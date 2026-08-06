@@ -1,0 +1,218 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1200">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap');
+    text { font-family: 'JetBrains Mono', 'SF Mono', 'Cascadia Code', monospace; }
+  </style>
+  <defs>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="0.5"/>
+    </pattern>
+  </defs>
+
+  <rect width="100%" height="100%" fill="#0f172a"/>
+  <rect width="100%" height="100%" fill="url(#grid)"/>
+
+  <!-- Title -->
+  <text x="30" y="35" fill="white" font-size="20" font-weight="700">ER — Visão Geral Completa</text>
+  <text x="30" y="55" fill="#94a3b8" font-size="11">AlumiGest: 13 Tabelas Interconectadas (Simplificado)</text>
+
+  <!-- MÓDULO AUTENTICAÇÃO (Top-Right) -->
+  <rect x="1200" y="80" width="350" height="200" rx="12" fill="none" stroke="#3b82f6" stroke-width="1.5" stroke-dasharray="8,4"/>
+  <text x="1215" y="105" fill="#3b82f6" font-size="12" font-weight="600">Autenticação &amp; Usuários</text>
+  
+  <g transform="translate(1220, 120)">
+    <rect width="310" height="140" rx="6" fill="#0f172a"/>
+    <rect width="310" height="140" rx="6" fill="rgba(76,29,149,0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+    <rect width="310" height="25" rx="6" fill="rgba(76,29,149,0.6)" stroke="#a78bfa" stroke-width="1.5"/>
+    <text x="155" y="17" fill="white" font-size="11" font-weight="700" text-anchor="middle">usuarios</text>
+    <text x="10" y="45" fill="white" font-size="10">PK id</text>
+    <text x="10" y="65" fill="#e2e8f0" font-size="10">nome_completo, email, senha</text>
+    <text x="10" y="85" fill="#34d399" font-size="10">perfil ENUM</text>
+  </g>
+
+  <!-- MÓDULO MATERIAIS (Left & Center) -->
+  <rect x="30" y="80" width="1120" height="650" rx="12" fill="none" stroke="#22d3ee" stroke-width="1.5" stroke-dasharray="8,4"/>
+  <text x="45" y="105" fill="#22d3ee" font-size="12" font-weight="600">Catálogo de Materiais</text>
+
+  <!-- fornecedores -->
+  <g transform="translate(50, 120)">
+    <rect width="250" height="120" rx="6" fill="#0f172a"/>
+    <rect width="250" height="120" rx="6" fill="rgba(30,41,59,0.5)" stroke="#94a3b8" stroke-width="1.5"/>
+    <rect width="250" height="25" rx="6" fill="rgba(30,41,59,0.7)" stroke="#94a3b8" stroke-width="1.5"/>
+    <text x="125" y="17" fill="white" font-size="11" font-weight="700" text-anchor="middle">fornecedores</text>
+    <text x="10" y="45" fill="white" font-size="10">PK id</text>
+    <text x="10" y="65" fill="#e2e8f0" font-size="10">razao_social, cnpj</text>
+  </g>
+
+  <!-- vidros -->
+  <g transform="translate(50, 280)">
+    <rect width="250" height="140" rx="6" fill="#0f172a"/>
+    <rect width="250" height="140" rx="6" fill="rgba(76,29,149,0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+    <rect width="250" height="25" rx="6" fill="rgba(76,29,149,0.6)" stroke="#a78bfa" stroke-width="1.5"/>
+    <text x="125" y="17" fill="white" font-size="11" font-weight="700" text-anchor="middle">vidros</text>
+    <text x="10" y="45" fill="white" font-size="10">PK id</text>
+    <text x="10" y="65" fill="#e2e8f0" font-size="10">nome, espessura</text>
+    <text x="10" y="85" fill="#e2e8f0" font-size="10">preco_m2, dim_max</text>
+    <text x="10" y="105" fill="#fb7185" font-size="10">FK fornecedor_id</text>
+  </g>
+
+  <!-- perfis_aluminio -->
+  <g transform="translate(350, 280)">
+    <rect width="250" height="140" rx="6" fill="#0f172a"/>
+    <rect width="250" height="140" rx="6" fill="rgba(76,29,149,0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+    <rect width="250" height="25" rx="6" fill="rgba(76,29,149,0.6)" stroke="#a78bfa" stroke-width="1.5"/>
+    <text x="125" y="17" fill="white" font-size="11" font-weight="700" text-anchor="middle">perfis_aluminio</text>
+    <text x="10" y="45" fill="white" font-size="10">PK id</text>
+    <text x="10" y="65" fill="#e2e8f0" font-size="10">codigo, linha</text>
+    <text x="10" y="85" fill="#e2e8f0" font-size="10">preco_ml, peso</text>
+    <text x="10" y="105" fill="#fb7185" font-size="10">FK fornecedor_id</text>
+  </g>
+
+  <!-- ferragens -->
+  <g transform="translate(650, 280)">
+    <rect width="250" height="140" rx="6" fill="#0f172a"/>
+    <rect width="250" height="140" rx="6" fill="rgba(76,29,149,0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+    <rect width="250" height="25" rx="6" fill="rgba(76,29,149,0.6)" stroke="#a78bfa" stroke-width="1.5"/>
+    <text x="125" y="17" fill="white" font-size="11" font-weight="700" text-anchor="middle">ferragens</text>
+    <text x="10" y="45" fill="white" font-size="10">PK id</text>
+    <text x="10" y="65" fill="#e2e8f0" font-size="10">codigo, nome</text>
+    <text x="10" y="85" fill="#e2e8f0" font-size="10">preco_unid, unidade</text>
+    <text x="10" y="105" fill="#fb7185" font-size="10">FK fornecedor_id</text>
+  </g>
+
+  <!-- peliculas -->
+  <g transform="translate(950, 280)">
+    <rect width="180" height="120" rx="6" fill="#0f172a"/>
+    <rect width="180" height="120" rx="6" fill="rgba(76,29,149,0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+    <rect width="180" height="25" rx="6" fill="rgba(76,29,149,0.6)" stroke="#a78bfa" stroke-width="1.5"/>
+    <text x="90" y="17" fill="white" font-size="11" font-weight="700" text-anchor="middle">peliculas</text>
+    <text x="10" y="45" fill="white" font-size="10">PK id</text>
+    <text x="10" y="65" fill="#e2e8f0" font-size="10">nome, tipo, preco</text>
+  </g>
+
+  <!-- tipos_produto -->
+  <g transform="translate(500, 100)">
+    <rect width="250" height="140" rx="6" fill="#0f172a"/>
+    <rect width="250" height="140" rx="6" fill="rgba(6,78,59,0.4)" stroke="#34d399" stroke-width="1.5"/>
+    <rect width="250" height="25" rx="6" fill="rgba(6,78,59,0.6)" stroke="#34d399" stroke-width="1.5"/>
+    <text x="125" y="17" fill="white" font-size="11" font-weight="700" text-anchor="middle">tipos_produto</text>
+    <text x="10" y="45" fill="white" font-size="10">PK id</text>
+    <text x="10" y="65" fill="#e2e8f0" font-size="10">codigo, nome</text>
+    <text x="10" y="85" fill="#e2e8f0" font-size="10">usa_vidro, usa_alum</text>
+  </g>
+
+  <!-- composicao_perfil_produto -->
+  <g transform="translate(350, 480)">
+    <rect width="280" height="140" rx="6" fill="#0f172a"/>
+    <rect width="280" height="140" rx="6" fill="rgba(251,146,60,0.2)" stroke="#fb923c" stroke-width="1.5"/>
+    <rect width="280" height="25" rx="6" fill="rgba(251,146,60,0.3)" stroke="#fb923c" stroke-width="1.5"/>
+    <text x="140" y="17" fill="white" font-size="11" font-weight="700" text-anchor="middle">composicao_perfil_produto</text>
+    <text x="10" y="45" fill="white" font-size="10">PK id</text>
+    <text x="10" y="65" fill="#fb7185" font-size="10">FK tipo_produto_id</text>
+    <text x="10" y="85" fill="#fb7185" font-size="10">FK perfil_aluminio_id</text>
+    <text x="10" y="105" fill="#e2e8f0" font-size="10">funcao, formula</text>
+  </g>
+
+  <!-- composicao_ferragem_produto -->
+  <g transform="translate(680, 480)">
+    <rect width="280" height="140" rx="6" fill="#0f172a"/>
+    <rect width="280" height="140" rx="6" fill="rgba(251,146,60,0.2)" stroke="#fb923c" stroke-width="1.5"/>
+    <rect width="280" height="25" rx="6" fill="rgba(251,146,60,0.3)" stroke="#fb923c" stroke-width="1.5"/>
+    <text x="140" y="17" fill="white" font-size="11" font-weight="700" text-anchor="middle">composicao_ferragem_produto</text>
+    <text x="10" y="45" fill="white" font-size="10">PK id</text>
+    <text x="10" y="65" fill="#fb7185" font-size="10">FK tipo_produto_id</text>
+    <text x="10" y="85" fill="#fb7185" font-size="10">FK ferragem_id</text>
+    <text x="10" y="105" fill="#e2e8f0" font-size="10">qtd_padrao</text>
+  </g>
+
+  <!-- MÓDULO ORÇAMENTOS (Bottom) -->
+  <rect x="30" y="780" width="1520" height="380" rx="12" fill="none" stroke="#fb923c" stroke-width="1.5" stroke-dasharray="8,4"/>
+  <text x="45" y="805" fill="#fb923c" font-size="12" font-weight="600">Módulo de Orçamentos</text>
+
+  <!-- clientes -->
+  <g transform="translate(60, 820)">
+    <rect width="250" height="120" rx="6" fill="#0f172a"/>
+    <rect width="250" height="120" rx="6" fill="rgba(8,51,68,0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+    <rect width="250" height="25" rx="6" fill="rgba(8,51,68,0.6)" stroke="#22d3ee" stroke-width="1.5"/>
+    <text x="125" y="17" fill="white" font-size="11" font-weight="700" text-anchor="middle">clientes</text>
+    <text x="10" y="45" fill="white" font-size="10">PK id</text>
+    <text x="10" y="65" fill="#e2e8f0" font-size="10">nome, cpf_cnpj</text>
+  </g>
+
+  <!-- orcamentos -->
+  <g transform="translate(370, 820)">
+    <rect width="280" height="180" rx="6" fill="#0f172a"/>
+    <rect width="280" height="180" rx="6" fill="rgba(251,146,60,0.3)" stroke="#fb923c" stroke-width="1.5"/>
+    <rect width="280" height="25" rx="6" fill="rgba(251,146,60,0.5)" stroke="#fb923c" stroke-width="1.5"/>
+    <text x="140" y="17" fill="white" font-size="11" font-weight="700" text-anchor="middle">orcamentos</text>
+    <text x="10" y="45" fill="white" font-size="10">PK id</text>
+    <text x="10" y="65" fill="#e2e8f0" font-size="10">numero, status</text>
+    <text x="10" y="85" fill="#fb7185" font-size="10">FK cliente_id</text>
+    <text x="10" y="105" fill="#fb7185" font-size="10">FK usuario_id</text>
+    <text x="10" y="125" fill="#e2e8f0" font-size="10">valor_total</text>
+  </g>
+
+  <!-- itens_orcamento -->
+  <g transform="translate(730, 820)">
+    <rect width="300" height="220" rx="6" fill="#0f172a"/>
+    <rect width="300" height="220" rx="6" fill="rgba(251,146,60,0.3)" stroke="#fb923c" stroke-width="1.5"/>
+    <rect width="300" height="25" rx="6" fill="rgba(251,146,60,0.5)" stroke="#fb923c" stroke-width="1.5"/>
+    <text x="150" y="17" fill="white" font-size="11" font-weight="700" text-anchor="middle">itens_orcamento</text>
+    <text x="10" y="45" fill="white" font-size="10">PK id</text>
+    <text x="10" y="65" fill="#fb7185" font-size="10">FK orcamento_id</text>
+    <text x="10" y="85" fill="#fb7185" font-size="10">FK tipo_produto_id</text>
+    <text x="10" y="105" fill="#fb7185" font-size="10">FK vidro_id</text>
+    <text x="10" y="125" fill="#fb7185" font-size="10">FK pelicula_id</text>
+    <text x="10" y="145" fill="#e2e8f0" font-size="10">largura, altura, qtd</text>
+    <text x="10" y="165" fill="#e2e8f0" font-size="10">custo_vidro, total_item</text>
+  </g>
+
+  <!-- materiais_item -->
+  <g transform="translate(1130, 820)">
+    <rect width="280" height="180" rx="6" fill="#0f172a"/>
+    <rect width="280" height="180" rx="6" fill="rgba(251,146,60,0.3)" stroke="#fb923c" stroke-width="1.5"/>
+    <rect width="280" height="25" rx="6" fill="rgba(251,146,60,0.5)" stroke="#fb923c" stroke-width="1.5"/>
+    <text x="140" y="17" fill="white" font-size="11" font-weight="700" text-anchor="middle">materiais_item</text>
+    <text x="10" y="45" fill="white" font-size="10">PK id</text>
+    <text x="10" y="65" fill="#fb7185" font-size="10">FK item_orcamento_id</text>
+    <text x="10" y="85" fill="#fb7185" font-size="10">FK perfil_aluminio_id</text>
+    <text x="10" y="105" fill="#fb7185" font-size="10">FK ferragem_id</text>
+    <text x="10" y="125" fill="#e2e8f0" font-size="10">qtd, preco_unitario</text>
+  </g>
+
+  <!-- LINHAS DE RELACIONAMENTO SIMPLIFICADAS -->
+  
+  <!-- Fornecedores → Vidros/Perfis/Ferragens -->
+  <path d="M 175,240 L 175,280" fill="none" stroke="#94a3b8" stroke-width="1"/>
+  <path d="M 300,180 L 475,180 L 475,280" fill="none" stroke="#94a3b8" stroke-width="1"/>
+  <path d="M 300,160 L 775,160 L 775,280" fill="none" stroke="#94a3b8" stroke-width="1"/>
+
+  <!-- Tipos Produto → Composições -->
+  <path d="M 500,170 L 490,170 L 490,480" fill="none" stroke="#94a3b8" stroke-width="1"/>
+  <path d="M 750,170 L 820,170 L 820,480" fill="none" stroke="#94a3b8" stroke-width="1"/>
+
+  <!-- Materiais → Composições -->
+  <path d="M 475,420 L 475,480" fill="none" stroke="#94a3b8" stroke-width="1"/> <!-- Perfil → Comp -->
+  <path d="M 775,420 L 775,480" fill="none" stroke="#94a3b8" stroke-width="1"/> <!-- Ferragem → Comp -->
+
+  <!-- Orçamentos e Dependências -->
+  <path d="M 310,880 L 370,880" fill="none" stroke="#94a3b8" stroke-width="1"/> <!-- Cliente → Orçamento -->
+  <path d="M 1375,320 L 1375,850 L 650,850" fill="none" stroke="#94a3b8" stroke-width="1"/> <!-- Usuario → Orçamento -->
+  
+  <path d="M 650,910 L 730,910" fill="none" stroke="#94a3b8" stroke-width="1"/> <!-- Orcamento → Item -->
+  <path d="M 1030,910 L 1130,910" fill="none" stroke="#94a3b8" stroke-width="1"/> <!-- Item → MaterialItem -->
+
+  <!-- Catálogo → Itens do Orçamento -->
+  <path d="M 625,240 L 625,260 L 1080,260 L 1080,850 L 1030,850" fill="none" stroke="#fb7185" stroke-width="1" stroke-dasharray="4,2"/> <!-- TipoProduto → Item -->
+  <path d="M 175,420 L 175,760 L 780,760 L 780,820" fill="none" stroke="#fb7185" stroke-width="1" stroke-dasharray="4,2"/> <!-- Vidro → Item -->
+  <path d="M 1040,400 L 1040,760 L 980,760 L 980,820" fill="none" stroke="#fb7185" stroke-width="1" stroke-dasharray="4,2"/> <!-- Pelicula → Item -->
+  
+  <!-- Catálogo → Materiais Item -->
+  <path d="M 475,420 L 475,700 L 1230,700 L 1230,820" fill="none" stroke="#fb7185" stroke-width="1" stroke-dasharray="4,2"/> <!-- Perfil → MaterialItem -->
+  <path d="M 775,420 L 775,680 L 1270,680 L 1270,820" fill="none" stroke="#fb7185" stroke-width="1" stroke-dasharray="4,2"/> <!-- Ferragem → MaterialItem -->
+
+  <rect x="50" y="1120" width="300" height="40" rx="4" fill="rgba(15,23,42,0.8)" stroke="#334155"/>
+  <line x1="65" y1="1140" x2="100" y2="1140" stroke="#fb7185" stroke-width="1" stroke-dasharray="4,2"/>
+  <text x="110" y="1144" fill="white" font-size="10">Relacionamentos Transacionais</text>
+
+</svg>

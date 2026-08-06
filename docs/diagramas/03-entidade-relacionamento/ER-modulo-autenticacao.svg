@@ -1,0 +1,105 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 500">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap');
+    text { font-family: 'JetBrains Mono', 'SF Mono', 'Cascadia Code', monospace; }
+  </style>
+  <defs>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="0.5"/>
+    </pattern>
+  </defs>
+
+  <rect width="100%" height="100%" fill="#0f172a"/>
+  <rect width="100%" height="100%" fill="url(#grid)"/>
+
+  <!-- Title -->
+  <text x="30" y="35" fill="white" font-size="16" font-weight="700">ER — Módulo de Autenticação</text>
+  <text x="30" y="52" fill="#94a3b8" font-size="9">Tabela: usuarios | Decisão: perfil como ENUM (não tabela separada)</text>
+
+  <!-- ======== ENTITY: usuarios ======== -->
+  <g transform="translate(180, 80)">
+    <!-- Mask -->
+    <rect width="340" height="290" rx="6" fill="#0f172a"/>
+    <!-- Box -->
+    <rect width="340" height="290" rx="6" fill="rgba(76,29,149,0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+    <!-- Entity Name -->
+    <rect width="340" height="30" rx="6" fill="rgba(76,29,149,0.6)" stroke="#a78bfa" stroke-width="1.5"/>
+    <text x="170" y="21" fill="white" font-size="12" font-weight="700" text-anchor="middle">usuarios</text>
+    <!-- Divider -->
+    <line x1="0" y1="30" x2="340" y2="30" stroke="#a78bfa" stroke-width="0.5" stroke-opacity="0.5"/>
+    <!-- Columns -->
+    <text x="12" y="50" fill="#fbbf24" font-size="9" font-weight="600">PK</text>
+    <text x="40" y="50" fill="white" font-size="9" font-weight="600">id</text>
+    <text x="250" y="50" fill="#94a3b8" font-size="8">BIGSERIAL NOT NULL</text>
+
+    <text x="40" y="68" fill="#e2e8f0" font-size="9">nome_completo</text>
+    <text x="250" y="68" fill="#94a3b8" font-size="8">VARCHAR(200) NN</text>
+
+    <text x="12" y="86" fill="#22d3ee" font-size="9" font-weight="600">UK</text>
+    <text x="40" y="86" fill="#e2e8f0" font-size="9">email</text>
+    <text x="250" y="86" fill="#94a3b8" font-size="8">VARCHAR(150) NN</text>
+
+    <text x="40" y="104" fill="#e2e8f0" font-size="9">senha_hash</text>
+    <text x="250" y="104" fill="#94a3b8" font-size="8">VARCHAR(255) NN</text>
+
+    <text x="40" y="122" fill="#e2e8f0" font-size="9">perfil</text>
+    <text x="250" y="122" fill="#34d399" font-size="8">ENUM NN</text>
+
+    <text x="40" y="140" fill="#e2e8f0" font-size="9">tentativas_login</text>
+    <text x="250" y="140" fill="#94a3b8" font-size="8">INTEGER NN = 0</text>
+
+    <text x="40" y="158" fill="#e2e8f0" font-size="9">bloqueado_ate</text>
+    <text x="250" y="158" fill="#94a3b8" font-size="8">TIMESTAMP NULL</text>
+
+    <!-- Divider audit -->
+    <line x1="10" y1="170" x2="330" y2="170" stroke="#a78bfa" stroke-width="0.3" stroke-opacity="0.5"/>
+    <text x="170" y="185" fill="#94a3b8" font-size="7" text-anchor="middle">— campos de auditoria —</text>
+
+    <text x="40" y="202" fill="#64748b" font-size="9">ativo</text>
+    <text x="250" y="202" fill="#94a3b8" font-size="8">BOOLEAN NN = TRUE</text>
+
+    <text x="40" y="220" fill="#64748b" font-size="9">created_at</text>
+    <text x="250" y="220" fill="#94a3b8" font-size="8">TIMESTAMP NN = NOW()</text>
+
+    <text x="40" y="238" fill="#64748b" font-size="9">updated_at</text>
+    <text x="250" y="238" fill="#94a3b8" font-size="8">TIMESTAMP NN = NOW()</text>
+
+    <!-- Constraints -->
+    <line x1="10" y1="250" x2="330" y2="250" stroke="#a78bfa" stroke-width="0.3" stroke-opacity="0.5"/>
+    <text x="12" y="267" fill="#fbbf24" font-size="8" font-weight="500">CONSTRAINTS</text>
+    <text x="12" y="282" fill="#94a3b8" font-size="7">PK: id | UK: uk_usuarios_email(email)</text>
+  </g>
+
+  <!-- ======== ENUM BOX ======== -->
+  <g transform="translate(180, 395)">
+    <rect width="340" height="80" rx="6" fill="#0f172a"/>
+    <rect width="340" height="80" rx="6" fill="rgba(6,78,59,0.3)" stroke="#34d399" stroke-width="1.5"/>
+    <rect width="340" height="25" rx="6" fill="rgba(6,78,59,0.5)" stroke="#34d399" stroke-width="1.5"/>
+    <text x="170" y="18" fill="white" font-size="10" font-weight="700" text-anchor="middle">«ENUM» Perfil</text>
+    <text x="12" y="42" fill="#34d399" font-size="9">ADMINISTRADOR</text>
+    <text x="150" y="42" fill="#94a3b8" font-size="8">→ Acesso total</text>
+    <text x="12" y="56" fill="#34d399" font-size="9">VENDEDOR</text>
+    <text x="150" y="56" fill="#94a3b8" font-size="8">→ Clientes + Orçamentos</text>
+    <text x="12" y="70" fill="#34d399" font-size="9">PRODUCAO</text>
+    <text x="150" y="70" fill="#94a3b8" font-size="8">→ Pedidos + OPs + Estoque</text>
+  </g>
+
+  <!-- Arrow from usuarios.perfil to Enum -->
+  <line x1="350" y1="370" x2="350" y2="395" stroke="#34d399" stroke-width="1" stroke-dasharray="4,3"/>
+
+  <!-- ======== DECISION NOTE ======== -->
+  <rect x="30" y="400" width="140" height="75" rx="8" fill="rgba(120,53,15,0.15)" stroke="#fbbf24" stroke-width="0.8" stroke-dasharray="4,3"/>
+  <text x="40" y="418" fill="#fbbf24" font-size="8" font-weight="600">Decisão</text>
+  <text x="40" y="433" fill="#94a3b8" font-size="7">Perfil como ENUM e</text>
+  <text x="40" y="444" fill="#94a3b8" font-size="7">não tabela separada:</text>
+  <text x="40" y="458" fill="#94a3b8" font-size="7">• Apenas 3 valores fixos</text>
+  <text x="40" y="469" fill="#94a3b8" font-size="7">• Sem necessidade de N:N</text>
+
+  <!-- Decision Note 2 -->
+  <rect x="530" y="400" width="140" height="75" rx="8" fill="rgba(120,53,15,0.15)" stroke="#fbbf24" stroke-width="0.8" stroke-dasharray="4,3"/>
+  <text x="540" y="418" fill="#fbbf24" font-size="8" font-weight="600">Segurança</text>
+  <text x="540" y="433" fill="#94a3b8" font-size="7">• BCrypt hash (custo 12)</text>
+  <text x="540" y="444" fill="#94a3b8" font-size="7">• Bloqueio após 5 falhas</text>
+  <text x="540" y="458" fill="#94a3b8" font-size="7">• JWT stateless (8h exp)</text>
+  <text x="540" y="469" fill="#94a3b8" font-size="7">• Soft delete (ativo)</text>
+</svg>
