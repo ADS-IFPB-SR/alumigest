@@ -3,8 +3,9 @@ package br.edu.ifpb.alumigest.catalog.service;
 import br.edu.ifpb.alumigest.catalog.dto.FilmRequestDTO;
 import br.edu.ifpb.alumigest.catalog.dto.FilmResponseDTO;
 import br.edu.ifpb.alumigest.catalog.dto.FilmUpdatePriceDTO;
-import br.edu.ifpb.alumigest.catalog.entity.Material;
-import br.edu.ifpb.alumigest.catalog.entity.MaterialGroup;
+import br.edu.ifpb.alumigest.catalog.domain.Material;
+import br.edu.ifpb.alumigest.catalog.domain.MaterialGroup;
+import br.edu.ifpb.alumigest.catalog.domain.UnitMeasure;
 import br.edu.ifpb.alumigest.catalog.repository.MaterialGroupRepository;
 import br.edu.ifpb.alumigest.catalog.repository.MaterialRepository;
 import br.edu.ifpb.alumigest.catalog.mapper.FilmMapper;
@@ -26,7 +27,6 @@ public class FilmService {
     private final FilmMapper filmMapper;
 
     private static final String FILM_GROUP_CODE = "PELICULA";
-    private static final String UNIT_MEASURE = "m2";
 
     public FilmService(MaterialRepository materialRepository, MaterialGroupRepository materialGroupRepository,  FilmMapper filmMapper) {
         this.materialRepository = materialRepository;
@@ -42,9 +42,9 @@ public class FilmService {
 
         Material material = filmMapper.toEntity(request);
 
-        material.setMaterialGroup(group);
-        material.setUnitMeasure(UNIT_MEASURE);
-        material.setIsActive(true);
+        material.setGroup(group);
+        material.setUnitMeasure(UnitMeasure.M2);
+        material.setActive(true);
 
         Material savedMaterial = materialRepository.save(material);
 
@@ -62,7 +62,7 @@ public class FilmService {
     @Transactional
     public FilmResponseDTO updateFilmPrice(UUID id, FilmUpdatePriceDTO request) {
 
-        Material material = materialRepository.findByIdAndMaterialGroupCode(id, FILM_GROUP_CODE)
+        Material material = materialRepository.findByIdAndGroupCode(id, FILM_GROUP_CODE)
                 .orElseThrow(() -> new ResourceNotFoundException("Película não encontrada com o ID informado."));
 
         material.setSalePrice(request.salePrice());
@@ -72,10 +72,10 @@ public class FilmService {
 
     @Transactional
     public void inactivateFilm(UUID id) {
-        Material material = materialRepository.findByIdAndMaterialGroupCode(id, FILM_GROUP_CODE)
+        Material material = materialRepository.findByIdAndGroupCode(id, FILM_GROUP_CODE)
                 .orElseThrow(() -> new ResourceNotFoundException("Película não encontrada com o ID informado."));
 
-        material.setIsActive(false);
+        material.setActive(false);
         materialRepository.save(material);
     }
 }

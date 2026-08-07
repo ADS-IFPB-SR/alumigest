@@ -3,8 +3,8 @@ package br.edu.ifpb.alumigest.catalog.service;
 import br.edu.ifpb.alumigest.catalog.dto.FilmRequestDTO;
 import br.edu.ifpb.alumigest.catalog.dto.FilmResponseDTO;
 import br.edu.ifpb.alumigest.catalog.dto.FilmUpdatePriceDTO;
-import br.edu.ifpb.alumigest.catalog.entity.Material;
-import br.edu.ifpb.alumigest.catalog.entity.MaterialGroup;
+import br.edu.ifpb.alumigest.catalog.domain.Material;
+import br.edu.ifpb.alumigest.catalog.domain.MaterialGroup;
 import br.edu.ifpb.alumigest.catalog.mapper.FilmMapper;
 import br.edu.ifpb.alumigest.catalog.repository.MaterialGroupRepository;
 import br.edu.ifpb.alumigest.catalog.repository.MaterialRepository;
@@ -61,7 +61,8 @@ class FilmServiceTest {
         mockMaterial.setId(filmId);
         mockMaterial.setName("Fumê G20");
         mockMaterial.setSalePrice(new BigDecimal("50.00"));
-        mockMaterial.setIsActive(true);
+        // CORREÇÃO 1: Mudou de setIsActive para setActive
+        mockMaterial.setActive(true);
 
         mockRequest = new FilmRequestDTO(
                 "Fumê G20", "Fumê", new BigDecimal("50.00"),
@@ -86,7 +87,6 @@ class FilmServiceTest {
 
     @Test
     void createFilm_ShouldThrowException_WhenGroupNotFound() {
-
         when(materialGroupRepository.findByCode("PELICULA")).thenReturn(Optional.empty());
 
         BusinessException exception = assertThrows(BusinessException.class, () -> filmService.createFilm(mockRequest));
@@ -94,10 +94,8 @@ class FilmServiceTest {
         verify(materialRepository, never()).save(any());
     }
 
-
     @Test
     void findAllActiveFilms_ShouldReturnPageOfFilms() {
-
         Pageable pageable = PageRequest.of(0, 10);
         Page<Material> pagedResponse = new PageImpl<>(List.of(mockMaterial));
 
@@ -115,7 +113,7 @@ class FilmServiceTest {
     void updateFilmPrice_ShouldUpdateOnlyPrice_WhenFilmExists() {
         FilmUpdatePriceDTO updateRequest = new FilmUpdatePriceDTO(new BigDecimal("85.50"));
 
-        when(materialRepository.findByIdAndMaterialGroupCode(filmId, "PELICULA")).thenReturn(Optional.of(mockMaterial));
+        when(materialRepository.findByIdAndGroupCode(filmId, "PELICULA")).thenReturn(Optional.of(mockMaterial));
         when(materialRepository.save(any(Material.class))).thenReturn(mockMaterial);
         when(filmMapper.toResponse(mockMaterial)).thenReturn(new FilmResponseDTO(filmId, "Fumê G20", "Fumê", new BigDecimal("85.50"), "m2"));
 
@@ -127,28 +125,28 @@ class FilmServiceTest {
 
     @Test
     void updateFilmPrice_ShouldThrowException_WhenFilmNotFound() {
-        // Arrange
         FilmUpdatePriceDTO updateRequest = new FilmUpdatePriceDTO(new BigDecimal("85.50"));
-        when(materialRepository.findByIdAndMaterialGroupCode(filmId, "PELICULA")).thenReturn(Optional.empty());
 
-        // Act & Assert
+        when(materialRepository.findByIdAndGroupCode(filmId, "PELICULA")).thenReturn(Optional.empty());
+
         assertThrows(ResourceNotFoundException.class, () -> filmService.updateFilmPrice(filmId, updateRequest));
         verify(materialRepository, never()).save(any());
     }
 
     @Test
     void inactivateFilm_ShouldSetIsActiveToFalse_WhenFilmExists() {
-        when(materialRepository.findByIdAndMaterialGroupCode(filmId, "PELICULA")).thenReturn(Optional.of(mockMaterial));
+        when(materialRepository.findByIdAndGroupCode(filmId, "PELICULA")).thenReturn(Optional.of(mockMaterial));
 
         filmService.inactivateFilm(filmId);
 
-        assertFalse(mockMaterial.getIsActive());
+        assertFalse(mockMaterial.isActive());
         verify(materialRepository, times(1)).save(mockMaterial);
     }
 
     @Test
     void inactivateFilm_ShouldThrowException_WhenFilmDoesNotExist() {
-        when(materialRepository.findByIdAndMaterialGroupCode(filmId, "PELICULA")).thenReturn(Optional.empty());
+
+        when(materialRepository.findByIdAndGroupCode(filmId, "PELICULA")).thenReturn(Optional.empty());
 
         assertThrows(ResourceNotFoundException.class, () -> filmService.inactivateFilm(filmId));
         verify(materialRepository, never()).save(any());

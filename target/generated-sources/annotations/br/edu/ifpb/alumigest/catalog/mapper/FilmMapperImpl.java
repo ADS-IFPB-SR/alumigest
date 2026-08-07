@@ -1,8 +1,8 @@
 package br.edu.ifpb.alumigest.catalog.mapper;
 
+import br.edu.ifpb.alumigest.catalog.domain.Material;
 import br.edu.ifpb.alumigest.catalog.dto.FilmRequestDTO;
 import br.edu.ifpb.alumigest.catalog.dto.FilmResponseDTO;
-import br.edu.ifpb.alumigest.catalog.entity.Material;
 import java.math.BigDecimal;
 import java.util.UUID;
 import javax.annotation.processing.Generated;
@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2026-08-07T14:18:23-0300",
+    date = "2026-08-07T20:48:45-0300",
     comments = "version: 1.6.3, compiler: javac, environment: Java 21.0.10 (Microsoft)"
 )
 @Component
@@ -52,7 +52,9 @@ public class FilmMapperImpl implements FilmMapper {
         name = material.getName();
         colorFinish = material.getColorFinish();
         salePrice = material.getSalePrice();
-        unitMeasure = material.getUnitMeasure();
+        if ( material.getUnitMeasure() != null ) {
+            unitMeasure = material.getUnitMeasure().name();
+        }
 
         FilmResponseDTO filmResponseDTO = new FilmResponseDTO( id, name, colorFinish, salePrice, unitMeasure );
 

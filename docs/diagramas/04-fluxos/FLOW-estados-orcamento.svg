@@ -1,0 +1,107 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 650">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap');
+    text { font-family: 'JetBrains Mono', 'SF Mono', 'Cascadia Code', monospace; }
+  </style>
+  <defs>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="0.5"/>
+    </pattern>
+    <marker id="arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#64748b"/>
+    </marker>
+    <marker id="arrow-green" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#34d399"/>
+    </marker>
+    <marker id="arrow-rose" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#fb7185"/>
+    </marker>
+  </defs>
+
+  <rect width="100%" height="100%" fill="#0f172a"/>
+  <rect width="100%" height="100%" fill="url(#grid)"/>
+
+  <!-- Title -->
+  <text x="30" y="35" fill="white" font-size="16" font-weight="700">Máquina de Estados — Orçamento (AlumiGest)</text>
+  <text x="30" y="52" fill="#94a3b8" font-size="9">Ciclo de vida do Orçamento: Rascunho → Enviado → Aprovado → Ordem de Produção</text>
+
+  <!-- Start Point -->
+  <circle cx="100" cy="200" r="12" fill="#0f172a" stroke="#60a5fa" stroke-width="2"/>
+  <circle cx="100" cy="200" r="6" fill="#60a5fa"/>
+
+  <line x1="112" y1="200" x2="160" y2="200" stroke="#60a5fa" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="135" y="190" fill="#60a5fa" font-size="8" text-anchor="middle">Criar</text>
+
+  <!-- STATE: RASCUNHO -->
+  <rect x="160" y="175" width="140" height="50" rx="25" fill="#0f172a"/>
+  <rect x="160" y="175" width="140" height="50" rx="25" fill="rgba(148,163,184,0.2)" stroke="#94a3b8" stroke-width="2"/>
+  <text x="230" y="200" fill="white" font-size="11" font-weight="700" text-anchor="middle">RASCUNHO</text>
+  <text x="230" y="215" fill="#94a3b8" font-size="8" text-anchor="middle">Editável</text>
+
+  <!-- Loop Rascunho -->
+  <path d="M 190,175 Q 160,110 230,110 Q 300,110 270,175" fill="none" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="230" y="105" fill="#94a3b8" font-size="8" text-anchor="middle">Add/Remover Itens</text>
+
+  <!-- Transition: Enviar -->
+  <line x1="300" y1="200" x2="430" y2="200" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="365" y="190" fill="#94a3b8" font-size="9" font-weight="600" text-anchor="middle">Enviar ao Cliente</text>
+
+  <!-- STATE: ENVIADO -->
+  <rect x="430" y="175" width="140" height="50" rx="25" fill="#0f172a"/>
+  <rect x="430" y="175" width="140" height="50" rx="25" fill="rgba(59,130,246,0.3)" stroke="#60a5fa" stroke-width="2"/>
+  <text x="500" y="200" fill="white" font-size="11" font-weight="700" text-anchor="middle">ENVIADO</text>
+  <text x="500" y="215" fill="#60a5fa" font-size="8" text-anchor="middle">Aguardando Resposta</text>
+
+  <!-- Transition: Venceu (Tempo) -->
+  <path d="M 500,225 L 500,320 L 430,320" fill="none" stroke="#fb7185" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arrow-rose)"/>
+  <text x="460" y="270" fill="#fb7185" font-size="8">Prazo Expirou</text>
+
+  <!-- Transition: Rejeitado -->
+  <path d="M 430,215 L 360,250 L 360,300" fill="none" stroke="#fb7185" stroke-width="2" marker-end="url(#arrow-rose)"/>
+  <text x="380" y="260" fill="#fb7185" font-size="9" font-weight="600" text-anchor="middle">Rejeitado</text>
+
+  <!-- STATE: VENCIDO / CANCELADO -->
+  <rect x="290" y="300" width="140" height="50" rx="25" fill="#0f172a"/>
+  <rect x="290" y="300" width="140" height="50" rx="25" fill="rgba(251,113,133,0.2)" stroke="#fb7185" stroke-width="2"/>
+  <text x="360" y="325" fill="white" font-size="11" font-weight="700" text-anchor="middle">CANCELADO / VENC</text>
+  <text x="360" y="340" fill="#fb7185" font-size="8" text-anchor="middle">Fim (Falha)</text>
+
+  <!-- Transition: Aprovado -->
+  <line x1="570" y1="200" x2="700" y2="200" stroke="#34d399" stroke-width="2" marker-end="url(#arrow-green)"/>
+  <text x="635" y="190" fill="#34d399" font-size="9" font-weight="600" text-anchor="middle">Cliente Aprova</text>
+  <text x="635" y="215" fill="#94a3b8" font-size="7" text-anchor="middle">Congela alterações</text>
+
+  <!-- STATE: APROVADO -->
+  <rect x="700" y="175" width="140" height="50" rx="25" fill="#0f172a"/>
+  <rect x="700" y="175" width="140" height="50" rx="25" fill="rgba(52,211,153,0.3)" stroke="#34d399" stroke-width="2"/>
+  <text x="770" y="200" fill="white" font-size="11" font-weight="700" text-anchor="middle">APROVADO</text>
+  <text x="770" y="215" fill="#34d399" font-size="8" text-anchor="middle">Gera OP Automática</text>
+
+  <!-- Transition: Produção -->
+  <line x1="770" y1="225" x2="770" y2="300" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="785" y="260" fill="#94a3b8" font-size="9">Iniciar OP</text>
+
+  <!-- STATE: EM_PRODUCAO (Out of scope, but linked) -->
+  <rect x="700" y="300" width="140" height="50" rx="25" fill="#0f172a"/>
+  <rect x="700" y="300" width="140" height="50" rx="25" fill="rgba(251,146,60,0.3)" stroke="#fb923c" stroke-width="2" stroke-dasharray="4,2"/>
+  <text x="770" y="325" fill="white" font-size="11" font-weight="700" text-anchor="middle">EM PRODUÇÃO</text>
+  <text x="770" y="340" fill="#fb923c" font-size="8" text-anchor="middle">(Módulo OP)</text>
+
+  <!-- End States circles -->
+  <circle cx="360" cy="380" r="10" fill="#0f172a" stroke="#fb7185" stroke-width="2"/>
+  <circle cx="360" cy="380" r="5" fill="#fb7185"/>
+  <line x1="360" y1="350" x2="360" y2="370" stroke="#fb7185" stroke-width="1.5"/>
+
+  <circle cx="770" cy="400" r="10" fill="#0f172a" stroke="#34d399" stroke-width="2"/>
+  <circle cx="770" cy="400" r="5" fill="#34d399"/>
+  <line x1="770" y1="350" x2="770" y2="390" stroke="#fb923c" stroke-width="1.5" stroke-dasharray="4,2"/>
+
+  <!-- Legend / Rules -->
+  <rect x="160" y="450" width="580" height="120" rx="8" fill="rgba(120,53,15,0.15)" stroke="#fbbf24" stroke-width="0.8" stroke-dasharray="4,3"/>
+  <text x="180" y="475" fill="#fbbf24" font-size="10" font-weight="600">Regras de Negócio (State Transitions)</text>
+  
+  <text x="180" y="500" fill="#94a3b8" font-size="9">1. Apenas orçamentos em <tspan fill="white">RASCUNHO</tspan> podem ter seus itens (quantidades/medidas) alterados.</text>
+  <text x="180" y="520" fill="#94a3b8" font-size="9">2. A transição para <tspan fill="white">APROVADO</tspan> trava o orçamento (imutável) e dispara o gatilho para OP.</text>
+  <text x="180" y="540" fill="#94a3b8" font-size="9">3. Um orçamento <tspan fill="white">ENVIADO</tspan> com mais de 30 dias muda para VENCIDO automaticamente (Cron Job).</text>
+
+</svg>
