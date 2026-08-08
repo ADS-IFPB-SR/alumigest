@@ -44,6 +44,7 @@ public class FilmService {
 
         material.setGroup(group);
         material.setUnitMeasure(UnitMeasure.M2);
+
         material.setActive(true);
 
         Material savedMaterial = materialRepository.save(material);

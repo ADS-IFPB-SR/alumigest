@@ -42,11 +42,11 @@ public class FilmController {
     @GetMapping
     @Operation(summary = "Listar películas ativas", description = "Retorna lista paginada de todas as películas ativas no catálogo")
 
-    public ResponseEntity<PageResponse<FilmResponseDTO>> listActiveFilms(Pageable pageable) {
+    public ResponseEntity<ApiResponse<PageResponse<FilmResponseDTO>>> listActiveFilms(Pageable pageable) {
 
         Page<FilmResponseDTO> page = filmService.findAllActiveFilms(pageable);
 
-        return ResponseEntity.ok(PageResponse.of(page));
+        return ResponseEntity.ok(ApiResponse.ok("Películas listadas com sucesso", PageResponse.of(page)));
     }
 
     @PutMapping("/{id}")
