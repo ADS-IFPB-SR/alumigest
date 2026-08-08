@@ -7,7 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -35,4 +35,14 @@ public interface MaterialRepository extends JpaRepository<Material, UUID> {
            "(LOWER(m.name) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
            "LOWER(m.commercialReference) LIKE LOWER(CONCAT('%', :query, '%')))")
     Page<Material> searchActiveByGroup(@Param("groupId") UUID groupId, @Param("query") String query, Pageable pageable);
+
+    @Query("SELECT m FROM Material m WHERE m.isActive = true AND m.group.id = :groupId " +
+            "AND (:thickness IS NULL OR m.thicknessMm = :thickness) " +
+            "AND (CAST(:color AS text) IS NULL OR LOWER(m.colorFinish) LIKE LOWER(CONCAT('%', CAST(:color AS text), '%')))")
+    Page<Material> findActiveByGroupWithFilters(
+            @Param("groupId") UUID groupId,
+            @Param("thickness") BigDecimal thickness,
+            @Param("color") String color,
+            Pageable pageable
+    );
 }
