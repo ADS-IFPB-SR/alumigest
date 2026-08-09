@@ -27,7 +27,6 @@
     </properties>
 
     <dependencies>
-
         <!-- MapStruct -->
         <dependency>
             <groupId>org.mapstruct</groupId>
@@ -100,13 +99,10 @@
     </dependencies>
 
     <build>
-
         <plugins>
-
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-
                 <configuration>
                     <excludes>
                         <exclude>
@@ -115,30 +111,21 @@
                         </exclude>
                     </excludes>
                 </configuration>
-
             </plugin>
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-
                 <configuration>
-
                     <annotationProcessorPaths>
-
                         <path>
                             <groupId>org.mapstruct</groupId>
                             <artifactId>mapstruct-processor</artifactId>
                             <version>${mapstruct.version}</version>
                         </path>
-
                     </annotationProcessorPaths>
-
                 </configuration>
-
             </plugin>
-
         </plugins>
-
     </build>
 </project>
