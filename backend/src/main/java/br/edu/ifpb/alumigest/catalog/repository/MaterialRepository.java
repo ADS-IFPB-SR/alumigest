@@ -55,4 +55,25 @@ public interface MaterialRepository extends JpaRepository<Material, UUID> {
             @Param("unitMeasure") UnitMeasure unitMeasure,
             @Param("name") String name,
             Pageable pageable);
+
+    @Query("SELECT m FROM Material m " +
+           "WHERE m.isActive = true " +
+           "AND m.group.id = :groupId " +
+           "AND LOWER(m.commercialReference) = LOWER(:commercialReference) " +
+           "AND LOWER(m.colorFinish) = LOWER(:colorFinish)")
+    Optional<Material> findActiveByGroupAndCommercialReferenceAndColorFinish(
+            @Param("groupId") UUID groupId,
+            @Param("commercialReference") String commercialReference,
+            @Param("colorFinish") String colorFinish);
+
+    @Query("SELECT m FROM Material m " +
+           "WHERE m.isActive = true " +
+           "AND m.group.id = :groupId " +
+           "AND (:colorFinish IS NULL OR LOWER(m.colorFinish) LIKE LOWER(CONCAT('%', :colorFinish, '%'))) " +
+           "AND (:name IS NULL OR LOWER(m.name) LIKE LOWER(CONCAT('%', :name, '%')))")
+    Page<Material> findAllActiveAluminumFiltered(
+            @Param("groupId") UUID groupId,
+            @Param("colorFinish") String colorFinish,
+            @Param("name") String name,
+            Pageable pageable);
 }
