@@ -16,23 +16,22 @@ import java.util.UUID;
 public interface MaterialRepository extends JpaRepository<Material, UUID> {
 
     Page<Material> findByIsActiveTrue(Pageable pageable);
-
     Page<Material> findByGroupIdAndIsActiveTrue(UUID groupId, Pageable pageable);
-
     List<Material> findByGroupIdAndIsActiveTrue(UUID groupId);
-
     Optional<Material> findByIdAndIsActiveTrue(UUID id);
-
     Optional<Material> findBySkuCodeAndIsActiveTrue(String skuCode);
 
     @Query("SELECT m FROM Material m WHERE m.isActive = true AND " +
-           "(LOWER(m.name) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
-           "LOWER(m.commercialReference) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
-           "LOWER(m.skuCode) LIKE LOWER(CONCAT('%', :query, '%')))")
+            "(LOWER(m.name) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
+            "LOWER(m.commercialReference) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
+            "LOWER(m.skuCode) LIKE LOWER(CONCAT('%', :query, '%')))")
     Page<Material> searchActive(@Param("query") String query, Pageable pageable);
 
     @Query("SELECT m FROM Material m WHERE m.isActive = true AND m.group.id = :groupId AND " +
-           "(LOWER(m.name) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
-           "LOWER(m.commercialReference) LIKE LOWER(CONCAT('%', :query, '%')))")
+            "(LOWER(m.name) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
+            "LOWER(m.commercialReference) LIKE LOWER(CONCAT('%', :query, '%')))")
     Page<Material> searchActiveByGroup(@Param("groupId") UUID groupId, @Param("query") String query, Pageable pageable);
+
+    Page<Material> findAllActiveByGroupCode(String groupCode, Pageable pageable);
+    Optional<Material> findByIdAndGroupCode(UUID id, String groupCode);
 }
