@@ -1,6 +1,7 @@
 package br.edu.ifpb.alumigest.catalog.repository;
 
 import br.edu.ifpb.alumigest.catalog.domain.Material;
+import br.edu.ifpb.alumigest.catalog.domain.UnitMeasure;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -34,4 +35,24 @@ public interface MaterialRepository extends JpaRepository<Material, UUID> {
 
     Page<Material> findAllActiveByGroupCode(String groupCode, Pageable pageable);
     Optional<Material> findByIdAndGroupCode(UUID id, String groupCode);
+
+    /**
+     * Lista materiais ativos de um grupo com filtros opcionais por unidade de medida e nome.
+     * Usado pelo {@code HardwareService.findAll()} para filtrar ferragens dentro do grupo FERRAGEM.
+     *
+     * @param groupId     UUID do MaterialGroup
+     * @param unitMeasure filtro por unidade de medida; {@code null} desativa o filtro
+     * @param name        fragmento de nome para busca case-insensitive; {@code null} desativa o filtro
+     * @param pageable    configuração de paginação
+     */
+    @Query("SELECT m FROM Material m " +
+           "WHERE m.isActive = true " +
+           "AND m.group.id = :groupId " +
+           "AND (:unitMeasure IS NULL OR m.unitMeasure = :unitMeasure) " +
+           "AND (:name IS NULL OR LOWER(m.name) LIKE LOWER(CONCAT('%', :name, '%')))")
+    Page<Material> findAllActiveByGroupFiltered(
+            @Param("groupId") UUID groupId,
+            @Param("unitMeasure") UnitMeasure unitMeasure,
+            @Param("name") String name,
+            Pageable pageable);
 }
