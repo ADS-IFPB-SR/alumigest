@@ -49,3 +49,7 @@ postgres-data/
 *.sqlite
 *.db
 docker-compose.override.yml
+
+# Planejamento
+.planning
+
