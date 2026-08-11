@@ -9,6 +9,7 @@ import br.edu.ifpb.alumigest.common.dto.PageResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -42,7 +43,7 @@ public class FilmController {
     @GetMapping
     @Operation(summary = "Listar películas ativas", description = "Retorna lista paginada de todas as películas ativas no catálogo")
 
-    public ResponseEntity<ApiResponse<PageResponse<FilmResponseDTO>>> listActiveFilms(Pageable pageable) {
+    public ResponseEntity<ApiResponse<PageResponse<FilmResponseDTO>>> listActiveFilms(@ParameterObject Pageable pageable) {
 
         Page<FilmResponseDTO> page = filmService.findAllActiveFilms(pageable);
 

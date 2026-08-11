@@ -48,8 +48,8 @@ public interface MaterialRepository extends JpaRepository<Material, UUID> {
     @Query("SELECT m FROM Material m " +
            "WHERE m.isActive = true " +
            "AND m.group.id = :groupId " +
-           "AND (:unitMeasure IS NULL OR m.unitMeasure = :unitMeasure) " +
-           "AND (:name IS NULL OR LOWER(m.name) LIKE LOWER(CONCAT('%', :name, '%')))")
+           "AND (CAST(:unitMeasure AS string) IS NULL OR m.unitMeasure = :unitMeasure) " +
+           "AND (CAST(:name AS string) IS NULL OR LOWER(m.name) LIKE LOWER(CONCAT('%', CAST(:name AS string), '%')))")
     Page<Material> findAllActiveByGroupFiltered(
             @Param("groupId") UUID groupId,
             @Param("unitMeasure") UnitMeasure unitMeasure,
