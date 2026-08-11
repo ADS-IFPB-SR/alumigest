@@ -9,6 +9,7 @@ import br.edu.ifpb.alumigest.common.dto.PageResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
@@ -44,7 +45,7 @@ public class AluminumProfileController {
     public ResponseEntity<ApiResponse<PageResponse<AluminumProfileResponseDTO>>> findAll(
             @RequestParam(required = false) String colorFinish,
             @RequestParam(required = false) String name,
-            @PageableDefault(size = 20) Pageable pageable) {
+            @ParameterObject @PageableDefault(size = 20) Pageable pageable) {
 
         PageResponse<AluminumProfileResponseDTO> response =
                 PageResponse.of(aluminumProfileService.findAll(colorFinish, name, pageable));
