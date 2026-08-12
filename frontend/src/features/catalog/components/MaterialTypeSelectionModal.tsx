@@ -1,6 +1,5 @@
-import { Modal } from '../ui/Modal';
-
-export type MaterialType = 'Vidro' | 'Perfil' | 'Película' | 'Ferragem';
+import { Modal } from '../../../components/ui/Modal';
+import type { MaterialType } from '../types';
 
 interface Props {
   isOpen: boolean;
@@ -10,32 +9,32 @@ interface Props {
 
 const tipos: { type: MaterialType; title: string; desc: string; icon: string }[] = [
   {
-    type: 'Vidro',
+    type: 'Glass',
     title: 'Vidro',
     desc: 'Vidros temperados, laminados, float e insulados por m²',
     icon: 'window',
   },
   {
-    type: 'Perfil',
+    type: 'Profile',
     title: 'Perfil de Alumínio',
     desc: 'Linhas Suprema, Gold, Integrada por metro linear/barra',
     icon: 'view_column',
   },
   {
-    type: 'Película',
+    type: 'Film',
     title: 'Película de Proteção/Estética',
     desc: 'Películas jateadas, fumê, insulfilm por m²',
     icon: 'texture',
   },
   {
-    type: 'Ferragem',
+    type: 'Hardware',
     title: 'Ferragem / Acessório',
     desc: 'Roldanas, fechos, dobradiças e fechaduras por unidade',
     icon: 'hardware',
   },
 ];
 
-export function SelecaoTipoMaterialModal({ isOpen, onClose, onSelect }: Props) {
+export function MaterialTypeSelectionModal({ isOpen, onClose, onSelect }: Props) {
   return (
     <Modal
       isOpen={isOpen}

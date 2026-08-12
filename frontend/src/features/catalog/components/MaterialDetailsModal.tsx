@@ -1,5 +1,5 @@
-import { Modal } from '../ui/Modal';
-import { Button } from '../ui/Button';
+import { Modal } from '../../../components/ui/Modal';
+import { Button } from '../../../components/ui/Button';
 
 interface Props {
   isOpen: boolean;
@@ -8,8 +8,11 @@ interface Props {
   onEdit: () => void;
 }
 
-export function DetalhesMaterialModal({ isOpen, onClose, item, onEdit }: Props) {
+export function MaterialDetailsModal({ isOpen, onClose, item, onEdit }: Props) {
   if (!item) return null;
+
+  const price = item.pricePerSqm || item.pricePerMeter || item.salePrice;
+  const itemName = item.name || item.description;
 
   return (
     <Modal
@@ -38,7 +41,7 @@ export function DetalhesMaterialModal({ isOpen, onClose, item, onEdit }: Props) 
         <div className="flex items-center justify-between p-sm bg-surface-container-low dark:bg-surface-container-high/20 border border-outline-variant dark:border-outline/30 rounded-sm">
           <div>
             <span className="font-data-mono text-data-mono text-xs text-on-surface-variant dark:text-outline-variant block">Código Interno</span>
-            <span className="font-title-sm text-title-sm font-bold text-on-surface dark:text-inverse-on-surface">{item.codigo || item.nome || 'N/A'}</span>
+            <span className="font-title-sm text-title-sm font-bold text-on-surface dark:text-inverse-on-surface">{item.skuCode || itemName || 'N/A'}</span>
           </div>
           <span className="px-sm py-xs bg-success/10 text-success text-xs font-bold rounded-full">
             Ativo no Catálogo
@@ -49,34 +52,36 @@ export function DetalhesMaterialModal({ isOpen, onClose, item, onEdit }: Props) 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-sm sm:gap-md">
           <div className="p-sm border border-outline-variant dark:border-outline/30 rounded-sm">
             <span className="font-label-bold text-xs text-on-surface-variant dark:text-outline-variant block mb-xs">Nome / Descrição</span>
-            <span className="font-body-md text-on-surface dark:text-inverse-on-surface font-medium">{item.nome || item.descricao}</span>
+            <span className="font-body-md text-on-surface dark:text-inverse-on-surface font-medium">{itemName}</span>
           </div>
 
-          {item.especificacoes && (
+          {(item.thicknessMm || item.colorFinish) && (
             <div className="p-sm border border-outline-variant dark:border-outline/30 rounded-sm">
               <span className="font-label-bold text-xs text-on-surface-variant dark:text-outline-variant block mb-xs">Especificação Técnica</span>
-              <span className="font-data-mono text-data-mono text-on-surface dark:text-inverse-on-surface">{item.especificacoes}</span>
+              <span className="font-data-mono text-data-mono text-on-surface dark:text-inverse-on-surface">
+                {item.thicknessMm ? `${item.thicknessMm}mm ` : ''}{item.colorFinish}
+              </span>
             </div>
           )}
 
-          {item.peso !== undefined && (
+          {item.weightPerMeterKg !== undefined && (
             <div className="p-sm border border-outline-variant dark:border-outline/30 rounded-sm">
               <span className="font-label-bold text-xs text-on-surface-variant dark:text-outline-variant block mb-xs">Peso Linear</span>
-              <span className="font-data-mono text-data-mono text-on-surface dark:text-inverse-on-surface">{item.peso.toFixed(3)} Kg/m</span>
+              <span className="font-data-mono text-data-mono text-on-surface dark:text-inverse-on-surface">{item.weightPerMeterKg.toFixed(3)} Kg/m</span>
             </div>
           )}
 
-          {item.tipo && (
+          {item.commercialLine && (
             <div className="p-sm border border-outline-variant dark:border-outline/30 rounded-sm">
-              <span className="font-label-bold text-xs text-on-surface-variant dark:text-outline-variant block mb-xs">Categoria / Tipo</span>
-              <span className="font-body-md text-on-surface dark:text-inverse-on-surface">{item.tipo}</span>
+              <span className="font-label-bold text-xs text-on-surface-variant dark:text-outline-variant block mb-xs">Linha Comercial</span>
+              <span className="font-body-md text-on-surface dark:text-inverse-on-surface">{item.commercialLine}</span>
             </div>
           )}
 
           <div className="p-sm border border-outline-variant dark:border-outline/30 rounded-sm sm:col-span-2 bg-surface-container-low dark:bg-surface-container-high/10">
             <span className="font-label-bold text-xs text-on-surface-variant dark:text-outline-variant block mb-xs">Valores e Precificação</span>
             <span className="font-data-mono text-lg font-bold text-primary dark:text-primary-fixed">
-              {typeof item.preco === 'number' ? `R$ ${item.preco.toFixed(2).replace('.', ',')}` : item.preco}
+              {typeof price === 'number' ? `R$ ${price.toFixed(2).replace('.', ',')}` : price}
             </span>
           </div>
         </div>
