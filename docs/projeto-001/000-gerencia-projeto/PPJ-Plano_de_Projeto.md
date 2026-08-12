@@ -133,14 +133,14 @@ Sistema Web PWA integrado para gestão de orçamentos técnicos, pedidos, contro
 
 | Papel (Processo IMPROS) | Membro Titular | Membro de Backup | Responsabilidade Principal |
 |---|---|---|---|
-| Product Owner (Fixo) | José Guilherme | Italo Santos | Priorização de backlog e validação com parceiro social |
-| Gerente de Projeto (Rotativo) | Rotativo por Sprint | José Guilherme | Gestão do cronograma, reuniões e facilitação ágil |
+| Product Owner (Fixo) | José Guylherme | Italo Santos | Priorização de backlog e validação com parceiro social |
+| Gerente de Projeto (Rotativo) | Rotativo por Sprint | José Guylherme | Gestão do cronograma, reuniões e facilitação ágil |
 | Desenvolvimento (DEV) | Equipe (8 membros) | Membros da Sprint | Implementação Spring Boot 3 e TypeScript PWA |
 | Qualidade & Testes (QA) | Rotativo por Sprint | Maylson / Gabriel | Testes de aceitação (TEA), unitários e Three Amigos |
 
 ### 6.2 Membros da Equipe de Desenvolvimento
 
-1. José Guilherme (PO)
+1. José Guylherme (PO)
 2. Italo Santos
 3. Guilherme Kauã
 4. Gabriel
@@ -164,7 +164,7 @@ Sistema Web PWA integrado para gestão de orçamentos técnicos, pedidos, contro
 | Stakeholder | Papel no Projeto | Responsabilidade / Interesses | Canal de Comunicação |
 |---|---|---|---|
 | Thiago Thasso de Melo | Proprietário Alumiportas | Patrocinador; validação de regras de cálculo, processos e homologação | Reuniões quinzenais presenciais/online |
-| José Guilherme | Product Owner (PO) | Intermediar requisitos, priorizar backlog e alinhar expectativas | Dailies, Planning e Three Amigos |
+| José Guylherme | Product Owner (PO) | Intermediar requisitos, priorizar backlog e alinhar expectativas | Dailies, Planning e Three Amigos |
 | Equipe de Desenvolvimento | Time Técnico (8 alunos) | Construção, testes, documentação e entrega contínua do sistema | GitHub, Discord e reuniões de Sprint |
 | Usuários Operacionais | Operadores e Vendedores | Operação diária (orçamentos, corte, produção e estoque) | Sessões de teste e feedback prático |
 | Clientes da Alumiportas | Beneficiários Indiretos | Receber propostas claras em PDF, agilidade e precisão nos pedidos | Orçamentos e documentos emitidos |
@@ -235,15 +235,15 @@ AlumiGest (ALG)
 | **Release 1** — Fundação & Orçamentos (v1.0.0) | Sprints 1 a 4 | Meses 1 e 2 (Ago-Set/2026) | Setup do Monorepo, CI/CD e Docker; Autenticação, perfis e usuários; Cadastro de clientes e catálogo de materiais; Motor de cálculo de orçamentos (vidro m², alumínio linear, ferragens); Aplicação de descontos e emissão de PDF (com/sem valores) |
 | **Release 2** — Pedidos, Estoque e Produção (v2.0.0) | Sprints 5 a 8 | Meses 3 e 4 (Out-Nov/2026) | Aprovação de orçamento e congelamento de pedidos; Geração de OPs e etiquetas; Listas de corte de perfis e chapas de vidro; Controle de estoque, reservas automáticas e registro de perdas; Rastreamento de status de produção |
 | **Release 3** — Financeiro & Conclusão (v3.0.0) | Sprints 9 a 12 | Meses 5 e 6 (Dez/2026-Jan/2027) | Contas a receber, entradas e parcelamentos; Baixa de pagamentos e fluxo de caixa; Agenda de instalações e ordens de serviço; Relatórios gerenciais e indicadores de desempenho; Homologação completa com o parceiro social |
-| **Reserva** — Imprevistos & Estabilização | Sprints 13 a 16 | Meses 7 e 8 (Fev-Mar/2027) | Ajustes finos de regras de cálculo e usabilidade; Correções de homologação e estabilização de bugs; Treinamento dos usuários da Alumiportas e implantação final; Documentação final de encerramento do projeto |
+| **Reserva** — Imprevistos & Estabilização | Sprint 16 | Uma sprint (16) | Ajustes finos de regras de cálculo e usabilidade; Correções de homologação e estabilização de bugs; Treinamento dos usuários da Alumiportas e implantação final; Documentação final de encerramento do projeto |
 
 ### 9.2 Detalhamento da Release 1
 
 | Sprint | Período | Entregáveis |
 |---|---|---|
 | Sprint 1 | Semanas 1-2 | Planejamento: PPJ, PGC, setup do repositório |
-| Sprint 2 | Semanas 3-4 | Módulo de Cadastro de Materiais e Motor de Orçamentos |
-| Sprint 3 | Semanas 5-6 | Cálculos de vidro, alumínio e ferragens; descontos |
+| Sprint 2 | Semanas 3-4 | Catálogo Genérico de Materiais, Ficha Técnica de Produtos e Frontend PWA |
+| Sprint 3 | Semanas 5-6 | Clientes, Motor de Orçamentos, Cálculos de vidro, alumínio e descontos |
 | Sprint 4 | Semanas 7-8 | Geração de PDF, testes integrados, Release 1 |
 
 ---
@@ -252,13 +252,13 @@ AlumiGest (ALG)
 
 | # | Premissa |
 |---|---|
-| P-01 | O Product Owner (José Guilherme) manterá o backlog priorizado e os critérios de aceitação refinados continuamente |
+| P-01 | O Product Owner (José Guylherme) manterá o backlog priorizado e os critérios de aceitação refinados continuamente |
 | P-02 | A equipe de 8 membros manterá dedicação compatível com ciclos quinzenais (Sprints de 15 dias) |
 | P-03 | O proprietário Thiago estará disponível para reuniões de validação e Three Amigos |
 | P-04 | O backend Java/Spring Boot adotará estrutura modular orientada a funcionalidades (package-by-feature) |
 | P-05 | O frontend TypeScript atenderá tanto a telas desktop do escritório quanto tablets/celulares na oficina (PWA) |
 | P-06 | As tabelas de preços e fórmulas de corte de vidro/alumínio serão fornecidas pelo cliente |
-| P-07 | A reserva dos meses 7 e 8 será utilizada para absorver imprevistos técnicos e homologação |
+| P-07 | A reserva de uma sprint (16) será utilizada para absorver imprevistos técnicos e homologação |
 
 ---
 
@@ -266,7 +266,7 @@ AlumiGest (ALG)
 
 | # | Restrição | Detalhamento |
 |---|---|---|
-| R-01 | **Prazo Rígido** | Desenvolvimento principal em até 6 meses (12 sprints) + 2 meses de buffer de estabilização |
+| R-01 | **Prazo Rígido** | Desenvolvimento principal em até 6 meses (12 sprints) + uma sprint (16) de buffer de estabilização |
 | R-02 | **Duração de Sprint** | Ciclos fixos e inegociáveis de 2 semanas (15 dias), com cerimônias de Planning, Review e Retrospective |
 | R-03 | **Stack Tecnológica Definida** | Backend obrigatório em Java 21 LTS + Spring Boot 3; Frontend em TypeScript + PWA; Banco PostgreSQL 16 |
 | R-04 | **Padrão Arquitetural** | Backend estruturado exclusivamente no padrão package-by-feature |
@@ -285,7 +285,7 @@ AlumiGest (ALG)
 | RI-03 | Dificuldade na rotação de papéis por sprint | Média | Médio | Definição de matriz de backups técnicos e documentação detalhada de cada papel no PGC | Líder de Projeto |
 | RI-04 | Mudanças de requisitos e aumento descontrolado de escopo | Média | Alto | Gestão rígida de backlog pelo PO, com controle de baselines e inclusão apenas em releases futuras | PO / GP |
 | RI-05 | Inconsistência nos cadastros iniciais de materiais e preços | Alta | Médio | Criar templates padrão em Excel para a Alumiportas preencher antes da implementação do catálogo | PO |
-| RI-06 | Atrasos no cronograma de desenvolvimento | Baixa | Alto | Monitoramento contínuo via Burndown (BRD) e utilização dos 2 meses de buffer (Meses 7 e 8) | GP |
+| RI-06 | Atrasos no cronograma de desenvolvimento | Baixa | Alto | Monitoramento contínuo via Burndown (BRD) e utilização de uma sprint (16) de buffer | GP |
 
 ---
 
@@ -298,13 +298,13 @@ AlumiGest (ALG)
 - [x] Definição da estrutura do repositório monorepo
 - [x] Geração da baseline inicial `B-ALG-v0.1.0-S01-01`
 
-### 13.2 Sprint 2 — Cadastro de Materiais e Orçamentos (Em Planejamento)
+### 13.2 Sprint 2 — Catálogo de Materiais e Produtos (Em Andamento)
 
-- [ ] Refinamento Three Amigos: PO + Líder Técnico + QA para detalhar TEA da Sprint 2
-- [ ] Documentação de requisitos e regras de cálculo
-- [ ] Implementação do módulo de Cadastro de Materiais (vidros, alumínio, ferragens, películas)
-- [ ] Implementação do motor de Orçamentos
-- [ ] Setup da infraestrutura: Monorepo GitHub (ALG), CI/CD, Docker Compose
+- [x] Setup da infraestrutura: Monorepo GitHub (ALG), CI/CD, Docker Compose
+- [x] Refatoração do Banco de Dados para Entidade Universal (MaterialGroup / Material)
+- [x] Implementação da Ficha Técnica de Produtos (Product / ProductItem)
+- [x] Integração do Frontend PWA do Catálogo
+- [ ] Rota de Vidros no Backend
 
 ---
 

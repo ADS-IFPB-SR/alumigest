@@ -1,8 +1,8 @@
 # 📐 Documento de Arquitetura e Modelagem de Dados (DER)
 ## Módulo: Catálogo de Materiais e Insumos Genéricos
 **Projeto:** AlumiGest (Gestão Operacional e Orçamentária para Esquadrias e Vidraçaria)  
-**Versão:** 1.0.0  
-**Data:** 06 de Agosto de 2026  
+**Versão:** 2.0.0  
+**Data:** 12 de Agosto de 2026  
 **Autor:** Equipe de Engenharia de Software (Scrum Master: Nichollas Cavalcante)  
 
 ---
@@ -12,13 +12,13 @@
 O módulo de **Catálogo de Materiais** é o alicerce de dados do AlumiGest. Seu objetivo principal é fornecer uma base sólida, flexível e performática para o cadastro, precificação e consulta de todos os insumos utilizados na fabricação de esquadrias e vidros pela **Alumiportas**.
 
 ### 🌟 Princípios de Design e Extensibilidade
-1. **Atendimento Imediato à Alumiportas (Sprint 2):** Suporte nativo e otimizado para os 4 grupos essenciais de materiais:
+1. **Atendimento Imediato à Alumiportas:** Suporte nativo e otimizado para os 4 grupos essenciais de materiais:
    * **Vidros:** Medidos por área ($m^2$) com suporte a espessuras finas para móveis (**2mm e 4mm**) e comuns/temperados (**6mm, 8mm, 10mm**).
    * **Perfis de Alumínio e Puxadores:** Medidos por metro linear ($m$) com suporte a barras comerciais (**3.00m e 6.00m**), referências comerciais de perfis (ex: `SU-001`, `S83`, `SPR-060`) e código NCM opcional para conformidade fiscal.
    * **Películas:** Medidas por área de aplicação ($m^2$) sobre os vidros (Fumê G5/G20, Jateada, Leitosa, Espelhada).
    * **Ferragens e Acessórios:** Medidos por **Unidade (`UN`)**, **Par (`PAR`)** (dobradiças, rodízios) ou **Metro (`METRO`)** (trilhos e escovas).
 2. **Extensibilidade Futura (*Type-Object Pattern*):** A arquitetura foi projetada para que a expansão para outros setores da indústria moveleira ou serralheria (ex: **Marcenaria** com chapas de MDF, fitas de borda e corrediças) ocorra **sem necessidade de alterar o esquema do banco de dados ou recompilar o backend**.
-3. **Desacoplamento entre Insumo e Produto Final:** Materiais são os componentes atômicos; portas e esquadrias são **Produtos Finais / Templates (Compostos)** montados a partir desses materiais na Sprint 3.
+3. **Desacoplamento entre Insumo e Produto Final:** Materiais são os componentes atômicos; portas e esquadrias são **Produtos Finais / Templates (Compostos)** montados a partir desses materiais através da ficha técnica (`tb_product_items`).
 
 ---
 
@@ -26,13 +26,16 @@ O módulo de **Catálogo de Materiais** é o alicerce de dados do AlumiGest. Seu
 
 ```mermaid
 erDiagram
-    tb_material_groups ||--o{ tb_materials : "possui / categoriza (1:N)"
+    tb_material_groups ||--o{ tb_materials : "categoriza (1:N)"
+    tb_product_categories ||--o{ tb_products : "agrupa (1:N)"
+    tb_products ||--o{ tb_product_items : "composto por (1:N)"
+    tb_materials ||--o{ tb_product_items : "utilizado em (1:N)"
     
     tb_material_groups {
         uuid id PK "Identificador Único Universal"
         string code UK "VIDRO, ALUMINIO, PELICULA, FERRAGEM"
         string name "Nome legível do grupo"
-        string calculation_type "SQUARE_METER, LINEAR_METER, UNIT, PAIR, WEIGHT_KG"
+        enum calculation_type "SQUARE_METER, LINEAR_METER, UNIT, PAIR, WEIGHT_KG"
         string description "Descrição da regra de cálculo"
         boolean is_system_default "TRUE para nativos Alumiportas, FALSE para extensões"
         boolean is_active "Controle de exclusão lógica"
@@ -48,7 +51,7 @@ erDiagram
         string name "Nome descritivo do material"
         decimal cost_price "Preço de custo base (R$)"
         decimal sale_price "Preço de venda praticado (R$)"
-        string unit_measure "M2, METRO, BARRA_3M, BARRA_6M, UN, PAR"
+        enum unit_measure "M2, METRO, BARRA_3M, BARRA_6M, UN, PAR"
         decimal thickness_mm "Espessura em mm (2.00, 4.00, 15.00)"
         string color_finish "Cor / Acabamento (Incolor, Fumê, Bronze, Branco Ral)"
         decimal standard_length_m "Comprimento padrão (3.00m ou 6.00m)"
@@ -56,6 +59,27 @@ erDiagram
         boolean is_active "Controle de exclusão lógica (Soft Delete)"
         timestamp created_at "Data de criação"
         timestamp updated_at "Data da última modificação"
+    }
+
+    tb_product_categories {
+        uuid id PK
+        string name "Nome da categoria (ex: Esquadrias)"
+        boolean is_active
+    }
+
+    tb_products {
+        uuid id PK
+        uuid category_id FK
+        string name "Nome do produto final"
+        decimal labor_cost "Custo de mão de obra"
+        boolean is_active
+    }
+
+    tb_product_items {
+        uuid id PK
+        uuid product_id FK
+        uuid material_id FK
+        decimal quantity "Quantidade consumida na ficha técnica"
     }
 ```
 
@@ -71,13 +95,11 @@ Armazena as famílias de insumos e define a estratégia matemática de medição
 | `id` | `UUID` | `PK, DEFAULT uuid_generate_v4()` | Chave primária universal. |
 | `code` | `VARCHAR(50)` | `NOT NULL, UNIQUE` | Código identificador (ex: `VIDRO`, `ALUMINIO`, `PELICULA`, `FERRAGEM`, `MDF`). |
 | `name` | `VARCHAR(100)` | `NOT NULL` | Nome exibido na interface (*"Vidros e Espelhos"*). |
-| `calculation_type` | `VARCHAR(30)` | `NOT NULL` | `SQUARE_METER`, `LINEAR_METER`, `UNIT`, `PAIR`, `WEIGHT_KG`. |
+| `calculation_type` | `VARCHAR(30)` | `NOT NULL` | Enum: `SQUARE_METER`, `LINEAR_METER`, `UNIT`, `PAIR`, `WEIGHT_KG`. |
 | `description` | `TEXT` | `NULL` | Descrição técnica das regras do grupo. |
 | `is_system_default`| `BOOLEAN` | `DEFAULT FALSE` | `TRUE` para proteger os 4 grupos nativos da Alumiportas contra exclusão. |
 | `is_active` | `BOOLEAN` | `DEFAULT TRUE` | Soft delete para desativação de grupos. |
 | `created_at` | `TIMESTAMP WITH TIME ZONE` | `DEFAULT NOW()` | Auditoria de criação. |
-
----
 
 ### 3.2 Tabela `tb_materials` (Insumos e Materiais do Catálogo)
 Armazena a listagem de todos os materiais comercializados, associados ao seu respectivo grupo.
@@ -92,7 +114,7 @@ Armazena a listagem de todos os materiais comercializados, associados ao seu res
 | `name` | `VARCHAR(150)`| `NOT NULL` | Nome completo (*"Vidro Canelado 4mm"*, *"Perfil Puxador Alfa"*). |
 | `cost_price` | `DECIMAL(12,2)`| `NOT NULL, DEFAULT 0.00` | Preço de custo base. |
 | `sale_price` | `DECIMAL(12,2)`| `NOT NULL, DEFAULT 0.00` | Preço de venda padrão praticado no catálogo. |
-| `unit_measure` | `VARCHAR(20)` | `NOT NULL, DEFAULT 'UN'` | `M2`, `METRO`, `BARRA_3M`, `BARRA_6M`, `UN`, `PAR`. |
+| `unit_measure` | `VARCHAR(20)` | `NOT NULL, DEFAULT 'UN'` | Enum: `M2`, `METRO`, `BARRA_3M`, `BARRA_6M`, `UN`, `PAR`. |
 | `thickness_mm` | `DECIMAL(6,2)` | `NULL` | Espessura física em mm (**2.00, 4.00, 6.00** ou **15.00** para MDF). |
 | `color_finish` | `VARCHAR(50)` | `NULL` | Cor/Acabamento (Incolor, Bronze, Champanhe, Preto Fosco). |
 | `standard_length_m`| `DECIMAL(6,2)` | `NULL` | Comprimento padrão da barra (**3.00m** ou **6.00m**). |
@@ -101,14 +123,44 @@ Armazena a listagem de todos os materiais comercializados, associados ao seu res
 | `created_at` | `TIMESTAMP WITH TIME ZONE` | `DEFAULT NOW()` | Data de criação. |
 | `updated_at` | `TIMESTAMP WITH TIME ZONE` | `DEFAULT NOW()` | Data da última atualização. |
 
+### 3.3 Tabela `tb_product_categories` (Categorias de Produtos)
+Agrupamento e organização dos produtos finais (ex: Esquadrias, Portas, Janelas, Box).
+
+| Campo | Tipo | Restrições | Descrição / Exemplo |
+| :--- | :--- | :--- | :--- |
+| `id` | `UUID` | `PK` | Chave primária universal. |
+| `name` | `VARCHAR(100)` | `NOT NULL` | Nome da categoria. |
+| `is_active` | `BOOLEAN` | `DEFAULT TRUE` | Soft delete. |
+
+### 3.4 Tabela `tb_products` (Produtos Finais)
+Modelagem do produto final (template), definindo informações de custo e classificação.
+
+| Campo | Tipo | Restrições | Descrição / Exemplo |
+| :--- | :--- | :--- | :--- |
+| `id` | `UUID` | `PK` | Chave primária universal. |
+| `category_id` | `UUID` | `FK -> tb_product_categories(id)` | Categoria a qual o produto pertence. |
+| `name` | `VARCHAR(150)` | `NOT NULL` | Nome do produto final (*"Janela 4 Folhas"*). |
+| `labor_cost` | `DECIMAL(12,2)`| `DEFAULT 0.00` | Custo de mão de obra de produção. |
+| `is_active` | `BOOLEAN` | `DEFAULT TRUE` | Soft delete. |
+
+### 3.5 Tabela `tb_product_items` (Ficha Técnica / Composição)
+Receita de materiais: relaciona as quantidades necessárias de cada insumo do catálogo para fabricar um Produto Final.
+
+| Campo | Tipo | Restrições | Descrição / Exemplo |
+| :--- | :--- | :--- | :--- |
+| `id` | `UUID` | `PK` | Chave primária universal. |
+| `product_id` | `UUID` | `FK -> tb_products(id)` | Produto final sendo composto. |
+| `material_id`| `UUID` | `FK -> tb_materials(id)` | Material (insumo) a ser utilizado. |
+| `quantity` | `DECIMAL(10,4)`| `NOT NULL` | Quantidade demandada deste material na receita base. |
+
 ---
 
 ## 4. 🗄️ Script DDL Oficial (PostgreSQL 16 & Flyway)
 
 ```sql
 -- ============================================================================
--- AlumiGest Database Migration - V1__create_generic_catalog.sql
--- Módulo: Catálogo de Materiais e Insumos Genéricos
+-- AlumiGest Database Migration
+-- Módulo: Catálogo de Materiais Genéricos, Produtos e Ficha Técnica
 -- ============================================================================
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -125,14 +177,7 @@ CREATE TABLE tb_material_groups (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- 2. Seed dos 4 Grupos Nativos da Alumiportas
-INSERT INTO tb_material_groups (code, name, calculation_type, description, is_system_default) VALUES
-('VIDRO', 'Vidros e Espelhos', 'SQUARE_METER', 'Vidros planos, fantasia e temperados calculados por área (m²)', TRUE),
-('ALUMINIO', 'Perfis de Alumínio e Puxadores', 'LINEAR_METER', 'Perfis, trilhos e puxadores calculados por metro linear e barras de 3m/6m', TRUE),
-('PELICULA', 'Películas de Proteção e Acabamento', 'SQUARE_METER', 'Películas decorativas e de proteção solar calculadas por m²', TRUE),
-('FERRAGEM', 'Ferragens, Componentes e Acessórios', 'UNIT', 'Fechaduras, rodízios, esquadretas e kits de montagem por unidade ou par', TRUE);
-
--- 3. Criação da Tabela Universal de Materiais
+-- 2. Tabela Universal de Materiais
 CREATE TABLE tb_materials (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     group_id UUID NOT NULL,
@@ -154,11 +199,47 @@ CREATE TABLE tb_materials (
     CONSTRAINT fk_materials_group FOREIGN KEY (group_id) REFERENCES tb_material_groups (id) ON DELETE RESTRICT
 );
 
--- 4. Índices de Otimização para Consultas
+-- 3. Índices de Otimização para Consultas de Material
 CREATE INDEX idx_materials_group_id ON tb_materials(group_id);
 CREATE INDEX idx_materials_name ON tb_materials(name);
 CREATE INDEX idx_materials_commercial_ref ON tb_materials(commercial_reference);
 CREATE INDEX idx_materials_active ON tb_materials(is_active);
+
+-- 4. Criação das Categorias de Produtos
+CREATE TABLE tb_product_categories (
+    id UUID NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    is_active BOOLEAN NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    PRIMARY KEY (id)
+);
+
+-- 5. Criação da Tabela principal de Produtos Finais (Esquadrias)
+CREATE TABLE tb_products (
+    id UUID NOT NULL,
+    name VARCHAR(150) NOT NULL,
+    category_id UUID NOT NULL,
+    labor_cost NUMERIC(12,2) DEFAULT 0.00,
+    is_active BOOLEAN NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    
+    PRIMARY KEY (id),
+    CONSTRAINT fk_product_category FOREIGN KEY (category_id) REFERENCES tb_product_categories (id)
+);
+
+-- 6. Tabela de Itens (Ficha Técnica / Composição)
+CREATE TABLE tb_product_items (
+    id UUID NOT NULL,
+    product_id UUID NOT NULL,
+    material_id UUID NOT NULL,
+    quantity NUMERIC(10,4) NOT NULL,
+    
+    PRIMARY KEY (id),
+    CONSTRAINT fk_product_item_product FOREIGN KEY (product_id) REFERENCES tb_products (id) ON DELETE CASCADE,
+    CONSTRAINT fk_product_item_material FOREIGN KEY (material_id) REFERENCES tb_materials (id)
+);
 ```
 
 ---

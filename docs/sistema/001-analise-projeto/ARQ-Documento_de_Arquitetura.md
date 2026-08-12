@@ -109,32 +109,30 @@ backend/src/main/java/com/alumigest/
 │       ├── ClienteRequest.java
 │       └── ClienteResponse.java
 │
-├── material/                      # Módulo de Materiais (Catálogo)
+├── catalog/                       # Módulo de Catálogo e Produtos
 │   ├── controller/
-│   │   ├── VidroController.java
-│   │   ├── PerfilAluminioController.java
-│   │   ├── FerragemController.java
-│   │   └── PeliculaController.java
+│   │   ├── AluminumProfileController.java
+│   │   ├── HardwareController.java
+│   │   ├── FilmController.java
+│   │   ├── ProductController.java
+│   │   └── ProductCategoryController.java
 │   ├── service/
-│   │   ├── VidroService.java
-│   │   ├── PerfilAluminioService.java
-│   │   ├── FerragemService.java
-│   │   └── PeliculaService.java
+│   │   ├── MaterialService.java
+│   │   ├── ProductService.java
+│   │   └── ProductCategoryService.java
 │   ├── repository/
-│   │   ├── VidroRepository.java
-│   │   ├── PerfilAluminioRepository.java
-│   │   ├── FerragemRepository.java
-│   │   └── PeliculaRepository.java
+│   │   ├── MaterialRepository.java
+│   │   ├── ProductRepository.java
+│   │   └── ProductCategoryRepository.java
 │   ├── domain/
-│   │   ├── Vidro.java
-│   │   ├── PerfilAluminio.java
-│   │   ├── Ferragem.java
-│   │   ├── Pelicula.java
-│   │   ├── TipoProduto.java
-│   │   └── ComposicaoFerragemProduto.java
+│   │   ├── Material.java
+│   │   ├── MaterialGroup.java
+│   │   ├── Product.java
+│   │   ├── ProductCategory.java
+│   │   └── ProductItem.java
 │   └── dto/
-│       ├── VidroRequest.java
-│       ├── VidroResponse.java
+│       ├── MaterialRequest.java
+│       ├── ProductResponse.java
 │       └── ...
 │
 ├── orcamento/                     # Módulo de Orçamentos
