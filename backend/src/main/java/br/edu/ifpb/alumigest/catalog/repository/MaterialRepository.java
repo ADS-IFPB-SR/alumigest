@@ -49,10 +49,31 @@ public interface MaterialRepository extends JpaRepository<Material, UUID> {
            "WHERE m.isActive = true " +
            "AND m.group.id = :groupId " +
            "AND (:unitMeasure IS NULL OR m.unitMeasure = :unitMeasure) " +
-           "AND (:name IS NULL OR LOWER(m.name) LIKE LOWER(CONCAT('%', :name, '%')))")
+           "AND (CAST(:name AS string) IS NULL OR LOWER(m.name) LIKE LOWER(CONCAT('%', :name, '%')))")
     Page<Material> findAllActiveByGroupFiltered(
             @Param("groupId") UUID groupId,
             @Param("unitMeasure") UnitMeasure unitMeasure,
+            @Param("name") String name,
+            Pageable pageable);
+
+    @Query("SELECT m FROM Material m " +
+           "WHERE m.isActive = true " +
+           "AND m.group.id = :groupId " +
+           "AND LOWER(m.commercialReference) = LOWER(:commercialReference) " +
+           "AND LOWER(m.colorFinish) = LOWER(:colorFinish)")
+    Optional<Material> findActiveByGroupAndCommercialReferenceAndColorFinish(
+            @Param("groupId") UUID groupId,
+            @Param("commercialReference") String commercialReference,
+            @Param("colorFinish") String colorFinish);
+
+    @Query("SELECT m FROM Material m " +
+           "WHERE m.isActive = true " +
+           "AND m.group.id = :groupId " +
+           "AND (CAST(:colorFinish AS string) IS NULL OR LOWER(m.colorFinish) LIKE LOWER(CONCAT('%', :colorFinish, '%'))) " +
+           "AND (CAST(:name AS string) IS NULL OR LOWER(m.name) LIKE LOWER(CONCAT('%', :name, '%')))")
+    Page<Material> findAllActiveAluminumFiltered(
+            @Param("groupId") UUID groupId,
+            @Param("colorFinish") String colorFinish,
             @Param("name") String name,
             Pageable pageable);
 }
