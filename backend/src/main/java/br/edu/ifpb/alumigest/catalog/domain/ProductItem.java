@@ -64,7 +64,7 @@ public class ProductItem {
     }
 
     public BigDecimal getQuantity() {
-        return quantity;
+        return this.quantity;
     }
 
     public void setQuantity(BigDecimal quantity) {
