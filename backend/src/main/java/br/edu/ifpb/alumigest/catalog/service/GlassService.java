@@ -48,7 +48,7 @@ public class GlassService {
         material.setThicknessMm(dto.thicknessMm());
         material.setCostPrice(dto.costPrice());
         material.setSalePrice(dto.salePrice());
-        material.setUnitMeasure(UnitMeasure.M2); // Usando a unidade correta do seu Enum (assumindo M2 ou SQUARE_METER)
+        material.setUnitMeasure(UnitMeasure.M2);
         material.setActive(true);
 
         Material savedMaterial = materialRepository.save(material);

@@ -76,7 +76,7 @@ public class Material {
     private BigDecimal standardLengthM;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "attributes_json", columnDefinition = "jsonb")
+    @Column(name = "attributes_json")
     private String attributesJson;
 
     @Column(name = "is_active", nullable = false)
