@@ -2,11 +2,13 @@ package br.edu.ifpb.alumigest.catalog.service;
 
 import br.edu.ifpb.alumigest.catalog.domain.Material;
 import br.edu.ifpb.alumigest.catalog.domain.Product;
+import br.edu.ifpb.alumigest.catalog.domain.ProductCategory;
 import br.edu.ifpb.alumigest.catalog.dto.ProductItemRequestDTO;
 import br.edu.ifpb.alumigest.catalog.dto.ProductRequestDTO;
 import br.edu.ifpb.alumigest.catalog.dto.ProductResponseDTO;
 import br.edu.ifpb.alumigest.catalog.mapper.ProductMapper;
 import br.edu.ifpb.alumigest.catalog.repository.MaterialRepository;
+import br.edu.ifpb.alumigest.catalog.repository.ProductCategoryRepository;
 import br.edu.ifpb.alumigest.catalog.repository.ProductRepository;
 import br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException;
 import org.junit.jupiter.api.DisplayName;
@@ -34,6 +36,8 @@ class ProductServiceTest {
     @Mock
     private MaterialRepository materialRepository;
     @Mock
+    private ProductCategoryRepository productCategoryRepository;
+    @Mock
     private ProductMapper productMapper;
     @InjectMocks
     private ProductService productService;
@@ -48,9 +52,11 @@ class ProductServiceTest {
         ProductItemRequestDTO item1 = new ProductItemRequestDTO(materialId, new BigDecimal("2.0"));
         ProductItemRequestDTO item2 = new ProductItemRequestDTO(materialId, new BigDecimal("3.0"));
 
+        UUID categoryId = UUID.randomUUID();
+
         ProductRequestDTO request = new ProductRequestDTO(
                 "Janela de Correr",
-                "Esquadrias",
+                categoryId,
                 new BigDecimal("150.00"),
                 List.of(item1, item2)
         );
@@ -59,9 +65,14 @@ class ProductServiceTest {
         mockMaterial.setId(materialId);
 
         Product mockSavedProduct = new Product();
-        ProductResponseDTO mockResponse = new ProductResponseDTO(UUID.randomUUID(), "Janela de Correr", "Esquadrias", new BigDecimal("150.00"), true, List.of());
+        ProductResponseDTO mockResponse = new ProductResponseDTO(UUID.randomUUID(), "Janela de Correr", categoryId, "Esquadrias", new BigDecimal("150.00"), true, List.of());
+
+        ProductCategory mockCategory = new ProductCategory();
+        mockCategory.setId(categoryId);
+        mockCategory.setName("Esquadrias");
 
         // Comportamento dos Mocks
+        when(productCategoryRepository.findById(categoryId)).thenReturn(Optional.of(mockCategory));
         when(materialRepository.findByIdAndIsActiveTrue(materialId)).thenReturn(Optional.of(mockMaterial));
         when(productRepository.save(any(Product.class))).thenReturn(mockSavedProduct);
         when(productMapper.toResponse(mockSavedProduct)).thenReturn(mockResponse);
@@ -94,13 +105,18 @@ class ProductServiceTest {
         UUID invalidMaterialId = UUID.randomUUID();
         ProductItemRequestDTO item = new ProductItemRequestDTO(invalidMaterialId, new BigDecimal("1.0"));
 
+        UUID categoryId = UUID.randomUUID();
+        ProductCategory mockCategory = new ProductCategory();
+        mockCategory.setId(categoryId);
+
         ProductRequestDTO request = new ProductRequestDTO(
                 "Porta",
-                "Esquadrias",
+                categoryId,
                 new BigDecimal("50.00"),
                 List.of(item)
         );
 
+        when(productCategoryRepository.findById(categoryId)).thenReturn(Optional.of(mockCategory));
         when(materialRepository.findByIdAndIsActiveTrue(invalidMaterialId)).thenReturn(Optional.empty());
 
         // Act & Assert

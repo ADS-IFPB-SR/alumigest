@@ -7,7 +7,8 @@ import java.util.UUID;
 public record ProductResponseDTO(
         UUID id,
         String name,
-        String category,
+        UUID categoryId,
+        String categoryName,
         BigDecimal laborCost,
         boolean isActive,
         List<ProductItemResponseDTO> items

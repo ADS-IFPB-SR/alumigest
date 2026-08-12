@@ -7,7 +7,9 @@ import br.edu.ifpb.alumigest.catalog.dto.ProductItemRequestDTO;
 import br.edu.ifpb.alumigest.catalog.dto.ProductRequestDTO;
 import br.edu.ifpb.alumigest.catalog.dto.ProductResponseDTO;
 import br.edu.ifpb.alumigest.catalog.mapper.ProductMapper;
+import br.edu.ifpb.alumigest.catalog.domain.ProductCategory;
 import br.edu.ifpb.alumigest.catalog.repository.MaterialRepository;
+import br.edu.ifpb.alumigest.catalog.repository.ProductCategoryRepository;
 import br.edu.ifpb.alumigest.catalog.repository.ProductRepository;
 import br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException;
 import org.springframework.data.domain.Page;
@@ -25,20 +27,25 @@ public class ProductService {
 
     private final ProductRepository productRepository;
     private final MaterialRepository materialRepository;
+    private final ProductCategoryRepository productCategoryRepository;
     private final ProductMapper productMapper;
 
-    public ProductService(ProductRepository productRepository, MaterialRepository materialRepository, ProductMapper productMapper) {
+    public ProductService(ProductRepository productRepository, MaterialRepository materialRepository, ProductCategoryRepository productCategoryRepository, ProductMapper productMapper) {
         this.productRepository = productRepository;
         this.materialRepository = materialRepository;
+        this.productCategoryRepository = productCategoryRepository;
         this.productMapper = productMapper;
     }
 
     @Transactional
     public ProductResponseDTO createProduct(ProductRequestDTO request) {
 
+        ProductCategory category = productCategoryRepository.findById(request.categoryId())
+                .orElseThrow(() -> new ResourceNotFoundException("Categoria não encontrada: " + request.categoryId()));
+
         Product product = new Product();
         product.setName(request.name());
-        product.setCategory(request.category());
+        product.setCategory(category);
         product.setLaborCost(request.laborCost());
         product.setActive(true);
 
@@ -78,8 +85,11 @@ public class ProductService {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Produto não encontrado com o ID informado."));
 
+        ProductCategory category = productCategoryRepository.findById(request.categoryId())
+                .orElseThrow(() -> new ResourceNotFoundException("Categoria não encontrada: " + request.categoryId()));
+
         product.setName(request.name());
-        product.setCategory(request.category());
+        product.setCategory(category);
         product.setLaborCost(request.laborCost());
 
         product.getItems().clear();
