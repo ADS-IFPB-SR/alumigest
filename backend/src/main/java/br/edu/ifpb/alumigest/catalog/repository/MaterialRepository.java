@@ -49,7 +49,7 @@ public interface MaterialRepository extends JpaRepository<Material, UUID> {
            "WHERE m.isActive = true " +
            "AND m.group.id = :groupId " +
            "AND (:unitMeasure IS NULL OR m.unitMeasure = :unitMeasure) " +
-           "AND (CAST(:name AS string) IS NULL OR LOWER(m.name) LIKE LOWER(CONCAT('%', :name, '%')))")
+           "AND (CAST(:name AS string) IS NULL OR LOWER(m.name) LIKE LOWER(CONCAT('%', CAST(:name AS string), '%')))")
     Page<Material> findAllActiveByGroupFiltered(
             @Param("groupId") UUID groupId,
             @Param("unitMeasure") UnitMeasure unitMeasure,
@@ -69,8 +69,8 @@ public interface MaterialRepository extends JpaRepository<Material, UUID> {
     @Query("SELECT m FROM Material m " +
            "WHERE m.isActive = true " +
            "AND m.group.id = :groupId " +
-           "AND (CAST(:colorFinish AS string) IS NULL OR LOWER(m.colorFinish) LIKE LOWER(CONCAT('%', :colorFinish, '%'))) " +
-           "AND (CAST(:name AS string) IS NULL OR LOWER(m.name) LIKE LOWER(CONCAT('%', :name, '%')))")
+           "AND (CAST(:colorFinish AS string) IS NULL OR LOWER(m.colorFinish) LIKE LOWER(CONCAT('%', CAST(:colorFinish AS string), '%'))) " +
+           "AND (CAST(:name AS string) IS NULL OR LOWER(m.name) LIKE LOWER(CONCAT('%', CAST(:name AS string), '%')))")
     Page<Material> findAllActiveAluminumFiltered(
             @Param("groupId") UUID groupId,
             @Param("colorFinish") String colorFinish,

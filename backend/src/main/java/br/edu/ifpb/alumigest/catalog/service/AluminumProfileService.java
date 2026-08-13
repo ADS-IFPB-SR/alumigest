@@ -60,14 +60,7 @@ public class AluminumProfileService {
         material.setGroup(group);
         material.setActive(true);
 
-        try {
-            return aluminumProfileMapper.toResponse(materialRepository.save(material));
-        } catch (DataIntegrityViolationException ex) {
-            throw new BusinessException(
-                    "Conflito de cadastro: a referência '" + request.commercialReference() +
-                    "' com acabamento '" + request.colorFinish() +
-                    "' já existe ou ocorreu uma violação de integridade. Tente novamente.");
-        }
+        return aluminumProfileMapper.toResponse(materialRepository.save(material));
     }
 
     @Transactional(readOnly = true)

@@ -12,6 +12,7 @@ import br.edu.ifpb.alumigest.catalog.repository.MaterialGroupRepository;
 import br.edu.ifpb.alumigest.catalog.repository.MaterialRepository;
 import br.edu.ifpb.alumigest.common.exception.BusinessException;
 import br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -48,7 +49,8 @@ class AluminumProfileServiceTest {
     private MaterialGroupRepository materialGroupRepository;
 
     @Spy
-    private AluminumProfileMapper aluminumProfileMapper = new AluminumProfileMapper();
+    private ObjectMapper objectMapper = new ObjectMapper();
+    private AluminumProfileMapper aluminumProfileMapper = new AluminumProfileMapper(objectMapper);
 
     @InjectMocks
     private AluminumProfileService aluminumProfileService;
@@ -96,12 +98,13 @@ class AluminumProfileServiceTest {
         void shouldCreateAluminumProfileSuccessfully() {
             AluminumProfileRequestDTO request = new AluminumProfileRequestDTO(
                     "Perfil S83 Linha Rometal",
-                    "S83",
+                    "S83", "Rometal",
                     "76042990",
                     "Branco",
                     new BigDecimal("6.00"),
                     new BigDecimal("45.00"),
-                    new BigDecimal("65.00")
+                    new BigDecimal("65.00"),
+                    new BigDecimal("1.500")
             );
 
             when(materialGroupRepository.findByCode("ALUMINIO"))
@@ -134,12 +137,13 @@ class AluminumProfileServiceTest {
         void shouldThrowBusinessExceptionWhenDuplicateReferenceAndColor() {
             AluminumProfileRequestDTO request = new AluminumProfileRequestDTO(
                     "Perfil S83 Linha Rometal",
-                    "S83",
+                    "S83", "Rometal",
                     null,
                     "Branco",
                     new BigDecimal("6.00"),
                     new BigDecimal("45.00"),
-                    new BigDecimal("65.00")
+                    new BigDecimal("65.00"),
+                    new BigDecimal("1.500")
             );
 
             when(materialGroupRepository.findByCode("ALUMINIO"))
@@ -161,12 +165,13 @@ class AluminumProfileServiceTest {
         void shouldConvertDataIntegrityViolationToBusinessExceptionOnConcurrentInsert() {
             AluminumProfileRequestDTO request = new AluminumProfileRequestDTO(
                     "Perfil S83 Linha Rometal",
-                    "S83",
+                    "S83", "Rometal",
                     null,
                     "Branco",
                     new BigDecimal("6.00"),
                     new BigDecimal("45.00"),
-                    new BigDecimal("65.00")
+                    new BigDecimal("65.00"),
+                    new BigDecimal("1.500")
             );
 
             when(materialGroupRepository.findByCode("ALUMINIO"))
@@ -190,12 +195,13 @@ class AluminumProfileServiceTest {
         void shouldThrowBusinessExceptionWhenGroupNotFound() {
             AluminumProfileRequestDTO request = new AluminumProfileRequestDTO(
                     "Perfil SPR-060",
-                    "SPR-060",
+                    "SPR-060", "Rometal",
                     null,
                     "Natural",
                     new BigDecimal("3.00"),
                     new BigDecimal("30.00"),
-                    new BigDecimal("50.00")
+                    new BigDecimal("50.00"),
+                    new BigDecimal("1.500")
             );
 
             when(materialGroupRepository.findByCode("ALUMINIO"))
@@ -213,12 +219,13 @@ class AluminumProfileServiceTest {
         void shouldThrowBusinessExceptionWhenStandardLengthInvalid() {
             AluminumProfileRequestDTO request = new AluminumProfileRequestDTO(
                     "Perfil S83 Linha Rometal",
-                    "S83",
+                    "S83", "Rometal",
                     null,
                     "Branco",
                     new BigDecimal("4.50"),
                     new BigDecimal("45.00"),
-                    new BigDecimal("65.00")
+                    new BigDecimal("65.00"),
+                    new BigDecimal("1.500")
             );
 
             assertThatThrownBy(() -> aluminumProfileService.create(request))
@@ -235,12 +242,13 @@ class AluminumProfileServiceTest {
         void shouldAcceptThreeMeterBar() {
             AluminumProfileRequestDTO request = new AluminumProfileRequestDTO(
                     "Puxador SPR-060 Linha Alternativa",
-                    "SPR-060",
+                    "SPR-060", "Rometal",
                     null,
                     "Natural",
                     new BigDecimal("3.00"),
                     new BigDecimal("30.00"),
-                    new BigDecimal("50.00")
+                    new BigDecimal("50.00"),
+                    new BigDecimal("1.500")
             );
 
             Material savedMaterial = new Material();

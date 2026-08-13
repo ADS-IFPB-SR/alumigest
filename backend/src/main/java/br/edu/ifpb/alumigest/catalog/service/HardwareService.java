@@ -70,17 +70,7 @@ public class HardwareService {
         material.setGroup(group);
         material.setActive(true);
 
-        try {
-            return hardwareMapper.toResponse(materialRepository.save(material));
-        } catch (DataIntegrityViolationException ex) {
-            // Garante que corridas entre requisições concorrentes que passaram
-            // pela validação antecipada simultaneamente não resultem em HTTP 500.
-            // A constraint UNIQUE do banco é a garantia definitiva de integridade;
-            // aqui apenas convertemos a exceção técnica em resposta amigável.
-            throw new BusinessException(
-                    "Conflito de cadastro: o código '" + request.skuCode() +
-                    "' já existe ou ocorreu uma violação de integridade. Tente novamente.");
-        }
+        return hardwareMapper.toResponse(materialRepository.save(material));
     }
 
     // -------------------------------------------------------------------------
