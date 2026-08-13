@@ -5,19 +5,19 @@ import type { ProfileDTO } from '../types';
 const columns = [
   { 
     header: 'Código', 
-    accessor: (row: ProfileDTO) => <span className="font-data-mono text-data-mono text-on-surface-variant dark:text-outline-variant">{row.skuCode}</span> 
+    accessor: (row: ProfileDTO) => <span className="font-data-mono text-data-mono text-on-surface-variant dark:text-outline-variant">{row.commercialReference}</span> 
   },
   { 
     header: 'Descrição', 
-    accessor: (row: ProfileDTO) => <span className="font-title-sm text-title-sm text-on-surface dark:text-inverse-on-surface font-semibold">{row.description}</span> 
+    accessor: (row: ProfileDTO) => <span className="font-title-sm text-title-sm text-on-surface dark:text-inverse-on-surface font-semibold">{row.name}</span> 
   },
   { 
-    header: 'Peso (Kg/m)', 
-    accessor: (row: ProfileDTO) => <span className="font-data-mono text-data-mono text-secondary dark:text-outline-variant">{row.weightPerMeterKg.toFixed(3).replace('.', ',')}</span>,
+    header: 'Tam. Barra (m)', 
+    accessor: (row: ProfileDTO) => <span className="font-data-mono text-data-mono text-secondary dark:text-outline-variant">{row.standardLengthM.toFixed(1).replace('.', ',')}</span>,
   },
   { 
-    header: 'Preço/m linear', 
-    accessor: (row: ProfileDTO) => <span className="font-data-mono text-data-mono text-on-surface dark:text-inverse-on-surface">R$ {row.pricePerMeter.toFixed(2).replace('.', ',')}</span>,
+    header: 'Preço Venda', 
+    accessor: (row: ProfileDTO) => <span className="font-data-mono text-data-mono text-on-surface dark:text-inverse-on-surface">R$ {row.salePrice.toFixed(2).replace('.', ',')}</span>,
     align: 'right' as const
   }
 ];

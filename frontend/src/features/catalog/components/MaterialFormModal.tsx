@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { Modal } from '../../../components/ui/Modal';
 import { Input } from '../../../components/ui/Input';
 import { Button } from '../../../components/ui/Button';
-import { useCreateGlass, useCreateHardware, useCreateFilm } from '../hooks/useCatalog';
+import { useCreateGlass, useUpdateGlass, useCreateHardware, useUpdateHardware, useCreateFilm, useUpdateFilm } from '../hooks/useCatalog';
 import type { MaterialType } from '../types';
+import { formatCurrencyInput, parseCurrencyString, formatUppercase, formatInteger } from '../../../utils/formatters';
 
 interface Props {
   isOpen: boolean;
@@ -16,10 +17,15 @@ export function MaterialFormModal({ isOpen, onClose, tipo, initialData }: Props)
   const isEditing = Boolean(initialData);
 
   const { mutate: createGlass, isPending: isGlassPending } = useCreateGlass();
+  const { mutate: updateGlass, isPending: isUpdateGlassPending } = useUpdateGlass();
+  
   const { mutate: createHardware, isPending: isHardwarePending } = useCreateHardware();
+  const { mutate: updateHardware, isPending: isUpdateHardwarePending } = useUpdateHardware();
+  
   const { mutate: createFilm, isPending: isFilmPending } = useCreateFilm();
+  const { mutate: updateFilm, isPending: isUpdateFilmPending } = useUpdateFilm();
 
-  const isPending = isGlassPending || isHardwarePending || isFilmPending;
+  const isPending = isGlassPending || isUpdateGlassPending || isHardwarePending || isUpdateHardwarePending || isFilmPending || isUpdateFilmPending;
 
   // Estado do formulário
   const [name, setName] = useState('');
@@ -31,8 +37,25 @@ export function MaterialFormModal({ isOpen, onClose, tipo, initialData }: Props)
   const [unitMeasure, setUnitMeasure] = useState('UNIDADE');
 
   // Reset form on open
+  // Populate form on open
   useEffect(() => {
-    if (isOpen && !initialData) {
+    if (isOpen && initialData) {
+      setName(initialData.name || '');
+      
+      if (tipo === 'Hardware') {
+        setSkuCode(initialData.skuCode || '');
+        setUnitMeasure(initialData.unitMeasure === 'UN' ? 'UNIDADE' : 'M2');
+      } else if (tipo === 'Film') {
+        setSkuCode(initialData.commercialReference || '');
+        setFilmType(initialData.colorFinish || '');
+      } else if (tipo === 'Glass') {
+        setThicknessMm(initialData.thicknessMm?.toString() || '8');
+        setColorFinish(initialData.colorFinish || '');
+      }
+      
+      const p = initialData.salePrice ?? initialData.pricePerSqm ?? 0;
+      setPrice(formatCurrencyInput(p.toFixed(2)));
+    } else if (isOpen && !initialData) {
       setName('');
       setSkuCode('');
       setThicknessMm('8');
@@ -41,42 +64,51 @@ export function MaterialFormModal({ isOpen, onClose, tipo, initialData }: Props)
       setFilmType('');
       setUnitMeasure('UNIDADE');
     }
-  }, [isOpen, initialData]);
+  }, [isOpen, initialData, tipo]);
 
   const handleSave = () => {
+    const payloadGlass = {
+      name,
+      thicknessMm: Number(thicknessMm),
+      colorFinish,
+      pricePerSqm: parseCurrencyString(price),
+      maxWidthMm: 2000,
+      maxHeightMm: 3000,
+      supplierId: "1",
+      active: true
+    };
+    
+    const payloadHardware = {
+      name,
+      skuCode,
+      unitMeasure: unitMeasure === 'UNIDADE' ? 'UN' : 'M2',
+      calculationType: 'UNIT' as const,
+      costPrice: 0,
+      salePrice: parseCurrencyString(price),
+      active: true
+    };
+    
+    const payloadFilm = {
+      name,
+      commercialReference: skuCode || 'PEL-001',
+      colorFinish: filmType,
+      salePrice: parseCurrencyString(price),
+      costPrice: 0,
+      thicknessMm: 0.08,
+      standardLengthM: 30,
+      unitMeasure: 'M2',
+      active: true
+    };
+
     if (tipo === 'Glass') {
-      createGlass({
-        name,
-        thicknessMm: Number(thicknessMm),
-        colorFinish,
-        pricePerSqm: Number(price.replace(',', '.')),
-        maxWidthMm: 2000,
-        maxHeightMm: 3000,
-        supplierId: 1, // Mock fornecedor
-        active: true
-      }, {
-        onSuccess: onClose
-      });
+      if (isEditing) updateGlass({ id: initialData.id, data: payloadGlass as any }, { onSuccess: onClose });
+      else createGlass(payloadGlass as any, { onSuccess: onClose });
     } else if (tipo === 'Hardware') {
-      createHardware({
-        name,
-        skuCode,
-        unitMeasure,
-        salePrice: Number(price.replace(',', '.')),
-        supplierId: 1,
-        active: true
-      }, {
-        onSuccess: onClose
-      });
+      if (isEditing) updateHardware({ id: initialData.id, data: payloadHardware as any }, { onSuccess: onClose });
+      else createHardware(payloadHardware as any, { onSuccess: onClose });
     } else if (tipo === 'Film') {
-      createFilm({
-        name,
-        colorFinish: filmType, // Use colorFinish per FilmDTO
-        salePrice: Number(price.replace(',', '.')),
-        active: true
-      }, {
-        onSuccess: onClose
-      });
+      if (isEditing) updateFilm({ id: initialData.id, data: payloadFilm as any }, { onSuccess: onClose });
+      else createFilm(payloadFilm as any, { onSuccess: onClose });
     }
   };
 
@@ -107,7 +139,7 @@ export function MaterialFormModal({ isOpen, onClose, tipo, initialData }: Props)
             label="Código" 
             placeholder="Ex: FER-001" 
             value={skuCode}
-            onChange={(e) => setSkuCode(e.target.value)}
+            onChange={(e) => setSkuCode(formatUppercase(e.target.value))}
             className="col-span-1 md:col-span-2" 
           />
         )}
@@ -127,13 +159,13 @@ export function MaterialFormModal({ isOpen, onClose, tipo, initialData }: Props)
               unit="mm" 
               placeholder="8" 
               value={thicknessMm}
-              onChange={(e) => setThicknessMm(e.target.value)} 
+              onChange={(e) => setThicknessMm(formatInteger(e.target.value))} 
             />
             <Input 
               label="Cor / Acabamento" 
               placeholder="Incolor" 
               value={colorFinish}
-              onChange={(e) => setColorFinish(e.target.value)}
+              onChange={(e) => setColorFinish(formatUppercase(e.target.value))}
             />
           </>
         )}
@@ -143,7 +175,7 @@ export function MaterialFormModal({ isOpen, onClose, tipo, initialData }: Props)
             label="Tipo/Cor" 
             placeholder="Ex: JATEADO" 
             value={filmType}
-            onChange={(e) => setFilmType(e.target.value)}
+            onChange={(e) => setFilmType(formatUppercase(e.target.value))}
             className="col-span-1 md:col-span-2" 
           />
         )}
@@ -154,7 +186,7 @@ export function MaterialFormModal({ isOpen, onClose, tipo, initialData }: Props)
             unit="R$" 
             placeholder="0,00" 
             value={price}
-            onChange={(e) => setPrice(e.target.value)}
+            onChange={(e) => setPrice(formatCurrencyInput(e.target.value))}
           />
         ) : (
           <Input 
@@ -162,7 +194,7 @@ export function MaterialFormModal({ isOpen, onClose, tipo, initialData }: Props)
             unit="R$/m²" 
             placeholder="0,00" 
             value={price}
-            onChange={(e) => setPrice(e.target.value)}
+            onChange={(e) => setPrice(formatCurrencyInput(e.target.value))}
           />
         )}
       </div>
