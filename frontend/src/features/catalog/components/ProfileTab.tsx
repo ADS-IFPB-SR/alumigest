@@ -40,20 +40,25 @@ const columns = [
   }
 ];
 
+import { filterByStatus } from '../utils/filters';
+
 interface Props {
   searchQuery: string;
+  filterStatus: 'ALL' | 'ACTIVE' | 'INACTIVE';
   onEdit: (item: ProfileDTO) => void;
   onViewDetails: (item: ProfileDTO) => void;
 }
 
-export function ProfileTab({ searchQuery, onEdit, onViewDetails }: Props) {
+export function ProfileTab({ searchQuery, filterStatus, onEdit, onViewDetails }: Props) {
   const { data, isLoading } = useProfiles();
   const profiles = data?.content || [];
 
   const filteredProfiles = profiles.filter(p => {
+    if (!filterByStatus(p, filterStatus)) return false;
+
     const term = searchQuery.toLowerCase();
     return p.name.toLowerCase().includes(term) || 
-           p.commercialReference.toLowerCase().includes(term);
+           (p.commercialReference && p.commercialReference.toLowerCase().includes(term));
   });
 
   if (isLoading) {

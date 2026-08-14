@@ -55,10 +55,6 @@ export function Table<T extends { id: string | number }>({ columns, data, onEdit
       {/* Table Controls / Filter Bar */}
       <div className="p-xs sm:p-md border-b border-outline-variant/60 dark:border-outline/30 bg-[#F8FAFC] dark:bg-surface-container-high/20 flex justify-between items-center gap-xs sm:gap-sm flex-wrap">
         <div className="flex gap-xs sm:gap-sm">
-          <button className="flex items-center gap-xs px-xs py-xs sm:px-sm sm:py-sm border border-outline-variant/80 dark:border-outline/40 rounded-md bg-white dark:bg-[#182230] text-primary dark:text-inverse-on-surface font-body text-xs sm:text-sm hover:bg-surface-container-low dark:hover:bg-surface-variant/30 transition-colors shadow-sm">
-            <span className="material-symbols-outlined text-[16px] sm:text-[18px] text-secondary">filter_list</span>
-            <span className="font-medium hidden sm:inline">Filtros</span>
-          </button>
           <button 
             onClick={handleExport}
             className="flex items-center gap-xs px-xs py-xs sm:px-sm sm:py-sm border border-outline-variant/80 dark:border-outline/40 rounded-md bg-white dark:bg-[#182230] text-secondary dark:text-outline-variant font-body text-xs sm:text-sm hover:bg-surface-container-low dark:hover:bg-surface-variant/30 transition-colors shadow-sm"

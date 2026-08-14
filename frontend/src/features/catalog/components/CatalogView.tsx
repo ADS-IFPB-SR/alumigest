@@ -17,6 +17,7 @@ export function CatalogView() {
   const [editingItem, setEditingItem] = useState<any | null>(null);
   const [detailsItem, setDetailsItem] = useState<any | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [filterStatus, setFilterStatus] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL');
 
   const handleOpenSelectionModal = () => {
     setIsSelectionModalOpen(true);
@@ -70,6 +71,22 @@ export function CatalogView() {
             />
           </div>
 
+          {/* Status Filter Dropdown */}
+          <div className="relative">
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value as 'ALL' | 'ACTIVE' | 'INACTIVE')}
+              className="appearance-none bg-white dark:bg-surface-container-high/20 border border-outline-variant/80 dark:border-outline/40 rounded-md font-body text-sm text-on-surface dark:text-inverse-on-surface focus:border-primary focus:outline-none transition-colors shadow-sm pl-sm pr-xl py-sm min-w-[140px] cursor-pointer"
+            >
+              <option value="ALL">Todos (Status)</option>
+              <option value="ACTIVE">Apenas Ativos</option>
+              <option value="INACTIVE">Apenas Inativos</option>
+            </select>
+            <span className="material-symbols-outlined absolute right-sm top-1/2 -translate-y-1/2 text-secondary dark:text-outline-variant pointer-events-none text-[18px]">
+              expand_more
+            </span>
+          </div>
+
           <Button 
             variant="primary"
             icon="add"
@@ -85,6 +102,7 @@ export function CatalogView() {
         <Tab label="Vidros">
           <GlassTab 
             searchQuery={searchQuery}
+            filterStatus={filterStatus}
             onEdit={(item) => handleEditItem(item, 'Glass')} 
             onViewDetails={handleViewDetails} 
           />
@@ -92,6 +110,7 @@ export function CatalogView() {
         <Tab label="Perfis de Alumínio">
           <ProfileTab 
             searchQuery={searchQuery}
+            filterStatus={filterStatus}
             onEdit={(item) => handleEditItem(item, 'Profile')} 
             onViewDetails={handleViewDetails} 
           />
@@ -99,6 +118,7 @@ export function CatalogView() {
         <Tab label="Películas">
           <FilmTab 
             searchQuery={searchQuery}
+            filterStatus={filterStatus}
             onEdit={(item) => handleEditItem(item, 'Film')} 
             onViewDetails={handleViewDetails} 
           />
@@ -106,6 +126,7 @@ export function CatalogView() {
         <Tab label="Ferragens">
           <HardwareTab 
             searchQuery={searchQuery}
+            filterStatus={filterStatus}
             onEdit={(item) => handleEditItem(item, 'Hardware')} 
             onViewDetails={handleViewDetails} 
           />

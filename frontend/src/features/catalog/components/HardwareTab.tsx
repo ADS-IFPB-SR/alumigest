@@ -40,17 +40,22 @@ const columns = [
   }
 ];
 
+import { filterByStatus } from '../utils/filters';
+
 interface Props {
   searchQuery: string;
+  filterStatus: 'ALL' | 'ACTIVE' | 'INACTIVE';
   onEdit: (item: HardwareDTO) => void;
   onViewDetails: (item: HardwareDTO) => void;
 }
 
-export function HardwareTab({ searchQuery, onEdit, onViewDetails }: Props) {
+export function HardwareTab({ searchQuery, filterStatus, onEdit, onViewDetails }: Props) {
   const { data, isLoading } = useHardwares();
   const hardwares = data?.content || [];
 
   const filteredHardwares = hardwares.filter(h => {
+    if (!filterByStatus(h, filterStatus)) return false;
+
     const term = searchQuery.toLowerCase();
     return h.name.toLowerCase().includes(term) || 
            (h.commercialReference && h.commercialReference.toLowerCase().includes(term));

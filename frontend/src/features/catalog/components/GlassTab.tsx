@@ -45,17 +45,22 @@ const columns = [
   }
 ];
 
+import { filterByStatus } from '../utils/filters';
+
 interface Props {
   searchQuery: string;
+  filterStatus: 'ALL' | 'ACTIVE' | 'INACTIVE';
   onEdit: (item: GlassDTO) => void;
   onViewDetails: (item: GlassDTO) => void;
 }
 
-export function GlassTab({ searchQuery, onEdit, onViewDetails }: Props) {
+export function GlassTab({ searchQuery, filterStatus, onEdit, onViewDetails }: Props) {
   const { data, isLoading } = useGlasses();
   const glasses = data?.content || [];
 
   const filteredGlasses = glasses.filter(g => {
+    if (!filterByStatus(g, filterStatus)) return false;
+
     const term = searchQuery.toLowerCase();
     return g.name.toLowerCase().includes(term) || 
            (g.commercialReference && g.commercialReference.toLowerCase().includes(term)) ||

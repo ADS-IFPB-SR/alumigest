@@ -35,17 +35,22 @@ const columns = [
   }
 ];
 
+import { filterByStatus } from '../utils/filters';
+
 interface Props {
   searchQuery: string;
+  filterStatus: 'ALL' | 'ACTIVE' | 'INACTIVE';
   onEdit: (item: FilmDTO) => void;
   onViewDetails: (item: FilmDTO) => void;
 }
 
-export function FilmTab({ searchQuery, onEdit, onViewDetails }: Props) {
+export function FilmTab({ searchQuery, filterStatus, onEdit, onViewDetails }: Props) {
   const { data, isLoading } = useFilms();
   const films = data?.content || [];
 
   const filteredFilms = films.filter(f => {
+    if (!filterByStatus(f, filterStatus)) return false;
+
     const term = searchQuery.toLowerCase();
     return f.name.toLowerCase().includes(term) || 
            (f.commercialReference && f.commercialReference.toLowerCase().includes(term)) ||

@@ -5,6 +5,7 @@ import { Button } from '../../../components/ui/Button';
 import { useCreateGlass, useUpdateGlass, useCreateHardware, useUpdateHardware, useCreateFilm, useUpdateFilm } from '../hooks/useCatalog';
 import type { MaterialType } from '../types';
 import { formatCurrencyInput, parseCurrencyString, formatUppercase, formatInteger } from '../../../utils/formatters';
+import { StatusToggle } from './StatusToggle';
 
 interface Props {
   isOpen: boolean;
@@ -35,6 +36,7 @@ export function MaterialFormModal({ isOpen, onClose, tipo, initialData }: Props)
   const [price, setPrice] = useState('');
   const [filmType, setFilmType] = useState('');
   const [unitMeasure, setUnitMeasure] = useState('UNIDADE');
+  const [active, setActive] = useState(true);
 
   // Reset form on open
   // Populate form on open
@@ -55,6 +57,7 @@ export function MaterialFormModal({ isOpen, onClose, tipo, initialData }: Props)
       
       const p = initialData.salePrice ?? initialData.pricePerSqm ?? 0;
       setPrice(formatCurrencyInput(p.toFixed(2)));
+      setActive(initialData.active ?? true);
     } else if (isOpen && !initialData) {
       setName('');
       setSkuCode('');
@@ -63,6 +66,7 @@ export function MaterialFormModal({ isOpen, onClose, tipo, initialData }: Props)
       setPrice('');
       setFilmType('');
       setUnitMeasure('UNIDADE');
+      setActive(true);
     }
   }, [isOpen, initialData, tipo]);
 
@@ -75,7 +79,7 @@ export function MaterialFormModal({ isOpen, onClose, tipo, initialData }: Props)
       maxWidthMm: 2000,
       maxHeightMm: 3000,
       supplierId: "1",
-      active: true
+      active
     };
     
     const payloadHardware = {
@@ -85,7 +89,7 @@ export function MaterialFormModal({ isOpen, onClose, tipo, initialData }: Props)
       calculationType: 'UNIT' as const,
       costPrice: 0,
       salePrice: parseCurrencyString(price),
-      active: true
+      active
     };
     
     const payloadFilm = {
@@ -97,7 +101,7 @@ export function MaterialFormModal({ isOpen, onClose, tipo, initialData }: Props)
       thicknessMm: 0.08,
       standardLengthM: 30,
       unitMeasure: 'M2',
-      active: true
+      active
     };
 
     if (tipo === 'Glass') {
@@ -196,6 +200,10 @@ export function MaterialFormModal({ isOpen, onClose, tipo, initialData }: Props)
             value={price}
             onChange={(e) => setPrice(formatCurrencyInput(e.target.value))}
           />
+        )}
+        
+        {isEditing && (
+          <StatusToggle active={active} onChange={setActive} />
         )}
       </div>
     </Modal>

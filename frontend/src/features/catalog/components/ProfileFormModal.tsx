@@ -4,6 +4,7 @@ import { Input } from '../../../components/ui/Input';
 import { Button } from '../../../components/ui/Button';
 import { useCreateProfile, useUpdateProfile } from '../hooks/useCatalog';
 import { formatCurrencyInput, parseCurrencyString, formatUppercase, formatInteger, formatWeightInput, parseWeightString } from '../../../utils/formatters';
+import { StatusToggle } from './StatusToggle';
 
 interface Props {
   isOpen: boolean;
@@ -23,6 +24,7 @@ export function ProfileFormModal({ isOpen, onClose, initialData }: Props) {
   const [weight, setWeight] = useState('');
   const [length, setLength] = useState('3');
   const [price, setPrice] = useState('');
+  const [active, setActive] = useState(true);
 
   // Populate form on open
   useEffect(() => {
@@ -35,6 +37,7 @@ export function ProfileFormModal({ isOpen, onClose, initialData }: Props) {
       
       const p = initialData.salePrice ?? 0;
       setPrice(formatCurrencyInput(p.toFixed(2)));
+      setActive(initialData.active ?? true);
     } else if (isOpen && !initialData) {
       setSkuCode('');
       setCommercialLine('Rometal');
@@ -42,6 +45,7 @@ export function ProfileFormModal({ isOpen, onClose, initialData }: Props) {
       setWeight('');
       setLength('3');
       setPrice('');
+      setActive(true);
     }
   }, [isOpen, initialData]);
 
@@ -57,7 +61,7 @@ export function ProfileFormModal({ isOpen, onClose, initialData }: Props) {
       colorFinish: 'INCOLOR',
       costPrice: 0,
       salePrice: parseCurrencyString(price),
-      active: true
+      active
     };
     
     if (isEditing) {
@@ -126,6 +130,10 @@ export function ProfileFormModal({ isOpen, onClose, initialData }: Props) {
           onChange={(e) => setPrice(formatCurrencyInput(e.target.value))} 
           className="col-span-1 md:col-span-2" 
         />
+        
+        {isEditing && (
+          <StatusToggle active={active} onChange={setActive} />
+        )}
       </div>
     </Modal>
   );
