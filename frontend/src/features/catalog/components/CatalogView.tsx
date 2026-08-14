@@ -78,9 +78,9 @@ export function CatalogView() {
               onChange={(e) => setFilterStatus(e.target.value as 'ALL' | 'ACTIVE' | 'INACTIVE')}
               className="appearance-none bg-white dark:bg-surface-container-high/20 border border-outline-variant/80 dark:border-outline/40 rounded-md font-body text-sm text-on-surface dark:text-inverse-on-surface focus:border-primary focus:outline-none transition-colors shadow-sm pl-sm pr-xl py-sm min-w-[140px] cursor-pointer"
             >
-              <option value="ALL">Todos (Status)</option>
-              <option value="ACTIVE">Apenas Ativos</option>
-              <option value="INACTIVE">Apenas Inativos</option>
+              <option className="dark:bg-[#182230] dark:text-inverse-on-surface" value="ALL">Todos (Status)</option>
+              <option className="dark:bg-[#182230] dark:text-inverse-on-surface" value="ACTIVE">Apenas Ativos</option>
+              <option className="dark:bg-[#182230] dark:text-inverse-on-surface" value="INACTIVE">Apenas Inativos</option>
             </select>
             <span className="material-symbols-outlined absolute right-sm top-1/2 -translate-y-1/2 text-secondary dark:text-outline-variant pointer-events-none text-[18px]">
               expand_more

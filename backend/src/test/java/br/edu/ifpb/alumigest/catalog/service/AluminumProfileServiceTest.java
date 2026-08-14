@@ -295,7 +295,7 @@ class AluminumProfileServiceTest {
 
             when(materialGroupRepository.findByCode("ALUMINIO"))
                     .thenReturn(Optional.of(aluminumGroup));
-            when(materialRepository.findAllActiveAluminumFiltered(
+            when(materialRepository.findAllAluminumFiltered(
                     GROUP_ID, "Branco", "Rometal", pageable))
                     .thenReturn(materialPage);
 
@@ -308,7 +308,7 @@ class AluminumProfileServiceTest {
             assertThat(result.getContent().get(0).commercialReference()).isEqualTo("S83");
 
             verify(materialGroupRepository).findByCode("ALUMINIO");
-            verify(materialRepository).findAllActiveAluminumFiltered(
+            verify(materialRepository).findAllAluminumFiltered(
                     GROUP_ID, "Branco", "Rometal", pageable);
         }
 
@@ -320,13 +320,13 @@ class AluminumProfileServiceTest {
 
             when(materialGroupRepository.findByCode("ALUMINIO"))
                     .thenReturn(Optional.of(aluminumGroup));
-            when(materialRepository.findAllActiveAluminumFiltered(GROUP_ID, null, null, pageable))
+            when(materialRepository.findAllAluminumFiltered(GROUP_ID, null, null, pageable))
                     .thenReturn(materialPage);
 
             Page<AluminumProfileResponseDTO> result = aluminumProfileService.findAll(null, null, pageable);
 
             assertThat(result.getTotalElements()).isEqualTo(1);
-            verify(materialRepository).findAllActiveAluminumFiltered(GROUP_ID, null, null, pageable);
+            verify(materialRepository).findAllAluminumFiltered(GROUP_ID, null, null, pageable);
         }
     }
 
@@ -373,7 +373,7 @@ class AluminumProfileServiceTest {
         @DisplayName("Deve atualizar os preços de custo e venda do perfil com sucesso")
         void shouldUpdatePricesSuccessfully() {
             AluminumProfileUpdateDTO updateRequest =
-                    new AluminumProfileUpdateDTO(new BigDecimal("50.00"), new BigDecimal("75.00"));
+                    new AluminumProfileUpdateDTO(new BigDecimal("50.00"), new BigDecimal("75.00"), null);
 
             when(materialRepository.findByIdAndGroupCode(MATERIAL_ID, "ALUMINIO"))
                     .thenReturn(Optional.of(aluminumMaterial));
@@ -395,7 +395,7 @@ class AluminumProfileServiceTest {
         void shouldThrowResourceNotFoundExceptionOnUpdateWhenIdNotFound() {
             UUID nonExistentId = UUID.randomUUID();
             AluminumProfileUpdateDTO updateRequest =
-                    new AluminumProfileUpdateDTO(new BigDecimal("50.00"), new BigDecimal("75.00"));
+                    new AluminumProfileUpdateDTO(new BigDecimal("50.00"), new BigDecimal("75.00"), null);
 
             when(materialRepository.findByIdAndGroupCode(nonExistentId, "ALUMINIO"))
                     .thenReturn(Optional.empty());

@@ -5,8 +5,8 @@ import type { HardwareDTO } from '../types';
 const columns = [
   { 
     header: 'Código', 
-    accessor: (row: HardwareDTO) => <span className="font-data-mono text-data-mono text-on-surface-variant dark:text-outline-variant">{row.commercialReference}</span>,
-    exportValue: (row: HardwareDTO) => row.commercialReference
+    accessor: (row: HardwareDTO) => <span className="font-data-mono text-data-mono text-on-surface-variant dark:text-outline-variant">{row.skuCode}</span>,
+    exportValue: (row: HardwareDTO) => row.skuCode || ''
   },
   { 
     header: 'Descrição', 

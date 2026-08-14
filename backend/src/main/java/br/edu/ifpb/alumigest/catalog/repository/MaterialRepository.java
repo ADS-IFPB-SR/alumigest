@@ -33,7 +33,7 @@ public interface MaterialRepository extends JpaRepository<Material, UUID> {
             "LOWER(m.commercialReference) LIKE LOWER(CONCAT('%', :query, '%')))")
     Page<Material> searchActiveByGroup(@Param("groupId") UUID groupId, @Param("query") String query, Pageable pageable);
 
-    Page<Material> findAllActiveByGroupCode(String groupCode, Pageable pageable);
+    Page<Material> findAllByGroupCode(String groupCode, Pageable pageable);
     Optional<Material> findByIdAndGroupCode(UUID id, String groupCode);
 
     /**
@@ -45,12 +45,12 @@ public interface MaterialRepository extends JpaRepository<Material, UUID> {
      * @param name        fragmento de nome para busca case-insensitive; {@code null} desativa o filtro
      * @param pageable    configuração de paginação
      */
+
     @Query("SELECT m FROM Material m " +
-           "WHERE m.isActive = true " +
-           "AND m.group.id = :groupId " +
+           "WHERE m.group.id = :groupId " +
            "AND (:unitMeasure IS NULL OR m.unitMeasure = :unitMeasure) " +
            "AND (CAST(:name AS string) IS NULL OR LOWER(m.name) LIKE LOWER(CONCAT('%', CAST(:name AS string), '%')))")
-    Page<Material> findAllActiveByGroupFiltered(
+    Page<Material> findAllByGroupFiltered(
             @Param("groupId") UUID groupId,
             @Param("unitMeasure") UnitMeasure unitMeasure,
             @Param("name") String name,
@@ -67,11 +67,10 @@ public interface MaterialRepository extends JpaRepository<Material, UUID> {
             @Param("colorFinish") String colorFinish);
 
     @Query("SELECT m FROM Material m " +
-           "WHERE m.isActive = true " +
-           "AND m.group.id = :groupId " +
+           "WHERE m.group.id = :groupId " +
            "AND (CAST(:colorFinish AS string) IS NULL OR LOWER(m.colorFinish) LIKE LOWER(CONCAT('%', CAST(:colorFinish AS string), '%'))) " +
            "AND (CAST(:name AS string) IS NULL OR LOWER(m.name) LIKE LOWER(CONCAT('%', CAST(:name AS string), '%')))")
-    Page<Material> findAllActiveAluminumFiltered(
+    Page<Material> findAllAluminumFiltered(
             @Param("groupId") UUID groupId,
             @Param("colorFinish") String colorFinish,
             @Param("name") String name,

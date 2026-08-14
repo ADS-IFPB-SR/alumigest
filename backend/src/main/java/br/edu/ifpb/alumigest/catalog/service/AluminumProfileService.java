@@ -67,7 +67,7 @@ public class AluminumProfileService {
     public Page<AluminumProfileResponseDTO> findAll(String colorFinish, String name, Pageable pageable) {
         MaterialGroup group = resolveAluminumGroup();
         return materialRepository
-                .findAllActiveAluminumFiltered(group.getId(), colorFinish, name, pageable)
+                .findAllAluminumFiltered(group.getId(), colorFinish, name, pageable)
                 .map(aluminumProfileMapper::toResponse);
     }
 
@@ -87,6 +87,11 @@ public class AluminumProfileService {
 
         material.setCostPrice(request.costPrice());
         material.setSalePrice(request.salePrice());
+        
+        if (request.active() != null) {
+            material.setActive(request.active());
+        }
+        
         return aluminumProfileMapper.toResponse(materialRepository.save(material));
     }
 

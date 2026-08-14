@@ -89,7 +89,7 @@ public class HardwareService {
     public Page<HardwareResponseDTO> findAll(UnitMeasure unitMeasure, String name, Pageable pageable) {
         MaterialGroup group = resolveHardwareGroup();
         return materialRepository
-                .findAllActiveByGroupFiltered(group.getId(), unitMeasure, name, pageable)
+                .findAllByGroupFiltered(group.getId(), unitMeasure, name, pageable)
                 .map(hardwareMapper::toResponse);
     }
 
@@ -127,6 +127,11 @@ public class HardwareService {
                         new ResourceNotFoundException("Ferragem não encontrada com ID: " + id));
 
         material.setSalePrice(request.salePrice());
+        
+        if (request.active() != null) {
+            material.setActive(request.active());
+        }
+        
         return hardwareMapper.toResponse(materialRepository.save(material));
     }
 
