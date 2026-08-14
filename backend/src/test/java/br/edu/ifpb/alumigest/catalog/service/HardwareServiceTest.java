@@ -54,10 +54,8 @@ class HardwareServiceTest {
     @Mock
     private MaterialGroupRepository materialGroupRepository;
 
-    @Spy
     private HardwareMapper hardwareMapper = new HardwareMapper();
 
-    @InjectMocks
     private HardwareService hardwareService;
 
     // -------------------------------------------------------------------------
@@ -72,6 +70,8 @@ class HardwareServiceTest {
 
     @BeforeEach
     void setUp() {
+        hardwareService = new HardwareService(materialRepository, materialGroupRepository, hardwareMapper);
+
         ferragemGroup = new MaterialGroup(
                 GROUP_ID,
                 "FERRAGEM",

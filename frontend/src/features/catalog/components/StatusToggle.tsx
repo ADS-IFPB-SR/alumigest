@@ -21,6 +21,7 @@ export function StatusToggle({
       </div>
       <button 
         type="button"
+        aria-label="Alternar status"
         onClick={() => onChange(!active)}
         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${active ? 'bg-green-600 dark:bg-green-500' : 'bg-surface-variant dark:bg-outline'}`}
       >

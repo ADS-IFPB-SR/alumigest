@@ -48,11 +48,8 @@ class AluminumProfileServiceTest {
     @Mock
     private MaterialGroupRepository materialGroupRepository;
 
-    @Spy
-    private ObjectMapper objectMapper = new ObjectMapper();
-    private AluminumProfileMapper aluminumProfileMapper = new AluminumProfileMapper(objectMapper);
+    private AluminumProfileMapper aluminumProfileMapper = new AluminumProfileMapper(new ObjectMapper());
 
-    @InjectMocks
     private AluminumProfileService aluminumProfileService;
 
     private static final UUID MATERIAL_ID = UUID.randomUUID();
@@ -63,6 +60,8 @@ class AluminumProfileServiceTest {
 
     @BeforeEach
     void setUp() {
+        aluminumProfileService = new AluminumProfileService(materialRepository, materialGroupRepository, aluminumProfileMapper);
+
         aluminumGroup = new MaterialGroup(
                 GROUP_ID,
                 "ALUMINIO",

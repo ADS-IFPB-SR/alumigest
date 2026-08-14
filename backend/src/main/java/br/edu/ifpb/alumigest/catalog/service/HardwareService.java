@@ -70,7 +70,11 @@ public class HardwareService {
         material.setGroup(group);
         material.setActive(true);
 
-        return hardwareMapper.toResponse(materialRepository.save(material));
+        try {
+            return hardwareMapper.toResponse(materialRepository.save(material));
+        } catch (DataIntegrityViolationException e) {
+            throw new BusinessException("Conflito de cadastro: já existe uma ferragem com o código " + request.skuCode());
+        }
     }
 
     // -------------------------------------------------------------------------

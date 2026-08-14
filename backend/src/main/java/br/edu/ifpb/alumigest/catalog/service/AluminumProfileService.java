@@ -60,7 +60,11 @@ public class AluminumProfileService {
         material.setGroup(group);
         material.setActive(true);
 
-        return aluminumProfileMapper.toResponse(materialRepository.save(material));
+        try {
+            return aluminumProfileMapper.toResponse(materialRepository.save(material));
+        } catch (DataIntegrityViolationException e) {
+            throw new BusinessException("Conflito de cadastro: já existe um perfil de alumínio com a referência " + request.commercialReference());
+        }
     }
 
     @Transactional(readOnly = true)
