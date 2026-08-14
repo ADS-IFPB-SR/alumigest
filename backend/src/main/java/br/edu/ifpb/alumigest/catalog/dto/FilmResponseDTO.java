@@ -8,5 +8,8 @@ public record FilmResponseDTO(
         String name,
         String colorFinish,
         BigDecimal salePrice,
-        String unitMeasure
+        String unitMeasure,
+        boolean active,
+        String commercialReference,
+        String skuCode
 ) { }

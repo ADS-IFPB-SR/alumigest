@@ -66,7 +66,8 @@ class AluminumProfileControllerTest {
                     "colorFinish", "Branco",
                     "standardLengthM", 6.00,
                     "costPrice", 45.00,
-                    "salePrice", 65.00
+                    "salePrice", 65.00,
+                    "weight", 1.50
             );
 
             mockMvc.perform(post(BASE_URL)
@@ -92,7 +93,8 @@ class AluminumProfileControllerTest {
                     "colorFinish", "Natural",
                     "standardLengthM", 3.00,
                     "costPrice", 30.00,
-                    "salePrice", 50.00
+                    "salePrice", 50.00,
+                    "weight", 1.50
             );
 
             mockMvc.perform(post(BASE_URL)
@@ -128,7 +130,8 @@ class AluminumProfileControllerTest {
                     "colorFinish", "Branco",
                     "standardLengthM", 6.00,
                     "costPrice", 40.00,
-                    "salePrice", 60.00
+                    "salePrice", 60.00,
+                    "weight", 1.50
             );
 
             mockMvc.perform(post(BASE_URL)
@@ -152,7 +155,8 @@ class AluminumProfileControllerTest {
                     "colorFinish", "Preto",
                     "standardLengthM", 4.50,
                     "costPrice", 40.00,
-                    "salePrice", 60.00
+                    "salePrice", 60.00,
+                    "weight", 1.50
             );
 
             mockMvc.perform(post(BASE_URL)
@@ -176,7 +180,8 @@ class AluminumProfileControllerTest {
                     "colorFinish", "Bronze",
                     "standardLengthM", 6.00,
                     "costPrice", 35.00,
-                    "salePrice", 55.00
+                    "salePrice", 55.00,
+                    "weight", 1.50
             );
 
             mockMvc.perform(post(BASE_URL)
@@ -201,7 +206,8 @@ class AluminumProfileControllerTest {
                     "colorFinish", "Champagne",
                     "standardLengthM", 3.00,
                     "costPrice", 42.00,
-                    "salePrice", 62.00
+                    "salePrice", 62.00,
+                    "weight", 1.50
             );
 
             mockMvc.perform(post(BASE_URL)
@@ -232,7 +238,8 @@ class AluminumProfileControllerTest {
                     "colorFinish", "Branco",
                     "standardLengthM", 6.00,
                     "costPrice", 40.00,
-                    "salePrice", 60.00
+                    "salePrice", 60.00,
+                    "weight", 1.50
             );
 
             MvcResult createResult = mockMvc.perform(post(BASE_URL)
@@ -276,7 +283,8 @@ class AluminumProfileControllerTest {
                     "colorFinish", "Natural",
                     "standardLengthM", 6.00,
                     "costPrice", 40.00,
-                    "salePrice", 60.00
+                    "salePrice", 60.00,
+                    "weight", 1.50
             );
 
             MvcResult createResult = mockMvc.perform(post(BASE_URL)
@@ -317,7 +325,8 @@ class AluminumProfileControllerTest {
                     "colorFinish", "Preto",
                     "standardLengthM", 3.00,
                     "costPrice", 35.00,
-                    "salePrice", 55.00
+                    "salePrice", 55.00,
+                    "weight", 1.50
             );
 
             MvcResult createResult = mockMvc.perform(post(BASE_URL)

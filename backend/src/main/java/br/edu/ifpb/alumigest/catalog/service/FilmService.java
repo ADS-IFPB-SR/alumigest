@@ -55,7 +55,7 @@ public class FilmService {
     @Transactional(readOnly = true)
     public Page<FilmResponseDTO> findAllActiveFilms(Pageable pageable) {
 
-        Page<Material> materials = materialRepository.findAllActiveByGroupCode(FILM_GROUP_CODE, pageable);
+        Page<Material> materials = materialRepository.findAllByGroupCode(FILM_GROUP_CODE, pageable);
 
         return materials.map(filmMapper::toResponse);
     }
@@ -67,6 +67,10 @@ public class FilmService {
                 .orElseThrow(() -> new ResourceNotFoundException("Película não encontrada com o ID informado."));
 
         material.setSalePrice(request.salePrice());
+        
+        if (request.active() != null) {
+            material.setActive(request.active());
+        }
 
         return filmMapper.toResponse(materialRepository.save(material));
     }
