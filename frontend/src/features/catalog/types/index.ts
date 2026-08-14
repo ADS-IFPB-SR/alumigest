@@ -1,6 +1,6 @@
 export type MaterialType = 'Glass' | 'Profile' | 'Film' | 'Hardware';
 
-export type UnitMeasure = 'M2' | 'METRO' | 'BARRA_3M' | 'BARRA_6M' | 'UN' | 'PAR' | 'KG' | 'LITRO';
+export type UnitMeasure = 'M2' | 'METRO' | 'BARRA_3M' | 'BARRA_6M' | 'UN' | 'PAR' | 'PAIR' | 'KG' | 'LITRO';
 
 export type CalculationType = 'SQUARE_METER' | 'LINEAR_METER' | 'UNIT' | 'PAIR' | 'WEIGHT_KG';
 
@@ -10,6 +10,9 @@ export interface GlassDTO {
   thicknessMm: number;
   colorFinish: string;
   pricePerSqm: number;
+  salePrice?: number;
+  commercialReference?: string;
+  skuCode?: string;
   maxWidthMm: number;
   maxHeightMm: number;
   supplierId?: string;
@@ -35,6 +38,7 @@ export interface ProfileDTO {
 export interface HardwareDTO {
   id: string; // UUID from HardwareResponseDTO
   skuCode: string;
+  commercialReference?: string;
   name: string;
   unitMeasure: UnitMeasure;
   calculationType: CalculationType;
@@ -48,6 +52,8 @@ export interface HardwareDTO {
 export interface FilmDTO {
   id: string; // UUID from FilmResponseDTO
   name: string;
+  commercialReference?: string;
+  skuCode?: string;
   colorFinish: string;
   salePrice: number;
   unitMeasure: string; // Backend currently returns String, not UnitMeasure enum here

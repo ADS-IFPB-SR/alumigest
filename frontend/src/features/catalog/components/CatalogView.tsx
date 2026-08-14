@@ -16,6 +16,7 @@ export function CatalogView() {
   const [activeFormType, setActiveFormType] = useState<MaterialType | null>(null);
   const [editingItem, setEditingItem] = useState<any | null>(null);
   const [detailsItem, setDetailsItem] = useState<any | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const handleOpenSelectionModal = () => {
     setIsSelectionModalOpen(true);
@@ -44,25 +45,27 @@ export function CatalogView() {
   return (
     <>
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-sm sm:mb-md gap-sm flex-none">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-md gap-sm flex-none">
         <div>
           <h2 className="font-headline text-headline-md sm:text-headline-lg font-bold text-primary dark:text-inverse-on-surface leading-tight">
             Catálogo de Materiais
           </h2>
-          <p className="font-body text-xs sm:text-body-sm text-secondary dark:text-outline-variant mt-xs">
+          <p className="font-body text-sm text-secondary dark:text-outline-variant mt-xs">
             Gerencie especificações técnicas e precificação de insumos.
           </p>
         </div>
 
-        <div className="flex items-center gap-sm">
-          {/* Mobile search bar */}
-          <div className="relative sm:hidden flex-1">
-            <span className="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-secondary pointer-events-none text-[18px]">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-sm">
+          {/* Universal Search Bar */}
+          <div className="relative flex-1 sm:w-64">
+            <span className="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-secondary dark:text-outline-variant pointer-events-none text-[18px]">
               search
             </span>
             <input 
-              className="w-full pl-xl pr-sm py-xs bg-white dark:bg-surface-container-high/20 border border-outline-variant/80 dark:border-outline/40 rounded-md font-body text-xs text-on-surface dark:text-inverse-on-surface focus:border-primary focus:outline-none" 
-              placeholder="Buscar..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-xl pr-sm py-sm bg-white dark:bg-surface-container-high/20 border border-outline-variant/80 dark:border-outline/40 rounded-md font-body text-sm text-on-surface dark:text-inverse-on-surface focus:border-primary focus:outline-none transition-colors shadow-sm" 
+              placeholder="Buscar código ou insumo..." 
               type="text" 
             />
           </div>
@@ -81,24 +84,28 @@ export function CatalogView() {
       <Tabs>
         <Tab label="Vidros">
           <GlassTab 
+            searchQuery={searchQuery}
             onEdit={(item) => handleEditItem(item, 'Glass')} 
             onViewDetails={handleViewDetails} 
           />
         </Tab>
         <Tab label="Perfis de Alumínio">
           <ProfileTab 
+            searchQuery={searchQuery}
             onEdit={(item) => handleEditItem(item, 'Profile')} 
             onViewDetails={handleViewDetails} 
           />
         </Tab>
         <Tab label="Películas">
           <FilmTab 
+            searchQuery={searchQuery}
             onEdit={(item) => handleEditItem(item, 'Film')} 
             onViewDetails={handleViewDetails} 
           />
         </Tab>
         <Tab label="Ferragens">
           <HardwareTab 
+            searchQuery={searchQuery}
             onEdit={(item) => handleEditItem(item, 'Hardware')} 
             onViewDetails={handleViewDetails} 
           />

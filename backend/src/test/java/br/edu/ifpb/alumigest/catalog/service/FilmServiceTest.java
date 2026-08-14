@@ -76,7 +76,7 @@ class FilmServiceTest {
         when(materialGroupRepository.findByCode("PELICULA")).thenReturn(Optional.of(mockGroup));
         when(filmMapper.toEntity(mockRequest)).thenReturn(mockMaterial);
         when(materialRepository.save(any(Material.class))).thenReturn(mockMaterial);
-        when(filmMapper.toResponse(mockMaterial)).thenReturn(new FilmResponseDTO(filmId, "Fumê G20", "Fumê", new BigDecimal("50.00"), "m2"));
+        when(filmMapper.toResponse(mockMaterial)).thenReturn(new FilmResponseDTO(filmId, "Fumê G20", "Fumê", new BigDecimal("50.00"), "m2", true, "REF-1", "123"));
 
         FilmResponseDTO result = filmService.createFilm(mockRequest);
 
@@ -100,7 +100,7 @@ class FilmServiceTest {
         Page<Material> pagedResponse = new PageImpl<>(List.of(mockMaterial));
 
         when(materialRepository.findAllActiveByGroupCode("PELICULA", pageable)).thenReturn(pagedResponse);
-        when(filmMapper.toResponse(mockMaterial)).thenReturn(new FilmResponseDTO(filmId, "Fumê G20", "Fumê", new BigDecimal("50.00"), "m2"));
+        when(filmMapper.toResponse(mockMaterial)).thenReturn(new FilmResponseDTO(filmId, "Fumê G20", "Fumê", new BigDecimal("50.00"), "m2", true, "REF-1", "123"));
 
         Page<FilmResponseDTO> result = filmService.findAllActiveFilms(pageable);
 
@@ -115,7 +115,7 @@ class FilmServiceTest {
 
         when(materialRepository.findByIdAndGroupCode(filmId, "PELICULA")).thenReturn(Optional.of(mockMaterial));
         when(materialRepository.save(any(Material.class))).thenReturn(mockMaterial);
-        when(filmMapper.toResponse(mockMaterial)).thenReturn(new FilmResponseDTO(filmId, "Fumê G20", "Fumê", new BigDecimal("85.50"), "m2"));
+        when(filmMapper.toResponse(mockMaterial)).thenReturn(new FilmResponseDTO(filmId, "Fumê G20", "Fumê", new BigDecimal("85.50"), "m2", true, "REF-1", "123"));
 
         FilmResponseDTO result = filmService.updateFilmPrice(filmId, updateRequest);
 

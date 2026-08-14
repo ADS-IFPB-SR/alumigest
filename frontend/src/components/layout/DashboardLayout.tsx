@@ -40,9 +40,11 @@ export function DashboardLayout() {
       
       {/* Mobile Sidebar Overlay */}
       {isMobileMenuOpen && (
-        <div 
+        <button 
           onClick={() => setIsMobileMenuOpen(false)}
-          className="lg:hidden fixed inset-0 bg-black/60 z-30 backdrop-blur-sm transition-opacity"
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setIsMobileMenuOpen(false); }}
+          aria-label="Fechar menu"
+          className="lg:hidden fixed inset-0 bg-black/60 z-30 backdrop-blur-sm transition-opacity w-full h-full cursor-default"
         />
       )}
 
@@ -134,16 +136,7 @@ export function DashboardLayout() {
 
             {/* Search and Top Right Icons */}
             <div className="flex items-center gap-xs sm:gap-sm ml-auto">
-              <div className="hidden sm:flex items-center relative">
-                <span className="material-symbols-outlined absolute left-sm text-secondary dark:text-outline-variant pointer-events-none text-[18px]">search</span>
-                <input 
-                  className="pl-xl pr-sm py-xs bg-background dark:bg-surface-container-high/20 border border-outline-variant dark:border-outline/40 rounded-md font-body text-body-sm text-on-surface dark:text-inverse-on-surface focus:border-primary focus:outline-none transition-all w-48 lg:w-64 text-xs" 
-                  placeholder="Buscar código ou insumo..." 
-                  type="text" 
-                />
-              </div>
-
-              {/* Dark / Light Theme Toggle Button */}
+              {/* Desktop Theme Toggle and Notifications */}
               <button 
                 onClick={toggleTheme}
                 className="p-xs sm:p-xs text-secondary dark:text-inverse-on-surface hover:bg-surface-container-high dark:hover:bg-surface-variant/30 rounded-full transition-colors flex items-center justify-center cursor-pointer"
