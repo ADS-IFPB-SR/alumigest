@@ -19,9 +19,10 @@ export const useCreateGlass = () => {
       toast.success('Vidro cadastrado com sucesso!');
       queryClient.invalidateQueries({ queryKey: ['glasses'] });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Erro ao cadastrar vidro:', error);
-      toast.error('Erro ao cadastrar vidro.');
+      const message = error?.response?.data?.message || 'Erro ao cadastrar vidro.';
+      toast.error(message);
     },
   });
 };
@@ -34,9 +35,10 @@ export const useUpdateGlass = () => {
       toast.success('Vidro atualizado com sucesso!');
       queryClient.invalidateQueries({ queryKey: ['glasses'] });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Erro ao atualizar vidro:', error);
-      toast.error('Erro ao atualizar vidro.');
+      const message = error?.response?.data?.message || 'Erro ao atualizar vidro.';
+      toast.error(message);
     },
   });
 };
@@ -57,9 +59,10 @@ export const useCreateProfile = () => {
       toast.success('Perfil cadastrado com sucesso!');
       queryClient.invalidateQueries({ queryKey: ['profiles'] });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Erro ao cadastrar perfil:', error);
-      toast.error('Erro ao cadastrar perfil.');
+      const message = error?.response?.data?.message || 'Erro ao cadastrar perfil.';
+      toast.error(message);
     },
   });
 };
@@ -72,9 +75,10 @@ export const useUpdateProfile = () => {
       toast.success('Perfil atualizado com sucesso!');
       queryClient.invalidateQueries({ queryKey: ['profiles'] });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Erro ao atualizar perfil:', error);
-      toast.error('Erro ao atualizar perfil.');
+      const message = error?.response?.data?.message || 'Erro ao atualizar perfil.';
+      toast.error(message);
     },
   });
 };
@@ -95,9 +99,10 @@ export const useCreateHardware = () => {
       toast.success('Ferragem cadastrada com sucesso!');
       queryClient.invalidateQueries({ queryKey: ['hardwares'] });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Erro ao cadastrar ferragem:', error);
-      toast.error('Erro ao cadastrar ferragem.');
+      const message = error?.response?.data?.message || 'Erro ao cadastrar ferragem.';
+      toast.error(message);
     },
   });
 };
@@ -110,9 +115,10 @@ export const useUpdateHardware = () => {
       toast.success('Ferragem atualizada com sucesso!');
       queryClient.invalidateQueries({ queryKey: ['hardwares'] });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Erro ao atualizar ferragem:', error);
-      toast.error('Erro ao atualizar ferragem.');
+      const message = error?.response?.data?.message || 'Erro ao atualizar ferragem.';
+      toast.error(message);
     },
   });
 };
@@ -133,9 +139,10 @@ export const useCreateFilm = () => {
       toast.success('Película cadastrada com sucesso!');
       queryClient.invalidateQueries({ queryKey: ['films'] });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Erro ao cadastrar película:', error);
-      toast.error('Erro ao cadastrar película.');
+      const message = error?.response?.data?.message || 'Erro ao cadastrar película.';
+      toast.error(message);
     },
   });
 };
@@ -148,9 +155,10 @@ export const useUpdateFilm = () => {
       toast.success('Película atualizada com sucesso!');
       queryClient.invalidateQueries({ queryKey: ['films'] });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Erro ao atualizar película:', error);
-      toast.error('Erro ao atualizar película.');
+      const message = error?.response?.data?.message || 'Erro ao atualizar película.';
+      toast.error(message);
     },
   });
 };
