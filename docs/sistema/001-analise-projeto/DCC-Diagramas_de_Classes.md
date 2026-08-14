@@ -3,327 +3,152 @@
 | Campo | Valor |
 |---|---|
 | **Projeto** | AlumiGest |
-| **Versão** | 1.0 |
-| **Data** | 05/08/2026 |
+| **Versão** | 2.0 |
+| **Data** | 12/08/2026 |
 
 ---
 
-## 1. Diagrama de Classes — Módulo de Materiais
+## 1. Diagrama de Classes — Domínio Principal (Catálogo)
 
 ```mermaid
 classDiagram
-    class Vidro {
-        -Long id
-        -String nome
-        -BigDecimal espessuraMm
-        -String corAcabamento
-        -BigDecimal precoMetroQuadrado
-        -Integer larguraMaximaMm
-        -Integer alturaMaximaMm
-        -Fornecedor fornecedor
-        -Boolean ativo
-        +validarDimensoes(larguraCm, alturaCm) Boolean
+    class MaterialGroup {
+        -UUID id
+        -String code
+        -String name
+        -CalculationType calculationType
+        -Boolean isSystemDefault
+        -Boolean isActive
     }
 
-    class PerfilAluminio {
-        -Long id
-        -String codigo
-        -String descricao
-        -String linhaComercial
-        -BigDecimal pesoMetroKg
-        -BigDecimal precoMetroLinear
-        -Integer comprimentoBarraMm
-        -Fornecedor fornecedor
-        -Boolean ativo
+    class Material {
+        -UUID id
+        -MaterialGroup materialGroup
+        -String commercialReference
+        -String ncmCode
+        -String name
+        -BigDecimal costPrice
+        -BigDecimal salePrice
+        -UnitMeasure unitMeasure
+        -BigDecimal thicknessMm
+        -BigDecimal standardLengthM
+        -String attributesJson
+        -Boolean isActive
     }
 
-    class Ferragem {
-        -Long id
-        -String nome
-        -String codigo
-        -UnidadeMedida unidadeMedida
-        -BigDecimal precoUnitario
-        -Fornecedor fornecedor
-        -Boolean ativo
+    class ProductCategory {
+        -UUID id
+        -String name
+        -Boolean isActive
     }
 
-    class Pelicula {
-        -Long id
-        -String nome
-        -TipoPelicula tipo
-        -BigDecimal precoMetroQuadrado
-        -Boolean ativo
+    class Product {
+        -UUID id
+        -ProductCategory category
+        -String name
+        -BigDecimal laborCost
+        -Boolean isActive
+        -List~ProductItem~ items
     }
 
-    class TipoProduto {
-        -Long id
-        -String nome
-        -String codigo
-        -String descricao
-        -Boolean usaVidro
-        -Boolean usaAluminio
-        -Boolean usaPelicula
-        -List~ComposicaoFerragem~ ferragens
-        -List~ComposicaoPerfil~ perfis
-        -Boolean ativo
+    class ProductItem {
+        -UUID id
+        -Product product
+        -Material material
+        -BigDecimal quantity
     }
 
-    class ComposicaoFerragem {
-        -Long id
-        -TipoProduto tipoProduto
-        -Ferragem ferragem
-        -Integer quantidadePadrao
-        -Boolean obrigatorio
-    }
-
-    class ComposicaoPerfil {
-        -Long id
-        -TipoProduto tipoProduto
-        -PerfilAluminio perfilAluminio
-        -String funcao
-        -String formulaComprimento
-        -Integer quantidade
-    }
-
-    class Fornecedor {
-        -Long id
-        -String razaoSocial
-        -String cnpj
-        -String telefone
-        -String email
-        -Boolean ativo
-    }
-
-    TipoProduto "1" --> "*" ComposicaoFerragem
-    TipoProduto "1" --> "*" ComposicaoPerfil
-    ComposicaoFerragem "*" --> "1" Ferragem
-    ComposicaoPerfil "*" --> "1" PerfilAluminio
-    Vidro "*" --> "0..1" Fornecedor
-    PerfilAluminio "*" --> "0..1" Fornecedor
-    Ferragem "*" --> "0..1" Fornecedor
+    MaterialGroup "1" --> "*" Material
+    ProductCategory "1" --> "*" Product
+    Product "1" --> "*" ProductItem
+    ProductItem "*" --> "1" Material
 ```
 
 ---
 
-## 2. Diagrama de Classes — Módulo de Orçamentos
+## 2. Diagrama de Classes — Services
 
 ```mermaid
 classDiagram
-    class Orcamento {
-        -Long id
-        -String numero
-        -Cliente cliente
-        -Usuario usuario
-        -StatusOrcamento status
-        -LocalDateTime dataCriacao
-        -LocalDate dataValidade
-        -BigDecimal descontoPercentual
-        -BigDecimal subtotal
-        -BigDecimal valorDesconto
-        -BigDecimal valorTotal
-        -String observacoes
-        -List~ItemOrcamento~ itens
-        +adicionarItem(ItemOrcamento) void
-        +removerItem(Long itemId) void
-        +recalcularTotais() void
-        +aplicarDesconto(BigDecimal percentual) void
-        +alterarStatus(StatusOrcamento novoStatus) void
-        +isEditavel() Boolean
+    class MaterialGroupService {
+        -MaterialGroupRepository repository
+        +findAll() List~MaterialGroupResponseDTO~
+        +findById(UUID id) MaterialGroupResponseDTO
     }
 
-    class ItemOrcamento {
-        -Long id
-        -Orcamento orcamento
-        -TipoProduto tipoProduto
-        -Vidro vidro
-        -Pelicula pelicula
-        -String linhaAluminio
-        -BigDecimal larguraCm
-        -BigDecimal alturaCm
-        -Integer quantidade
-        -BigDecimal areaVidroM2
-        -BigDecimal custoVidro
-        -BigDecimal custoAluminio
-        -BigDecimal custoFerragens
-        -BigDecimal custoPelicula
-        -BigDecimal descontoItemPercentual
-        -BigDecimal subtotalItem
-        -BigDecimal totalItem
-        -List~MaterialItem~ materiais
-        -Integer ordem
+    class MaterialService {
+        -MaterialRepository repository
+        -MaterialGroupRepository groupRepository
+        +findAll(Pageable) Page~MaterialResponseDTO~
+        +findById(UUID id) MaterialResponseDTO
+        +create(MaterialRequestDTO) MaterialResponseDTO
+        +update(UUID id, MaterialRequestDTO) MaterialResponseDTO
+        +delete(UUID id) void
     }
 
-    class MaterialItem {
-        -Long id
-        -ItemOrcamento itemOrcamento
-        -TipoMaterial tipoMaterial
-        -PerfilAluminio perfilAluminio
-        -Ferragem ferragem
-        -String funcao
-        -BigDecimal comprimentoMetros
-        -BigDecimal quantidade
-        -BigDecimal precoUnitario
-        -BigDecimal custoTotal
+    class ProductCategoryService {
+        -ProductCategoryRepository repository
+        +findAll() List~ProductCategoryResponseDTO~
+        +findById(UUID id) ProductCategoryResponseDTO
+        +create(ProductCategoryRequestDTO) ProductCategoryResponseDTO
+        +update(UUID id, ProductCategoryRequestDTO) ProductCategoryResponseDTO
+        +delete(UUID id) void
     }
 
-    class StatusOrcamento {
-        <<enumeration>>
-        RASCUNHO
-        ENVIADO
-        APROVADO
-        RECUSADO
-        EXPIRADO
-        +podeTransitar(StatusOrcamento destino) Boolean
+    class ProductService {
+        -ProductRepository repository
+        -ProductCategoryRepository categoryRepository
+        +findAll(Pageable) Page~ProductResponseDTO~
+        +findById(UUID id) ProductResponseDTO
+        +create(ProductRequestDTO) ProductResponseDTO
+        +update(UUID id, ProductRequestDTO) ProductResponseDTO
+        +delete(UUID id) void
     }
 
-    class TipoMaterial {
-        <<enumeration>>
-        PERFIL_ALUMINIO
-        FERRAGEM
-    }
-
-    Orcamento "1" --> "*" ItemOrcamento
-    ItemOrcamento "1" --> "*" MaterialItem
-    Orcamento --> StatusOrcamento
-    MaterialItem --> TipoMaterial
-    Orcamento "*" --> "1" Cliente
-    Orcamento "*" --> "1" Usuario
+    MaterialService --> MaterialGroupService : uses Group
+    ProductService --> ProductCategoryService : uses Category
 ```
 
 ---
 
-## 3. Diagrama de Classes — Services
+## 3. Diagrama de Classes — Principais DTOs
 
 ```mermaid
 classDiagram
-    class OrcamentoService {
-        -OrcamentoRepository repository
-        -ItemOrcamentoRepository itemRepository
-        -CalculoOrcamentoService calculoService
-        -ClienteService clienteService
-        +criar(OrcamentoRequest) OrcamentoResponse
-        +adicionarItem(Long orcId, ItemRequest) ItemResponse
-        +atualizarItem(Long orcId, Long itemId, ItemRequest) ItemResponse
-        +removerItem(Long orcId, Long itemId) void
-        +aplicarDesconto(Long orcId, BigDecimal pct) OrcamentoResponse
-        +alterarStatus(Long orcId, StatusOrcamento) OrcamentoResponse
-        +duplicar(Long orcId) OrcamentoResponse
-        +gerarPdf(Long orcId, TipoPdf) byte[]
-    }
-
-    class CalculoOrcamentoService {
-        -VidroRepository vidroRepo
-        -TipoProdutoRepository tipoProdutoRepo
-        +calcularItem(ItemRequest) CalculoResultado
-        -calcularVidro(BigDecimal largura, BigDecimal altura, Vidro vidro, int qtd) BigDecimal
-        -calcularPerfis(TipoProduto tipo, BigDecimal largura, BigDecimal altura, String linha, int qtd) List~MaterialItem~
-        -calcularFerragens(TipoProduto tipo, int qtd) List~MaterialItem~
-        -calcularPelicula(BigDecimal areaM2, Pelicula pelicula, int qtd) BigDecimal
-    }
-
-    class VidroService {
-        -VidroRepository repository
-        +listar(Pageable, filtros) Page~VidroResponse~
-        +buscarPorId(Long id) VidroResponse
-        +criar(VidroRequest) VidroResponse
-        +atualizar(Long id, VidroRequest) VidroResponse
-        +alterarStatus(Long id, Boolean ativo) void
-    }
-
-    class ClienteService {
-        -ClienteRepository repository
-        +listar(Pageable, busca) Page~ClienteResponse~
-        +buscarPorId(Long id) ClienteResponse
-        +criar(ClienteRequest) ClienteResponse
-        +atualizar(Long id, ClienteRequest) ClienteResponse
-        +alterarStatus(Long id, Boolean ativo) void
-    }
-
-    OrcamentoService --> CalculoOrcamentoService
-    OrcamentoService --> ClienteService
-```
-
----
-
-## 4. Diagrama de Classes — DTOs
-
-```mermaid
-classDiagram
-    class OrcamentoRequest {
+    class ProductRequestDTO {
         <<record>>
-        +Long clienteId
-        +LocalDate dataValidade
-        +String observacoes
+        +String name
+        +UUID categoryId
+        +BigDecimal laborCost
+        +List~ProductItemRequestDTO~ items
     }
 
-    class ItemOrcamentoRequest {
+    class ProductResponseDTO {
         <<record>>
-        +Long tipoProdutoId
-        +Long vidroId
-        +Long peliculaId
-        +String linhaAluminio
-        +BigDecimal larguraCm
-        +BigDecimal alturaCm
-        +Integer quantidade
-        +String observacoes
+        +UUID id
+        +String name
+        +UUID categoryId
+        +String categoryName
+        +BigDecimal laborCost
+        +List~ProductItemResponseDTO~ items
+        +Boolean isActive
     }
 
-    class OrcamentoResponse {
+    class MaterialRequestDTO {
         <<record>>
-        +Long id
-        +String numero
-        +ClienteResumo cliente
-        +String status
-        +LocalDateTime dataCriacao
-        +LocalDate dataValidade
-        +List~ItemOrcamentoResponse~ itens
-        +BigDecimal subtotal
-        +BigDecimal descontoPercentual
-        +BigDecimal valorDesconto
-        +BigDecimal valorTotal
-    }
-
-    class VidroRequest {
-        <<record>>
-        +String nome
-        +BigDecimal espessuraMm
-        +String corAcabamento
-        +BigDecimal precoMetroQuadrado
-        +Integer larguraMaximaMm
-        +Integer alturaMaximaMm
-        +Long fornecedorId
-    }
-
-    class ClienteRequest {
-        <<record>>
-        +String nomeCompleto
-        +String cpfCnpj
-        +String tipoPessoa
-        +String telefone
-        +String email
-        +String cep
-        +String logradouro
-        +String numero
-        +String complemento
-        +String bairro
-        +String cidade
-        +String uf
+        +UUID groupId
+        +String commercialReference
+        +String ncmCode
+        +String name
+        +BigDecimal costPrice
+        +BigDecimal salePrice
+        +String unitMeasure
+        +BigDecimal thicknessMm
+        +BigDecimal standardLengthM
+        +String attributesJson
     }
 ```
 
 ---
 
-## 5. Enums do Domínio
-
-| Enum | Valores | Uso |
-|---|---|---|
-| `StatusOrcamento` | RASCUNHO, ENVIADO, APROVADO, RECUSADO, EXPIRADO | Status do orçamento |
-| `TipoMaterial` | PERFIL_ALUMINIO, FERRAGEM | Tipo de material por item |
-| `UnidadeMedida` | UNIDADE, PAR, JOGO, METRO | Unidade de medida das ferragens |
-| `TipoPelicula` | JATEADO, FUME, INSULFILM, ESPELHADO, DECORATIVO | Tipo de película |
-| `TipoPessoa` | PF, PJ | Pessoa física ou jurídica |
-| `Perfil` (Role) | ADMINISTRADOR, VENDEDOR, PRODUCAO | Perfil de acesso do usuário |
-
----
-
-*Documento elaborado pela Ítalo Jefferson / Equipe AlumiGest — IFPB CST em ADS — Agosto/2026*
+*Documento atualizado conforme decisões arquiteturais e refatoração do Catálogo (Agosto/2026)*

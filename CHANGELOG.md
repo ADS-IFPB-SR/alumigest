@@ -14,6 +14,10 @@ O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.
 - **Ata de Planejamento da Sprint 2:** Criação dos arquivos `ATA-Sprint_02_Planning.md` e `ATA-Sprint_02_Planning.docx` (Redação: Guilherme Kauã / Revisão: Nichollas Cavalcante) com os alinhamentos operacionais da Alumiportas, decomposição da User Story `#4` e distribuição da equipe.
 - **Modelagem DER do Catálogo:** Criação do documento `DER-Catalogo_Materiais.md` detalhando o padrão *Type-Object Pattern* (`tb_material_groups` e `tb_materials`), dicionário de dados, extensibilidade para marcenaria e script DDL.
 
+### 💻 Backend (Spring Boot)
+- **Refatoração do Domínio de Produto (Issue #31):** Migração do campo `category` (String) para uma nova entidade e tabela dinâmica `ProductCategory` (Migration `V4__create_product_categories.sql`).
+- **Repositórios e Mapeamento:** Criação de `ProductCategoryRepository` e mapeamento de relacionamento `@ManyToOne` na entidade `Product`.
+
 ### 🚀 Planejado / Em Desenvolvimento
 - Modelagem das tabelas do banco de dados relacional PostgreSQL (Migration Flyway V1).
 - Estrutura base do Catálogo de Insumos e Materiais (Vidros por m², Perfis de Alumínio por metro/barra e Ferragens).
