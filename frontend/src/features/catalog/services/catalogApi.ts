@@ -4,8 +4,18 @@ import type {
   ProfileDTO, 
   HardwareDTO, 
   FilmDTO, 
-  PageResponse 
+  PageResponse,
+  ProductCategory,
+  MaterialSummary,
+  Product,
+  ProductRequest
 } from '../types';
+
+export interface ApiResponse<T> {
+  success: boolean;
+  message: string;
+  data: T;
+}
 
 export const catalogApi = {
   // Glasses (Ainda não implementado no backend)
@@ -63,4 +73,35 @@ export const catalogApi = {
     const response = await api.put<FilmDTO>(`/catalog/films/${id}`, data);
     return response.data;
   },
+
+  // Product Categories
+  getProductCategories: async () => {
+    const response = await api.get<ApiResponse<ProductCategory[]>>('/catalog/product-categories');
+    return response.data.data;
+  },
+
+  // Material Summary (Unified List)
+  getMaterialsSummary: async () => {
+    const response = await api.get<ApiResponse<MaterialSummary[]>>('/catalog/materials?size=1000');
+    return response.data.data;
+  },
+
+  // Products
+  getProducts: async () => {
+    const response = await api.get<ApiResponse<PageResponse<Product>>>('/catalog/products?size=100');
+    return response.data.data;
+  },
+  createProduct: async (data: ProductRequest) => {
+    const response = await api.post<ApiResponse<Product>>('/catalog/products', data);
+    return response.data.data;
+  },
+  updateProduct: async (id: string, data: ProductRequest) => {
+    const response = await api.put<ApiResponse<Product>>(`/catalog/products/${id}`, data);
+    return response.data.data;
+  },
+  inactivateProduct: async (id: string) => {
+    const response = await api.delete(`/catalog/products/${id}`);
+    return response.data;
+  },
 };
+

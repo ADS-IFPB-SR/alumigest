@@ -43,8 +43,8 @@ public class AluminumProfileController {
     @Operation(summary = "Listar perfis de alumínio com filtros",
                description = "Retorna lista paginada de perfis ativos com filtros opcionais por cor/acabamento e nome (linha Rometal/Alternativa)")
     public ResponseEntity<ApiResponse<PageResponse<AluminumProfileResponseDTO>>> findAll(
-            @RequestParam(required = false) String colorFinish,
-            @RequestParam(required = false) String name,
+            @RequestParam(required = false, defaultValue = "") String colorFinish,
+            @RequestParam(required = false, defaultValue = "") String name,
             @ParameterObject @PageableDefault(size = 20) Pageable pageable) {
 
         PageResponse<AluminumProfileResponseDTO> response =

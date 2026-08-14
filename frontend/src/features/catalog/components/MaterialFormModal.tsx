@@ -71,10 +71,14 @@ export function MaterialFormModal({ isOpen, onClose, tipo, initialData }: Props)
     } else if (tipo === 'Film') {
       createFilm({
         name,
-        colorFinish: filmType, // Use colorFinish per FilmDTO
+        colorFinish: filmType,
         salePrice: Number(price.replace(',', '.')),
+        commercialReference: 'PEL-REF-001',
+        costPrice: 0,
+        thicknessMm: 0.1,
+        standardLengthM: 1,
         active: true
-      }, {
+      } as any, {
         onSuccess: onClose
       });
     }

@@ -7,6 +7,8 @@ import { HardwareTab } from './HardwareTab';
 import { MaterialTypeSelectionModal } from './MaterialTypeSelectionModal';
 import { MaterialFormModal } from './MaterialFormModal';
 import { ProfileFormModal } from './ProfileFormModal';
+import { ProductFormModal } from './ProductFormModal';
+import { ProductTab } from './ProductTab';
 import { MaterialDetailsModal } from './MaterialDetailsModal';
 import { Button } from '../../../components/ui/Button';
 import type { MaterialType } from '../types';
@@ -25,6 +27,11 @@ export function CatalogView() {
     setIsSelectionModalOpen(false);
     setEditingItem(null); // Fresh create
     setActiveFormType(tipo);
+  };
+
+  const handleCreateProduct = () => {
+    setEditingItem(null);
+    setActiveFormType('Product');
   };
 
   const handleEditItem = (item: any, tipo: MaterialType) => {
@@ -74,6 +81,13 @@ export function CatalogView() {
           >
             Novo Material
           </Button>
+          <Button 
+            variant="outline"
+            icon="add"
+            onClick={handleCreateProduct}
+          >
+            Novo Produto
+          </Button>
         </div>
       </div>
 
@@ -103,6 +117,11 @@ export function CatalogView() {
             onViewDetails={handleViewDetails} 
           />
         </Tab>
+        <Tab label="Produtos Finais">
+          <ProductTab 
+            onEdit={(item) => handleEditItem(item, 'Product')} 
+          />
+        </Tab>
       </Tabs>
 
       {/* 1. Modal de Seleção de Tipo de Material */}
@@ -124,6 +143,14 @@ export function CatalogView() {
 
       {activeFormType === 'Profile' && (
         <ProfileFormModal
+          isOpen={true}
+          onClose={handleCloseFormModal}
+          initialData={editingItem}
+        />
+      )}
+
+      {activeFormType === 'Product' && (
+        <ProductFormModal
           isOpen={true}
           onClose={handleCloseFormModal}
           initialData={editingItem}

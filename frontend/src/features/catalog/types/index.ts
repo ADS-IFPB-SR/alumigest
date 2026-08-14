@@ -1,4 +1,4 @@
-export type MaterialType = 'Glass' | 'Profile' | 'Film' | 'Hardware';
+export type MaterialType = 'Glass' | 'Profile' | 'Film' | 'Hardware' | 'Product';
 
 export interface GlassDTO {
   id: number;
@@ -54,4 +54,51 @@ export interface PageResponse<T> {
   totalPages: number;
   first: boolean;
   last: boolean;
+}
+
+export interface ProductCategory {
+  id: string;
+  name: string;
+  description?: string;
+  isActive: boolean;
+}
+
+export interface MaterialSummary {
+  id: string;
+  name: string;
+  skuCode?: string;
+  unitMeasure: string;
+  salePrice: number;
+  costPrice: number;
+  colorFinish?: string;
+  isActive: boolean;
+}
+
+export interface ProductItem {
+  id: string;
+  materialId: string;
+  materialName: string;
+  quantity: number;
+}
+
+export interface Product {
+  id: string;
+  name: string;
+  categoryId: string;
+  categoryName: string;
+  laborCost: number;
+  isActive: boolean;
+  items: ProductItem[];
+}
+
+export interface ProductItemRequest {
+  materialId: string;
+  quantity: number;
+}
+
+export interface ProductRequest {
+  name: string;
+  categoryId: string;
+  laborCost: number;
+  items: ProductItemRequest[];
 }

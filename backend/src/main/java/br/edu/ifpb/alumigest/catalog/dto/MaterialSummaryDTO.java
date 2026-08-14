@@ -9,5 +9,6 @@ public record MaterialSummaryDTO(
         String skuCode,
         String commercialReference,
         BigDecimal salePrice,
+        BigDecimal costPrice,
         String unitMeasure
 ) {}
