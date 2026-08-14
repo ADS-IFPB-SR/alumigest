@@ -13,9 +13,9 @@ gantt
     dateFormat  YYYY-MM-DD
     section Release 1 (Fundação & Cadastros)
     Sprint 1 - Iniciação & Governança (Concluída) :done, s1, 2026-07-28, 2026-08-03
-    Sprint 2 - Catálogo de Materiais & Clientes   :active, s2, 2026-08-04, 2026-08-17
-    section Release 2 (Templates & Orçamentos)
-    Sprint 3 - Templates de Produtos & Motor de Cálculo :s3, 2026-08-18, 2026-08-31
+    Sprint 2 - Catálogo de Materiais & Produtos   :active, s2, 2026-08-04, 2026-08-17
+    section Release 2 (Orçamentos & Financeiro)
+    Sprint 3 - Clientes & Motor de Orçamentos           :s3, 2026-08-18, 2026-08-31
     Sprint 4 - Exportação PDF, PCP & Produção          :s4, 2026-09-01, 2026-09-14
 ```
 
@@ -27,7 +27,7 @@ gantt
 * **EP-01: Iniciação e Governança**
   * PGC (Plano de Gerência de Configuração), PPJ (Plano de Projeto), Templates de PR/Issue, Monorepo e Rulesets.
 
-### 🟡 SPRINT 2 (04/08 a 17/08/2026) — *Em Andamento (Foco: Catálogo & Clientes)*
+### 🟡 SPRINT 2 (04/08 a 17/08/2026) — *Em Andamento (Foco: Catálogo & Produtos)*
 * **EP-02: Catálogo de Materiais e Insumos Genéricos (Issue Pai #4)**
   * **#11:** Backend: Migration Flyway V1 e Entidades Base JPA universais (`tb_material_groups`, `tb_materials`).
   * **#12:** Backend: CRUD de Vidros (2mm, 4mm, 6mm a 10mm) calculados por $m^2$.
@@ -36,13 +36,13 @@ gantt
   * **#15:** Backend: CRUD de Ferragens e Acessórios por Unidade, Par ou Metro.
   * **#16:** Frontend: Interface PWA em Abas para Gestão Completa do Catálogo.
   * **#17:** QA: Cenários e Relatórios de Teste de Aceitação (TEA).
-* **EP-03: Cadastro de Clientes**
-  * Gestão de clientes físicos e jurídicos (Nome, Telefone, WhatsApp, Endereço).
+* **EP-03: Fichas Técnicas e Categorias de Produtos (Issue #31)**
+  * Cadastro de Categorias e Modelos de Portas/Esquadrias (ProductCategory e Product).
+  * Associação de componentes e insumos (ProductItem).
 
-### 🔵 SPRINT 3 (18/08 a 31/08/2026) — *Planejada (Release 2: Templates & Orçamentos)*
-* **EP-04: Templates de Produtos Finais (Portas e Esquadrias Compostas)**
-  * Cadastro de Modelos/Receitas de Portas (Porta de Correr, Porta de Abrir, Janela 2F/4F, Box).
-  * Associação de componentes (Perfis superiores/inferiores/laterais, vidros, películas e ferragens/roldanas).
+### 🔵 SPRINT 3 (18/08 a 31/08/2026) — *Planejada (Release 2: Orçamentos & Clientes)*
+* **EP-04: Cadastro de Clientes**
+  * Gestão de clientes físicos e jurídicos (Nome, Telefone, WhatsApp, Endereço).
 * **EP-05: Motor de Precificação e Orçamentos**
   * Criação de orçamentos rápidos com seleção de Templates ou Itens Avulsos.
   * Cálculo dinâmico com desconto de corte de perfil e folgas de vidro.

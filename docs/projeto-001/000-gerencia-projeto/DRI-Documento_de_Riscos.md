@@ -31,8 +31,8 @@
 | **Causa** | Proprietário de empresa ativa, horários comerciais conflitantes com horários acadêmicos. |
 | **Consequência** | Atraso na validação de requisitos, implementação de regras incorretas, retrabalho. |
 | **Estratégia** | Mitigar |
-| **Ações** | 1. Agendar reuniões com antecedência mínima de 1 semana. 2. PO (José Guilherme) mantém canal direto via WhatsApp. 3. Registrar decisões em ata para evitar re-validações. 4. Preparar questionário escrito como fallback se reunião presencial não for possível. |
-| **Responsável** | José Guilherme (PO) |
+| **Ações** | 1. Agendar reuniões com antecedência mínima de 1 semana. 2. PO (José Guylherme) mantém canal direto via WhatsApp. 3. Registrar decisões em ata para evitar re-validações. 4. Preparar questionário escrito como fallback se reunião presencial não for possível. |
+| **Responsável** | José Guylherme (PO) |
 | **Status** | ⚪ Não materializado |
 
 ---
@@ -109,16 +109,16 @@
 
 | Campo | Valor |
 |---|---|
-| **Probabilidade** | Média |
+| **Probabilidade** | Alta |
 | **Impacto** | Médio |
 | **Classificação** | 🟡 Moderado |
-| **Descrição** | Membros podem ter dificuldade com configuração de Docker, PostgreSQL ou ambiente de desenvolvimento em suas máquinas locais. |
-| **Causa** | Diferentes SOs (Windows/Mac/Linux), limitações de hardware, versões incompatíveis. |
-| **Consequência** | Tempo perdido em setup, bloqueio de desenvolvimento. |
+| **Descrição** | Problemas de compatibilidade na infraestrutura (ex: conflito de tipagem UUID/Bytea no PostgreSQL) ou configuração local de Docker. |
+| **Causa** | Diferentes SOs (Windows/Mac/Linux), versões do driver JDBC incompatíveis com o schema do Postgres. |
+| **Consequência** | Erros de execução (HTTP 500) que bloqueiam o Frontend. |
 | **Estratégia** | Mitigar |
-| **Ações** | 1. README detalhado com setup passo a passo. 2. Docker Compose padroniza o ambiente. 3. Sesão de setup coletiva no dia 1 da Sprint 2. |
-| **Responsável** | Italo (infra) |
-| **Status** | ⚪ Não materializado |
+| **Ações** | 1. Docker Compose padroniza o ambiente. 2. Code Review focado (O erro de tipagem `bytea` foi resolvido no PR #38 via anotações JPA). |
+| **Responsável** | Italo / Joseph |
+| **Status** | 🟢 Materializado e Mitigado |
 
 ---
 
@@ -134,7 +134,7 @@
 | **Consequência** | Retrabalho, atraso na entrega. |
 | **Estratégia** | Aceitar |
 | **Ações** | 1. A arquitetura package-by-feature facilita mudanças localizadas. 2. Composições e fórmulas são configuráveis (não hardcoded). 3. Mudanças são priorizadas pelo PO e adicionadas ao backlog. 4. Metodologia IMPROS (ágil) já prevê adaptação. |
-| **Responsável** | PO (José Guilherme) |
+| **Responsável** | PO (José Guylherme) |
 | **Status** | ⚪ Não materializado |
 
 ---
