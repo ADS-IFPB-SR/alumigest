@@ -11,6 +11,8 @@ import java.math.BigDecimal;
 public record HardwareUpdatePriceDTO(
         @NotNull(message = "O preço de venda é obrigatório")
         @PositiveOrZero(message = "O preço de venda deve ser maior ou igual a zero")
-        BigDecimal salePrice
+        BigDecimal salePrice,
+        
+        Boolean active
 ) {
 }

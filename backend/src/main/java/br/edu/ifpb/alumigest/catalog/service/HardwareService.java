@@ -72,14 +72,8 @@ public class HardwareService {
 
         try {
             return hardwareMapper.toResponse(materialRepository.save(material));
-        } catch (DataIntegrityViolationException ex) {
-            // Garante que corridas entre requisições concorrentes que passaram
-            // pela validação antecipada simultaneamente não resultem em HTTP 500.
-            // A constraint UNIQUE do banco é a garantia definitiva de integridade;
-            // aqui apenas convertemos a exceção técnica em resposta amigável.
-            throw new BusinessException(
-                    "Conflito de cadastro: o código '" + request.skuCode() +
-                    "' já existe ou ocorreu uma violação de integridade. Tente novamente.");
+        } catch (DataIntegrityViolationException e) {
+            throw new BusinessException("Conflito de cadastro: já existe uma ferragem com o código " + request.skuCode());
         }
     }
 
@@ -99,7 +93,7 @@ public class HardwareService {
     public Page<HardwareResponseDTO> findAll(UnitMeasure unitMeasure, String name, Pageable pageable) {
         MaterialGroup group = resolveHardwareGroup();
         return materialRepository
-                .findAllActiveByGroupFiltered(group.getId(), unitMeasure, name, pageable)
+                .findAllByGroupFiltered(group.getId(), unitMeasure, name, pageable)
                 .map(hardwareMapper::toResponse);
     }
 
@@ -137,6 +131,11 @@ public class HardwareService {
                         new ResourceNotFoundException("Ferragem não encontrada com ID: " + id));
 
         material.setSalePrice(request.salePrice());
+        
+        if (request.active() != null) {
+            material.setActive(request.active());
+        }
+        
         return hardwareMapper.toResponse(materialRepository.save(material));
     }
 

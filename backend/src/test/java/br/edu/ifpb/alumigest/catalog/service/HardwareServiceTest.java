@@ -54,10 +54,8 @@ class HardwareServiceTest {
     @Mock
     private MaterialGroupRepository materialGroupRepository;
 
-    @Spy
     private HardwareMapper hardwareMapper = new HardwareMapper();
 
-    @InjectMocks
     private HardwareService hardwareService;
 
     // -------------------------------------------------------------------------
@@ -72,6 +70,8 @@ class HardwareServiceTest {
 
     @BeforeEach
     void setUp() {
+        hardwareService = new HardwareService(materialRepository, materialGroupRepository, hardwareMapper);
+
         ferragemGroup = new MaterialGroup(
                 GROUP_ID,
                 "FERRAGEM",
@@ -245,7 +245,7 @@ class HardwareServiceTest {
 
             when(materialGroupRepository.findByCode("FERRAGEM"))
                     .thenReturn(Optional.of(ferragemGroup));
-            when(materialRepository.findAllActiveByGroupFiltered(
+            when(materialRepository.findAllByGroupFiltered(
                     GROUP_ID, UnitMeasure.UN, "Esquadreta", pageable))
                     .thenReturn(materialPage);
 
@@ -258,7 +258,7 @@ class HardwareServiceTest {
             assertThat(result.getContent().get(0).skuCode()).isEqualTo("ESQ-001");
 
             verify(materialGroupRepository).findByCode("FERRAGEM");
-            verify(materialRepository).findAllActiveByGroupFiltered(
+            verify(materialRepository).findAllByGroupFiltered(
                     GROUP_ID, UnitMeasure.UN, "Esquadreta", pageable);
         }
 
@@ -270,13 +270,13 @@ class HardwareServiceTest {
 
             when(materialGroupRepository.findByCode("FERRAGEM"))
                     .thenReturn(Optional.of(ferragemGroup));
-            when(materialRepository.findAllActiveByGroupFiltered(GROUP_ID, null, null, pageable))
+            when(materialRepository.findAllByGroupFiltered(GROUP_ID, null, null, pageable))
                     .thenReturn(materialPage);
 
             Page<HardwareResponseDTO> result = hardwareService.findAll(null, null, pageable);
 
             assertThat(result.getTotalElements()).isEqualTo(1);
-            verify(materialRepository).findAllActiveByGroupFiltered(GROUP_ID, null, null, pageable);
+            verify(materialRepository).findAllByGroupFiltered(GROUP_ID, null, null, pageable);
         }
     }
 
@@ -330,7 +330,7 @@ class HardwareServiceTest {
         @DisplayName("Deve atualizar o preço de venda da ferragem com sucesso")
         void shouldUpdatePriceSuccessfully() {
             HardwareUpdatePriceDTO updateRequest =
-                    new HardwareUpdatePriceDTO(new BigDecimal("18.90"));
+                    new HardwareUpdatePriceDTO(new BigDecimal("18.90"), null);
 
             when(materialRepository.findByIdAndGroupCode(MATERIAL_ID, "FERRAGEM"))
                     .thenReturn(Optional.of(hardwareMaterial));
@@ -351,7 +351,7 @@ class HardwareServiceTest {
         void shouldThrowResourceNotFoundExceptionOnUpdatePriceWhenIdNotFound() {
             UUID nonExistentId = UUID.randomUUID();
             HardwareUpdatePriceDTO updateRequest =
-                    new HardwareUpdatePriceDTO(new BigDecimal("18.90"));
+                    new HardwareUpdatePriceDTO(new BigDecimal("18.90"), null);
 
             when(materialRepository.findByIdAndGroupCode(nonExistentId, "FERRAGEM"))
                     .thenReturn(Optional.empty());
