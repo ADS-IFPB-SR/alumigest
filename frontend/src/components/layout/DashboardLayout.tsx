@@ -40,9 +40,11 @@ export function DashboardLayout() {
       
       {/* Mobile Sidebar Overlay */}
       {isMobileMenuOpen && (
-        <div 
+        <button 
+          type="button"
+          aria-label="Fechar menu"
           onClick={() => setIsMobileMenuOpen(false)}
-          className="lg:hidden fixed inset-0 bg-black/60 z-30 backdrop-blur-sm transition-opacity"
+          className="lg:hidden fixed inset-0 w-full h-full bg-black/60 z-30 backdrop-blur-sm transition-opacity cursor-default border-none"
         />
       )}
 
