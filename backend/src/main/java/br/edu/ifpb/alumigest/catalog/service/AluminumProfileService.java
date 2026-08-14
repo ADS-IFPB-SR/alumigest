@@ -62,11 +62,8 @@ public class AluminumProfileService {
 
         try {
             return aluminumProfileMapper.toResponse(materialRepository.save(material));
-        } catch (DataIntegrityViolationException ex) {
-            throw new BusinessException(
-                    "Conflito de cadastro: a referência '" + request.commercialReference() +
-                    "' com acabamento '" + request.colorFinish() +
-                    "' já existe ou ocorreu uma violação de integridade. Tente novamente.");
+        } catch (DataIntegrityViolationException e) {
+            throw new BusinessException("Conflito de cadastro: já existe um perfil de alumínio com a referência " + request.commercialReference());
         }
     }
 
@@ -74,7 +71,7 @@ public class AluminumProfileService {
     public Page<AluminumProfileResponseDTO> findAll(String colorFinish, String name, Pageable pageable) {
         MaterialGroup group = resolveAluminumGroup();
         return materialRepository
-                .findAllActiveAluminumFiltered(group.getId(), colorFinish, name, pageable)
+                .findAllAluminumFiltered(group.getId(), colorFinish, name, pageable)
                 .map(aluminumProfileMapper::toResponse);
     }
 
@@ -94,6 +91,11 @@ public class AluminumProfileService {
 
         material.setCostPrice(request.costPrice());
         material.setSalePrice(request.salePrice());
+        
+        if (request.active() != null) {
+            material.setActive(request.active());
+        }
+        
         return aluminumProfileMapper.toResponse(materialRepository.save(material));
     }
 

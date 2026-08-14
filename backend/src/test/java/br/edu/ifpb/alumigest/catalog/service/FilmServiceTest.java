@@ -76,7 +76,7 @@ class FilmServiceTest {
         when(materialGroupRepository.findByCode("PELICULA")).thenReturn(Optional.of(mockGroup));
         when(filmMapper.toEntity(mockRequest)).thenReturn(mockMaterial);
         when(materialRepository.save(any(Material.class))).thenReturn(mockMaterial);
-        when(filmMapper.toResponse(mockMaterial)).thenReturn(new FilmResponseDTO(filmId, "Fumê G20", "Fumê", new BigDecimal("50.00"), "m2"));
+        when(filmMapper.toResponse(mockMaterial)).thenReturn(new FilmResponseDTO(filmId, "Fumê G20", "Fumê", new BigDecimal("50.00"), "m2", true, "REF-1", "123"));
 
         FilmResponseDTO result = filmService.createFilm(mockRequest);
 
@@ -99,23 +99,23 @@ class FilmServiceTest {
         Pageable pageable = PageRequest.of(0, 10);
         Page<Material> pagedResponse = new PageImpl<>(List.of(mockMaterial));
 
-        when(materialRepository.findAllActiveByGroupCode("PELICULA", pageable)).thenReturn(pagedResponse);
-        when(filmMapper.toResponse(mockMaterial)).thenReturn(new FilmResponseDTO(filmId, "Fumê G20", "Fumê", new BigDecimal("50.00"), "m2"));
+        when(materialRepository.findAllByGroupCode("PELICULA", pageable)).thenReturn(pagedResponse);
+        when(filmMapper.toResponse(mockMaterial)).thenReturn(new FilmResponseDTO(filmId, "Fumê G20", "Fumê", new BigDecimal("50.00"), "m2", true, "REF-1", "123"));
 
         Page<FilmResponseDTO> result = filmService.findAllActiveFilms(pageable);
 
         assertNotNull(result);
         assertEquals(1, result.getTotalElements());
-        verify(materialRepository, times(1)).findAllActiveByGroupCode("PELICULA", pageable);
+        verify(materialRepository, times(1)).findAllByGroupCode("PELICULA", pageable);
     }
 
     @Test
     void updateFilmPrice_ShouldUpdateOnlyPrice_WhenFilmExists() {
-        FilmUpdatePriceDTO updateRequest = new FilmUpdatePriceDTO(new BigDecimal("85.50"));
+        FilmUpdatePriceDTO updateRequest = new FilmUpdatePriceDTO(new BigDecimal("85.50"), null);
 
         when(materialRepository.findByIdAndGroupCode(filmId, "PELICULA")).thenReturn(Optional.of(mockMaterial));
         when(materialRepository.save(any(Material.class))).thenReturn(mockMaterial);
-        when(filmMapper.toResponse(mockMaterial)).thenReturn(new FilmResponseDTO(filmId, "Fumê G20", "Fumê", new BigDecimal("85.50"), "m2"));
+        when(filmMapper.toResponse(mockMaterial)).thenReturn(new FilmResponseDTO(filmId, "Fumê G20", "Fumê", new BigDecimal("85.50"), "m2", true, "REF-1", "123"));
 
         FilmResponseDTO result = filmService.updateFilmPrice(filmId, updateRequest);
 
@@ -125,7 +125,7 @@ class FilmServiceTest {
 
     @Test
     void updateFilmPrice_ShouldThrowException_WhenFilmNotFound() {
-        FilmUpdatePriceDTO updateRequest = new FilmUpdatePriceDTO(new BigDecimal("85.50"));
+        FilmUpdatePriceDTO updateRequest = new FilmUpdatePriceDTO(new BigDecimal("85.50"), null);
 
         when(materialRepository.findByIdAndGroupCode(filmId, "PELICULA")).thenReturn(Optional.empty());
 

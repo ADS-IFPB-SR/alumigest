@@ -18,3 +18,17 @@ api.interceptors.request.use((config) => {
 }, (error) => {
   return Promise.reject(error);
 });
+
+// Interceptor para extrair o campo "data" do ApiResponse do backend
+api.interceptors.response.use(
+  (response) => {
+    if (response.data && response.data.data !== undefined) {
+      // O backend sempre envelopa a resposta em um ApiResponse { status, message, data }
+      response.data = response.data.data;
+    }
+    return response;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);

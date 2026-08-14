@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react';
 import { Modal } from '../../../components/ui/Modal';
 import { Input } from '../../../components/ui/Input';
 import { Button } from '../../../components/ui/Button';
-import { useCreateProfile } from '../hooks/useCatalog';
+import { useCreateProfile, useUpdateProfile } from '../hooks/useCatalog';
+import { formatCurrencyInput, parseCurrencyString, formatUppercase, formatInteger, formatWeightInput, parseWeightString } from '../../../utils/formatters';
+import { StatusToggle } from './StatusToggle';
 
 interface Props {
   isOpen: boolean;
@@ -12,38 +14,61 @@ interface Props {
 
 export function ProfileFormModal({ isOpen, onClose, initialData }: Props) {
   const isEditing = Boolean(initialData);
-  const { mutate: createProfile, isPending } = useCreateProfile();
+  const { mutate: createProfile, isPending: isCreatePending } = useCreateProfile();
+  const { mutate: updateProfile, isPending: isUpdatePending } = useUpdateProfile();
+  const isPending = isCreatePending || isUpdatePending;
 
   const [skuCode, setSkuCode] = useState('');
-  const [commercialLine, setCommercialLine] = useState('Suprema');
+  const [commercialLine, setCommercialLine] = useState('Rometal');
   const [description, setDescription] = useState('');
   const [weight, setWeight] = useState('');
-  const [length, setLength] = useState('6000');
+  const [length, setLength] = useState('3');
   const [price, setPrice] = useState('');
+  const [active, setActive] = useState(true);
 
+  // Populate form on open
   useEffect(() => {
-    if (isOpen && !initialData) {
+    if (isOpen && initialData) {
+      setSkuCode(initialData.commercialReference || '');
+      setCommercialLine(initialData.commercialLine || initialData.name?.split(' ')[0] || 'Rometal');
+      setDescription(initialData.name || '');
+      setWeight(formatWeightInput(initialData.weight?.toFixed(3) || ''));
+      setLength(initialData.standardLengthM?.toString() || '3');
+      
+      const p = initialData.salePrice ?? 0;
+      setPrice(formatCurrencyInput(p.toFixed(2)));
+      setActive(initialData.active ?? true);
+    } else if (isOpen && !initialData) {
       setSkuCode('');
-      setCommercialLine('Suprema');
+      setCommercialLine('Rometal');
       setDescription('');
       setWeight('');
-      setLength('6000');
+      setLength('3');
       setPrice('');
+      setActive(true);
     }
   }, [isOpen, initialData]);
 
   const handleSave = () => {
-    createProfile({
-      skuCode,
-      description,
-      commercialLine,
-      weightPerMeterKg: Number(weight.replace(',', '.')),
-      barLengthMm: Number(length),
-      pricePerMeter: Number(price.replace(',', '.')),
-      active: true
-    }, {
-      onSuccess: onClose
-    });
+    const payload = {
+      commercialReference: skuCode,
+      commercialLine: commercialLine,
+      name: description,
+      standardLengthM: Number(length),
+      weight: parseWeightString(weight),
+      unitMeasure: 'BARRA_6M' as const,
+      ncmCode: '',
+      colorFinish: 'INCOLOR',
+      costPrice: 0,
+      salePrice: parseCurrencyString(price),
+      active
+    };
+    
+    if (isEditing) {
+      updateProfile({ id: initialData.id, data: payload as any }, { onSuccess: onClose });
+    } else {
+      createProfile(payload as any, { onSuccess: onClose });
+    }
   };
 
   return (
@@ -65,11 +90,11 @@ export function ProfileFormModal({ isOpen, onClose, initialData }: Props) {
           label="Código" 
           placeholder="Ex: ALU-SUP-01" 
           value={skuCode}
-          onChange={(e) => setSkuCode(e.target.value)} 
+          onChange={(e) => setSkuCode(formatUppercase(e.target.value))} 
         />
         <Input 
           label="Linha Comercial" 
-          placeholder="Ex: Suprema" 
+          placeholder="Ex: Rometal" 
           value={commercialLine}
           onChange={(e) => setCommercialLine(e.target.value)} 
         />
@@ -84,19 +109,17 @@ export function ProfileFormModal({ isOpen, onClose, initialData }: Props) {
         
         <Input 
           label="Peso por Metro" 
-          type="number" 
           unit="Kg/m" 
-          placeholder="0.000" 
+          placeholder="0,000" 
           value={weight}
-          onChange={(e) => setWeight(e.target.value)} 
+          onChange={(e) => setWeight(formatWeightInput(e.target.value))} 
         />
         <Input 
           label="Comprimento da Barra" 
-          type="number" 
-          unit="mm" 
-          placeholder="6000" 
+          unit="m" 
+          placeholder="3" 
           value={length}
-          onChange={(e) => setLength(e.target.value)} 
+          onChange={(e) => setLength(formatInteger(e.target.value))} 
         />
         
         <Input 
@@ -104,9 +127,13 @@ export function ProfileFormModal({ isOpen, onClose, initialData }: Props) {
           unit="R$/m" 
           placeholder="0,00" 
           value={price}
-          onChange={(e) => setPrice(e.target.value)} 
+          onChange={(e) => setPrice(formatCurrencyInput(e.target.value))} 
           className="col-span-1 md:col-span-2" 
         />
+        
+        {isEditing && (
+          <StatusToggle active={active} onChange={setActive} />
+        )}
       </div>
     </Modal>
   );

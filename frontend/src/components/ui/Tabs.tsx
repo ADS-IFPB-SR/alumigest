@@ -22,7 +22,7 @@ export function Tabs({ children, defaultIndex = 0 }: TabsProps) {
           return (
             <button
               onClick={() => setActiveIndex(index)}
-              className={`px-sm sm:px-md py-xs sm:py-sm font-label text-xs sm:text-body-sm whitespace-nowrap transition-all border-b-2 font-medium cursor-pointer ${
+              className={`px-md sm:px-lg py-sm sm:py-md font-label text-sm sm:text-base whitespace-nowrap transition-all border-b-2 font-medium cursor-pointer ${
                 isActive 
                   ? 'text-primary dark:text-primary-fixed border-primary dark:border-primary-fixed font-bold bg-white/40 dark:bg-primary-container/20 rounded-t-md' 
                   : 'text-secondary dark:text-outline-variant border-transparent hover:text-primary dark:hover:text-white hover:bg-surface-container-high/40 dark:hover:bg-surface-variant/10'

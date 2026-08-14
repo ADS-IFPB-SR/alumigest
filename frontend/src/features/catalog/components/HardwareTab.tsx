@@ -5,31 +5,61 @@ import type { HardwareDTO } from '../types';
 const columns = [
   { 
     header: 'Código', 
-    accessor: (row: HardwareDTO) => <span className="font-data-mono text-data-mono text-on-surface-variant dark:text-outline-variant">{row.skuCode}</span> 
+    accessor: (row: HardwareDTO) => <span className="font-data-mono text-data-mono text-on-surface-variant dark:text-outline-variant">{row.skuCode}</span>,
+    exportValue: (row: HardwareDTO) => row.skuCode || ''
   },
   { 
-    header: 'Nome', 
-    accessor: (row: HardwareDTO) => <span className="font-title-sm text-title-sm text-on-surface dark:text-inverse-on-surface font-semibold">{row.name}</span> 
+    header: 'Descrição', 
+    accessor: (row: HardwareDTO) => <span className="font-title-sm text-title-sm text-on-surface dark:text-inverse-on-surface font-semibold">{row.name}</span>,
+    exportValue: (row: HardwareDTO) => row.name
   },
   { 
     header: 'Unidade', 
-    accessor: (row: HardwareDTO) => <span className="font-data-mono text-data-mono text-secondary dark:text-outline-variant">{row.unitMeasure}</span> 
+    accessor: (row: HardwareDTO) => <span className="text-secondary dark:text-outline-variant">{row.unitMeasure === 'PAIR' ? 'Par' : 'Unidade'}</span>,
+    exportValue: (row: HardwareDTO) => row.unitMeasure === 'PAIR' ? 'Par' : 'Unidade'
   },
   { 
-    header: 'Preço Unitário', 
+    header: 'Preço Venda', 
     accessor: (row: HardwareDTO) => <span className="font-data-mono text-data-mono text-on-surface dark:text-inverse-on-surface">R$ {row.salePrice.toFixed(2).replace('.', ',')}</span>,
+    exportValue: (row: HardwareDTO) => `R$ ${row.salePrice.toFixed(2).replace('.', ',')}`,
     align: 'right' as const
+  },
+  {
+    header: 'Status',
+    accessor: (row: HardwareDTO) => (
+      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ${
+        row.active 
+          ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' 
+          : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+      }`}>
+        {row.active ? 'Ativo' : 'Inativo'}
+      </span>
+    ),
+    exportValue: (row: HardwareDTO) => row.active ? 'Ativo' : 'Inativo',
+    align: 'center' as const
   }
 ];
 
+import { filterByStatus } from '../utils/filters';
+
 interface Props {
+  searchQuery: string;
+  filterStatus: 'ALL' | 'ACTIVE' | 'INACTIVE';
   onEdit: (item: HardwareDTO) => void;
   onViewDetails: (item: HardwareDTO) => void;
 }
 
-export function HardwareTab({ onEdit, onViewDetails }: Props) {
+export function HardwareTab({ searchQuery, filterStatus, onEdit, onViewDetails }: Props) {
   const { data, isLoading } = useHardwares();
   const hardwares = data?.content || [];
+
+  const filteredHardwares = hardwares.filter(h => {
+    if (!filterByStatus(h, filterStatus)) return false;
+
+    const term = searchQuery.toLowerCase();
+    return h.name.toLowerCase().includes(term) || 
+           (h.commercialReference && h.commercialReference.toLowerCase().includes(term));
+  });
 
   if (isLoading) {
     return <div className="p-md text-secondary">Carregando ferragens...</div>;
@@ -39,7 +69,7 @@ export function HardwareTab({ onEdit, onViewDetails }: Props) {
     <div className="flex-1 overflow-hidden flex flex-col p-xs sm:p-md">
       <Table 
         columns={columns} 
-        data={hardwares} 
+        data={filteredHardwares} 
         onEdit={(row) => onEdit(row)} 
         onViewDetails={(row) => onViewDetails(row)} 
       />

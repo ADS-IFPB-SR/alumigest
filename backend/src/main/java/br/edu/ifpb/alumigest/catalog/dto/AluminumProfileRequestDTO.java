@@ -18,6 +18,9 @@ public record AluminumProfileRequestDTO(
         @Size(max = 100, message = "A referência comercial deve ter no máximo 100 caracteres")
         String commercialReference,
 
+        @Size(max = 50, message = "A linha comercial deve ter no máximo 50 caracteres")
+        String commercialLine,
+
         @Size(max = 10, message = "O código NCM deve ter no máximo 10 caracteres")
         String ncmCode,
 
@@ -35,6 +38,10 @@ public record AluminumProfileRequestDTO(
 
         @NotNull(message = "O preço de venda é obrigatório")
         @PositiveOrZero(message = "O preço de venda deve ser maior ou igual a zero")
-        BigDecimal salePrice
+        BigDecimal salePrice,
+
+        @NotNull(message = "O peso é obrigatório")
+        @Positive(message = "O peso deve ser maior que zero")
+        BigDecimal weight
 ) {
 }
