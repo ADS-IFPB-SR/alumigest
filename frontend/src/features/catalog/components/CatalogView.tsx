@@ -7,8 +7,6 @@ import { HardwareTab } from './HardwareTab';
 import { MaterialTypeSelectionModal } from './MaterialTypeSelectionModal';
 import { MaterialFormModal } from './MaterialFormModal';
 import { ProfileFormModal } from './ProfileFormModal';
-import { ProductFormModal } from './ProductFormModal';
-import { ProductTab } from './ProductTab';
 import { MaterialDetailsModal } from './MaterialDetailsModal';
 import { Button } from '../../../components/ui/Button';
 import type { MaterialType } from '../types';
@@ -17,7 +15,7 @@ export function CatalogView() {
   const [isSelectionModalOpen, setIsSelectionModalOpen] = useState(false);
   const [activeFormType, setActiveFormType] = useState<MaterialType | null>(null);
   const [editingItem, setEditingItem] = useState<any | null>(null);
-  const [detailsItem, setDetailsItem] = useState<any | null>(null);
+  const [detailsItem, setDetailsItem] = useState<{ item: any; tipo: MaterialType } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL');
 
@@ -31,18 +29,13 @@ export function CatalogView() {
     setActiveFormType(tipo);
   };
 
-  const handleCreateProduct = () => {
-    setEditingItem(null);
-    setActiveFormType('Product');
-  };
-
   const handleEditItem = (item: any, tipo: MaterialType) => {
     setEditingItem(item);
     setActiveFormType(tipo);
   };
 
-  const handleViewDetails = (item: any) => {
-    setDetailsItem(item);
+  const handleViewDetails = (item: any, tipo: MaterialType) => {
+    setDetailsItem({ item, tipo });
   };
 
   const handleCloseFormModal = () => {
@@ -55,10 +48,10 @@ export function CatalogView() {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-md gap-sm flex-none">
         <div>
-          <h2 className="font-headline text-headline-md sm:text-headline-lg font-bold text-primary dark:text-inverse-on-surface leading-tight">
+          <h2 className="font-headline text-headline-md sm:text-headline-lg font-bold text-primary leading-tight">
             Catálogo de Materiais
           </h2>
-          <p className="font-body text-sm text-secondary dark:text-outline-variant mt-xs">
+          <p className="font-body text-sm text-secondary mt-xs">
             Gerencie especificações técnicas e precificação de insumos.
           </p>
         </div>
@@ -66,13 +59,13 @@ export function CatalogView() {
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-sm">
           {/* Universal Search Bar */}
           <div className="relative flex-1 sm:w-64">
-            <span className="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-secondary dark:text-outline-variant pointer-events-none text-[18px]">
+            <span className="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-secondary pointer-events-none text-[18px]">
               search
             </span>
             <input 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-xl pr-sm py-sm bg-white dark:bg-surface-container-high/20 border border-outline-variant/80 dark:border-outline/40 rounded-md font-body text-sm text-on-surface dark:text-inverse-on-surface focus:border-primary focus:outline-none transition-colors shadow-sm" 
+              className="w-full pl-xl pr-sm py-sm bg-surface-container-lowest border border-outline-variant rounded-md font-body text-sm text-on-surface focus:border-primary focus:outline-none transition-colors shadow-sm" 
               placeholder="Buscar código ou insumo..." 
               type="text" 
             />
@@ -83,13 +76,13 @@ export function CatalogView() {
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value as 'ALL' | 'ACTIVE' | 'INACTIVE')}
-              className="appearance-none bg-white dark:bg-surface-container-high/20 border border-outline-variant/80 dark:border-outline/40 rounded-md font-body text-sm text-on-surface dark:text-inverse-on-surface focus:border-primary focus:outline-none transition-colors shadow-sm pl-sm pr-xl py-sm min-w-[140px] cursor-pointer"
+              className="appearance-none bg-surface-container-lowest border border-outline-variant rounded-md font-body text-sm text-on-surface focus:border-primary focus:outline-none transition-colors shadow-sm pl-sm pr-xl py-sm min-w-[140px] cursor-pointer"
             >
-              <option className="dark:bg-[#182230] dark:text-inverse-on-surface" value="ALL">Todos (Status)</option>
-              <option className="dark:bg-[#182230] dark:text-inverse-on-surface" value="ACTIVE">Apenas Ativos</option>
-              <option className="dark:bg-[#182230] dark:text-inverse-on-surface" value="INACTIVE">Apenas Inativos</option>
+              <option value="ALL">Todos (Status)</option>
+              <option value="ACTIVE">Apenas Ativos</option>
+              <option value="INACTIVE">Apenas Inativos</option>
             </select>
-            <span className="material-symbols-outlined absolute right-sm top-1/2 -translate-y-1/2 text-secondary dark:text-outline-variant pointer-events-none text-[18px]">
+            <span className="material-symbols-outlined absolute right-sm top-1/2 -translate-y-1/2 text-secondary pointer-events-none text-[18px]">
               expand_more
             </span>
           </div>
@@ -101,13 +94,6 @@ export function CatalogView() {
           >
             Novo Material
           </Button>
-          <Button 
-            variant="outline"
-            icon="add"
-            onClick={handleCreateProduct}
-          >
-            Novo Produto
-          </Button>
         </div>
       </div>
 
@@ -118,7 +104,7 @@ export function CatalogView() {
             searchQuery={searchQuery}
             filterStatus={filterStatus}
             onEdit={(item) => handleEditItem(item, 'Glass')} 
-            onViewDetails={handleViewDetails} 
+            onViewDetails={(item) => handleViewDetails(item, 'Glass')} 
           />
         </Tab>
         <Tab label="Perfis de Alumínio">
@@ -126,7 +112,7 @@ export function CatalogView() {
             searchQuery={searchQuery}
             filterStatus={filterStatus}
             onEdit={(item) => handleEditItem(item, 'Profile')} 
-            onViewDetails={handleViewDetails} 
+            onViewDetails={(item) => handleViewDetails(item, 'Profile')} 
           />
         </Tab>
         <Tab label="Películas">
@@ -134,7 +120,7 @@ export function CatalogView() {
             searchQuery={searchQuery}
             filterStatus={filterStatus}
             onEdit={(item) => handleEditItem(item, 'Film')} 
-            onViewDetails={handleViewDetails} 
+            onViewDetails={(item) => handleViewDetails(item, 'Film')} 
           />
         </Tab>
         <Tab label="Ferragens">
@@ -142,12 +128,7 @@ export function CatalogView() {
             searchQuery={searchQuery}
             filterStatus={filterStatus}
             onEdit={(item) => handleEditItem(item, 'Hardware')} 
-            onViewDetails={handleViewDetails} 
-          />
-        </Tab>
-        <Tab label="Produtos Finais">
-          <ProductTab 
-            onEdit={(item) => handleEditItem(item, 'Product')} 
+            onViewDetails={(item) => handleViewDetails(item, 'Hardware')} 
           />
         </Tab>
       </Tabs>
@@ -177,22 +158,15 @@ export function CatalogView() {
         />
       )}
 
-      {activeFormType === 'Product' && (
-        <ProductFormModal
-          isOpen={true}
-          onClose={handleCloseFormModal}
-          initialData={editingItem}
-        />
-      )}
-
       {/* 3. Modal de Visualização de Detalhes (Read-only) */}
       <MaterialDetailsModal
         isOpen={Boolean(detailsItem)}
         onClose={() => setDetailsItem(null)}
-        item={detailsItem}
+        item={detailsItem?.item}
         onEdit={() => {
           if (detailsItem) {
-            handleEditItem(detailsItem, 'Glass');
+            handleEditItem(detailsItem.item, detailsItem.tipo);
+            setDetailsItem(null); // close details modal when editing
           }
         }}
       />
