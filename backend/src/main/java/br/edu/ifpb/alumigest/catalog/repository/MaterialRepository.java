@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -45,11 +46,10 @@ public interface MaterialRepository extends JpaRepository<Material, UUID> {
      * @param name        fragmento de nome para busca case-insensitive; {@code null} desativa o filtro
      * @param pageable    configuração de paginação
      */
-
     @Query("SELECT m FROM Material m " +
-           "WHERE m.group.id = :groupId " +
-           "AND (:unitMeasure IS NULL OR m.unitMeasure = :unitMeasure) " +
-           "AND (CAST(:name AS string) IS NULL OR LOWER(m.name) LIKE LOWER(CONCAT('%', CAST(:name AS string), '%')))")
+            "WHERE m.group.id = :groupId " +
+            "AND (:unitMeasure IS NULL OR m.unitMeasure = :unitMeasure) " +
+            "AND (CAST(:name AS string) IS NULL OR LOWER(m.name) LIKE LOWER(CONCAT('%', CAST(:name AS string), '%')))")
     Page<Material> findAllByGroupFiltered(
             @Param("groupId") UUID groupId,
             @Param("unitMeasure") UnitMeasure unitMeasure,
@@ -57,22 +57,32 @@ public interface MaterialRepository extends JpaRepository<Material, UUID> {
             Pageable pageable);
 
     @Query("SELECT m FROM Material m " +
-           "WHERE m.isActive = true " +
-           "AND m.group.id = :groupId " +
-           "AND LOWER(m.commercialReference) = LOWER(:commercialReference) " +
-           "AND LOWER(m.colorFinish) = LOWER(:colorFinish)")
+            "WHERE m.isActive = true " +
+            "AND m.group.id = :groupId " +
+            "AND LOWER(m.commercialReference) = LOWER(:commercialReference) " +
+            "AND LOWER(m.colorFinish) = LOWER(:colorFinish)")
     Optional<Material> findActiveByGroupAndCommercialReferenceAndColorFinish(
             @Param("groupId") UUID groupId,
             @Param("commercialReference") String commercialReference,
             @Param("colorFinish") String colorFinish);
 
     @Query("SELECT m FROM Material m " +
-           "WHERE m.group.id = :groupId " +
-           "AND (CAST(:colorFinish AS string) IS NULL OR LOWER(m.colorFinish) LIKE LOWER(CONCAT('%', CAST(:colorFinish AS string), '%'))) " +
-           "AND (CAST(:name AS string) IS NULL OR LOWER(m.name) LIKE LOWER(CONCAT('%', CAST(:name AS string), '%')))")
+            "WHERE m.group.id = :groupId " +
+            "AND (CAST(:colorFinish AS string) IS NULL OR LOWER(m.colorFinish) LIKE LOWER(CONCAT('%', CAST(:colorFinish AS string), '%'))) " +
+            "AND (CAST(:name AS string) IS NULL OR LOWER(m.name) LIKE LOWER(CONCAT('%', CAST(:name AS string), '%')))")
     Page<Material> findAllAluminumFiltered(
             @Param("groupId") UUID groupId,
             @Param("colorFinish") String colorFinish,
             @Param("name") String name,
             Pageable pageable);
+
+    @Query("SELECT m FROM Material m WHERE m.isActive = true AND m.group.id = :groupId " +
+            "AND (:thickness IS NULL OR m.thicknessMm = :thickness) " +
+            "AND (CAST(:color AS text) IS NULL OR LOWER(m.colorFinish) LIKE LOWER(CONCAT('%', CAST(:color AS text), '%')))")
+    Page<Material> findActiveByGroupWithFilters(
+            @Param("groupId") UUID groupId,
+            @Param("thickness") BigDecimal thickness,
+            @Param("color") String color,
+            Pageable pageable
+    );
 }
