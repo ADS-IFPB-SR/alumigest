@@ -35,6 +35,9 @@ public record HardwareRequestDTO(
 
         @NotNull(message = "O preço de venda é obrigatório")
         @PositiveOrZero(message = "O preço de venda deve ser maior ou igual a zero")
-        BigDecimal salePrice
+        BigDecimal salePrice,
+
+        @Size(max = 20, message = "O código NCM deve ter no máximo 20 caracteres")
+        String ncmCode
 ) {
 }

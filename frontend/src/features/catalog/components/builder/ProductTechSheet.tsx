@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import type { MaterialSummary } from '../../types';
 import { Button } from '../../../../components/ui/Button';
 import { MaterialPickerModal } from './MaterialPickerModal';
+import toast from 'react-hot-toast';
 
 export interface FormItem {
   tempId: string;
@@ -25,6 +26,10 @@ export function ProductTechSheet({ items, setItems, materials }: ProductTechShee
   }, [materials]);
 
   const handleAddPickedMaterial = (material: MaterialSummary) => {
+    if (items.some(item => item.materialId === material.id)) {
+      toast.error('Este insumo já está na ficha técnica.');
+      return;
+    }
     setItems([...items, { tempId: crypto.randomUUID(), materialId: material.id, quantity: '' }]);
     setIsPickerOpen(false);
   };
@@ -34,6 +39,24 @@ export function ProductTechSheet({ items, setItems, materials }: ProductTechShee
   };
 
   const handleChangeItem = (tempId: string, field: keyof FormItem, value: string) => {
+    if (field === 'quantity') {
+      let sanitized = value.replace(/[^0-9.,]/g, '');
+      
+      // Permitir apenas uma vírgula ou ponto
+      const parts = sanitized.replace(',', '.').split('.');
+      if (parts.length > 2) {
+        return; // ignora se tentar botar mais de uma vírgula
+      }
+
+      const numValue = Number(sanitized.replace(',', '.'));
+      if (sanitized !== '' && (isNaN(numValue) || numValue < 0 || numValue > 99999)) {
+        return;
+      }
+      if (sanitized.length > 8) return;
+      
+      setItems(items.map(item => item.tempId === tempId ? { ...item, [field]: sanitized } : item));
+      return;
+    }
     setItems(items.map(item => item.tempId === tempId ? { ...item, [field]: value } : item));
   };
 
@@ -56,7 +79,7 @@ export function ProductTechSheet({ items, setItems, materials }: ProductTechShee
         <div className="col-span-2 hidden md:block text-center">Unid.</div>
         <div className="col-span-3 md:col-span-2 text-right">Qtd.</div>
         <div className="col-span-2 hidden md:block text-right">Custo Ref.</div>
-        <div className="col-span-4 md:col-span-1 text-center">Ações</div>
+        <div className="col-span-4 md:col-span-1 text-center"></div>
       </div>
 
       {/* List Items */}
@@ -68,7 +91,7 @@ export function ProductTechSheet({ items, setItems, materials }: ProductTechShee
         ) : (
           items.map((item, index) => {
             const materialInfo = item.materialId ? materialsMap.get(item.materialId) : null;
-            const refCost = materialInfo ? materialInfo.costPrice : 0;
+            const refCost = materialInfo ? (materialInfo.costPrice > 0 ? materialInfo.costPrice : materialInfo.salePrice) : 0;
             const unit = materialInfo ? materialInfo.unitMeasure : '-';
 
             return (
@@ -90,9 +113,8 @@ export function ProductTechSheet({ items, setItems, materials }: ProductTechShee
                 
                 <div className="col-span-3 md:col-span-2">
                   <input 
-                    type="number"
-                    step="0.01"
-                    min="0"
+                    type="text"
+                    inputMode="decimal"
                     className="w-full bg-transparent border border-transparent p-xs font-data-mono text-data-mono text-right focus:border-primary focus:bg-surface-container-lowest focus:ring-0 rounded-sm transition-all h-8 hover:border-outline-variant text-on-surface focus:outline-none"
                     placeholder="0"
                     value={item.quantity}
@@ -134,6 +156,7 @@ export function ProductTechSheet({ items, setItems, materials }: ProductTechShee
         onClose={() => setIsPickerOpen(false)}
         onSelect={handleAddPickedMaterial}
         materials={materials}
+        addedMaterialIds={items.map(i => i.materialId)}
       />
     </section>
   );

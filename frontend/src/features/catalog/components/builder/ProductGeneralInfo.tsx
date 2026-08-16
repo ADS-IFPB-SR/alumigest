@@ -27,8 +27,8 @@ export function ProductGeneralInfo({
       </h3>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-md">
         <div className="col-span-1 md:col-span-2">
-          <label className="block font-label-bold text-label-bold text-on-surface mb-xs">
-            Nome do Template *
+          <label className="block font-label-md text-label-md font-medium text-on-surface mb-xs">
+            Nome do Produto *
           </label>
           <input 
             type="text"
@@ -72,10 +72,9 @@ export function ProductGeneralInfo({
           <label className="block font-label-bold text-label-bold text-on-surface mb-xs">
             Descrição Breve
           </label>
-          <input 
-            type="text"
-            className="w-full px-sm py-sm bg-surface-container-lowest border border-outline rounded-sm font-body-sm text-body-sm text-on-surface focus:border-primary focus:border-2 focus:outline-none transition-all"
-            placeholder="Notas internas sobre este template (opcional)"
+          <textarea 
+            className="w-full bg-surface-container-lowest border border-outline-variant rounded-md p-sm font-body text-sm text-on-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all shadow-sm resize-none h-24"
+            placeholder="Notas internas sobre este produto (opcional)"
           />
         </div>
       </div>

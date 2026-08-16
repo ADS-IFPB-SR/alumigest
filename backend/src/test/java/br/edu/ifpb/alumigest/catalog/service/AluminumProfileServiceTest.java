@@ -372,7 +372,7 @@ class AluminumProfileServiceTest {
         @DisplayName("Deve atualizar os preços de custo e venda do perfil com sucesso")
         void shouldUpdatePricesSuccessfully() {
             AluminumProfileUpdateDTO updateRequest =
-                    new AluminumProfileUpdateDTO(new BigDecimal("50.00"), new BigDecimal("75.00"), null);
+                    new AluminumProfileUpdateDTO("REF-123", "Perfil Atualizado", "FOSCO", "Rometal", new BigDecimal("1.500"), new BigDecimal("6.00"), new BigDecimal("50.00"), new BigDecimal("75.00"), null);
 
             when(materialRepository.findByIdAndGroupCode(MATERIAL_ID, "ALUMINIO"))
                     .thenReturn(Optional.of(aluminumMaterial));
@@ -394,7 +394,7 @@ class AluminumProfileServiceTest {
         void shouldThrowResourceNotFoundExceptionOnUpdateWhenIdNotFound() {
             UUID nonExistentId = UUID.randomUUID();
             AluminumProfileUpdateDTO updateRequest =
-                    new AluminumProfileUpdateDTO(new BigDecimal("50.00"), new BigDecimal("75.00"), null);
+                    new AluminumProfileUpdateDTO("REF-123", "Perfil Atualizado", "FOSCO", "Rometal", new BigDecimal("1.500"), new BigDecimal("6.00"), new BigDecimal("50.00"), new BigDecimal("75.00"), null);
 
             when(materialRepository.findByIdAndGroupCode(nonExistentId, "ALUMINIO"))
                     .thenReturn(Optional.empty());

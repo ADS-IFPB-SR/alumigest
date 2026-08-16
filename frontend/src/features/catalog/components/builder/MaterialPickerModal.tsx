@@ -8,9 +8,10 @@ interface Props {
   onClose: () => void;
   onSelect: (material: MaterialSummary) => void;
   materials: MaterialSummary[];
+  addedMaterialIds?: string[];
 }
 
-export function MaterialPickerModal({ isOpen, onClose, onSelect, materials }: Props) {
+export function MaterialPickerModal({ isOpen, onClose, onSelect, materials, addedMaterialIds = [] }: Props) {
   const [search, setSearch] = useState('');
 
   const filteredMaterials = useMemo(() => {
@@ -52,28 +53,41 @@ export function MaterialPickerModal({ isOpen, onClose, onSelect, materials }: Pr
             </div>
           ) : (
             <ul className="divide-y divide-outline-variant">
-              {filteredMaterials.map(material => (
-                <li key={material.id}>
-                  <button
-                    onClick={() => onSelect(material)}
-                    className="w-full text-left px-md py-sm hover:bg-surface-container-high focus:bg-surface-container-highest transition-colors focus:outline-none"
-                  >
-                    <div className="flex justify-between items-center">
-                      <span className="font-title-sm text-title-sm font-semibold text-on-surface">
-                        {material.name}
-                      </span>
-                      <span className="font-data-mono text-data-mono text-on-surface-variant">
-                        R$ {material.costPrice.toFixed(2).replace('.', ',')} / {material.unitMeasure || 'UN'}
-                      </span>
-                    </div>
-                    {(material.skuCode || material.commercialReference) && (
-                      <div className="font-data-mono text-xs text-on-surface-variant mt-0.5">
-                        {material.skuCode} {material.commercialReference ? `| ${material.commercialReference}` : ''}
+              {filteredMaterials.map(material => {
+                const isAdded = addedMaterialIds.includes(material.id);
+                return (
+                  <li key={material.id}>
+                    <button
+                      onClick={() => !isAdded && onSelect(material)}
+                      disabled={isAdded}
+                      className={`w-full text-left px-md py-sm focus:outline-none transition-colors ${
+                        isAdded 
+                          ? 'bg-surface-container-high opacity-50 cursor-not-allowed' 
+                          : 'hover:bg-surface-container-high focus:bg-surface-container-highest'
+                      }`}
+                    >
+                      <div className="flex justify-between items-center">
+                        <span className="font-title-sm text-title-sm font-semibold text-on-surface">
+                          {material.name}
+                        </span>
+                        <span className="font-data-mono text-data-mono text-on-surface-variant">
+                          R$ {(material.costPrice > 0 ? material.costPrice : material.salePrice).toFixed(2).replace('.', ',')} / {material.unitMeasure || 'UN'}
+                        </span>
                       </div>
-                    )}
-                  </button>
-                </li>
-              ))}
+                      {(material.skuCode || material.commercialReference) && (
+                        <div className="font-data-mono text-xs text-on-surface-variant mt-0.5">
+                          {material.skuCode} {material.commercialReference ? `| ${material.commercialReference}` : ''}
+                        </div>
+                      )}
+                      {isAdded && (
+                        <div className="text-xs font-label-sm text-primary mt-xs font-medium">
+                          Item já adicionado na ficha
+                        </div>
+                      )}
+                    </button>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>

@@ -116,7 +116,8 @@ class HardwareServiceTest {
                     UnitMeasure.UN,
                     CalculationType.UNIT,
                     new BigDecimal("10.00"),
-                    new BigDecimal("15.50")
+                    new BigDecimal("15.50"),
+                    "7318.15.00"
             );
 
             when(materialRepository.findBySkuCodeAndIsActiveTrue("ESQ-001"))
@@ -143,7 +144,8 @@ class HardwareServiceTest {
                     UnitMeasure.UN,
                     CalculationType.UNIT,
                     new BigDecimal("10.00"),
-                    new BigDecimal("15.50")
+                    new BigDecimal("15.50"),
+                    "7318.15.00"
             );
 
             // Validação antecipada não detecta duplicata (janela de corrida)
@@ -178,7 +180,8 @@ class HardwareServiceTest {
                     UnitMeasure.UN,
                     CalculationType.UNIT,
                     new BigDecimal("10.00"),
-                    new BigDecimal("15.50")
+                    new BigDecimal("15.50"),
+                    "7318.15.00"
             );
 
             when(materialRepository.findBySkuCodeAndIsActiveTrue("ESQ-001"))
@@ -213,7 +216,8 @@ class HardwareServiceTest {
                     UnitMeasure.PAR,
                     CalculationType.PAIR,
                     new BigDecimal("8.00"),
-                    new BigDecimal("12.00")
+                    new BigDecimal("12.00"),
+                    "7318.15.00"
             );
 
             when(materialRepository.findBySkuCodeAndIsActiveTrue("ESQ-002"))
@@ -330,7 +334,7 @@ class HardwareServiceTest {
         @DisplayName("Deve atualizar o preço de venda da ferragem com sucesso")
         void shouldUpdatePriceSuccessfully() {
             HardwareUpdatePriceDTO updateRequest =
-                    new HardwareUpdatePriceDTO(new BigDecimal("18.90"), null);
+                    new HardwareUpdatePriceDTO("FER-001", "Dobradiça", UnitMeasure.UN, CalculationType.UNIT, new BigDecimal("10.00"), new BigDecimal("18.90"), "7318.15.00", null);
 
             when(materialRepository.findByIdAndGroupCode(MATERIAL_ID, "FERRAGEM"))
                     .thenReturn(Optional.of(hardwareMaterial));
@@ -351,7 +355,7 @@ class HardwareServiceTest {
         void shouldThrowResourceNotFoundExceptionOnUpdatePriceWhenIdNotFound() {
             UUID nonExistentId = UUID.randomUUID();
             HardwareUpdatePriceDTO updateRequest =
-                    new HardwareUpdatePriceDTO(new BigDecimal("18.90"), null);
+                    new HardwareUpdatePriceDTO("FER-001", "Dobradiça", UnitMeasure.UN, CalculationType.UNIT, new BigDecimal("10.00"), new BigDecimal("18.90"), "7318.15.00", null);
 
             when(materialRepository.findByIdAndGroupCode(nonExistentId, "FERRAGEM"))
                     .thenReturn(Optional.empty());

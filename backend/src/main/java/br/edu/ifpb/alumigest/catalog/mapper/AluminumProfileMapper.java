@@ -37,17 +37,24 @@ public class AluminumProfileMapper {
         material.setSalePrice(request.salePrice());
         
         if (request.weight() != null || request.commercialLine() != null) {
-            try {
-                Map<String, Object> attrs = new HashMap<>();
-                if (request.weight() != null) attrs.put("weight", request.weight());
-                if (request.commercialLine() != null) attrs.put("commercialLine", request.commercialLine());
-                material.setAttributesJson(objectMapper.writeValueAsString(attrs));
-            } catch (JsonProcessingException e) {
-                // Ignore parsing errors for now
-            }
+            material.setAttributesJson(buildAttributesJson(request.weight(), request.commercialLine()));
         }
         
         return material;
+    }
+
+    public String buildAttributesJson(BigDecimal weight, String commercialLine) {
+        if (weight == null && commercialLine == null) {
+            return null;
+        }
+        try {
+            Map<String, Object> attrs = new HashMap<>();
+            if (weight != null) attrs.put("weight", weight);
+            if (commercialLine != null) attrs.put("commercialLine", commercialLine);
+            return objectMapper.writeValueAsString(attrs);
+        } catch (JsonProcessingException e) {
+            return null;
+        }
     }
 
     public AluminumProfileResponseDTO toResponse(Material material) {

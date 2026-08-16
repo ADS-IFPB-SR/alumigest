@@ -130,6 +130,12 @@ public class HardwareService {
                 .orElseThrow(() ->
                         new ResourceNotFoundException("Ferragem não encontrada com ID: " + id));
 
+        material.setName(request.name());
+        material.setSkuCode(request.skuCode());
+        material.setUnitMeasure(request.unitMeasure());
+        material.setAttributesJson(hardwareMapper.buildAttributesJson(request.calculationType()));
+        material.setNcmCode(request.ncmCode());
+        material.setCostPrice(request.costPrice());
         material.setSalePrice(request.salePrice());
         
         if (request.active() != null) {

@@ -19,10 +19,13 @@ export function ProfileFormModal({ isOpen, onClose, initialData }: Props) {
  const isPending = isCreatePending || isUpdatePending;
 
  const [skuCode, setSkuCode] = useState('');
- const [commercialLine, setCommercialLine] = useState('Rometal');
+ const [commercialLine, setCommercialLine] = useState('');
  const [description, setDescription] = useState('');
+ const [ncmCode, setNcmCode] = useState('');
+ const [colorFinish, setColorFinish] = useState('INCOLOR');
  const [weight, setWeight] = useState('');
  const [length, setLength] = useState('3');
+ const [costPrice, setCostPrice] = useState('');
  const [price, setPrice] = useState('');
  const [active, setActive] = useState(true);
 
@@ -30,20 +33,27 @@ export function ProfileFormModal({ isOpen, onClose, initialData }: Props) {
  useEffect(() => {
  if (isOpen && initialData) {
  setSkuCode(initialData.commercialReference || '');
- setCommercialLine(initialData.commercialLine || initialData.name?.split(' ')[0] || 'Rometal');
+ setCommercialLine(initialData.commercialLine || '');
  setDescription(initialData.name || '');
+ setNcmCode(initialData.ncmCode || '');
+ setColorFinish(initialData.colorFinish || 'INCOLOR');
  setWeight(formatWeightInput(initialData.weight?.toFixed(3) || ''));
  setLength(initialData.standardLengthM?.toString() || '3');
  
+ const cp = initialData.costPrice ?? 0;
  const p = initialData.salePrice ?? 0;
+ setCostPrice(formatCurrencyInput(cp.toFixed(2)));
  setPrice(formatCurrencyInput(p.toFixed(2)));
  setActive(initialData.active ?? true);
  } else if (isOpen && !initialData) {
  setSkuCode('');
- setCommercialLine('Rometal');
+ setCommercialLine('');
  setDescription('');
+ setNcmCode('');
+ setColorFinish('INCOLOR');
  setWeight('');
  setLength('3');
+ setCostPrice('');
  setPrice('');
  setActive(true);
  }
@@ -57,9 +67,9 @@ export function ProfileFormModal({ isOpen, onClose, initialData }: Props) {
  standardLengthM: Number(length),
  weight: parseWeightString(weight),
  unitMeasure: 'BARRA_6M' as const,
- ncmCode: '',
- colorFinish: 'INCOLOR',
- costPrice: 0,
+ ncmCode: ncmCode,
+ colorFinish: colorFinish,
+ costPrice: parseCurrencyString(costPrice),
  salePrice: parseCurrencyString(price),
  active
  };
@@ -108,6 +118,19 @@ export function ProfileFormModal({ isOpen, onClose, initialData }: Props) {
  />
  
  <Input 
+ label="Cor / Acabamento" 
+ placeholder="Ex: INCOLOR" 
+ value={colorFinish}
+ onChange={(e) => setColorFinish(formatUppercase(e.target.value))} 
+ />
+ <Input 
+ label="Código NCM" 
+ placeholder="Opcional" 
+ value={ncmCode}
+ onChange={(e) => setNcmCode(e.target.value)} 
+ />
+
+ <Input 
  label="Peso por Metro" 
  unit="Kg/m" 
  placeholder="0,000" 
@@ -123,7 +146,14 @@ export function ProfileFormModal({ isOpen, onClose, initialData }: Props) {
  />
  
  <Input 
- label="Preço Metro Linear" 
+ label="Preço de Custo" 
+ unit="R$" 
+ placeholder="0,00" 
+ value={costPrice}
+ onChange={(e) => setCostPrice(formatCurrencyInput(e.target.value))} 
+ />
+ <Input 
+ label="Preço Metro Linear (Venda)" 
  unit="R$/m" 
  placeholder="0,00" 
  value={price}

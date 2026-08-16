@@ -7,9 +7,14 @@ public record FilmResponseDTO(
         UUID id,
         String name,
         String colorFinish,
+        BigDecimal costPrice,
         BigDecimal salePrice,
         String unitMeasure,
+        BigDecimal thicknessMm,
+        BigDecimal standardLengthM,
+        BigDecimal maxWidthMm,
         boolean active,
         String commercialReference,
-        String skuCode
+        String skuCode,
+        String ncmCode
 ) { }

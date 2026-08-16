@@ -18,7 +18,6 @@ public record FilmRequestDTO(
         @Positive(message = "O preço por m² deve ser maior que zero")
         BigDecimal salePrice,
 
-        @NotBlank(message = "A ref. comercial é obrigatoria. Ex: PEL-G20")
         String commercialReference,
 
         String ncmCode,
@@ -33,7 +32,11 @@ public record FilmRequestDTO(
 
         @NotNull(message = "O comprimento do prod é obrigatório. Ex: 250cm") //Analisar qual será a unidade de medida
         @Positive(message = "O comprimento deve ser maior que zero")
-        BigDecimal standardLengthM
+        BigDecimal standardLengthM,
+        
+        @NotNull(message = "A largura máxima da bobina é obrigatória")
+        @Positive(message = "A largura máxima deve ser maior que zero")
+        BigDecimal maxWidthMm
 
 ) {
 }

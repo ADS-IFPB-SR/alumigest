@@ -4,6 +4,7 @@ import { useCreateProduct, useUpdateProduct, useProductCategories, useMaterialsS
 import { ProductGeneralInfo } from '../features/catalog/components/builder/ProductGeneralInfo';
 import { ProductTechSheet, type FormItem } from '../features/catalog/components/builder/ProductTechSheet';
 import { ProductCostSummary } from '../features/catalog/components/builder/ProductCostSummary';
+import toast from 'react-hot-toast';
 
 export function ProductBuilderPage() {
  const navigate = useNavigate();
@@ -52,27 +53,53 @@ export function ProductBuilderPage() {
  }
  }, [id, isEditing, productsData]);
 
- const handleSave = () => {
- if (!name || !categoryId) return; // Basic validation
+  const handleSave = () => {
+    if (!name.trim()) {
+      toast.error('O nome do produto é obrigatório.');
+      return;
+    }
+    if (!categoryId) {
+      toast.error('Selecione uma categoria para o produto.');
+      return;
+    }
 
- const payload = {
- name,
- categoryId,
- laborCost: Number(laborCost.replace(',', '.')) || 0,
- items: items
- .filter(item => item.materialId && item.quantity)
- .map(item => ({
- materialId: item.materialId,
- quantity: Number(item.quantity.replace(',', '.'))
- }))
- };
+    const parsedLaborCost = Number(laborCost.replace(',', '.'));
+    if (isNaN(parsedLaborCost) || parsedLaborCost < 0) {
+      toast.error('Custo de mão de obra inválido. Insira um valor maior ou igual a zero.');
+      return;
+    }
 
- if (isEditing && id) {
- updateProduct({ id, data: payload }, { onSuccess: () => navigate('/produtos') });
- } else {
- createProduct(payload, { onSuccess: () => navigate('/produtos') });
- }
- };
+    const invalidItems = items.filter(item => {
+      const q = Number(item.quantity.replace(',', '.'));
+      return isNaN(q) || q <= 0 || q > 99999 || !item.materialId;
+    });
+
+    if (invalidItems.length > 0) {
+      toast.error('Existem insumos com quantidade inválida. Ajuste para um valor entre 0.01 e 99999.');
+      return;
+    }
+
+    if (items.length === 0) {
+      toast.error('A ficha técnica precisa de pelo menos um insumo.');
+      return;
+    }
+
+    const payload = {
+      name: name.trim(),
+      categoryId,
+      laborCost: parsedLaborCost || 0,
+      items: items.map(item => ({
+        materialId: item.materialId,
+        quantity: Number(item.quantity.replace(',', '.'))
+      }))
+    };
+
+    if (isEditing && id) {
+      updateProduct({ id, data: payload }, { onSuccess: () => navigate('/produtos') });
+    } else {
+      createProduct(payload, { onSuccess: () => navigate('/produtos') });
+    }
+  };
 
  return (
  <div className="flex-1 flex flex-col h-full overflow-hidden bg-surface relative">
@@ -82,7 +109,7 @@ export function ProductBuilderPage() {
  <Link to="/produtos" className="hover:text-primary transition-colors">Produtos Finais</Link>
  <span className="material-symbols-outlined text-[16px]">chevron_right</span>
  <span className="text-on-surface font-medium">
- {isEditing ? 'Editar Template' : 'Novo Template Rápido'}
+ {isEditing ? 'Editar Produto' : 'Novo Produto Rápido'}
  </span>
  </div>
  
@@ -99,7 +126,7 @@ export function ProductBuilderPage() {
  className="flex items-center gap-xs px-md py-xs bg-primary text-on-primary rounded-sm font-label-bold text-label-bold hover:bg-primary-container hover:text-on-primary-container transition-colors shadow-sm disabled:opacity-50"
  >
  <span className="material-symbols-outlined text-[18px]">save</span>
- {isEditing ? 'Atualizar' : 'Salvar Template'}
+ {isEditing ? 'Atualizar' : 'Salvar Produto'}
  </button>
  </div>
  </div>
@@ -109,7 +136,7 @@ export function ProductBuilderPage() {
  <div className="flex flex-col md:flex-row md:items-center justify-between gap-sm mb-lg">
  <div>
  <h2 className="font-headline text-headline-md lg:text-headline-lg text-on-surface">
- {isEditing ? 'Edição de Produto' : 'Novo Template Rápido'}
+ {isEditing ? 'Edição de Produto' : 'Novo Produto Rápido'}
  </h2>
  <p className="font-body-sm text-body-sm text-on-surface-variant mt-xs">
  Configure as propriedades e a ficha técnica da esquadria.

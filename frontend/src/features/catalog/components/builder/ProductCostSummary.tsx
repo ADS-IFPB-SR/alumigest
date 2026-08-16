@@ -28,7 +28,7 @@ export function ProductCostSummary({
   const materialsSubtotal = useMemo(() => {
     return items.reduce((acc, item) => {
       const material = materialsMap.get(item.materialId);
-      const price = material ? material.costPrice : 0;
+      const price = material ? (material.costPrice > 0 ? material.costPrice : material.salePrice) : 0;
       const qty = Number(item.quantity.replace(',', '.')) || 0;
       return acc + (price * qty);
     }, 0);
@@ -86,9 +86,9 @@ export function ProductCostSummary({
             <span className="font-label-bold text-label-bold text-on-surface">Margem Sugerida</span>
             <span className="font-data-mono text-data-mono text-primary font-bold">35%</span>
           </div>
-          <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center gap-xs">
             <span className="font-body-sm text-body-sm text-on-surface-variant">Preço de Venda Sugerido</span>
-            <span className="font-data-mono text-data-mono text-on-surface font-bold">
+            <span className="font-data-mono text-data-mono text-on-surface font-bold whitespace-nowrap text-right">
               {formatCurrency(salePrice)}
             </span>
           </div>
@@ -100,7 +100,7 @@ export function ProductCostSummary({
           disabled={isPending || items.length === 0}
         >
           <span className="material-symbols-outlined text-[18px]">save</span>
-          {isPending ? 'Salvando...' : (isEditing ? 'Atualizar Template' : 'Salvar Template')}
+          {isPending ? 'Salvando...' : (isEditing ? 'Atualizar Produto' : 'Salvar Produto')}
         </button>
       </div>
     </aside>
