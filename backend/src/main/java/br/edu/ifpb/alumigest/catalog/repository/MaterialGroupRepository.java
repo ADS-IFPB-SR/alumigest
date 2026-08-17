@@ -11,11 +11,11 @@ import java.util.UUID;
 @Repository
 public interface MaterialGroupRepository extends JpaRepository<MaterialGroup, UUID> {
 
+
     Optional<MaterialGroup> findByCodeIgnoreCase(String code);
-
     boolean existsByCodeIgnoreCase(String code);
-
     List<MaterialGroup> findByIsActiveTrueOrderByNameAsc();
-
     List<MaterialGroup> findByIsSystemDefaultTrue();
+
+    Optional<MaterialGroup> findByCode(String code);
 }

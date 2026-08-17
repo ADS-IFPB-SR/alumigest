@@ -27,7 +27,8 @@ public class GlassService {
     private static final String GLASS_GROUP_CODE = "VIDRO";
     private static final List<BigDecimal> ALLOWED_THICKNESSES = List.of(
             new BigDecimal("2"), new BigDecimal("4"), new BigDecimal("6"),
-            new BigDecimal("8"), new BigDecimal("10")
+            new BigDecimal("8"), new BigDecimal("10"), new BigDecimal("12"),
+            new BigDecimal("15"), new BigDecimal("19")
     );
 
     public GlassService(MaterialRepository materialRepository, MaterialGroupRepository groupRepository) {
@@ -48,7 +49,7 @@ public class GlassService {
         material.setThicknessMm(dto.thicknessMm());
         material.setCostPrice(dto.costPrice());
         material.setSalePrice(dto.salePrice());
-        material.setUnitMeasure(UnitMeasure.M2); // Usando a unidade correta do seu Enum (assumindo M2 ou SQUARE_METER)
+        material.setUnitMeasure(UnitMeasure.M2);
         material.setActive(true);
 
         Material savedMaterial = materialRepository.save(material);
@@ -77,8 +78,19 @@ public class GlassService {
             throw new IllegalArgumentException("O material especificado não pertence ao grupo de vidros.");
         }
 
+        // Valida a nova espessura recebida no Update
+        validateThickness(dto.thicknessMm());
+
         material.setName(dto.name());
+        material.setColorFinish(dto.colorFinish());
+        material.setThicknessMm(dto.thicknessMm());
+        material.setCostPrice(dto.costPrice());
         material.setSalePrice(dto.salePrice());
+
+        // Atualiza o status ativo caso o toggle do frontend envie esse dado
+        if (dto.active() != null) {
+            material.setActive(dto.active());
+        }
 
         Material updatedMaterial = materialRepository.save(material);
         return toResponseDTO(updatedMaterial);
@@ -111,7 +123,7 @@ public class GlassService {
 
         if (!isValid) {
             throw new IllegalArgumentException(
-                    "Espessura inválida. Permitido apenas: 2mm, 4mm, 6mm, 8mm, 10mm."
+                    "Espessura inválida. Permitido apenas: 2mm, 4mm, 6mm, 8mm, 10mm, 12mm, 15mm, 19mm."
             );
         }
     }

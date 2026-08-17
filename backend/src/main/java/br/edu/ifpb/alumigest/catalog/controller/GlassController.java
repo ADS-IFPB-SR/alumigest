@@ -5,6 +5,7 @@ import br.edu.ifpb.alumigest.catalog.dto.GlassResponseDTO;
 import br.edu.ifpb.alumigest.catalog.dto.GlassUpdateDTO;
 import br.edu.ifpb.alumigest.catalog.service.GlassService;
 import jakarta.validation.Valid;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -35,7 +36,7 @@ public class GlassController {
     public ResponseEntity<Page<GlassResponseDTO>> listAll(
             @RequestParam(required = false) BigDecimal thickness,
             @RequestParam(required = false) String color,
-            @PageableDefault(size = 10, sort = "name") Pageable pageable) {
+            @ParameterObject @PageableDefault(size = 10, sort = "name") Pageable pageable) { // <-- @ParameterObject adicionado aqui
 
         Page<GlassResponseDTO> response = glassService.findAllGlasses(thickness, color, pageable);
         return ResponseEntity.ok(response);

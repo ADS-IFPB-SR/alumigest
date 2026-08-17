@@ -6,6 +6,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -76,7 +78,7 @@ public class Material {
     private BigDecimal standardLengthM;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "attributes_json", columnDefinition = "jsonb")
+    @Column(name = "attributes_json")
     private String attributesJson;
 
     @Column(name = "is_active", nullable = false)
