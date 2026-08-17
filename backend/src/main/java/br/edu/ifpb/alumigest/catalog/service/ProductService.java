@@ -23,7 +23,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
-public class ProductService {
+public class ProductService implements IProductService {
 
     private final ProductRepository productRepository;
     private final MaterialRepository materialRepository;

@@ -15,14 +15,18 @@ O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.
 - **Modelagem DER do Catálogo:** Criação do documento `DER-Catalogo_Materiais.md` detalhando o padrão *Type-Object Pattern* (`tb_material_groups` e `tb_materials`), dicionário de dados, extensibilidade para marcenaria e script DDL.
 
 ### 💻 Backend (Spring Boot)
-- **Refatoração do Domínio de Produto (Issue #31):** Migração do campo `category` (String) para uma nova entidade e tabela dinâmica `ProductCategory` (Migration `V4__create_product_categories.sql`).
-- **Repositórios e Mapeamento:** Criação de `ProductCategoryRepository` e mapeamento de relacionamento `@ManyToOne` na entidade `Product`.
+- **Catálogo Genérico de Insumos (Issues #11, #12, #13, #14, #15):** Implementação do padrão *Type-Object Pattern* permitindo CRUD completo de Vidros, Perfis de Alumínio, Películas e Ferragens com campos dinâmicos e controle de exclusão lógica (soft delete).
+- **Validação e Segurança:** Inclusão de tratamentos globais de exceção (`GlobalExceptionHandler`), padronização de formatação do código NCM (`@Pattern` exigindo exatos 8 dígitos) para todos os materiais e validação contra Fichas Técnicas vazias e preços negativos.
+- **Cadastro de Ficha Técnica de Produtos (BOM) (Issues #30, #31):** Migração do campo `category` para uma nova entidade e tabela dinâmica `ProductCategory` (Migration `V4__create_product_categories.sql`) e implementação do motor de Fichas Técnicas (`ProductItem`) permitindo o agrupamento inteligente de itens iguais e amarração entre produto final e insumo.
+- **Suite de Testes (Issue #17):** Escrita e refatoração massiva de testes para *Controllers* e *Services* de materiais e produtos. Resolvidos problemas de incompatibilidade de *Mocks* In-line na JVM do Java 25 através da extração de interfaces limpas (`IGlassService`, `IProductService`). Aprovado com sucesso (`BUILD SUCCESS`) e com alta cobertura.
+
+### 🎨 Frontend (React/TypeScript)
+- **Telas de Gestão do Catálogo (PWA) (Issue #16):** Desenvolvimento de abas (`Tabs`) modulares (`MaterialsCatalog.tsx`) com interface unificada e responsiva para cadastro e visualização de todos os tipos de materiais utilizando Modais reutilizáveis (`MaterialFormModal.tsx`).
+- **Tela de Ficha Técnica (Issue #32):** Implementação da interface completa do construtor de Produtos (`ProductBuilderPage.tsx`, `ProductTechSheet.tsx`, `ProductCostSummary.tsx`) bloqueando o cadastro de itens inválidos ou quantidades além de `99.999`.
 
 ### 🚀 Planejado / Em Desenvolvimento
-- Modelagem das tabelas do banco de dados relacional PostgreSQL (Migration Flyway V1).
-- Estrutura base do Catálogo de Insumos e Materiais (Vidros por m², Perfis de Alumínio por metro/barra e Ferragens).
-- Setup da arquitetura modular Backend (Spring Boot 3) e Frontend (TypeScript + PWA).
-- Configuração do pipeline de integração contínua (CI) no GitHub Actions.
+- Módulo de Orçamentos e Clientes (Sprint 2 - Restante).
+- Deploy na Oracle Cloud Infrastructure (OCI).
 
 ---
 
