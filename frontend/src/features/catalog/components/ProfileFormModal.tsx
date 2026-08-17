@@ -173,7 +173,7 @@ export function ProfileFormModal({ isOpen, onClose, initialData }: Props) {
  unit="m" 
  placeholder="3" 
  value={length}
- onChange={(e) => setLength(formatInteger(e.target.value))} 
+ onChange={(e) => setLength(formatInteger(e.target.value).slice(0, 2))} 
  />
  
  <Input 

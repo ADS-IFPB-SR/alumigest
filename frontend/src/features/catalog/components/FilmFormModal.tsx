@@ -160,7 +160,7 @@ export function FilmFormModal({ isOpen, onClose, initialData }: Props) {
           label="Largura da Bobina (mm)" 
           placeholder="Ex: 1520" 
           value={maxWidthMm}
-          onChange={(e) => setMaxWidthMm(formatInteger(e.target.value))}
+          onChange={(e) => setMaxWidthMm(formatInteger(e.target.value).slice(0, 5))}
           className="col-span-1 md:col-span-2" 
         />
 
