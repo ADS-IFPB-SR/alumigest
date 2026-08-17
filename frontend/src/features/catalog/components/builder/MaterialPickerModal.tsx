@@ -29,7 +29,6 @@ export function MaterialPickerModal({ isOpen, onClose, onSelect, materials, adde
       isOpen={isOpen}
       onClose={onClose}
       title="Selecionar Insumo"
-      maxWidth="md"
     >
       <div className="flex flex-col gap-md h-[60vh] max-h-[500px]">
         <div className="relative">

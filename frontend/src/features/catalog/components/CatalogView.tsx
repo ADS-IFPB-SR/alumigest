@@ -5,7 +5,9 @@ import { ProfileTab } from './ProfileTab';
 import { FilmTab } from './FilmTab';
 import { HardwareTab } from './HardwareTab';
 import { MaterialTypeSelectionModal } from './MaterialTypeSelectionModal';
-import { MaterialFormModal } from './MaterialFormModal';
+import { GlassFormModal } from './GlassFormModal';
+import { HardwareFormModal } from './HardwareFormModal';
+import { FilmFormModal } from './FilmFormModal';
 import { ProfileFormModal } from './ProfileFormModal';
 import { MaterialDetailsModal } from './MaterialDetailsModal';
 import { Button } from '../../../components/ui/Button';
@@ -140,12 +142,27 @@ export function CatalogView() {
         onSelect={handleSelectTipo}
       />
 
-      {/* 2. Modais de Formulário de Cadastro/Edição */}
-      {(activeFormType === 'Glass' || activeFormType === 'Film' || activeFormType === 'Hardware') && (
-        <MaterialFormModal
+      {/* 2. Modais de Formulário de Cadastro/Edição Específicos */}
+      {activeFormType === 'Glass' && (
+        <GlassFormModal
           isOpen={true}
           onClose={handleCloseFormModal}
-          tipo={activeFormType}
+          initialData={editingItem}
+        />
+      )}
+
+      {activeFormType === 'Hardware' && (
+        <HardwareFormModal
+          isOpen={true}
+          onClose={handleCloseFormModal}
+          initialData={editingItem}
+        />
+      )}
+
+      {activeFormType === 'Film' && (
+        <FilmFormModal
+          isOpen={true}
+          onClose={handleCloseFormModal}
           initialData={editingItem}
         />
       )}
@@ -166,7 +183,7 @@ export function CatalogView() {
         onEdit={() => {
           if (detailsItem) {
             handleEditItem(detailsItem.item, detailsItem.tipo);
-            setDetailsItem(null); // close details modal when editing
+            setDetailsItem(null);
           }
         }}
       />

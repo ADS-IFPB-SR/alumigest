@@ -3,7 +3,7 @@ import { Modal } from '../../../components/ui/Modal';
 import { Input } from '../../../components/ui/Input';
 import { Button } from '../../../components/ui/Button';
 import { useCreateProfile, useUpdateProfile } from '../hooks/useCatalog';
-import { formatCurrencyInput, parseCurrencyString, formatUppercase, formatWeightInput, parseWeightString } from '../../../utils/formatters';
+import { formatCurrencyInput, parseCurrencyString, formatUppercase, formatWeightInput, parseWeightString, formatInteger } from '../../../utils/formatters';
 import { StatusToggle } from './StatusToggle';
 import toast from 'react-hot-toast';
 

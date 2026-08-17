@@ -81,6 +81,7 @@ export interface MaterialSummary {
   id: string;
   name: string;
   skuCode?: string;
+  commercialReference?: string;
   unitMeasure: string;
   salePrice: number;
   costPrice: number;

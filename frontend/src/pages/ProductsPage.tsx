@@ -10,12 +10,12 @@ export function ProductTab() {
  const { data: productsData, isLoading: isLoadingProducts } = useProducts();
  const { data: materialsData, isLoading: isLoadingMaterials } = useMaterialsSummary();
 
- const products = productsData?.content || [];
- const materials = materialsData || [];
+  const products = productsData?.data?.content || [];
+  const materials = materialsData?.data || [];
 
- const materialsCostMap = useMemo(() => {
- const map = new Map<string, number>();
- materials.forEach(m => map.set(m.id, m.costPrice));
+  const materialsCostMap = useMemo(() => {
+    const map = new Map<string, number>();
+    materials.forEach((m: any) => map.set(m.id, m.costPrice));
  return map;
  }, [materials]);
 

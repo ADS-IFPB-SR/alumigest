@@ -11,10 +11,12 @@ export function ProductBuilderPage() {
  const { id } = useParams<{ id: string }>();
  const isEditing = Boolean(id);
 
- // Queries
- const { data: categories } = useProductCategories();
- const { data: materialsData } = useMaterialsSummary();
- const materials = materialsData || [];
+  // Queries
+  const { data: categoriesData } = useProductCategories();
+  const categories = categoriesData?.data || [];
+  
+  const { data: materialsData } = useMaterialsSummary();
+  const materials = materialsData?.data || [];
  
  // We fetch all products to find the one we're editing if we refreshed the page
  const { data: productsData } = useProducts();
@@ -32,25 +34,25 @@ export function ProductBuilderPage() {
 
  // Load existing data if editing
  useEffect(() => {
- if (isEditing && productsData?.content) {
- const existingProduct = productsData.content.find(p => p.id === id);
- if (existingProduct) {
- setName(existingProduct.name);
- setCategoryId(existingProduct.categoryId);
- setLaborCost(existingProduct.laborCost.toString().replace('.', ','));
- setItems(existingProduct.items.map(item => ({
- tempId: crypto.randomUUID(),
- materialId: item.materialId,
- quantity: item.quantity.toString().replace('.', ',')
- })));
- }
- } else if (!isEditing) {
- // Reset form if navigating from Edit -> New
- setName('');
- setCategoryId('');
- setLaborCost('');
- setItems([]);
- }
+   if (isEditing && productsData?.data?.content) {
+     const existingProduct = productsData.data.content.find((p: any) => p.id === id);
+     if (existingProduct) {
+       setName(existingProduct.name);
+       setCategoryId(existingProduct.categoryId);
+       setLaborCost(existingProduct.laborCost.toString().replace('.', ','));
+       setItems(existingProduct.items.map((item: any) => ({
+         tempId: crypto.randomUUID(),
+         materialId: item.materialId,
+         quantity: item.quantity.toString().replace('.', ',')
+       })));
+     }
+   } else if (!isEditing) {
+     // Reset form if navigating from Edit -> New
+     setName('');
+     setCategoryId('');
+     setLaborCost('');
+     setItems([]);
+   }
  }, [id, isEditing, productsData]);
 
   const handleSave = () => {
