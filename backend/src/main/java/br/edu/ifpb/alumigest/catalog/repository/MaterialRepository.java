@@ -85,4 +85,13 @@ public interface MaterialRepository extends JpaRepository<Material, UUID> {
             @Param("color") String color,
             Pageable pageable
     );
+
+    @Query("SELECT m FROM Material m WHERE m.group.id = :groupId " +
+            "AND (:thickness IS NULL OR m.thicknessMm = :thickness) " +
+            "AND (CAST(:color AS text) IS NULL OR LOWER(m.colorFinish) LIKE LOWER(CONCAT('%', CAST(:color AS text), '%')))")
+    Page<Material> findAllByGroupWithFilters(
+            @Param("groupId") UUID groupId,
+            @Param("thickness") BigDecimal thickness,
+            @Param("color") String color,
+            Pageable pageable);
 }

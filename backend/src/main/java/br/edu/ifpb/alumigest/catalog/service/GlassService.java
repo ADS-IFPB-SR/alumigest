@@ -62,7 +62,7 @@ public class GlassService implements IGlassService {
     public Page<GlassResponseDTO> findAllGlasses(BigDecimal thickness, String colorFinish, Pageable pageable) {
         MaterialGroup group = getGlassGroup();
 
-        Page<Material> materials = materialRepository.findActiveByGroupWithFilters(
+        Page<Material> materials = materialRepository.findAllByGroupWithFilters(
                 group.getId(), thickness, colorFinish, pageable
         );
 
