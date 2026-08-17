@@ -1,4 +1,4 @@
-export type MaterialType = 'Glass' | 'Profile' | 'Film' | 'Hardware';
+export type MaterialType = 'Glass' | 'Profile' | 'Film' | 'Hardware' | 'Product';
 
 export type UnitMeasure = 'M2' | 'METRO' | 'BARRA_3M' | 'BARRA_6M' | 'UN' | 'PAR' | 'PAIR' | 'KG' | 'LITRO';
 
@@ -68,4 +68,52 @@ export interface PageResponse<T> {
     totalElements: number;
     totalPages: number;
   };
+}
+
+export interface ProductCategory {
+  id: string;
+  name: string;
+  description?: string;
+  isActive: boolean;
+}
+
+export interface MaterialSummary {
+  id: string;
+  name: string;
+  skuCode?: string;
+  commercialReference?: string;
+  unitMeasure: string;
+  salePrice: number;
+  costPrice: number;
+  colorFinish?: string;
+  isActive: boolean;
+}
+
+export interface ProductItem {
+  id: string;
+  materialId: string;
+  materialName: string;
+  quantity: number;
+}
+
+export interface Product {
+  id: string;
+  name: string;
+  categoryId: string;
+  categoryName: string;
+  laborCost: number;
+  isActive: boolean;
+  items: ProductItem[];
+}
+
+export interface ProductItemRequest {
+  materialId: string;
+  quantity: number;
+}
+
+export interface ProductRequest {
+  name: string;
+  categoryId: string;
+  laborCost: number;
+  items: ProductItemRequest[];
 }

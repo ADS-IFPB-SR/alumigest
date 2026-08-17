@@ -4,6 +4,8 @@ import { Toaster } from 'react-hot-toast';
 import { DashboardLayout } from './components/layout/DashboardLayout';
 import { CatalogPage } from './pages/CatalogPage';
 import { PlaceholderPage } from './pages/PlaceholderPage';
+import { ProductTab as ProductsPage } from './pages/ProductsPage';
+import { ProductBuilderPage } from './pages/ProductBuilderPage';
 
 const queryClient = new QueryClient();
 
@@ -50,13 +52,15 @@ function App() {
             />
             <Route 
               path="produtos" 
-              element={
-                <PlaceholderPage 
-                  title="Tipologias & Produtos" 
-                  icon="category" 
-                  description="Cadastro de modelos de portas, janelas, portões, guarda-corpos e fórmulas de cálculo técnico." 
-                />
-              } 
+              element={<ProductsPage />} 
+            />
+            <Route 
+              path="produtos/novo" 
+              element={<ProductBuilderPage />} 
+            />
+            <Route 
+              path="produtos/:id/editar" 
+              element={<ProductBuilderPage />} 
             />
             <Route 
               path="clientes" 

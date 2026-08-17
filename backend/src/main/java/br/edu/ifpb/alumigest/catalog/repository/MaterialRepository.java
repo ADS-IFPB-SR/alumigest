@@ -24,14 +24,14 @@ public interface MaterialRepository extends JpaRepository<Material, UUID> {
     Optional<Material> findBySkuCodeAndIsActiveTrue(String skuCode);
 
     @Query("SELECT m FROM Material m WHERE m.isActive = true AND " +
-            "(LOWER(m.name) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
-            "LOWER(m.commercialReference) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
-            "LOWER(m.skuCode) LIKE LOWER(CONCAT('%', :query, '%')))")
+            "(LOWER(m.name) LIKE LOWER(CONCAT('%', CAST(:query AS string), '%')) OR " +
+            "LOWER(m.commercialReference) LIKE LOWER(CONCAT('%', CAST(:query AS string), '%')) OR " +
+            "LOWER(m.skuCode) LIKE LOWER(CONCAT('%', CAST(:query AS string), '%')))")
     Page<Material> searchActive(@Param("query") String query, Pageable pageable);
 
     @Query("SELECT m FROM Material m WHERE m.isActive = true AND m.group.id = :groupId AND " +
-            "(LOWER(m.name) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
-            "LOWER(m.commercialReference) LIKE LOWER(CONCAT('%', :query, '%')))")
+            "(LOWER(m.name) LIKE LOWER(CONCAT('%', CAST(:query AS string), '%')) OR " +
+            "LOWER(m.commercialReference) LIKE LOWER(CONCAT('%', CAST(:query AS string), '%')))")
     Page<Material> searchActiveByGroup(@Param("groupId") UUID groupId, @Param("query") String query, Pageable pageable);
 
     Page<Material> findAllByGroupCode(String groupCode, Pageable pageable);
@@ -85,4 +85,13 @@ public interface MaterialRepository extends JpaRepository<Material, UUID> {
             @Param("color") String color,
             Pageable pageable
     );
+
+    @Query("SELECT m FROM Material m WHERE m.group.id = :groupId " +
+            "AND (:thickness IS NULL OR m.thicknessMm = :thickness) " +
+            "AND (CAST(:color AS text) IS NULL OR LOWER(m.colorFinish) LIKE LOWER(CONCAT('%', CAST(:color AS text), '%')))")
+    Page<Material> findAllByGroupWithFilters(
+            @Param("groupId") UUID groupId,
+            @Param("thickness") BigDecimal thickness,
+            @Param("color") String color,
+            Pageable pageable);
 }

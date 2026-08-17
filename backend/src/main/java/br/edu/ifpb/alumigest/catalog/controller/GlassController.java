@@ -3,7 +3,7 @@ package br.edu.ifpb.alumigest.catalog.controller;
 import br.edu.ifpb.alumigest.catalog.dto.GlassCreateDTO;
 import br.edu.ifpb.alumigest.catalog.dto.GlassResponseDTO;
 import br.edu.ifpb.alumigest.catalog.dto.GlassUpdateDTO;
-import br.edu.ifpb.alumigest.catalog.service.GlassService;
+import br.edu.ifpb.alumigest.catalog.service.IGlassService;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
@@ -20,9 +20,9 @@ import java.util.UUID;
 @RequestMapping("/api/v1/catalog/glasses")
 public class GlassController {
 
-    private final GlassService glassService;
+    private final IGlassService glassService;
 
-    public GlassController(GlassService glassService) {
+    public GlassController(IGlassService glassService) {
         this.glassService = glassService;
     }
 

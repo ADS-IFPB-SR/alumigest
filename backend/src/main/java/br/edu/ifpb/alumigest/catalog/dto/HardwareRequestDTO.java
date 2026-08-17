@@ -35,6 +35,9 @@ public record HardwareRequestDTO(
 
         @NotNull(message = "O preço de venda é obrigatório")
         @PositiveOrZero(message = "O preço de venda deve ser maior ou igual a zero")
-        BigDecimal salePrice
+        BigDecimal salePrice,
+
+        @jakarta.validation.constraints.Pattern(regexp = "^\\d{8}$", message = "O código NCM deve conter exatamente 8 dígitos numéricos")
+        String ncmCode
 ) {
 }

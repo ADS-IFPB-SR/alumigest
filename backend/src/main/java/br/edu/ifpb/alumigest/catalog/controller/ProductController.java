@@ -8,6 +8,7 @@ import br.edu.ifpb.alumigest.common.dto.PageResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import br.edu.ifpb.alumigest.catalog.service.IProductService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -21,9 +22,9 @@ import java.util.UUID;
 @Tag(name = "Produtos (Esquadrias)", description = "Gerenciamento de produtos finais e suas fichas técnicas")
 public class ProductController {
 
-    private final ProductService productService;
+    private final IProductService productService;
 
-    public ProductController(ProductService productService) {
+    public ProductController(IProductService productService) {
         this.productService = productService;
     }
 

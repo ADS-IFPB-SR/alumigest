@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { catalogApi } from '../services/catalogApi';
-import type { GlassDTO, ProfileDTO, HardwareDTO, FilmDTO } from '../types';
+import type { GlassDTO, ProfileDTO, HardwareDTO, FilmDTO, ProductRequest } from '../types';
 import toast from 'react-hot-toast';
 
 // --- Glasses ---
@@ -162,3 +162,75 @@ export const useUpdateFilm = () => {
     },
   });
 };
+
+// --- Product Categories ---
+export const useProductCategories = () => {
+  return useQuery({
+    queryKey: ['productCategories'],
+    queryFn: catalogApi.getProductCategories,
+  });
+};
+
+// --- Material Summary ---
+export const useMaterialsSummary = () => {
+  return useQuery({
+    queryKey: ['materialsSummary'],
+    queryFn: catalogApi.getMaterialsSummary,
+  });
+};
+
+// --- Products ---
+export const useProducts = () => {
+  return useQuery({
+    queryKey: ['products'],
+    queryFn: catalogApi.getProducts,
+  });
+};
+
+export const useCreateProduct = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: ProductRequest) => catalogApi.createProduct(data),
+    onSuccess: () => {
+      toast.success('Produto cadastrado com sucesso!');
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+    },
+    onError: (error: any) => {
+      console.error('Erro ao cadastrar produto:', error);
+      const message = error?.response?.data?.message || 'Erro ao cadastrar produto.';
+      toast.error(message);
+    },
+  });
+};
+
+export const useUpdateProduct = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: ProductRequest }) => catalogApi.updateProduct(id, data),
+    onSuccess: () => {
+      toast.success('Produto atualizado com sucesso!');
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+    },
+    onError: (error: any) => {
+      console.error('Erro ao atualizar produto:', error);
+      const message = error?.response?.data?.message || 'Erro ao atualizar produto.';
+      toast.error(message);
+    },
+  });
+};
+
+export const useInactivateProduct = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => catalogApi.inactivateProduct(id),
+    onSuccess: () => {
+      toast.success('Produto inativado com sucesso!');
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+    },
+    onError: (error: any) => {
+      console.error('Erro ao inativar produto:', error);
+      toast.error('Erro ao inativar produto.');
+    },
+  });
+};
+

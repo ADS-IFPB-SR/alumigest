@@ -63,7 +63,7 @@ public class AluminumProfileService {
         try {
             return aluminumProfileMapper.toResponse(materialRepository.save(material));
         } catch (DataIntegrityViolationException e) {
-            throw new BusinessException("Conflito de cadastro: já existe um perfil de alumínio com a referência " + request.commercialReference());
+            throw new BusinessException("Conflito de cadastro: já existe um perfil com a referência '" + request.commercialReference() + "'.");
         }
     }
 
@@ -89,8 +89,16 @@ public class AluminumProfileService {
                 .orElseThrow(() ->
                         new ResourceNotFoundException("Perfil de alumínio não encontrado com ID: " + id));
 
+        material.setCommercialReference(request.commercialReference());
+        material.setName(request.name());
+        material.setColorFinish(request.colorFinish());
+        material.setStandardLengthM(request.standardLengthM());
         material.setCostPrice(request.costPrice());
         material.setSalePrice(request.salePrice());
+        
+        if (request.weight() != null || request.commercialLine() != null) {
+            material.setAttributesJson(aluminumProfileMapper.buildAttributesJson(request.weight(), request.commercialLine()));
+        }
         
         if (request.active() != null) {
             material.setActive(request.active());

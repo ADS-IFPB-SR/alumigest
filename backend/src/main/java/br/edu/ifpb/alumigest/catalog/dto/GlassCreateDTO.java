@@ -6,12 +6,17 @@ import jakarta.validation.constraints.Positive;
 import java.math.BigDecimal;
 import java.util.UUID;
 
+import jakarta.validation.constraints.Pattern;
+
 public record GlassCreateDTO(
         @NotBlank(message = "O nome do vidro é obrigatório.")
         String name,
 
         @NotBlank(message = "A cor/acabamento do vidro é obrigatória.")
         String colorFinish,
+
+        @Pattern(regexp = "^\\d{8}$", message = "O código NCM deve conter exatamente 8 dígitos numéricos")
+        String ncmCode,
 
         @NotNull(message = "A espessura é obrigatória.")
         BigDecimal thicknessMm,
@@ -22,5 +27,9 @@ public record GlassCreateDTO(
 
         @NotNull(message = "O preço de venda é obrigatório.")
         @Positive(message = "O preço de venda deve ser maior que zero.")
-        BigDecimal salePrice
+        BigDecimal salePrice,
+
+        BigDecimal maxWidthMm,
+
+        BigDecimal maxHeightMm
 ) {}
