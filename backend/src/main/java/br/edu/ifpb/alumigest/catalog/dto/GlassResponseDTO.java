@@ -12,7 +12,7 @@ public record GlassResponseDTO(
         BigDecimal costPrice,
         BigDecimal salePrice,
         String unitMeasure,
-        boolean isActive,
+        boolean active,
         BigDecimal maxWidthMm,
         BigDecimal maxHeightMm
 ) {}
