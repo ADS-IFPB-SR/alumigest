@@ -23,6 +23,8 @@ export function GlassFormModal({ isOpen, onClose, initialData }: Props) {
   const [thicknessMm, setThicknessMm] = useState('8');
   const [colorFinish, setColorFinish] = useState('');
   const [ncmCode, setNcmCode] = useState('');
+  const [maxWidthMm, setMaxWidthMm] = useState('2000');
+  const [maxHeightMm, setMaxHeightMm] = useState('3000');
   const [costPrice, setCostPrice] = useState('');
   const [salePrice, setSalePrice] = useState('');
   const [active, setActive] = useState(true);
@@ -33,6 +35,8 @@ export function GlassFormModal({ isOpen, onClose, initialData }: Props) {
       setNcmCode(initialData.ncmCode || '');
       setThicknessMm(initialData.thicknessMm?.toString() || '8');
       setColorFinish(initialData.colorFinish || '');
+      setMaxWidthMm(initialData.maxWidthMm?.toString() || '2000');
+      setMaxHeightMm(initialData.maxHeightMm?.toString() || '3000');
       
       const cp = initialData.costPrice ?? 0;
       const sp = initialData.salePrice ?? initialData.pricePerSqm ?? 0;
@@ -44,6 +48,8 @@ export function GlassFormModal({ isOpen, onClose, initialData }: Props) {
       setNcmCode('');
       setThicknessMm('8');
       setColorFinish('');
+      setMaxWidthMm('2000');
+      setMaxHeightMm('3000');
       setCostPrice('');
       setSalePrice('');
       setActive(true);
@@ -68,6 +74,8 @@ export function GlassFormModal({ isOpen, onClose, initialData }: Props) {
       name,
       thicknessMm: Number(thicknessMm),
       colorFinish,
+      maxWidthMm: Number(maxWidthMm),
+      maxHeightMm: Number(maxHeightMm),
       costPrice: parsedCostPrice,
       salePrice: parsedSalePrice,
       ncmCode,
@@ -140,6 +148,19 @@ export function GlassFormModal({ isOpen, onClose, initialData }: Props) {
           value={colorFinish}
           onChange={(e) => setColorFinish(formatUppercase(e.target.value))}
           disabled={isEditing}
+        />
+
+        <Input 
+          label="Largura Máxima (mm)" 
+          placeholder="Ex: 2000" 
+          value={maxWidthMm}
+          onChange={(e) => setMaxWidthMm(e.target.value)}
+        />
+        <Input 
+          label="Altura Máxima (mm)" 
+          placeholder="Ex: 3000" 
+          value={maxHeightMm}
+          onChange={(e) => setMaxHeightMm(e.target.value)}
         />
  
         <div className="grid grid-cols-1 md:grid-cols-2 gap-md col-span-1 md:col-span-2 mt-xs">
