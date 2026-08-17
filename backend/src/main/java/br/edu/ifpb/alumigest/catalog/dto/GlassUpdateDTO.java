@@ -28,5 +28,9 @@ public record GlassUpdateDTO(
         BigDecimal salePrice,
 
         @NotNull(message = "O status (ativo/inativo) é obrigatório.")
-        Boolean active
+        Boolean active,
+
+        BigDecimal maxWidthMm,
+
+        BigDecimal maxHeightMm
 ) {}

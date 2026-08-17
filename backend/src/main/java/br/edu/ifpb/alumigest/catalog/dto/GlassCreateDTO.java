@@ -27,5 +27,9 @@ public record GlassCreateDTO(
 
         @NotNull(message = "O preço de venda é obrigatório.")
         @Positive(message = "O preço de venda deve ser maior que zero.")
-        BigDecimal salePrice
+        BigDecimal salePrice,
+
+        BigDecimal maxWidthMm,
+
+        BigDecimal maxHeightMm
 ) {}
