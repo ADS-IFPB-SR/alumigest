@@ -48,7 +48,9 @@ class GlassServiceTest {
                 "70071900",
                 new BigDecimal("4"),
                 new BigDecimal("80.00"),
-                new BigDecimal("150.00")
+                new BigDecimal("150.00"),
+                new BigDecimal("2000"),
+                new BigDecimal("3000")
         );
 
         // Preparando Entidade base do Grupo de Vidros
@@ -85,7 +87,7 @@ class GlassServiceTest {
         assertEquals(savedMaterial.getId(), response.id());
         assertEquals(validDto.name(), response.name());
         assertEquals(validDto.thicknessMm(), response.thicknessMm());
-        assertTrue(response.isActive());
+        assertTrue(response.active());
         assertEquals(UnitMeasure.M2.name(), response.unitMeasure());
 
         // Verifica se os métodos foram realmente chamados
@@ -110,7 +112,9 @@ class GlassServiceTest {
                 "70071900",
                 new BigDecimal("5"), // Espessura não permitida (5mm)
                 new BigDecimal("50.00"),
-                new BigDecimal("100.00")
+                new BigDecimal("100.00"),
+                new BigDecimal("2000"),
+                new BigDecimal("3000")
         );
 
         // Act & Assert

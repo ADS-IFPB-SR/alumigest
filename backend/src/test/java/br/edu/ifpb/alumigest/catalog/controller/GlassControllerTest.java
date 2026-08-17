@@ -61,7 +61,9 @@ class GlassControllerTest {
                 "70071900",
                 new BigDecimal("4"),
                 new BigDecimal("80.00"),
-                new BigDecimal("150.00")
+                new BigDecimal("150.00"),
+                new BigDecimal("2000"),
+                new BigDecimal("3000")
         );
 
         GlassResponseDTO responseDTO = new GlassResponseDTO(
@@ -73,7 +75,9 @@ class GlassControllerTest {
                 new BigDecimal("80.00"),
                 new BigDecimal("150.00"),
                 "M2",
-                true
+                true,
+                new BigDecimal("2000"),
+                new BigDecimal("3000")
         );
 
         when(glassService.create(any(GlassCreateDTO.class))).thenReturn(responseDTO);
@@ -97,7 +101,9 @@ class GlassControllerTest {
                 "70071900",
                 new BigDecimal("4"),
                 new BigDecimal("-10.00"),
-                new BigDecimal("150.00")
+                new BigDecimal("150.00"),
+                new BigDecimal("2000"),
+                new BigDecimal("3000")
         );
 
         mockMvc.perform(post("/api/v1/catalog/glasses")
@@ -123,7 +129,9 @@ class GlassControllerTest {
                 new BigDecimal("80.00"),
                 new BigDecimal("150.00"),
                 "M2",
-                true
+                true,
+                new BigDecimal("2000"),
+                new BigDecimal("3000")
         );
 
         when(glassService.findAllGlasses(any(), any(), any(Pageable.class)))
@@ -149,12 +157,15 @@ class GlassControllerTest {
                 "70071900",
                 new BigDecimal("90.00"),
                 new BigDecimal("160.00"),
-                true
+                true,
+                new BigDecimal("2000"),
+                new BigDecimal("3000")
         );
 
         GlassResponseDTO responseDTO = new GlassResponseDTO(
                 id, "Vidro Atualizado", "Fume", "70071900", new BigDecimal("6"),
-                new BigDecimal("90.00"), new BigDecimal("160.00"), "M2", true
+                new BigDecimal("90.00"), new BigDecimal("160.00"), "M2", true,
+                new BigDecimal("2000"), new BigDecimal("3000")
         );
 
         when(glassService.update(eq(id), any(GlassUpdateDTO.class))).thenReturn(responseDTO);
