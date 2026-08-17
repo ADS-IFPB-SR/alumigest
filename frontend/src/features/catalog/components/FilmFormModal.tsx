@@ -3,7 +3,7 @@ import { Modal } from '../../../components/ui/Modal';
 import { Input } from '../../../components/ui/Input';
 import { Button } from '../../../components/ui/Button';
 import { useCreateFilm, useUpdateFilm } from '../hooks/useCatalog';
-import { formatCurrencyInput, parseCurrencyString, formatUppercase } from '../../../utils/formatters';
+import { formatCurrencyInput, parseCurrencyString, formatUppercase, formatInteger } from '../../../utils/formatters';
 import { StatusToggle } from './StatusToggle';
 import toast from 'react-hot-toast';
 
@@ -82,7 +82,7 @@ export function FilmFormModal({ isOpen, onClose, initialData }: Props) {
       thicknessMm: Number(thicknessMm) || 0.08,
       standardLengthM: Number(standardLengthM) || 30,
       maxWidthMm: Number(maxWidthMm) || 1520,
-      ncmCode,
+      ncmCode: ncmCode.trim() ? ncmCode.trim() : undefined,
       unitMeasure: initialData?.unitMeasure || 'M2',
       active
     };
@@ -133,7 +133,7 @@ export function FilmFormModal({ isOpen, onClose, initialData }: Props) {
           label="Código NCM" 
           placeholder="Opcional" 
           value={ncmCode}
-          onChange={(e) => setNcmCode(e.target.value)}
+          onChange={(e) => setNcmCode(formatInteger(e.target.value).slice(0, 8))}
           className="col-span-1 md:col-span-2" 
         />
         
@@ -160,7 +160,7 @@ export function FilmFormModal({ isOpen, onClose, initialData }: Props) {
           label="Largura da Bobina (mm)" 
           placeholder="Ex: 1520" 
           value={maxWidthMm}
-          onChange={(e) => setMaxWidthMm(e.target.value)}
+          onChange={(e) => setMaxWidthMm(formatInteger(e.target.value))}
           className="col-span-1 md:col-span-2" 
         />
 

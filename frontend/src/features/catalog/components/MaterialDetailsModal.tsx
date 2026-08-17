@@ -66,6 +66,15 @@ export function MaterialDetailsModal({ isOpen, onClose, item, onEdit }: Props) {
  </div>
  )}
 
+ {(item.maxWidthMm || item.maxHeightMm) && (
+ <div className="p-sm border border-outline-variant rounded-sm">
+ <span className="font-label-bold text-xs text-on-surface-variant block mb-xs">Dimensões Máximas (mm)</span>
+ <span className="font-data-mono text-data-mono text-on-surface">
+ {item.maxWidthMm} L x {item.maxHeightMm} A
+ </span>
+ </div>
+ )}
+
  {item.weightPerMeterKg !== undefined && (
  <div className="p-sm border border-outline-variant rounded-sm">
  <span className="font-label-bold text-xs text-on-surface-variant block mb-xs">Peso Linear</span>

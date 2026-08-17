@@ -98,7 +98,7 @@ export function ProfileFormModal({ isOpen, onClose, initialData }: Props) {
       standardLengthM: parsedLength,
       weight: parsedWeight,
       unitMeasure: 'BARRA_6M' as const,
-      ncmCode: ncmCode,
+      ncmCode: ncmCode.trim() ? ncmCode.trim() : undefined,
       colorFinish: colorFinish,
       costPrice: parsedCostPrice,
       salePrice: parsedSalePrice,
@@ -154,12 +154,12 @@ export function ProfileFormModal({ isOpen, onClose, initialData }: Props) {
  value={colorFinish}
  onChange={(e) => setColorFinish(formatUppercase(e.target.value))} 
  />
- <Input 
- label="Código NCM" 
- placeholder="Opcional" 
- value={ncmCode}
- onChange={(e) => setNcmCode(e.target.value)} 
- />
+  <Input 
+  label="Código NCM" 
+  placeholder="Opcional" 
+  value={ncmCode}
+  onChange={(e) => setNcmCode(formatInteger(e.target.value).slice(0, 8))} 
+  />
 
  <Input 
  label="Peso por Metro" 

@@ -3,7 +3,7 @@ import { Modal } from '../../../components/ui/Modal';
 import { Input } from '../../../components/ui/Input';
 import { Button } from '../../../components/ui/Button';
 import { useCreateHardware, useUpdateHardware } from '../hooks/useCatalog';
-import { formatCurrencyInput, parseCurrencyString, formatUppercase } from '../../../utils/formatters';
+import { formatCurrencyInput, parseCurrencyString, formatUppercase, formatInteger } from '../../../utils/formatters';
 import { StatusToggle } from './StatusToggle';
 import toast from 'react-hot-toast';
 
@@ -76,7 +76,7 @@ export function HardwareFormModal({ isOpen, onClose, initialData }: Props) {
       calculationType: unitMeasure === 'UN' ? 'UNIT' : (unitMeasure === 'PAR' ? 'PAIR' : 'LINEAR_METER'),
       costPrice: parsedCostPrice,
       salePrice: parsedSalePrice,
-      ncmCode,
+      ncmCode: ncmCode.trim() ? ncmCode.trim() : undefined,
       active
     };
 
@@ -126,7 +126,7 @@ export function HardwareFormModal({ isOpen, onClose, initialData }: Props) {
           label="Código NCM" 
           placeholder="Opcional" 
           value={ncmCode}
-          onChange={(e) => setNcmCode(e.target.value)}
+          onChange={(e) => setNcmCode(formatInteger(e.target.value).slice(0, 8))}
           className="col-span-1 md:col-span-2" 
         />
         

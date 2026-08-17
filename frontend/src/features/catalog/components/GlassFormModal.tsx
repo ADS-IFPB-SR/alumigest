@@ -3,7 +3,7 @@ import { Modal } from '../../../components/ui/Modal';
 import { Input } from '../../../components/ui/Input';
 import { Button } from '../../../components/ui/Button';
 import { useCreateGlass, useUpdateGlass } from '../hooks/useCatalog';
-import { formatCurrencyInput, parseCurrencyString, formatUppercase } from '../../../utils/formatters';
+import { formatCurrencyInput, parseCurrencyString, formatUppercase, formatInteger } from '../../../utils/formatters';
 import { StatusToggle } from './StatusToggle';
 import toast from 'react-hot-toast';
 
@@ -78,7 +78,7 @@ export function GlassFormModal({ isOpen, onClose, initialData }: Props) {
       maxHeightMm: Number(maxHeightMm),
       costPrice: parsedCostPrice,
       salePrice: parsedSalePrice,
-      ncmCode,
+      ncmCode: ncmCode.trim() ? ncmCode.trim() : undefined,
       active
     };
 
@@ -121,7 +121,7 @@ export function GlassFormModal({ isOpen, onClose, initialData }: Props) {
           label="Código NCM" 
           placeholder="Opcional" 
           value={ncmCode}
-          onChange={(e) => setNcmCode(e.target.value)}
+          onChange={(e) => setNcmCode(formatInteger(e.target.value).slice(0, 8))}
           className="col-span-1 md:col-span-2" 
         />
         
@@ -154,13 +154,13 @@ export function GlassFormModal({ isOpen, onClose, initialData }: Props) {
           label="Largura Máxima (mm)" 
           placeholder="Ex: 2000" 
           value={maxWidthMm}
-          onChange={(e) => setMaxWidthMm(e.target.value)}
+          onChange={(e) => setMaxWidthMm(formatInteger(e.target.value))}
         />
         <Input 
           label="Altura Máxima (mm)" 
           placeholder="Ex: 3000" 
           value={maxHeightMm}
-          onChange={(e) => setMaxHeightMm(e.target.value)}
+          onChange={(e) => setMaxHeightMm(formatInteger(e.target.value))}
         />
  
         <div className="grid grid-cols-1 md:grid-cols-2 gap-md col-span-1 md:col-span-2 mt-xs">
