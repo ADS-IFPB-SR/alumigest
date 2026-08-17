@@ -73,8 +73,8 @@ public class GlassService implements IGlassService {
     public GlassResponseDTO update(UUID id, GlassUpdateDTO dto) {
         validateThickness(dto.thicknessMm());
         
-        Material material = materialRepository.findByIdAndIsActiveTrue(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Vidro não encontrado ou inativo."));
+        Material material = materialRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Vidro não encontrado."));
 
         if (!material.getGroup().getCode().equalsIgnoreCase(GLASS_GROUP_CODE)) {
             throw new IllegalArgumentException("O material especificado não pertence ao grupo de vidros.");
@@ -96,8 +96,8 @@ public class GlassService implements IGlassService {
 
     @Transactional
     public void delete(UUID id) {
-        Material material = materialRepository.findByIdAndIsActiveTrue(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Vidro não encontrado ou já inativo."));
+        Material material = materialRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Vidro não encontrado."));
 
         if (!material.getGroup().getCode().equalsIgnoreCase(GLASS_GROUP_CODE)) {
             throw new IllegalArgumentException("O material especificado não pertence ao grupo de vidros.");
