@@ -4,8 +4,9 @@ import { Input } from '../../../components/ui/Input';
 import { Button } from '../../../components/ui/Button';
 import { useCreateGlass, useUpdateGlass, useCreateHardware, useUpdateHardware, useCreateFilm, useUpdateFilm } from '../hooks/useCatalog';
 import type { MaterialType } from '../types';
-import { formatCurrencyInput, parseCurrencyString, formatUppercase, formatInteger } from '../../../utils/formatters';
+import { formatCurrencyInput, parseCurrencyString, formatUppercase } from '../../../utils/formatters';
 import { StatusToggle } from './StatusToggle';
+import toast from 'react-hot-toast';
 
 interface Props {
  isOpen: boolean;
@@ -85,8 +86,23 @@ export function MaterialFormModal({ isOpen, onClose, tipo, initialData }: Props)
   }, [isOpen, initialData, tipo]);
 
   const handleSave = () => {
+    if (!name.trim()) {
+      toast.error('O nome/descrição é obrigatório.');
+      return;
+    }
+
+    if ((tipo === 'Hardware' || tipo === 'Film') && !skuCode.trim() && tipo === 'Hardware') {
+      toast.error('O código/referência é obrigatório para ferragens.');
+      return;
+    }
+
     const parsedCostPrice = parseCurrencyString(costPrice);
     const parsedSalePrice = parseCurrencyString(salePrice);
+
+    if (parsedCostPrice < 0 || parsedSalePrice < 0) {
+      toast.error('Os preços não podem ser negativos.');
+      return;
+    }
 
     const payloadGlass = {
       name,
@@ -128,14 +144,14 @@ export function MaterialFormModal({ isOpen, onClose, tipo, initialData }: Props)
     };
 
     if (tipo === 'Glass') {
-      if (isEditing) updateGlass({ id: initialData.id, data: updatePayloadGlass as any }, { onSuccess: onClose });
-      else createGlass(payloadGlass as any, { onSuccess: onClose });
+      if (isEditing) updateGlass({ id: initialData.id, data: updatePayloadGlass as any }, { onSuccess: onClose, onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao atualizar o vidro.') });
+      else createGlass(payloadGlass as any, { onSuccess: onClose, onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao criar o vidro.') });
     } else if (tipo === 'Hardware') {
-      if (isEditing) updateHardware({ id: initialData.id, data: payloadHardware as any }, { onSuccess: onClose });
-      else createHardware(payloadHardware as any, { onSuccess: onClose });
+      if (isEditing) updateHardware({ id: initialData.id, data: payloadHardware as any }, { onSuccess: onClose, onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao atualizar a ferragem.') });
+      else createHardware(payloadHardware as any, { onSuccess: onClose, onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao criar a ferragem.') });
     } else if (tipo === 'Film') {
-      if (isEditing) updateFilm({ id: initialData.id, data: payloadFilm as any }, { onSuccess: onClose });
-      else createFilm(payloadFilm as any, { onSuccess: onClose });
+      if (isEditing) updateFilm({ id: initialData.id, data: payloadFilm as any }, { onSuccess: onClose, onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao atualizar a película.') });
+      else createFilm(payloadFilm as any, { onSuccess: onClose, onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao criar a película.') });
     }
   };
 

@@ -63,7 +63,7 @@ public class AluminumProfileService {
         try {
             return aluminumProfileMapper.toResponse(materialRepository.save(material));
         } catch (DataIntegrityViolationException e) {
-            throw new BusinessException("Conflito de cadastro: já existe um perfil de alumínio com a referência " + request.commercialReference());
+            throw new BusinessException("Conflito de cadastro: já existe um perfil com a referência '" + request.commercialReference() + "'.");
         }
     }
 

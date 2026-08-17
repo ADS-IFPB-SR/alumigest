@@ -3,8 +3,9 @@ import { Modal } from '../../../components/ui/Modal';
 import { Input } from '../../../components/ui/Input';
 import { Button } from '../../../components/ui/Button';
 import { useCreateProfile, useUpdateProfile } from '../hooks/useCatalog';
-import { formatCurrencyInput, parseCurrencyString, formatUppercase, formatInteger, formatWeightInput, parseWeightString } from '../../../utils/formatters';
+import { formatCurrencyInput, parseCurrencyString, formatUppercase, formatWeightInput, parseWeightString } from '../../../utils/formatters';
 import { StatusToggle } from './StatusToggle';
+import toast from 'react-hot-toast';
 
 interface Props {
  isOpen: boolean;
@@ -59,27 +60,57 @@ export function ProfileFormModal({ isOpen, onClose, initialData }: Props) {
  }
  }, [isOpen, initialData]);
 
- const handleSave = () => {
- const payload = {
- commercialReference: skuCode,
- commercialLine: commercialLine,
- name: description,
- standardLengthM: Number(length),
- weight: parseWeightString(weight),
- unitMeasure: 'BARRA_6M' as const,
- ncmCode: ncmCode,
- colorFinish: colorFinish,
- costPrice: parseCurrencyString(costPrice),
- salePrice: parseCurrencyString(price),
- active
- };
- 
- if (isEditing) {
- updateProfile({ id: initialData.id, data: payload as any }, { onSuccess: onClose });
- } else {
- createProfile(payload as any, { onSuccess: onClose });
- }
- };
+  const handleSave = () => {
+    if (!description.trim()) {
+      toast.error('O nome/descrição do perfil é obrigatório.');
+      return;
+    }
+
+    if (!skuCode.trim()) {
+      toast.error('O código/referência é obrigatório.');
+      return;
+    }
+
+    const parsedCostPrice = parseCurrencyString(costPrice);
+    const parsedSalePrice = parseCurrencyString(price);
+
+    if (parsedCostPrice < 0 || parsedSalePrice < 0) {
+      toast.error('Os preços não podem ser negativos.');
+      return;
+    }
+
+    const parsedWeight = parseWeightString(weight);
+    if (parsedWeight <= 0) {
+      toast.error('O peso deve ser maior que zero.');
+      return;
+    }
+
+    const parsedLength = Number(length);
+    if (parsedLength <= 0) {
+      toast.error('O comprimento deve ser maior que zero.');
+      return;
+    }
+
+    const payload = {
+      commercialReference: skuCode,
+      commercialLine: commercialLine,
+      name: description,
+      standardLengthM: parsedLength,
+      weight: parsedWeight,
+      unitMeasure: 'BARRA_6M' as const,
+      ncmCode: ncmCode,
+      colorFinish: colorFinish,
+      costPrice: parsedCostPrice,
+      salePrice: parsedSalePrice,
+      active
+    };
+    
+    if (isEditing) {
+      updateProfile({ id: initialData.id, data: payload as any }, { onSuccess: onClose, onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao atualizar o perfil.') });
+    } else {
+      createProfile(payload as any, { onSuccess: onClose, onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao criar o perfil.') });
+    }
+  };
 
  return (
  <Modal
