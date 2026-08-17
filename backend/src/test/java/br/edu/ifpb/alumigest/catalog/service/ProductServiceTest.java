@@ -126,7 +126,55 @@ class ProductServiceTest {
 
         assertTrue(exception.getMessage().contains("Material não encontrado ou inativo"));
 
-        // Garante que não tentou salvar o produto no banco se deu erro no material
         verify(productRepository, never()).save(any(Product.class));
+    }
+
+    @Test
+    @DisplayName("Deve inativar produto corretamente (Soft Delete)")
+    void inactivateProduct_ShouldSetIsActiveToFalse() {
+        UUID productId = UUID.randomUUID();
+        Product product = new Product();
+        product.setId(productId);
+        product.setActive(true);
+
+        when(productRepository.findById(productId)).thenReturn(Optional.of(product));
+
+        productService.inactivateProduct(productId);
+
+        assertFalse(product.isActive());
+        verify(productRepository).save(product);
+    }
+
+    @Test
+    @DisplayName("Deve lançar BusinessException ao criar produto com nome duplicado")
+    void createProduct_WithDuplicateName_ShouldThrowBusinessException() {
+        ProductRequestDTO request = new ProductRequestDTO("Porta", UUID.randomUUID(), BigDecimal.ZERO, List.of());
+        
+        when(productRepository.existsByNameIgnoreCase("Porta")).thenReturn(true);
+
+        br.edu.ifpb.alumigest.common.exception.BusinessException exception = assertThrows(
+                br.edu.ifpb.alumigest.common.exception.BusinessException.class, 
+                () -> productService.createProduct(request)
+        );
+
+        assertEquals("Já existe um produto com o nome informado.", exception.getMessage());
+        verify(productRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Deve lançar BusinessException ao atualizar produto com nome de outro já existente")
+    void updateProduct_WithDuplicateName_ShouldThrowBusinessException() {
+        UUID id = UUID.randomUUID();
+        ProductRequestDTO request = new ProductRequestDTO("Porta Nova", UUID.randomUUID(), BigDecimal.ZERO, List.of());
+        
+        when(productRepository.existsByNameIgnoreCaseAndIdNot("Porta Nova", id)).thenReturn(true);
+
+        br.edu.ifpb.alumigest.common.exception.BusinessException exception = assertThrows(
+                br.edu.ifpb.alumigest.common.exception.BusinessException.class, 
+                () -> productService.updateProduct(id, request)
+        );
+
+        assertEquals("Já existe outro produto com o nome informado.", exception.getMessage());
+        verify(productRepository, never()).save(any());
     }
 }

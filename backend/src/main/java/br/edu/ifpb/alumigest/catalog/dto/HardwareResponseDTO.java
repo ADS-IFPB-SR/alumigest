@@ -17,6 +17,7 @@ public record HardwareResponseDTO(
         String name,
         UnitMeasure unitMeasure,
         CalculationType calculationType,
+        String ncmCode,
         BigDecimal costPrice,
         BigDecimal salePrice,
         boolean active,

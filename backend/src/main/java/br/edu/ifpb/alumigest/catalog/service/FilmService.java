@@ -62,11 +62,18 @@ public class FilmService {
 
     @Transactional
     public FilmResponseDTO updateFilmPrice(UUID id, FilmUpdatePriceDTO request) {
-
         Material material = materialRepository.findByIdAndGroupCode(id, FILM_GROUP_CODE)
-                .orElseThrow(() -> new ResourceNotFoundException("Película não encontrada com o ID informado."));
+                .orElseThrow(() -> new ResourceNotFoundException("Película não encontrada."));
 
+        material.setName(request.name());
+        material.setCommercialReference(request.commercialReference());
+        material.setColorFinish(request.colorFinish());
+        material.setCostPrice(request.costPrice());
         material.setSalePrice(request.salePrice());
+        material.setNcmCode(request.ncmCode());
+        material.setThicknessMm(request.thicknessMm());
+        material.setStandardLengthM(request.standardLengthM());
+        material.setMaxWidthMm(request.maxWidthMm());
         
         if (request.active() != null) {
             material.setActive(request.active());

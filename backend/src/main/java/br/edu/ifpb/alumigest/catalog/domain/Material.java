@@ -1,5 +1,6 @@
 package br.edu.ifpb.alumigest.catalog.domain;
 
+
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -12,7 +13,8 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 import java.util.UUID;
-
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 /**
  * Entidade universal que representa insumos e matérias-primas no catálogo.
  * Suporta vidros (2mm, 4mm, comuns, temperados), perfis de alumínio (linhas Rometal/Alternativa em 3m/6m),
@@ -74,6 +76,14 @@ public class Material {
     @PositiveOrZero(message = "Comprimento padrão deve ser maior ou igual a zero")
     @Column(name = "standard_length_m", precision = 6, scale = 2)
     private BigDecimal standardLengthM;
+
+    @PositiveOrZero(message = "Largura máxima da chapa deve ser maior ou igual a zero")
+    @Column(name = "max_width_mm", precision = 10, scale = 2)
+    private BigDecimal maxWidthMm;
+
+    @PositiveOrZero(message = "Altura máxima da chapa deve ser maior ou igual a zero")
+    @Column(name = "max_height_mm", precision = 10, scale = 2)
+    private BigDecimal maxHeightMm;
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "attributes_json")
@@ -201,6 +211,22 @@ public class Material {
 
     public void setStandardLengthM(BigDecimal standardLengthM) {
         this.standardLengthM = standardLengthM;
+    }
+
+    public BigDecimal getMaxWidthMm() {
+        return maxWidthMm;
+    }
+
+    public void setMaxWidthMm(BigDecimal maxWidthMm) {
+        this.maxWidthMm = maxWidthMm;
+    }
+
+    public BigDecimal getMaxHeightMm() {
+        return maxHeightMm;
+    }
+
+    public void setMaxHeightMm(BigDecimal maxHeightMm) {
+        this.maxHeightMm = maxHeightMm;
     }
 
     public String getAttributesJson() {
