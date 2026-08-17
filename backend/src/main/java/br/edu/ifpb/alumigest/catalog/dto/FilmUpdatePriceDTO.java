@@ -24,7 +24,7 @@ public record FilmUpdatePriceDTO(
         @Positive(message = "O preço por m² deve ser maior que zero")
         BigDecimal salePrice,
         
-        @jakarta.validation.constraints.Size(max = 20, message = "O código NCM deve ter no máximo 20 caracteres")
+        @jakarta.validation.constraints.Pattern(regexp = "^\\d{8}$", message = "O código NCM deve conter exatamente 8 dígitos numéricos")
         String ncmCode,
         
         @NotNull(message = "A expessura do prod é obrigatória. Ex: 0.08 mm")

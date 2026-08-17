@@ -7,6 +7,7 @@ public record GlassResponseDTO(
         UUID id,
         String name,
         String colorFinish,
+        String ncmCode,
         BigDecimal thicknessMm,
         BigDecimal costPrice,
         BigDecimal salePrice,

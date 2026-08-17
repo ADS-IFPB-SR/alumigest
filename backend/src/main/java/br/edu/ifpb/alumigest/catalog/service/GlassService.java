@@ -8,7 +8,7 @@ import br.edu.ifpb.alumigest.catalog.dto.GlassResponseDTO;
 import br.edu.ifpb.alumigest.catalog.dto.GlassUpdateDTO;
 import br.edu.ifpb.alumigest.catalog.repository.MaterialGroupRepository;
 import br.edu.ifpb.alumigest.catalog.repository.MaterialRepository;
-import jakarta.persistence.EntityNotFoundException;
+import br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Service
-public class GlassService {
+public class GlassService implements IGlassService {
 
     private final MaterialRepository materialRepository;
     private final MaterialGroupRepository groupRepository;
@@ -48,6 +48,7 @@ public class GlassService {
         material.setThicknessMm(dto.thicknessMm());
         material.setCostPrice(dto.costPrice());
         material.setSalePrice(dto.salePrice());
+        material.setNcmCode(dto.ncmCode());
         material.setUnitMeasure(UnitMeasure.M2);
         material.setActive(true);
 
@@ -59,7 +60,6 @@ public class GlassService {
     public Page<GlassResponseDTO> findAllGlasses(BigDecimal thickness, String colorFinish, Pageable pageable) {
         MaterialGroup group = getGlassGroup();
 
-        // Utiliza o novo método adicionado ao seu MaterialRepository
         Page<Material> materials = materialRepository.findActiveByGroupWithFilters(
                 group.getId(), thickness, colorFinish, pageable
         );
@@ -69,16 +69,22 @@ public class GlassService {
 
     @Transactional
     public GlassResponseDTO update(UUID id, GlassUpdateDTO dto) {
+        validateThickness(dto.thicknessMm());
+        
         Material material = materialRepository.findByIdAndIsActiveTrue(id)
-                .orElseThrow(() -> new EntityNotFoundException("Vidro não encontrado ou inativo."));
+                .orElseThrow(() -> new ResourceNotFoundException("Vidro não encontrado ou inativo."));
 
-        // Proteção extra: garantir que o material atualizado é de fato um Vidro
         if (!material.getGroup().getCode().equalsIgnoreCase(GLASS_GROUP_CODE)) {
             throw new IllegalArgumentException("O material especificado não pertence ao grupo de vidros.");
         }
 
         material.setName(dto.name());
+        material.setColorFinish(dto.colorFinish());
+        material.setThicknessMm(dto.thicknessMm());
+        material.setCostPrice(dto.costPrice());
         material.setSalePrice(dto.salePrice());
+        material.setNcmCode(dto.ncmCode());
+        material.setActive(dto.active());
 
         Material updatedMaterial = materialRepository.save(material);
         return toResponseDTO(updatedMaterial);
@@ -87,7 +93,7 @@ public class GlassService {
     @Transactional
     public void delete(UUID id) {
         Material material = materialRepository.findByIdAndIsActiveTrue(id)
-                .orElseThrow(() -> new EntityNotFoundException("Vidro não encontrado ou já inativo."));
+                .orElseThrow(() -> new ResourceNotFoundException("Vidro não encontrado ou já inativo."));
 
         if (!material.getGroup().getCode().equalsIgnoreCase(GLASS_GROUP_CODE)) {
             throw new IllegalArgumentException("O material especificado não pertence ao grupo de vidros.");
@@ -97,7 +103,6 @@ public class GlassService {
         materialRepository.save(material);
     }
 
-    // Método auxiliar para buscar o grupo centralizando a regra e a exceção
     private MaterialGroup getGlassGroup() {
         return groupRepository.findByCodeIgnoreCase(GLASS_GROUP_CODE)
                 .orElseThrow(() -> new IllegalStateException(
@@ -106,6 +111,7 @@ public class GlassService {
     }
 
     private void validateThickness(BigDecimal thickness) {
+        if (thickness == null) return; // Se a anotação @NotNull falhar, o Controller Advice já barra.
         boolean isValid = ALLOWED_THICKNESSES.stream()
                 .anyMatch(allowed -> allowed.compareTo(thickness) == 0);
 
@@ -121,6 +127,7 @@ public class GlassService {
                 material.getId(),
                 material.getName(),
                 material.getColorFinish(),
+                material.getNcmCode(),
                 material.getThicknessMm(),
                 material.getCostPrice(),
                 material.getSalePrice(),

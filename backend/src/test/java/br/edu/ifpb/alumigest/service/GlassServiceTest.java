@@ -45,6 +45,7 @@ class GlassServiceTest {
         validDto = new GlassCreateDTO(
                 "Vidro Temperado Incolor 4mm",
                 "Incolor",
+                "70071900",
                 new BigDecimal("4"),
                 new BigDecimal("80.00"),
                 new BigDecimal("150.00")
@@ -106,6 +107,7 @@ class GlassServiceTest {
         GlassCreateDTO invalidThicknessDto = new GlassCreateDTO(
                 "Vidro Fora do Padrão",
                 "Fumê",
+                "70071900",
                 new BigDecimal("5"), // Espessura não permitida (5mm)
                 new BigDecimal("50.00"),
                 new BigDecimal("100.00")

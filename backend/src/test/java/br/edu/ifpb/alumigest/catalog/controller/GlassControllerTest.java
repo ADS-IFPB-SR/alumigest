@@ -3,19 +3,23 @@ package br.edu.ifpb.alumigest.catalog.controller;
 import br.edu.ifpb.alumigest.catalog.dto.GlassCreateDTO;
 import br.edu.ifpb.alumigest.catalog.dto.GlassResponseDTO;
 import br.edu.ifpb.alumigest.catalog.dto.GlassUpdateDTO;
-import br.edu.ifpb.alumigest.catalog.service.GlassService;
+import br.edu.ifpb.alumigest.catalog.service.IGlassService;
+import br.edu.ifpb.alumigest.common.exception.GlobalExceptionHandler;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableHandlerMethodArgumentResolver;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -27,18 +31,26 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(GlassController.class)
-@ActiveProfiles("test")
+@ExtendWith(MockitoExtension.class)
 class GlassControllerTest {
 
-    @Autowired
     private MockMvc mockMvc;
 
-    @Autowired
-    private ObjectMapper objectMapper; // Utilitário do Jackson para converter Objetos em JSON
+    private ObjectMapper objectMapper = new ObjectMapper();
 
-    @MockBean
-    private GlassService glassService; // Mockamos o serviço pois a lógica dele já foi testada
+    @Mock
+    private IGlassService glassService;
+
+    @InjectMocks
+    private GlassController glassController;
+
+    @BeforeEach
+    void setUp() {
+        mockMvc = MockMvcBuilders.standaloneSetup(glassController)
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .setCustomArgumentResolvers(new PageableHandlerMethodArgumentResolver())
+                .build();
+    }
 
     @Test
     @DisplayName("Deve retornar 201 CREATED ao cadastrar um vidro válido")
@@ -46,6 +58,7 @@ class GlassControllerTest {
         GlassCreateDTO requestDTO = new GlassCreateDTO(
                 "Vidro Incolor 4mm",
                 "Incolor",
+                "70071900",
                 new BigDecimal("4"),
                 new BigDecimal("80.00"),
                 new BigDecimal("150.00")
@@ -55,6 +68,7 @@ class GlassControllerTest {
                 UUID.randomUUID(),
                 "Vidro Incolor 4mm",
                 "Incolor",
+                "70071900",
                 new BigDecimal("4"),
                 new BigDecimal("80.00"),
                 new BigDecimal("150.00"),
@@ -80,6 +94,7 @@ class GlassControllerTest {
         GlassCreateDTO invalidDto = new GlassCreateDTO(
                 "",
                 "Incolor",
+                "70071900",
                 new BigDecimal("4"),
                 new BigDecimal("-10.00"),
                 new BigDecimal("150.00")
@@ -99,32 +114,47 @@ class GlassControllerTest {
     @Test
     @DisplayName("Deve retornar 200 OK com página de vidros")
     void shouldReturn200WithPagedGlasses() throws Exception {
-        GlassResponseDTO glass = new GlassResponseDTO(
-                UUID.randomUUID(), "Vidro Temperado", "Incolor", new BigDecimal("8"),
-                new BigDecimal("100"), new BigDecimal("200"), "M2", true
+        GlassResponseDTO responseDTO = new GlassResponseDTO(
+                UUID.randomUUID(),
+                "Vidro Incolor 4mm",
+                "Incolor",
+                "70071900",
+                new BigDecimal("4"),
+                new BigDecimal("80.00"),
+                new BigDecimal("150.00"),
+                "M2",
+                true
         );
 
-        PageImpl<GlassResponseDTO> page = new PageImpl<>(List.of(glass));
+        when(glassService.findAllGlasses(any(), any(), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(responseDTO), PageRequest.of(0, 10), 1));
 
-        // Simulamos a resposta do serviço
-        when(glassService.findAllGlasses(any(), any(), any(Pageable.class))).thenReturn(page);
-
-        mockMvc.perform(get("/api/v1/catalog/glasses?thickness=8&color=Incolor&page=0&size=10")
-                        .accept(MediaType.APPLICATION_JSON))
+        mockMvc.perform(get("/api/v1/catalog/glasses")
+                        .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[0].name").value("Vidro Temperado"))
-                .andExpect(jsonPath("$.totalElements").value(1));
+                .andExpect(jsonPath("$.content[0].name").value("Vidro Incolor 4mm"))
+                .andExpect(jsonPath("$.content[0].ncmCode").value("70071900"));
+
+        verify(glassService, times(1)).findAllGlasses(any(), any(), any(Pageable.class));
     }
 
     @Test
     @DisplayName("Deve retornar 200 OK ao atualizar um vidro existente")
     void shouldReturn200WhenUpdatingGlass() throws Exception {
         UUID id = UUID.randomUUID();
-        GlassUpdateDTO updateDto = new GlassUpdateDTO("Vidro Atualizado", new BigDecimal("160.00"));
+        GlassUpdateDTO updateDto = new GlassUpdateDTO(
+                "Vidro Atualizado",
+                "Fume",
+                new BigDecimal("6"),
+                "70071900",
+                new BigDecimal("90.00"),
+                new BigDecimal("160.00"),
+                true
+        );
 
         GlassResponseDTO responseDTO = new GlassResponseDTO(
-                id, "Vidro Atualizado", "Incolor", new BigDecimal("4"),
-                new BigDecimal("80.00"), new BigDecimal("160.00"), "M2", true
+                id, "Vidro Atualizado", "Fume", "70071900", new BigDecimal("6"),
+                new BigDecimal("90.00"), new BigDecimal("160.00"), "M2", true
         );
 
         when(glassService.update(eq(id), any(GlassUpdateDTO.class))).thenReturn(responseDTO);

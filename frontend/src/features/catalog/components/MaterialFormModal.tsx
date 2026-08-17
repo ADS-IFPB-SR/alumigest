@@ -109,13 +109,9 @@ export function MaterialFormModal({ isOpen, onClose, tipo, initialData }: Props)
       thicknessMm: Number(thicknessMm),
       colorFinish,
       costPrice: parsedCostPrice,
-      salePrice: parsedSalePrice
-    };
-    
-    const updatePayloadGlass = {
-      name,
-      costPrice: parsedCostPrice, // Será ignorado pelo backend até Herbert arrumar
-      salePrice: parsedSalePrice
+      salePrice: parsedSalePrice,
+      ncmCode,
+      active
     };
     
     const payloadHardware = {
@@ -144,7 +140,7 @@ export function MaterialFormModal({ isOpen, onClose, tipo, initialData }: Props)
     };
 
     if (tipo === 'Glass') {
-      if (isEditing) updateGlass({ id: initialData.id, data: updatePayloadGlass as any }, { onSuccess: onClose, onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao atualizar o vidro.') });
+      if (isEditing) updateGlass({ id: initialData.id, data: payloadGlass as any }, { onSuccess: onClose, onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao atualizar o vidro.') });
       else createGlass(payloadGlass as any, { onSuccess: onClose, onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao criar o vidro.') });
     } else if (tipo === 'Hardware') {
       if (isEditing) updateHardware({ id: initialData.id, data: payloadHardware as any }, { onSuccess: onClose, onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao atualizar a ferragem.') });

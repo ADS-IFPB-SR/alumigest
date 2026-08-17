@@ -33,7 +33,7 @@ public record HardwareUpdatePriceDTO(
         @PositiveOrZero(message = "O preço de venda deve ser maior ou igual a zero")
         BigDecimal salePrice,
 
-        @Size(max = 20, message = "O código NCM deve ter no máximo 20 caracteres")
+        @jakarta.validation.constraints.Pattern(regexp = "^\\d{8}$", message = "O código NCM deve conter exatamente 8 dígitos numéricos")
         String ncmCode,
         
         Boolean active

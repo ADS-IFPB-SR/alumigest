@@ -297,6 +297,11 @@ class AluminumProfileControllerTest {
                     .path("data").path("id").asText();
 
             Map<String, Object> updateRequest = Map.of(
+                    "commercialReference", "REF-001",
+                    "name", "Perfil Atualizado",
+                    "colorFinish", "Branco",
+                    "weight", 1.5,
+                    "standardLengthM", 6.0,
                     "costPrice", 55.00,
                     "salePrice", 80.00
             );
