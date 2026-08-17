@@ -1,6 +1,5 @@
 import { useState, useMemo } from 'react';
 import { Modal } from '../../../../components/ui/Modal';
-import { Input } from '../../../../components/ui/Input';
 import type { MaterialSummary } from '../../types';
 
 interface Props {
@@ -41,7 +40,6 @@ export function MaterialPickerModal({ isOpen, onClose, onSelect, materials, adde
             className="w-full pl-xl pr-sm py-sm bg-surface-container-lowest border border-outline-variant rounded-md font-body text-sm text-on-surface focus:border-primary focus:outline-none transition-colors shadow-sm" 
             placeholder="Buscar por nome ou código..." 
             type="text" 
-            autoFocus
           />
         </div>
 

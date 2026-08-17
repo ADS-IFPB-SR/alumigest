@@ -126,10 +126,11 @@ export function GlassFormModal({ isOpen, onClose, initialData }: Props) {
         />
         
         <div className="flex flex-col gap-xs">
-          <label className="font-label-md text-label-md font-medium text-on-surface">
+          <label htmlFor="glass-thickness" className="font-label-md text-label-md font-medium text-on-surface">
             Espessura (mm)
           </label>
           <select
+            id="glass-thickness"
             className="w-full bg-surface-container-lowest border border-outline-variant rounded-md px-sm py-xs h-[42px] font-body text-sm text-on-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all shadow-sm"
             value={thicknessMm}
             onChange={(e) => setThicknessMm(e.target.value)}

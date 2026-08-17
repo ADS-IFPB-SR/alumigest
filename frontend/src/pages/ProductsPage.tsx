@@ -11,45 +11,45 @@ export function ProductTab() {
  const { data: materialsData, isLoading: isLoadingMaterials } = useMaterialsSummary();
 
   const products = productsData?.data?.content || [];
-  const materials = materialsData?.data || [];
 
   const materialsCostMap = useMemo(() => {
     const map = new Map<string, number>();
+    const materials = materialsData?.data || [];
     materials.forEach((m: any) => map.set(m.id, m.costPrice));
- return map;
- }, [materials]);
+    return map;
+  }, [materialsData?.data]);
 
- const calculateTotalCost = (product: Product) => {
- const materialsCost = product.items.reduce((acc, item) => {
- const price = materialsCostMap.get(item.materialId) || 0;
- return acc + (price * item.quantity);
- }, 0);
- return product.laborCost + materialsCost;
- };
+  const calculateTotalCost = useMemo(() => (product: Product) => {
+    const materialsCost = product.items.reduce((acc, item) => {
+      const price = materialsCostMap.get(item.materialId) || 0;
+      return acc + (price * item.quantity);
+    }, 0);
+    return product.laborCost + materialsCost;
+  }, [materialsCostMap]);
 
- const columns = [
- { 
- header: 'Nome da Esquadria', 
- accessor: (row: Product) => <span className="font-title-sm text-title-sm text-on-surface font-semibold">{row.name}</span> 
- },
- { 
- header: 'Categoria', 
- accessor: (row: Product) => <span className="font-body text-body-sm text-secondary">{row.categoryName}</span> 
- },
- { 
- header: 'Mão de Obra', 
- accessor: (row: Product) => <span className="font-data-mono text-data-mono text-secondary">R$ {row.laborCost.toFixed(2).replace('.', ',')}</span>,
- },
- { 
- header: 'Custo Total Estimado', 
- accessor: (row: Product) => (
- <span className="font-data-mono text-data-mono text-primary font-bold">
- R$ {calculateTotalCost(row).toFixed(2).replace('.', ',')}
- </span>
- ),
- align: 'right' as const
- }
- ];
+  const columns = useMemo(() => [
+    { 
+      header: 'Nome da Esquadria', 
+      accessor: (row: Product) => <span className="font-title-sm text-title-sm text-on-surface font-semibold">{row.name}</span> 
+    },
+    { 
+      header: 'Categoria', 
+      accessor: (row: Product) => <span className="font-body text-body-sm text-secondary">{row.categoryName}</span> 
+    },
+    { 
+      header: 'Mão de Obra', 
+      accessor: (row: Product) => <span className="font-data-mono text-data-mono text-secondary">R$ {row.laborCost.toFixed(2).replace('.', ',')}</span>,
+    },
+    { 
+      header: 'Custo Total Estimado', 
+      accessor: (row: Product) => (
+        <span className="font-data-mono text-data-mono text-primary font-bold">
+          R$ {calculateTotalCost(row).toFixed(2).replace('.', ',')}
+        </span>
+      ),
+      align: 'right' as const
+    }
+  ], [calculateTotalCost]);
 
  const handleCreate = () => {
  navigate('/produtos/novo');

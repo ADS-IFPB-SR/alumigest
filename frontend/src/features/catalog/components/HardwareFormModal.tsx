@@ -131,10 +131,11 @@ export function HardwareFormModal({ isOpen, onClose, initialData }: Props) {
         />
         
         <div className="flex flex-col gap-xs col-span-1 md:col-span-2">
-          <label className="font-label-md text-label-md font-medium text-on-surface">
+          <label htmlFor="hardware-unit" className="font-label-md text-label-md font-medium text-on-surface">
             Unidade de Medida
           </label>
           <select
+            id="hardware-unit"
             className="w-full bg-surface-container-lowest border border-outline-variant rounded-md px-sm py-xs h-[42px] font-body text-sm text-on-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all shadow-sm"
             value={unitMeasure}
             onChange={(e) => setUnitMeasure(e.target.value)}
