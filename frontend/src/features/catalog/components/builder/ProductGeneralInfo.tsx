@@ -1,5 +1,6 @@
 import React from 'react';
 import type { ProductCategory } from '../../types';
+import { formatCurrencyInput } from '../../../../utils/formatters';
 
 interface ProductGeneralInfoProps {
   name: string;
@@ -64,7 +65,7 @@ export function ProductGeneralInfo({
             className="w-full px-sm py-sm bg-surface-container-lowest border border-outline rounded-sm font-data-mono text-data-mono text-on-surface focus:border-primary focus:border-2 focus:outline-none transition-all"
             placeholder="0,00"
             value={laborCost}
-            onChange={(e) => setLaborCost(e.target.value)}
+            onChange={(e) => setLaborCost(formatCurrencyInput(e.target.value))}
           />
         </div>
         

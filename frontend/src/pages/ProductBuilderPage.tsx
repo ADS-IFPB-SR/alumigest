@@ -4,6 +4,7 @@ import { useCreateProduct, useUpdateProduct, useProductCategories, useMaterialsS
 import { ProductGeneralInfo } from '../features/catalog/components/builder/ProductGeneralInfo';
 import { ProductTechSheet, type FormItem } from '../features/catalog/components/builder/ProductTechSheet';
 import { ProductCostSummary } from '../features/catalog/components/builder/ProductCostSummary';
+import { formatCurrencyInput, parseCurrencyString } from '../utils/formatters';
 import toast from 'react-hot-toast';
 
 export function ProductBuilderPage() {
@@ -39,7 +40,7 @@ export function ProductBuilderPage() {
      if (existingProduct) {
        setName(existingProduct.name);
        setCategoryId(existingProduct.categoryId);
-       setLaborCost(existingProduct.laborCost.toString().replace('.', ','));
+       setLaborCost(formatCurrencyInput(existingProduct.laborCost.toFixed(2)));
        setItems(existingProduct.items.map((item: any) => ({
          tempId: crypto.randomUUID(),
          materialId: item.materialId,
@@ -65,7 +66,7 @@ export function ProductBuilderPage() {
       return;
     }
 
-    const parsedLaborCost = Number(laborCost.replace(',', '.'));
+    const parsedLaborCost = parseCurrencyString(laborCost);
     if (isNaN(parsedLaborCost) || parsedLaborCost < 0) {
       toast.error('Custo de mão de obra inválido. Insira um valor maior ou igual a zero.');
       return;
