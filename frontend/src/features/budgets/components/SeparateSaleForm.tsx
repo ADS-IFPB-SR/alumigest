@@ -10,24 +10,20 @@ import {
 
 import { useCreateSeparateSale } from '../hooks/useSeparateSale';
 
-// Importação dos componentes do seu Design System
 import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
 import { Select } from '../../../components/ui/Select';
 
-// Importação genial: Consumindo os hooks do seu módulo de Catálogo!
 import { useGlasses,useProfiles,useFilms,useHardwares } from '../../catalog/hooks/useCatalog';
 
 export function SeparateSaleForm() {
   const { mutateAsync: createSale, isPending: isSubmitting } = useCreateSeparateSale();
 
-  // Fetches do Catálogo
   const { data: glassesData } = useGlasses();
   const { data: profilesData } = useProfiles();
   const { data: filmsData } = useFilms();
   const { data: hardwaresData } = useHardwares();
 
-  // Transformando os DTOs do backend no formato { value, label } que o Select precisa
   const glassOptions = useMemo(() => glassesData?.content.filter(g => g.active).map(g => ({ value: g.id, label: `${g.skuCode || ''} - ${g.name}` })) || [],
   [glassesData]);
 
@@ -50,12 +46,11 @@ export function SeparateSaleForm() {
 
   const currentSaleType = watch('saleType');
 
-  // Alternador de Abas Interno (Limpa os dados ao trocar para não enviar sujeira pro Back)
   const handleTypeChange = (type: SaleType) => {
     if (type === currentSaleType) return;
     reset({
       saleType: type,
-      quantity: 1, // Mantém default
+      quantity: 1,
     });
   };
 
@@ -166,22 +161,29 @@ export function SeparateSaleForm() {
               </>
             )}
 
-            {currentSaleType === 'ALUMINUM' && (
-              <>
-                <Select
-                  label="Tipo de Alumínio *"
-                  options={profileOptions}
-                  {...register('profileId')}
-                  error={errors.profileId?.message}
-                />
-                <Select
-                  label="Esquadreta *"
-                  options={hardwareOptions}
-                  {...register('hardwareId')}
-                  error={errors.hardwareId?.message}
-                />
-              </>
-            )}
+           {currentSaleType === 'ALUMINUM' && (
+                         <>
+                           <Select
+                             label="Tipo de Alumínio *"
+                             options={profileOptions}
+                             {...register('profileId')}
+                             error={errors.profileId?.message}
+                           />
+                           <Select
+                             label="Esquadreta *"
+                             options={hardwareOptions}
+                             {...register('hardwareId')}
+                             error={errors.hardwareId?.message}
+                           />
+
+                           <Select
+                             label="Puxador (Opcional)"
+                             options={hardwareOptions}
+                             {...register('handleId')}
+                             error={errors.handleId?.message}
+                           />
+                         </>
+                       )}
 
           </div>
         </div>
