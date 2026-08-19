@@ -16,12 +16,7 @@ import { Input } from '../../../components/ui/Input';
 import { Select } from '../../../components/ui/Select';
 
 // Importação genial: Consumindo os hooks do seu módulo de Catálogo!
-import {
-  useGlasses,
-  useProfiles,
-  useFilms,
-  useHardwares
-} from '../../catalog/hooks/useCatalog';
+import { useGlasses,useProfiles,useFilms,useHardwares } from '../../catalog/hooks/useCatalog';
 
 export function SeparateSaleForm() {
   const { mutateAsync: createSale, isPending: isSubmitting } = useCreateSeparateSale();
@@ -33,29 +28,19 @@ export function SeparateSaleForm() {
   const { data: hardwaresData } = useHardwares();
 
   // Transformando os DTOs do backend no formato { value, label } que o Select precisa
-  const glassOptions = useMemo(() =>
-    glassesData?.content.filter(g => g.active).map(g => ({ value: g.id, label: `${g.skuCode || ''} - ${g.name}` })) || [],
+  const glassOptions = useMemo(() => glassesData?.content.filter(g => g.active).map(g => ({ value: g.id, label: `${g.skuCode || ''} - ${g.name}` })) || [],
   [glassesData]);
 
-  const profileOptions = useMemo(() =>
-    profilesData?.content.filter(p => p.active).map(p => ({ value: p.id, label: `${p.commercialReference} - ${p.name}` })) || [],
+  const profileOptions = useMemo(() => profilesData?.content.filter(p => p.active).map(p => ({ value: p.id, label: `${p.commercialReference} - ${p.name}` })) || [],
   [profilesData]);
 
-  const filmOptions = useMemo(() =>
-    filmsData?.content.filter(f => f.active).map(f => ({ value: f.id, label: f.name })) || [],
+  const filmOptions = useMemo(() => filmsData?.content.filter(f => f.active).map(f => ({ value: f.id, label: f.name })) || [],
   [filmsData]);
 
-  const hardwareOptions = useMemo(() =>
-    hardwaresData?.content.filter(h => h.active).map(h => ({ value: h.id, label: `${h.skuCode} - ${h.name}` })) || [],
+  const hardwareOptions = useMemo(() => hardwaresData?.content.filter(h => h.active).map(h => ({ value: h.id, label: `${h.skuCode} - ${h.name}` })) || [],
   [hardwaresData]);
 
-  const {
-    register,
-    handleSubmit,
-    watch,
-    reset,
-    formState: { errors },
-  } = useForm<SeparateSaleFormData>({
+  const {register, handleSubmit, watch,reset, formState: { errors },} = useForm<SeparateSaleFormData>({
     resolver: zodResolver(separateSaleSchema),
     defaultValues: {
       saleType: 'GLASS',
