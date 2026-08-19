@@ -39,7 +39,7 @@ export function ProductBuilderPage() {
        setCategoryId(existingProduct.categoryId);
        setLaborCost(formatCurrencyInput(existingProduct.laborCost.toFixed(2)));
        setItems(existingProduct.items.map((item: any) => ({
-         tempId: crypto.randomUUID(),
+         tempId: Math.random().toString(36).slice(2),
          materialId: item.materialId,
          quantity: item.quantity.toString().replace('.', ',')
        })));
