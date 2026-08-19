@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import type { MaterialSummary } from '../../types';
 import type { FormItem } from './ProductTechSheet';
 

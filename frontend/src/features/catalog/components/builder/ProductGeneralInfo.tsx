@@ -1,4 +1,3 @@
-import React from 'react';
 import type { ProductCategory } from '../../types';
 import { formatCurrencyInput } from '../../../../utils/formatters';
 
