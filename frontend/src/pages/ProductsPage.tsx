@@ -8,16 +8,16 @@ import type { Product } from '../features/catalog/types';
 export function ProductTab() {
  const navigate = useNavigate();
  const { data: productsData, isLoading: isLoadingProducts } = useProducts();
- const { data: materialsData, isLoading: isLoadingMaterials } = useMaterialsSummary();
+ const { data: materialsData = [], isLoading: isLoadingMaterials } = useMaterialsSummary();
 
-  const products = productsData?.data?.content || [];
+  const products = productsData?.content || [];
 
   const materialsCostMap = useMemo(() => {
     const map = new Map<string, number>();
-    const materials = materialsData?.data || [];
+    const materials = materialsData;
     materials.forEach((m: any) => map.set(m.id, m.costPrice));
     return map;
-  }, [materialsData?.data]);
+  }, [materialsData]);
 
   const calculateTotalCost = useMemo(() => (product: Product) => {
     const materialsCost = product.items.reduce((acc, item) => {
