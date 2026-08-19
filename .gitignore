@@ -29,6 +29,8 @@ backend/*.war
 backend/*.class
 backend/logs/
 backend/.env
+!.mvn/wrapper/maven-wrapper.jar
+!backend/.mvn/wrapper/maven-wrapper.jar
 
 # Frontend - Node / TypeScript / React / Vite / PWA
 frontend/node_modules/
@@ -47,3 +49,10 @@ postgres-data/
 *.sqlite
 *.db
 docker-compose.override.yml
+
+# Planejamento
+.planning
+
+
+# Configurações Locais
+.env

@@ -1,0 +1,20 @@
+spring:
+  config:
+    activate:
+      on-profile: test
+  datasource:
+    # A URL abaixo foi atualizada com o INIT para o JSONB
+    url: jdbc:h2:mem:alumigest_testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=PostgreSQL;INIT=CREATE DOMAIN IF NOT EXISTS JSONB AS VARCHAR;
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+  flyway:
+    enabled: false
+logging:
+  level:
+    root: WARN
+    br.edu.ifpb.alumigest: DEBUG

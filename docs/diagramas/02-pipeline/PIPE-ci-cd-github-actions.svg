@@ -1,0 +1,176 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 920">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap');
+    text { font-family: 'JetBrains Mono', 'SF Mono', 'Cascadia Code', monospace; }
+  </style>
+  <defs>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="0.5"/>
+    </pattern>
+    <marker id="arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#64748b"/>
+    </marker>
+    <marker id="arrow-green" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#34d399"/>
+    </marker>
+    <marker id="arrow-rose" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#fb7185"/>
+    </marker>
+  </defs>
+
+  <rect width="100%" height="100%" fill="#0f172a"/>
+  <rect width="100%" height="100%" fill="url(#grid)"/>
+
+  <!-- Title -->
+  <text x="30" y="35" fill="white" font-size="16" font-weight="700">Pipeline CI/CD — GitHub Actions</text>
+  <text x="30" y="52" fill="#94a3b8" font-size="9">Fluxo completo: Push → Build → Test → Lint → Deploy (branch main)</text>
+
+  <!-- ======== START ======== -->
+  <rect x="420" y="75" width="160" height="40" rx="20" fill="#0f172a"/>
+  <rect x="420" y="75" width="160" height="40" rx="20" fill="rgba(59,130,246,0.3)" stroke="#60a5fa" stroke-width="1.5"/>
+  <text x="500" y="100" fill="white" font-size="11" font-weight="600" text-anchor="middle">git push / PR</text>
+
+  <line x1="500" y1="115" x2="500" y2="145" stroke="#60a5fa" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+  <!-- ======== TRIGGER DECISION ======== -->
+  <g transform="translate(500, 180)">
+    <polygon points="0,-35 70,0 0,35 -70,0" fill="#0f172a"/>
+    <polygon points="0,-35 70,0 0,35 -70,0" fill="rgba(120,53,15,0.3)" stroke="#fbbf24" stroke-width="1.5"/>
+    <text y="-5" fill="white" font-size="9" font-weight="600" text-anchor="middle">Branch?</text>
+    <text y="10" fill="#94a3b8" font-size="8" text-anchor="middle">main / develop / PR</text>
+  </g>
+
+  <!-- Yes: main/develop → full pipeline -->
+  <line x1="500" y1="215" x2="500" y2="260" stroke="#64748b" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="510" y="242" fill="#34d399" font-size="8">main/develop</text>
+
+  <!-- Feature branch → limited -->
+  <line x1="570" y1="180" x2="780" y2="180" stroke="#64748b" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="650" y="173" fill="#fbbf24" font-size="8">feat/* / fix/*</text>
+
+  <!-- Feature branch box -->
+  <rect x="780" y="155" width="180" height="50" rx="6" fill="#0f172a"/>
+  <rect x="780" y="155" width="180" height="50" rx="6" fill="rgba(8,51,68,0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+  <text x="870" y="177" fill="white" font-size="10" font-weight="600" text-anchor="middle">Build + Test Only</text>
+  <text x="870" y="193" fill="#94a3b8" font-size="8" text-anchor="middle">Sem deploy</text>
+
+  <!-- ======== STAGE 1: CHECKOUT ======== -->
+  <rect x="400" y="260" width="200" height="50" rx="6" fill="#0f172a"/>
+  <rect x="400" y="260" width="200" height="50" rx="6" fill="rgba(30,41,59,0.5)" stroke="#94a3b8" stroke-width="1.5"/>
+  <text x="500" y="283" fill="white" font-size="10" font-weight="600" text-anchor="middle">1. Checkout</text>
+  <text x="500" y="298" fill="#94a3b8" font-size="8" text-anchor="middle">actions/checkout@v4</text>
+
+  <line x1="500" y1="310" x2="500" y2="340" stroke="#64748b" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+  <!-- ======== STAGE 2: PARALLEL BUILDS ======== -->
+  <!-- Parallel boundary -->
+  <rect x="100" y="340" width="800" height="80" rx="8" fill="none" stroke="#94a3b8" stroke-width="0.8" stroke-dasharray="6,3"/>
+  <text x="115" y="356" fill="#94a3b8" font-size="8" font-weight="500">Paralelo</text>
+
+  <!-- Backend Build -->
+  <rect x="130" y="362" width="220" height="48" rx="6" fill="#0f172a"/>
+  <rect x="130" y="362" width="220" height="48" rx="6" fill="rgba(6,78,59,0.4)" stroke="#34d399" stroke-width="1.5"/>
+  <text x="240" y="383" fill="white" font-size="10" font-weight="600" text-anchor="middle">2a. Build Backend</text>
+  <text x="240" y="398" fill="#94a3b8" font-size="8" text-anchor="middle">JDK 21 + mvn clean package -DskipTests</text>
+
+  <!-- Frontend Build -->
+  <rect x="400" y="362" width="220" height="48" rx="6" fill="#0f172a"/>
+  <rect x="400" y="362" width="220" height="48" rx="6" fill="rgba(8,51,68,0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+  <text x="510" y="383" fill="white" font-size="10" font-weight="600" text-anchor="middle">2b. Build Frontend</text>
+  <text x="510" y="398" fill="#94a3b8" font-size="8" text-anchor="middle">Node 20 + npm ci + npm run build</text>
+
+  <!-- Lint -->
+  <rect x="670" y="362" width="200" height="48" rx="6" fill="#0f172a"/>
+  <rect x="670" y="362" width="200" height="48" rx="6" fill="rgba(120,53,15,0.3)" stroke="#fbbf24" stroke-width="1.5"/>
+  <text x="770" y="383" fill="white" font-size="10" font-weight="600" text-anchor="middle">2c. Lint &amp; Format</text>
+  <text x="770" y="398" fill="#94a3b8" font-size="8" text-anchor="middle">Checkstyle + ESLint</text>
+
+  <!-- Arrows down from parallel -->
+  <line x1="240" y1="420" x2="240" y2="460" stroke="#64748b" stroke-width="1" marker-end="url(#arrow)"/>
+  <line x1="510" y1="420" x2="510" y2="460" stroke="#64748b" stroke-width="1" marker-end="url(#arrow)"/>
+  <line x1="770" y1="420" x2="770" y2="450" stroke="#64748b" stroke-width="1"/>
+  <line x1="770" y1="450" x2="500" y2="450" stroke="#64748b" stroke-width="1"/>
+
+  <!-- ======== STAGE 3: PARALLEL TESTS ======== -->
+  <rect x="100" y="460" width="800" height="80" rx="8" fill="none" stroke="#94a3b8" stroke-width="0.8" stroke-dasharray="6,3"/>
+  <text x="115" y="476" fill="#94a3b8" font-size="8" font-weight="500">Paralelo</text>
+
+  <!-- Backend Tests -->
+  <rect x="130" y="482" width="220" height="48" rx="6" fill="#0f172a"/>
+  <rect x="130" y="482" width="220" height="48" rx="6" fill="rgba(6,78,59,0.4)" stroke="#34d399" stroke-width="1.5"/>
+  <text x="240" y="503" fill="white" font-size="10" font-weight="600" text-anchor="middle">3a. Testes Backend</text>
+  <text x="240" y="518" fill="#94a3b8" font-size="8" text-anchor="middle">mvn test (JUnit 5 + Mockito)</text>
+
+  <!-- Frontend Tests -->
+  <rect x="400" y="482" width="220" height="48" rx="6" fill="#0f172a"/>
+  <rect x="400" y="482" width="220" height="48" rx="6" fill="rgba(8,51,68,0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+  <text x="510" y="503" fill="white" font-size="10" font-weight="600" text-anchor="middle">3b. Testes Frontend</text>
+  <text x="510" y="518" fill="#94a3b8" font-size="8" text-anchor="middle">npm test (Vitest)</text>
+
+  <!-- Coverage Report -->
+  <rect x="670" y="482" width="200" height="48" rx="6" fill="#0f172a"/>
+  <rect x="670" y="482" width="200" height="48" rx="6" fill="rgba(30,41,59,0.5)" stroke="#94a3b8" stroke-width="1.5"/>
+  <text x="770" y="503" fill="white" font-size="10" font-weight="600" text-anchor="middle">3c. Coverage Report</text>
+  <text x="770" y="518" fill="#94a3b8" font-size="8" text-anchor="middle">JaCoCo ≥ 70%</text>
+
+  <!-- Arrows merge -->
+  <line x1="240" y1="540" x2="240" y2="565" stroke="#64748b" stroke-width="1"/>
+  <line x1="510" y1="540" x2="510" y2="565" stroke="#64748b" stroke-width="1"/>
+  <line x1="770" y1="540" x2="770" y2="565" stroke="#64748b" stroke-width="1"/>
+  <line x1="240" y1="565" x2="770" y2="565" stroke="#64748b" stroke-width="1"/>
+  <line x1="500" y1="565" x2="500" y2="590" stroke="#64748b" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+  <!-- ======== DECISION: Tests pass? ======== -->
+  <g transform="translate(500, 625)">
+    <polygon points="0,-35 60,0 0,35 -60,0" fill="#0f172a"/>
+    <polygon points="0,-35 60,0 0,35 -60,0" fill="rgba(120,53,15,0.3)" stroke="#fbbf24" stroke-width="1.5"/>
+    <text y="-3" fill="white" font-size="9" font-weight="600" text-anchor="middle">Testes</text>
+    <text y="10" fill="#94a3b8" font-size="8" text-anchor="middle">OK?</text>
+  </g>
+
+  <!-- Fail → notify -->
+  <line x1="560" y1="625" x2="780" y2="625" stroke="#fb7185" stroke-width="1.2" stroke-dasharray="6,3" marker-end="url(#arrow-rose)"/>
+  <text x="640" y="618" fill="#fb7185" font-size="8">Falhou</text>
+
+  <rect x="780" y="600" width="180" height="50" rx="6" fill="#0f172a"/>
+  <rect x="780" y="600" width="180" height="50" rx="6" fill="rgba(136,19,55,0.4)" stroke="#fb7185" stroke-width="1.5"/>
+  <text x="870" y="622" fill="white" font-size="10" font-weight="600" text-anchor="middle">Notificar Equipe</text>
+  <text x="870" y="638" fill="#94a3b8" font-size="8" text-anchor="middle">GitHub PR Check ❌</text>
+
+  <!-- Pass → deploy decision -->
+  <line x1="500" y1="660" x2="500" y2="700" stroke="#34d399" stroke-width="1.2" marker-end="url(#arrow-green)"/>
+  <text x="510" y="685" fill="#34d399" font-size="8">Passou ✅</text>
+
+  <!-- ======== DECISION: Branch main? ======== -->
+  <g transform="translate(500, 735)">
+    <polygon points="0,-35 65,0 0,35 -65,0" fill="#0f172a"/>
+    <polygon points="0,-35 65,0 0,35 -65,0" fill="rgba(120,53,15,0.3)" stroke="#fbbf24" stroke-width="1.5"/>
+    <text y="-3" fill="white" font-size="9" font-weight="600" text-anchor="middle">Branch</text>
+    <text y="10" fill="#94a3b8" font-size="8" text-anchor="middle">= main?</text>
+  </g>
+
+  <!-- No → stop -->
+  <line x1="565" y1="735" x2="780" y2="735" stroke="#64748b" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="640" y="728" fill="#fbbf24" font-size="8">develop / PR</text>
+
+  <rect x="780" y="710" width="180" height="50" rx="20" fill="#0f172a"/>
+  <rect x="780" y="710" width="180" height="50" rx="20" fill="rgba(59,130,246,0.2)" stroke="#60a5fa" stroke-width="1.5"/>
+  <text x="870" y="738" fill="white" font-size="10" font-weight="600" text-anchor="middle">Fim (sem deploy)</text>
+
+  <!-- Yes → deploy -->
+  <line x1="500" y1="770" x2="500" y2="810" stroke="#34d399" stroke-width="1.2" marker-end="url(#arrow-green)"/>
+  <text x="510" y="795" fill="#34d399" font-size="8">main ✅</text>
+
+  <!-- ======== STAGE 5: DEPLOY ======== -->
+  <rect x="350" y="810" width="300" height="55" rx="6" fill="#0f172a"/>
+  <rect x="350" y="810" width="300" height="55" rx="6" fill="rgba(120,53,15,0.3)" stroke="#fbbf24" stroke-width="1.5"/>
+  <text x="500" y="835" fill="white" font-size="11" font-weight="700" text-anchor="middle">4. Deploy via Coolify Webhook</text>
+  <text x="500" y="852" fill="#94a3b8" font-size="8" text-anchor="middle">Webhook POST → Coolify → docker compose pull + up -d</text>
+
+  <!-- END -->
+  <line x1="500" y1="865" x2="500" y2="885" stroke="#34d399" stroke-width="1.2" marker-end="url(#arrow-green)"/>
+
+  <rect x="420" y="885" width="160" height="30" rx="15" fill="#0f172a"/>
+  <rect x="420" y="885" width="160" height="30" rx="15" fill="rgba(6,78,59,0.3)" stroke="#34d399" stroke-width="1.5"/>
+  <text x="500" y="905" fill="white" font-size="10" font-weight="600" text-anchor="middle">Deploy Completo ✅</text>
+</svg>
