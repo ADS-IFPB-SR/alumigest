@@ -13,11 +13,8 @@ export function ProductBuilderPage() {
  const isEditing = Boolean(id);
 
   // Queries
-  const { data: categoriesData } = useProductCategories();
-  const categories = categoriesData?.data || [];
-  
-  const { data: materialsData } = useMaterialsSummary();
-  const materials = materialsData?.data || [];
+  const { data: categories = [] } = useProductCategories();
+  const { data: materials = [] } = useMaterialsSummary();
  
  // We fetch all products to find the one we're editing if we refreshed the page
  const { data: productsData } = useProducts();
@@ -35,8 +32,8 @@ export function ProductBuilderPage() {
 
  // Load existing data if editing
  useEffect(() => {
-   if (isEditing && productsData?.data?.content) {
-     const existingProduct = productsData.data.content.find((p: any) => p.id === id);
+   if (isEditing && productsData?.content) {
+     const existingProduct = productsData.content.find((p: any) => p.id === id);
      if (existingProduct) {
        setName(existingProduct.name);
        setCategoryId(existingProduct.categoryId);

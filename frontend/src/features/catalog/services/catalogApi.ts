@@ -76,27 +76,27 @@ export const catalogApi = {
 
   // Product Categories
   getProductCategories: async () => {
-    const response = await api.get<ApiResponse<ProductCategory[]>>('/catalog/product-categories');
+    const response = await api.get<ProductCategory[]>('/catalog/product-categories');
     return response.data;
   },
 
   // Material Summary (Unified List)
   getMaterialsSummary: async () => {
-    const response = await api.get<ApiResponse<MaterialSummary[]>>('/catalog/materials?size=1000');
+    const response = await api.get<MaterialSummary[]>('/catalog/materials?size=1000');
     return response.data;
   },
 
   // Products
   getProducts: async () => {
-    const response = await api.get<ApiResponse<PageResponse<Product>>>('/catalog/products?size=100');
+    const response = await api.get<PageResponse<Product>>('/catalog/products?size=100');
     return response.data;
   },
   createProduct: async (data: ProductRequest) => {
-    const response = await api.post<ApiResponse<Product>>('/catalog/products', data);
+    const response = await api.post<Product>('/catalog/products', data);
     return response.data;
   },
   updateProduct: async (id: string, data: ProductRequest) => {
-    const response = await api.put<ApiResponse<Product>>(`/catalog/products/${id}`, data);
+    const response = await api.put<Product>(`/catalog/products/${id}`, data);
     return response.data;
   },
   inactivateProduct: async (id: string) => {
