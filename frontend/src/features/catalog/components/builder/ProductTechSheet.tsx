@@ -30,7 +30,7 @@ export function ProductTechSheet({ items, setItems, materials }: ProductTechShee
       toast.error('Este insumo já está na ficha técnica.');
       return;
     }
-    setItems([...items, { tempId: crypto.randomUUID(), materialId: material.id, quantity: '' }]);
+    setItems([...items, { tempId: Math.random().toString(36).slice(2), materialId: material.id, quantity: '' }]);
     setIsPickerOpen(false);
   };
 
