@@ -1,4 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Modal } from '../../../components/ui/Modal';
 import { Input } from '../../../components/ui/Input';
 import { Button } from '../../../components/ui/Button';
@@ -6,6 +8,7 @@ import { useCreateGlass, useUpdateGlass } from '../hooks/useCatalog';
 import { formatCurrencyInput, parseCurrencyString, formatUppercase, formatInteger } from '../../../utils/formatters';
 import { StatusToggle } from './StatusToggle';
 import toast from 'react-hot-toast';
+import { glassSchema, type GlassFormValues } from '../schemas/catalogSchemas';
 
 interface Props {
   isOpen: boolean;
@@ -19,80 +22,55 @@ export function GlassFormModal({ isOpen, onClose, initialData }: Props) {
   const { mutate: updateGlass, isPending: isUpdatePending } = useUpdateGlass();
   const isPending = isCreatePending || isUpdatePending;
 
-  const [name, setName] = useState('');
-  const [thicknessMm, setThicknessMm] = useState('8');
-  const [colorFinish, setColorFinish] = useState('');
-  const [ncmCode, setNcmCode] = useState('');
-  const [maxWidthMm, setMaxWidthMm] = useState('2000');
-  const [maxHeightMm, setMaxHeightMm] = useState('3000');
-  const [costPrice, setCostPrice] = useState('');
-  const [salePrice, setSalePrice] = useState('');
-  const [active, setActive] = useState(true);
+  const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<GlassFormValues>({
+    resolver: zodResolver(glassSchema),
+    defaultValues: {
+      name: '', ncmCode: '', thicknessMm: '8', colorFinish: '', maxWidthMm: '2000', maxHeightMm: '3000', costPrice: '', salePrice: '', active: true
+    }
+  });
+  
+  const activeValue = watch('active');
 
   useEffect(() => {
-    if (isOpen && initialData) {
-      setName(initialData.name || '');
-      setNcmCode(initialData.ncmCode || '');
-      setThicknessMm(initialData.thicknessMm?.toString() || '8');
-      setColorFinish(initialData.colorFinish || '');
-      setMaxWidthMm(initialData.maxWidthMm?.toString() || '2000');
-      setMaxHeightMm(initialData.maxHeightMm?.toString() || '3000');
-      
-      const cp = initialData.costPrice ?? 0;
-      const sp = initialData.salePrice ?? initialData.pricePerSqm ?? 0;
-      setCostPrice(formatCurrencyInput(cp.toFixed(2)));
-      setSalePrice(formatCurrencyInput(sp.toFixed(2)));
-      setActive(initialData.active ?? true);
-    } else if (isOpen && !initialData) {
-      setName('');
-      setNcmCode('');
-      setThicknessMm('8');
-      setColorFinish('');
-      setMaxWidthMm('2000');
-      setMaxHeightMm('3000');
-      setCostPrice('');
-      setSalePrice('');
-      setActive(true);
+    if (isOpen) {
+      if (initialData) {
+        reset({
+          name: initialData.name || '',
+          ncmCode: initialData.ncmCode || '',
+          thicknessMm: initialData.thicknessMm?.toString() || '8',
+          colorFinish: initialData.colorFinish || '',
+          maxWidthMm: initialData.maxWidthMm?.toString() || '2000',
+          maxHeightMm: initialData.maxHeightMm?.toString() || '3000',
+          costPrice: formatCurrencyInput((initialData.costPrice ?? 0).toFixed(2)),
+          salePrice: formatCurrencyInput((initialData.salePrice ?? initialData.pricePerSqm ?? 0).toFixed(2)),
+          active: initialData.active ?? true
+        });
+      } else {
+        reset({
+          name: '', ncmCode: '', thicknessMm: '8', colorFinish: '', maxWidthMm: '2000', maxHeightMm: '3000', costPrice: '', salePrice: '', active: true
+        });
+      }
     }
-  }, [isOpen, initialData]);
+  }, [isOpen, initialData, reset]);
 
-  const handleSave = () => {
-    if (!name.trim()) {
-      toast.error('O nome/descrição é obrigatório.');
-      return;
-    }
-
-    const parsedCostPrice = parseCurrencyString(costPrice);
-    const parsedSalePrice = parseCurrencyString(salePrice);
-
-    if (parsedCostPrice < 0 || parsedSalePrice < 0) {
-      toast.error('Os preços não podem ser negativos.');
-      return;
-    }
-
+  const onSubmit = (data: GlassFormValues) => {
     const payload = {
-      name,
-      thicknessMm: Number(thicknessMm),
-      colorFinish,
-      maxWidthMm: Number(maxWidthMm),
-      maxHeightMm: Number(maxHeightMm),
-      costPrice: parsedCostPrice,
-      salePrice: parsedSalePrice,
-      ncmCode: ncmCode.trim() ? ncmCode.trim() : undefined,
-      active
+      name: data.name,
+      thicknessMm: Number(data.thicknessMm),
+      colorFinish: data.colorFinish,
+      maxWidthMm: Number(data.maxWidthMm),
+      maxHeightMm: Number(data.maxHeightMm),
+      costPrice: parseCurrencyString(data.costPrice),
+      salePrice: parseCurrencyString(data.salePrice),
+      ncmCode: data.ncmCode?.trim() ? data.ncmCode.trim() : undefined,
+      active: data.active
     };
 
-    if (isEditing) {
-      updateGlass({ id: initialData.id, data: payload as any }, { 
-        onSuccess: onClose, 
-        onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao atualizar o vidro.') 
-      });
-    } else {
-      createGlass(payload as any, { 
-        onSuccess: onClose, 
-        onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao criar o vidro.') 
-      });
-    }
+    const action = isEditing ? updateGlass : createGlass;
+    action(isEditing ? { id: initialData.id, data: payload as any } : payload as any, { 
+      onSuccess: onClose, 
+      onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro de servidor.') 
+    });
   };
 
   return (
@@ -103,7 +81,7 @@ export function GlassFormModal({ isOpen, onClose, initialData }: Props) {
       footer={
         <>
           <Button variant="ghost" onClick={onClose} disabled={isPending}>Cancelar</Button>
-          <Button variant="primary" onClick={handleSave} disabled={isPending}>
+          <Button variant="primary" onClick={handleSubmit(onSubmit)} disabled={isPending}>
             {isPending ? 'Salvando...' : (isEditing ? 'Atualizar' : 'Salvar')}
           </Button>
         </>
@@ -111,79 +89,58 @@ export function GlassFormModal({ isOpen, onClose, initialData }: Props) {
     >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-md">
         <Input 
-          label="Nome / Descrição" 
-          placeholder="Ex: Vidro Temperado 8mm Incolor" 
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="col-span-1 md:col-span-2" 
+          label="Nome / Descrição *" placeholder="Ex: VIDRO TEMPERADO 8MM INCOLOR" className="col-span-1 md:col-span-2"
+          {...register('name', { onChange: e => setValue('name', formatUppercase(e.target.value)) })}
+          error={errors.name?.message}
         />
         <Input 
-          label="Código NCM" 
-          placeholder="Opcional" 
-          value={ncmCode}
-          onChange={(e) => setNcmCode(formatInteger(e.target.value).slice(0, 8))}
-          className="col-span-1 md:col-span-2" 
+          label="Código NCM" placeholder="Opcional" className="col-span-1 md:col-span-2"
+          {...register('ncmCode', { onChange: e => setValue('ncmCode', formatInteger(e.target.value).slice(0, 8)) })}
+          error={errors.ncmCode?.message}
         />
         
         <div className="flex flex-col gap-xs">
-          <label htmlFor="glass-thickness" className="font-label-md text-label-md font-medium text-on-surface">
-            Espessura (mm)
-          </label>
-          <select
-            id="glass-thickness"
-            className="w-full bg-surface-container-lowest border border-outline-variant rounded-md px-sm py-xs h-[42px] font-body text-sm text-on-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all shadow-sm"
-            value={thicknessMm}
-            onChange={(e) => setThicknessMm(e.target.value)}
-            disabled={isEditing}
-          >
-            <option value="2">2 mm</option>
-            <option value="4">4 mm</option>
-            <option value="6">6 mm</option>
-            <option value="8">8 mm</option>
-            <option value="10">10 mm</option>
+          <label htmlFor="glass-thickness" className="font-label-bold text-label-bold text-on-surface text-xs">Espessura (mm) *</label>
+          <select id="glass-thickness" className="w-full px-sm py-xs bg-surface-container-low border border-outline-variant rounded-sm font-body-sm text-body-sm text-on-surface h-[34px]" {...register('thicknessMm')}>
+            {[2,4,6,8,10].map(v => <option key={v} value={v}>{v} mm</option>)}
           </select>
+          {errors.thicknessMm?.message && <span className="font-body-sm text-body-sm text-error">{errors.thicknessMm.message}</span>}
         </div>
+
         <Input 
-          label="Cor / Acabamento" 
-          placeholder="Ex: INCOLOR" 
-          value={colorFinish}
-          onChange={(e) => setColorFinish(formatUppercase(e.target.value))}
-          disabled={isEditing}
+          label="Cor / Acabamento *" placeholder="Ex: INCOLOR" 
+          {...register('colorFinish', { onChange: e => setValue('colorFinish', formatUppercase(e.target.value)) })}
+          error={errors.colorFinish?.message}
         />
 
         <Input 
-          label="Largura Máxima (mm)" 
-          placeholder="Ex: 2000" 
-          value={maxWidthMm}
-          onChange={(e) => setMaxWidthMm(formatInteger(e.target.value).slice(0, 5))}
+          label="Largura Máxima (mm) *" placeholder="Ex: 2000"
+          {...register('maxWidthMm', { onChange: e => setValue('maxWidthMm', formatInteger(e.target.value).slice(0, 5)) })}
+          error={errors.maxWidthMm?.message}
         />
+        
         <Input 
-          label="Altura Máxima (mm)" 
-          placeholder="Ex: 3000" 
-          value={maxHeightMm}
-          onChange={(e) => setMaxHeightMm(formatInteger(e.target.value).slice(0, 5))}
+          label="Altura Máxima (mm) *" placeholder="Ex: 3000"
+          {...register('maxHeightMm', { onChange: e => setValue('maxHeightMm', formatInteger(e.target.value).slice(0, 5)) })}
+          error={errors.maxHeightMm?.message}
         />
  
         <div className="grid grid-cols-1 md:grid-cols-2 gap-md col-span-1 md:col-span-2 mt-xs">
           <Input 
-            label="Preço de Custo" 
-            unit="R$/m²"
-            placeholder="0,00" 
-            value={costPrice}
-            onChange={(e) => setCostPrice(formatCurrencyInput(e.target.value))}
+            label="Preço de Custo *" unit="R$/m²" placeholder="0,00"
+            {...register('costPrice', { onChange: e => setValue('costPrice', formatCurrencyInput(e.target.value)) })}
+            error={errors.costPrice?.message}
           />
           <Input 
-            label="Preço de Venda" 
-            unit="R$/m²"
-            placeholder="0,00" 
-            value={salePrice}
-            onChange={(e) => setSalePrice(formatCurrencyInput(e.target.value))}
+            label="Preço de Venda *" unit="R$/m²" placeholder="0,00"
+            {...register('salePrice', { onChange: e => setValue('salePrice', formatCurrencyInput(e.target.value)) })}
+            error={errors.salePrice?.message}
           />
         </div>
         
         {isEditing && (
           <div className="col-span-1 md:col-span-2 mt-xs">
-            <StatusToggle active={active} onChange={setActive} />
+            <StatusToggle active={activeValue} onChange={(v) => setValue('active', v)} />
           </div>
         )}
       </div>
