@@ -55,7 +55,7 @@ jobs:
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
         run: |
           cd backend
-          ./mvnw sonar:sonar \
+          ./mvnw org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
             -Dsonar.projectKey=alumigest-backend \
             -Dsonar.projectName="AlumiGest Backend" \
             -Dsonar.host.url=$SONAR_HOST_URL \
