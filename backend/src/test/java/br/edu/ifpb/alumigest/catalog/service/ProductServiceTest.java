@@ -1,15 +1,12 @@
 package br.edu.ifpb.alumigest.catalog.service;
 
-import br.edu.ifpb.alumigest.catalog.domain.Material;
-import br.edu.ifpb.alumigest.catalog.domain.Product;
-import br.edu.ifpb.alumigest.catalog.domain.ProductCategory;
-import br.edu.ifpb.alumigest.catalog.dto.ProductItemRequestDTO;
-import br.edu.ifpb.alumigest.catalog.dto.ProductRequestDTO;
-import br.edu.ifpb.alumigest.catalog.dto.ProductResponseDTO;
+import br.edu.ifpb.alumigest.catalog.domain.*;
+import br.edu.ifpb.alumigest.catalog.dto.*;
 import br.edu.ifpb.alumigest.catalog.mapper.ProductMapper;
 import br.edu.ifpb.alumigest.catalog.repository.MaterialRepository;
 import br.edu.ifpb.alumigest.catalog.repository.ProductCategoryRepository;
 import br.edu.ifpb.alumigest.catalog.repository.ProductRepository;
+import br.edu.ifpb.alumigest.common.exception.BusinessException;
 import br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -43,90 +40,195 @@ class ProductServiceTest {
     private ProductService productService;
 
     @Test
-    @DisplayName("Deve cadastrar um produto agrupando itens repetidos e retornar o DTO")
-    void createProduct_WithValidData_ShouldSaveAndReturnResponse() {
-        // Arrange (Preparação)
-        UUID materialId = UUID.randomUUID();
-
-        // Simulando que o usuário mandou o mesmo material DUAS vezes na requisição
-        ProductItemRequestDTO item1 = new ProductItemRequestDTO(materialId, new BigDecimal("2.0"));
-        ProductItemRequestDTO item2 = new ProductItemRequestDTO(materialId, new BigDecimal("3.0"));
-
+    @DisplayName("Deve cadastrar um produto com template e categoryRequirements com sucesso")
+    void createProduct_WithTemplateAndCategories_ShouldSaveSuccessfully() {
         UUID categoryId = UUID.randomUUID();
-
-        ProductRequestDTO request = new ProductRequestDTO(
-                "Janela de Correr",
-                categoryId,
-                new BigDecimal("150.00"),
-                List.of(item1, item2)
-        );
-
-        Material mockMaterial = new Material();
-        mockMaterial.setId(materialId);
-
-        Product mockSavedProduct = new Product();
-        ProductResponseDTO mockResponse = new ProductResponseDTO(UUID.randomUUID(), "Janela de Correr", categoryId, "Esquadrias", new BigDecimal("150.00"), true, List.of());
-
         ProductCategory mockCategory = new ProductCategory();
         mockCategory.setId(categoryId);
-        mockCategory.setName("Esquadrias");
+        mockCategory.setName("Portas de Giro");
 
-        // Comportamento dos Mocks
+        TemplateConfigDTO templateConfigDTO = new TemplateConfigDTO(
+                new BigDecimal("20.0"),
+                "#212121",
+                "#e3f2fd",
+                OpeningDirection.LEFT_TO_RIGHT,
+                null,
+                new HandleConfigDTO(HandleType.LEVER_HANDLE, HandlePosition.RIGHT, new BigDecimal("150.0"), null),
+                new DrillingConfigDTO(HoleDrillingMode.EQUAL, 2, List.of()),
+                new TemplateOptionSchemaDTO(false, List.of(), true, List.of(OpeningDirection.LEFT_TO_RIGHT, OpeningDirection.RIGHT_TO_LEFT),
+                        true, List.of(HandleType.LEVER_HANDLE, HandleType.BAR_TUBULAR), List.of(HandlePosition.RIGHT, HandlePosition.LEFT),
+                        true, List.of(HoleDrillingMode.EQUAL), List.of("#212121", "#FFFFFF"), List.of("#e3f2fd", "#595959"))
+        );
+
+        ProductRequestDTO request = new ProductRequestDTO(
+                "Porta de Giro Alumiportas",
+                categoryId,
+                new BigDecimal("150.00"),
+                DoorTemplateType.GIRO,
+                templateConfigDTO,
+                List.of(MaterialCategoryType.GLASS, MaterialCategoryType.PROFILE, MaterialCategoryType.HARDWARE),
+                List.of()
+        );
+
+        Product mockSavedProduct = new Product();
+        mockSavedProduct.setId(UUID.randomUUID());
+        mockSavedProduct.setName("Porta de Giro Alumiportas");
+        mockSavedProduct.setTemplateType(DoorTemplateType.GIRO);
+
+        ProductResponseDTO mockResponse = new ProductResponseDTO(
+                mockSavedProduct.getId(),
+                "Porta de Giro Alumiportas",
+                categoryId,
+                "Portas de Giro",
+                new BigDecimal("150.00"),
+                DoorTemplateType.GIRO,
+                templateConfigDTO,
+                List.of(MaterialCategoryType.GLASS, MaterialCategoryType.PROFILE, MaterialCategoryType.HARDWARE),
+                true,
+                List.of()
+        );
+
+        when(productRepository.existsByNameIgnoreCase("Porta de Giro Alumiportas")).thenReturn(false);
         when(productCategoryRepository.findById(categoryId)).thenReturn(Optional.of(mockCategory));
-        when(materialRepository.findByIdAndIsActiveTrue(materialId)).thenReturn(Optional.of(mockMaterial));
+        when(productMapper.toTemplateConfig(any())).thenReturn(new TemplateConfig());
         when(productRepository.save(any(Product.class))).thenReturn(mockSavedProduct);
         when(productMapper.toResponse(mockSavedProduct)).thenReturn(mockResponse);
 
-        // Act (Ação)
         ProductResponseDTO result = productService.createProduct(request);
 
-        // Assert (Verificação)
         assertNotNull(result);
-        assertEquals("Janela de Correr", result.name());
+        assertEquals("Porta de Giro Alumiportas", result.name());
+        assertEquals(DoorTemplateType.GIRO, result.templateType());
+        assertEquals(3, result.categoryRequirements().size());
 
-        // Capturar o Produto exato que foi mandado para o banco para checar a nossa regra da soma!
-        ArgumentCaptor<Product> productCaptor = ArgumentCaptor.forClass(Product.class);
-        verify(productRepository).save(productCaptor.capture());
-
-        Product capturedProduct = productCaptor.getValue();
-
-        // Verifica se os itens repetidos foram somados em UMA única linha na ficha técnica (2.0 + 3.0 = 5.0)
-        assertEquals(1, capturedProduct.getItems().size());
-        assertEquals(new BigDecimal("5.0"), capturedProduct.getItems().get(0).getQuantity());
-
-        // Como agrupou, o banco só deve ter sido consultado UMA vez
-        verify(materialRepository, times(1)).findByIdAndIsActiveTrue(materialId);
+        ArgumentCaptor<Product> captor = ArgumentCaptor.forClass(Product.class);
+        verify(productRepository).save(captor.capture());
+        Product captured = captor.getValue();
+        assertEquals(DoorTemplateType.GIRO, captured.getTemplateType());
+        assertEquals(3, captured.getCategoryRequirements().size());
+        assertTrue(captured.isActive());
     }
 
     @Test
-    @DisplayName("Deve lançar exceção ao tentar cadastrar produto com material inexistente")
-    void createProduct_WithInvalidMaterial_ShouldThrowException() {
-        // Arrange
-        UUID invalidMaterialId = UUID.randomUUID();
-        ProductItemRequestDTO item = new ProductItemRequestDTO(invalidMaterialId, new BigDecimal("1.0"));
-
+    @DisplayName("Deve lançar BusinessException ao criar produto com template mas sem categoryRequirements")
+    void createProduct_WithTemplateButNoCategoryRequirements_ShouldThrowException() {
         UUID categoryId = UUID.randomUUID();
-        ProductCategory mockCategory = new ProductCategory();
-        mockCategory.setId(categoryId);
-
         ProductRequestDTO request = new ProductRequestDTO(
-                "Porta",
+                "Porta Inválida",
                 categoryId,
-                new BigDecimal("50.00"),
-                List.of(item)
+                BigDecimal.ZERO,
+                DoorTemplateType.GIRO,
+                null,
+                List.of(),
+                List.of()
         );
 
+        when(productRepository.existsByNameIgnoreCase("Porta Inválida")).thenReturn(false);
+
+        BusinessException ex = assertThrows(BusinessException.class, () -> productService.createProduct(request));
+        assertTrue(ex.getMessage().contains("Templates de produto exigem ao menos uma categoria de insumo"));
+        verify(productRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Deve atualizar produto e alterar template e opções com sucesso")
+    void updateProduct_WithNewTemplate_ShouldUpdateSuccessfully() {
+        UUID productId = UUID.randomUUID();
+        UUID categoryId = UUID.randomUUID();
+
+        Product existingProduct = new Product();
+        existingProduct.setId(productId);
+        existingProduct.setName("Porta Antiga");
+        existingProduct.setTemplateType(DoorTemplateType.GIRO);
+
+        ProductCategory mockCategory = new ProductCategory();
+        mockCategory.setId(categoryId);
+        mockCategory.setName("Portas de Correr");
+
+        TemplateConfigDTO newConfigDTO = new TemplateConfigDTO(
+                new BigDecimal("45.0"),
+                "#FFFFFF",
+                "#595959",
+                OpeningDirection.LEFT_TO_RIGHT,
+                SlidingMode.BOTH_SLIDING,
+                new HandleConfigDTO(HandleType.SHELL_LOCK, HandlePosition.RIGHT, new BigDecimal("120.0"), null),
+                new DrillingConfigDTO(HoleDrillingMode.EQUAL, 0, List.of()),
+                null
+        );
+
+        ProductRequestDTO request = new ProductRequestDTO(
+                "Porta de Correr Suprema",
+                categoryId,
+                new BigDecimal("200.00"),
+                DoorTemplateType.CORRER,
+                newConfigDTO,
+                List.of(MaterialCategoryType.GLASS, MaterialCategoryType.PROFILE, MaterialCategoryType.ROLLERS),
+                List.of()
+        );
+
+        Product updatedProduct = new Product();
+        updatedProduct.setId(productId);
+        updatedProduct.setName("Porta de Correr Suprema");
+        updatedProduct.setTemplateType(DoorTemplateType.CORRER);
+
+        ProductResponseDTO mockResponse = new ProductResponseDTO(
+                productId,
+                "Porta de Correr Suprema",
+                categoryId,
+                "Portas de Correr",
+                new BigDecimal("200.00"),
+                DoorTemplateType.CORRER,
+                newConfigDTO,
+                List.of(MaterialCategoryType.GLASS, MaterialCategoryType.PROFILE, MaterialCategoryType.ROLLERS),
+                true,
+                List.of()
+        );
+
+        when(productRepository.existsByNameIgnoreCaseAndIdNot("Porta de Correr Suprema", productId)).thenReturn(false);
+        when(productRepository.findById(productId)).thenReturn(Optional.of(existingProduct));
         when(productCategoryRepository.findById(categoryId)).thenReturn(Optional.of(mockCategory));
-        when(materialRepository.findByIdAndIsActiveTrue(invalidMaterialId)).thenReturn(Optional.empty());
+        when(productMapper.toTemplateConfig(any())).thenReturn(new TemplateConfig());
+        when(productRepository.save(any(Product.class))).thenReturn(updatedProduct);
+        when(productMapper.toResponse(updatedProduct)).thenReturn(mockResponse);
 
-        // Act & Assert
-        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> {
-            productService.createProduct(request);
-        });
+        ProductResponseDTO result = productService.updateProduct(productId, request);
 
-        assertTrue(exception.getMessage().contains("Material não encontrado ou inativo"));
+        assertNotNull(result);
+        assertEquals("Porta de Correr Suprema", result.name());
+        assertEquals(DoorTemplateType.CORRER, result.templateType());
+        verify(productRepository).save(existingProduct);
+    }
 
-        verify(productRepository, never()).save(any(Product.class));
+    @Test
+    @DisplayName("Deve buscar produto por ID com sucesso")
+    void findById_ExistingId_ShouldReturnProduct() {
+        UUID id = UUID.randomUUID();
+        Product product = new Product();
+        product.setId(id);
+        product.setName("Janela Basculante");
+
+        ProductResponseDTO response = new ProductResponseDTO(
+                id, "Janela Basculante", UUID.randomUUID(), "Janelas", BigDecimal.ZERO,
+                DoorTemplateType.BASCULANTE, null, List.of(MaterialCategoryType.GLASS, MaterialCategoryType.PROFILE), true, List.of()
+        );
+
+        when(productRepository.findById(id)).thenReturn(Optional.of(product));
+        when(productMapper.toResponse(product)).thenReturn(response);
+
+        ProductResponseDTO result = productService.findById(id);
+
+        assertNotNull(result);
+        assertEquals("Janela Basculante", result.name());
+        assertEquals(DoorTemplateType.BASCULANTE, result.templateType());
+    }
+
+    @Test
+    @DisplayName("Deve lançar ResourceNotFoundException ao buscar ID inexistente")
+    void findById_NonExistingId_ShouldThrowException() {
+        UUID id = UUID.randomUUID();
+        when(productRepository.findById(id)).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> productService.findById(id));
     }
 
     @Test
@@ -148,12 +250,12 @@ class ProductServiceTest {
     @Test
     @DisplayName("Deve lançar BusinessException ao criar produto com nome duplicado")
     void createProduct_WithDuplicateName_ShouldThrowBusinessException() {
-        ProductRequestDTO request = new ProductRequestDTO("Porta", UUID.randomUUID(), BigDecimal.ZERO, List.of());
-        
+        ProductRequestDTO request = new ProductRequestDTO("Porta", UUID.randomUUID(), BigDecimal.ZERO, null, null, null, List.of());
+
         when(productRepository.existsByNameIgnoreCase("Porta")).thenReturn(true);
 
-        br.edu.ifpb.alumigest.common.exception.BusinessException exception = assertThrows(
-                br.edu.ifpb.alumigest.common.exception.BusinessException.class, 
+        BusinessException exception = assertThrows(
+                BusinessException.class,
                 () -> productService.createProduct(request)
         );
 
@@ -165,12 +267,12 @@ class ProductServiceTest {
     @DisplayName("Deve lançar BusinessException ao atualizar produto com nome de outro já existente")
     void updateProduct_WithDuplicateName_ShouldThrowBusinessException() {
         UUID id = UUID.randomUUID();
-        ProductRequestDTO request = new ProductRequestDTO("Porta Nova", UUID.randomUUID(), BigDecimal.ZERO, List.of());
-        
+        ProductRequestDTO request = new ProductRequestDTO("Porta Nova", UUID.randomUUID(), BigDecimal.ZERO, null, null, null, List.of());
+
         when(productRepository.existsByNameIgnoreCaseAndIdNot("Porta Nova", id)).thenReturn(true);
 
-        br.edu.ifpb.alumigest.common.exception.BusinessException exception = assertThrows(
-                br.edu.ifpb.alumigest.common.exception.BusinessException.class, 
+        BusinessException exception = assertThrows(
+                BusinessException.class,
                 () -> productService.updateProduct(id, request)
         );
 

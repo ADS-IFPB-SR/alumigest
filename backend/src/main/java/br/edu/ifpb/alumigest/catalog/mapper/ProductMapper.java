@@ -1,9 +1,7 @@
 package br.edu.ifpb.alumigest.catalog.mapper;
 
-import br.edu.ifpb.alumigest.catalog.domain.Product;
-import br.edu.ifpb.alumigest.catalog.domain.ProductItem;
-import br.edu.ifpb.alumigest.catalog.dto.ProductItemResponseDTO;
-import br.edu.ifpb.alumigest.catalog.dto.ProductResponseDTO;
+import br.edu.ifpb.alumigest.catalog.domain.*;
+import br.edu.ifpb.alumigest.catalog.dto.*;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
@@ -18,4 +16,20 @@ public interface ProductMapper {
     @Mapping(target = "materialId", source = "material.id")
     @Mapping(target = "materialName", source = "material.name")
     ProductItemResponseDTO toItemResponse(ProductItem item);
+
+    TemplateConfigDTO toTemplateConfigDTO(TemplateConfig config);
+
+    TemplateConfig toTemplateConfig(TemplateConfigDTO dto);
+
+    HandleConfigDTO toHandleConfigDTO(HandleConfig config);
+
+    HandleConfig toHandleConfig(HandleConfigDTO dto);
+
+    DrillingConfigDTO toDrillingConfigDTO(DrillingConfig config);
+
+    DrillingConfig toDrillingConfig(DrillingConfigDTO dto);
+
+    TemplateOptionSchemaDTO toOptionSchemaDTO(TemplateOptionSchema schema);
+
+    TemplateOptionSchema toOptionSchema(TemplateOptionSchemaDTO dto);
 }

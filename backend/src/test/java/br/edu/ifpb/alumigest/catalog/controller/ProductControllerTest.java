@@ -1,6 +1,7 @@
 package br.edu.ifpb.alumigest.catalog.controller;
 
-import br.edu.ifpb.alumigest.catalog.dto.ProductItemRequestDTO;
+import br.edu.ifpb.alumigest.catalog.domain.DoorTemplateType;
+import br.edu.ifpb.alumigest.catalog.domain.MaterialCategoryType;
 import br.edu.ifpb.alumigest.catalog.dto.ProductRequestDTO;
 import br.edu.ifpb.alumigest.catalog.dto.ProductResponseDTO;
 import br.edu.ifpb.alumigest.catalog.service.IProductService;
@@ -52,22 +53,28 @@ class ProductControllerTest {
     }
 
     @Test
-    @DisplayName("Deve retornar 201 Created ao cadastrar produto com dados validos")
-    void createProduct_WithValidData_ShouldReturn201() throws Exception {
-        ProductItemRequestDTO item = new ProductItemRequestDTO(UUID.randomUUID(), new BigDecimal("1.5"));
+    @DisplayName("Deve retornar 201 Created ao cadastrar produto com template")
+    void createProduct_WithValidTemplate_ShouldReturn201() throws Exception {
+        UUID categoryId = UUID.randomUUID();
         ProductRequestDTO request = new ProductRequestDTO(
-                "Porta Balcão",
-                UUID.randomUUID(),
-                new BigDecimal("200.00"),
-                List.of(item)
+                "Porta de Giro Simples",
+                categoryId,
+                new BigDecimal("150.00"),
+                DoorTemplateType.GIRO,
+                null,
+                List.of(MaterialCategoryType.GLASS, MaterialCategoryType.PROFILE),
+                List.of()
         );
 
         ProductResponseDTO response = new ProductResponseDTO(
                 UUID.randomUUID(),
-                "Porta Balcão",
-                request.categoryId(),
+                "Porta de Giro Simples",
+                categoryId,
                 "Portas",
-                new BigDecimal("200.00"),
+                new BigDecimal("150.00"),
+                DoorTemplateType.GIRO,
+                null,
+                List.of(MaterialCategoryType.GLASS, MaterialCategoryType.PROFILE),
                 true,
                 List.of()
         );
@@ -78,18 +85,22 @@ class ProductControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.data.name").value("Porta Balcão"))
+                .andExpect(jsonPath("$.data.name").value("Porta de Giro Simples"))
+                .andExpect(jsonPath("$.data.templateType").value("GIRO"))
                 .andExpect(jsonPath("$.data.categoryName").value("Portas"));
     }
 
     @Test
-    @DisplayName("Deve retornar 400 Bad Request ao tentar cadastrar produto com ficha tecnica vazia")
-    void createProduct_WithEmptyBOM_ShouldReturn400() throws Exception {
+    @DisplayName("Deve retornar 400 Bad Request ao tentar cadastrar produto sem nome")
+    void createProduct_WithoutName_ShouldReturn400() throws Exception {
         ProductRequestDTO request = new ProductRequestDTO(
-                "Porta Balcão",
+                "",
                 UUID.randomUUID(),
                 new BigDecimal("200.00"),
-                List.of() // Vazio, deveria acionar o @NotEmpty
+                null,
+                null,
+                null,
+                List.of()
         );
 
         mockMvc.perform(post("/api/v1/catalog/products")
@@ -99,9 +110,57 @@ class ProductControllerTest {
     }
 
     @Test
+    @DisplayName("Deve retornar 200 OK ao buscar produto por ID")
+    void getProductById_ShouldReturn200() throws Exception {
+        UUID id = UUID.randomUUID();
+        ProductResponseDTO response = new ProductResponseDTO(
+                id, "Porta de Correr Suprema", UUID.randomUUID(), "Portas", BigDecimal.ZERO,
+                DoorTemplateType.CORRER, null, List.of(MaterialCategoryType.GLASS), true, List.of()
+        );
+
+        when(productService.findById(id)).thenReturn(response);
+
+        mockMvc.perform(get("/api/v1/catalog/products/{id}", id))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id").value(id.toString()))
+                .andExpect(jsonPath("$.data.name").value("Porta de Correr Suprema"))
+                .andExpect(jsonPath("$.data.templateType").value("CORRER"));
+    }
+
+    @Test
+    @DisplayName("Deve retornar 200 OK ao atualizar produto com template")
+    void updateProduct_ShouldReturn200() throws Exception {
+        UUID id = UUID.randomUUID();
+        UUID categoryId = UUID.randomUUID();
+        ProductRequestDTO request = new ProductRequestDTO(
+                "Porta Atualizada",
+                categoryId,
+                new BigDecimal("180.00"),
+                DoorTemplateType.CORRER,
+                null,
+                List.of(MaterialCategoryType.GLASS, MaterialCategoryType.ROLLERS),
+                List.of()
+        );
+
+        ProductResponseDTO response = new ProductResponseDTO(
+                id, "Porta Atualizada", categoryId, "Portas", new BigDecimal("180.00"),
+                DoorTemplateType.CORRER, null, List.of(MaterialCategoryType.GLASS, MaterialCategoryType.ROLLERS), true, List.of()
+        );
+
+        when(productService.updateProduct(eq(id), any(ProductRequestDTO.class))).thenReturn(response);
+
+        mockMvc.perform(put("/api/v1/catalog/products/{id}", id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.name").value("Porta Atualizada"))
+                .andExpect(jsonPath("$.data.templateType").value("CORRER"));
+    }
+
+    @Test
     @DisplayName("Deve retornar 200 OK ao buscar produtos paginados")
     void getProducts_ShouldReturn200() throws Exception {
-        ProductResponseDTO p1 = new ProductResponseDTO(UUID.randomUUID(), "Produto 1", UUID.randomUUID(), "Cat", BigDecimal.ZERO, true, List.of());
+        ProductResponseDTO p1 = new ProductResponseDTO(UUID.randomUUID(), "Produto 1", UUID.randomUUID(), "Cat", BigDecimal.ZERO, null, null, null, true, List.of());
         Page<ProductResponseDTO> page = new PageImpl<>(List.of(p1));
 
         when(productService.findProducts(any(PageRequest.class), eq(true))).thenReturn(page);
@@ -118,7 +177,7 @@ class ProductControllerTest {
     @DisplayName("Deve retornar 204 No Content ao inativar (soft delete) produto")
     void deleteProduct_ShouldReturn204() throws Exception {
         UUID productId = UUID.randomUUID();
-        
+
         doNothing().when(productService).inactivateProduct(productId);
 
         mockMvc.perform(delete("/api/v1/catalog/products/{id}", productId))
