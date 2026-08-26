@@ -183,4 +183,67 @@ class ProductControllerTest {
                 .andExpect(status().isNoContent());
         verify(productService, times(1)).inactivateProduct(productId);
     }
+
+    @Test
+    @DisplayName("POST - Deve retornar 400 Bad Request ao criar produto sem nome")
+    void createProduct_WithoutName_ShouldReturn400() throws Exception {
+        ProductRequestDTO request = new ProductRequestDTO(
+                "", categoryId, new BigDecimal("200.00"), List.of(validItem),
+                null, null, null
+        );
+
+        mockMvc.perform(post("/api/v1/catalog/products")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("GET /{id} - Deve retornar 404 Not Found ao buscar produto inexistente")
+    void getProductById_NotFound_ShouldReturn404() throws Exception {
+        when(productService.findById(productId))
+                .thenThrow(new br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException("Produto não encontrado"));
+
+        mockMvc.perform(get("/api/v1/catalog/products/{id}", productId))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("GET /{id} - Deve retornar campos de template nulos ao buscar produto legado")
+    void getProductById_WithoutTemplate_ShouldReturn200() throws Exception {
+        ProductResponseDTO response = new ProductResponseDTO(
+                productId, "Parafuso", categoryId, "Acessórios", new BigDecimal("1.50"), true, List.of(),
+                null, null, null // Campos de template nulos
+        );
+
+        when(productService.findById(productId)).thenReturn(response);
+
+        mockMvc.perform(get("/api/v1/catalog/products/{id}", productId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.templateType").isEmpty())
+                .andExpect(jsonPath("$.data.templateConfig").isEmpty())
+                .andExpect(jsonPath("$.data.categoryRequirements").isEmpty());
+    }
+
+    @Test
+    @DisplayName("PUT - Deve permitir remover o template de um produto (Atualizar para nulo)")
+    void updateProduct_RemoveTemplate_ShouldReturn200() throws Exception {
+        ProductRequestDTO updateRequest = new ProductRequestDTO(
+                "Porta Básica", categoryId, new BigDecimal("300.00"), List.of(validItem),
+                null, null, null // Removendo template
+        );
+
+        ProductResponseDTO response = new ProductResponseDTO(
+                productId, "Porta Básica", categoryId, "Portas", new BigDecimal("300.00"), true, List.of(),
+                null, null, null
+        );
+
+        when(productService.updateProduct(eq(productId), any(ProductRequestDTO.class))).thenReturn(response);
+
+        mockMvc.perform(put("/api/v1/catalog/products/{id}", productId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updateRequest)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.templateType").isEmpty());
+    }
 }
