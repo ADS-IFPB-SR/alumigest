@@ -79,6 +79,10 @@ export const catalogApi = {
     const response = await api.get<ProductCategory[]>('/catalog/product-categories');
     return response.data;
   },
+  createProductCategory: async (data: { name: string; description?: string }) => {
+    const response = await api.post<ProductCategory>('/catalog/product-categories', data);
+    return response.data;
+  },
 
   // Material Summary (Unified List)
   getMaterialsSummary: async () => {
@@ -89,6 +93,10 @@ export const catalogApi = {
   // Products
   getProducts: async () => {
     const response = await api.get<PageResponse<Product>>('/catalog/products?size=100');
+    return response.data;
+  },
+  getProductById: async (id: string) => {
+    const response = await api.get<Product>(`/catalog/products/${id}`);
     return response.data;
   },
   createProduct: async (data: ProductRequest) => {
@@ -104,4 +112,5 @@ export const catalogApi = {
     return response.data;
   },
 };
+
 

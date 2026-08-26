@@ -1,103 +1,84 @@
-import { useMemo } from 'react';
-import type { MaterialSummary } from '../../types';
-import type { FormItem } from './ProductTechSheet';
+import type { DoorTemplateType, MaterialCategoryType } from '../../types/templates';
+import { DOOR_TEMPLATE_LABELS, MATERIAL_CATEGORY_LABELS, MATERIAL_CATEGORY_ICONS } from '../../types/templates';
 
 interface ProductCostSummaryProps {
-  items: FormItem[];
-  laborCost: string;
-  materials: MaterialSummary[];
+  name: string;
+  templateType: DoorTemplateType | null;
+  categoryRequirements: MaterialCategoryType[];
   onSave: () => void;
   isPending: boolean;
   isEditing: boolean;
 }
 
 export function ProductCostSummary({ 
-  items, 
-  laborCost, 
-  materials, 
+  name,
+  templateType, 
+  categoryRequirements, 
   onSave, 
   isPending, 
   isEditing 
 }: ProductCostSummaryProps) {
-  const materialsMap = useMemo(() => {
-    const map = new Map<string, MaterialSummary>();
-    materials.forEach(m => map.set(m.id, m));
-    return map;
-  }, [materials]);
-
-  const materialsSubtotal = useMemo(() => {
-    return items.reduce((acc, item) => {
-      const material = materialsMap.get(item.materialId);
-      const price = material ? (material.costPrice > 0 ? material.costPrice : material.salePrice) : 0;
-      const qty = Number(item.quantity.replace(',', '.')) || 0;
-      return acc + (price * qty);
-    }, 0);
-  }, [items, materialsMap]);
-
-  const parsedLaborCost = Number(laborCost.replace(',', '.')) || 0;
-  
-  // Tax and Margin calculation for display purposes
-  const taxRate = 0.10; // 10%
-  const marginRate = 0.35; // 35%
-  
-  const taxCost = (materialsSubtotal + parsedLaborCost) * taxRate;
-  const totalCost = materialsSubtotal + parsedLaborCost + taxCost;
-  const salePrice = totalCost * (1 + marginRate);
-
-  const formatCurrency = (val: number) => `R$ ${val.toFixed(2).replace('.', ',')}`;
-
   return (
-    <aside className="hidden xl:flex flex-col w-80 shrink-0 bg-surface-container-lowest border border-outline-variant rounded-lg shadow-sm h-fit sticky top-0">
-      <div className="p-md border-b border-outline-variant bg-primary text-on-primary rounded-t-lg">
-        <h3 className="font-title-sm text-title-sm">Resumo de Custos</h3>
+    <aside className="hidden xl:flex flex-col w-80 shrink-0 bg-surface-container-lowest border border-outline-variant rounded-lg shadow-sm h-fit sticky top-4">
+      <div className="p-md border-b border-outline-variant bg-primary text-on-primary rounded-t-lg flex items-center justify-between">
+        <h3 className="font-title-sm text-title-sm font-semibold">Resumo da Esquadria</h3>
+        <span className="material-symbols-outlined text-[20px]">tune</span>
       </div>
       
-      <div className="p-md flex flex-col gap-sm">
-        <div className="flex justify-between items-center py-xs border-b border-outline-variant border-dashed">
-          <span className="font-body-sm text-body-sm text-on-surface-variant">Materiais (Subtotal)</span>
-          <span className="font-data-mono text-data-mono text-on-surface">
-            {formatCurrency(materialsSubtotal)}
+      <div className="p-md flex flex-col gap-md">
+        {/* Nome e Modelo */}
+        <div className="flex flex-col gap-xs pb-sm border-b border-outline-variant/60">
+          <span className="font-body-sm text-body-sm text-on-surface-variant">Produto</span>
+          <span className="font-label-bold text-label-bold text-on-surface truncate">
+            {name.trim() || <span className="text-on-surface-variant/40 italic">Sem nome definido</span>}
           </span>
-        </div>
-        
-        <div className="flex justify-between items-center py-xs border-b border-outline-variant border-dashed">
-          <span className="font-body-sm text-body-sm text-on-surface-variant">Mão de Obra Est.</span>
-          <span className="font-data-mono text-data-mono text-on-surface">
-            {formatCurrency(parsedLaborCost)}
-          </span>
-        </div>
-        
-        <div className="flex justify-between items-center py-xs border-b border-outline-variant border-dashed">
-          <span className="font-body-sm text-body-sm text-on-surface-variant">Taxas / Impostos (10%)</span>
-          <span className="font-data-mono text-data-mono text-on-surface">
-            {formatCurrency(taxCost)}
-          </span>
-        </div>
-        
-        <div className="mt-sm pt-sm border-t-2 border-outline flex justify-between items-center">
-          <span className="font-title-sm text-title-sm text-on-surface font-bold">Custo Total Base</span>
-          <span className="font-data-mono text-[16px] font-bold text-on-surface">
-            {formatCurrency(totalCost)}
-          </span>
-        </div>
-        
-        <div className="mt-lg bg-surface-container p-sm rounded-lg border border-outline-variant">
-          <div className="flex justify-between items-center mb-xs">
-            <span className="font-label-bold text-label-bold text-on-surface">Margem Sugerida</span>
-            <span className="font-data-mono text-data-mono text-primary font-bold">35%</span>
-          </div>
-          <div className="flex justify-between items-center gap-xs">
-            <span className="font-body-sm text-body-sm text-on-surface-variant">Preço de Venda Sugerido</span>
-            <span className="font-data-mono text-data-mono text-on-surface font-bold whitespace-nowrap text-right">
-              {formatCurrency(salePrice)}
+          <div className="flex items-center gap-xs mt-xs">
+            <span className="font-body-sm text-body-sm text-on-surface-variant">Modelo:</span>
+            <span className="font-label text-body-sm font-semibold text-primary">
+              {templateType ? DOOR_TEMPLATE_LABELS[templateType] : 'Sem Template'}
             </span>
           </div>
         </div>
+        
+        {/* Insumos Habilitados no Orçamento */}
+        <div className="flex flex-col gap-xs py-xs border-b border-outline-variant/60">
+          <span className="font-body-sm text-body-sm text-on-surface-variant">
+            Categorias no Orçamento ({categoryRequirements.length})
+          </span>
+          {categoryRequirements.length > 0 ? (
+            <div className="flex flex-wrap gap-xs mt-xs">
+              {categoryRequirements.map((cat) => (
+                <span
+                  key={cat}
+                  className="inline-flex items-center gap-[2px] px-sm py-[2px] rounded-full bg-surface-container text-on-surface font-label text-[11px]"
+                >
+                  <span className="material-symbols-outlined text-[12px]">
+                    {MATERIAL_CATEGORY_ICONS[cat]}
+                  </span>
+                  {MATERIAL_CATEGORY_LABELS[cat]}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <span className="font-body-sm text-body-sm text-on-surface-variant/60 italic">
+              Nenhuma categoria selecionada
+            </span>
+          )}
+        </div>
 
+        {/* Informação sobre o Orçamento */}
+        <div className="bg-surface-container-low p-sm rounded-lg border border-outline-variant/40 text-on-surface-variant text-xs flex gap-xs items-start">
+          <span className="material-symbols-outlined text-[16px] text-primary shrink-0 mt-[2px]">info</span>
+          <span>
+            Os materiais específicos, dimensões e custos serão definidos dinamicamente durante a criação do orçamento.
+          </span>
+        </div>
+
+        {/* Botão Salvar */}
         <button 
-          className="mt-md w-full py-sm bg-primary text-on-primary rounded-sm font-label-bold text-label-bold hover:opacity-90 transition-opacity flex items-center justify-center gap-xs disabled:opacity-50"
+          className="mt-xs w-full py-sm bg-primary text-on-primary rounded-sm font-label-bold text-label-bold hover:bg-primary-container hover:text-on-primary-container transition-colors flex items-center justify-center gap-xs disabled:opacity-50 cursor-pointer shadow-sm"
           onClick={onSave}
-          disabled={isPending || items.length === 0}
+          disabled={isPending}
         >
           <span className="material-symbols-outlined text-[18px]">save</span>
           {isPending ? 'Salvando...' : (isEditing ? 'Atualizar Produto' : 'Salvar Produto')}
