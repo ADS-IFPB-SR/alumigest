@@ -12,6 +12,7 @@ public interface ProductMapper {
 
     @Mapping(target = "categoryId", source = "category.id")
     @Mapping(target = "categoryName", source = "category.name")
+    @Mapping(target = "isActive", source = "active")
     ProductResponseDTO toResponse(Product product);
 
     @Mapping(target = "materialId", source = "material.id")

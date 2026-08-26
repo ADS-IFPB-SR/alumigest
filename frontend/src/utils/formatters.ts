@@ -1,6 +1,6 @@
 export const formatCurrencyInput = (value: string): string => {
   if (!value) return '';
-  const onlyDigits = value.replace(/\D/g, '');
+  const onlyDigits = value.replace(/\D/g, '').slice(0, 10);
   if (!onlyDigits) return '';
   
   const numberValue = Number(onlyDigits) / 100;
@@ -12,7 +12,7 @@ export const formatCurrencyInput = (value: string): string => {
 
 export const parseCurrencyString = (value: string): number => {
   if (!value) return 0;
-  const onlyDigits = value.replace(/\D/g, '');
+  const onlyDigits = value.replace(/\D/g, '').slice(0, 10);
   return Number(onlyDigits) / 100;
 };
 
@@ -26,7 +26,7 @@ export const formatInteger = (value: string): string => {
 
 export const formatWeightInput = (value: string): string => {
   if (!value) return '';
-  const onlyDigits = value.replace(/\D/g, '');
+  const onlyDigits = value.replace(/\D/g, '').slice(0, 7);
   if (!onlyDigits) return '';
   
   const numberValue = Number(onlyDigits) / 1000;
@@ -38,6 +38,6 @@ export const formatWeightInput = (value: string): string => {
 
 export const parseWeightString = (value: string): number => {
   if (!value) return 0;
-  const onlyDigits = value.replace(/\D/g, '');
+  const onlyDigits = value.replace(/\D/g, '').slice(0, 7);
   return Number(onlyDigits) / 1000;
 };

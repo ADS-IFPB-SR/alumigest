@@ -23,7 +23,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
-public class ProductService {
+public class ProductService implements IProductService {
 
     private final ProductRepository productRepository;
     private final MaterialRepository materialRepository;
@@ -39,6 +39,9 @@ public class ProductService {
 
     @Transactional
     public ProductResponseDTO createProduct(ProductRequestDTO request) {
+        if (productRepository.existsByNameIgnoreCase(request.name())) {
+            throw new br.edu.ifpb.alumigest.common.exception.BusinessException("Já existe um produto com o nome informado.");
+        }
 
         ProductCategory category = productCategoryRepository.findById(request.categoryId())
                 .orElseThrow(() -> new ResourceNotFoundException("Categoria não encontrada: " + request.categoryId()));
@@ -81,6 +84,9 @@ public class ProductService {
 
     @Transactional
     public ProductResponseDTO updateProduct(UUID id, ProductRequestDTO request) {
+        if (productRepository.existsByNameIgnoreCaseAndIdNot(request.name(), id)) {
+            throw new br.edu.ifpb.alumigest.common.exception.BusinessException("Já existe outro produto com o nome informado.");
+        }
 
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Produto não encontrado com o ID informado."));

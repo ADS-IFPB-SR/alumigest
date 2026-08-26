@@ -33,6 +33,7 @@ public class HardwareMapper {
         material.setUnitMeasure(request.unitMeasure());
         material.setCostPrice(request.costPrice());
         material.setSalePrice(request.salePrice());
+        material.setNcmCode(request.ncmCode());
         material.setAttributesJson(buildAttributesJson(request.calculationType()));
         return material;
     }
@@ -50,6 +51,7 @@ public class HardwareMapper {
                 material.getName(),
                 material.getUnitMeasure(),
                 extractCalculationType(material.getAttributesJson()),
+                material.getNcmCode(),
                 material.getCostPrice(),
                 material.getSalePrice(),
                 material.isActive(),
@@ -62,7 +64,7 @@ public class HardwareMapper {
     // Helpers de serialização do attributesJson
     // -------------------------------------------------------------------------
 
-    private String buildAttributesJson(CalculationType calculationType) {
+    public String buildAttributesJson(CalculationType calculationType) {
         if (calculationType == null) {
             return null;
         }

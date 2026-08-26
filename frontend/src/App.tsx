@@ -4,7 +4,10 @@ import { Toaster } from 'react-hot-toast';
 import { DashboardLayout } from './components/layout/DashboardLayout';
 import { CatalogPage } from './pages/CatalogPage';
 import { PlaceholderPage } from './pages/PlaceholderPage';
+// Suas importações + Importações da equipe
 import { SeparateSalePage } from './pages/SeparateSalePage';
+import { ProductTab as ProductsPage } from './pages/ProductsPage';
+import { ProductBuilderPage } from './pages/ProductBuilderPage';
 
 const queryClient = new QueryClient();
 
@@ -18,6 +21,7 @@ function App() {
             {/* Active Feature Route */}
             <Route index element={<CatalogPage />} />
 
+            {/* Sua Rota */}
             <Route path="orcamentos/venda-avulsa" element={<SeparateSalePage />} />
 
             {/* Future Modules Placeholders */}
@@ -51,16 +55,12 @@ function App() {
                 />
               }
             />
-            <Route
-              path="produtos"
-              element={
-                <PlaceholderPage
-                  title="Tipologias & Produtos"
-                  icon="category"
-                  description="Cadastro de modelos de portas, janelas, portões, guarda-corpos e fórmulas de cálculo técnico."
-                />
-              }
-            />
+
+            {/* Rotas de Produtos (Adicionadas pela Equipe) */}
+            <Route path="produtos" element={<ProductsPage />} />
+            <Route path="produtos/novo" element={<ProductBuilderPage />} />
+            <Route path="produtos/:id/editar" element={<ProductBuilderPage />} />
+
             <Route
               path="clientes"
               element={
