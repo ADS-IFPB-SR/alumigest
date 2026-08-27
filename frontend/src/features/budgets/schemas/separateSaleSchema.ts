@@ -4,9 +4,9 @@ export const SaleTypeEnum = z.enum(['GLASS', 'ALUMINUM']);
 export type SaleType = z.infer<typeof SaleTypeEnum>;
 
 const baseSaleSchema = z.object({
-  quantity: z.coerce.number({ invalid_type_error: "Obrigatório" }).min(1, 'Mínimo de 1'),
-  width: z.coerce.number({ invalid_type_error: "Obrigatório" }).min(1, 'Mínimo de 1mm'),
-  height: z.coerce.number({ invalid_type_error: "Obrigatório" }).min(1, 'Mínimo de 1mm'),
+  quantity: z.coerce.number({ message: "Obrigatório" }).min(1, 'Mínimo de 1'),
+  width: z.coerce.number({ message: "Obrigatório" }).min(1, 'Mínimo de 1mm'),
+  height: z.coerce.number({ message: "Obrigatório" }).min(1, 'Mínimo de 1mm'),
 });
 
 const glassSaleSchema = baseSaleSchema.extend({
