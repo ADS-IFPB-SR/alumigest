@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, type FieldErrors } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 
 import {
@@ -43,6 +43,9 @@ export function SeparateSaleForm() {
       quantity: 1,
     },
   });
+
+  const glassErrors = errors as FieldErrors<Extract<SeparateSaleFormData, { saleType: 'GLASS' }>>;
+  const aluminumErrors = errors as FieldErrors<Extract<SeparateSaleFormData, { saleType: 'ALUMINUM' }>>;
 
   const currentSaleType = watch('saleType');
 
@@ -150,40 +153,40 @@ export function SeparateSaleForm() {
                   label="Tipo de Vidro *"
                   options={glassOptions}
                   {...register('glassId')}
-                  error={errors.glassId?.message}
+                  error={glassErrors.glassId?.message}
                 />
                 <Select
                   label="Película (Opcional)"
                   options={filmOptions}
                   {...register('filmId')}
-                  error={errors.filmId?.message}
+                  error={glassErrors.filmId?.message}
                 />
               </>
             )}
 
            {currentSaleType === 'ALUMINUM' && (
-                         <>
-                           <Select
-                             label="Tipo de Alumínio *"
-                             options={profileOptions}
-                             {...register('profileId')}
-                             error={errors.profileId?.message}
-                           />
-                           <Select
-                             label="Esquadreta *"
-                             options={hardwareOptions}
-                             {...register('hardwareId')}
-                             error={errors.hardwareId?.message}
-                           />
+             <>
+               <Select
+                 label="Tipo de Alumínio *"
+                 options={profileOptions}
+                 {...register('profileId')}
+                 error={aluminumErrors.profileId?.message}
+               />
+               <Select
+                 label="Esquadreta *"
+                 options={hardwareOptions}
+                 {...register('hardwareId')}
+                 error={aluminumErrors.hardwareId?.message}
+               />
 
-                           <Select
-                             label="Puxador (Opcional)"
-                             options={hardwareOptions}
-                             {...register('handleId')}
-                             error={errors.handleId?.message}
-                           />
-                         </>
-                       )}
+               <Select
+                 label="Puxador (Opcional)"
+                 options={hardwareOptions}
+                 {...register('handleId')}
+                 error={aluminumErrors.handleId?.message}
+               />
+             </>
+           )}
 
           </div>
         </div>
