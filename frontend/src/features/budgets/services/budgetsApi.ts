@@ -1,5 +1,14 @@
 import { api } from '../../../lib/api';
-import type { BudgetFilters, BudgetPageResponse, BudgetSummary, BudgetStatus } from '../types';
+import type { 
+  BudgetFilters, 
+  BudgetPageResponse, 
+  BudgetSummary, 
+  BudgetStatus,
+  BudgetDetail,
+  CreateBudgetPayload,
+  WindowTemplate,
+  PageResponse
+} from '../types';
 
 const MOCK_BUDGETS: BudgetSummary[] = [
   {
@@ -266,16 +275,26 @@ function filterAndPaginateMockBudgets(filters: BudgetFilters): BudgetPageRespons
       totalElements,
       totalPages,
     },
-    totalElements,
-    totalPages,
-    size: filters.size,
-    number: filters.page,
-    first: filters.page === 0,
-    last: filters.page >= totalPages - 1,
   };
 }
 
 export const budgetsApi = {
+  // ============================================================
+  // TEMPLATES DE ESQUADRIAS
+  // ============================================================
+  getWindowTemplates: async (): Promise<WindowTemplate[]> => {
+    const response = await api.get<PageResponse<WindowTemplate>>('/catalog/products', {
+      params: { size: 100 },
+    });
+    // @ts-ignore
+    const data = response.data as unknown as PageResponse<WindowTemplate>;
+    const all = data.content ?? (response.data as unknown as WindowTemplate[]);
+    return all.filter((p) => Boolean(p.templateType));
+  },
+
+  // ============================================================
+  // ORÇAMENTOS - LISTAGEM
+  // ============================================================
   getBudgets: async (filters: BudgetFilters): Promise<BudgetPageResponse> => {
     try {
       const params: Record<string, string | number> = {
@@ -295,7 +314,7 @@ export const budgetsApi = {
         params.sort = filters.sort;
       }
 
-      const response = await api.get<BudgetPageResponse>('/budgets', { params });
+      const response = await api.get<BudgetPageResponse>('/orcamentos', { params });
       if (response.data && Array.isArray(response.data.content)) {
         return response.data;
       }
@@ -307,7 +326,7 @@ export const budgetsApi = {
 
   getStatusCounts: async (): Promise<Record<BudgetStatus | '', number>> => {
     try {
-      const response = await api.get<Record<BudgetStatus | '', number>>('/budgets/status-counts');
+      const response = await api.get<Record<BudgetStatus | '', number>>('/orcamentos/status-counts');
       if (response.data) {
         return response.data;
       }
@@ -320,5 +339,23 @@ export const budgetsApi = {
       counts[st] = (counts[st] || 0) + 1;
     }
     return counts as Record<BudgetStatus | '', number>;
+  },
+
+  // ============================================================
+  // ORÇAMENTOS - CRUD
+  // ============================================================
+  getBudget: async (id: string): Promise<BudgetDetail> => {
+    const response = await api.get<BudgetDetail>(`/orcamentos/${id}`);
+    return response.data;
+  },
+
+  createBudget: async (data: CreateBudgetPayload): Promise<BudgetDetail> => {
+    const response = await api.post<BudgetDetail>('/orcamentos', data);
+    return response.data;
+  },
+
+  updateBudget: async (id: string, data: CreateBudgetPayload): Promise<BudgetDetail> => {
+    const response = await api.put<BudgetDetail>(`/orcamentos/${id}`, data);
+    return response.data;
   },
 };
