@@ -9,6 +9,7 @@ import { ProductBuilderPage } from './pages/ProductBuilderPage';
 import { BudgetListPage } from './pages/BudgetListPage';
 import { BudgetNewPage } from './pages/BudgetNewPage';
 import { BudgetDetailPage } from './pages/BudgetDetailPage';
+import { BudgetBuilderPage as PrototypeBudget } from './prototype/telas/BudgetBuilderPage';
 
 const queryClient = new QueryClient();
 
@@ -18,6 +19,7 @@ function App() {
       <Toaster position="top-right" />
       <BrowserRouter>
         <Routes>
+          <Route path="/prototipo" element={<PrototypeBudget />} />
           <Route path="/" element={<DashboardLayout />}>
             {/* Active Feature Route */}
             <Route index element={<CatalogPage />} />
