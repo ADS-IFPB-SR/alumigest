@@ -33,7 +33,7 @@ public class ProductCategoryController {
     @Operation(summary = "Listar todas as categorias ativas", description = "Retorna lista de categorias para popular o Dropdown no front-end")
     public ResponseEntity<ApiResponse<List<ProductCategoryResponseDTO>>> findAllActive() {
         List<ProductCategoryResponseDTO> categories = repository.findAll().stream()
-                .filter(c -> c.isActive())
+                .filter(ProductCategory::isActive)
                 .map(c -> new ProductCategoryResponseDTO(c.getId(), c.getName(), c.getDescription()))
                 .toList();
         return ResponseEntity.ok(ApiResponse.ok("Categorias listadas com sucesso", categories));
