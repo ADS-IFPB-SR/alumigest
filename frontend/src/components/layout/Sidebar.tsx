@@ -1,8 +1,7 @@
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 
 const navItems = [
   { path: '/dashboard', label: 'Dashboard', icon: 'dashboard' },
-  { path: '/orcamentos', label: 'Orçamentos', icon: 'description' },
   { path: '/kanban', label: 'Kanban', icon: 'view_kanban' },
   { path: '/', label: 'Catálogo de Materiais', icon: 'inventory_2' },
   { path: '/estoque', label: 'Estoque', icon: 'inventory' },
@@ -18,7 +17,6 @@ interface SidebarProps {
 }
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
-  const navigate = useNavigate();
   return (
     <>
       {/* Mobile Sidebar Overlay */}
@@ -56,10 +54,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
         {/* 1. Novo Orçamento Action Button */}
         <div className="mb-sm">
-          <button
-            onClick={() => { navigate('/orcamentos/novo'); onClose(); }}
-            className="w-full flex items-center justify-center gap-xs px-md py-sm bg-primary hover:opacity-90 text-on-primary rounded-md font-label text-label-bold text-xs shadow-md transition-all active:scale-95 cursor-pointer"
-          >
+          <button className="w-full flex items-center justify-center gap-xs px-md py-sm bg-primary hover:opacity-90 text-on-primary rounded-md font-label text-label-bold text-xs shadow-md transition-all active:scale-95 cursor-pointer">
             <span className="material-symbols-outlined text-[18px]">add</span>
             <span>Novo Orçamento</span>
           </button>

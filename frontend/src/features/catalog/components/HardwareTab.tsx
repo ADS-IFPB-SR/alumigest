@@ -14,16 +14,10 @@ const columns = [
  exportValue: (row: HardwareDTO) => row.name
  },
  { 
-  header: 'Unidade', 
-  accessor: (row: HardwareDTO) => {
-    const map: Record<string, string> = { 'UN': 'Unidade', 'PAR': 'Par', 'METRO': 'Metro Linear' };
-    return <span className="text-secondary">{map[row.unitMeasure] || row.unitMeasure}</span>;
-  },
-  exportValue: (row: HardwareDTO) => {
-    const map: Record<string, string> = { 'UN': 'Unidade', 'PAR': 'Par', 'METRO': 'Metro Linear' };
-    return map[row.unitMeasure] || row.unitMeasure;
-  }
-  },
+ header: 'Unidade', 
+ accessor: (row: HardwareDTO) => <span className="text-secondary">{row.unitMeasure === 'PAIR' ? 'Par' : 'Unidade'}</span>,
+ exportValue: (row: HardwareDTO) => row.unitMeasure === 'PAIR' ? 'Par' : 'Unidade'
+ },
  { 
  header: 'Preço Venda', 
  accessor: (row: HardwareDTO) => <span className="font-data-mono text-data-mono text-on-surface">R$ {row.salePrice.toFixed(2).replace('.', ',')}</span>,
