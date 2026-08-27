@@ -6,6 +6,9 @@ import { CatalogPage } from './pages/CatalogPage';
 import { PlaceholderPage } from './pages/PlaceholderPage';
 import { ProductTab as ProductsPage } from './pages/ProductsPage';
 import { ProductBuilderPage } from './pages/ProductBuilderPage';
+import { BudgetListPage } from './pages/BudgetListPage';
+import { BudgetNewPage } from './pages/BudgetNewPage';
+import { BudgetDetailPage } from './pages/BudgetDetailPage';
 
 const queryClient = new QueryClient();
 
@@ -61,6 +64,18 @@ function App() {
             <Route 
               path="produtos/:id/editar" 
               element={<ProductBuilderPage />} 
+            />
+            <Route 
+              path="orcamentos" 
+              element={<BudgetListPage />} 
+            />
+            <Route 
+              path="orcamentos/novo" 
+              element={<BudgetNewPage />} 
+            />
+            <Route 
+              path="orcamentos/:id" 
+              element={<BudgetDetailPage />} 
             />
             <Route 
               path="clientes" 

@@ -1,4 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Modal } from '../../../components/ui/Modal';
 import { Input } from '../../../components/ui/Input';
 import { Button } from '../../../components/ui/Button';
@@ -6,6 +8,7 @@ import { useCreateFilm, useUpdateFilm } from '../hooks/useCatalog';
 import { formatCurrencyInput, parseCurrencyString, formatUppercase, formatInteger } from '../../../utils/formatters';
 import { StatusToggle } from './StatusToggle';
 import toast from 'react-hot-toast';
+import { filmSchema, type FilmFormValues } from '../schemas/catalogSchemas';
 
 interface Props {
   isOpen: boolean;
@@ -19,85 +22,58 @@ export function FilmFormModal({ isOpen, onClose, initialData }: Props) {
   const { mutate: updateFilm, isPending: isUpdatePending } = useUpdateFilm();
   const isPending = isCreatePending || isUpdatePending;
 
-  const [skuCode, setSkuCode] = useState('');
-  const [name, setName] = useState('');
-  const [ncmCode, setNcmCode] = useState('');
-  const [filmType, setFilmType] = useState('');
-  const [thicknessMm, setThicknessMm] = useState('0.08');
-  const [standardLengthM, setStandardLengthM] = useState('30');
-  const [maxWidthMm, setMaxWidthMm] = useState('1520');
-  const [costPrice, setCostPrice] = useState('');
-  const [salePrice, setSalePrice] = useState('');
-  const [active, setActive] = useState(true);
+  const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<FilmFormValues>({
+    resolver: zodResolver(filmSchema),
+    defaultValues: {
+      skuCode: '', name: '', ncmCode: '', filmType: '', thicknessMm: '0.08', standardLengthM: '30', maxWidthMm: '1520', costPrice: '', salePrice: '', active: true
+    }
+  });
+
+  const activeValue = watch('active');
 
   useEffect(() => {
-    if (isOpen && initialData) {
-      setSkuCode(initialData.commercialReference || '');
-      setName(initialData.name || '');
-      setNcmCode(initialData.ncmCode || '');
-      setFilmType(initialData.colorFinish || '');
-      setThicknessMm(initialData.thicknessMm?.toString() || '0.08');
-      setStandardLengthM(initialData.standardLengthM?.toString() || '30');
-      setMaxWidthMm(initialData.maxWidthMm?.toString() || '1520');
-      
-      const cp = initialData.costPrice ?? 0;
-      const sp = initialData.salePrice ?? 0;
-      setCostPrice(formatCurrencyInput(cp.toFixed(2)));
-      setSalePrice(formatCurrencyInput(sp.toFixed(2)));
-      setActive(initialData.active ?? true);
-    } else if (isOpen && !initialData) {
-      setSkuCode('');
-      setName('');
-      setNcmCode('');
-      setFilmType('');
-      setThicknessMm('0.08');
-      setStandardLengthM('30');
-      setMaxWidthMm('1520');
-      setCostPrice('');
-      setSalePrice('');
-      setActive(true);
+    if (isOpen) {
+      if (initialData) {
+        reset({
+          skuCode: initialData.commercialReference || '',
+          name: initialData.name || '',
+          ncmCode: initialData.ncmCode || '',
+          filmType: initialData.colorFinish || '',
+          thicknessMm: initialData.thicknessMm?.toString() || '0.08',
+          standardLengthM: initialData.standardLengthM?.toString() || '30',
+          maxWidthMm: initialData.maxWidthMm?.toString() || '1520',
+          costPrice: formatCurrencyInput((initialData.costPrice ?? 0).toFixed(2)),
+          salePrice: formatCurrencyInput((initialData.salePrice ?? 0).toFixed(2)),
+          active: initialData.active ?? true
+        });
+      } else {
+        reset({
+          skuCode: '', name: '', ncmCode: '', filmType: '', thicknessMm: '0.08', standardLengthM: '30', maxWidthMm: '1520', costPrice: '', salePrice: '', active: true
+        });
+      }
     }
-  }, [isOpen, initialData]);
+  }, [isOpen, initialData, reset]);
 
-  const handleSave = () => {
-    if (!name.trim()) {
-      toast.error('O nome/descrição é obrigatório.');
-      return;
-    }
-
-    const parsedCostPrice = parseCurrencyString(costPrice);
-    const parsedSalePrice = parseCurrencyString(salePrice);
-
-    if (parsedCostPrice < 0 || parsedSalePrice < 0) {
-      toast.error('Os preços não podem ser negativos.');
-      return;
-    }
-
+  const onSubmit = (data: FilmFormValues) => {
     const payload = {
-      name,
-      commercialReference: skuCode || undefined,
-      colorFinish: filmType,
-      salePrice: parsedSalePrice,
-      costPrice: parsedCostPrice,
-      thicknessMm: Number(thicknessMm) || 0.08,
-      standardLengthM: Number(standardLengthM) || 30,
-      maxWidthMm: Number(maxWidthMm) || 1520,
-      ncmCode: ncmCode.trim() ? ncmCode.trim() : undefined,
+      name: data.name,
+      commercialReference: data.skuCode,
+      colorFinish: data.filmType,
+      salePrice: parseCurrencyString(data.salePrice),
+      costPrice: parseCurrencyString(data.costPrice),
+      thicknessMm: Number(data.thicknessMm) || 0.08,
+      standardLengthM: Number(data.standardLengthM) || 30,
+      maxWidthMm: Number(data.maxWidthMm) || 1520,
+      ncmCode: data.ncmCode?.trim() ? data.ncmCode.trim() : undefined,
       unitMeasure: initialData?.unitMeasure || 'M2',
-      active
+      active: data.active
     };
 
-    if (isEditing) {
-      updateFilm({ id: initialData.id, data: payload as any }, { 
-        onSuccess: onClose, 
-        onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao atualizar a película.') 
-      });
-    } else {
-      createFilm(payload as any, { 
-        onSuccess: onClose, 
-        onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao criar a película.') 
-      });
-    }
+    const action = isEditing ? updateFilm : createFilm;
+    action(isEditing ? { id: initialData.id, data: payload as any } : payload as any, { 
+      onSuccess: onClose, 
+      onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro de servidor.') 
+    });
   };
 
   return (
@@ -108,7 +84,7 @@ export function FilmFormModal({ isOpen, onClose, initialData }: Props) {
       footer={
         <>
           <Button variant="ghost" onClick={onClose} disabled={isPending}>Cancelar</Button>
-          <Button variant="primary" onClick={handleSave} disabled={isPending}>
+          <Button variant="primary" onClick={handleSubmit(onSubmit)} disabled={isPending}>
             {isPending ? 'Salvando...' : (isEditing ? 'Atualizar' : 'Salvar')}
           </Button>
         </>
@@ -116,74 +92,53 @@ export function FilmFormModal({ isOpen, onClose, initialData }: Props) {
     >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-md">
         <Input 
-          label="Referência Comercial (Opcional)" 
-          placeholder="Ex: G20" 
-          value={skuCode}
-          onChange={(e) => setSkuCode(formatUppercase(e.target.value))}
-          className="col-span-1 md:col-span-2" 
+          label="Referência Comercial (Opcional)" placeholder="Ex: G20" className="col-span-1 md:col-span-2" 
+          {...register('skuCode', { onChange: e => setValue('skuCode', formatUppercase(e.target.value)) })}
         />
         <Input 
-          label="Nome / Descrição" 
-          placeholder="Ex: Película G20 Fumê" 
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="col-span-1 md:col-span-2" 
+          label="Nome / Descrição *" placeholder="Ex: PELÍCULA G20 FUMÊ" className="col-span-1 md:col-span-2" 
+          {...register('name', { onChange: e => setValue('name', formatUppercase(e.target.value)) })}
+          error={errors.name?.message}
         />
         <Input 
-          label="Código NCM" 
-          placeholder="Opcional" 
-          value={ncmCode}
-          onChange={(e) => setNcmCode(formatInteger(e.target.value).slice(0, 8))}
-          className="col-span-1 md:col-span-2" 
+          label="Código NCM" placeholder="Opcional" className="col-span-1 md:col-span-2" 
+          {...register('ncmCode', { onChange: e => setValue('ncmCode', formatInteger(e.target.value).slice(0, 8)) })}
         />
         
         <Input 
-          label="Tipo/Cor" 
-          placeholder="Ex: FUMÊ" 
-          value={filmType}
-          onChange={(e) => setFilmType(formatUppercase(e.target.value))}
-          className="col-span-1 md:col-span-2" 
+          label="Tipo/Cor *" placeholder="Ex: FUMÊ" className="col-span-1 md:col-span-2" 
+          {...register('filmType', { onChange: e => setValue('filmType', formatUppercase(e.target.value)) })}
+          error={errors.filmType?.message}
         />
         <Input 
-          label="Espessura (mm)" 
-          placeholder="Ex: 0.08" 
-          value={thicknessMm}
-          onChange={(e) => setThicknessMm(e.target.value)}
+          label="Espessura (mm)" placeholder="Ex: 0.08" 
+          {...register('thicknessMm')}
         />
         <Input 
-          label="Comprimento da Bobina (m)" 
-          placeholder="Ex: 30" 
-          value={standardLengthM}
-          onChange={(e) => setStandardLengthM(e.target.value)}
+          label="Comprimento da Bobina (m)" placeholder="Ex: 30" 
+          {...register('standardLengthM')}
         />
         <Input 
-          label="Largura da Bobina (mm)" 
-          placeholder="Ex: 1520" 
-          value={maxWidthMm}
-          onChange={(e) => setMaxWidthMm(formatInteger(e.target.value).slice(0, 5))}
-          className="col-span-1 md:col-span-2" 
+          label="Largura da Bobina (mm)" placeholder="Ex: 1520" className="col-span-1 md:col-span-2" 
+          {...register('maxWidthMm', { onChange: e => setValue('maxWidthMm', formatInteger(e.target.value).slice(0, 5)) })}
         />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-md col-span-1 md:col-span-2 mt-xs">
           <Input 
-            label="Preço de Custo" 
-            unit="R$/m²"
-            placeholder="0,00" 
-            value={costPrice}
-            onChange={(e) => setCostPrice(formatCurrencyInput(e.target.value))}
+            label="Preço de Custo *" unit="R$/m²" placeholder="0,00" 
+            {...register('costPrice', { onChange: e => setValue('costPrice', formatCurrencyInput(e.target.value)) })}
+            error={errors.costPrice?.message}
           />
           <Input 
-            label="Preço de Venda" 
-            unit="R$/m²"
-            placeholder="0,00" 
-            value={salePrice}
-            onChange={(e) => setSalePrice(formatCurrencyInput(e.target.value))}
+            label="Preço de Venda *" unit="R$/m²" placeholder="0,00" 
+            {...register('salePrice', { onChange: e => setValue('salePrice', formatCurrencyInput(e.target.value)) })}
+            error={errors.salePrice?.message}
           />
         </div>
         
         {isEditing && (
           <div className="col-span-1 md:col-span-2 mt-xs">
-            <StatusToggle active={active} onChange={setActive} />
+            <StatusToggle active={activeValue} onChange={(v) => setValue('active', v)} />
           </div>
         )}
       </div>
