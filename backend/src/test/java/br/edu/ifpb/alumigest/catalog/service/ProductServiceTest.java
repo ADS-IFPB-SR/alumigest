@@ -279,4 +279,80 @@ class ProductServiceTest {
         assertEquals("Já existe outro produto com o nome informado.", exception.getMessage());
         verify(productRepository, never()).save(any());
     }
+
+    @Test
+    @DisplayName("Deve listar produtos ativos quando activeOnly for true")
+    void findProducts_ActiveOnlyTrue_ShouldCallFindByIsActiveTrue() {
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(0, 10);
+        Product product = new Product();
+        product.setId(UUID.randomUUID());
+        product.setName("Produto Ativo");
+
+        org.springframework.data.domain.Page<Product> page = new org.springframework.data.domain.PageImpl<>(List.of(product));
+        when(productRepository.findByIsActiveTrue(pageable)).thenReturn(page);
+        when(productMapper.toResponse(any())).thenReturn(new ProductResponseDTO(product.getId(), "Produto Ativo", UUID.randomUUID(), "Cat", BigDecimal.ZERO, null, null, null, true, List.of()));
+
+        org.springframework.data.domain.Page<ProductResponseDTO> result = productService.findProducts(pageable, true);
+
+        assertNotNull(result);
+        assertEquals(1, result.getTotalElements());
+        verify(productRepository).findByIsActiveTrue(pageable);
+    }
+
+    @Test
+    @DisplayName("Deve listar todos os produtos quando activeOnly for false")
+    void findProducts_ActiveOnlyFalse_ShouldCallFindAll() {
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(0, 10);
+        Product product = new Product();
+        product.setId(UUID.randomUUID());
+
+        org.springframework.data.domain.Page<Product> page = new org.springframework.data.domain.PageImpl<>(List.of(product));
+        when(productRepository.findAll(pageable)).thenReturn(page);
+        when(productMapper.toResponse(any())).thenReturn(new ProductResponseDTO(product.getId(), "Produto", UUID.randomUUID(), "Cat", BigDecimal.ZERO, null, null, null, false, List.of()));
+
+        org.springframework.data.domain.Page<ProductResponseDTO> result = productService.findProducts(pageable, false);
+
+        assertNotNull(result);
+        assertEquals(1, result.getTotalElements());
+        verify(productRepository).findAll(pageable);
+    }
+
+    @Test
+    @DisplayName("Deve cadastrar produto com itens de materiais fixos vinculados")
+    void createProduct_WithItems_ShouldAttachItemsCorrectly() {
+        UUID categoryId = UUID.randomUUID();
+        UUID materialId = UUID.randomUUID();
+        ProductCategory mockCategory = new ProductCategory();
+        mockCategory.setId(categoryId);
+
+        Material mockMaterial = new Material();
+        mockMaterial.setId(materialId);
+        mockMaterial.setName("Perfil de Alumínio");
+        mockMaterial.setActive(true);
+
+        ProductRequestDTO request = new ProductRequestDTO(
+                "Produto com Itens",
+                categoryId,
+                new BigDecimal("50.00"),
+                null,
+                null,
+                null,
+                List.of(new ProductItemRequestDTO(materialId, new BigDecimal("2.5")))
+        );
+
+        Product mockSaved = new Product();
+        mockSaved.setId(UUID.randomUUID());
+        mockSaved.setName("Produto com Itens");
+
+        when(productRepository.existsByNameIgnoreCase("Produto com Itens")).thenReturn(false);
+        when(productCategoryRepository.findById(categoryId)).thenReturn(Optional.of(mockCategory));
+        when(materialRepository.findByIdAndIsActiveTrue(materialId)).thenReturn(Optional.of(mockMaterial));
+        when(productRepository.save(any(Product.class))).thenReturn(mockSaved);
+        when(productMapper.toResponse(any())).thenReturn(new ProductResponseDTO(mockSaved.getId(), "Produto com Itens", categoryId, "Cat", new BigDecimal("50.00"), null, null, null, true, List.of()));
+
+        ProductResponseDTO response = productService.createProduct(request);
+
+        assertNotNull(response);
+        verify(productRepository).save(any(Product.class));
+    }
 }
