@@ -4,7 +4,6 @@ import { Toaster } from 'react-hot-toast';
 import { DashboardLayout } from './components/layout/DashboardLayout';
 import { CatalogPage } from './pages/CatalogPage';
 import { PlaceholderPage } from './pages/PlaceholderPage';
-// Suas importações + Importações da equipe
 import { SeparateSalePage } from './pages/SeparateSalePage';
 import { ProductTab as ProductsPage } from './pages/ProductsPage';
 import { ProductBuilderPage } from './pages/ProductBuilderPage';
@@ -21,7 +20,6 @@ function App() {
             {/* Active Feature Route */}
             <Route index element={<CatalogPage />} />
 
-            {/* Sua Rota */}
             <Route path="orcamentos/venda-avulsa" element={<SeparateSalePage />} />
 
             {/* Future Modules Placeholders */}

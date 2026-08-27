@@ -37,7 +37,7 @@ export function SeparateSaleForm() {
   [hardwaresData]);
 
   const {register, handleSubmit, watch,reset, formState: { errors },} = useForm<SeparateSaleFormData>({
-    resolver: zodResolver(separateSaleSchema),
+    resolver: zodResolver(separateSaleSchema) as any,
     defaultValues: {
       saleType: 'GLASS',
       quantity: 1,
@@ -54,12 +54,12 @@ export function SeparateSaleForm() {
     reset({
       saleType: type,
       quantity: 1,
-    });
+    } as any);
   };
 
   const onSubmit = async (data: SeparateSaleFormData) => {
     await createSale(data);
-    reset({ saleType: currentSaleType, quantity: 1 }); // Reseta o form após sucesso
+    reset({ saleType: currentSaleType, quantity: 1 } as any ); // Reseta o form após sucesso
   };
 
   return (
@@ -108,7 +108,7 @@ export function SeparateSaleForm() {
         </button>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-md">
+      <form onSubmit={handleSubmit(onSubmit as any)} className="space-y-md">
 
         {/* CAMPOS COMUNS (Base) */}
         <div className="p-md rounded-md border border-outline-variant/40 dark:border-outline/20 bg-[#F8FAFC] dark:bg-surface-container-high/10">
