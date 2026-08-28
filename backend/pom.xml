@@ -24,6 +24,15 @@
         <mapstruct.version>1.6.3</mapstruct.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+
+        <!-- SonarQube Quality Gate & Coverage Exclusions -->
+        <sonar.coverage.exclusions>
+            **/dto/**,
+            **/domain/**,
+            **/config/**,
+            **/exception/**,
+            **/br/edu/ifpb/alumigest/AlumiGestApplication.java
+        </sonar.coverage.exclusions>
     </properties>
 
     <dependencies>

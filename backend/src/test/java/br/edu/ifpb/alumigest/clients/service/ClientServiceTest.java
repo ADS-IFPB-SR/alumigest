@@ -38,11 +38,14 @@ class ClientServiceTest {
     @Mock
     private ClientRepository clientRepository;
 
-    @Spy
-    private ClientMapper clientMapper;
+    private ClientMapper clientMapper = new ClientMapper();
 
-    @InjectMocks
     private ClientService clientService;
+
+    @org.junit.jupiter.api.BeforeEach
+    void setUp() {
+        clientService = new ClientService(clientRepository, clientMapper);
+    }
 
     @Test
     @DisplayName("Deve cadastrar cliente Pessoa Física com sucesso quando dados forem válidos")
