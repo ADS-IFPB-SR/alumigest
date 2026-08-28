@@ -70,3 +70,55 @@ export const filmSchema = z.object({
 }).superRefine(basePriceRefinement);
 
 export type FilmFormValues = z.infer<typeof filmSchema>;
+
+// ==========================================
+// SCHEMAS E LABELS PARA TEMPLATES E PRODUTOS
+// ==========================================
+
+export const doorTemplateTypeSchema = z.enum(['SWING', 'SLIDING', 'AWNING', 'DRAWER']);
+export type DoorTemplateType = z.infer<typeof doorTemplateTypeSchema>;
+
+export const DOOR_TEMPLATE_LABELS: Record<DoorTemplateType, string> = {
+  SWING: 'Porta de Giro',
+  SLIDING: 'Porta / Janela de Correr',
+  AWNING: 'Janela Basculante / Maxim-Ar',
+  DRAWER: 'Gaveta'
+};
+
+export const DOOR_TEMPLATE_OPTIONS = Object.entries(DOOR_TEMPLATE_LABELS).map(([value, label]) => ({
+  value: value as DoorTemplateType,
+  label
+}));
+
+export const materialCategoryTypeSchema = z.enum(['GLASS', 'PROFILE', 'HARDWARE', 'ROLLERS', 'FILM']);
+export type MaterialCategoryType = z.infer<typeof materialCategoryTypeSchema>;
+
+export const MATERIAL_CATEGORY_LABELS: Record<MaterialCategoryType, string> = {
+  GLASS: 'Vidro',
+  PROFILE: 'Perfil de Alumínio',
+  HARDWARE: 'Ferragem / Fechadura',
+  ROLLERS: 'Roldana',
+  FILM: 'Película'
+};
+
+export const MATERIAL_CATEGORY_OPTIONS = Object.entries(MATERIAL_CATEGORY_LABELS).map(([value, label]) => ({
+  value: value as MaterialCategoryType,
+  label
+}));
+
+export const productItemRequestSchema = z.object({
+  materialId: z.string().uuid('ID de material inválido'),
+  quantity: z.number().positive('A quantidade deve ser positiva')
+});
+
+export const productSchema = z.object({
+  name: z.string().min(1, 'O nome do produto é obrigatório').transform(v => v.trim()),
+  categoryId: z.string().uuid('Categoria obrigatória'),
+  laborCost: z.string().min(1, 'Custo de mão de obra obrigatório'),
+  templateType: doorTemplateTypeSchema.optional().nullable(),
+  categoryRequirements: z.array(materialCategoryTypeSchema).optional().nullable(),
+  items: z.array(productItemRequestSchema).optional().default([])
+});
+
+export type ProductFormValues = z.infer<typeof productSchema>;
+

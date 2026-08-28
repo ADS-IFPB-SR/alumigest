@@ -9,6 +9,6 @@ ALTER TABLE tb_products ADD COLUMN template_config JSONB;
 ALTER TABLE tb_products ADD COLUMN category_requirements JSONB;
 
 -- Comentários explicativos para documentação de banco
-COMMENT ON COLUMN tb_products.template_type IS 'Modelo de esquadria/template (GIRO, CORRER, BASCULANTE, GAVETA)';
+COMMENT ON COLUMN tb_products.template_type IS 'Modelo de esquadria/template (SWING, SLIDING, AWNING, DRAWER)';
 COMMENT ON COLUMN tb_products.template_config IS 'Configuração paramétrica padrão e esquema de opções disponíveis para orçamento (JSON)';
 COMMENT ON COLUMN tb_products.category_requirements IS 'Lista de categorias de insumos requeridas para montagem (GLASS, PROFILE, HARDWARE, ROLLERS, FILM)';

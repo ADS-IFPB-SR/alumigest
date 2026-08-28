@@ -26,7 +26,7 @@ public record ProductRequestDTO(
         @Schema(description = "Custo base de mão de obra", example = "150.00")
         BigDecimal laborCost,
 
-        @Schema(description = "Modelo de template de esquadria (GIRO, CORRER, BASCULANTE, GAVETA)", example = "GIRO")
+        @Schema(description = "Modelo de template de esquadria (SWING, SLIDING, AWNING, DRAWER)", example = "SWING")
         DoorTemplateType templateType,
 
         @Schema(description = "Configurações padrão e opções permitidas para orçamento")

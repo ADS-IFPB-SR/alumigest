@@ -25,7 +25,7 @@ public record ProductResponseDTO(
         @Schema(description = "Custo base de mão de obra", example = "150.00")
         BigDecimal laborCost,
 
-        @Schema(description = "Modelo de template de esquadria", example = "GIRO")
+        @Schema(description = "Modelo de template de esquadria", example = "SWING")
         DoorTemplateType templateType,
 
         @Schema(description = "Configurações padrão e esquema de opções do template")

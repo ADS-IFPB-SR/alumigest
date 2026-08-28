@@ -72,7 +72,7 @@ class ProductControllerTest {
                 "Porta de Giro Simples",
                 categoryId,
                 new BigDecimal("150.00"),
-                DoorTemplateType.GIRO,
+                DoorTemplateType.SWING,
                 null,
                 List.of(MaterialCategoryType.GLASS, MaterialCategoryType.PROFILE),
                 List.of(validItem)
@@ -84,7 +84,7 @@ class ProductControllerTest {
                 categoryId,
                 "Portas",
                 new BigDecimal("150.00"),
-                DoorTemplateType.GIRO,
+                DoorTemplateType.SWING,
                 null,
                 List.of(MaterialCategoryType.GLASS, MaterialCategoryType.PROFILE),
                 true,
@@ -98,7 +98,7 @@ class ProductControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.name").value("Porta de Giro Simples"))
-                .andExpect(jsonPath("$.data.templateType").value("GIRO"))
+                .andExpect(jsonPath("$.data.templateType").value("SWING"))
                 .andExpect(jsonPath("$.data.categoryName").value("Portas"));
     }
 
@@ -170,7 +170,7 @@ class ProductControllerTest {
                 categoryId,
                 "Portas",
                 new BigDecimal("500.00"),
-                DoorTemplateType.CORRER,
+                DoorTemplateType.SLIDING,
                 null,
                 List.of(MaterialCategoryType.GLASS),
                 true,
@@ -183,7 +183,7 @@ class ProductControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.id").value(productId.toString()))
                 .andExpect(jsonPath("$.data.name").value("Porta de Correr Suprema"))
-                .andExpect(jsonPath("$.data.templateType").value("CORRER"));
+                .andExpect(jsonPath("$.data.templateType").value("SLIDING"));
     }
 
     @Test
@@ -231,7 +231,7 @@ class ProductControllerTest {
                 "Porta Atualizada",
                 categoryId,
                 new BigDecimal("180.00"),
-                DoorTemplateType.CORRER,
+                DoorTemplateType.SLIDING,
                 null,
                 List.of(MaterialCategoryType.GLASS, MaterialCategoryType.ROLLERS),
                 List.of(validItem)
@@ -243,7 +243,7 @@ class ProductControllerTest {
                 categoryId,
                 "Portas",
                 new BigDecimal("180.00"),
-                DoorTemplateType.CORRER,
+                DoorTemplateType.SLIDING,
                 null,
                 List.of(MaterialCategoryType.GLASS, MaterialCategoryType.ROLLERS),
                 true,
@@ -257,7 +257,7 @@ class ProductControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.name").value("Porta Atualizada"))
-                .andExpect(jsonPath("$.data.templateType").value("CORRER"));
+                .andExpect(jsonPath("$.data.templateType").value("SLIDING"));
     }
 
     @Test
@@ -308,7 +308,7 @@ class ProductControllerTest {
                 categoryId,
                 "Portas",
                 new BigDecimal("100.00"),
-                DoorTemplateType.GIRO,
+                DoorTemplateType.SWING,
                 null,
                 List.of(MaterialCategoryType.GLASS),
                 true,
@@ -323,7 +323,7 @@ class ProductControllerTest {
                         .param("size", "10")
                         .param("activeOnly", "true"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.content[0].templateType").value("GIRO"));
+                .andExpect(jsonPath("$.data.content[0].templateType").value("SWING"));
     }
 
     @Test
