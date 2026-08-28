@@ -1,5 +1,5 @@
 -- ============================================================================
--- AlumiGest Database Migration - V7
+-- AlumiGest Database Migration - V8
 -- Módulo: Catálogo de Produtos Finais (Templates Paramétricos e Categorias de Insumos)
 -- ============================================================================
 

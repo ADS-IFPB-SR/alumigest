@@ -15,6 +15,10 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -38,6 +42,58 @@ class ProductServiceTest {
     private ProductMapper productMapper;
     @InjectMocks
     private ProductService productService;
+
+    @Test
+    @DisplayName("Deve cadastrar um produto agrupando itens repetidos e retornar o DTO")
+    void createProduct_WithRepeatedItems_ShouldGroupAndSave() {
+        UUID materialId = UUID.randomUUID();
+        UUID categoryId = UUID.randomUUID();
+
+        ProductItemRequestDTO item1 = new ProductItemRequestDTO(materialId, new BigDecimal("2.0"));
+        ProductItemRequestDTO item2 = new ProductItemRequestDTO(materialId, new BigDecimal("3.0"));
+
+        ProductRequestDTO request = new ProductRequestDTO(
+                "Janela de Correr",
+                categoryId,
+                new BigDecimal("150.00"),
+                null,
+                null,
+                null,
+                List.of(item1, item2)
+        );
+
+        Material mockMaterial = new Material();
+        mockMaterial.setId(materialId);
+
+        Product mockSavedProduct = new Product();
+        ProductResponseDTO mockResponse = new ProductResponseDTO(
+                UUID.randomUUID(), "Janela de Correr", categoryId, "Esquadrias", new BigDecimal("150.00"),
+                null, null, null, true, List.of()
+        );
+
+        ProductCategory mockCategory = new ProductCategory();
+        mockCategory.setId(categoryId);
+        mockCategory.setName("Esquadrias");
+
+        when(productRepository.existsByNameIgnoreCase("Janela de Correr")).thenReturn(false);
+        when(productCategoryRepository.findById(categoryId)).thenReturn(Optional.of(mockCategory));
+        when(materialRepository.findByIdAndIsActiveTrue(materialId)).thenReturn(Optional.of(mockMaterial));
+        when(productRepository.save(any(Product.class))).thenReturn(mockSavedProduct);
+        when(productMapper.toResponse(mockSavedProduct)).thenReturn(mockResponse);
+
+        ProductResponseDTO result = productService.createProduct(request);
+
+        assertNotNull(result);
+        assertEquals("Janela de Correr", result.name());
+
+        ArgumentCaptor<Product> productCaptor = ArgumentCaptor.forClass(Product.class);
+        verify(productRepository).save(productCaptor.capture());
+
+        Product capturedProduct = productCaptor.getValue();
+        assertEquals(1, capturedProduct.getItems().size());
+        assertEquals(new BigDecimal("5.0"), capturedProduct.getItems().get(0).getQuantity());
+        verify(materialRepository, times(1)).findByIdAndIsActiveTrue(materialId);
+    }
 
     @Test
     @DisplayName("Deve cadastrar um produto com template e categoryRequirements com sucesso")
@@ -283,16 +339,16 @@ class ProductServiceTest {
     @Test
     @DisplayName("Deve listar produtos ativos quando activeOnly for true")
     void findProducts_ActiveOnlyTrue_ShouldCallFindByIsActiveTrue() {
-        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(0, 10);
+        Pageable pageable = PageRequest.of(0, 10);
         Product product = new Product();
         product.setId(UUID.randomUUID());
         product.setName("Produto Ativo");
 
-        org.springframework.data.domain.Page<Product> page = new org.springframework.data.domain.PageImpl<>(List.of(product));
+        Page<Product> page = new PageImpl<>(List.of(product));
         when(productRepository.findByIsActiveTrue(pageable)).thenReturn(page);
         when(productMapper.toResponse(any())).thenReturn(new ProductResponseDTO(product.getId(), "Produto Ativo", UUID.randomUUID(), "Cat", BigDecimal.ZERO, null, null, null, true, List.of()));
 
-        org.springframework.data.domain.Page<ProductResponseDTO> result = productService.findProducts(pageable, true);
+        Page<ProductResponseDTO> result = productService.findProducts(pageable, true);
 
         assertNotNull(result);
         assertEquals(1, result.getTotalElements());
@@ -302,15 +358,15 @@ class ProductServiceTest {
     @Test
     @DisplayName("Deve listar todos os produtos quando activeOnly for false")
     void findProducts_ActiveOnlyFalse_ShouldCallFindAll() {
-        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(0, 10);
+        Pageable pageable = PageRequest.of(0, 10);
         Product product = new Product();
         product.setId(UUID.randomUUID());
 
-        org.springframework.data.domain.Page<Product> page = new org.springframework.data.domain.PageImpl<>(List.of(product));
+        Page<Product> page = new PageImpl<>(List.of(product));
         when(productRepository.findAll(pageable)).thenReturn(page);
         when(productMapper.toResponse(any())).thenReturn(new ProductResponseDTO(product.getId(), "Produto", UUID.randomUUID(), "Cat", BigDecimal.ZERO, null, null, null, false, List.of()));
 
-        org.springframework.data.domain.Page<ProductResponseDTO> result = productService.findProducts(pageable, false);
+        Page<ProductResponseDTO> result = productService.findProducts(pageable, false);
 
         assertNotNull(result);
         assertEquals(1, result.getTotalElements());

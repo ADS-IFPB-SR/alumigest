@@ -35,6 +35,13 @@ public class ProductController {
                 .body(ApiResponse.created("Produto cadastrado com sucesso", response));
     }
 
+    @GetMapping("/{id}")
+    @Operation(summary = "Buscar Produto por ID", description = "Retorna os detalhes de um produto específico e sua ficha técnica.")
+    public ResponseEntity<ApiResponse<ProductResponseDTO>> getProductById(@PathVariable UUID id) {
+        ProductResponseDTO product = productService.findById(id);
+        return ResponseEntity.ok(ApiResponse.ok("Produto encontrado com sucesso", product));
+    }
+
     @GetMapping
     @Operation(summary = "Listar Produtos", description = "Retorna uma lista paginada de produtos e templates. Permite filtrar apenas ativos (padrão) ou todos.")
     public ResponseEntity<ApiResponse<PageResponse<ProductResponseDTO>>> listProducts(
@@ -43,13 +50,6 @@ public class ProductController {
 
         Page<ProductResponseDTO> page = productService.findProducts(pageable, activeOnly);
         return ResponseEntity.ok(ApiResponse.ok("Produtos listados com sucesso", PageResponse.of(page)));
-    }
-
-    @GetMapping("/{id}")
-    @Operation(summary = "Buscar Produto por ID", description = "Retorna os detalhes completos de um produto ou template de esquadria.")
-    public ResponseEntity<ApiResponse<ProductResponseDTO>> getProductById(@PathVariable UUID id) {
-        ProductResponseDTO response = productService.findById(id);
-        return ResponseEntity.ok(ApiResponse.ok("Produto recuperado com sucesso", response));
     }
 
     @PutMapping("/{id}")
