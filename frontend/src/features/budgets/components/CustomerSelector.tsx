@@ -171,7 +171,7 @@ export const CustomerSelector: React.FC<CustomerSelectorProps> = ({
                     <div className="min-w-0">
                       <p className="font-label font-semibold text-on-surface text-sm">{customer.nomeCompleto}</p>
                       <p className="text-xs text-on-surface-variant font-data-mono truncate">
-                        {customer.cpfCnpj ?? ''} {customer.telefone ? `· ${customer.telefone}` : ''} {customer.cidade ? `· ${customer.cidade}/${customer.uf}` : ''}
+                        {customer.cpfCnpj ?? ''} {customer.telefone ? `· ${customer.telefone}` : ''} {customer.cidade ? `· ${customer.cidade}${customer.uf ? `/${customer.uf}` : ''}` : ''}
                       </p>
                     </div>
                   </button>

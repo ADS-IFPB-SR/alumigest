@@ -1,5 +1,5 @@
-import { BudgetWizard } from '../features/budgets/components/BudgetWizard';
+import { BudgetEditor } from '../features/budgets/components/BudgetEditor';
 
 export function BudgetNewPage() {
-  return <BudgetWizard />;
+  return <BudgetEditor />;
 }

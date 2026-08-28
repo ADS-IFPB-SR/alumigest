@@ -108,7 +108,7 @@ export const BudgetItemsTable: React.FC<BudgetItemsTableProps> = ({
                         )}
                         {item.options.length > 1 && (
                           <span className="text-[10px] text-on-surface-variant">
-                            +{item.options.length - 1} material{item.options.length > 2 ? 'is' : ''}
+                            +{item.options.length - 1} {item.options.length - 1 === 1 ? 'material' : 'materiais'}
                           </span>
                         )}
                         {item.options.length === 0 && (

@@ -358,4 +358,33 @@ export const budgetsApi = {
     const response = await api.put<BudgetDetail>(`/orcamentos/${id}`, data);
     return response.data;
   },
+
+  deleteBudget: async (id: string): Promise<boolean> => {
+    await api.delete(`/orcamentos/${id}`);
+    return true;
+  },
+
+  updateBudgetStatus: async (id: string, status: BudgetStatus): Promise<BudgetDetail> => {
+    const response = await api.patch<BudgetDetail>(`/orcamentos/${id}/status`, { status });
+    return response.data;
+  },
+
+  exportBudgetPdf: async (id: string): Promise<Blob> => {
+    const response = await api.get<Blob>(`/orcamentos/${id}/pdf`, {
+      responseType: 'blob',
+    });
+    return response.data;
+  },
+
+  recalculateBudget: async (payload: unknown): Promise<{ subtotal?: number; materials?: { materialId: string; quantity: number; totalPrice: number }[] } | null> => {
+    try {
+      const response = await api.post<{ subtotal?: number; materials?: { materialId: string; quantity: number; totalPrice: number }[] }>(
+        '/orcamentos/calcular',
+        payload,
+      );
+      return response.data;
+    } catch {
+      return null;
+    }
+  },
 };

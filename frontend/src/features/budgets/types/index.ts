@@ -100,8 +100,13 @@ export interface MaterialSelection {
   materialName: string;
   unitMeasure: string;
   unitPrice: number;
-  calculatedQty: number;
-  totalPrice: number;
+  /**
+   * Quantidade técnica de insumo calculada e retornada pelo backend.
+   * O frontend NÃO calcula este valor através de fórmulas geométricas locais.
+   */
+  quantity?: number;
+  /** Subtotal estimado se quantity for fornecida pelo backend */
+  totalPrice?: number;
 }
 
 export interface BuilderState {
@@ -112,6 +117,10 @@ export interface BuilderState {
   openingDirection: OpeningDirection;
   handleConfig: HandleConfig;
   drillingConfig: DrillingConfig;
+  aluminumColor?: string;
+  glassFinish?: string;
+  laborCost?: number;
+  notes?: string;
   materialSelections: MaterialSelection[];
 }
 
@@ -123,9 +132,9 @@ export interface BudgetItemOption {
   materialName: string;
   categoryType: CategoryType;
   unitMeasure: string;
-  quantity: number;
+  quantity?: number;
   unitPrice: number;
-  totalPrice: number;
+  totalPrice?: number;
 }
 
 export interface BudgetItem {
@@ -275,7 +284,7 @@ export interface CreateBudgetPayload {
     width: number;
     height: number;
     quantity: number;
-    options: { materialId: string; quantity: number }[];
+    options: { materialId: string; quantity?: number }[];
     notes?: string;
   }[];
 }
