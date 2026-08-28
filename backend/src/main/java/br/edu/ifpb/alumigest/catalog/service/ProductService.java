@@ -118,6 +118,14 @@ public class ProductService implements IProductService {
         return productMapper.toResponse(productRepository.save(product));
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public ProductResponseDTO findById(UUID id) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Produto não encontrado com o ID informado."));
+        return productMapper.toResponse(product);
+    }
+
 
     @Transactional
     public void inactivateProduct(UUID id) {

@@ -54,18 +54,25 @@ class ProductServiceTest {
 
         UUID categoryId = UUID.randomUUID();
 
+        // Correção das variáveis (categoryId e itens) e adição dos nulls do template
         ProductRequestDTO request = new ProductRequestDTO(
                 "Janela de Correr",
                 categoryId,
                 new BigDecimal("150.00"),
-                List.of(item1, item2)
+                List.of(item1, item2),
+                null, null, null
         );
 
         Material mockMaterial = new Material();
         mockMaterial.setId(materialId);
 
         Product mockSavedProduct = new Product();
-        ProductResponseDTO mockResponse = new ProductResponseDTO(UUID.randomUUID(), "Janela de Correr", categoryId, "Esquadrias", new BigDecimal("150.00"), true, List.of());
+
+        // Adição dos nulls do template no Response
+        ProductResponseDTO mockResponse = new ProductResponseDTO(
+                UUID.randomUUID(), "Janela de Correr", categoryId, "Esquadrias", new BigDecimal("150.00"), true, List.of(),
+                null, null, null
+        );
 
         ProductCategory mockCategory = new ProductCategory();
         mockCategory.setId(categoryId);
@@ -109,11 +116,13 @@ class ProductServiceTest {
         ProductCategory mockCategory = new ProductCategory();
         mockCategory.setId(categoryId);
 
+        // Correção da variável categoryId e adição dos nulls do template
         ProductRequestDTO request = new ProductRequestDTO(
-                "Porta",
+                "Nome",
                 categoryId,
-                new BigDecimal("50.00"),
-                List.of(item)
+                new BigDecimal("10.00"),
+                List.of(item),
+                null, null, null
         );
 
         when(productCategoryRepository.findById(categoryId)).thenReturn(Optional.of(mockCategory));
@@ -148,12 +157,16 @@ class ProductServiceTest {
     @Test
     @DisplayName("Deve lançar BusinessException ao criar produto com nome duplicado")
     void createProduct_WithDuplicateName_ShouldThrowBusinessException() {
-        ProductRequestDTO request = new ProductRequestDTO("Porta", UUID.randomUUID(), BigDecimal.ZERO, List.of());
-        
+        // Adição dos nulls do template
+        ProductRequestDTO request = new ProductRequestDTO(
+                "Porta", UUID.randomUUID(), BigDecimal.ZERO, List.of(),
+                null, null, null
+        );
+
         when(productRepository.existsByNameIgnoreCase("Porta")).thenReturn(true);
 
         br.edu.ifpb.alumigest.common.exception.BusinessException exception = assertThrows(
-                br.edu.ifpb.alumigest.common.exception.BusinessException.class, 
+                br.edu.ifpb.alumigest.common.exception.BusinessException.class,
                 () -> productService.createProduct(request)
         );
 
@@ -165,12 +178,16 @@ class ProductServiceTest {
     @DisplayName("Deve lançar BusinessException ao atualizar produto com nome de outro já existente")
     void updateProduct_WithDuplicateName_ShouldThrowBusinessException() {
         UUID id = UUID.randomUUID();
-        ProductRequestDTO request = new ProductRequestDTO("Porta Nova", UUID.randomUUID(), BigDecimal.ZERO, List.of());
-        
+        // Adição dos nulls do template
+        ProductRequestDTO request = new ProductRequestDTO(
+                "Porta Nova", UUID.randomUUID(), BigDecimal.ZERO, List.of(),
+                null, null, null
+        );
+
         when(productRepository.existsByNameIgnoreCaseAndIdNot("Porta Nova", id)).thenReturn(true);
 
         br.edu.ifpb.alumigest.common.exception.BusinessException exception = assertThrows(
-                br.edu.ifpb.alumigest.common.exception.BusinessException.class, 
+                br.edu.ifpb.alumigest.common.exception.BusinessException.class,
                 () -> productService.updateProduct(id, request)
         );
 

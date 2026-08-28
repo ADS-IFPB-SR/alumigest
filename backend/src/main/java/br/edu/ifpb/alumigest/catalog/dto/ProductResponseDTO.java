@@ -11,5 +11,10 @@ public record ProductResponseDTO(
         String categoryName,
         BigDecimal laborCost,
         boolean isActive,
-        List<ProductItemResponseDTO> items
+        List<ProductItemResponseDTO> items,
+
+        // Novos campos retornados para renderização no Frontend
+        String templateType,
+        String templateConfig,
+        List<String> categoryRequirements
 ) {}

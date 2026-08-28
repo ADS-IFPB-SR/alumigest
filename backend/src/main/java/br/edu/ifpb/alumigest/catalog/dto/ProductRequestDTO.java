@@ -22,5 +22,10 @@ public record ProductRequestDTO(
 
         @NotEmpty(message = "A ficha técnica deve conter pelo menos um material")
         @Valid
-        List<ProductItemRequestDTO> items
+        List<ProductItemRequestDTO> items,
+
+        // Novos campos para os Templates Paramétricos (Opcionais)
+        String templateType,
+        String templateConfig,
+        List<String> categoryRequirements
 ) {}

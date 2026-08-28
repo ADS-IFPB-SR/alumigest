@@ -12,4 +12,5 @@ public interface IProductService {
     Page<ProductResponseDTO> findProducts(Pageable pageable, boolean activeOnly);
     ProductResponseDTO updateProduct(UUID id, ProductRequestDTO request);
     void inactivateProduct(UUID id);
+    ProductResponseDTO findById(UUID id);
 }

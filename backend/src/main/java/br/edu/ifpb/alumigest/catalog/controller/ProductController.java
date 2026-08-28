@@ -2,7 +2,6 @@ package br.edu.ifpb.alumigest.catalog.controller;
 
 import br.edu.ifpb.alumigest.catalog.dto.ProductRequestDTO;
 import br.edu.ifpb.alumigest.catalog.dto.ProductResponseDTO;
-import br.edu.ifpb.alumigest.catalog.service.ProductService;
 import br.edu.ifpb.alumigest.common.dto.ApiResponse;
 import br.edu.ifpb.alumigest.common.dto.PageResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -34,6 +33,14 @@ public class ProductController {
         ProductResponseDTO response = productService.createProduct(request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.created("Produto cadastrado com sucesso", response));
+    }
+
+    // O PROBLEMA ESTAVA AQUI: Agora ele também retorna um ApiResponse!
+    @GetMapping("/{id}")
+    @Operation(summary = "Buscar Produto por ID", description = "Retorna os detalhes de um produto específico e sua ficha técnica.")
+    public ResponseEntity<ApiResponse<ProductResponseDTO>> getProductById(@PathVariable UUID id) {
+        ProductResponseDTO product = productService.findById(id);
+        return ResponseEntity.ok(ApiResponse.ok("Produto encontrado com sucesso", product));
     }
 
     @GetMapping
