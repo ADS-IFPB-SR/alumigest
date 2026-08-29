@@ -15,4 +15,9 @@ public interface BudgetRepository extends JpaRepository<Budget, UUID> {
     Page<Budget> findByClientId(UUID clientId, Pageable pageable);
     Page<Budget> findByStatus(BudgetStatus status, Pageable pageable);
     Optional<Budget> findByCode(String code);
+
+    Page<Budget> findAllByOrderByCreatedAtDesc(Pageable pageable);
+
+    //  busca o último código gerado para um prefixo (ex: "ORC-2026-")
+    Optional<Budget> findTopByCodeStartingWithOrderByCodeDesc(String prefix);
 }
