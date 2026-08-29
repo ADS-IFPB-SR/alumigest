@@ -1,34 +1,18 @@
 package br.edu.ifpb.alumigest.catalog.domain;
 
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
-import jakarta.persistence.Table;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.PositiveOrZero;
-import jakarta.validation.constraints.Size;
 
 @Entity
 @Table(name = "tb_products")
@@ -52,6 +36,18 @@ public class Product {
     @PositiveOrZero(message = "O custo de mão de obra não pode ser negativo")
     @Column(name = "labor_cost", nullable = false, precision = 12, scale = 2)
     private BigDecimal laborCost = BigDecimal.ZERO;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "template_type", length = 50)
+    private DoorTemplateType templateType;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "template_config", columnDefinition = "jsonb")
+    private TemplateConfig templateConfig;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "category_requirements", columnDefinition = "jsonb")
+    private List<MaterialCategoryType> categoryRequirements = new ArrayList<>();
 
     @Column(name = "is_active", nullable = false)
     private boolean isActive = true;
@@ -110,6 +106,30 @@ public class Product {
         this.laborCost = laborCost;
     }
 
+    public DoorTemplateType getTemplateType() {
+        return templateType;
+    }
+
+    public void setTemplateType(DoorTemplateType templateType) {
+        this.templateType = templateType;
+    }
+
+    public TemplateConfig getTemplateConfig() {
+        return templateConfig;
+    }
+
+    public void setTemplateConfig(TemplateConfig templateConfig) {
+        this.templateConfig = templateConfig;
+    }
+
+    public List<MaterialCategoryType> getCategoryRequirements() {
+        return categoryRequirements;
+    }
+
+    public void setCategoryRequirements(List<MaterialCategoryType> categoryRequirements) {
+        this.categoryRequirements = categoryRequirements != null ? categoryRequirements : new ArrayList<>();
+    }
+
     public boolean isActive() {
         return isActive;
     }
@@ -122,11 +142,13 @@ public class Product {
         return items;
     }
 
-    // Método auxiliar para adicionar itens na Ficha Técnica e manter os dois lados
-    // sincronizados
+    public void setItems(List<ProductItem> items) {
+        this.items = items != null ? items : new ArrayList<>();
+    }
+
+    // Método auxiliar para adicionar itens na Ficha Técnica e manter os dois lados sincronizados
     public void addItem(ProductItem item) {
         this.items.add(item);
         item.setProduct(this);
     }
-
 }
