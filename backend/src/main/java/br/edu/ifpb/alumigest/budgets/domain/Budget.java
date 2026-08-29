@@ -1,7 +1,6 @@
 package br.edu.ifpb.alumigest.budgets.domain;
 
 import br.edu.ifpb.alumigest.clients.domain.Client;
-import br.edu.ifpb.alumigest.budgets.domain.BudgetStatus;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;

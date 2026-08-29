@@ -1,5 +1,5 @@
 -- ============================================================================
--- AlumiGest Database Migration - V8__create_budgets_schema.sql
+-- AlumiGest Database Migration - V9__create_budgets_schema.sql
 -- Módulo: 📐 Orçamentos / Cálculos
 -- Criação das tabelas de orçamentos, itens da esquadria e insumos vinculados
 -- Requisitos: US-05
