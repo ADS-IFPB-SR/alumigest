@@ -47,10 +47,10 @@ public interface BudgetMapper {
     // --- Entidade para Response ---
 
     @Mapping(target = "clientId", source = "client.id")
-    @Mapping(target = "clientName", source = "client.fullname")
+    @Mapping(target = "clientName", source = "client.fullName")
     BudgetResponseDTO toResponseDTO(Budget budget);
 
-    @Mapping(target = "clientName", source = "client.fullname")
+    @Mapping(target = "clientName", source = "client.fullName")
     BudgetSummaryResponseDTO toSummaryResponseDTO(Budget budget);
 
     @Mapping(target = "productId", source = "product.id")
