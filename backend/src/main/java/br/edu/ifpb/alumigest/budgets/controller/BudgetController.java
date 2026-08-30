@@ -60,7 +60,7 @@ public class BudgetController {
             @RequestParam(required = false) String busca,
             @Parameter(description = "Filtro por status do orçamento")
             @RequestParam(required = false) BudgetStatus status,
-            @ParameterObject @PageableDefault(size = 20, sort = "createdAt,DESC") Pageable pageable) {
+            @ParameterObject @PageableDefault(size = 20, sort = "createdAt", direction = org.springframework.data.domain.Sort.Direction.DESC) Pageable pageable) {
 
         PageResponse<BudgetSummaryResponseDTO> response = budgetService.findAll(busca, status, pageable);
         return ResponseEntity.ok(response);
