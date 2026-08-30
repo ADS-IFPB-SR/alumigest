@@ -20,4 +20,18 @@ public interface BudgetRepository extends JpaRepository<Budget, UUID> {
 
     //  busca o último código gerado para um prefixo (ex: "ORC-2026-")
     Optional<Budget> findTopByCodeStartingWithOrderByCodeDesc(String prefix);
+
+    @org.springframework.data.jpa.repository.Query("""
+        SELECT b FROM Budget b
+        LEFT JOIN b.client c
+        WHERE (:status IS NULL OR b.status = :status)
+          AND (CAST(:busca AS string) IS NULL OR :busca = ''
+               OR LOWER(b.code) LIKE LOWER(CONCAT('%', CAST(:busca AS string), '%'))
+               OR LOWER(c.fullName) LIKE LOWER(CONCAT('%', CAST(:busca AS string), '%')))
+    """)
+    Page<Budget> searchBudgets(
+            @org.springframework.data.repository.query.Param("busca") String busca,
+            @org.springframework.data.repository.query.Param("status") BudgetStatus status,
+            Pageable pageable
+    );
 }
