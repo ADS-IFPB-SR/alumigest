@@ -36,7 +36,6 @@ public interface BudgetMapper {
     @Mapping(target = "budgetItem", ignore = true)
     @Mapping(target = "materialName", ignore = true)
     @Mapping(target = "unitMeasure", ignore = true)
-    @Mapping(target = "categoryType", ignore = true)
     @Mapping(target = "unitPrice", ignore = true)
     @Mapping(target = "totalPrice", ignore = true)
     @Mapping(target = "material.id", source = "materialId")

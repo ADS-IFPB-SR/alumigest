@@ -109,6 +109,18 @@ public class BudgetController {
         return ResponseEntity.ok().build();
     }
 
+    @PostMapping("/{id}/recalcular")
+    @Operation(summary = "Forçar recálculo", description = "Força o recálculo de quantidades e preços de um orçamento DRAFT.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Orçamento recalculado"),
+            @ApiResponse(responseCode = "404", description = "Orçamento não encontrado"),
+            @ApiResponse(responseCode = "422", description = "Orçamento imutável")
+    })
+    public ResponseEntity<BudgetResponseDTO> recalculate(@PathVariable UUID id) {
+        BudgetResponseDTO response = budgetService.recalculate(id);
+        return ResponseEntity.ok(response);
+    }
+
     @DeleteMapping("/{id}")
     @Operation(summary = "Cancelar orçamento", description = "Cancela o orçamento alterando seu status para CANCELLED (soft delete).")
     @ApiResponses({

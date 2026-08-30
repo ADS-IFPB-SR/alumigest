@@ -37,20 +37,20 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@ExtendWith(MockitoExtension.class)
 class BudgetControllerTest {
 
     private MockMvc mockMvc;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    @Mock
     private BudgetService budgetService;
 
-    @InjectMocks
     private BudgetController budgetController;
 
     @BeforeEach
     void setUp() {
+        budgetService = mock(BudgetService.class);
+        budgetController = new BudgetController(budgetService);
+
         mockMvc = MockMvcBuilders.standaloneSetup(budgetController)
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .setCustomArgumentResolvers(new PageableHandlerMethodArgumentResolver())
@@ -61,7 +61,7 @@ class BudgetControllerTest {
     @DisplayName("Deve retornar 201 ao criar orçamento")
     void create_ShouldReturn201() throws Exception {
         UUID id = UUID.randomUUID();
-        BudgetItemRequestDTO itemRequest = new BudgetItemRequestDTO(UUID.randomUUID(), BigDecimal.TEN, BigDecimal.TEN, 1, null, null, null, null, null, null);
+        BudgetItemRequestDTO itemRequest = new BudgetItemRequestDTO(UUID.randomUUID(), BigDecimal.TEN, BigDecimal.TEN, 1, BigDecimal.ZERO, null, null, null, null, null, null);
         BudgetRequestDTO request = new BudgetRequestDTO(UUID.randomUUID(), BigDecimal.ZERO, "Notes", List.of(itemRequest));
         BudgetResponseDTO response = new BudgetResponseDTO(id, "ORC-2026-001", UUID.randomUUID(), "João da Silva", BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BudgetStatus.DRAFT, "Notes", null, null, null, null);
 
@@ -121,7 +121,7 @@ class BudgetControllerTest {
     @DisplayName("Deve retornar 200 ao atualizar orçamento DRAFT")
     void update_ShouldReturn200() throws Exception {
         UUID id = UUID.randomUUID();
-        BudgetItemRequestDTO itemRequest = new BudgetItemRequestDTO(UUID.randomUUID(), BigDecimal.TEN, BigDecimal.TEN, 1, null, null, null, null, null, null);
+        BudgetItemRequestDTO itemRequest = new BudgetItemRequestDTO(UUID.randomUUID(), BigDecimal.TEN, BigDecimal.TEN, 1, BigDecimal.ZERO, null, null, null, null, null, null);
         BudgetRequestDTO request = new BudgetRequestDTO(UUID.randomUUID(), BigDecimal.ZERO, "Notes", List.of(itemRequest));
         BudgetResponseDTO response = new BudgetResponseDTO(id, "ORC-2026-001", UUID.randomUUID(), "João da Silva", BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BudgetStatus.DRAFT, "Notes", null, null, null, null);
 
@@ -138,7 +138,7 @@ class BudgetControllerTest {
     @DisplayName("Deve retornar 422 ao atualizar orçamento não DRAFT")
     void update_ShouldReturn422() throws Exception {
         UUID id = UUID.randomUUID();
-        BudgetItemRequestDTO itemRequest = new BudgetItemRequestDTO(UUID.randomUUID(), BigDecimal.TEN, BigDecimal.TEN, 1, null, null, null, null, null, null);
+        BudgetItemRequestDTO itemRequest = new BudgetItemRequestDTO(UUID.randomUUID(), BigDecimal.TEN, BigDecimal.TEN, 1, BigDecimal.ZERO, null, null, null, null, null, null);
         BudgetRequestDTO request = new BudgetRequestDTO(UUID.randomUUID(), BigDecimal.ZERO, "Notes", List.of(itemRequest));
 
         when(budgetService.update(eq(id), any())).thenThrow(new BudgetImmutableException("Immutable"));

@@ -39,7 +39,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class)
 class BudgetServiceTest {
 
     @Mock
@@ -51,7 +50,20 @@ class BudgetServiceTest {
     @Mock
     private BudgetMapper budgetMapper;
 
-    @InjectMocks
+    @Mock
+    private br.edu.ifpb.alumigest.budgets.calculator.MaterialCalculatorFactory calculatorFactory;
+
+    @Mock
+    private br.edu.ifpb.alumigest.catalog.repository.MaterialRepository materialRepository;
+
+    @Mock
+    private br.edu.ifpb.alumigest.catalog.repository.ProductRepository productRepository;
+
+    private BudgetQuantityService budgetQuantityService;
+
+    @Mock
+    private BudgetPricingService budgetPricingService;
+
     private BudgetService budgetService;
 
     private Client client;
@@ -60,6 +72,11 @@ class BudgetServiceTest {
 
     @BeforeEach
     void setUp() {
+        org.mockito.MockitoAnnotations.openMocks(this);
+        
+        budgetQuantityService = new BudgetQuantityService(calculatorFactory, materialRepository, productRepository);
+        budgetService = new BudgetService(budgetRepository, clientRepository, budgetMapper, budgetQuantityService, budgetPricingService);
+
         client = new Client();
         client.setId(UUID.randomUUID());
 
@@ -69,7 +86,7 @@ class BudgetServiceTest {
         budget.setStatus(BudgetStatus.DRAFT);
         budget.setCode("ORC-2026-001");
 
-        BudgetItemRequestDTO itemRequest = new BudgetItemRequestDTO(UUID.randomUUID(), BigDecimal.TEN, BigDecimal.TEN, 1, null, null, null, null, null, null);
+        BudgetItemRequestDTO itemRequest = new BudgetItemRequestDTO(UUID.randomUUID(), BigDecimal.TEN, BigDecimal.TEN, 1, BigDecimal.ZERO, null, null, null, null, null, null);
         requestDTO = new BudgetRequestDTO(client.getId(), BigDecimal.ZERO, "Notes", List.of(itemRequest));
     }
 
