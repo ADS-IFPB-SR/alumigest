@@ -1,0 +1,24 @@
+[
+  {
+    "skuCode": "PER-001",
+    "commercialLine": "LINHA SUPREMA",
+    "description": "PERFIL ALUMINIO 25X25 BRANCO",
+    "ncmCode": "76042990",
+    "colorFinish": "BRANCO",
+    "weight": "1.250",
+    "length": "6",
+    "costPrice": "32,50",
+    "salePrice": "49,90"
+  },
+  {
+    "skuCode": "PER-002",
+    "commercialLine": "LINHA GOLD",
+    "description": "PERFIL ALUMINIO 30X30 PRETO",
+    "ncmCode": "76042990",
+    "colorFinish": "PRETO",
+    "weight": "1.480",
+    "length": "3",
+    "costPrice": "38,00",
+    "salePrice": "56,90"
+  }
+]

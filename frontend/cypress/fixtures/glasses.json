@@ -1,0 +1,41 @@
+[
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440001",
+    "name": "Vidro Temperado 8mm",
+    "colorFinish": "Incolor",
+    "ncmCode": "70071900",
+    "thicknessMm": 8.00,
+    "costPrice": 120.00,
+    "salePrice": 180.00,
+    "unitMeasure": "M2",
+    "active": true,
+    "maxWidthMm": 3210.00,
+    "maxHeightMm": 2200.00
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440002",
+    "name": "Vidro Laminado 10mm",
+    "colorFinish": "Incolor",
+    "ncmCode": "70072900",
+    "thicknessMm": 10.00,
+    "costPrice": 180.00,
+    "salePrice": 260.00,
+    "unitMeasure": "M2",
+    "active": true,
+    "maxWidthMm": 3200.00,
+    "maxHeightMm": 2300.00
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440003",
+    "name": "Vidro Fumê 6mm",
+    "colorFinish": "Fumê",
+    "ncmCode": "70071900",
+    "thicknessMm": 6.00,
+    "costPrice": 95.00,
+    "salePrice": 145.00,
+    "unitMeasure": "M2",
+    "active": false,
+    "maxWidthMm": 3000.00,
+    "maxHeightMm": 2100.00
+  }
+]
