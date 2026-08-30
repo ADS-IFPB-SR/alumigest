@@ -13,6 +13,7 @@ import br.edu.ifpb.alumigest.clients.repository.ClientRepository;
 import br.edu.ifpb.alumigest.common.exception.BudgetImmutableException;
 import br.edu.ifpb.alumigest.common.exception.InvalidBudgetStatusTransitionException;
 import br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException;
+import br.edu.ifpb.alumigest.common.dto.PageResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -37,7 +38,7 @@ public class BudgetService {
     @Transactional
     public BudgetResponseDTO create(BudgetRequestDTO requestDTO) {
         Client client = clientRepository.findById(requestDTO.clientId())
-                .orElseThrow(() -> new ResourceNotFoundException("Cliente não encontrado com ID: " + requestDTO.clientId()));
+                .orElseThrow(() -> new ResourceNotFoundException("Cliente", requestDTO.clientId().toString()));
 
         Budget budget = budgetMapper.toEntity(requestDTO);
         budget.setClient(client);
@@ -55,9 +56,11 @@ public class BudgetService {
     }
 
     @Transactional(readOnly = true)
-    public Page<BudgetSummaryResponseDTO> findAll(Pageable pageable) {
-        return budgetRepository.findAllByOrderByCreatedAtDesc(pageable)
+    public PageResponse<BudgetSummaryResponseDTO> findAll(String busca, BudgetStatus status, Pageable pageable) {
+        String query = (busca != null && !busca.isBlank()) ? busca.trim() : null;
+        Page<BudgetSummaryResponseDTO> page = budgetRepository.searchBudgets(query, status, pageable)
                 .map(budgetMapper::toSummaryResponseDTO);
+        return PageResponse.of(page);
     }
 
     @Transactional
@@ -67,7 +70,7 @@ public class BudgetService {
         validateBudgetIsDraft(existingBudget);
 
         Client client = clientRepository.findById(requestDTO.clientId())
-                .orElseThrow(() -> new ResourceNotFoundException("Cliente não encontrado."));
+                .orElseThrow(() -> new ResourceNotFoundException("Cliente", requestDTO.clientId().toString()));
 
         existingBudget.getItems().clear();
         Budget updatedData = budgetMapper.toEntity(requestDTO);
@@ -104,7 +107,7 @@ public class BudgetService {
 
     private Budget getBudgetOrThrow(UUID id) {
         return budgetRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Orçamento não encontrado com ID: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Orçamento", id.toString()));
     }
 
     private void validateBudgetIsDraft(Budget budget) {
