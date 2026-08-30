@@ -1,12 +1,12 @@
-import profileForm from '../../fixtures/profile-form.json';
+import hardwareForm from '../../fixtures/hardware-form.json';
 
-describe('Detalhes de Perfil de Alumínio - Happy Path', () => {
+describe('Detalhes de Ferragem - Happy Path', () => {
   const uniqueSuffix = Date.now();
 
-  const profile = {
-    ...profileForm[0],
-    skuCode: `${profileForm[0].skuCode}-${uniqueSuffix}`,
-    description: `${profileForm[0].description} ${uniqueSuffix}`,
+  const hardware = {
+    ...hardwareForm[0],
+    skuCode: `${hardwareForm[0].skuCode}-${uniqueSuffix}`,
+    name: `${hardwareForm[0].name} ${uniqueSuffix}`,
   };
 
   const formatBRL = (value: string) => {
@@ -19,11 +19,17 @@ describe('Detalhes de Perfil de Alumínio - Happy Path', () => {
       .replace('.', ',')}`;
   };
 
- const formatWeight = (value: string) => {
-   return Number(value).toFixed(3);
- };
+  const getUnitLabel = (unit: string) => {
+    const map: Record<string, string> = {
+      UN: 'Unidade',
+      PAR: 'Par',
+      METRO: 'Metro Linear',
+    };
 
-  it('deve cadastrar um perfil e validar seus detalhes', () => {
+    return map[unit] || unit;
+  };
+
+  it('deve cadastrar uma ferragem e validar seus detalhes', () => {
     // =========================================================
     // 1. Acessa o catálogo
     // =========================================================
@@ -37,9 +43,9 @@ describe('Detalhes de Perfil de Alumínio - Happy Path', () => {
       .and('have.text', 'Catálogo de Materiais');
 
     // =========================================================
-    // 3. Seleciona Perfis de Alumínio
+    // 3. Seleciona Ferragens
     // =========================================================
-    cy.get('[data-cy="catalog-tab-profiles"]')
+    cy.get('[data-cy="catalog-tab-hardwares"]')
       .should('be.visible')
       .click();
 
@@ -51,101 +57,85 @@ describe('Detalhes de Perfil de Alumínio - Happy Path', () => {
       .click();
 
     // =========================================================
-    // 5. Seleciona Perfil
+    // 5. Valida modal de seleção
     // =========================================================
     cy.get('[data-cy="material-type-modal"]')
       .should('be.visible');
 
-    cy.get('[data-cy="material-type-profile"]')
+    // =========================================================
+    // 6. Seleciona Ferragem
+    // =========================================================
+    cy.get('[data-cy="material-type-hardware"]')
       .should('be.visible')
       .click();
 
     // =========================================================
-    // 6. Valida formulário
+    // 7. Valida formulário
     // =========================================================
-    cy.get('[data-cy="profile-form-save-button"]')
+    cy.get('[data-cy="hardware-form-save-button"]')
       .should('be.visible');
 
     // =========================================================
-    // 7. Preenche formulário
+    // 8. Preenche formulário
     // =========================================================
-    cy.get('[data-cy="profile-form-sku"]')
+    cy.get('[data-cy="hardware-form-sku"]')
       .clear()
-      .type(profile.skuCode);
+      .type(hardware.skuCode);
 
-    cy.get('[data-cy="profile-form-commercial-line"]')
+    cy.get('[data-cy="hardware-form-name"]')
       .clear()
-      .type(profile.commercialLine);
+      .type(hardware.name);
 
-    cy.get('[data-cy="profile-form-description"]')
+    cy.get('[data-cy="hardware-form-ncm"]')
       .clear()
-      .type(profile.description);
+      .type(hardware.ncmCode);
 
-    cy.get('[data-cy="profile-form-ncm"]')
-      .clear()
-      .type(profile.ncmCode);
+    cy.get('[data-cy="hardware-form-unit"]')
+      .select(hardware.unitMeasure);
 
-    cy.get('[data-cy="profile-form-color-finish"]')
+    cy.get('[data-cy="hardware-form-cost-price"]')
       .clear()
-      .type(profile.colorFinish);
+      .type(hardware.costPrice);
 
-    cy.get('[data-cy="profile-form-weight"]')
+    cy.get('[data-cy="hardware-form-sale-price"]')
       .clear()
-      .type(profile.weight);
-
-    cy.get('[data-cy="profile-form-length"]')
-      .clear()
-      .type(profile.length);
-
-    cy.get('[data-cy="profile-form-cost-price"]')
-      .clear()
-      .type(profile.costPrice);
-
-    cy.get('[data-cy="profile-form-sale-price"]')
-      .should('exist')
-      .and('not.be.disabled')
-      .clear()
-      .type(profile.salePrice);
+      .type(hardware.salePrice);
 
     // =========================================================
-    // 8. Salva
+    // 9. Salva
     // =========================================================
-    cy.get('[data-cy="profile-form-save-button"]')
+    cy.get('[data-cy="hardware-form-save-button"]')
       .click();
 
     // =========================================================
-    // 9. Valida Toast
+    // 10. Valida Toast
     // =========================================================
-    cy.contains('Perfil cadastrado com sucesso!')
+    cy.contains('Ferragem cadastrada com sucesso!')
       .should('be.visible');
 
     // =========================================================
-    // 10. Aguarda retorno ao catálogo
+    // 11. Aguarda retorno ao catálogo
     // =========================================================
     cy.get('[data-cy="catalog-title"]')
       .should('be.visible')
       .and('have.text', 'Catálogo de Materiais');
 
     // =========================================================
-    // 11. Seleciona Perfis novamente
+    // 12. Seleciona Ferragens novamente
     // =========================================================
-    cy.get('[data-cy="catalog-tab-profiles"]')
-      .should('be.visible')
+    cy.get('[data-cy="catalog-tab-hardwares"]')
       .click();
 
     // =========================================================
-    // 12. Localiza o perfil criado
+    // 13. Localiza a ferragem criada
     // =========================================================
     cy.contains(
-      '[data-cy="profile-row"]',
-      profile.description
+      '[data-cy="hardware-row"]',
+      hardware.name
     )
       .should('exist')
       .within(() => {
-
-        // =====================================================
-        // 13. Abre detalhes
-        // =====================================================
+        // Abre detalhes
         cy.get('[data-cy="table-details-button"]')
           .should('exist')
           .click();
@@ -161,55 +151,47 @@ describe('Detalhes de Perfil de Alumínio - Happy Path', () => {
     // 15. Valida nome
     // =========================================================
     cy.get('[data-cy="details-name"]')
-      .should('have.text', profile.description);
+      .should('have.text', hardware.name);
 
     // =========================================================
-    // 16. Valida linha comercial
+    // 16. Valida código interno
     // =========================================================
-    cy.get('[data-cy="details-commercial-line"]')
-      .should(
-        'have.text',
-        profile.commercialLine
-      );
+    cy.get('[data-cy="details-internal-code"]')
+      .should('be.visible')
+      .and('contain.text', hardware.skuCode);
 
     // =========================================================
-    // 17. Valida peso
-    // =========================================================
-    cy.get('[data-cy="details-weight"]')
-      .should(
-        'contain.text',
-        formatWeight(profile.weight)
-      );
-
-    // =========================================================
-    // 18. Valida comprimento
-    // =========================================================
-    cy.get('[data-cy="details-length"]')
-      .should(
-        'contain.text',
-        profile.length
-      );
-
-    // =========================================================
-    // 19. Valida preço de venda
+    // 17. Valida preço
     // =========================================================
     cy.get('[data-cy="details-price"]')
       .should(
         'have.text',
-        formatBRL(profile.salePrice)
+        formatBRL(hardware.salePrice)
       );
 
     // =========================================================
-    // 20. Valida status
+    // 18. Valida status
     // =========================================================
     cy.get('[data-cy="details-status"]')
       .should('be.visible')
-      .and('have.text', 'Ativo no Catálogo');
+      .and(
+        'have.text',
+        'Ativo no Catálogo'
+      );
 
     // =========================================================
-    // 21. Valida botão de fechar
+    // 19. Valida botão de fechar
     // =========================================================
     cy.get('[data-cy="details-close-button"]')
       .should('be.visible');
+
+    // =========================================================
+    // 20. Fecha o modal
+    // =========================================================
+    cy.get('[data-cy="details-close-button"]')
+      .click();
+
+    cy.get('[data-cy="material-details-modal"]')
+      .should('not.exist');
   });
 });

@@ -82,6 +82,7 @@ export function CatalogView() {
           {/* Status Filter Dropdown */}
           <div className="relative">
             <select
+              data-cy="catalog-status-filter"
               value={filterStatus}
               onChange={(e) =>
                 setFilterStatus(
