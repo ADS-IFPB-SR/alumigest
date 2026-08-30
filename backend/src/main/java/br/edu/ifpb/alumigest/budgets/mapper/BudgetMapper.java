@@ -28,7 +28,6 @@ public interface BudgetMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "budget", ignore = true)
     @Mapping(target = "productName", ignore = true)
-    @Mapping(target = "laborCost", ignore = true)
     @Mapping(target = "subtotal", ignore = true)
     @Mapping(target = "product.id", source = "productId")
     BudgetItem toEntity(BudgetItemRequestDTO requestDTO);
