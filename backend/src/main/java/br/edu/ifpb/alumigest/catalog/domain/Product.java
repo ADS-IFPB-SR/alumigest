@@ -3,12 +3,10 @@ package br.edu.ifpb.alumigest.catalog.domain;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -31,11 +29,6 @@ public class Product {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "category_id", nullable = false)
     private ProductCategory category;
-
-    @NotNull(message = "O custo de mão de obra não pode ser nulo")
-    @PositiveOrZero(message = "O custo de mão de obra não pode ser negativo")
-    @Column(name = "labor_cost", nullable = false, precision = 12, scale = 2)
-    private BigDecimal laborCost = BigDecimal.ZERO;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "template_type", length = 50)
@@ -96,14 +89,6 @@ public class Product {
 
     public void setCategory(ProductCategory category) {
         this.category = category;
-    }
-
-    public BigDecimal getLaborCost() {
-        return laborCost;
-    }
-
-    public void setLaborCost(BigDecimal laborCost) {
-        this.laborCost = laborCost;
     }
 
     public DoorTemplateType getTemplateType() {

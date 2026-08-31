@@ -2,30 +2,14 @@ import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Table } from '../components/ui/Table';
 import { Button } from '../components/ui/Button';
-import { useProducts, useMaterialsSummary } from '../features/catalog/hooks/useCatalog';
+import { useProducts } from '../features/catalog/hooks/useCatalog';
 import type { Product } from '../features/catalog/types';
 
 export function ProductTab() {
- const navigate = useNavigate();
- const { data: productsData, isLoading: isLoadingProducts } = useProducts();
- const { data: materialsData = [], isLoading: isLoadingMaterials } = useMaterialsSummary();
+  const navigate = useNavigate();
+  const { data: productsData, isLoading: isLoadingProducts } = useProducts();
 
   const products = productsData?.content || [];
-
-  const materialsCostMap = useMemo(() => {
-    const map = new Map<string, number>();
-    const materials = materialsData;
-    materials.forEach((m: any) => map.set(m.id, m.costPrice));
-    return map;
-  }, [materialsData]);
-
-  const calculateTotalCost = useMemo(() => (product: Product) => {
-    const materialsCost = product.items.reduce((acc, item) => {
-      const price = materialsCostMap.get(item.materialId) || 0;
-      return acc + (price * item.quantity);
-    }, 0);
-    return product.laborCost + materialsCost;
-  }, [materialsCostMap]);
 
   const columns = useMemo(() => [
     { 
@@ -35,33 +19,20 @@ export function ProductTab() {
     { 
       header: 'Categoria', 
       accessor: (row: Product) => <span className="font-body text-body-sm text-secondary">{row.categoryName}</span> 
-    },
-    { 
-      header: 'Mão de Obra', 
-      accessor: (row: Product) => <span className="font-data-mono text-data-mono text-secondary">R$ {row.laborCost.toFixed(2).replace('.', ',')}</span>,
-    },
-    { 
-      header: 'Custo Total Estimado', 
-      accessor: (row: Product) => (
-        <span className="font-data-mono text-data-mono text-primary font-bold">
-          R$ {calculateTotalCost(row).toFixed(2).replace('.', ',')}
-        </span>
-      ),
-      align: 'right' as const
     }
-  ], [calculateTotalCost]);
+  ], []);
 
- const handleCreate = () => {
- navigate('/produtos/novo');
- };
+  const handleCreate = () => {
+    navigate('/produtos/novo');
+  };
 
- const handleEdit = (item: Product) => {
- navigate(`/produtos/${item.id}/editar`);
- };
+  const handleEdit = (item: Product) => {
+    navigate(`/produtos/${item.id}/editar`);
+  };
 
- if (isLoadingProducts || isLoadingMaterials) {
- return <div className="p-md text-secondary">Carregando produtos...</div>;
- }
+  if (isLoadingProducts) {
+    return <div className="p-md text-secondary">Carregando produtos...</div>;
+  }
 
  return (
  <div className="flex-1 flex flex-col h-full overflow-hidden">
