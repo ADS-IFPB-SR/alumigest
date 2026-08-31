@@ -1,12 +1,12 @@
-import profileForm from '../../fixtures/profile-form.json';
+import filmForm from '../../fixtures/film-form.json';
 
-describe('Detalhes de Perfil de Alumínio - Happy Path', () => {
+describe('Detalhes de Película - Happy Path', () => {
   const uniqueSuffix = Date.now();
 
-  const profile = {
-    ...profileForm[0],
-    skuCode: `${profileForm[0].skuCode}-${uniqueSuffix}`,
-    description: `${profileForm[0].description} ${uniqueSuffix}`,
+  const film = {
+    ...filmForm[0],
+    skuCode: `${filmForm[0].skuCode}-${uniqueSuffix}`,
+    name: `${filmForm[0].name} ${uniqueSuffix}`,
   };
 
   const formatBRL = (value: string) => {
@@ -19,11 +19,11 @@ describe('Detalhes de Perfil de Alumínio - Happy Path', () => {
       .replace('.', ',')}`;
   };
 
- const formatWeight = (value: string) => {
-   return Number(value).toFixed(3);
- };
+  const formatThickness = (value: string) => {
+    return Number(value).toString();
+  };
 
-  it('deve cadastrar um perfil e validar seus detalhes', () => {
+  it('deve cadastrar uma película e validar seus detalhes', () => {
     // =========================================================
     // 1. Acessa o catálogo
     // =========================================================
@@ -37,9 +37,9 @@ describe('Detalhes de Perfil de Alumínio - Happy Path', () => {
       .and('have.text', 'Catálogo de Materiais');
 
     // =========================================================
-    // 3. Seleciona Perfis de Alumínio
+    // 3. Seleciona Películas
     // =========================================================
-    cy.get('[data-cy="catalog-tab-profiles"]')
+    cy.get('[data-cy="catalog-tab-films"]')
       .should('be.visible')
       .click();
 
@@ -51,163 +51,150 @@ describe('Detalhes de Perfil de Alumínio - Happy Path', () => {
       .click();
 
     // =========================================================
-    // 5. Seleciona Perfil
+    // 5. Seleciona Película
     // =========================================================
     cy.get('[data-cy="material-type-modal"]')
       .should('be.visible');
 
-    cy.get('[data-cy="material-type-profile"]')
+    cy.get('[data-cy="material-type-film"]')
       .should('be.visible')
       .click();
 
     // =========================================================
     // 6. Valida formulário
     // =========================================================
-    cy.get('[data-cy="profile-form-save-button"]')
+    cy.get('[data-cy="film-form-save-button"]')
       .should('be.visible');
 
     // =========================================================
     // 7. Preenche formulário
     // =========================================================
-    cy.get('[data-cy="profile-form-sku"]')
+    cy.get('[data-cy="film-form-sku"]')
       .clear()
-      .type(profile.skuCode);
+      .type(film.skuCode);
 
-    cy.get('[data-cy="profile-form-commercial-line"]')
+    cy.get('[data-cy="film-form-name"]')
       .clear()
-      .type(profile.commercialLine);
+      .type(film.name);
 
-    cy.get('[data-cy="profile-form-description"]')
+    cy.get('[data-cy="film-form-ncm"]')
       .clear()
-      .type(profile.description);
+      .type(film.ncmCode);
 
-    cy.get('[data-cy="profile-form-ncm"]')
+    cy.get('[data-cy="film-form-type"]')
       .clear()
-      .type(profile.ncmCode);
+      .type(film.filmType);
 
-    cy.get('[data-cy="profile-form-color-finish"]')
+    cy.get('[data-cy="film-form-thickness"]')
       .clear()
-      .type(profile.colorFinish);
+      .type(film.thicknessMm);
 
-    cy.get('[data-cy="profile-form-weight"]')
+    cy.get('[data-cy="film-form-standard-length"]')
       .clear()
-      .type(profile.weight);
+      .type(film.standardLengthM);
 
-    cy.get('[data-cy="profile-form-length"]')
+    cy.get('[data-cy="film-form-max-width"]')
       .clear()
-      .type(profile.length);
+      .type(film.maxWidthMm);
 
-    cy.get('[data-cy="profile-form-cost-price"]')
+    cy.get('[data-cy="film-form-cost-price"]')
       .clear()
-      .type(profile.costPrice);
+      .type(film.costPrice);
 
-    cy.get('[data-cy="profile-form-sale-price"]')
-      .should('exist')
-      .and('not.be.disabled')
+    cy.get('[data-cy="film-form-sale-price"]')
       .clear()
-      .type(profile.salePrice);
+      .type(film.salePrice);
 
     // =========================================================
     // 8. Salva
     // =========================================================
-    cy.get('[data-cy="profile-form-save-button"]')
+    cy.get('[data-cy="film-form-save-button"]')
       .click();
 
     // =========================================================
     // 9. Valida Toast
     // =========================================================
-    cy.contains('Perfil cadastrado com sucesso!')
+    cy.contains('Película cadastrada com sucesso!')
       .should('be.visible');
 
     // =========================================================
-    // 10. Aguarda retorno ao catálogo
+    // 10. Aguarda catálogo
     // =========================================================
     cy.get('[data-cy="catalog-title"]')
       .should('be.visible')
       .and('have.text', 'Catálogo de Materiais');
 
     // =========================================================
-    // 11. Seleciona Perfis novamente
+    // 11. Seleciona Películas novamente
     // =========================================================
-    cy.get('[data-cy="catalog-tab-profiles"]')
+    cy.get('[data-cy="catalog-tab-films"]')
       .should('be.visible')
       .click();
 
     // =========================================================
-    // 12. Localiza o perfil criado
+    // 12. Localiza a película criada
     // =========================================================
     cy.contains(
-      '[data-cy="profile-row"]',
-      profile.description
+      '[data-cy="film-row"]',
+      film.name
     )
       .should('exist')
       .within(() => {
-
-        // =====================================================
-        // 13. Abre detalhes
-        // =====================================================
+        // Abre detalhes
         cy.get('[data-cy="table-details-button"]')
           .should('exist')
           .click();
       });
 
     // =========================================================
-    // 14. Valida abertura do modal
+    // 13. Valida abertura do modal
     // =========================================================
     cy.get('[data-cy="material-details-modal"]')
       .should('be.visible');
 
     // =========================================================
-    // 15. Valida nome
+    // 14. Valida nome
     // =========================================================
     cy.get('[data-cy="details-name"]')
-      .should('have.text', profile.description);
+      .should('have.text', film.name);
 
     // =========================================================
-    // 16. Valida linha comercial
+    // 15. Valida referência/código
     // =========================================================
-    cy.get('[data-cy="details-commercial-line"]')
+    cy.get('[data-cy="details-internal-code"]')
+      .should('be.visible')
+      .and('contain.text', film.skuCode);
+
+    // =========================================================
+    // 16. Valida especificação técnica
+    // =========================================================
+    cy.get('[data-cy="details-technical-spec"]')
       .should(
         'have.text',
-        profile.commercialLine
+        `${formatThickness(film.thicknessMm)}mm ${film.filmType}`
       );
 
     // =========================================================
-    // 17. Valida peso
-    // =========================================================
-    cy.get('[data-cy="details-weight"]')
-      .should(
-        'contain.text',
-        formatWeight(profile.weight)
-      );
-
-    // =========================================================
-    // 18. Valida comprimento
-    // =========================================================
-    cy.get('[data-cy="details-length"]')
-      .should(
-        'contain.text',
-        profile.length
-      );
-
-    // =========================================================
-    // 19. Valida preço de venda
+    // 17. Valida preço
     // =========================================================
     cy.get('[data-cy="details-price"]')
       .should(
         'have.text',
-        formatBRL(profile.salePrice)
+        formatBRL(film.salePrice)
       );
 
     // =========================================================
-    // 20. Valida status
+    // 18. Valida status
     // =========================================================
     cy.get('[data-cy="details-status"]')
       .should('be.visible')
-      .and('have.text', 'Ativo no Catálogo');
+      .and(
+        'have.text',
+        'Ativo no Catálogo'
+      );
 
     // =========================================================
-    // 21. Valida botão de fechar
+    // 19. Valida botão de fechar
     // =========================================================
     cy.get('[data-cy="details-close-button"]')
       .should('be.visible');

@@ -48,25 +48,61 @@ export const hardwareSchema = z.object({
   skuCode: z.string().min(1, 'Código obrigatório').transform(v => v.toUpperCase()),
   name: z.string().min(1, 'A descrição é obrigatória.').transform(v => v.toUpperCase()),
   ncmCode: z.string().optional(),
-  unitMeasure: z.string().min(1),
+  unitMeasure: z.string().min(
+    1,
+    'A unidade de medida é obrigatória.'
+  ),
   costPrice: z.string().min(1, 'O preço de custo é obrigatório'),
   salePrice: z.string().min(1, 'O preço de venda é obrigatório'),
   active: z.boolean()
+
 }).superRefine(basePriceRefinement);
 
 export type HardwareFormValues = z.infer<typeof hardwareSchema>;
 
 export const filmSchema = z.object({
-  skuCode: z.string().optional().transform(v => v ? v.toUpperCase() : undefined),
-  name: z.string().min(1, 'A descrição é obrigatória.').transform(v => v.toUpperCase()),
+  skuCode: z.string().optional().transform(v =>
+    v ? v.toUpperCase() : undefined
+  ),
+
+  name: z.string().min(
+    1,
+    'A descrição é obrigatória.'
+  ).transform(v => v.toUpperCase()),
+
   ncmCode: z.string().optional(),
-  filmType: z.string().min(1, 'O tipo é obrigatório.').transform(v => v.toUpperCase()),
-  thicknessMm: z.string().min(1),
-  standardLengthM: z.string().min(1),
-  maxWidthMm: z.string().min(1),
-  costPrice: z.string().min(1, 'O preço de custo é obrigatório'),
-  salePrice: z.string().min(1, 'O preço de venda é obrigatório'),
-  active: z.boolean()
+
+  filmType: z.string().min(
+    1,
+    'O tipo é obrigatório.'
+  ).transform(v => v.toUpperCase()),
+
+  thicknessMm: z.string().min(
+    1,
+    'A espessura é obrigatória.'
+  ),
+
+  standardLengthM: z.string().min(
+    1,
+    'O comprimento da bobina é obrigatório.'
+  ),
+
+  maxWidthMm: z.string().min(
+    1,
+    'A largura da bobina é obrigatória.'
+  ),
+
+  costPrice: z.string().min(
+    1,
+    'O preço de custo é obrigatório'
+  ),
+
+  salePrice: z.string().min(
+    1,
+    'O preço de venda é obrigatório'
+  ),
+
+  active: z.boolean(),
 }).superRefine(basePriceRefinement);
 
 export type FilmFormValues = z.infer<typeof filmSchema>;
