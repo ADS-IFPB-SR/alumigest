@@ -28,7 +28,6 @@ public interface BudgetMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "budget", ignore = true)
     @Mapping(target = "productName", ignore = true)
-    @Mapping(target = "laborCost", ignore = true)
     @Mapping(target = "subtotal", ignore = true)
     @Mapping(target = "product.id", source = "productId")
     BudgetItem toEntity(BudgetItemRequestDTO requestDTO);
@@ -37,7 +36,6 @@ public interface BudgetMapper {
     @Mapping(target = "budgetItem", ignore = true)
     @Mapping(target = "materialName", ignore = true)
     @Mapping(target = "unitMeasure", ignore = true)
-    @Mapping(target = "categoryType", ignore = true)
     @Mapping(target = "unitPrice", ignore = true)
     @Mapping(target = "totalPrice", ignore = true)
     @Mapping(target = "material.id", source = "materialId")

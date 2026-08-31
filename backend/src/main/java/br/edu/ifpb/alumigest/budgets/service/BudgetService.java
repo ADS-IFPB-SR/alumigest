@@ -29,10 +29,15 @@ public class BudgetService {
     private final ClientRepository clientRepository;
     private final BudgetMapper budgetMapper;
 
-    public BudgetService(BudgetRepository budgetRepository, ClientRepository clientRepository, BudgetMapper budgetMapper) {
+    private final BudgetQuantityService budgetQuantityService;
+    private final BudgetPricingService budgetPricingService;
+
+    public BudgetService(BudgetRepository budgetRepository, ClientRepository clientRepository, BudgetMapper budgetMapper, BudgetQuantityService budgetQuantityService, BudgetPricingService budgetPricingService) {
         this.budgetRepository = budgetRepository;
         this.clientRepository = clientRepository;
         this.budgetMapper = budgetMapper;
+        this.budgetQuantityService = budgetQuantityService;
+        this.budgetPricingService = budgetPricingService;
     }
 
     @Transactional
@@ -44,6 +49,9 @@ public class BudgetService {
         budget.setClient(client);
 
         budget.setCode(generateBudgetCode());
+
+        budgetQuantityService.calculateQuantities(budget);
+        budgetPricingService.calculatePricing(budget);
 
         budget = budgetRepository.save(budget);
         return budgetMapper.toResponseDTO(budget);
@@ -80,7 +88,9 @@ public class BudgetService {
         existingBudget.setDiscountPercent(updatedData.getDiscountPercent());
         existingBudget.setNotes(updatedData.getNotes());
 
-        // TODO: Recalcular totais após a atualização
+        // Recalcular totais após a atualização
+        budgetQuantityService.calculateQuantities(existingBudget);
+        budgetPricingService.calculatePricing(existingBudget);
 
         budgetRepository.save(existingBudget);
         return budgetMapper.toResponseDTO(existingBudget);
@@ -94,6 +104,18 @@ public class BudgetService {
 
         budget.setStatus(statusDto.status());
         budgetRepository.save(budget);
+    }
+
+    @Transactional
+    public BudgetResponseDTO recalculate(UUID id) {
+        Budget budget = getBudgetOrThrow(id);
+        validateBudgetIsDraft(budget);
+
+        budgetQuantityService.calculateQuantities(budget);
+        budgetPricingService.calculatePricing(budget);
+        
+        budgetRepository.save(budget);
+        return budgetMapper.toResponseDTO(budget);
     }
 
     @Transactional
