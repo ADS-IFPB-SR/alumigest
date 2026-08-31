@@ -9,15 +9,6 @@ describe('Cadastro de Película - Happy Path', () => {
     name: `${filmForm[0].name} ${uniqueSuffix}`,
   };
 
-  const formatBRL = (value: string) => {
-    const numericValue = Number(
-      value.replace(',', '.')
-    );
-
-    return `R$ ${numericValue
-      .toFixed(2)
-      .replace('.', ',')}`;
-  };
 
   it('deve cadastrar uma película e validar sua exibição no catálogo', () => {
     // =========================================================

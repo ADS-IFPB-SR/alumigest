@@ -61,10 +61,7 @@ export const hardwareSchema = z.object({
 export type HardwareFormValues = z.infer<typeof hardwareSchema>;
 
 export const filmSchema = z.object({
-  skuCode: z.string().optional().transform(v =>
-    v ? v.toUpperCase() : undefined
-  ),
-
+  skuCode: z.string().toUpperCase().optional(),
   name: z.string().min(
     1,
     'A descrição é obrigatória.'
