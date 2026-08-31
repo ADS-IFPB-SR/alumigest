@@ -19,15 +19,6 @@ describe('Detalhes de Ferragem - Happy Path', () => {
       .replace('.', ',')}`;
   };
 
-  const getUnitLabel = (unit: string) => {
-    const map: Record<string, string> = {
-      UN: 'Unidade',
-      PAR: 'Par',
-      METRO: 'Metro Linear',
-    };
-
-    return map[unit] || unit;
-  };
 
   it('deve cadastrar uma ferragem e validar seus detalhes', () => {
     // =========================================================
