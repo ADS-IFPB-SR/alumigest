@@ -5,6 +5,14 @@ import { Button } from '../components/ui/Button';
 import { useProducts } from '../features/catalog/hooks/useCatalog';
 import type { Product } from '../features/catalog/types';
 
+const renderName = (row: Product) => (
+  <span className="font-title-sm text-title-sm text-on-surface font-semibold">{row.name}</span>
+);
+
+const renderCategory = (row: Product) => (
+  <span className="font-body text-body-sm text-secondary">{row.categoryName}</span>
+);
+
 export function ProductTab() {
   const navigate = useNavigate();
   const { data: productsData, isLoading: isLoadingProducts } = useProducts();
@@ -14,11 +22,11 @@ export function ProductTab() {
   const columns = useMemo(() => [
     { 
       header: 'Nome da Esquadria', 
-      accessor: (row: Product) => <span className="font-title-sm text-title-sm text-on-surface font-semibold">{row.name}</span> 
+      accessor: renderName
     },
     { 
       header: 'Categoria', 
-      accessor: (row: Product) => <span className="font-body text-body-sm text-secondary">{row.categoryName}</span> 
+      accessor: renderCategory
     }
   ], []);
 
