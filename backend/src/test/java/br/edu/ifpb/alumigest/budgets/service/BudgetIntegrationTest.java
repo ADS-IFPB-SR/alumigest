@@ -69,9 +69,10 @@ class BudgetIntegrationTest {
         productCategory = productCategoryRepository.save(productCategory);
 
         br.edu.ifpb.alumigest.catalog.domain.Product product = new br.edu.ifpb.alumigest.catalog.domain.Product();
+        product.setId(UUID.randomUUID());
         product.setName("Janela Correr 2 Folhas");
         product.setCategory(productCategory);
-        product.setLaborCost(new BigDecimal("150.00"));
+        product.setTemplateType(br.edu.ifpb.alumigest.budgets.calculator.TemplateType.SLIDING_2_LEAF);
         savedProduct = productRepository.save(product);
 
         MaterialGroup glassGroup = new MaterialGroup();
