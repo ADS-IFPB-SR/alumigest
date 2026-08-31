@@ -55,7 +55,6 @@ class ProductServiceTest {
         ProductRequestDTO request = new ProductRequestDTO(
                 "Janela de Correr",
                 categoryId,
-                new BigDecimal("150.00"),
                 null,
                 null,
                 null,
@@ -67,7 +66,7 @@ class ProductServiceTest {
 
         Product mockSavedProduct = new Product();
         ProductResponseDTO mockResponse = new ProductResponseDTO(
-                UUID.randomUUID(), "Janela de Correr", categoryId, "Esquadrias", new BigDecimal("150.00"),
+                UUID.randomUUID(), "Janela de Correr", categoryId, "Esquadrias",
                 null, null, null, true, List.of()
         );
 
@@ -119,7 +118,6 @@ class ProductServiceTest {
         ProductRequestDTO request = new ProductRequestDTO(
                 "Porta de Giro Alumiportas",
                 categoryId,
-                new BigDecimal("150.00"),
                 DoorTemplateType.GIRO,
                 templateConfigDTO,
                 List.of(MaterialCategoryType.GLASS, MaterialCategoryType.PROFILE, MaterialCategoryType.HARDWARE),
@@ -136,7 +134,6 @@ class ProductServiceTest {
                 "Porta de Giro Alumiportas",
                 categoryId,
                 "Portas de Giro",
-                new BigDecimal("150.00"),
                 DoorTemplateType.GIRO,
                 templateConfigDTO,
                 List.of(MaterialCategoryType.GLASS, MaterialCategoryType.PROFILE, MaterialCategoryType.HARDWARE),
@@ -172,7 +169,6 @@ class ProductServiceTest {
         ProductRequestDTO request = new ProductRequestDTO(
                 "Porta Inválida",
                 categoryId,
-                BigDecimal.ZERO,
                 DoorTemplateType.GIRO,
                 null,
                 List.of(),
@@ -215,7 +211,6 @@ class ProductServiceTest {
         ProductRequestDTO request = new ProductRequestDTO(
                 "Porta de Correr Suprema",
                 categoryId,
-                new BigDecimal("200.00"),
                 DoorTemplateType.CORRER,
                 newConfigDTO,
                 List.of(MaterialCategoryType.GLASS, MaterialCategoryType.PROFILE, MaterialCategoryType.ROLLERS),
@@ -232,7 +227,6 @@ class ProductServiceTest {
                 "Porta de Correr Suprema",
                 categoryId,
                 "Portas de Correr",
-                new BigDecimal("200.00"),
                 DoorTemplateType.CORRER,
                 newConfigDTO,
                 List.of(MaterialCategoryType.GLASS, MaterialCategoryType.PROFILE, MaterialCategoryType.ROLLERS),
@@ -264,7 +258,7 @@ class ProductServiceTest {
         product.setName("Janela Basculante");
 
         ProductResponseDTO response = new ProductResponseDTO(
-                id, "Janela Basculante", UUID.randomUUID(), "Janelas", BigDecimal.ZERO,
+                id, "Janela Basculante", UUID.randomUUID(), "Janelas",
                 DoorTemplateType.BASCULANTE, null, List.of(MaterialCategoryType.GLASS, MaterialCategoryType.PROFILE), true, List.of()
         );
 
@@ -306,7 +300,7 @@ class ProductServiceTest {
     @Test
     @DisplayName("Deve lançar BusinessException ao criar produto com nome duplicado")
     void createProduct_WithDuplicateName_ShouldThrowBusinessException() {
-        ProductRequestDTO request = new ProductRequestDTO("Porta", UUID.randomUUID(), BigDecimal.ZERO, null, null, null, List.of());
+        ProductRequestDTO request = new ProductRequestDTO("Porta", UUID.randomUUID(), null, null, null, List.of());
 
         when(productRepository.existsByNameIgnoreCase("Porta")).thenReturn(true);
 
@@ -323,7 +317,7 @@ class ProductServiceTest {
     @DisplayName("Deve lançar BusinessException ao atualizar produto com nome de outro já existente")
     void updateProduct_WithDuplicateName_ShouldThrowBusinessException() {
         UUID id = UUID.randomUUID();
-        ProductRequestDTO request = new ProductRequestDTO("Porta Nova", UUID.randomUUID(), BigDecimal.ZERO, null, null, null, List.of());
+        ProductRequestDTO request = new ProductRequestDTO("Porta Nova", UUID.randomUUID(), null, null, null, List.of());
 
         when(productRepository.existsByNameIgnoreCaseAndIdNot("Porta Nova", id)).thenReturn(true);
 
@@ -346,7 +340,7 @@ class ProductServiceTest {
 
         Page<Product> page = new PageImpl<>(List.of(product));
         when(productRepository.findByIsActiveTrue(pageable)).thenReturn(page);
-        when(productMapper.toResponse(any())).thenReturn(new ProductResponseDTO(product.getId(), "Produto Ativo", UUID.randomUUID(), "Cat", BigDecimal.ZERO, null, null, null, true, List.of()));
+        when(productMapper.toResponse(any())).thenReturn(new ProductResponseDTO(product.getId(), "Produto Ativo", UUID.randomUUID(), "Cat", null, null, null, true, List.of()));
 
         Page<ProductResponseDTO> result = productService.findProducts(pageable, true);
 
@@ -364,7 +358,7 @@ class ProductServiceTest {
 
         Page<Product> page = new PageImpl<>(List.of(product));
         when(productRepository.findAll(pageable)).thenReturn(page);
-        when(productMapper.toResponse(any())).thenReturn(new ProductResponseDTO(product.getId(), "Produto", UUID.randomUUID(), "Cat", BigDecimal.ZERO, null, null, null, false, List.of()));
+        when(productMapper.toResponse(any())).thenReturn(new ProductResponseDTO(product.getId(), "Produto", UUID.randomUUID(), "Cat", null, null, null, false, List.of()));
 
         Page<ProductResponseDTO> result = productService.findProducts(pageable, false);
 
@@ -389,7 +383,6 @@ class ProductServiceTest {
         ProductRequestDTO request = new ProductRequestDTO(
                 "Produto com Itens",
                 categoryId,
-                new BigDecimal("50.00"),
                 null,
                 null,
                 null,
@@ -404,7 +397,7 @@ class ProductServiceTest {
         when(productCategoryRepository.findById(categoryId)).thenReturn(Optional.of(mockCategory));
         when(materialRepository.findByIdAndIsActiveTrue(materialId)).thenReturn(Optional.of(mockMaterial));
         when(productRepository.save(any(Product.class))).thenReturn(mockSaved);
-        when(productMapper.toResponse(any())).thenReturn(new ProductResponseDTO(mockSaved.getId(), "Produto com Itens", categoryId, "Cat", new BigDecimal("50.00"), null, null, null, true, List.of()));
+        when(productMapper.toResponse(any())).thenReturn(new ProductResponseDTO(mockSaved.getId(), "Produto com Itens", categoryId, "Cat", null, null, null, true, List.of()));
 
         ProductResponseDTO response = productService.createProduct(request);
 

@@ -4,7 +4,6 @@ import br.edu.ifpb.alumigest.catalog.domain.DoorTemplateType;
 import br.edu.ifpb.alumigest.catalog.domain.MaterialCategoryType;
 import io.swagger.v3.oas.annotations.media.Schema;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -21,9 +20,6 @@ public record ProductResponseDTO(
 
         @Schema(description = "Nome da categoria", example = "Portas de Giro")
         String categoryName,
-
-        @Schema(description = "Custo base de mão de obra", example = "150.00")
-        BigDecimal laborCost,
 
         @Schema(description = "Modelo de template de esquadria", example = "GIRO")
         DoorTemplateType templateType,

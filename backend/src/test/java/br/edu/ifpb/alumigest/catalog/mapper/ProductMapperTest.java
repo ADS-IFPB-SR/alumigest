@@ -41,7 +41,6 @@ class ProductMapperTest {
         product.setId(UUID.randomUUID());
         product.setName("Porta Suprema 2F");
         product.setCategory(category);
-        product.setLaborCost(new BigDecimal("250.00"));
         product.setTemplateType(DoorTemplateType.CORRER);
         product.setTemplateConfig(config);
         product.setCategoryRequirements(List.of(MaterialCategoryType.GLASS, MaterialCategoryType.PROFILE, MaterialCategoryType.ROLLERS));

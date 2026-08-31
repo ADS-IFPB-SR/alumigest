@@ -101,7 +101,6 @@ export interface Product {
   name: string;
   categoryId: string;
   categoryName: string;
-  laborCost: number;
   isActive: boolean;
   items: ProductItem[];
 }
@@ -114,6 +113,5 @@ export interface ProductItemRequest {
 export interface ProductRequest {
   name: string;
   categoryId: string;
-  laborCost: number;
   items: ProductItemRequest[];
 }

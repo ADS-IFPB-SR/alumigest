@@ -4,7 +4,6 @@ import type { FormItem } from './ProductTechSheet';
 
 interface ProductCostSummaryProps {
   items: FormItem[];
-  laborCost: string;
   materials: MaterialSummary[];
   onSave: () => void;
   isPending: boolean;
@@ -13,7 +12,6 @@ interface ProductCostSummaryProps {
 
 export function ProductCostSummary({ 
   items, 
-  laborCost, 
   materials, 
   onSave, 
   isPending, 
@@ -34,14 +32,12 @@ export function ProductCostSummary({
     }, 0);
   }, [items, materialsMap]);
 
-  const parsedLaborCost = Number(laborCost.replace(',', '.')) || 0;
-  
   // Tax and Margin calculation for display purposes
   const taxRate = 0.10; // 10%
   const marginRate = 0.35; // 35%
   
-  const taxCost = (materialsSubtotal + parsedLaborCost) * taxRate;
-  const totalCost = materialsSubtotal + parsedLaborCost + taxCost;
+  const taxCost = materialsSubtotal * taxRate;
+  const totalCost = materialsSubtotal + taxCost;
   const salePrice = totalCost * (1 + marginRate);
 
   const formatCurrency = (val: number) => `R$ ${val.toFixed(2).replace('.', ',')}`;
@@ -57,13 +53,6 @@ export function ProductCostSummary({
           <span className="font-body-sm text-body-sm text-on-surface-variant">Materiais (Subtotal)</span>
           <span className="font-data-mono text-data-mono text-on-surface">
             {formatCurrency(materialsSubtotal)}
-          </span>
-        </div>
-        
-        <div className="flex justify-between items-center py-xs border-b border-outline-variant border-dashed">
-          <span className="font-body-sm text-body-sm text-on-surface-variant">Mão de Obra Est.</span>
-          <span className="font-data-mono text-data-mono text-on-surface">
-            {formatCurrency(parsedLaborCost)}
           </span>
         </div>
         
