@@ -73,11 +73,11 @@ export const BudgetEditor: React.FC = () => {
       }));
 
       setForm({
-        customerId: existingBudget.customer.id,
-        customerName: existingBudget.customer.name,
-        customerDocument: '',
-        customerPhone: existingBudget.customer.phone ?? '',
-        customerAddress: '',
+        customerId: existingBudget.customer?.id ?? existingBudget.customerId ?? '',
+        customerName: existingBudget.customer?.name ?? existingBudget.customerName ?? '',
+        customerDocument: existingBudget.customer?.document ?? '',
+        customerPhone: existingBudget.customer?.phone ?? '',
+        customerAddress: existingBudget.customer?.address ?? '',
         items: loadedItems,
         discountPercent: existingBudget.discountPercent,
         notes: existingBudget.notes ?? '',

@@ -7,8 +7,8 @@ import type {
   BudgetDetail,
   CreateBudgetPayload,
   WindowTemplate,
-  PageResponse
 } from '../types';
+import type { PageResponse } from '../../catalog/types';
 
 const MOCK_BUDGETS: BudgetSummary[] = [
   {
@@ -289,7 +289,7 @@ export const budgetsApi = {
     // @ts-ignore
     const data = response.data as unknown as PageResponse<WindowTemplate>;
     const all = data.content ?? (response.data as unknown as WindowTemplate[]);
-    return all.filter((p) => Boolean(p.templateType));
+    return all.filter((p: WindowTemplate) => Boolean(p.templateType));
   },
 
   // ============================================================
@@ -314,7 +314,10 @@ export const budgetsApi = {
         params.sort = filters.sort;
       }
 
-      const response = await api.get<BudgetPageResponse>('/orcamentos', { params });
+      const response = await api.get<BudgetPageResponse>('/api/orcamentos', {
+        baseURL: '',
+        params,
+      });
       if (response.data && Array.isArray(response.data.content)) {
         return response.data;
       }
@@ -325,66 +328,46 @@ export const budgetsApi = {
   },
 
   getStatusCounts: async (): Promise<Record<BudgetStatus | '', number>> => {
-    try {
-      const response = await api.get<Record<BudgetStatus | '', number>>('/orcamentos/status-counts');
-      if (response.data) {
-        return response.data;
-      }
-    } catch {
-    }
-
-    const counts: Record<string, number> = { '': MOCK_BUDGETS.length };
-    for (const budget of MOCK_BUDGETS) {
-      const st = budget.status;
-      counts[st] = (counts[st] || 0) + 1;
-    }
-    return counts as Record<BudgetStatus | '', number>;
+    return {} as Record<BudgetStatus | '', number>;
   },
 
   // ============================================================
   // ORÇAMENTOS - CRUD
   // ============================================================
   getBudget: async (id: string): Promise<BudgetDetail> => {
-    const response = await api.get<BudgetDetail>(`/orcamentos/${id}`);
-    return response.data;
-  },
-
-  createBudget: async (data: CreateBudgetPayload): Promise<BudgetDetail> => {
-    const response = await api.post<BudgetDetail>('/orcamentos', data);
-    return response.data;
-  },
-
-  updateBudget: async (id: string, data: CreateBudgetPayload): Promise<BudgetDetail> => {
-    const response = await api.put<BudgetDetail>(`/orcamentos/${id}`, data);
-    return response.data;
-  },
-
-  deleteBudget: async (id: string): Promise<boolean> => {
-    await api.delete(`/orcamentos/${id}`);
-    return true;
-  },
-
-  updateBudgetStatus: async (id: string, status: BudgetStatus): Promise<BudgetDetail> => {
-    const response = await api.patch<BudgetDetail>(`/orcamentos/${id}/status`, { status });
-    return response.data;
-  },
-
-  exportBudgetPdf: async (id: string): Promise<Blob> => {
-    const response = await api.get<Blob>(`/orcamentos/${id}/pdf`, {
-      responseType: 'blob',
+    const response = await api.get<BudgetDetail>(`/api/orcamentos/${id}`, {
+      baseURL: '',
     });
     return response.data;
   },
 
-  recalculateBudget: async (payload: unknown): Promise<{ subtotal?: number; materials?: { materialId: string; quantity: number; totalPrice: number }[] } | null> => {
-    try {
-      const response = await api.post<{ subtotal?: number; materials?: { materialId: string; quantity: number; totalPrice: number }[] }>(
-        '/orcamentos/calcular',
-        payload,
-      );
-      return response.data;
-    } catch {
-      return null;
-    }
+  createBudget: async (data: CreateBudgetPayload): Promise<BudgetDetail> => {
+    const response = await api.post<BudgetDetail>('/api/orcamentos', data, {
+      baseURL: '',
+    });
+    return response.data;
+  },
+
+  updateBudget: async (id: string, data: CreateBudgetPayload): Promise<BudgetDetail> => {
+    const response = await api.put<BudgetDetail>(`/api/orcamentos/${id}`, data, {
+      baseURL: '',
+    });
+    return response.data;
+  },
+
+  deleteBudget: async (id: string): Promise<boolean> => {
+    await api.delete(`/api/orcamentos/${id}`, {
+      baseURL: '',
+    });
+    return true;
+  },
+
+  updateBudgetStatus: async (id: string, status: BudgetStatus): Promise<BudgetDetail> => {
+    const response = await api.patch<BudgetDetail>(
+      `/api/orcamentos/${id}/status`,
+      { status },
+      { baseURL: '' },
+    );
+    return response.data;
   },
 };

@@ -23,7 +23,7 @@ const ALL_STATUSES: { value: BudgetStatus | 'ALL'; label: string }[] = [
 ];
 
 export function BudgetListPage() {
-  const { data, isLoading, isError } = useBudgets();
+  const { data, isLoading, isError } = useBudgets({ page: 0, size: 100 });
   const { mutate: deleteBudget, isPending: isDeleting } = useDeleteBudget();
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -37,8 +37,9 @@ export function BudgetListPage() {
       const matchesSearch =
         !searchTerm.trim() ||
         b.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        b.customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (b.customer.phone && b.customer.phone.includes(searchTerm));
+        (b.customer?.name && b.customer.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (b.customerName && b.customerName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (b.customer?.phone && b.customer.phone.includes(searchTerm));
 
       const matchesStatus = selectedStatus === 'ALL' || b.status === selectedStatus;
 
@@ -194,10 +195,10 @@ export function BudgetListPage() {
                       </span>
                     </div>
 
-                    <p className="font-body-sm text-on-surface font-semibold truncate">{budget.customer.name}</p>
+                    <p className="font-body-sm text-on-surface font-semibold truncate">{budget.customer?.name ?? budget.customerName}</p>
 
                     <div className="flex items-center gap-md flex-wrap text-xs text-on-surface-variant font-body">
-                      {budget.customer.phone && (
+                      {budget.customer?.phone && (
                         <span className="font-data-mono flex items-center gap-xs">
                           <span className="material-symbols-outlined text-[14px]">phone</span>
                           {budget.customer.phone}
@@ -269,7 +270,7 @@ export function BudgetListPage() {
               <h4 className="font-headline font-bold text-on-surface text-base">Excluir Orçamento?</h4>
             </div>
             <p className="text-sm text-on-surface-variant font-body">
-              Tem certeza que deseja remover o orçamento <strong>{budgetToDelete.code}</strong> ({budgetToDelete.customer.name}) de <strong>{formatBRL(budgetToDelete.total)}</strong>?
+              Tem certeza que deseja remover o orçamento <strong>{budgetToDelete.code}</strong> ({budgetToDelete.customer?.name ?? budgetToDelete.customerName}) de <strong>{formatBRL(budgetToDelete.total)}</strong>?
             </p>
             <div className="flex justify-end gap-sm mt-xs">
               <button

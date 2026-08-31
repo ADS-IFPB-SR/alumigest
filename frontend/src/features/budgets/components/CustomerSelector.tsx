@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import type { Customer } from '../types';
-import { useSearchClientes, useCreateCliente } from '../hooks/useBudgets';
-import { useDebounce } from '../hooks/useDebounce';
 import { CustomerQuickCreateModal } from './CustomerQuickCreateModal';
+import { budgetCustomersLocalDB, generateLocalId } from '../mocks/budgetCustomersMock';
+import type { BudgetCustomerOption } from '../mocks/budgetCustomersMock';
 
 interface CustomerSelectorProps {
   selectedCustomer: { id: string; name: string; document: string; phone: string; address: string } | null;
@@ -21,8 +21,18 @@ export const CustomerSelector: React.FC<CustomerSelectorProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const debouncedQuery = useDebounce(query, 300);
-  const { data: results = [], isFetching } = useSearchClientes(debouncedQuery);
+  // Estado local para a sessão atual (simulando clientes em memória)
+  const [localCustomers, setLocalCustomers] = useState<BudgetCustomerOption[]>(budgetCustomersLocalDB);
+
+  // Busca síncrona local
+  const results = localCustomers.filter((c) => {
+    if (query.trim().length < 2) return false;
+    const q = query.toLowerCase();
+    return (
+      c.nomeCompleto.toLowerCase().includes(q) ||
+      (c.cpfCnpj && c.cpfCnpj.includes(q))
+    );
+  });
 
   // Fecha dropdown ao clicar fora
   useEffect(() => {
@@ -40,8 +50,18 @@ export const CustomerSelector: React.FC<CustomerSelectorProps> = ({
     setIsDropdownOpen(true);
   };
 
-  const handleSelect = (customer: Customer) => {
-    onSelect(customer);
+  const handleSelect = (customer: BudgetCustomerOption) => {
+    onSelect({
+      id: customer.id,
+      nomeCompleto: customer.nomeCompleto,
+      cpfCnpj: customer.cpfCnpj,
+      telefone: customer.telefone,
+      email: customer.email,
+      logradouro: customer.logradouro,
+      cidade: customer.cidade,
+      uf: customer.uf,
+      ativo: true,
+    });
     setQuery('');
     setIsDropdownOpen(false);
   };
@@ -51,8 +71,6 @@ export const CustomerSelector: React.FC<CustomerSelectorProps> = ({
     setQuery('');
     inputRef.current?.focus();
   };
-
-  const { mutate: createCliente, isPending: isCreating } = useCreateCliente();
 
   const handleQuickCreate = (data: {
     nomeCompleto: string;
@@ -66,12 +84,20 @@ export const CustomerSelector: React.FC<CustomerSelectorProps> = ({
     uf?: string;
     cep?: string;
   }) => {
-    createCliente(data, {
-      onSuccess: (createdCustomer) => {
-        onSelect(createdCustomer);
-        setIsCreateModalOpen(false);
-      },
-    });
+    const newCustomer: BudgetCustomerOption = {
+      id: generateLocalId(),
+      nomeCompleto: data.nomeCompleto,
+      cpfCnpj: data.cpfCnpj,
+      telefone: data.telefone,
+      email: data.email,
+      logradouro: data.logradouro,
+      cidade: data.cidade,
+      uf: data.uf,
+    };
+
+    setLocalCustomers((prev) => [...prev, newCustomer]);
+    handleSelect(newCustomer);
+    setIsCreateModalOpen(false);
   };
 
   return (
@@ -126,11 +152,6 @@ export const CustomerSelector: React.FC<CustomerSelectorProps> = ({
                   placeholder="Buscar cliente por nome ou documento..."
                   className={`w-full pl-xl pr-sm py-sm bg-surface-container-lowest border rounded-sm font-body-sm text-body-sm text-on-surface focus:border-primary focus:border-2 focus:outline-none transition-all ${error ? 'border-error' : 'border-outline-variant'}`}
                 />
-                {isFetching && (
-                  <span className="material-symbols-outlined absolute right-sm top-1/2 -translate-y-1/2 text-secondary text-[18px] animate-spin">
-                    progress_activity
-                  </span>
-                )}
               </div>
               <button
                 type="button"
@@ -147,7 +168,7 @@ export const CustomerSelector: React.FC<CustomerSelectorProps> = ({
             {/* Dropdown de resultados */}
             {isDropdownOpen && query.length >= 2 && (
               <div className="absolute left-0 right-0 top-full mt-xs bg-surface-container-lowest border border-outline-variant rounded-md shadow-lg z-10 max-h-56 overflow-y-auto">
-                {results.length === 0 && !isFetching && (
+                {results.length === 0 && (
                   <div className="p-md text-center text-sm text-on-surface-variant font-body">
                     <p>Nenhum cliente encontrado para "{query}"</p>
                     <button
@@ -192,7 +213,7 @@ export const CustomerSelector: React.FC<CustomerSelectorProps> = ({
         initialName={query}
         onClose={() => setIsCreateModalOpen(false)}
         onSubmit={handleQuickCreate}
-        isLoading={isCreating}
+        isLoading={false}
       />
     </>
   );

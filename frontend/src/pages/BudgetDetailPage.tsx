@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useParams, useLocation, useNavigate } from 'react-router-dom';
-import { useBudget, useDeleteBudget, useUpdateBudgetStatus, useExportBudgetPdf } from '../features/budgets/hooks/useBudgets';
+import { useBudget, useDeleteBudget, useUpdateBudgetStatus } from '../features/budgets/hooks/useBudgets';
 import { Button } from '../components/ui/Button';
 import { STATUS_LABELS, type BudgetStatus } from '../features/budgets/types';
 import { formatBRL } from '../features/budgets/utils/calculations';
@@ -25,7 +25,6 @@ export function BudgetDetailPage() {
   const { data: budget, isLoading, isError } = useBudget(id);
   const { mutate: deleteBudget, isPending: isDeleting } = useDeleteBudget();
   const { mutate: updateStatus, isPending: isUpdatingStatus } = useUpdateBudgetStatus();
-  const { mutate: exportPdf, isPending: isExportingPdf } = useExportBudgetPdf();
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
@@ -53,10 +52,6 @@ export function BudgetDetailPage() {
     updateStatus({ id: budget.id, status: newStatus });
   };
 
-  const handleExportPdf = () => {
-    if (!budget) return;
-    exportPdf({ id: budget.id, code: budget.code });
-  };
 
   if (isLoading) {
     return (
@@ -118,16 +113,6 @@ export function BudgetDetailPage() {
             </select>
           </div>
 
-          {/* Botão de Exportar PDF */}
-          <Button
-            variant="outline"
-            icon={isExportingPdf ? 'progress_activity' : 'picture_as_pdf'}
-            onClick={handleExportPdf}
-            disabled={isExportingPdf}
-            title="Exportar proposta comercial em PDF"
-          >
-            {isExportingPdf ? 'Exportando...' : 'Exportar PDF'}
-          </Button>
 
           <Link to={`/orcamentos/${budget.id}/editar`}>
             <Button variant="outline" icon="edit">
@@ -212,8 +197,8 @@ export function BudgetDetailPage() {
             <div className="flex items-start gap-sm">
               <span className="material-symbols-outlined text-primary text-[28px]">account_circle</span>
               <div className="min-w-0">
-                <p className="font-label font-semibold text-on-surface text-base">{budget.customer.name}</p>
-                {budget.customer.phone && (
+                <p className="font-label font-semibold text-on-surface text-base">{budget.customer?.name ?? budget.customerName}</p>
+                {budget.customer?.phone && (
                   <p className="text-xs text-on-surface-variant font-data-mono mt-xs flex items-center gap-xs">
                     <span className="material-symbols-outlined text-[14px]">phone</span>
                     {budget.customer.phone}
@@ -371,14 +356,6 @@ export function BudgetDetailPage() {
               <Button variant="outline" icon="arrow_back">Voltar à Lista</Button>
             </Link>
             <div className="flex items-center gap-sm flex-wrap">
-              <Button
-                variant="outline"
-                icon={isExportingPdf ? 'progress_activity' : 'picture_as_pdf'}
-                onClick={handleExportPdf}
-                disabled={isExportingPdf}
-              >
-                {isExportingPdf ? 'Exportando...' : 'Exportar PDF'}
-              </Button>
               <Link to={`/orcamentos/${budget.id}/editar`}>
                 <Button variant="outline" icon="edit">Editar Orçamento</Button>
               </Link>
@@ -399,7 +376,7 @@ export function BudgetDetailPage() {
               <h4 className="font-headline font-bold text-on-surface text-base">Excluir Orçamento?</h4>
             </div>
             <p className="text-sm text-on-surface-variant font-body">
-              Tem certeza que deseja excluir o orçamento <strong>{budget.code}</strong> de <strong>{budget.customer.name}</strong> ({formatBRL(budget.total)})? Esta ação não pode ser desfeita.
+              Tem certeza que deseja excluir o orçamento <strong>{budget.code}</strong> de <strong>{budget.customer?.name ?? budget.customerName}</strong> ({formatBRL(budget.total)})? Esta ação não pode ser desfeita.
             </p>
             <div className="flex justify-end gap-sm mt-xs">
               <button

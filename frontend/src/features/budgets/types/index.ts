@@ -205,17 +205,18 @@ export interface CustomerRequest {
 // RESPOSTAS E DTOs DA API (DEVELOP)
 // ============================================================
 export interface BudgetCustomer {
-  id?: string | number;
+  id?: string;
   name: string;
   phone?: string;
   email?: string;
   document?: string;
+  address?: string;
 }
 
 export interface BudgetSummary {
-  id: string | number;
+  id: string;
   code: string;
-  customerId?: string | number;
+  customerId?: string;
   customerName: string;
   customer?: BudgetCustomer;
   status: BudgetStatus;
@@ -230,6 +231,8 @@ export interface BudgetSummary {
 
 export interface BudgetPageResponse {
   content: BudgetSummary[];
+  totalElements?: number;
+  totalPages?: number;
   page?: {
     size?: number;
     number?: number;

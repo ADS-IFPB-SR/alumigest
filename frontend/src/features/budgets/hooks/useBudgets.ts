@@ -111,37 +111,3 @@ export const useUpdateBudgetStatus = () => {
     },
   });
 };
-
-export const useExportBudgetPdf = () => {
-  return useMutation({
-    mutationFn: async ({ id, code }: { id: string; code?: string }) => {
-      const blob = await budgetsApi.exportBudgetPdf(id);
-      return { blob, code };
-    },
-    onSuccess: ({ blob, code }) => {
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `orcamento-${code || 'proposta'}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-      toast.success('Download do PDF iniciado!');
-    },
-    onError: (error: unknown) => {
-      console.error('Erro ao exportar PDF do orçamento:', error);
-      const err = error as { response?: { data?: { message?: string } } };
-      const message =
-        err?.response?.data?.message ||
-        'O serviço de geração de PDF ainda não está disponível no servidor.';
-      toast.error(message);
-    },
-  });
-};
-
-export const useRecalculateBudget = () => {
-  return useMutation({
-    mutationFn: (payload: unknown) => budgetsApi.recalculateBudget(payload),
-  });
-};

@@ -10,7 +10,7 @@ import type {
   MaterialSelection,
   CategoryType,
 } from '../../types';
-import { useWindowTemplates, useRecalculateBudget } from '../../hooks/useBudgets';
+import { useWindowTemplates } from '../../hooks/useBudgets';
 import {
   useGlasses,
   useProfiles,
@@ -68,7 +68,6 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
   const { data: profilesData } = useProfiles();
   const { data: hardwaresData } = useHardwares();
   const { data: filmsData } = useFilms();
-  const { mutate: triggerRecalculate } = useRecalculateBudget();
 
   const glasses = useMemo(() => glassesData?.content ?? [], [glassesData]);
   const profiles = useMemo(() => profilesData?.content ?? [], [profilesData]);
@@ -284,28 +283,6 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
     };
   }, [isOpen, onClose]);
 
-  // ─── Enviar recálculo ao backend quando materiais/medidas forem alterados ──
-  useEffect(() => {
-    if (!state.template || !isOpen) return;
-
-    const timer = setTimeout(() => {
-      triggerRecalculate({
-        templateId: state.template?.id,
-        templateType: state.template?.templateType,
-        widthMm: state.widthMm,
-        heightMm: state.heightMm,
-        quantity: state.quantity,
-        materials: state.materialSelections.map((s) => ({
-          materialId: s.materialId,
-          categoryType: s.categoryType,
-          quantity: s.quantity,
-          unitPrice: s.unitPrice,
-        })),
-      });
-    }, 600);
-
-    return () => clearTimeout(timer);
-  }, [state.materialSelections, state.widthMm, state.heightMm, state.quantity, state.template, isOpen, triggerRecalculate]);
 
   // ─── Handler: Troca de Template ───────────────────────────────────────────
   const handleTemplateSelect = (templateId: string) => {
