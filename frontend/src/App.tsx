@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
 import { DashboardLayout } from './components/layout/DashboardLayout';
 import { CatalogPage } from './pages/CatalogPage';
+import { BudgetsPage } from './pages/BudgetsPage';
 import { PlaceholderPage } from './pages/PlaceholderPage';
 import { SeparateSalePage } from './pages/SeparateSalePage';
 import { ProductTab as ProductsPage } from './pages/ProductsPage';
@@ -17,12 +18,31 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<DashboardLayout />}>
-            {/* Active Feature Route */}
             <Route index element={<CatalogPage />} />
 
+            <Route path="orcamentos" element={<BudgetsPage />} />
             <Route path="orcamentos/venda-avulsa" element={<SeparateSalePage />} />
+            <Route
+              path="orcamentos/novo"
+              element={
+                <PlaceholderPage
+                  title="Novo Orçamento"
+                  icon="receipt_long"
+                  description="Assistente para criação e cálculo automático de orçamentos e propostas comerciais."
+                />
+              }
+            />
+            <Route
+              path="orcamentos/:id"
+              element={
+                <PlaceholderPage
+                  title="Detalhes do Orçamento"
+                  icon="receipt_long"
+                  description="Visualização detalhada da composição, insumos calculados e exportação de proposta."
+                />
+              }
+            />
 
-            {/* Future Modules Placeholders */}
             <Route
               path="dashboard"
               element={
@@ -54,7 +74,6 @@ function App() {
               }
             />
 
-            {/* Rotas de Produtos (Adicionadas pela Equipe) */}
             <Route path="produtos" element={<ProductsPage />} />
             <Route path="produtos/novo" element={<ProductBuilderPage />} />
             <Route path="produtos/:id/editar" element={<ProductBuilderPage />} />
@@ -90,7 +109,6 @@ function App() {
               }
             />
 
-            {/* Catch-all Fallback */}
             <Route
               path="*"
               element={

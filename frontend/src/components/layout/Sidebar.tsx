@@ -1,8 +1,9 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 
 const navItems = [
   { path: '/dashboard', label: 'Dashboard', icon: 'dashboard' },
   { path: '/kanban', label: 'Kanban', icon: 'view_kanban' },
+  { path: '/orcamentos', label: 'Orçamentos', icon: 'receipt_long' },
   { path: '/', label: 'Catálogo de Materiais', icon: 'inventory_2' },
   { path: '/estoque', label: 'Estoque', icon: 'inventory' },
   { path: '/produtos', label: 'Produtos', icon: 'category' },
@@ -17,9 +18,10 @@ interface SidebarProps {
 }
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
+  const navigate = useNavigate();
+
   return (
     <>
-      {/* Mobile Sidebar Overlay */}
       {isOpen && (
         <button 
           onClick={onClose}
@@ -29,12 +31,10 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         />
       )}
 
-      {/* SideNavBar */}
       <aside className={`
         fixed lg:static top-0 left-0 h-screen p-md gap-sm bg-surface-container-lowest border-r border-outline-variant z-40 shrink-0 w-64 flex flex-col transition-transform duration-300 ease-in-out shadow-xs
         ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
-        {/* Brand Header */}
         <div className="flex items-center justify-between px-xs mb-sm">
           <div>
             <h1 className="font-headline text-headline-md font-bold text-on-surface leading-tight tracking-tight">
@@ -52,15 +52,20 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           </button>
         </div>
 
-        {/* 1. Novo Orçamento Action Button */}
         <div className="mb-sm">
-          <button className="w-full flex items-center justify-center gap-xs px-md py-sm bg-primary hover:opacity-90 text-on-primary rounded-md font-label text-label-bold text-xs shadow-md transition-all active:scale-95 cursor-pointer">
+          <button
+            type="button"
+            onClick={() => {
+              navigate('/orcamentos/novo');
+              onClose();
+            }}
+            className="w-full flex items-center justify-center gap-xs px-md py-sm bg-primary hover:opacity-90 text-on-primary rounded-md font-label text-label-bold text-xs shadow-md transition-all active:scale-95 cursor-pointer"
+          >
             <span className="material-symbols-outlined text-[18px]">add</span>
             <span>Novo Orçamento</span>
           </button>
         </div>
 
-        {/* 2-9. Navigation Items in Exact Required Order */}
         <nav className="flex-1 flex flex-col gap-xs overflow-y-auto">
           {navItems.map((item) => (
             <NavLink 
@@ -81,7 +86,6 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           ))}
         </nav>
 
-        {/* Footer Items */}
         <div className="mt-auto flex flex-col gap-xs border-t border-outline-variant pt-sm">
           <button className="flex items-center gap-sm px-sm py-xs text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high rounded-md transition-colors text-xs cursor-pointer">
             <span className="material-symbols-outlined text-[18px]">support</span>
