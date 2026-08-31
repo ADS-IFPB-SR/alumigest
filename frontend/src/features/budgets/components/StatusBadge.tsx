@@ -7,7 +7,7 @@ interface StatusBadgeProps {
   className?: string;
 }
 
-const STATUS_STYLES: Record<string, string> = {
+const STATUS_STYLES: Record<BudgetStatus, string> = {
   DRAFT: 'bg-surface-container-high text-on-surface-variant border-outline-variant/60',
   SENT: 'bg-[#dbeafe] text-[#1e40af] border-[#93c5fd] dark:bg-[#1e3a5f] dark:text-[#93c5fd] dark:border-[#1e3a5f]',
   APPROVED: 'bg-success/10 text-success border-success/30',

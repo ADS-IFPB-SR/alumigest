@@ -97,21 +97,21 @@ export function BudgetsTable({ data, sortField, sortDirection, onSort }: Budgets
           <tr className="bg-surface-container-low border-b border-outline-variant group">
             <SortableHeader
               label="Código"
-              field="numero"
+              field="code"
               activeField={sortField}
               direction={sortDirection}
               onSort={onSort}
             />
             <SortableHeader
               label="Cliente"
-              field="clienteNome"
+              field="customerName"
               activeField={sortField}
               direction={sortDirection}
               onSort={onSort}
             />
             <SortableHeader
               label="Data de Emissão"
-              field="dataCriacao"
+              field="createdAt"
               activeField={sortField}
               direction={sortDirection}
               onSort={onSort}
@@ -124,7 +124,7 @@ export function BudgetsTable({ data, sortField, sortDirection, onSort }: Budgets
             </th>
             <SortableHeader
               label="Valor Total (R$)"
-              field="valorTotal"
+              field="total"
               activeField={sortField}
               direction={sortDirection}
               onSort={onSort}
@@ -144,35 +144,37 @@ export function BudgetsTable({ data, sortField, sortDirection, onSort }: Budgets
             >
               <td className="p-xs sm:p-sm lg:p-md">
                 <span className="font-data-mono text-data-mono text-primary font-semibold text-xs">
-                  {budget.numero}
+                  {budget.code}
                 </span>
               </td>
 
               <td className="p-xs sm:p-sm lg:p-md">
-                <span className="text-on-surface font-medium">{budget.clienteNome}</span>
-              </td>
-
-              <td className="p-xs sm:p-sm lg:p-md">
-                <span className="font-data-mono text-data-mono text-secondary text-xs">
-                  {formatDate(budget.dataCriacao)}
+                <span className="text-on-surface font-medium">
+                  {budget.customerName || budget.customer?.name || '-'}
                 </span>
               </td>
 
               <td className="p-xs sm:p-sm lg:p-md">
                 <span className="font-data-mono text-data-mono text-secondary text-xs">
-                  {formatDate(budget.dataValidade)}
+                  {formatDate(budget.createdAt)}
+                </span>
+              </td>
+
+              <td className="p-xs sm:p-sm lg:p-md">
+                <span className="font-data-mono text-data-mono text-secondary text-xs">
+                  {formatDate(budget.validUntil)}
                 </span>
               </td>
 
               <td className="p-xs sm:p-sm lg:p-md text-center">
                 <span className="font-data-mono text-data-mono text-secondary">
-                  {budget.quantidadeItens}
+                  {budget.itemCount}
                 </span>
               </td>
 
               <td className="p-xs sm:p-sm lg:p-md text-right">
                 <span className="font-data-mono text-data-mono text-primary font-bold">
-                  {formatCurrency(budget.valorTotal)}
+                  {formatCurrency(budget.total)}
                 </span>
               </td>
 

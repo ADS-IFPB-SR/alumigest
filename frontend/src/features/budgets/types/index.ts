@@ -3,26 +3,30 @@ export type BudgetStatus =
   | 'SENT'
   | 'APPROVED'
   | 'REJECTED'
-  | 'CANCELLED'
-  | 'RASCUNHO'
-  | 'ENVIADO'
-  | 'APROVADO'
-  | 'REJEITADO'
-  | 'CANCELADO';
+  | 'CANCELLED';
+
+export interface BudgetCustomer {
+  id?: string | number;
+  name: string;
+  phone?: string;
+  email?: string;
+  document?: string;
+}
 
 export interface BudgetSummary {
-  id: number | string;
-  numero: string;
-  clienteId?: number | string;
-  clienteNome: string;
+  id: string | number;
+  code: string;
+  customerId?: string | number;
+  customerName: string;
+  customer?: BudgetCustomer;
   status: BudgetStatus;
-  dataCriacao: string;
-  dataValidade: string;
+  createdAt: string;
+  validUntil: string;
   subtotal: number;
-  descontoPercentual: number;
-  valorDesconto: number;
-  valorTotal: number;
-  quantidadeItens: number;
+  discountPercent: number;
+  discountValue: number;
+  total: number;
+  itemCount: number;
 }
 
 export interface BudgetPageResponse {
@@ -60,16 +64,12 @@ export const BUDGET_STATUS_OPTIONS: { value: BudgetStatus | ''; label: string }[
 
 export const BUDGET_STATUS_CONFIG: Record<
   BudgetStatus,
-  { label: string; icon: string; key: 'DRAFT' | 'SENT' | 'APPROVED' | 'REJECTED' | 'CANCELLED' }
+  { label: string; icon: string; key: BudgetStatus }
 > = {
   DRAFT: { label: 'Rascunho', icon: 'edit_note', key: 'DRAFT' },
-  RASCUNHO: { label: 'Rascunho', icon: 'edit_note', key: 'DRAFT' },
   SENT: { label: 'Enviado', icon: 'send', key: 'SENT' },
-  ENVIADO: { label: 'Enviado', icon: 'send', key: 'SENT' },
   APPROVED: { label: 'Aprovado', icon: 'check_circle', key: 'APPROVED' },
-  APROVADO: { label: 'Aprovado', icon: 'check_circle', key: 'APPROVED' },
   REJECTED: { label: 'Rejeitado', icon: 'cancel', key: 'REJECTED' },
-  REJEITADO: { label: 'Rejeitado', icon: 'cancel', key: 'REJECTED' },
   CANCELLED: { label: 'Cancelado', icon: 'block', key: 'CANCELLED' },
-  CANCELADO: { label: 'Cancelado', icon: 'block', key: 'CANCELLED' },
 };
+

@@ -14,7 +14,7 @@ export function BudgetsView() {
   const [pageSize] = useState(10);
   const [status, setStatus] = useState<BudgetStatus | ''>('');
   const [search, setSearch] = useState('');
-  const [sortField, setSortField] = useState<string>('dataCriacao');
+  const [sortField, setSortField] = useState<string>('createdAt');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
   const filters = useMemo(
