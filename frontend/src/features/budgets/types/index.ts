@@ -61,7 +61,7 @@ export interface CategoryRequirement {
 // CONFIGURAÇÃO DE TEMPLATE (TemplateConfig)
 // ============================================================
 export interface TemplateConfig {
-  templateType: DoorTemplateType;
+  templateType: string;
   aluminumColor?: string;
   glassFinish?: string;
   openingDirection?: OpeningDirection;
@@ -82,7 +82,8 @@ export interface WindowTemplate {
   categoryName: string;
   laborCost: number;
   isActive: boolean;
-  templateType?: DoorTemplateType;
+  templateType?: string;
+  catalogTemplateType?: string | null;
   templateConfig?: TemplateConfig;
   categoryRequirements?: CategoryRequirement[];
   items?: { id: string; materialId: string; materialName: string; quantity: number }[];
@@ -141,7 +142,7 @@ export interface BudgetItem {
   tempId: string;
   productId: string;
   productName: string;
-  templateType: DoorTemplateType;
+  templateType: string;
   templateConfig: TemplateConfig;
   handleConfig: HandleConfig;
   drillingConfig: DrillingConfig;
@@ -161,6 +162,7 @@ export interface BudgetFormState {
   customerPhone: string;
   customerAddress: string;
   items: BudgetItem[];
+  laborCost: number;
   discountPercent: number;
   notes: string;
   commercialConditions: string;
@@ -259,7 +261,7 @@ export interface BudgetDetail extends BudgetSummary {
     id: string;
     productId: string;
     productName: string;
-    templateType: DoorTemplateType;
+    templateType: string;
     templateConfig: TemplateConfig;
     handleConfig: HandleConfig;
     drillingConfig: DrillingConfig;
@@ -280,13 +282,14 @@ export interface CreateBudgetPayload {
   commercialConditions?: string;
   items: {
     productId: string;
-    templateType: DoorTemplateType;
+    templateType: string;
     templateConfig: TemplateConfig;
     handleConfig: HandleConfig;
     drillingConfig: DrillingConfig;
     width: number;
     height: number;
     quantity: number;
+    laborCost?: number;
     options: { materialId: string; quantity?: number }[];
     notes?: string;
   }[];

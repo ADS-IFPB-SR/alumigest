@@ -1,6 +1,5 @@
 import React from 'react';
 import type { BudgetItem } from '../types';
-import { TEMPLATE_TYPE_INFO } from '../types';
 import { formatBRL } from '../utils/calculations';
 
 interface BudgetItemsTableProps {
@@ -59,7 +58,6 @@ export const BudgetItemsTable: React.FC<BudgetItemsTableProps> = ({
             </thead>
             <tbody className="divide-y divide-outline-variant/40">
               {items.map((item, idx) => {
-                const info = TEMPLATE_TYPE_INFO[item.templateType];
                 const mainMaterial = item.options.find((o) => o.categoryType === 'GLASS') ?? item.options[0];
                 const openDir = item.templateConfig.openingDirection;
                 return (
@@ -77,7 +75,7 @@ export const BudgetItemsTable: React.FC<BudgetItemsTableProps> = ({
                           {item.productName}
                         </span>
                         <span className="text-xs text-on-surface-variant font-body">
-                          {info?.label ?? item.templateType}
+                          Modelo: {item.templateType || 'Básico'}
                           {openDir && <span className="ml-xs text-secondary">· {openDir === 'LEFT_TO_RIGHT' ? '→' : openDir === 'RIGHT_TO_LEFT' ? '←' : openDir}</span>}
                         </span>
                       </div>

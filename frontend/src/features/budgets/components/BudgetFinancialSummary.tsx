@@ -5,7 +5,11 @@ import { Button } from '../../../components/ui/Button';
 interface BudgetFinancialSummaryProps {
   /** Número de itens — usado no label "N item(s)" */
   itemCount: number;
-  /** Subtotal bruto (soma das estimativas de todos os itens) */
+  /** Subtotal dos itens (apenas esquadrias) */
+  itemsSubtotal: number;
+  /** Mão de obra geral (opcional) */
+  laborCost?: number;
+  /** Subtotal bruto = itemsSubtotal + laborCost */
   subtotal: number;
   /** Percentual de desconto (0-100) */
   discountPercent: number;
@@ -36,6 +40,8 @@ interface BudgetFinancialSummaryProps {
  */
 export const BudgetFinancialSummary: React.FC<BudgetFinancialSummaryProps> = ({
   itemCount,
+  itemsSubtotal,
+  laborCost = 0,
   subtotal,
   discountPercent,
   discountValue,
@@ -53,33 +59,55 @@ export const BudgetFinancialSummary: React.FC<BudgetFinancialSummaryProps> = ({
       </div>
 
       <div className="p-md flex flex-col gap-sm">
-        {/* Subtotal */}
+        {/* Subtotal das Esquadrias */}
         <div className="flex justify-between items-center py-xs border-b border-outline-variant border-dashed">
           <span className="text-sm text-on-surface-variant font-body">
-            Subtotal ({itemCount} item{itemCount !== 1 ? 's' : ''})
+            Esquadrias ({itemCount} {itemCount === 1 ? 'item' : 'itens'})
           </span>
           <span className="font-data-mono text-on-surface font-semibold text-sm">
-            {formatBRL(subtotal)}
+            {formatBRL(itemsSubtotal)}
           </span>
         </div>
 
+        {/* Mão de Obra Geral (Opcional) */}
+        {laborCost > 0 && (
+          <>
+            <div className="flex justify-between items-center py-xs border-b border-outline-variant border-dashed">
+              <span className="text-sm text-on-surface-variant font-body">
+                Mão de Obra / Serviços
+              </span>
+              <span className="font-data-mono text-primary font-semibold text-sm">
+                + {formatBRL(laborCost)}
+              </span>
+            </div>
+
+            <div className="flex justify-between items-center py-xs border-b border-outline-variant border-dashed font-medium">
+              <span className="text-sm text-on-surface font-body">
+                Subtotal Bruto
+              </span>
+              <span className="font-data-mono text-on-surface text-sm">
+                {formatBRL(subtotal)}
+              </span>
+            </div>
+          </>
+        )}
+
         {/* Desconto */}
-        <div className="flex justify-between items-center py-xs border-b border-outline-variant border-dashed">
-          <span className="text-sm text-on-surface-variant font-body">
-            Desconto
-            {discountPercent > 0 && (
-              <span className="ml-xs font-data-mono text-xs">({discountPercent}%)</span>
-            )}
-          </span>
-          <span className={`font-data-mono text-sm ${discountValue > 0 ? 'text-error' : 'text-on-surface-variant'}`}>
-            {discountValue > 0 ? `− ${formatBRL(discountValue)}` : '—'}
-          </span>
-        </div>
+        {discountPercent > 0 && (
+          <div className="flex justify-between items-center py-xs border-b border-outline-variant border-dashed">
+            <span className="text-sm text-on-surface-variant font-body">
+              Desconto ({discountPercent}%)
+            </span>
+            <span className="font-data-mono text-sm text-error font-semibold">
+              − {formatBRL(discountValue)}
+            </span>
+          </div>
+        )}
 
         {/* Total Líquido */}
         <div className="flex justify-between items-center pt-sm border-t-2 border-outline mt-xs">
           <span className="font-headline font-bold text-on-surface text-base">
-            Valor Total Líquido
+            Valor Total da Proposta
           </span>
           <span className={`font-data-mono font-bold text-xl ${total > 0 ? 'text-primary' : 'text-on-surface-variant'}`}>
             {total > 0 ? formatBRL(total) : 'R$ 0,00'}

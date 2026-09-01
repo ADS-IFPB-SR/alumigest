@@ -1,13 +1,12 @@
 import React from 'react';
 import type {
-  DoorTemplateType,
   OpeningDirection,
   HandleConfig,
   DrillingConfig,
 } from '../../types';
 
 interface WindowSvgPreviewProps {
-  templateType: DoorTemplateType;
+  templateType: string;
   widthMm: number;
   heightMm: number;
   openingDirection: OpeningDirection;

@@ -73,8 +73,15 @@ export const CustomerQuickCreateModal: React.FC<CustomerQuickCreateModalProps> =
 
   const validate = (): boolean => {
     const errs: Partial<Record<keyof CustomerRequest, string>> = {};
-    if (!form.nomeCompleto?.trim()) errs.nomeCompleto = 'Nome é obrigatório.';
-    if (!form.telefone?.trim()) errs.telefone = 'Telefone é obrigatório.';
+    if (!form.nomeCompleto?.trim()) {
+      errs.nomeCompleto = 'Nome completo é obrigatório.';
+    }
+    if (form.cpfCnpj?.trim()) {
+      const clean = form.cpfCnpj.replace(/\D/g, '');
+      if (clean.length > 0 && clean.length !== 11 && clean.length !== 14) {
+        errs.cpfCnpj = 'CPF deve ter 11 dígitos ou CNPJ 14 dígitos.';
+      }
+    }
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -146,7 +153,7 @@ export const CustomerQuickCreateModal: React.FC<CustomerQuickCreateModalProps> =
                 placeholder="000.000.000-00"
               />
               <Input
-                label="Telefone *"
+                label="Telefone"
                 id="cqc-tel"
                 value={form.telefone ?? ''}
                 onChange={(e) => set('telefone', e.target.value)}

@@ -12,18 +12,19 @@
 
 /**
  * Calcula o subtotal financeiro de um item do orçamento.
- * Cálculo puramente comercial: Σ(quantidade × preço unitário) + mão de obra × quantidade de esquadrias.
+ * Cálculo puramente comercial: Σ(quantidade × preço unitário) × quantidade de esquadrias + mão de obra.
  */
 export function calcItemSubtotal(
   options: { quantity?: number; unitPrice: number }[],
   laborCost: number,
   quantity: number
 ): number {
-  const materialsCost = options.reduce((acc, opt) => {
+  const materialsUnitCost = options.reduce((acc, opt) => {
     const qty = typeof opt.quantity === 'number' && opt.quantity > 0 ? opt.quantity : 0;
     return acc + qty * opt.unitPrice;
   }, 0);
-  return materialsCost + laborCost * quantity;
+  const qty = typeof quantity === 'number' && quantity > 0 ? quantity : 1;
+  return parseFloat((materialsUnitCost * qty + (laborCost || 0)).toFixed(2));
 }
 
 /**

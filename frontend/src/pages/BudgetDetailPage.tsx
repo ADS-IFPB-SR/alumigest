@@ -4,16 +4,8 @@ import { useBudget, useDeleteBudget, useUpdateBudgetStatus } from '../features/b
 import { Button } from '../components/ui/Button';
 import { STATUS_LABELS, type BudgetStatus } from '../features/budgets/types';
 import { formatBRL } from '../features/budgets/utils/calculations';
-import { TEMPLATE_TYPE_INFO } from '../features/budgets/types';
 import { WindowSvgPreview } from '../features/budgets/components/builder/WindowSvgPreview';
-
-const STATUS_COLORS: Record<BudgetStatus, string> = {
-  DRAFT: 'bg-surface-container text-on-surface-variant border-outline-variant',
-  SENT: 'bg-secondary-container text-on-secondary-container border-secondary-container',
-  APPROVED: 'bg-tertiary-container/40 text-on-tertiary-container border-tertiary-container/40 font-bold',
-  REJECTED: 'bg-error-container text-on-error-container border-error-container',
-  CANCELLED: 'bg-surface-container-highest text-on-surface-variant border-outline-variant',
-};
+import { StatusBadge } from '../features/budgets/components/StatusBadge';
 
 const ALL_STATUSES: BudgetStatus[] = ['DRAFT', 'SENT', 'APPROVED', 'REJECTED', 'CANCELLED'];
 
@@ -103,7 +95,7 @@ export function BudgetDetailPage() {
               onChange={(e) => handleStatusChange(e.target.value as BudgetStatus)}
               disabled={isUpdatingStatus}
               aria-label="Status do orçamento"
-              className={`text-xs px-sm py-[4px] rounded-full border font-label font-semibold cursor-pointer outline-none transition-all ${STATUS_COLORS[budget.status]}`}
+              className="text-xs px-sm py-[4px] rounded-full border border-outline-variant bg-surface-container font-label font-semibold cursor-pointer outline-none transition-all text-on-surface hover:border-primary"
             >
               {ALL_STATUSES.map((st) => (
                 <option key={st} value={st}>
@@ -171,9 +163,7 @@ export function BudgetDetailPage() {
                 <h2 className="font-headline text-headline-md font-bold text-on-surface">
                   {budget.code}
                 </h2>
-                <span className={`text-xs px-sm py-[2px] rounded-full border font-label font-semibold ${STATUS_COLORS[budget.status]}`}>
-                  {STATUS_LABELS[budget.status]}
-                </span>
+                <StatusBadge status={budget.status} />
               </div>
               <p className="text-xs text-on-surface-variant font-body mt-xs">
                 Criado em {new Date(budget.createdAt).toLocaleDateString('pt-BR')} às {new Date(budget.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
@@ -220,7 +210,6 @@ export function BudgetDetailPage() {
             </div>
             <div className="flex flex-col divide-y divide-outline-variant/40">
               {(budget.items ?? []).map((item, idx) => {
-                const info = item.templateType ? TEMPLATE_TYPE_INFO[item.templateType] : null;
                 return (
                   <div key={item.id ?? idx} className="p-md flex flex-col sm:flex-row gap-md items-start">
                     {/* Mini SVG preview — exibido apenas se o item tiver templateType configurado */}
@@ -240,7 +229,7 @@ export function BudgetDetailPage() {
                       <div className="flex items-start justify-between gap-sm mb-sm">
                         <div>
                           <p className="font-label font-semibold text-on-surface text-base">{item.productName}</p>
-                          <p className="text-xs text-on-surface-variant font-body">{info?.label ?? item.templateType}</p>
+                          <p className="text-xs text-on-surface-variant font-body">Modelo: {item.templateType || 'Básico'}</p>
                         </div>
                         <div className="text-right shrink-0">
                           <p className="font-data-mono font-bold text-primary text-lg">{formatBRL(item.subtotal)}</p>

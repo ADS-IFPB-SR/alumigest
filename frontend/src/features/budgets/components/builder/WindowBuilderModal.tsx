@@ -9,9 +9,11 @@ import type {
   DivisionType,
   MaterialSelection,
   CategoryType,
+  WindowTemplate,
 } from '../../types';
-import { useWindowTemplates } from '../../hooks/useBudgets';
+import type { Product } from '../../../catalog/types';
 import {
+  useProducts,
   useGlasses,
   useProfiles,
   useHardwares,
@@ -46,6 +48,13 @@ const CATEGORY_ICONS: Record<CategoryType, string> = {
   FILM: 'layers',
 };
 
+const CATEGORY_LABELS: Record<string, string> = {
+  GLASS: 'Vidros',
+  PROFILE: 'Perfis de Alumínio',
+  HARDWARE: 'Ferragens / Componentes',
+  FILM: 'Películas',
+};
+
 const DEFAULT_WIDTH = 1600;
 const DEFAULT_HEIGHT = 2150;
 
@@ -62,8 +71,25 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
   onAddItem,
   editingItem,
 }) => {
-  // Queries do Catálogo
-  const { data: templates = [], isLoading: isLoadingTemplates } = useWindowTemplates();
+  // Queries do Catálogo (read-only)
+  const { data: productsData, isLoading: isLoadingTemplates } = useProducts();
+  const templates = useMemo(() => {
+    if (!productsData?.content) return [];
+    return (productsData.content as unknown as Product[])
+      .filter((p) => p.isActive)
+      .map((p): WindowTemplate => ({
+        id: p.id,
+        name: p.name,
+        categoryId: p.categoryId,
+        categoryName: p.categoryName,
+        isActive: p.isActive,
+        laborCost: 0,
+        templateType: 'SLIDING_DOOR_2F',
+        catalogTemplateType: 'SLIDING_DOOR_2F',
+        items: p.items,
+      }));
+  }, [productsData]);
+
   const { data: glassesData } = useGlasses();
   const { data: profilesData } = useProfiles();
   const { data: hardwaresData } = useHardwares();
@@ -109,7 +135,7 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
     },
     aluminumColor: 'Alumínio Fosco / Anodizado',
     glassFinish: 'Fumê / Cinza',
-    laborCost: 200.0,
+    laborCost: 0,
     notes: '',
     materialSelections: [],
   });
@@ -122,13 +148,13 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
     (materialId: string) => {
       if (!materialId) return null;
       const g = glasses.find((item) => item.id === materialId);
-      if (g) return { name: g.name, unit: 'm²', price: g.salePrice ?? g.pricePerSqm ?? 0, colorFinish: g.colorFinish };
+      if (g) return { name: g.name, unit: 'm²', price: g.salePrice ?? g.pricePerSqm ?? 0, colorFinish: g.colorFinish, categoryType: 'GLASS' as CategoryType };
       const p = profiles.find((item) => item.id === materialId);
-      if (p) return { name: p.name, unit: p.unitMeasure ?? 'm', price: p.salePrice ?? 0, colorFinish: p.colorFinish };
+      if (p) return { name: p.name, unit: p.unitMeasure ?? 'm', price: p.salePrice ?? 0, colorFinish: p.colorFinish, categoryType: 'PROFILE' as CategoryType };
       const h = hardwares.find((item) => item.id === materialId);
-      if (h) return { name: h.name, unit: h.unitMeasure ?? 'un', price: h.salePrice ?? 0, colorFinish: undefined };
+      if (h) return { name: h.name, unit: h.unitMeasure ?? 'un', price: h.salePrice ?? 0, colorFinish: undefined, categoryType: 'HARDWARE' as CategoryType };
       const f = films.find((item) => item.id === materialId);
-      if (f) return { name: f.name, unit: 'm²', price: f.salePrice ?? 0, colorFinish: f.colorFinish };
+      if (f) return { name: f.name, unit: 'm²', price: f.salePrice ?? 0, colorFinish: f.colorFinish, categoryType: 'FILM' as CategoryType };
       return null;
     },
     [glasses, profiles, hardwares, films],
@@ -140,28 +166,27 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
 
     if (editingItem) {
       const template = templates.find((t) => t.id === editingItem.productId) ?? templates[0] ?? null;
-      const reqs = template?.categoryRequirements ?? [];
-
-      const selections: MaterialSelection[] = (reqs.length > 0 ? reqs : []).map((req) => {
-        const existingOpt = editingItem.options.find((o) => o.categoryType === req.categoryType);
-        const mat = existingOpt ? findCatalogMaterial(existingOpt.materialId) : null;
-        const qty = existingOpt?.quantity;
-        const price = existingOpt?.unitPrice ?? mat?.price ?? 0;
+      const selections: MaterialSelection[] = (editingItem.options ?? []).map((opt, idx) => {
+        const mat = findCatalogMaterial(opt.materialId);
+        const reqId = `edit-item-${opt.materialId}-${idx}`;
+        const categoryType = opt.categoryType || (mat?.categoryType as CategoryType) || 'HARDWARE';
+        const price = opt.unitPrice || mat?.price || 0;
+        const qty = opt.quantity ?? 1;
         return {
-          requirementId: req.id,
-          categoryType: req.categoryType,
-          label: req.label,
-          isOptional: req.isOptional,
-          materialId: existingOpt?.materialId ?? '',
-          materialName: existingOpt?.materialName ?? mat?.name ?? '',
-          unitMeasure: existingOpt?.unitMeasure ?? mat?.unit ?? 'un',
+          requirementId: reqId,
+          categoryType: categoryType,
+          label: CATEGORY_LABELS[categoryType] ?? categoryType,
+          isOptional: false,
+          materialId: opt.materialId,
+          materialName: opt.materialName || mat?.name || 'Material',
+          unitMeasure: opt.unitMeasure || mat?.unit || 'un',
           unitPrice: price,
           quantity: qty,
           totalPrice: qty !== undefined ? parseFloat((qty * price).toFixed(2)) : undefined,
         };
       });
 
-      const dists = editingItem.drillingConfig.customDistancesMm ?? [100, 500, 560, 100];
+      const dists = editingItem.drillingConfig?.customDistancesMm ?? [100, 500, 560, 100];
       setCustomDistanceInput(dists.join(', '));
 
       setState({
@@ -174,70 +199,94 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
           handleType: 'BAR_TUBULAR',
           side: 'ONE_SIDE',
           coverage: 'FULL',
+          pieceLengthCm: 40,
         },
         drillingConfig: editingItem.drillingConfig ?? {
           holeCount: 2,
           divisionType: 'EQUAL',
+          customDistancesMm: dists,
         },
         aluminumColor: editingItem.templateConfig.aluminumColor ?? 'Alumínio Fosco / Anodizado',
         glassFinish: editingItem.templateConfig.glassFinish ?? 'Fumê / Cinza',
-        laborCost: editingItem.laborCost ?? template?.laborCost ?? 200.0,
+        laborCost: editingItem.laborCost ?? 0,
         notes: editingItem.notes ?? '',
         materialSelections: selections,
       });
     } else {
-      // Novo item: seleciona o primeiro template disponível e pré-popula seleções padrão
+      // Novo item: seleciona o primeiro template disponível e inicializa seleções
       const defaultTemplate = templates[0] ?? null;
       const w = DEFAULT_WIDTH;
       const h = DEFAULT_HEIGHT;
       const qty = 1;
 
-      let detectedAlumColor = 'Alumínio Fosco / Anodizado';
-      let detectedGlassFinish = 'Fumê / Cinza';
+      let initialSelections: MaterialSelection[] = [];
 
-      const initialSelections: MaterialSelection[] = (defaultTemplate?.categoryRequirements ?? []).map((req) => {
-        let defaultMatId = '';
-        let defaultMatName = '';
-        let unit = 'un';
-        let price = 0;
+      if (defaultTemplate?.items && defaultTemplate.items.length > 0) {
+        initialSelections = defaultTemplate.items.map((item) => {
+          const matDetails = findCatalogMaterial(item.materialId);
+          const reqId = item.id || `item-${item.materialId}`;
+          const categoryType = (matDetails?.categoryType as CategoryType) || 'HARDWARE';
+          const unit = matDetails?.unit ?? 'un';
+          const price = matDetails?.price ?? 0;
 
-        if (req.categoryType === 'GLASS' && glasses.length > 0) {
-          defaultMatId = glasses[0].id;
-          defaultMatName = glasses[0].name;
-          unit = 'm²';
-          price = glasses[0].salePrice ?? glasses[0].pricePerSqm ?? 0;
-          if (glasses[0].colorFinish) detectedGlassFinish = glasses[0].colorFinish;
-        } else if (req.categoryType === 'PROFILE' && profiles.length > 0) {
-          defaultMatId = profiles[0].id;
-          defaultMatName = profiles[0].name;
-          unit = profiles[0].unitMeasure ?? 'm';
-          price = profiles[0].salePrice ?? 0;
-          if (profiles[0].colorFinish) detectedAlumColor = profiles[0].colorFinish;
-        } else if (req.categoryType === 'HARDWARE' && hardwares.length > 0) {
-          defaultMatId = hardwares[0].id;
-          defaultMatName = hardwares[0].name;
-          unit = hardwares[0].unitMeasure ?? 'un';
-          price = hardwares[0].salePrice ?? 0;
-        } else if (req.categoryType === 'FILM' && films.length > 0) {
-          if (!req.isOptional) {
-            defaultMatId = films[0].id;
-            defaultMatName = films[0].name;
-            unit = 'm²';
-            price = films[0].salePrice ?? 0;
-          }
+          return {
+            requirementId: reqId,
+            categoryType: categoryType,
+            label: CATEGORY_LABELS[categoryType] ?? categoryType,
+            isOptional: false,
+            materialId: item.materialId,
+            materialName: matDetails?.name ?? item.materialName,
+            unitMeasure: unit,
+            unitPrice: price,
+            quantity: item.quantity ?? 1,
+            totalPrice: item.quantity !== undefined ? parseFloat((item.quantity * price).toFixed(2)) : undefined,
+          };
+        });
+      } else {
+        // Gera slots padrão preenchidos com os primeiros itens do catálogo
+        if (glasses.length > 0) {
+          initialSelections.push({
+            requirementId: `default-glass-1`,
+            categoryType: 'GLASS',
+            label: 'Vidro Principal',
+            isOptional: false,
+            materialId: glasses[0].id,
+            materialName: glasses[0].name,
+            unitMeasure: 'm²',
+            unitPrice: glasses[0].salePrice ?? glasses[0].pricePerSqm ?? 0,
+            quantity: parseFloat(((w / 1000) * (h / 1000)).toFixed(2)),
+            totalPrice: parseFloat((((w / 1000) * (h / 1000)) * (glasses[0].salePrice ?? glasses[0].pricePerSqm ?? 0)).toFixed(2)),
+          });
         }
-
-        return {
-          requirementId: req.id,
-          categoryType: req.categoryType,
-          label: req.label,
-          isOptional: req.isOptional,
-          materialId: defaultMatId,
-          materialName: defaultMatName,
-          unitMeasure: unit,
-          unitPrice: price,
-        };
-      });
+        if (profiles.length > 0) {
+          initialSelections.push({
+            requirementId: `default-profile-1`,
+            categoryType: 'PROFILE',
+            label: 'Perfil de Alumínio',
+            isOptional: false,
+            materialId: profiles[0].id,
+            materialName: profiles[0].name,
+            unitMeasure: profiles[0].unitMeasure ?? 'm',
+            unitPrice: profiles[0].salePrice ?? 0,
+            quantity: 2,
+            totalPrice: parseFloat((2 * (profiles[0].salePrice ?? 0)).toFixed(2)),
+          });
+        }
+        if (hardwares.length > 0) {
+          initialSelections.push({
+            requirementId: `default-hardware-1`,
+            categoryType: 'HARDWARE',
+            label: 'Puxador / Fecho',
+            isOptional: false,
+            materialId: hardwares[0].id,
+            materialName: hardwares[0].name,
+            unitMeasure: hardwares[0].unitMeasure ?? 'un',
+            unitPrice: hardwares[0].salePrice ?? 0,
+            quantity: 1,
+            totalPrice: parseFloat((1 * (hardwares[0].salePrice ?? 0)).toFixed(2)),
+          });
+        }
+      }
 
       setState({
         template: defaultTemplate,
@@ -256,8 +305,8 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
           divisionType: 'EQUAL',
           customDistancesMm: [100, 500, 560, 100],
         },
-        aluminumColor: detectedAlumColor,
-        glassFinish: detectedGlassFinish,
+        aluminumColor: 'Alumínio Fosco / Anodizado',
+        glassFinish: 'Fumê / Cinza',
         laborCost: defaultTemplate?.laborCost ?? 200.0,
         notes: '',
         materialSelections: initialSelections,
@@ -283,65 +332,96 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
     };
   }, [isOpen, onClose]);
 
-
   // ─── Handler: Troca de Template ───────────────────────────────────────────
   const handleTemplateSelect = (templateId: string) => {
     const template = templates.find((t) => t.id === templateId);
     if (!template) return;
 
-    const newSelections: MaterialSelection[] = (template.categoryRequirements ?? []).map((req) => {
-      const existing = state.materialSelections.find((s) => s.categoryType === req.categoryType);
-      let matId = existing?.materialId ?? '';
-      let matName = existing?.materialName ?? '';
-      let unit = existing?.unitMeasure ?? 'un';
-      let price = existing?.unitPrice ?? 0;
+    let newSelections: MaterialSelection[] = [];
 
-      if (!matId) {
-        if (req.categoryType === 'GLASS' && glasses.length > 0) {
-          matId = glasses[0].id;
-          matName = glasses[0].name;
-          unit = 'm²';
-          price = glasses[0].salePrice ?? glasses[0].pricePerSqm ?? 0;
-        } else if (req.categoryType === 'PROFILE' && profiles.length > 0) {
-          matId = profiles[0].id;
-          matName = profiles[0].name;
-          unit = profiles[0].unitMeasure ?? 'm';
-          price = profiles[0].salePrice ?? 0;
-        } else if (req.categoryType === 'HARDWARE' && hardwares.length > 0) {
-          matId = hardwares[0].id;
-          matName = hardwares[0].name;
-          unit = hardwares[0].unitMeasure ?? 'un';
-          price = hardwares[0].salePrice ?? 0;
+    if (template.items && template.items.length > 0) {
+      newSelections = template.items.map((item) => {
+        const mat = findCatalogMaterial(item.materialId);
+        const reqId = item.id || `item-${item.materialId}`;
+        const categoryType = (mat?.categoryType as CategoryType) || 'HARDWARE';
+        const price = mat?.price ?? 0;
+        const qty = item.quantity ?? 1;
+        return {
+          requirementId: reqId,
+          categoryType: categoryType,
+          label: mat?.name ?? item.materialName ?? (CATEGORY_LABELS[categoryType] ?? categoryType),
+          isOptional: false,
+          materialId: item.materialId,
+          materialName: mat?.name ?? item.materialName,
+          unitMeasure: mat?.unit ?? 'un',
+          unitPrice: price,
+          quantity: qty,
+          totalPrice: qty !== undefined ? parseFloat((qty * price).toFixed(2)) : undefined,
+        };
+      });
+    } else {
+      // Se o produto não tiver itens vinculados, preserva as seleções atuais ou gera slots padrão
+      if (state.materialSelections.length > 0) {
+        newSelections = state.materialSelections;
+      } else {
+        if (glasses.length > 0) {
+          newSelections.push({
+            requirementId: `default-glass-1`,
+            categoryType: 'GLASS',
+            label: 'Vidro Principal',
+            isOptional: false,
+            materialId: glasses[0].id,
+            materialName: glasses[0].name,
+            unitMeasure: 'm²',
+            unitPrice: glasses[0].salePrice ?? glasses[0].pricePerSqm ?? 0,
+            quantity: 1,
+            totalPrice: glasses[0].salePrice ?? glasses[0].pricePerSqm ?? 0,
+          });
+        }
+        if (profiles.length > 0) {
+          newSelections.push({
+            requirementId: `default-profile-1`,
+            categoryType: 'PROFILE',
+            label: 'Perfil de Alumínio',
+            isOptional: false,
+            materialId: profiles[0].id,
+            materialName: profiles[0].name,
+            unitMeasure: profiles[0].unitMeasure ?? 'm',
+            unitPrice: profiles[0].salePrice ?? 0,
+            quantity: 2,
+            totalPrice: parseFloat((2 * (profiles[0].salePrice ?? 0)).toFixed(2)),
+          });
+        }
+        if (hardwares.length > 0) {
+          newSelections.push({
+            requirementId: `default-hardware-1`,
+            categoryType: 'HARDWARE',
+            label: 'Puxador / Fecho',
+            isOptional: false,
+            materialId: hardwares[0].id,
+            materialName: hardwares[0].name,
+            unitMeasure: hardwares[0].unitMeasure ?? 'un',
+            unitPrice: hardwares[0].salePrice ?? 0,
+            quantity: 1,
+            totalPrice: parseFloat((1 * (hardwares[0].salePrice ?? 0)).toFixed(2)),
+          });
         }
       }
-
-      return {
-        requirementId: req.id,
-        categoryType: req.categoryType,
-        label: req.label,
-        isOptional: req.isOptional,
-        materialId: matId,
-        materialName: matName,
-        unitMeasure: unit,
-        unitPrice: price,
-        quantity: existing?.quantity,
-        totalPrice: existing?.totalPrice,
-      };
-    });
+    }
 
     setState((prev) => ({
       ...prev,
       template,
-      laborCost: template.laborCost ?? prev.laborCost,
+      laborCost: template.laborCost || prev.laborCost || 200.0,
       materialSelections: newSelections,
     }));
   };
 
   // ─── Handler: Alterar Seleção de Material por Categoria ───────────────────
-  // Inclui sincronização automática de Acabamento e Puxador baseado no material
   const handleMaterialChange = (requirementId: string, materialId: string) => {
-    const req = (state.template?.categoryRequirements ?? []).find((r) => r.id === requirementId);
-    if (!req) return;
+    const selIndex = state.materialSelections.findIndex((s) => s.requirementId === requirementId);
+    if (selIndex === -1) return;
+    const sel = state.materialSelections[selIndex];
 
     if (!materialId) {
       setState((prev) => ({
@@ -370,8 +450,7 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
       let nextGlass = prev.glassFinish;
       let nextHandleType = prev.handleConfig.handleType;
 
-      // 4. Sincroniza acabamento de alumínio se for perfil
-      if (req.categoryType === 'PROFILE' && mat) {
+      if (sel.categoryType === 'PROFILE' && mat) {
         if (mat.colorFinish) {
           nextAlum = mat.colorFinish;
         } else if (mat.name.toLowerCase().includes('branco')) {
@@ -385,8 +464,7 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
         }
       }
 
-      // 4. Sincroniza acabamento de vidro se for vidro
-      if (req.categoryType === 'GLASS' && mat) {
+      if (sel.categoryType === 'GLASS' && mat) {
         if (mat.colorFinish) {
           nextGlass = mat.colorFinish;
         } else if (mat.name.toLowerCase().includes('fumê') || mat.name.toLowerCase().includes('fume')) {
@@ -402,8 +480,7 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
         }
       }
 
-      // 5. Interação entre tipo de puxador e ferragem selecionada
-      if (req.categoryType === 'HARDWARE' && mat) {
+      if (sel.categoryType === 'HARDWARE' && mat) {
         const n = mat.name.toLowerCase();
         if (n.includes('tubular') || n.includes('inox') || n.includes('barra')) {
           nextHandleType = 'BAR_TUBULAR';
@@ -430,7 +507,7 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
                 materialName: mat?.name ?? '',
                 unitMeasure: mat?.unit ?? s.unitMeasure,
                 unitPrice,
-                totalPrice: s.quantity !== undefined ? parseFloat((s.quantity * unitPrice).toFixed(2)) : undefined,
+                totalPrice: (s.quantity ?? 1) * unitPrice,
               }
             : s,
         ),
@@ -439,10 +516,12 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
   };
 
   // ─── Handler: Alterar Quantidade Manual de Material ──────────────────────
-  // 6. Permite adicionar/ajustar a quantidade de cada material individualmente
-  const handleMaterialQtyChange = (requirementId: string, valStr: string) => {
-    const num = parseFloat(valStr.replace(',', '.'));
-    const qty = !isNaN(num) && num >= 0 ? num : undefined;
+  const handleMaterialQtyChange = (requirementId: string, valStr: string | undefined) => {
+    let qty: number | undefined = undefined;
+    if (valStr !== undefined) {
+      const num = parseFloat(String(valStr).replace(',', '.'));
+      qty = !isNaN(num) && num >= 0 ? num : undefined;
+    }
 
     setState((prev) => ({
       ...prev,
@@ -458,55 +537,53 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
     }));
   };
 
-  // ─── Handler: Puxador ─────────────────────────────────────────────────────
-  // 5. Troca de puxador interage pré-selecionando ferragem correspondente
-  const handleHandleTypeChange = (type: HandleType) => {
-    setState((prev) => {
-      // Tenta sugerir ferragem no catálogo correspondente ao tipo de puxador
-      let updatedSelections = prev.materialSelections;
-      if (type !== 'NONE' && hardwares.length > 0) {
-        const hwReq = prev.template?.categoryRequirements?.find((r) => r.categoryType === 'HARDWARE');
-        if (hwReq) {
-          let matchedHw = hardwares[0];
-          if (type === 'BAR_TUBULAR') {
-            matchedHw = hardwares.find((h) => h.name.toLowerCase().includes('tubular') || h.name.toLowerCase().includes('barra')) ?? hardwares[0];
-          } else if (type === 'SHELL_LOCK') {
-            matchedHw = hardwares.find((h) => h.name.toLowerCase().includes('concha') || h.name.toLowerCase().includes('fecho')) ?? hardwares[0];
-          } else if (type === 'LEVER_HANDLE') {
-            matchedHw = hardwares.find((h) => h.name.toLowerCase().includes('maçaneta') || h.name.toLowerCase().includes('macaneta')) ?? hardwares[0];
-          }
+  // ─── Handlers para Adicionar/Remover Insumos Extras ────────────────────────
+  const handleAddMaterial = (catType: CategoryType) => {
+    let defaultMat: { id: string; name: string; price: number; unit: string } | undefined;
+    if (catType === 'GLASS' && glasses.length > 0) defaultMat = { id: glasses[0].id, name: glasses[0].name, price: glasses[0].salePrice ?? glasses[0].pricePerSqm ?? 0, unit: 'm²' };
+    else if (catType === 'PROFILE' && profiles.length > 0) defaultMat = { id: profiles[0].id, name: profiles[0].name, price: profiles[0].salePrice ?? 0, unit: profiles[0].unitMeasure ?? 'm' };
+    else if (catType === 'HARDWARE' && hardwares.length > 0) defaultMat = { id: hardwares[0].id, name: hardwares[0].name, price: hardwares[0].salePrice ?? 0, unit: hardwares[0].unitMeasure ?? 'un' };
+    else if (catType === 'FILM' && films.length > 0) defaultMat = { id: films[0].id, name: films[0].name, price: films[0].salePrice ?? 0, unit: 'm²' };
 
-          if (matchedHw) {
-            updatedSelections = prev.materialSelections.map((s) =>
-              s.requirementId === hwReq.id
-                ? {
-                    ...s,
-                    materialId: matchedHw.id,
-                    materialName: matchedHw.name,
-                    unitMeasure: matchedHw.unitMeasure ?? 'un',
-                    unitPrice: matchedHw.salePrice ?? 0,
-                    totalPrice: s.quantity !== undefined ? parseFloat((s.quantity * (matchedHw.salePrice ?? 0)).toFixed(2)) : undefined,
-                  }
-                : s,
-            );
-          }
-        }
-      }
+    const newSel: MaterialSelection = {
+      requirementId: `custom-mat-${Date.now()}`,
+      categoryType: catType,
+      label: `${CATEGORY_LABELS[catType]} (Adicional)`,
+      isOptional: true,
+      materialId: defaultMat?.id ?? '',
+      materialName: defaultMat?.name ?? '',
+      unitMeasure: defaultMat?.unit ?? (catType === 'GLASS' || catType === 'FILM' ? 'm²' : catType === 'PROFILE' ? 'm' : 'un'),
+      unitPrice: defaultMat?.price ?? 0,
+      quantity: 1,
+      totalPrice: defaultMat?.price ?? 0,
+    };
 
-      return {
-        ...prev,
-        materialSelections: updatedSelections,
-        handleConfig: {
-          ...prev.handleConfig,
-          handleType: type,
-          side: prev.handleConfig.side ?? 'ONE_SIDE',
-          coverage: type === 'BAR_TUBULAR' ? prev.handleConfig.coverage ?? 'FULL' : undefined,
-        },
-      };
-    });
+    setState((prev) => ({
+      ...prev,
+      materialSelections: [...prev.materialSelections, newSel],
+    }));
   };
 
-  // 3. Opção de colocar ambos os lados
+  const handleRemoveMaterial = (requirementId: string) => {
+    setState((prev) => ({
+      ...prev,
+      materialSelections: prev.materialSelections.filter((s) => s.requirementId !== requirementId),
+    }));
+  };
+
+  // ─── Handlers de Puxador ──────────────────────────────────────────────────
+  const handleHandleTypeChange = (type: HandleType) => {
+    setState((prev) => ({
+      ...prev,
+      handleConfig: {
+        ...prev.handleConfig,
+        handleType: type,
+        side: prev.handleConfig.side ?? 'ONE_SIDE',
+        coverage: type === 'BAR_TUBULAR' ? prev.handleConfig.coverage ?? 'FULL' : undefined,
+      },
+    }));
+  };
+
   const handleHandleSideChange = (side: HandleSide) => {
     setState((prev) => ({
       ...prev,
@@ -525,7 +602,7 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
     }));
   };
 
-  // ─── Handler: Furação ─────────────────────────────────────────────────────
+  // ─── Handlers de Furação ──────────────────────────────────────────────────
   const handleHoleCountChange = (count: number) => {
     setState((prev) => ({
       ...prev,
@@ -557,19 +634,25 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
   };
 
   // ─── Cálculo do Subtotal Estimado do Item ──────────────────────────────────
-  // Baseado na quantidade de cada material + mão de obra × quantidade de esquadrias
   const itemSubtotalEstimate = useMemo(() => {
     const w = typeof state.widthMm === 'number' ? state.widthMm : 0;
     const h = typeof state.heightMm === 'number' ? state.heightMm : 0;
     const qty = typeof state.quantity === 'number' && state.quantity >= 1 ? state.quantity : 1;
     if (!w || !h) return 0;
-    const labor = state.laborCost ?? state.template?.laborCost ?? 0;
     return calcItemSubtotal(
       state.materialSelections.map((s) => ({ quantity: s.quantity, unitPrice: s.unitPrice })),
-      labor,
+      0,
       qty,
     );
-  }, [state.materialSelections, state.laborCost, state.template, state.quantity, state.widthMm, state.heightMm]);
+  }, [state.materialSelections, state.quantity, state.widthMm, state.heightMm]);
+
+  // Subtotal apenas de materiais
+  const materialsTotal = useMemo(() => {
+    return state.materialSelections.reduce((sum, s) => {
+      const q = typeof s.quantity === 'number' && s.quantity > 0 ? s.quantity : 0;
+      return sum + q * s.unitPrice;
+    }, 0);
+  }, [state.materialSelections]);
 
   // ─── Validação e Submissão ────────────────────────────────────────────────
   const handleSubmit = () => {
@@ -577,13 +660,6 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
 
     if (!state.template) {
       toast.error('Selecione um template de esquadria.');
-      return;
-    }
-
-    if (!state.template.templateType) {
-      toast.error(
-        `O produto "${state.template.name}" não possui um tipo de esquadria configurado no backend. Contate o administrador.`,
-      );
       return;
     }
 
@@ -595,9 +671,8 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
     if (!h || h <= 0) newErrors.heightMm = 'Altura obrigatória';
     if (!qty || qty < 1) newErrors.quantity = 'Quantidade inválida';
 
-    // Validação de materiais obrigatórios
-    const missingReqs = (state.template.categoryRequirements ?? []).filter(
-      (req) => !req.isOptional && !state.materialSelections.find((s) => s.requirementId === req.id && s.materialId),
+    const missingReqs = state.materialSelections.filter(
+      (sel) => !sel.isOptional && !sel.materialId,
     );
 
     if (missingReqs.length > 0) {
@@ -615,9 +690,9 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
       tempId: editingItem?.tempId ?? `item-${Date.now()}`,
       productId: state.template.id,
       productName: state.template.name,
-      templateType: state.template.templateType,
+      templateType: state.template.templateType ?? 'SLIDING_DOOR_2F',
       templateConfig: {
-        templateType: state.template.templateType,
+        templateType: state.template.templateType ?? 'SLIDING_DOOR_2F',
         aluminumColor: state.aluminumColor,
         glassFinish: state.glassFinish,
         openingDirection: state.openingDirection,
@@ -630,7 +705,7 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
       widthMm: w,
       heightMm: h,
       quantity: qty,
-      laborCost: state.laborCost ?? state.template.laborCost ?? 200.0,
+      laborCost: state.laborCost ?? 0,
       options: state.materialSelections
         .filter((s) => s.materialId)
         .map((s) => ({
@@ -658,10 +733,9 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
   const unitAreaM2 = ((svgW / 1000) * (svgH / 1000)).toFixed(2);
   const totalQty = typeof state.quantity === 'number' && state.quantity >= 1 ? state.quantity : 1;
 
-  // ─── Render do Modal Unificado ─────────────────────────────────────────────
+  // ─── Render do Modal ──────────────────────────────────────────────────────
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-xs sm:p-md bg-black/75 backdrop-blur-sm animate-fadeIn">
-      {/* Background backdrop click to close */}
       <button
         type="button"
         className="fixed inset-0 w-full h-full bg-transparent border-0 cursor-default"
@@ -671,12 +745,12 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
       />
 
       <div
-        className="relative bg-surface border border-outline-variant rounded-xl w-full max-h-[95vh] shadow-2xl flex flex-col overflow-hidden z-10"
-        style={{ maxWidth: '1180px' }}
+        className="relative bg-surface border border-outline-variant rounded-xl w-full max-h-[92vh] shadow-2xl flex flex-col overflow-hidden z-10"
+        style={{ maxWidth: '1240px' }}
         aria-modal="true"
       >
-        {/* ── Header Unificado: Seleção de Template ──────────────────────── */}
-        <div className="flex items-center justify-between px-md py-sm border-b border-outline-variant bg-surface-container-low flex-shrink-0">
+        {/* ── Header do Modal ────────────────────────────────────────────── */}
+        <header className="flex items-center justify-between px-md sm:px-lg py-sm border-b border-outline-variant bg-surface-container-low flex-shrink-0">
           <div className="flex items-center gap-sm flex-1 min-w-0">
             <span className="material-symbols-outlined text-[24px] text-primary shrink-0">tune</span>
             <div className="min-w-0 flex-1">
@@ -686,7 +760,7 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
                   onChange={(e) => handleTemplateSelect(e.target.value)}
                   disabled={isLoadingTemplates}
                   aria-label="Selecionar Template de Esquadria"
-                  className="font-headline text-headline-md font-bold text-on-surface bg-transparent border-0 cursor-pointer hover:text-primary focus:outline-none pr-md truncate max-w-full"
+                  className="font-headline text-title-md sm:text-headline-sm font-bold text-on-surface bg-transparent border-0 cursor-pointer hover:text-primary focus:outline-none pr-md truncate max-w-full"
                 >
                   {templates.map((t) => (
                     <option key={t.id} value={t.id}>
@@ -696,13 +770,12 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
                 </select>
               </div>
               <p className="font-body text-xs text-on-surface-variant truncate">
-                Template selecionado. Configure os insumos de cada categoria, medidas e parâmetros técnicos.
+                Configure os insumos de cada categoria, medidas e parâmetros técnicos da esquadria.
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-sm shrink-0 ml-sm">
-            {/* Chip de Subtotal no topo para nunca ficar oculto (Item 1) */}
             <div className="hidden sm:flex items-center gap-xs bg-primary/10 border border-primary/30 px-sm py-[4px] rounded-lg">
               <span className="text-xs font-label text-primary font-medium">Subtotal:</span>
               <span className="text-sm font-data-mono font-bold text-primary">
@@ -719,69 +792,81 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
               <span className="material-symbols-outlined text-[22px]">close</span>
             </button>
           </div>
-        </div>
+        </header>
 
-        {/* ── Corpo do Modal: Layout em 2 Colunas ────────────────────────── */}
-        <div className="flex-1 overflow-y-auto p-md lg:p-lg min-h-0 bg-surface">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-md">
+        {/* ── Corpo do Modal: Layout em 2 Colunas Perfeitamente Balanceadas ── */}
+        <main className="flex-1 overflow-y-auto p-md sm:p-lg min-h-0 bg-surface">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-lg items-start">
 
             {/* ════════════════════════════════════════════════════════════════
-                COLUNA DA ESQUERDA: GABARITO VISUAL, SENTIDO, PUXADOR, FURAÇÃO & ACABAMENTOS
+                COLUNA DA ESQUERDA (5 cols): GABARITO VISUAL & CONTROLES FÍSICOS
                ════════════════════════════════════════════════════════════════ */}
             <div className="lg:col-span-5 flex flex-col gap-md">
-              <h3 className="text-xs font-label font-bold text-on-surface-variant uppercase tracking-wider flex items-center gap-xs">
-                <span>📐</span> GABARITO VISUAL & DETALHES TÉCNICOS
-              </h3>
 
-              {/* 1. Preview SVG e Cotas Técnicas (Item 1: altura controlada para não esconder subtotal) */}
-              <div className="bg-surface-container-lowest border border-outline-variant rounded-lg p-sm shadow-sm flex flex-col items-center justify-center h-[260px] max-h-[260px] overflow-hidden">
-                <WindowSvgPreview
-                  templateType={svgTemplate}
-                  widthMm={svgW}
-                  heightMm={svgH}
-                  openingDirection={state.openingDirection}
-                  handleConfig={state.handleConfig}
-                  drillingConfig={state.drillingConfig}
-                  templateName={state.template?.name}
-                  aluminumColor={state.aluminumColor}
-                />
+              {/* 1. Gabarito Visual CAD */}
+              <div className="bg-surface-container-lowest border border-outline-variant rounded-lg p-sm shadow-xs flex flex-col gap-xs">
+                <div className="flex items-center justify-between pb-xs border-b border-outline-variant/50">
+                  <h3 className="text-xs font-label font-bold text-on-surface flex items-center gap-xs uppercase tracking-wider">
+                    <span className="material-symbols-outlined text-[16px] text-primary">architecture</span>
+                    Gabarito Visual
+                  </h3>
+                  <span className="text-[11px] font-data-mono text-secondary">
+                    {svgW}×{svgH} mm
+                  </span>
+                </div>
+                <div className="flex flex-col items-center justify-center min-h-[240px] max-h-[260px] py-xs overflow-hidden">
+                  <WindowSvgPreview
+                    templateType={svgTemplate}
+                    widthMm={svgW}
+                    heightMm={svgH}
+                    openingDirection={state.openingDirection}
+                    handleConfig={state.handleConfig}
+                    drillingConfig={state.drillingConfig}
+                    templateName={state.template?.name}
+                    aluminumColor={state.aluminumColor}
+                  />
+                </div>
               </div>
 
               {/* 2. Sentido de Abertura */}
-              <div className="bg-surface-container-lowest border border-outline-variant rounded-lg p-sm shadow-sm flex flex-col gap-xs">
+              <div className="bg-surface-container-lowest border border-outline-variant rounded-lg p-sm shadow-xs flex flex-col gap-xs">
                 <p className="text-xs font-label font-semibold text-on-surface flex items-center gap-xs">
-                  <span>↔</span> Sentido de Abertura da Folha
+                  <span className="material-symbols-outlined text-[16px] text-primary">swap_horiz</span>
+                  Sentido de Abertura da Folha
                 </p>
-                <div className="flex gap-xs mt-xs">
+                <div className="grid grid-cols-2 gap-xs mt-xs">
                   <button
                     type="button"
                     onClick={() => setState((p) => ({ ...p, openingDirection: 'LEFT_TO_RIGHT' }))}
-                    className={`flex-1 py-xs px-sm rounded border text-xs font-label font-semibold flex items-center justify-center gap-xs transition-all ${
+                    className={`py-xs px-sm rounded border text-xs font-label font-semibold flex items-center justify-center gap-xs transition-all ${
                       state.openingDirection === 'LEFT_TO_RIGHT'
-                        ? 'bg-primary text-on-primary border-primary shadow-sm'
+                        ? 'bg-primary text-on-primary border-primary shadow-xs'
                         : 'bg-surface border-outline-variant text-on-surface-variant hover:bg-surface-container'
                     }`}
                   >
-                    <span>→</span> Abrir p/ Direita
+                    <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+                    Abrir p/ Direita
                   </button>
                   <button
                     type="button"
                     onClick={() => setState((p) => ({ ...p, openingDirection: 'RIGHT_TO_LEFT' }))}
-                    className={`flex-1 py-xs px-sm rounded border text-xs font-label font-semibold flex items-center justify-center gap-xs transition-all ${
+                    className={`py-xs px-sm rounded border text-xs font-label font-semibold flex items-center justify-center gap-xs transition-all ${
                       state.openingDirection === 'RIGHT_TO_LEFT'
-                        ? 'bg-primary text-on-primary border-primary shadow-sm'
+                        ? 'bg-primary text-on-primary border-primary shadow-xs'
                         : 'bg-surface border-outline-variant text-on-surface-variant hover:bg-surface-container'
                     }`}
                   >
-                    <span>←</span> Abrir p/ Esquerda
+                    <span className="material-symbols-outlined text-[16px]">arrow_back</span>
+                    Abrir p/ Esquerda
                   </button>
                 </div>
               </div>
 
-              {/* 3 e 5. Configuração de Puxador (Interage com material e permite ambos os lados) */}
-              <div className="bg-surface-container-lowest border border-outline-variant rounded-lg p-sm shadow-sm flex flex-col gap-sm">
+              {/* 3. Configuração de Puxador */}
+              <div className="bg-surface-container-lowest border border-outline-variant rounded-lg p-sm shadow-xs flex flex-col gap-sm">
                 <p className="text-xs font-label font-semibold text-on-surface flex items-center gap-xs">
-                  <span>≡</span> Configuração de Puxador
+                  <span className="material-symbols-outlined text-[16px] text-primary">hardware</span>
+                  Configuração de Puxador
                 </p>
                 <div className="grid grid-cols-2 gap-sm">
                   <div>
@@ -802,7 +887,6 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
                     </select>
                   </div>
 
-                  {/* 3. Opção de colocar ambos os lados */}
                   <div>
                     <label htmlFor="handle-side-select" className="text-[11px] font-label text-on-surface-variant block mb-xs">
                       Lados do Puxador
@@ -816,7 +900,7 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
                       className="w-full text-xs p-xs bg-surface border border-outline-variant rounded font-body text-on-surface focus:border-primary focus:outline-none disabled:opacity-50"
                     >
                       <option value="ONE_SIDE">1 Lado (Face Única)</option>
-                      <option value="BOTH_SIDES">2 Lados (Ambos os Lados / Frente e Verso)</option>
+                      <option value="BOTH_SIDES">2 Lados (Frente e Verso)</option>
                     </select>
                   </div>
                 </div>
@@ -835,7 +919,7 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
                         className="w-full text-xs p-xs bg-surface border border-outline-variant rounded font-body text-on-surface focus:border-primary focus:outline-none"
                       >
                         <option value="FULL">Extensão Total da Folha</option>
-                        <option value="PIECE">Pedaço / Tamanho Fixo (cm)</option>
+                        <option value="PIECE">Pedaço / Tamanho Fixo</option>
                       </select>
                     </div>
 
@@ -869,9 +953,10 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
               </div>
 
               {/* 4. Furação */}
-              <div className="bg-surface-container-lowest border border-outline-variant rounded-lg p-sm shadow-sm flex flex-col gap-sm">
+              <div className="bg-surface-container-lowest border border-outline-variant rounded-lg p-sm shadow-xs flex flex-col gap-sm">
                 <p className="text-xs font-label font-semibold text-on-surface flex items-center gap-xs">
-                  <span>⚙</span> Parâmetros de Furação
+                  <span className="material-symbols-outlined text-[16px] text-primary">adjust</span>
+                  Parâmetros de Furação
                 </p>
                 <div className="grid grid-cols-2 gap-sm">
                   <div>
@@ -929,9 +1014,12 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
                 )}
               </div>
 
-              {/* 4. Acabamentos do Template (Baseados nos materiais selecionados) */}
-              <div className="bg-surface-container-lowest border border-outline-variant rounded-lg p-sm shadow-sm flex flex-col gap-sm">
-                <p className="text-xs font-label font-semibold text-on-surface">Acabamentos do Template</p>
+              {/* 5. Acabamentos */}
+              <div className="bg-surface-container-lowest border border-outline-variant rounded-lg p-sm shadow-xs flex flex-col gap-sm">
+                <p className="text-xs font-label font-semibold text-on-surface flex items-center gap-xs">
+                  <span className="material-symbols-outlined text-[16px] text-primary">palette</span>
+                  Acabamentos do Template
+                </p>
                 <div className="grid grid-cols-2 gap-sm">
                   <div>
                     <label htmlFor="aluminum-color-select" className="text-[11px] font-label text-on-surface-variant block mb-xs">
@@ -972,269 +1060,342 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
                   </div>
                 </div>
               </div>
+
             </div>
 
             {/* ════════════════════════════════════════════════════════════════
-                COLUNA DA DIREITA:
-                2. MATERIAIS LOGO APÓS O TEMPLATE
-                3. MEDIDAS E QUANTIDADE
-                4. MÃO DE OBRA E OBSERVAÇÕES
+                COLUNA DA DIREITA (7 cols): MEDIDAS, INSUMOS & VALORES
                ════════════════════════════════════════════════════════════════ */}
             <div className="lg:col-span-7 flex flex-col gap-md">
 
-              {/* 2. SELEÇÃO DE INSUMOS POR CATEGORIA (Primeira seção após seleção de template) */}
-              <div className="flex items-center justify-between">
-                <h3 className="text-xs font-label font-bold text-on-surface-variant uppercase tracking-wider flex items-center gap-xs">
-                  <span>🗃</span> 1. SELEÇÃO DE INSUMOS DO TEMPLATE
-                </h3>
-                <span className="text-[11px] font-body text-on-surface-variant">
-                  Selecione os materiais e informe a quantidade
-                </span>
+              {/* 1. Medidas e Quantidade de Esquadrias */}
+              <div className="bg-surface-container-lowest border border-outline-variant rounded-lg p-md shadow-xs flex flex-col gap-sm">
+                <div className="flex items-center justify-between pb-xs border-b border-outline-variant">
+                  <h3 className="text-xs font-label font-bold text-on-surface uppercase tracking-wider flex items-center gap-xs">
+                    <span className="material-symbols-outlined text-[16px] text-primary">aspect_ratio</span>
+                    1. Medidas e Quantidade
+                  </h3>
+                  <span className="text-xs font-data-mono font-medium text-secondary">
+                    Total: {totalQty} un
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-3 gap-sm mt-xs">
+                  <div>
+                    <label htmlFor="modal-width-input" className="text-xs font-label text-on-surface-variant block mb-xs">
+                      Largura (mm) *
+                    </label>
+                    <input
+                      id="modal-width-input"
+                      type="number"
+                      min={100}
+                      max={9999}
+                      value={state.widthMm}
+                      onChange={(e) =>
+                        setState((p) => ({
+                          ...p,
+                          widthMm: parseInt(e.target.value, 10) || '',
+                        }))
+                      }
+                      aria-label="Largura em milímetros"
+                      className={`w-full p-xs bg-surface border rounded text-sm font-data-mono text-on-surface focus:border-primary focus:outline-none ${
+                        errors.widthMm ? 'border-error' : 'border-outline-variant'
+                      }`}
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="modal-height-input" className="text-xs font-label text-on-surface-variant block mb-xs">
+                      Altura (mm) *
+                    </label>
+                    <input
+                      id="modal-height-input"
+                      type="number"
+                      min={100}
+                      max={9999}
+                      value={state.heightMm}
+                      onChange={(e) =>
+                        setState((p) => ({
+                          ...p,
+                          heightMm: parseInt(e.target.value, 10) || '',
+                        }))
+                      }
+                      aria-label="Altura em milímetros"
+                      className={`w-full p-xs bg-surface border rounded text-sm font-data-mono text-on-surface focus:border-primary focus:outline-none ${
+                        errors.heightMm ? 'border-error' : 'border-outline-variant'
+                      }`}
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="modal-quantity-input" className="text-xs font-label text-on-surface-variant block mb-xs">
+                      Qtd de Esquadrias *
+                    </label>
+                    <input
+                      id="modal-quantity-input"
+                      type="number"
+                      min={1}
+                      max={999}
+                      value={state.quantity}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setState((p) => ({
+                          ...p,
+                          quantity: val === '' ? ('' as unknown as number) : Math.max(1, parseInt(val, 10) || 1),
+                        }));
+                      }}
+                      aria-label="Quantidade de Esquadrias"
+                      className={`w-full p-xs bg-surface border rounded text-sm font-data-mono text-on-surface focus:border-primary focus:outline-none ${
+                        errors.quantity ? 'border-error' : 'border-outline-variant'
+                      }`}
+                    />
+                  </div>
+                </div>
+
+                {/* Badge da Área do Vão */}
+                <div className="flex items-center gap-xs text-xs font-data-mono text-on-surface-variant bg-surface-container-low px-sm py-xs rounded border border-outline-variant/60">
+                  <span className="material-symbols-outlined text-[16px] text-secondary">straighten</span>
+                  <span>
+                    Área do Vão: <strong className="text-on-surface font-bold">{unitAreaM2} m²</strong> por unidade
+                    {totalQty > 1 && (
+                      <span className="text-primary ml-xs">
+                        · Total ({totalQty}×): {((+unitAreaM2) * totalQty).toFixed(2)} m²
+                      </span>
+                    )}
+                  </span>
+                </div>
               </div>
 
-              {/* Cards de Insumos por Categoria (Item 6: Permite adicionar quantidade) */}
-              <div className="flex flex-col gap-sm">
-                {(state.template?.categoryRequirements ?? []).map((req) => {
-                  const sel = state.materialSelections.find((s) => s.requirementId === req.id);
-                  const iconName = CATEGORY_ICONS[req.categoryType] ?? 'category';
+              {/* 2. Seleção de Insumos do Template */}
+              <div className="bg-surface-container-lowest border border-outline-variant rounded-lg p-md shadow-xs flex flex-col gap-sm">
+                <div className="flex items-center justify-between pb-xs border-b border-outline-variant flex-wrap gap-xs">
+                  <div className="flex items-center gap-xs">
+                    <span className="material-symbols-outlined text-[16px] text-primary">inventory_2</span>
+                    <h3 className="text-xs font-label font-bold text-on-surface uppercase tracking-wider">
+                      2. Composição de Insumos
+                    </h3>
+                  </div>
 
-                  let optionsList: { id: string; name: string; price: number; unit: string }[] = [];
-                  if (req.categoryType === 'GLASS') {
-                    optionsList = glasses.map((g) => ({
-                      id: g.id,
-                      name: g.name,
-                      price: g.salePrice ?? g.pricePerSqm ?? 0,
-                      unit: 'm²',
-                    }));
-                  } else if (req.categoryType === 'PROFILE') {
-                    optionsList = profiles.map((p) => ({
-                      id: p.id,
-                      name: p.name,
-                      price: p.salePrice ?? 0,
-                      unit: p.unitMeasure ?? 'm',
-                    }));
-                  } else if (req.categoryType === 'HARDWARE') {
-                    optionsList = hardwares.map((h) => ({
-                      id: h.id,
-                      name: h.name,
-                      price: h.salePrice ?? 0,
-                      unit: h.unitMeasure ?? 'un',
-                    }));
-                  } else if (req.categoryType === 'FILM') {
-                    optionsList = films.map((f) => ({
-                      id: f.id,
-                      name: f.name,
-                      price: f.salePrice ?? 0,
-                      unit: 'm²',
-                    }));
-                  }
-
-                  const categoryPrice = sel?.totalPrice;
-                  const unitMeasure = sel?.unitMeasure ?? (req.categoryType === 'GLASS' || req.categoryType === 'FILM' ? 'm²' : req.categoryType === 'PROFILE' ? 'm' : 'un');
-
-                  return (
-                    <div
-                      key={req.id}
-                      className="bg-surface-container-lowest border border-outline-variant rounded-lg p-sm shadow-sm flex flex-col gap-xs"
+                  {/* Ações rápidas para adicionar insumos extras */}
+                  <div className="flex items-center gap-xs">
+                    <button
+                      type="button"
+                      onClick={() => handleAddMaterial('GLASS')}
+                      className="px-xs py-[2px] rounded text-[11px] font-label text-primary hover:bg-primary/10 transition-colors border border-primary/30"
+                      title="Adicionar Vidro"
                     >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-xs">
-                          <span className="material-symbols-outlined text-[18px] text-primary">{iconName}</span>
-                          <span className="text-xs font-label font-bold text-on-surface">{req.label}</span>
-                          {req.isOptional && (
-                            <span className="text-[10px] bg-surface-container px-xs py-[1px] rounded text-on-surface-variant">
-                              Opcional
-                            </span>
-                          )}
-                        </div>
-                        <span className="font-data-mono font-bold text-primary text-sm">
-                          {categoryPrice !== undefined
-                            ? formatBRL(categoryPrice)
-                            : sel?.materialId
-                            ? `${formatBRL(sel.unitPrice)} / ${unitMeasure}`
-                            : '—'}
-                        </span>
-                      </div>
+                      + Vidro
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleAddMaterial('PROFILE')}
+                      className="px-xs py-[2px] rounded text-[11px] font-label text-primary hover:bg-primary/10 transition-colors border border-primary/30"
+                      title="Adicionar Perfil"
+                    >
+                      + Perfil
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleAddMaterial('HARDWARE')}
+                      className="px-xs py-[2px] rounded text-[11px] font-label text-primary hover:bg-primary/10 transition-colors border border-primary/30"
+                      title="Adicionar Ferragem"
+                    >
+                      + Ferragem
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleAddMaterial('FILM')}
+                      className="px-xs py-[2px] rounded text-[11px] font-label text-primary hover:bg-primary/10 transition-colors border border-primary/30"
+                      title="Adicionar Película"
+                    >
+                      + Película
+                    </button>
+                  </div>
+                </div>
 
-                      <div className="flex items-center gap-xs mt-xs">
-                        {/* Seletor de Material */}
-                        <select
-                          value={sel?.materialId ?? ''}
-                          onChange={(e) => handleMaterialChange(req.id, e.target.value)}
-                          aria-label={`Selecionar material para ${req.label}`}
-                          className="flex-1 text-xs p-xs bg-surface border border-outline-variant rounded font-body text-on-surface focus:border-primary focus:outline-none min-w-0"
+                {/* Lista de Insumos */}
+                {state.materialSelections.length === 0 ? (
+                  <div className="text-center py-md text-xs text-on-surface-variant font-body bg-surface-container-low rounded border border-outline-variant/60">
+                    <p>Nenhum insumo configurado para este produto.</p>
+                    <p className="mt-xs text-secondary">Utilize os botões acima para adicionar insumos ao item.</p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-xs">
+                    {state.materialSelections.map((sel) => {
+                      const reqId = sel.requirementId;
+                      const categoryType = sel.categoryType;
+                      const iconName = CATEGORY_ICONS[categoryType] ?? 'category';
+
+                      let optionsList: { id: string; name: string; price: number; unit: string }[] = [];
+                      if (categoryType === 'GLASS') {
+                        optionsList = glasses.map((g) => ({
+                          id: g.id,
+                          name: g.name,
+                          price: g.salePrice ?? g.pricePerSqm ?? 0,
+                          unit: 'm²',
+                        }));
+                      } else if (categoryType === 'PROFILE') {
+                        optionsList = profiles.map((p) => ({
+                          id: p.id,
+                          name: p.name,
+                          price: p.salePrice ?? 0,
+                          unit: p.unitMeasure ?? 'm',
+                        }));
+                      } else if (categoryType === 'HARDWARE') {
+                        optionsList = hardwares.map((h) => ({
+                          id: h.id,
+                          name: h.name,
+                          price: h.salePrice ?? 0,
+                          unit: h.unitMeasure ?? 'un',
+                        }));
+                      } else if (categoryType === 'FILM') {
+                        optionsList = films.map((f) => ({
+                          id: f.id,
+                          name: f.name,
+                          price: f.salePrice ?? 0,
+                          unit: 'm²',
+                        }));
+                      }
+
+                      const categoryPrice = sel.totalPrice;
+                      const unitMeasure = sel.unitMeasure ?? (categoryType === 'GLASS' || categoryType === 'FILM' ? 'm²' : categoryType === 'PROFILE' ? 'm' : 'un');
+
+                      return (
+                        <div
+                          key={reqId}
+                          className="bg-surface-container-low border border-outline-variant/60 rounded-md p-xs sm:p-sm flex flex-col gap-xs hover:border-primary/40 transition-colors"
                         >
-                          {req.isOptional && <option value="">-- Sem {req.label} / Nenhuma --</option>}
-                          {!req.isOptional && !sel?.materialId && (
-                            <option value="">-- Selecione o material --</option>
-                          )}
-                          {optionsList.map((opt) => (
-                            <option key={opt.id} value={opt.id}>
-                              {opt.name} · {formatBRL(opt.price)} / {opt.unit}
-                            </option>
-                          ))}
-                        </select>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-xs min-w-0">
+                              <span className="material-symbols-outlined text-[16px] text-primary">{iconName}</span>
+                              <span className="text-xs font-label font-semibold text-on-surface truncate">
+                                {sel.label} {sel.isOptional && <span className="text-on-surface-variant font-normal text-[11px]">(Opcional)</span>}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-xs shrink-0">
+                              <span className="font-data-mono font-bold text-primary text-xs">
+                                {categoryPrice !== undefined
+                                  ? formatBRL(categoryPrice)
+                                  : sel.materialId
+                                  ? `${formatBRL(sel.unitPrice)} / ${unitMeasure}`
+                                  : '—'}
+                              </span>
+                              {sel.isOptional && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveMaterial(reqId)}
+                                  className="p-[2px] text-on-surface-variant hover:text-error hover:bg-error/10 rounded transition-colors"
+                                  title="Remover este insumo"
+                                >
+                                  <span className="material-symbols-outlined text-[14px]">close</span>
+                                </button>
+                              )}
+                            </div>
+                          </div>
 
-                        {/* 6. Input de Quantidade do Material */}
-                        <div className="flex items-center gap-[2px]">
-                          <input
-                            type="number"
-                            step="0.01"
-                            min={0}
-                            value={sel?.quantity ?? ''}
-                            onChange={(e) => handleMaterialQtyChange(req.id, e.target.value)}
-                            disabled={!sel?.materialId}
-                            placeholder="Qtd"
-                            aria-label={`Quantidade de ${req.label}`}
-                            className="w-20 p-xs bg-surface border border-outline-variant rounded text-xs font-data-mono text-on-surface text-center focus:border-primary focus:outline-none disabled:opacity-40"
-                          />
-                          <span className="text-xs font-data-mono text-on-surface-variant bg-surface-container px-xs py-[6px] rounded border border-outline-variant min-w-[36px] text-center">
-                            {unitMeasure}
-                          </span>
+                          <div className="flex items-center gap-xs mt-xs">
+                            {/* Seletor de Material */}
+                            <select
+                              value={sel.materialId ?? ''}
+                              onChange={(e) => handleMaterialChange(reqId, e.target.value)}
+                              aria-label={`Selecionar material para ${sel.label}`}
+                              className="flex-1 text-xs p-xs bg-surface border border-outline-variant rounded font-body text-on-surface focus:border-primary focus:outline-none min-w-0"
+                            >
+                              {sel.isOptional && <option value="">-- Sem {sel.label} / Nenhuma --</option>}
+                              {!sel.isOptional && !sel.materialId && (
+                                <option value="">-- Selecione o material --</option>
+                              )}
+                              {optionsList.map((opt) => (
+                                <option key={opt.id} value={opt.id}>
+                                  {opt.name} · {formatBRL(opt.price)} / {opt.unit}
+                                </option>
+                              ))}
+                            </select>
+
+                            {/* Input de Quantidade */}
+                            <div className="flex items-center gap-[2px] shrink-0">
+                              <input
+                                type="number"
+                                step="0.01"
+                                min={0}
+                                value={sel.quantity ?? ''}
+                                onChange={(e) => handleMaterialQtyChange(reqId, e.target.value)}
+                                disabled={!sel.materialId}
+                                placeholder="Qtd"
+                                aria-label={`Quantidade de ${sel.label}`}
+                                className="w-16 p-xs bg-surface border border-outline-variant rounded text-xs font-data-mono text-on-surface text-center focus:border-primary focus:outline-none disabled:opacity-40"
+                              />
+                              <span className="text-[11px] font-data-mono text-on-surface-variant bg-surface-container px-xs py-[4px] rounded border border-outline-variant min-w-[32px] text-center">
+                                {unitMeasure}
+                              </span>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                  );
-                })}
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
-              {/* 2. MEDIDAS E QUANTIDADE DE PEÇAS */}
-              <h3 className="text-xs font-label font-bold text-on-surface-variant uppercase tracking-wider flex items-center gap-xs mt-xs">
-                <span>🪟</span> 2. MEDIDAS E QUANTIDADE DE ESQUADRIAS
-              </h3>
-
-              {/* Grid de Medidas (Largura, Altura, Quantidade) */}
-              <div className="grid grid-cols-3 gap-sm">
-                <div>
-                  <label htmlFor="modal-width-input" className="text-xs font-label text-on-surface-variant block mb-xs">
-                    Largura (mm) *
-                  </label>
-                  <input
-                    id="modal-width-input"
-                    type="number"
-                    min={100}
-                    max={9999}
-                    value={state.widthMm}
-                    onChange={(e) =>
-                      setState((p) => ({
-                        ...p,
-                        widthMm: parseInt(e.target.value, 10) || '',
-                      }))
-                    }
-                    aria-label="Largura em milímetros"
-                    className={`w-full p-xs bg-surface-container-lowest border rounded text-sm font-data-mono text-on-surface focus:border-primary focus:outline-none ${
-                      errors.widthMm ? 'border-error' : 'border-outline-variant'
-                    }`}
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="modal-height-input" className="text-xs font-label text-on-surface-variant block mb-xs">
-                    Altura (mm) *
-                  </label>
-                  <input
-                    id="modal-height-input"
-                    type="number"
-                    min={100}
-                    max={9999}
-                    value={state.heightMm}
-                    onChange={(e) =>
-                      setState((p) => ({
-                        ...p,
-                        heightMm: parseInt(e.target.value, 10) || '',
-                      }))
-                    }
-                    aria-label="Altura em milímetros"
-                    className={`w-full p-xs bg-surface-container-lowest border rounded text-sm font-data-mono text-on-surface focus:border-primary focus:outline-none ${
-                      errors.heightMm ? 'border-error' : 'border-outline-variant'
-                    }`}
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="modal-quantity-input" className="text-xs font-label text-on-surface-variant block mb-xs">
-                    Qtd de Esquadrias
-                  </label>
-                  <input
-                    id="modal-quantity-input"
-                    type="number"
-                    min={1}
-                    max={999}
-                    value={state.quantity}
-                    onChange={(e) =>
-                      setState((p) => ({
-                        ...p,
-                        quantity: parseInt(e.target.value, 10) || 1,
-                      }))
-                    }
-                    aria-label="Quantidade de Esquadrias"
-                    className={`w-full p-xs bg-surface-container-lowest border rounded text-sm font-data-mono text-on-surface focus:border-primary focus:outline-none ${
-                      errors.quantity ? 'border-error' : 'border-outline-variant'
-                    }`}
-                  />
-                </div>
-              </div>
-
-              {/* Cota da Área Retangular */}
-              <div className="flex items-center gap-xs text-xs font-data-mono text-on-surface-variant bg-surface-container-low px-sm py-xs rounded border border-outline-variant/60">
-                <span className="material-symbols-outlined text-[16px] text-secondary">straighten</span>
-                <span>
-                  Área do Vão: <strong className="text-on-surface font-bold">{unitAreaM2} m²</strong> por unidade
-                  {totalQty > 1 && (
-                    <span className="text-primary ml-xs">
-                      · Total ({totalQty}×): {((+unitAreaM2) * totalQty).toFixed(2)} m²
-                    </span>
-                  )}
-                </span>
-              </div>
-
-              {/* 3. MÃO DE OBRA E OBSERVAÇÕES */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-sm mt-xs">
-                <div>
-                  <label htmlFor="modal-labor-cost-input" className="text-xs font-label text-on-surface-variant block mb-xs">
-                    Mão de Obra deste Item (R$)
-                  </label>
-                  <input
-                    id="modal-labor-cost-input"
-                    type="number"
-                    step="0.01"
-                    min={0}
-                    value={state.laborCost ?? 200.0}
-                    onChange={(e) =>
-                      setState((p) => ({
-                        ...p,
-                        laborCost: parseFloat(e.target.value) || 0,
-                      }))
-                    }
-                    aria-label="Mão de Obra deste Item em Reais"
-                    className="w-full p-xs bg-surface-container-lowest border border-outline-variant rounded text-sm font-data-mono text-on-surface focus:border-primary focus:outline-none"
-                  />
+              {/* 3. Observações da Esquadria */}
+              <div className="bg-surface-container-lowest border border-outline-variant rounded-lg p-md shadow-xs flex flex-col gap-sm">
+                <div className="flex items-center gap-xs pb-xs border-b border-outline-variant">
+                  <span className="material-symbols-outlined text-[16px] text-primary">edit_note</span>
+                  <h3 className="text-xs font-label font-bold text-on-surface uppercase tracking-wider">
+                    3. Observações da Esquadria
+                  </h3>
                 </div>
 
                 <div>
                   <label htmlFor="modal-notes-input" className="text-xs font-label text-on-surface-variant block mb-xs">
-                    Observações do Item
+                    Observações do Item <span className="text-[11px] font-normal text-secondary lowercase">(opcional)</span>
                   </label>
                   <input
                     id="modal-notes-input"
                     type="text"
                     value={state.notes ?? ''}
                     onChange={(e) => setState((p) => ({ ...p, notes: e.target.value }))}
-                    placeholder="Ex: Vidro temperado jateado..."
+                    placeholder="Ex: Vidro temperado jateado, puxador especial..."
                     aria-label="Observações do Item"
-                    className="w-full p-xs bg-surface-container-lowest border border-outline-variant rounded text-sm font-body text-on-surface focus:border-primary focus:outline-none"
+                    className="w-full p-xs bg-surface border border-outline-variant rounded text-sm font-body text-on-surface focus:border-primary focus:outline-none"
                   />
                 </div>
               </div>
-            </div>
-          </div>
-        </div>
 
-        {/* ── Footer Actions: Subtotal sempre visível e fixado na base (Item 1) ── */}
-        <div className="sticky bottom-0 z-20 flex items-center justify-between gap-sm px-md py-sm border-t border-outline-variant bg-surface-container-low flex-shrink-0 shadow-lg">
+              {/* 4. Card de Resumo da Esquadria */}
+              <div className="bg-surface-container-low border border-outline-variant rounded-lg p-md shadow-xs flex flex-col gap-xs">
+                <div className="flex justify-between items-center text-xs text-on-surface-variant font-body">
+                  <span>Custo Unitário dos Insumos:</span>
+                  <span className="font-data-mono font-semibold text-on-surface">
+                    {formatBRL(materialsTotal)}
+                  </span>
+                </div>
+                {totalQty > 1 && (
+                  <div className="flex justify-between items-center text-xs text-on-surface-variant font-body">
+                    <span>Quantidade ({totalQty}× unidades):</span>
+                    <span className="font-data-mono font-semibold text-on-surface">
+                      × {totalQty}
+                    </span>
+                  </div>
+                )}
+                <div className="flex justify-between items-center pt-xs border-t border-outline-variant/60 text-sm mt-xs">
+                  <span className="font-label font-bold text-on-surface">Subtotal da Esquadria:</span>
+                  <span className="font-data-mono font-bold text-primary text-base">
+                    {formatBRL(itemSubtotalEstimate)}
+                  </span>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+        </main>
+
+        {/* ── Footer Actions: Subtotal fixado na base ────────────────────── */}
+        <footer className="sticky bottom-0 z-20 flex items-center justify-between gap-sm px-md sm:px-lg py-sm border-t border-outline-variant bg-surface-container-low flex-shrink-0 shadow-md">
           <div className="flex items-center gap-xs">
             <span className="text-xs font-label text-on-surface-variant">Subtotal Estimado:</span>
-            <span className="font-data-mono font-bold text-primary text-xl">
+            <span className="font-data-mono font-bold text-primary text-lg sm:text-xl">
               {formatBRL(itemSubtotalEstimate)}
             </span>
           </div>
@@ -1247,7 +1408,7 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
               {editingItem ? 'Salvar Alterações' : 'Adicionar ao Orçamento'}
             </Button>
           </div>
-        </div>
+        </footer>
       </div>
     </div>,
     document.body,

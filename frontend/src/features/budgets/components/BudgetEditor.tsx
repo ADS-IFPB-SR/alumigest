@@ -23,6 +23,7 @@ const createInitialFormState = (): BudgetFormState => ({
   customerPhone:        '',
   customerAddress:      '',
   items:                [],
+  laborCost:            0,
   discountPercent:      0,
   notes:                '',
   commercialConditions: '',
@@ -72,6 +73,8 @@ export const BudgetEditor: React.FC = () => {
         notes: item.notes,
       }));
 
+      const loadedLaborCost = (existingBudget.items ?? []).reduce((sum, item) => sum + (item.laborCost || 0), 0);
+
       setForm({
         customerId: existingBudget.customer?.id ?? existingBudget.customerId ?? '',
         customerName: existingBudget.customer?.name ?? existingBudget.customerName ?? '',
@@ -79,6 +82,7 @@ export const BudgetEditor: React.FC = () => {
         customerPhone: existingBudget.customer?.phone ?? '',
         customerAddress: existingBudget.customer?.address ?? '',
         items: loadedItems,
+        laborCost: loadedLaborCost,
         discountPercent: existingBudget.discountPercent,
         notes: existingBudget.notes ?? '',
         commercialConditions: existingBudget.commercialConditions ?? '',
@@ -87,9 +91,13 @@ export const BudgetEditor: React.FC = () => {
   }, [existingBudget, isEditing]);
 
   // ─── Cálculos financeiros — derivados do estado, sem fonte alternativa ──
-  const subtotal = useMemo(
+  const itemsSubtotal = useMemo(
     () => form.items.reduce((acc, item) => acc + item.subtotal, 0),
     [form.items],
+  );
+  const subtotal = useMemo(
+    () => itemsSubtotal + (form.laborCost || 0),
+    [itemsSubtotal, form.laborCost],
   );
   const discountValue = useMemo(
     () => (subtotal * form.discountPercent) / 100,
@@ -208,6 +216,8 @@ export const BudgetEditor: React.FC = () => {
     if (isPending) return;
     if (!validate()) return;
 
+    const laborPerItem = form.items.length > 0 && form.laborCost > 0 ? form.laborCost / form.items.length : 0;
+
     const payload: CreateBudgetPayload = {
       customerId:           form.customerId,
       discountPercent:      form.discountPercent,
@@ -222,6 +232,7 @@ export const BudgetEditor: React.FC = () => {
         width:          item.widthMm,
         height:         item.heightMm,
         quantity:       item.quantity,
+        laborCost:      laborPerItem,
         options: item.options.map((opt) => ({
           materialId: opt.materialId,
           quantity:   opt.quantity,
@@ -442,6 +453,8 @@ export const BudgetEditor: React.FC = () => {
 
               {/* Coluna esquerda: campos editáveis */}
               <BudgetCommercialConditions
+                laborCost={form.laborCost}
+                onLaborCostChange={(val) => setForm((p) => ({ ...p, laborCost: val }))}
                 discountPercent={form.discountPercent}
                 onDiscountChange={(val) =>
                   setForm((p) => ({ ...p, discountPercent: val }))
@@ -460,6 +473,8 @@ export const BudgetEditor: React.FC = () => {
               <div className="lg:sticky lg:top-4 lg:self-start">
                 <BudgetFinancialSummary
                   itemCount={form.items.length}
+                  itemsSubtotal={itemsSubtotal}
+                  laborCost={form.laborCost}
                   subtotal={subtotal}
                   discountPercent={form.discountPercent}
                   discountValue={discountValue}

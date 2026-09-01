@@ -9,7 +9,6 @@ public record BudgetItemOptionRequestDTO(
         @NotNull(message = "O ID do material é obrigatório")
         UUID materialId,
 
-        @NotNull(message = "A categoria do material é obrigatória")
         br.edu.ifpb.alumigest.catalog.domain.MaterialCategoryType categoryType,
 
         @PositiveOrZero(message = "A quantidade do insumo não pode ser negativa")
