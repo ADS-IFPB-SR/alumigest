@@ -3,8 +3,9 @@
 | Campo | Valor |
 |---|---|
 | **Projeto** | AlumiGest — Sistema de Gestão para Vidraçaria e Esquadrias |
-| **Versão** | 1.0 |
-| **Data** | 05/08/2026 |
+| **Versão** | 2.0 (Revisado ao final da Sprint 3) |
+| **Data** | 31/08/2026 |
+| **Autor** | Equipe AlumiGest (Scrum Master: Italo Jefferson Lima dos Santos) |
 
 ---
 
@@ -18,7 +19,7 @@
 
 ---
 
-## 2. Registro de Riscos
+## 2. Registro e Acompanhamento de Riscos
 
 ### R01 — Indisponibilidade do Parceiro Social
 
@@ -31,9 +32,9 @@
 | **Causa** | Proprietário de empresa ativa, horários comerciais conflitantes com horários acadêmicos. |
 | **Consequência** | Atraso na validação de requisitos, implementação de regras incorretas, retrabalho. |
 | **Estratégia** | Mitigar |
-| **Ações** | 1. Agendar reuniões com antecedência mínima de 1 semana. 2. PO (José Guylherme) mantém canal direto via WhatsApp. 3. Registrar decisões em ata para evitar re-validações. 4. Preparar questionário escrito como fallback se reunião presencial não for possível. |
+| **Ações** | 1. Agendar reuniões com antecedência mínima de 1 semana. 2. PO (José Guylherme) mantém canal direto via WhatsApp e visitas à fábrica. 3. Registrar decisões em ata para evitar re-validações. 4. Questionário e fotos dos materiais reais levantados pelo PO. |
 | **Responsável** | José Guylherme (PO) |
-| **Status** | ⚪ Não materializado |
+| **Status** | 🟢 Mitigado / Sob Controle |
 
 ---
 
@@ -44,29 +45,29 @@
 | **Probabilidade** | Alta |
 | **Impacto** | Alto |
 | **Classificação** | 🔴 Crítico |
-| **Descrição** | As fórmulas de cálculo de vidro (m²), alumínio (metro linear) e composição de ferragens podem não refletir a realidade operacional da Alumiportas, gerando orçamentos incorretos. |
-| **Causa** | Complexidade do cálculo específico de esquadrias, variações por tipo de produto, conhecimento tácito do proprietário. |
-| **Consequência** | Orçamentos com valores errados → perda de confiança no sistema → abandono da ferramenta. |
+| **Descrição** | As fórmulas de cálculo de vidro ($m^2$), perfis de alumínio (metro linear com desconto de folga e montantes) e composição de ferragens poderiam não refletir a realidade operacional da Alumiportas. |
+| **Causa** | Complexidade do cálculo específico de esquadrias, variações por tipo de produto e conhecimento tácito da fábrica. |
+| **Consequência** | Orçamentos com valores errados → prejuízo na precificação → perda de confiança no sistema. |
 | **Estratégia** | Mitigar |
-| **Ações** | 1. Sessão de Three Amigos com Thiago na Sprint 2. 2. Validar fórmulas com orçamentos reais (pegar 3-5 orçamentos manuais e comparar). 3. Tornar composições e fórmulas configuráveis (admin pode ajustar). 4. Criar testes unitários com valores conhecidos. |
-| **Responsável** | Equipe de desenvolvimento |
-| **Status** | ⚪ Não materializado |
+| **Ações Executadas** | 1. Implementado o padrão Factory/Strategy no backend (`BudgetQuantityService` e `BudgetPricingService` no PR #117). 2. Cobertura de 141 testes automatizados cobrindo arredondamento de vidro, desconto de perfil ($4W + 6H$) e ferragens. 3. Validação das fórmulas no documento `RN-Regras_de_Calculo.md`. |
+| **Responsável** | Nichollas Cavalcante / Backend |
+| **Status** | 🟢 Materializado e Mitigado (PR #117) |
 
 ---
 
-### R03 — Complexidade Técnica Subestimada
+### R03 — Complexidade Técnica Subestimada no Frontend
 
 | Campo | Valor |
 |---|---|
 | **Probabilidade** | Média |
 | **Impacto** | Alto |
 | **Classificação** | 🟠 Significativo |
-| **Descrição** | A equipe é formada por alunos com experiência variada em Java/Spring Boot, JPA, TypeScript e Docker. Tarefas podem levar mais tempo que o estimado. |
-| **Causa** | Curva de aprendizado, primeira experiência com stack completa, complexidade de integração. |
-| **Consequência** | Atraso na entrega de sprints, acúmulo de débito técnico, frustração da equipe. |
+| **Descrição** | A modelagem e renderização dinâmica de interfaces complexas (Wizard de 3 passos, cálculo reativo de subtotal e desenhos paramétricos SVG) podem exigir mais esforço que o previsto. |
+| **Causa** | Curva de aprendizado em componentes vetoriais SVG e integração assíncrona com TypeScript/React. |
+| **Consequência** | Atraso nas entregas de frontend e sobrecarga no fluxo de desenvolvimento. |
 | **Estratégia** | Mitigar |
-| **Ações** | 1. Pair programming obrigatório em duplas. 2. Coding dojo na primeira semana. 3. Buffer de 20% nos story points estimados. 4. LP monitora burndown diariamente e escala impedimentos. |
-| **Responsável** | LP da sprint (rotativo) |
+| **Ações** | 1. Subdivisão das demandas em sub-issues menores. 2. Disponibilização de templates JSX/SVG de referência no grupo. 3. Apoio contínuo e pair programming nas tarefas complexas. |
+| **Responsável** | Scrum Master / Equipe Frontend |
 | **Status** | ⚪ Não materializado |
 
 ---
@@ -79,93 +80,127 @@
 | **Impacto** | Alto |
 | **Classificação** | 🟡 Moderado |
 | **Descrição** | Membros da equipe podem trancar a disciplina, desistir do curso ou ter problemas pessoais que os impeçam de continuar. |
-| **Causa** | Natureza acadêmica do projeto, compromissos pessoais, dificuldade com a disciplina. |
+| **Causa** | Natureza acadêmica do projeto, compromissos pessoais ou sobrecarga. |
 | **Consequência** | Redução da capacidade da equipe, necessidade de redistribuir tarefas, possível corte de escopo. |
 | **Estratégia** | Aceitar + Contingência |
-| **Ações** | 1. Matriz de backup no PPJ (cada papel tem substituto). 2. Documentar conhecimento para reduzir bus factor. 3. Se ocorrer, LP redistribui tarefas e negocia escopo com PO. |
-| **Responsável** | LP + PO |
-| **Status** | ⚪ Não materializado |
+| **Ações** | 1. Matriz de backup no PPJ. 2. Documentação contínua de código e arquitetura para mitigar bus factor. |
+| **Responsável** | Scrum Master + PO |
+| **Status** | ⚪ Não materializado (Equipe completa com 8 membros) |
 
 ---
 
-### R05 — Conflitos de Merge e Integração
+### R05 — Conflitos de Merge e Integração de Branches
 
 | Campo | Valor |
 |---|---|
 | **Probabilidade** | Alta |
 | **Impacto** | Médio |
 | **Classificação** | 🟠 Significativo |
-| **Descrição** | Com 8 desenvolvedores trabalhando em paralelo no mesmo monorepo, conflitos de merge são prováveis, especialmente em arquivos compartilhados (migrations, configs). |
-| **Causa** | Múltiplos PRs em paralelo, edição de arquivos compartilhados, falta de comunicação. |
-| **Consequência** | Tempo perdido resolvendo conflitos, possibilidade de perda de código, atraso na integração. |
+| **Descrição** | Múltiplos desenvolvedores atuando simultaneamente em branches paralelas podem gerar conflitos em arquivos compartilhados (migrations Flyway, rotas do Frontend e schemas Zod). |
+| **Causa** | Múltiplos PRs abertos simultaneamente sem merge contínuo da `develop`. |
+| **Consequência** | Tempo perdido resolvendo conflitos, possibilidade de perda de código e atraso na integração. |
 | **Estratégia** | Mitigar |
-| **Ações** | 1. Branches curtas (máximo 3 dias). 2. Merges frequentes da develop para a branch de trabalho. 3. Cada dupla trabalha em módulo isolado (package-by-feature reduz conflitos). 4. Workshop de resolução de conflitos Git. |
-| **Responsável** | Todos os DEVs |
+| **Ações** | 1. Governança rígida de numeração de migrations. 2. Pipeline de CI no GitHub Actions validando Maven e build do Vite em todo PR. 3. Ambiente de homologação em nuvem `develop.italuhub.cloud` para validações integradas. |
+| **Responsável** | Italo Jefferson (DevOps) / Todos os DEVs |
 | **Status** | ⚪ Não materializado |
 
 ---
 
-### R06 — Problemas de Infraestrutura (Docker/PostgreSQL)
+### R06 — Inconsistências de Ambiente e Tipagem no Banco
 
 | Campo | Valor |
 |---|---|
 | **Probabilidade** | Alta |
 | **Impacto** | Médio |
 | **Classificação** | 🟡 Moderado |
-| **Descrição** | Problemas de compatibilidade na infraestrutura (ex: conflito de tipagem UUID/Bytea no PostgreSQL) ou configuração local de Docker. |
-| **Causa** | Diferentes SOs (Windows/Mac/Linux), versões do driver JDBC incompatíveis com o schema do Postgres. |
-| **Consequência** | Erros de execução (HTTP 500) que bloqueiam o Frontend. |
+| **Descrição** | Incompatibilidades de driver JDBC com PostgreSQL (ex: UUID vs `bytea`) e execução de Docker Compose local. |
+| **Causa** | Variação de sistemas operacionais e mapeamentos Hibernate. |
+| **Consequência** | Erros HTTP 500 no backend que bloqueavam o avanço do frontend. |
 | **Estratégia** | Mitigar |
-| **Ações** | 1. Docker Compose padroniza o ambiente. 2. Code Review focado (O erro de tipagem `bytea` foi resolvido no PR #38 via anotações JPA). |
-| **Responsável** | Italo / Joseph |
+| **Ações Executadas** | 1. Dockerfile e Docker Compose padronizados no PR #55. 2. Resolução definitiva do mapeamento de tipos no PR #38. |
+| **Responsável** | Italo Jefferson / Nichollas Cavalcante |
 | **Status** | 🟢 Materializado e Mitigado |
 
 ---
 
-### R07 — Mudança de Requisitos pelo Parceiro
+### R07 — Mudança e Refinamento de Requisitos de Domínio
 
 | Campo | Valor |
 |---|---|
-| **Probabilidade** | Média |
+| **Probabilidade** | Alta |
 | **Impacto** | Médio |
-| **Classificação** | 🟡 Moderado |
-| **Descrição** | Thiago pode solicitar mudanças significativas nos requisitos após o início do desenvolvimento, especialmente nas fórmulas de cálculo ou tipos de produto. |
-| **Causa** | Entendimento progressivo do sistema, novas necessidades identificadas no uso. |
-| **Consequência** | Retrabalho, atraso na entrega. |
-| **Estratégia** | Aceitar |
-| **Ações** | 1. A arquitetura package-by-feature facilita mudanças localizadas. 2. Composições e fórmulas são configuráveis (não hardcoded). 3. Mudanças são priorizadas pelo PO e adicionadas ao backlog. 4. Metodologia IMPROS (ágil) já prevê adaptação. |
-| **Responsável** | PO (José Guylherme) |
-| **Status** | ⚪ Não materializado |
+| **Classificação** | 🟠 Significativo |
+| **Descrição** | Necessidade de refatorar modelos de dados ao constatar que a mão de obra (`laborCost`) não pertence ao produto base do catálogo, mas sim a cada item do orçamento sob medida. |
+| **Causa** | Amadurecimento do entendimento do modelo de negócios da vidraçaria durante a Sprint 3. |
+| **Consequência** | Retrabalho para remover colunas do banco e ajustar DTOs e telas. |
+| **Estratégia** | Mitigar |
+| **Ações Executadas** | 1. Criação da migration Flyway V10 e refatoração completa no backend e frontend através dos PRs #119 e #120. 2. Desacoplamento da gestão complexa de estoque para manter o motor focado na venda direta. |
+| **Responsável** | Italo Jefferson / Nichollas Cavalcante |
+| **Status** | 🟢 Materializado e Mitigado (PR #119/#120) |
 
 ---
 
-### R08 — Não Cumprimento do Cronograma Acadêmico
+### R08 — Não Cumprimento do Cronograma Acadêmico (Prazos de Release)
 
 | Campo | Valor |
 |---|---|
 | **Probabilidade** | Baixa |
 | **Impacto** | Crítico |
 | **Classificação** | 🟠 Significativo |
-| **Descrição** | O projeto tem prazo fixo vinculado ao calendário acadêmico. Se as 3 releases não forem entregues a tempo, o projeto extensionista pode ser comprometido. |
-| **Causa** | Atrasos acumulados, escopo excessivo, problemas técnicos graves. |
-| **Consequência** | Entrega incompleta, nota prejudicada, comprometimento do projeto extensionista. |
+| **Descrição** | O projeto tem prazo fixo vinculado ao calendário acadêmico do IFPB. Atrasos podem comprometer a entrega da Release 1 homologada. |
+| **Causa** | Atrasos acumulados em sprints intermediárias. |
+| **Consequência** | Não homologação do sistema com o parceiro social no prazo estipulado. |
 | **Estratégia** | Mitigar |
-| **Ações** | 1. Priorização rígida (Must Have primeiro). 2. Cortar features "Could Have" se necessário. 3. RAP a cada sprint com avaliação de prazo. 4. Release 1 deve ser funcional mesmo sem R2 e R3. |
-| **Responsável** | LP + PO + Orientador |
-| **Status** | ⚪ Não materializado |
+| **Ações** | 1. Priorização rígida de itens *Must Have*. 2. Replanejamento transparente de itens não críticos (ex: postergação de etiquetas e relatórios para a Sprint 4). 3. Acompanhamento por relatórios de auditoria e RAP a cada sprint. |
+| **Responsável** | Scrum Master + PO |
+| **Status** | 🟡 Sob Monitoramento Ativo |
 
 ---
 
-## 3. Resumo da Matriz de Riscos
+### 🆕 R09 — Desalinhamento entre Abordagens Frontend-First e Backend-First
+
+| Campo | Valor |
+|---|---|
+| **Probabilidade** | Média |
+| **Impacto** | Médio |
+| **Classificação** | 🟡 Moderado |
+| **Descrição** | O desenvolvimento de telas no frontend utilizando mocks ou DTOs presumidos antes da finalização dos endpoints REST gera fricção de integração e retrabalho de code review. |
+| **Causa** | Desenvolvimento paralelo com contratos de API não homologados previamente no Swagger. |
+| **Consequência** | Dificuldade no teste end-to-end e acúmulo de apontamentos em PRs de frontend (ex: feedback da Daily de 28/08). |
+| **Estratégia** | Mitigar |
+| **Ações** | 1. Adoção obrigatória de *API-First*: endpoints e DTOs devem ser definidos no documento `API-Especificacao_API_REST.md` antes da codificação das telas. 2. Uso do Swagger/OpenAPI local e do ambiente `develop.italuhub.cloud` como fonte única de verdade. |
+| **Responsável** | Todos os Desenvolvedores (Backend & Frontend) |
+| **Status** | 🟡 Identificado na Sprint 3 / Ação para Sprint 4 |
+
+---
+
+### 🆕 R10 — Sobrecarga no Escopo da Sprint 4 (Acúmulo de Entregas)
+
+| Campo | Valor |
+|---|---|
+| **Probabilidade** | Alta |
+| **Impacto** | Alto |
+| **Classificação** | 🔴 Crítico |
+| **Descrição** | A Sprint 4 precisará absorver as demandas postergadas da Sprint 3 (Relatório Comercial, Romaneio e PDF), o débito técnico da US-04 (Templates SVG de Produtos) e os novos requisitos de Descontos Comerciais e Homologação. |
+| **Causa** | Acúmulo de entregas não finalizadas nas sprints anteriores. |
+| **Consequência** | Risco de estouro de prazo na entrega da Release 1. |
+| **Estratégia** | Mitigar |
+| **Ações** | 1. Priorização MoSCoW rígida: Emissão do PDF Comercial e Descontos são *Must Have*; Romaneio e Templates SVG avançados entram como *Should Have*. 2. Foco imediato na aprovação e merge dos PRs #110 e #111 no primeiro dia da Sprint 4. |
+| **Responsável** | Scrum Master / PO |
+| **Status** | 🟡 Ativo para a Sprint 4 |
+
+---
+
+## 3. Resumo da Matriz de Riscos (Versão 2.0)
 
 | Classificação | Quantidade | IDs |
-|---|---|---|
-| 🔴 Crítico | 1 | R02 |
-| 🟠 Significativo | 4 | R01, R03, R05, R08 |
-| 🟡 Moderado | 3 | R04, R06, R07 |
-| 🟢 Baixo | 0 | — |
-| **Total** | **8** | |
+|---|:---:|---|
+| 🔴 **Crítico** | **2** | R02, R10 |
+| 🟠 **Significativo** | **4** | R01, R03, R05, R08 |
+| 🟡 **Moderado** | **4** | R04, R06, R07, R09 |
+| 🟢 **Baixo** | **0** | — |
+| **Total de Riscos Mapeados** | **10** | |
 
 ---
 
-*Documento elaborado pela Ítalo Jefferson / Equipe AlumiGest — IFPB CST em ADS — Agosto/2026*
+*Documento revisado e atualizado pela Equipe AlumiGest — Sprint 03 — 31/08/2026*
