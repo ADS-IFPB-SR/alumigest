@@ -2,6 +2,8 @@ package br.edu.ifpb.alumigest.budgets.domain;
 
 import br.edu.ifpb.alumigest.catalog.domain.Product;
 import jakarta.persistence.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,12 +31,15 @@ public class BudgetItem {
     @Column(name = "template_type", length = 50)
     private String templateType;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "template_config", columnDefinition = "jsonb")
     private String templateConfig;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "handle_config", columnDefinition = "jsonb")
     private String handleConfig;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "drilling_config", columnDefinition = "jsonb")
     private String drillingConfig;
 

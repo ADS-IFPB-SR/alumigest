@@ -118,7 +118,7 @@ class ProductServiceTest {
         ProductRequestDTO request = new ProductRequestDTO(
                 "Porta de Giro Alumiportas",
                 categoryId,
-                DoorTemplateType.GIRO,
+                DoorTemplateType.SWING,
                 templateConfigDTO,
                 List.of(MaterialCategoryType.GLASS, MaterialCategoryType.PROFILE, MaterialCategoryType.HARDWARE),
                 List.of()
@@ -127,14 +127,14 @@ class ProductServiceTest {
         Product mockSavedProduct = new Product();
         mockSavedProduct.setId(UUID.randomUUID());
         mockSavedProduct.setName("Porta de Giro Alumiportas");
-        mockSavedProduct.setTemplateType(DoorTemplateType.GIRO);
+        mockSavedProduct.setTemplateType(DoorTemplateType.SWING);
 
         ProductResponseDTO mockResponse = new ProductResponseDTO(
                 mockSavedProduct.getId(),
                 "Porta de Giro Alumiportas",
                 categoryId,
                 "Portas de Giro",
-                DoorTemplateType.GIRO,
+                DoorTemplateType.SWING,
                 templateConfigDTO,
                 List.of(MaterialCategoryType.GLASS, MaterialCategoryType.PROFILE, MaterialCategoryType.HARDWARE),
                 true,
@@ -151,13 +151,13 @@ class ProductServiceTest {
 
         assertNotNull(result);
         assertEquals("Porta de Giro Alumiportas", result.name());
-        assertEquals(DoorTemplateType.GIRO, result.templateType());
+        assertEquals(DoorTemplateType.SWING, result.templateType());
         assertEquals(3, result.categoryRequirements().size());
 
         ArgumentCaptor<Product> captor = ArgumentCaptor.forClass(Product.class);
         verify(productRepository).save(captor.capture());
         Product captured = captor.getValue();
-        assertEquals(DoorTemplateType.GIRO, captured.getTemplateType());
+        assertEquals(DoorTemplateType.SWING, captured.getTemplateType());
         assertEquals(3, captured.getCategoryRequirements().size());
         assertTrue(captured.isActive());
     }
@@ -169,7 +169,7 @@ class ProductServiceTest {
         ProductRequestDTO request = new ProductRequestDTO(
                 "Porta Inválida",
                 categoryId,
-                DoorTemplateType.GIRO,
+                DoorTemplateType.SWING,
                 null,
                 List.of(),
                 List.of()
@@ -191,7 +191,7 @@ class ProductServiceTest {
         Product existingProduct = new Product();
         existingProduct.setId(productId);
         existingProduct.setName("Porta Antiga");
-        existingProduct.setTemplateType(DoorTemplateType.GIRO);
+        existingProduct.setTemplateType(DoorTemplateType.SWING);
 
         ProductCategory mockCategory = new ProductCategory();
         mockCategory.setId(categoryId);
@@ -211,7 +211,7 @@ class ProductServiceTest {
         ProductRequestDTO request = new ProductRequestDTO(
                 "Porta de Correr Suprema",
                 categoryId,
-                DoorTemplateType.CORRER,
+                DoorTemplateType.SLIDING,
                 newConfigDTO,
                 List.of(MaterialCategoryType.GLASS, MaterialCategoryType.PROFILE, MaterialCategoryType.ROLLERS),
                 List.of()
@@ -220,14 +220,14 @@ class ProductServiceTest {
         Product updatedProduct = new Product();
         updatedProduct.setId(productId);
         updatedProduct.setName("Porta de Correr Suprema");
-        updatedProduct.setTemplateType(DoorTemplateType.CORRER);
+        updatedProduct.setTemplateType(DoorTemplateType.SLIDING);
 
         ProductResponseDTO mockResponse = new ProductResponseDTO(
                 productId,
                 "Porta de Correr Suprema",
                 categoryId,
                 "Portas de Correr",
-                DoorTemplateType.CORRER,
+                DoorTemplateType.SLIDING,
                 newConfigDTO,
                 List.of(MaterialCategoryType.GLASS, MaterialCategoryType.PROFILE, MaterialCategoryType.ROLLERS),
                 true,
@@ -245,7 +245,7 @@ class ProductServiceTest {
 
         assertNotNull(result);
         assertEquals("Porta de Correr Suprema", result.name());
-        assertEquals(DoorTemplateType.CORRER, result.templateType());
+        assertEquals(DoorTemplateType.SLIDING, result.templateType());
         verify(productRepository).save(existingProduct);
     }
 
@@ -259,7 +259,7 @@ class ProductServiceTest {
 
         ProductResponseDTO response = new ProductResponseDTO(
                 id, "Janela Basculante", UUID.randomUUID(), "Janelas",
-                DoorTemplateType.BASCULANTE, null, List.of(MaterialCategoryType.GLASS, MaterialCategoryType.PROFILE), true, List.of()
+                DoorTemplateType.TILT, null, List.of(MaterialCategoryType.GLASS, MaterialCategoryType.PROFILE), true, List.of()
         );
 
         when(productRepository.findById(id)).thenReturn(Optional.of(product));
@@ -269,7 +269,7 @@ class ProductServiceTest {
 
         assertNotNull(result);
         assertEquals("Janela Basculante", result.name());
-        assertEquals(DoorTemplateType.BASCULANTE, result.templateType());
+        assertEquals(DoorTemplateType.TILT, result.templateType());
     }
 
     @Test

@@ -28,7 +28,7 @@ public class ProductController {
     }
 
     @PostMapping
-    @Operation(summary = "Cadastrar Produto ou Template", description = "Cria um novo produto ou template de esquadria (GIRO, CORRER, BASCULANTE, GAVETA) com seu esquema de opções e requisitos de categorias de insumos.")
+    @Operation(summary = "Cadastrar Produto ou Template", description = "Cria um novo produto ou template de esquadria (SWING, SLIDING, TILT, DRAWER) com seu esquema de opções e requisitos de categorias de insumos.")
     public ResponseEntity<ApiResponse<ProductResponseDTO>> createProduct(@Valid @RequestBody ProductRequestDTO request) {
         ProductResponseDTO response = productService.createProduct(request);
         return ResponseEntity.status(HttpStatus.CREATED)

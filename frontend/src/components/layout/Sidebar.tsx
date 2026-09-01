@@ -1,4 +1,4 @@
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 
 const navItems = [
   { path: '/dashboard', label: 'Dashboard', icon: 'dashboard' },
@@ -18,7 +18,6 @@ interface SidebarProps {
 }
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
-  const navigate = useNavigate();
 
   return (
     <>
@@ -52,19 +51,6 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           </button>
         </div>
 
-        <div className="mb-sm">
-          <button
-            type="button"
-            onClick={() => {
-              navigate('/orcamentos/novo');
-              onClose();
-            }}
-            className="w-full flex items-center justify-center gap-xs px-md py-sm bg-primary hover:opacity-90 text-on-primary rounded-md font-label text-label-bold text-xs shadow-md transition-all active:scale-95 cursor-pointer"
-          >
-            <span className="material-symbols-outlined text-[18px]">add</span>
-            <span>Novo Orçamento</span>
-          </button>
-        </div>
 
         <nav className="flex-1 flex flex-col gap-xs overflow-y-auto">
           {navItems.map((item) => (

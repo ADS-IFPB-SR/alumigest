@@ -28,7 +28,7 @@ public class BudgetPricingService {
         BigDecimal budgetSubtotal = BigDecimal.ZERO;
 
         for (BudgetItem item : budget.getItems()) {
-            BigDecimal itemSubtotal = BigDecimal.ZERO;
+            BigDecimal itemMaterialsSubtotal = BigDecimal.ZERO;
 
             for (BudgetItemOption option : item.getOptions()) {
                 Material material = materialRepository.findById(option.getMaterial().getId())
@@ -42,9 +42,13 @@ public class BudgetPricingService {
                 BigDecimal totalPrice = salePrice.multiply(option.getQuantity()).setScale(2, RoundingMode.HALF_UP);
                 option.setTotalPrice(totalPrice);
 
-                // Acumula no subtotal do item
-                itemSubtotal = itemSubtotal.add(totalPrice);
+                // Acumula no subtotal dos materiais da esquadria
+                itemMaterialsSubtotal = itemMaterialsSubtotal.add(totalPrice);
             }
+
+            // Multiplica pelo número de esquadrias
+            int itemQty = (item.getQuantity() != null && item.getQuantity() > 0) ? item.getQuantity() : 1;
+            BigDecimal itemSubtotal = itemMaterialsSubtotal.multiply(BigDecimal.valueOf(itemQty));
 
             // A mão de obra (laborCost) já vem preenchida do frontend (graças a nossa correção no DTO)
             BigDecimal itemLaborCost = item.getLaborCost() != null ? item.getLaborCost() : BigDecimal.ZERO;

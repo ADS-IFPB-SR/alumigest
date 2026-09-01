@@ -4,12 +4,21 @@ import { Toaster } from 'react-hot-toast';
 import { DashboardLayout } from './components/layout/DashboardLayout';
 import { CatalogPage } from './pages/CatalogPage';
 import { BudgetsPage } from './pages/BudgetsPage';
+import { BudgetNewPage } from './pages/BudgetNewPage';
+import { BudgetDetailPage } from './pages/BudgetDetailPage';
+import { BudgetEditor } from './features/budgets/components/BudgetEditor';
 import { PlaceholderPage } from './pages/PlaceholderPage';
 import { SeparateSalePage } from './pages/SeparateSalePage';
 import { ProductTab as ProductsPage } from './pages/ProductsPage';
 import { ProductBuilderPage } from './pages/ProductBuilderPage';
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 function App() {
   return (
@@ -22,26 +31,9 @@ function App() {
 
             <Route path="orcamentos" element={<BudgetsPage />} />
             <Route path="orcamentos/venda-avulsa" element={<SeparateSalePage />} />
-            <Route
-              path="orcamentos/novo"
-              element={
-                <PlaceholderPage
-                  title="Novo Orçamento"
-                  icon="receipt_long"
-                  description="Assistente para criação e cálculo automático de orçamentos e propostas comerciais."
-                />
-              }
-            />
-            <Route
-              path="orcamentos/:id"
-              element={
-                <PlaceholderPage
-                  title="Detalhes do Orçamento"
-                  icon="receipt_long"
-                  description="Visualização detalhada da composição, insumos calculados e exportação de proposta."
-                />
-              }
-            />
+            <Route path="orcamentos/novo" element={<BudgetNewPage />} />
+            <Route path="orcamentos/:id" element={<BudgetDetailPage />} />
+            <Route path="orcamentos/:id/editar" element={<BudgetEditor />} />
 
             <Route
               path="dashboard"

@@ -21,8 +21,8 @@ public record ProductResponseDTO(
         @Schema(description = "Nome da categoria", example = "Portas de Giro")
         String categoryName,
 
-        @Schema(description = "Modelo de template de esquadria", example = "GIRO")
-        DoorTemplateType templateType,
+        @Schema(description = "Modelo de template de esquadria", example = "SWING")
+        br.edu.ifpb.alumigest.catalog.domain.DoorTemplateType templateType,
 
         @Schema(description = "Configurações padrão e esquema de opções do template")
         TemplateConfigDTO templateConfig,

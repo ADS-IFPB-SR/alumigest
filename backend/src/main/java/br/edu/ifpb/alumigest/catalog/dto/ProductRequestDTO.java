@@ -19,7 +19,7 @@ public record ProductRequestDTO(
         @Schema(description = "ID da categoria do produto", example = "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11")
         UUID categoryId,
 
-        @Schema(description = "Modelo de template de esquadria (GIRO, CORRER, BASCULANTE, GAVETA)", example = "GIRO")
+        @Schema(description = "Modelo de template de esquadria (SWING, SLIDING, TILT, DRAWER)", example = "SWING")
         DoorTemplateType templateType,
 
         @Schema(description = "Configurações padrão e opções permitidas para orçamento")

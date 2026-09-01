@@ -1,6 +1,8 @@
 package br.edu.ifpb.alumigest.budgets.service;
 
 import br.edu.ifpb.alumigest.budgets.domain.Budget;
+import br.edu.ifpb.alumigest.budgets.domain.BudgetItem;
+import br.edu.ifpb.alumigest.budgets.domain.BudgetItemOption;
 import br.edu.ifpb.alumigest.budgets.domain.BudgetStatus;
 import br.edu.ifpb.alumigest.budgets.dto.BudgetRequestDTO;
 import br.edu.ifpb.alumigest.budgets.dto.BudgetResponseDTO;
@@ -50,6 +52,18 @@ public class BudgetService {
 
         budget.setCode(generateBudgetCode());
 
+        // Vincula referências bidirecionais (Budget -> Items -> Options)
+        if (budget.getItems() != null) {
+            for (BudgetItem item : budget.getItems()) {
+                item.setBudget(budget);
+                if (item.getOptions() != null) {
+                    for (BudgetItemOption option : item.getOptions()) {
+                        option.setBudgetItem(item);
+                    }
+                }
+            }
+        }
+
         budgetQuantityService.calculateQuantities(budget);
         budgetPricingService.calculatePricing(budget);
 
@@ -83,7 +97,17 @@ public class BudgetService {
         existingBudget.getItems().clear();
         Budget updatedData = budgetMapper.toEntity(requestDTO);
 
-        updatedData.getItems().forEach(existingBudget::addItem);
+        if (updatedData.getItems() != null) {
+            for (BudgetItem item : updatedData.getItems()) {
+                existingBudget.addItem(item);
+                if (item.getOptions() != null) {
+                    for (BudgetItemOption option : item.getOptions()) {
+                        option.setBudgetItem(item);
+                    }
+                }
+            }
+        }
+
         existingBudget.setClient(client);
         existingBudget.setDiscountPercent(updatedData.getDiscountPercent());
         existingBudget.setNotes(updatedData.getNotes());

@@ -56,6 +56,7 @@ public class BudgetQuantityService {
                 option.setMaterialName(material.getName());
                 option.setUnitMeasure(material.getUnitMeasure() != null ? material.getUnitMeasure().name() : "");
 
+
                 if (template != null && option.getCategoryType() != null) {
                     try {
                         CategoryType calcCategory = CategoryType.valueOf(option.getCategoryType().name());
