@@ -1,5 +1,6 @@
 import React from 'react';
 import type { BudgetItem } from '../types';
+import { TEMPLATE_TYPE_INFO } from '../types';
 import { formatBRL } from '../utils/calculations';
 
 interface BudgetItemsTableProps {
@@ -75,7 +76,7 @@ export const BudgetItemsTable: React.FC<BudgetItemsTableProps> = ({
                           {item.productName}
                         </span>
                         <span className="text-xs text-on-surface-variant font-body">
-                          Modelo: {item.templateType || 'Básico'}
+                          Modelo: {item.templateType ? (TEMPLATE_TYPE_INFO[item.templateType as keyof typeof TEMPLATE_TYPE_INFO]?.label || item.templateType) : 'Básico'}
                           {openDir && <span className="ml-xs text-secondary">· {openDir === 'LEFT_TO_RIGHT' ? '→' : openDir === 'RIGHT_TO_LEFT' ? '←' : openDir}</span>}
                         </span>
                       </div>

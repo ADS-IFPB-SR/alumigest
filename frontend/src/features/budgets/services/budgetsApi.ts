@@ -316,6 +316,7 @@ function toBackendBudgetPayload(data: CreateBudgetPayload) {
       options: (item.options ?? []).map((opt) => ({
         materialId: opt.materialId,
         quantity: opt.quantity,
+        categoryType: opt.categoryType,
       })),
     })),
   };

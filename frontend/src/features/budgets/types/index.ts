@@ -290,7 +290,7 @@ export interface CreateBudgetPayload {
     height: number;
     quantity: number;
     laborCost?: number;
-    options: { materialId: string; quantity?: number }[];
+    options: { materialId: string; quantity?: number; categoryType: string }[];
     notes?: string;
   }[];
 }

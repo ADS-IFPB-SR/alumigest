@@ -2,14 +2,14 @@ import type { DoorTemplateType } from '../types';
 import { TEMPLATE_TYPE_INFO } from '../types';
 
 /**
- * Mapeia a família de abertura do catálogo (backend DoorTemplateType: GIRO, CORRER, etc.)
+ * Mapeia a família de abertura do catálogo (backend DoorTemplateType: SWING, SLIDING, etc.)
  * para as opções de templates visuais (SVG) permitidas no Budget.
  * O usuário deverá escolher uma destas opções no modal.
  */
 export const CATALOG_FAMILY_TO_SVG_OPTIONS: Record<string, DoorTemplateType[]> = {
-  GIRO: ['SWING_DOOR_1F', 'SWING_DOOR_2F', 'PIVOTING_DOOR'],
-  CORRER: ['SLIDING_DOOR_2F', 'SLIDING_DOOR_4F', 'SLIDING_WINDOW_2F', 'SLIDING_WINDOW_4F'],
-  BASCULANTE: ['MAXIM_AR_WINDOW'],
+  SWING: ['SWING_DOOR_1F', 'SWING_DOOR_2F', 'PIVOTING_DOOR'],
+  SLIDING: ['SLIDING_DOOR_2F', 'SLIDING_DOOR_4F', 'SLIDING_WINDOW_2F', 'SLIDING_WINDOW_4F'],
+  TILT: ['MAXIM_AR_WINDOW'],
 };
 
 /**

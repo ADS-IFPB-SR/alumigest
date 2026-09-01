@@ -56,24 +56,6 @@ public class BudgetQuantityService {
                 option.setMaterialName(material.getName());
                 option.setUnitMeasure(material.getUnitMeasure() != null ? material.getUnitMeasure().name() : "");
 
-                if (option.getCategoryType() == null) {
-                    if (material.getGroup() != null && material.getGroup().getCode() != null) {
-                        String grpCode = material.getGroup().getCode().toUpperCase();
-                        if (grpCode.contains("VIDRO")) {
-                            option.setCategoryType(br.edu.ifpb.alumigest.catalog.domain.MaterialCategoryType.GLASS);
-                        } else if (grpCode.contains("ALUMINIO") || grpCode.contains("PERFIL")) {
-                            option.setCategoryType(br.edu.ifpb.alumigest.catalog.domain.MaterialCategoryType.PROFILE);
-                        } else if (grpCode.contains("PELICULA")) {
-                            option.setCategoryType(br.edu.ifpb.alumigest.catalog.domain.MaterialCategoryType.FILM);
-                        } else if (grpCode.contains("ROL")) {
-                            option.setCategoryType(br.edu.ifpb.alumigest.catalog.domain.MaterialCategoryType.ROLLERS);
-                        } else {
-                            option.setCategoryType(br.edu.ifpb.alumigest.catalog.domain.MaterialCategoryType.HARDWARE);
-                        }
-                    } else {
-                        option.setCategoryType(br.edu.ifpb.alumigest.catalog.domain.MaterialCategoryType.HARDWARE);
-                    }
-                }
 
                 if (template != null && option.getCategoryType() != null) {
                     try {

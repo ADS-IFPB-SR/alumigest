@@ -41,7 +41,7 @@ class ProductMapperTest {
         product.setId(UUID.randomUUID());
         product.setName("Porta Suprema 2F");
         product.setCategory(category);
-        product.setTemplateType(DoorTemplateType.CORRER);
+        product.setTemplateType(DoorTemplateType.SLIDING);
         product.setTemplateConfig(config);
         product.setCategoryRequirements(List.of(MaterialCategoryType.GLASS, MaterialCategoryType.PROFILE, MaterialCategoryType.ROLLERS));
         product.setActive(true);
@@ -53,7 +53,7 @@ class ProductMapperTest {
         assertEquals("Porta Suprema 2F", response.name());
         assertEquals(category.getId(), response.categoryId());
         assertEquals("Portas de Correr", response.categoryName());
-        assertEquals(DoorTemplateType.CORRER, response.templateType());
+        assertEquals(DoorTemplateType.SLIDING, response.templateType());
         assertNotNull(response.templateConfig());
         assertEquals(new BigDecimal("20.0"), response.templateConfig().profileMm());
         assertEquals("#212121", response.templateConfig().aluminumColor());
