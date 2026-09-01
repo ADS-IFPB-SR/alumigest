@@ -236,6 +236,7 @@ export const BudgetEditor: React.FC = () => {
         options: item.options.map((opt) => ({
           materialId: opt.materialId,
           quantity:   opt.quantity,
+          categoryType: opt.categoryType,
         })),
         notes: item.notes,
       })),

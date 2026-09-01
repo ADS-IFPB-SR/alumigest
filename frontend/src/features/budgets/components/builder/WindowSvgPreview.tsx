@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { FullscreenPreviewModal } from './FullscreenPreviewModal';
 import type {
   OpeningDirection,
   HandleConfig,
@@ -95,7 +96,7 @@ const HorizontalDimension = ({
         x={mid}
         y={lineY + 2}
         textAnchor="middle"
-        fontSize={6}
+        fontSize={9}
         fontFamily="JetBrains Mono, monospace"
         fontWeight="bold"
         fill={COTA_COLOR}
@@ -143,7 +144,7 @@ const VerticalDimension = ({
           x={lineX}
           y={mid + 2}
           textAnchor="middle"
-          fontSize={6}
+          fontSize={9}
           fontFamily="JetBrains Mono, monospace"
           fontWeight="bold"
           fill={COTA_COLOR}
@@ -211,7 +212,7 @@ const DrillingHoles = ({
             x={posX + cotaOffset + (mirrored ? 2 : -2)}
             y={pos.py + 2.5}
             textAnchor={textAnchor}
-            fontSize={5.5}
+            fontSize={8.2}
             fontFamily="JetBrains Mono, monospace"
             fontWeight="bold"
             fill={COTA_COLOR}
@@ -327,7 +328,7 @@ const HandleElement = ({
             x={mirrored ? hx + handleW * 2 + 7 : hx - handleW * 2 - 7}
             y={handleY + handleH / 2 + 2}
             textAnchor={mirrored ? 'start' : 'end'}
-            fontSize={5}
+            fontSize={7.5}
             fontFamily="JetBrains Mono, monospace"
             fontWeight="bold"
             fill={COTA_COLOR}
@@ -373,7 +374,7 @@ const HandlePieceDimension = ({
         x={cotaX + (mirrored ? -3 : 3)}
         y={handleY + handleH / 2 + 2}
         textAnchor={textAnchor}
-        fontSize={5.5}
+        fontSize={8.2}
         fontFamily="JetBrains Mono, monospace"
         fontWeight="bold"
         fill={COTA_COLOR}
@@ -415,11 +416,11 @@ function renderSlidingDoor2F(
 
       {/* Folha fixa */}
       <rect x={fixedX}  y={fw} width={halfW} height={innerH} fill={FIXED_GLASS_FILL} stroke={GLASS_STROKE} strokeWidth={0.8} />
-      <text x={fixedX + halfW / 2}  y={svgH / 2} textAnchor="middle" fontSize={8} fontFamily="JetBrains Mono, monospace" fill={FRAME_STROKE} opacity={0.5}>FIXA</text>
+      <text x={fixedX + halfW / 2}  y={svgH / 2} textAnchor="middle" fontSize={12} fontFamily="JetBrains Mono, monospace" fill={FRAME_STROKE} opacity={0.5}>FIXA</text>
 
       {/* Folha móvel */}
       <rect x={mobileX} y={fw} width={halfW} height={innerH} fill={GLASS_FILL} stroke={GLASS_STROKE} strokeWidth={1} />
-      <text x={mobileX + halfW / 2} y={svgH / 2} textAnchor="middle" fontSize={8} fontFamily="JetBrains Mono, monospace" fill={FRAME_STROKE} opacity={0.5}>MÓVEL</text>
+      <text x={mobileX + halfW / 2} y={svgH / 2} textAnchor="middle" fontSize={12} fontFamily="JetBrains Mono, monospace" fill={FRAME_STROKE} opacity={0.5}>MÓVEL</text>
 
       {/* Divisória central */}
       <rect x={fw + halfW - 1} y={fw} width={2} height={innerH} fill={FRAME_STROKE} opacity={0.8} />
@@ -432,7 +433,7 @@ function renderSlidingDoor2F(
       <DrillingHoles svgH={svgH} svgW={svgW} frameW={fw} count={drillingConfig.holeCount} divisionType={drillingConfig.divisionType} customDistancesMm={drillingConfig.customDistancesMm} heightMm={heightMm} posX={drillingPosX} mirrored={!inverted} />
 
       {/* Seta de abertura */}
-      <text x={mobileX + halfW / 2} y={svgH - fw - RAIL_H - 6} textAnchor="middle" fontSize={11} fill={ARROW_COLOR} fontWeight="bold">
+      <text x={mobileX + halfW / 2} y={svgH - fw - RAIL_H - 6} textAnchor="middle" fontSize={16.5} fill={ARROW_COLOR} fontWeight="bold">
         {inverted ? '← Correr' : 'Correr →'}
       </text>
 
@@ -465,7 +466,7 @@ function renderSlidingDoor4F(
       {xs.map((x, i) => (
         <g key={i}>
           <rect x={x} y={fw} width={qW} height={innerH} fill={isFixed[i] ? FIXED_GLASS_FILL : GLASS_FILL} stroke={GLASS_STROKE} strokeWidth={0.8} />
-          <text x={x + qW / 2} y={svgH / 2} textAnchor="middle" fontSize={7} fontFamily="JetBrains Mono, monospace" fill={FRAME_STROKE} opacity={0.4}>
+          <text x={x + qW / 2} y={svgH / 2} textAnchor="middle" fontSize={10.5} fontFamily="JetBrains Mono, monospace" fill={FRAME_STROKE} opacity={0.4}>
             {isFixed[i] ? 'F' : 'M'}
           </text>
           {i < 3 && <rect x={x + qW - 1} y={fw} width={2} height={innerH} fill={FRAME_STROKE} opacity={0.7} />}
@@ -475,7 +476,7 @@ function renderSlidingDoor4F(
       <HandleElement handleConfig={handleConfig} svgH={svgH} frameW={fw} posX={fw + qW + qW * 0.1} heightMm={heightMm} />
       <HandleElement handleConfig={handleConfig} svgH={svgH} frameW={fw} posX={fw + qW * 3 - fw * 1.5} mirrored heightMm={heightMm} />
       <DrillingHoles svgH={svgH} svgW={svgW} frameW={fw} count={drillingConfig.holeCount} divisionType={drillingConfig.divisionType} customDistancesMm={drillingConfig.customDistancesMm} heightMm={heightMm} posX={fw + fw / 2} mirrored />
-      <text x={svgW / 2} y={svgH - fw - RAIL_H - 6} textAnchor="middle" fontSize={9} fill={ARROW_COLOR} fontWeight="bold">← Abertura Central →</text>
+      <text x={svgW / 2} y={svgH - fw - RAIL_H - 6} textAnchor="middle" fontSize={13.5} fill={ARROW_COLOR} fontWeight="bold">← Abertura Central →</text>
 
       {/* Cotas das 4 folhas (Item 7) */}
       {xs.map((x, i) => (
@@ -507,7 +508,7 @@ function renderSwingDoor(
         <HandleElement handleConfig={handleConfig} svgH={svgH} frameW={fw} posX={inverted ? doorEnd + 2 : doorEnd - fw * 1.5} mirrored={!inverted} heightMm={heightMm} />
         <HandlePieceDimension svgH={svgH} frameW={fw} posX={inverted ? doorEnd + 2 : doorEnd - fw * 1.5} handleConfig={handleConfig} heightMm={heightMm} mirrored={!inverted} />
         <DrillingHoles svgH={svgH} svgW={svgW} frameW={fw} count={drillingConfig.holeCount} divisionType={drillingConfig.divisionType} customDistancesMm={drillingConfig.customDistancesMm} heightMm={heightMm} posX={inverted ? fw + fw / 2 : svgW - fw - fw / 2} mirrored={!inverted} />
-        <text x={svgW / 2} y={fw + 14} textAnchor="middle" fontSize={8} fontFamily="JetBrains Mono, monospace" fill={ARROW_COLOR}>{inverted ? '← Giro p/ Esquerda' : 'Giro p/ Direita →'}</text>
+        <text x={svgW / 2} y={fw + 14} textAnchor="middle" fontSize={12} fontFamily="JetBrains Mono, monospace" fill={ARROW_COLOR}>{inverted ? '← Giro p/ Esquerda' : 'Giro p/ Direita →'}</text>
         <HorizontalDimension x1={fw} x2={svgW - fw} y={svgH - fw} label={`Vão Único: ${widthMm}mm`} offsetDir="below" offsetDist={8} />
       </>
     );
@@ -583,7 +584,7 @@ function renderSlidingWindow(
       <HandleElement handleConfig={handleConfig} svgH={svgH} frameW={fw} posX={inverted ? mobileX + halfW - fw * 1.5 : mobileX + fw * 0.5} mirrored={!inverted} heightMm={heightMm} />
       <HandlePieceDimension svgH={svgH} frameW={fw} posX={inverted ? mobileX + halfW - fw * 1.5 : mobileX + fw * 0.5} handleConfig={handleConfig} heightMm={heightMm} mirrored={!inverted} />
       <DrillingHoles svgH={svgH} svgW={svgW} frameW={fw} count={drillingConfig.holeCount} divisionType={drillingConfig.divisionType} customDistancesMm={drillingConfig.customDistancesMm} heightMm={heightMm} posX={inverted ? fixedX + halfW - fw : fixedX + fw / 2} mirrored={!inverted} />
-      <text x={mobileX + halfW / 2} y={svgH - fw - batente - 5} textAnchor="middle" fontSize={9} fill={ARROW_COLOR} fontWeight="bold">{inverted ? '←' : '→'}</text>
+      <text x={mobileX + halfW / 2} y={svgH - fw - batente - 5} textAnchor="middle" fontSize={13.5} fill={ARROW_COLOR} fontWeight="bold">{inverted ? '←' : '→'}</text>
       <HorizontalDimension x1={fixedX}  x2={fixedX + halfW}  y={fw} label={`F: ${leafMm}mm`} offsetDir="above" offsetDist={6} />
       <HorizontalDimension x1={mobileX} x2={mobileX + halfW} y={fw} label={`M: ${leafMm}mm`} offsetDir="above" offsetDist={6} />
     </>
@@ -601,9 +602,9 @@ function renderMaximAr(svgW: number, svgH: number) {
     <>
       <rect x={fw} y={fw} width={innerW} height={topH} fill="#b8d9f5" stroke={GLASS_STROKE} strokeWidth={1} />
       <line x1={fw} y1={fw + topH} x2={svgW - fw} y2={fw + topH} stroke={FRAME_STROKE} strokeWidth={2} />
-      <text x={svgW / 2} y={fw + topH / 2 + 4} textAnchor="middle" fontSize={9} fill={ARROW_COLOR}>↑ Basculante</text>
+      <text x={svgW / 2} y={fw + topH / 2 + 4} textAnchor="middle" fontSize={13.5} fill={ARROW_COLOR}>↑ Basculante</text>
       <rect x={fw} y={fw + topH} width={innerW} height={botH} fill={FIXED_GLASS_FILL} stroke={GLASS_STROKE} strokeWidth={0.8} />
-      <text x={svgW / 2} y={fw + topH + botH / 2 + 4} textAnchor="middle" fontSize={7} fontFamily="JetBrains Mono, monospace" fill={FRAME_STROKE} opacity={0.4}>FIXO</text>
+      <text x={svgW / 2} y={fw + topH + botH / 2 + 4} textAnchor="middle" fontSize={10.5} fontFamily="JetBrains Mono, monospace" fill={FRAME_STROKE} opacity={0.4}>FIXO</text>
     </>
   );
 }
@@ -626,9 +627,9 @@ function renderBoxCorner(svgW: number, svgH: number) {
   return (
     <>
       <rect x={fw} y={fw} width={frontW} height={innerH} fill={GLASS_FILL} stroke={GLASS_STROKE} strokeWidth={1} />
-      <text x={fw + frontW / 2} y={svgH / 2} textAnchor="middle" fontSize={8} fill={FRAME_STROKE} opacity={0.4}>Frontal</text>
+      <text x={fw + frontW / 2} y={svgH / 2} textAnchor="middle" fontSize={12} fill={FRAME_STROKE} opacity={0.4}>Frontal</text>
       <rect x={fw + frontW} y={fw} width={sideW} height={innerH} fill={FIXED_GLASS_FILL} stroke={GLASS_STROKE} strokeWidth={1} />
-      <text x={fw + frontW + sideW / 2} y={svgH / 2} textAnchor="middle" fontSize={8} fill={FRAME_STROKE} opacity={0.4}>Lateral</text>
+      <text x={fw + frontW + sideW / 2} y={svgH / 2} textAnchor="middle" fontSize={12} fill={FRAME_STROKE} opacity={0.4}>Lateral</text>
       <rect x={fw + frontW - 2} y={fw} width={4} height={innerH} fill={FRAME_STROKE} />
     </>
   );
@@ -665,6 +666,8 @@ export const WindowSvgPreview: React.FC<WindowSvgPreviewProps> = ({
   templateName,
   aluminumColor,
 }) => {
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
   // Margens internas para acomodar cotas externas sem cortar
   const MARGIN  = 26;
   const SVG_W   = 240;
@@ -709,48 +712,88 @@ export const WindowSvgPreview: React.FC<WindowSvgPreviewProps> = ({
   const hasDimensions = widthMm > 0 && heightMm > 0;
   const captionText = `${templateName ?? 'Esquadria'} · ${aluminumColor ?? 'Alumínio'}`;
 
+  const svgContent = (
+    <svg
+      width="100%"
+      viewBox={`${-MARGIN} ${-MARGIN} ${VB_W} ${VB_H}`}
+      aria-label={`Preview da esquadria ${widthMm}×${heightMm}mm`}
+    >
+      <defs>
+        <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+          <feDropShadow dx="2" dy="2" stdDeviation="3" floodOpacity="0.2" />
+        </filter>
+      </defs>
+
+      {/* Caixilho externo */}
+      <rect x={0} y={0} width={SVG_W} height={SVG_H} rx={3} fill={FRAME_FILL} filter="url(#shadow)" />
+      {/* Área interna */}
+      <rect x={fw} y={fw} width={SVG_W - fw * 2} height={SVG_H - fw * 2} fill={GLASS_FILL} />
+
+      {renderContent()}
+
+      {/* ── Cotas externas principais (Largura e Altura Totais em mm) (Item 7) ──── */}
+      {hasDimensions && (
+        <>
+          {/* Cota de largura total — acima da esquadria */}
+          <HorizontalDimension
+            x1={0} x2={SVG_W}
+            y={0}
+            label={`L: ${widthMm} mm`}
+            offsetDir="above"
+            offsetDist={14}
+          />
+          {/* Cota de altura total — à esquerda da esquadria */}
+          <VerticalDimension
+            x={0} y1={0} y2={SVG_H}
+            label={`A: ${heightMm} mm`}
+            offsetDir="left"
+            offsetDist={14}
+          />
+        </>
+      )}
+    </svg>
+  );
+
+  const legend = (
+    <>
+      <span className="flex items-center gap-[3px]">
+        <span className="inline-block w-2 h-2 rounded-sm" style={{ background: GLASS_FILL, border: `1px solid ${GLASS_STROKE}` }} />
+        Móvel
+      </span>
+      <span className="flex items-center gap-[3px]">
+        <span className="inline-block w-2 h-2 rounded-sm" style={{ background: FIXED_GLASS_FILL, border: `1px solid ${GLASS_STROKE}` }} />
+        Fixo
+      </span>
+      {handleConfig.handleType !== 'NONE' && (
+        <span className="flex items-center gap-[3px] text-primary">
+          <span className="material-symbols-outlined text-[12px]">hardware</span>
+          {handleConfig.side === 'BOTH_SIDES' ? 'Puxador 2 Lados' : 'Puxador 1 Lado'}
+        </span>
+      )}
+      {drillingConfig.holeCount > 0 && (
+        <span className="flex items-center gap-[3px]">
+          <span className="inline-block w-1.5 h-1.5 rounded-full bg-on-surface" />
+          {drillingConfig.holeCount} Furo{drillingConfig.holeCount > 1 ? 's' : ''}
+        </span>
+      )}
+    </>
+  );
+
   return (
-    <div className="flex flex-col items-center gap-xs w-full max-h-full">
-      <svg
-        width="100%"
-        viewBox={`${-MARGIN} ${-MARGIN} ${VB_W} ${VB_H}`}
-        style={{ maxWidth: SVG_W + MARGIN * 2, maxHeight: '200px' }}
-        aria-label={`Preview da esquadria ${widthMm}×${heightMm}mm`}
+    <div className="flex flex-col items-center gap-xs w-full max-h-full relative group">
+      {/* Expand button */}
+      <button
+        type="button"
+        onClick={() => setIsFullscreen(true)}
+        className="absolute top-0 right-0 p-1 bg-surface-container border border-outline-variant rounded-bl text-on-surface-variant hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity z-10"
+        title="Abrir em tela cheia"
       >
-        <defs>
-          <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
-            <feDropShadow dx="2" dy="2" stdDeviation="3" floodOpacity="0.2" />
-          </filter>
-        </defs>
+        <span className="material-symbols-outlined text-[18px]">fullscreen</span>
+      </button>
 
-        {/* Caixilho externo */}
-        <rect x={0} y={0} width={SVG_W} height={SVG_H} rx={3} fill={FRAME_FILL} filter="url(#shadow)" />
-        {/* Área interna */}
-        <rect x={fw} y={fw} width={SVG_W - fw * 2} height={SVG_H - fw * 2} fill={GLASS_FILL} />
-
-        {renderContent()}
-
-        {/* ── Cotas externas principais (Largura e Altura Totais em mm) (Item 7) ──── */}
-        {hasDimensions && (
-          <>
-            {/* Cota de largura total — acima da esquadria */}
-            <HorizontalDimension
-              x1={0} x2={SVG_W}
-              y={0}
-              label={`L: ${widthMm} mm`}
-              offsetDir="above"
-              offsetDist={14}
-            />
-            {/* Cota de altura total — à esquerda da esquadria */}
-            <VerticalDimension
-              x={0} y1={0} y2={SVG_H}
-              label={`A: ${heightMm} mm`}
-              offsetDir="left"
-              offsetDist={14}
-            />
-          </>
-        )}
-      </svg>
+      <div style={{ maxWidth: SVG_W + MARGIN * 2, maxHeight: '200px' }} className="w-full flex justify-center">
+        {svgContent}
+      </div>
 
       {/* Legenda do template e acabamento */}
       <p className="text-[10px] font-body text-on-surface-variant text-center opacity-85 truncate max-w-full">
@@ -759,27 +802,18 @@ export const WindowSvgPreview: React.FC<WindowSvgPreviewProps> = ({
 
       {/* Legenda de elementos técnicos */}
       <div className="flex items-center gap-sm text-[10px] font-data-mono text-on-surface-variant flex-wrap justify-center">
-        <span className="flex items-center gap-[3px]">
-          <span className="inline-block w-2 h-2 rounded-sm" style={{ background: GLASS_FILL, border: `1px solid ${GLASS_STROKE}` }} />
-          Móvel
-        </span>
-        <span className="flex items-center gap-[3px]">
-          <span className="inline-block w-2 h-2 rounded-sm" style={{ background: FIXED_GLASS_FILL, border: `1px solid ${GLASS_STROKE}` }} />
-          Fixo
-        </span>
-        {handleConfig.handleType !== 'NONE' && (
-          <span className="flex items-center gap-[3px] text-primary">
-            <span className="material-symbols-outlined text-[12px]">hardware</span>
-            {handleConfig.side === 'BOTH_SIDES' ? 'Puxador 2 Lados' : 'Puxador 1 Lado'}
-          </span>
-        )}
-        {drillingConfig.holeCount > 0 && (
-          <span className="flex items-center gap-[3px]">
-            <span className="inline-block w-1.5 h-1.5 rounded-full bg-on-surface" />
-            {drillingConfig.holeCount} Furo{drillingConfig.holeCount > 1 ? 's' : ''}
-          </span>
-        )}
+        {legend}
       </div>
+
+      <FullscreenPreviewModal
+        isOpen={isFullscreen}
+        onClose={() => setIsFullscreen(false)}
+        title={captionText}
+        legend={legend}
+      >
+        {svgContent}
+      </FullscreenPreviewModal>
     </div>
   );
 };
+
