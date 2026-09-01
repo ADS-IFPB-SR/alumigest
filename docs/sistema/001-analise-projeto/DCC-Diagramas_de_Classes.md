@@ -1,17 +1,32 @@
 # DCC — Diagrama de Classes do Domínio
-
-| Campo | Valor |
-|---|---|
-| **Projeto** | AlumiGest |
-| **Versão** | 2.0 |
-| **Data** | 12/08/2026 |
+**Projeto:** AlumiGest — Sistema de Gestão para Vidraçaria e Esquadrias  
+**Sigla:** ALG  
+**Versão:** 3.0 (Atualizado com Domínios de Clientes, Templates Paramétricos, Orçamentos e Motor Strategy)  
+**Data:** 31/08/2026  
+**Autor:** Equipe de Engenharia de Software (Scrum Master: Italo Santos)  
 
 ---
 
-## 1. Diagrama de Classes — Domínio Principal (Catálogo)
+## 1. 🏗️ Diagrama de Classes — Modelo de Domínio Completo
 
 ```mermaid
 classDiagram
+    %% Módulo de Clientes
+    class Client {
+        -UUID id
+        -String name
+        -PersonType personType
+        -String cpfCnpj
+        -String phone
+        -String email
+        -String address
+        -String notes
+        -Boolean isActive
+        -LocalDateTime createdAt
+        -LocalDateTime updatedAt
+    }
+
+    %% Módulo de Catálogo
     class MaterialGroup {
         -UUID id
         -String code
@@ -46,109 +61,216 @@ classDiagram
         -UUID id
         -ProductCategory category
         -String name
-        -BigDecimal laborCost
+        -TemplateType templateType
+        -String templateConfig
+        -String categoryRequirements
         -Boolean isActive
-        -List~ProductItem~ items
     }
 
-    class ProductItem {
+    %% Módulo de Orçamentos
+    class Budget {
         -UUID id
-        -Product product
-        -Material material
-        -BigDecimal quantity
+        -String code
+        -Client client
+        -BudgetStatus status
+        -BigDecimal subtotal
+        -BigDecimal discountPercent
+        -BigDecimal discountValue
+        -BigDecimal total
+        -String notes
+        -LocalDateTime validUntil
+        -LocalDateTime createdAt
+        -LocalDateTime updatedAt
+        -List~BudgetItem~ items
     }
 
-    MaterialGroup "1" --> "*" Material
-    ProductCategory "1" --> "*" Product
-    Product "1" --> "*" ProductItem
-    ProductItem "*" --> "1" Material
+    class BudgetItem {
+        -UUID id
+        -Budget budget
+        -Product product
+        -Integer width
+        -Integer height
+        -Integer quantity
+        -BigDecimal laborCost
+        -BigDecimal subtotal
+        -String notes
+        -List~BudgetItemOption~ options
+    }
+
+    class BudgetItemOption {
+        -UUID id
+        -BudgetItem item
+        -Material material
+        -CategoryType categoryType
+        -UnitMeasure unitMeasure
+        -BigDecimal quantity
+        -BigDecimal unitPrice
+        -BigDecimal totalPrice
+    }
+
+    %% Relacionamentos
+    MaterialGroup "1" --> "*" Material : agrupa
+    ProductCategory "1" --> "*" Product : categoriza
+    Client "1" --> "*" Budget : solicita
+    Budget "1" *-- "*" BudgetItem : compõe
+    BudgetItem "*" --> "1" Product : instancia template
+    BudgetItem "1" *-- "*" BudgetItemOption : seleciona insumos
+    BudgetItemOption "*" --> "1" Material : referencia
 ```
 
 ---
 
-## 2. Diagrama de Classes — Services
+## 2. 🧮 Diagrama de Classes — Motor de Cálculo (Padrão Strategy + Factory)
 
 ```mermaid
 classDiagram
-    class MaterialGroupService {
-        -MaterialGroupRepository repository
-        +findAll() List~MaterialGroupResponseDTO~
-        +findById(UUID id) MaterialGroupResponseDTO
+    class QuantityCalculatorStrategy {
+        <<interface>>
+        +supports(CategoryType categoryType) boolean
+        +calculateQuantity(TemplateType templateType, Integer widthMm, Integer heightMm, BudgetItemOption option) BigDecimal
+    }
+
+    class GlassQuantityCalculator {
+        +calculateQuantity(...) BigDecimal
+    }
+
+    class ProfileQuantityCalculator {
+        +calculateQuantity(...) BigDecimal
+    }
+
+    class HardwareQuantityCalculator {
+        +calculateQuantity(...) BigDecimal
+    }
+
+    class FilmQuantityCalculator {
+        +calculateQuantity(...) BigDecimal
+    }
+
+    class QuantityCalculatorFactory {
+        -List~QuantityCalculatorStrategy~ strategies
+        +getStrategy(CategoryType categoryType) QuantityCalculatorStrategy
+    }
+
+    class BudgetPricingService {
+        -QuantityCalculatorFactory calculatorFactory
+        +calculateItemTotals(BudgetItem item) void
+        +calculateBudgetTotals(Budget budget) void
+    }
+
+    QuantityCalculatorStrategy <|.. GlassQuantityCalculator
+    QuantityCalculatorStrategy <|.. ProfileQuantityCalculator
+    QuantityCalculatorStrategy <|.. HardwareQuantityCalculator
+    QuantityCalculatorStrategy <|.. FilmQuantityCalculator
+    QuantityCalculatorFactory o-- QuantityCalculatorStrategy
+    BudgetPricingService --> QuantityCalculatorFactory
+```
+
+---
+
+## 3. ⚙️ Diagrama de Classes — Camada de Serviços (Services)
+
+```mermaid
+classDiagram
+    class ClientService {
+        -ClientRepository clientRepository
+        +findAll(String busca, Pageable) PageResponse~ClientResponseDTO~
+        +findById(UUID id) ClientResponseDTO
+        +create(ClientRequestDTO) ClientResponseDTO
+        +update(UUID id, ClientRequestDTO) ClientResponseDTO
+        +delete(UUID id) void
     }
 
     class MaterialService {
         -MaterialRepository repository
         -MaterialGroupRepository groupRepository
-        +findAll(Pageable) Page~MaterialResponseDTO~
+        +findAll(Pageable) PageResponse~MaterialResponseDTO~
         +findById(UUID id) MaterialResponseDTO
         +create(MaterialRequestDTO) MaterialResponseDTO
         +update(UUID id, MaterialRequestDTO) MaterialResponseDTO
-        +delete(UUID id) void
-    }
-
-    class ProductCategoryService {
-        -ProductCategoryRepository repository
-        +findAll() List~ProductCategoryResponseDTO~
-        +findById(UUID id) ProductCategoryResponseDTO
-        +create(ProductCategoryRequestDTO) ProductCategoryResponseDTO
-        +update(UUID id, ProductCategoryRequestDTO) ProductCategoryResponseDTO
-        +delete(UUID id) void
+        +updateStatus(UUID id, boolean status) void
     }
 
     class ProductService {
-        -ProductRepository repository
+        -ProductRepository productRepository
         -ProductCategoryRepository categoryRepository
-        +findAll(Pageable) Page~ProductResponseDTO~
+        +findAll(Pageable) PageResponse~ProductResponseDTO~
         +findById(UUID id) ProductResponseDTO
         +create(ProductRequestDTO) ProductResponseDTO
         +update(UUID id, ProductRequestDTO) ProductResponseDTO
         +delete(UUID id) void
     }
 
-    MaterialService --> MaterialGroupService : uses Group
-    ProductService --> ProductCategoryService : uses Category
+    class BudgetService {
+        -BudgetRepository budgetRepository
+        -ClientRepository clientRepository
+        -ProductRepository productRepository
+        -MaterialRepository materialRepository
+        -BudgetPricingService pricingService
+        +create(BudgetRequestDTO) BudgetResponseDTO
+        +findAll(String busca, BudgetStatus status, Pageable) PageResponse~BudgetSummaryResponseDTO~
+        +findById(UUID id) BudgetResponseDTO
+        +update(UUID id, BudgetRequestDTO) BudgetResponseDTO
+        +recalculate(UUID id) BudgetResponseDTO
+        +updateStatus(UUID id, BudgetStatusUpdateDTO) void
+        +delete(UUID id) void
+    }
+
+    BudgetService --> ClientService : valida cliente
+    BudgetService --> ProductService : valida template
+    BudgetService --> BudgetPricingService : executa cálculo
 ```
 
 ---
 
-## 3. Diagrama de Classes — Principais DTOs
+## 4. 📦 Diagrama de Classes — DTOs Principais
 
 ```mermaid
 classDiagram
-    class ProductRequestDTO {
+    class BudgetRequestDTO {
         <<record>>
-        +String name
-        +UUID categoryId
-        +BigDecimal laborCost
-        +List~ProductItemRequestDTO~ items
+        +UUID clientId
+        +BigDecimal discountPercent
+        +BigDecimal discountValue
+        +String notes
+        +List~BudgetItemRequestDTO~ items
     }
 
-    class ProductResponseDTO {
+    class BudgetItemRequestDTO {
+        <<record>>
+        +UUID productId
+        +Integer width
+        +Integer height
+        +Integer quantity
+        +BigDecimal laborCost
+        +String notes
+        +List~BudgetItemOptionRequestDTO~ options
+    }
+
+    class BudgetItemOptionRequestDTO {
+        <<record>>
+        +UUID materialId
+        +CategoryType categoryType
+        +BigDecimal unitPrice
+    }
+
+    class BudgetResponseDTO {
         <<record>>
         +UUID id
-        +String name
-        +UUID categoryId
-        +String categoryName
-        +BigDecimal laborCost
-        +List~ProductItemResponseDTO~ items
-        +Boolean isActive
+        +String code
+        +ClientSummaryDTO client
+        +BudgetStatus status
+        +BigDecimal subtotal
+        +BigDecimal discountPercent
+        +BigDecimal discountValue
+        +BigDecimal total
+        +List~BudgetItemResponseDTO~ items
+        +LocalDateTime createdAt
     }
 
-    class MaterialRequestDTO {
-        <<record>>
-        +UUID groupId
-        +String commercialReference
-        +String ncmCode
-        +String name
-        +BigDecimal costPrice
-        +BigDecimal salePrice
-        +String unitMeasure
-        +BigDecimal thicknessMm
-        +BigDecimal standardLengthM
-        +String attributesJson
-    }
+    BudgetRequestDTO *-- BudgetItemRequestDTO
+    BudgetItemRequestDTO *-- BudgetItemOptionRequestDTO
 ```
 
 ---
 
-*Documento atualizado conforme decisões arquiteturais e refatoração do Catálogo (Agosto/2026)*
+*Documento de Classes homologado com o código da Sprint 3 — Versão 3.0 — 31/08/2026*

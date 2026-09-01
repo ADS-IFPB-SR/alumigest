@@ -1,4 +1,4 @@
-# ==========================================
+ï»¿# ==========================================
 # AlumiGest Monorepo - .gitignore
 # ==========================================
 
@@ -53,6 +53,10 @@ docker-compose.override.yml
 # Planejamento
 .planning
 
+# Spec Kit / SDD
+.specify/
+specs/
+.agents/skills/speckit-*
 
-# Configurações Locais
+# ConfiguraÃ§Ãµes Locais
 .env

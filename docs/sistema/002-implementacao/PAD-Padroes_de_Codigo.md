@@ -1,218 +1,206 @@
 # PAD — Padrões de Código
-
-| Campo | Valor |
-|---|---|
-| **Projeto** | AlumiGest |
-| **Versão** | 1.0 |
-| **Data** | 05/08/2026 |
+**Projeto:** AlumiGest — Sistema de Gestão para Vidraçaria e Esquadrias  
+**Sigla:** ALG  
+**Versão:** 2.0 (Atualizado com convenções IFPB, UUIDs, MapStruct e Nomenclatura Oficial)  
+**Data:** 31/08/2026  
+**Autor:** Equipe de Engenharia AlumiGest (Scrum Master: Italo Santos)  
 
 ---
 
-## 1. Convenções Java (Backend)
+## 1. Convenções Java (Backend Spring Boot 3.4 / Java 21)
 
-### 1.1 Nomenclatura
+### 1.1 Nomenclatura e Idioma
+
+> 📌 **Diretriz de Idioma:** Código-fonte (classes, métodos, variáveis, DTOs e entidades) é escrito em **inglês técnico**. Mensagens de validação de formulários, erros de API, interfaces de usuário e documentação de requisitos são escritas em **Português do Brasil (`pt-br`)**.
 
 | Elemento | Convenção | Exemplo |
 |---|---|---|
-| Classe | PascalCase | `OrcamentoService`, `VidroController` |
-| Interface | PascalCase | `OrcamentoRepository` |
-| Método | camelCase | `calcularAreaVidro()`, `buscarPorId()` |
-| Variável | camelCase | `precoMetroLinear`, `areaVidroM2` |
-| Constante | UPPER_SNAKE_CASE | `AREA_MINIMA_VIDRO`, `MAX_TENTATIVAS_LOGIN` |
-| Pacote | lowercase | `com.alumigest.orcamento.service` |
-| Enum | PascalCase (tipo), UPPER_SNAKE_CASE (valores) | `StatusOrcamento.RASCUNHO` |
-| Tabela (DB) | snake_case, plural | `itens_orcamento`, `perfis_aluminio` |
-| Coluna (DB) | snake_case | `preco_metro_quadrado` |
-
-### 1.2 Organização de Pacotes (Package-by-Feature)
-
-```
-com.alumigest.{feature}/
-├── controller/    → @RestController (1 por feature principal)
-├── service/       → @Service com lógica de negócio
-├── repository/    → JpaRepository
-├── domain/        → @Entity, Enums, Value Objects
-├── dto/           → Records Java (Request/Response)
-└── config/        → Configurações específicas da feature (se necessário)
-```
-
-### 1.3 Padrões de Controller
-
-```java
-@RestController
-@RequestMapping("/api/vidros")
-@RequiredArgsConstructor
-public class VidroController {
-
-    private final VidroService vidroService;
-
-    @GetMapping
-    public ResponseEntity<PageResponse<VidroResponse>> listar(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size,
-            @RequestParam(required = false) String busca,
-            @RequestParam(required = false) Boolean ativo) {
-        return ResponseEntity.ok(vidroService.listar(PageRequest.of(page, size), busca, ativo));
-    }
-
-    @PostMapping
-    @PreAuthorize("hasRole('ADMINISTRADOR')")
-    public ResponseEntity<VidroResponse> criar(@RequestBody @Valid VidroRequest request) {
-        VidroResponse response = vidroService.criar(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
-    }
-}
-```
-
-### 1.4 Padrões de Service
-
-```java
-@Service
-@RequiredArgsConstructor
-@Transactional(readOnly = true)
-public class VidroService {
-
-    private final VidroRepository repository;
-
-    public PageResponse<VidroResponse> listar(Pageable pageable, String busca, Boolean ativo) {
-        // Lógica de listagem com filtros
-    }
-
-    @Transactional
-    public VidroResponse criar(VidroRequest request) {
-        // Validações de negócio
-        // Conversão DTO → Entity
-        // Persistência
-        // Conversão Entity → Response
-    }
-}
-```
-
-### 1.5 Padrões de DTO (Records Java)
-
-```java
-public record VidroRequest(
-    @NotBlank(message = "Nome é obrigatório")
-    String nome,
-
-    @NotNull(message = "Espessura é obrigatória")
-    @Positive(message = "Espessura deve ser positiva")
-    BigDecimal espessuraMm,
-
-    @NotBlank(message = "Cor/acabamento é obrigatório")
-    String corAcabamento,
-
-    @NotNull(message = "Preço é obrigatório")
-    @Positive(message = "Preço deve ser maior que zero")
-    BigDecimal precoMetroQuadrado,
-
-    @NotNull @Positive Integer larguraMaximaMm,
-    @NotNull @Positive Integer alturaMaximaMm,
-
-    Long fornecedorId
-) {}
-```
-
-### 1.6 Tratamento de Exceções
-
-```java
-// Exceções customizadas
-public class ResourceNotFoundException extends RuntimeException { ... }
-public class BusinessException extends RuntimeException { ... }
-public class ValidationException extends RuntimeException { ... }
-
-// Handler global
-@RestControllerAdvice
-public class GlobalExceptionHandler {
-    @ExceptionHandler(ResourceNotFoundException.class) → 404
-    @ExceptionHandler(BusinessException.class)        → 422
-    @ExceptionHandler(MethodArgumentNotValidException.class) → 400
-    @ExceptionHandler(DataIntegrityViolationException.class) → 409
-}
-```
-
-### 1.7 Boas Práticas
-
-- **Injeção de dependência** via construtor (`@RequiredArgsConstructor` do Lombok)
-- **Nunca** retornar entidades JPA diretamente — sempre usar DTOs
-- **`@Transactional(readOnly = true)`** no nível do Service, `@Transactional` nos métodos que alteram dados
-- **Validação dupla:** Bean Validation no DTO + validação de negócio no Service
-- **Soft delete** (`ativo = false`) em vez de DELETE real para dados de negócio
-- **Paginação** obrigatória em listagens (`Pageable`)
+| Classe / Record | PascalCase | `BudgetService`, `GlassController`, `BudgetRequestDTO` |
+| Interface | PascalCase | `QuantityCalculatorStrategy`, `BudgetRepository` |
+| Método | camelCase | `calculateQuantity()`, `findById()`, `updateStatus()` |
+| Variável / Parâmetro | camelCase | `linearMeterPrice`, `glassAreaM2`, `subtotal` |
+| Constante | UPPER_SNAKE_CASE | `MINIMUM_GLASS_AREA_M2`, `DEFAULT_VALIDITY_DAYS` |
+| Pacote | lowercase | `br.edu.ifpb.alumigest.budgets.service` |
+| Enum (Tipo e Valores) | PascalCase (tipo), UPPER_SNAKE (valores) | `BudgetStatus.DRAFT`, `TemplateType.SLIDING_DOOR_2F` |
+| Tabela (DB) | snake_case com prefixo `tb_*` | `tb_budgets`, `tb_materials`, `tb_customers` |
+| Coluna (DB) | snake_case | `cost_price`, `thickness_mm`, `template_config` |
 
 ---
 
-## 2. Convenções TypeScript (Frontend)
+### 1.2 Organização de Pacotes (`package-by-feature`)
+
+```
+br.edu.ifpb.alumigest.{feature}/
+├── controller/    → @RestController e anotações OpenAPI Swagger
+├── service/       → @Service com regras de negócio e orquestração
+├── repository/    → JpaRepository<Entity, UUID> e queries JPQL
+├── domain/        → Entidades JPA (@Entity), Enums e Value Objects
+├── dto/           → Records Java imutáveis de entrada e saída
+├── mapper/        → Interfaces MapStruct (@Mapper(componentModel = "spring"))
+└── calculator/    → (Módulo budgets) Strategy e Factory de precificação física
+```
+
+---
+
+### 1.3 Padrões de Controller REST
+
+```java
+@RestController
+@RequestMapping({"/api/orcamentos", "/api/v1/budgets"})
+@Tag(name = "Orçamentos", description = "Endpoints para gerenciamento de orçamentos")
+public class BudgetController {
+
+    private final BudgetService budgetService;
+
+    public BudgetController(BudgetService budgetService) {
+        this.budgetService = budgetService;
+    }
+
+    @PostMapping
+    @Operation(summary = "Criar orçamento", description = "Cria um novo orçamento com cálculo automático.")
+    public ResponseEntity<BudgetResponseDTO> create(@RequestBody @Valid BudgetRequestDTO request) {
+        BudgetResponseDTO response = budgetService.create(request);
+        URI location = ServletUriComponentsBuilder.fromCurrentRequest()
+                .path("/{id}")
+                .buildAndExpand(response.id())
+                .toUri();
+        return ResponseEntity.created(location).body(response);
+    }
+}
+```
+
+---
+
+### 1.4 Padrões de Service e Transacionalidade
+
+```java
+@Service
+@Transactional(readOnly = true)
+public class BudgetService {
+
+    private final BudgetRepository budgetRepository;
+    private final BudgetPricingService pricingService;
+    private final BudgetMapper mapper;
+
+    @Transactional
+    public BudgetResponseDTO create(BudgetRequestDTO request) {
+        // 1. Validação de regras de negócio
+        // 2. Mapeamento DTO -> Entidade
+        // 3. Execução do motor de cálculo via PricingService
+        // 4. Persistência
+        // 5. Retorno do DTO de resposta
+    }
+}
+```
+
+---
+
+### 1.5 Padrões de DTO (Java Records & JSR-380)
+
+```java
+public record BudgetRequestDTO(
+    @NotNull(message = "O ID do cliente é obrigatório")
+    UUID clientId,
+
+    @DecimalMin(value = "0.0", message = "O percentual de desconto não pode ser negativo")
+    @DecimalMax(value = "100.0", message = "O desconto não pode ultrapassar 100%")
+    BigDecimal discountPercent,
+
+    @DecimalMin(value = "0.0", message = "O valor de desconto não pode ser negativo")
+    BigDecimal discountValue,
+
+    String notes,
+
+    @NotEmpty(message = "O orçamento deve conter pelo menos 1 item")
+    @Valid
+    List<BudgetItemRequestDTO> items
+) {}
+```
+
+---
+
+### 1.6 Tratamento de Exceções e Erros
+
+```java
+@RestControllerAdvice
+public class GlobalExceptionHandler {
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNotFound(ResourceNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse(HttpStatus.NOT_FOUND.value(), ex.getMessage()));
+    }
+
+    @ExceptionHandler(BusinessException.class)
+    public ResponseEntity<ErrorResponse> handleBusiness(BusinessException ex) {
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
+                .body(new ErrorResponse(HttpStatus.UNPROCESSABLE_ENTITY.value(), ex.getMessage()));
+    }
+}
+```
+
+---
+
+## 2. Convenções Frontend (React 18 + TypeScript + Vite + Tailwind)
 
 ### 2.1 Nomenclatura
 
 | Elemento | Convenção | Exemplo |
 |---|---|---|
-| Componente | PascalCase | `ClienteForm.tsx`, `OrcamentoList.tsx` |
-| Função | camelCase | `calcularAreaVidro()`, `formatarMoeda()` |
-| Variável | camelCase | `precoTotal`, `listaClientes` |
-| Constante | UPPER_SNAKE_CASE | `API_BASE_URL`, `MAX_DESCONTO` |
-| Interface/Type | PascalCase com prefixo semântico | `ClienteResponse`, `VidroRequest` |
-| CSS class | kebab-case | `orcamento-card`, `btn-primary` |
-| Arquivo | kebab-case ou PascalCase (componentes) | `api.ts`, `ClienteForm.tsx` |
+| Componente React | PascalCase | `BudgetWizardModal.tsx`, `GlassFormModal.tsx` |
+| Custom Hook | camelCase com prefixo `use` | `useBudgets.ts`, `useDebounce.ts` |
+| Função Utilitária | camelCase | `formatCurrency()`, `calculateM2()` |
+| Interface / Type | PascalCase | `BudgetResponse`, `BudgetItemOption` |
+| Estilização | Classes Utilitárias Tailwind | `className="flex items-center gap-2 p-4"` |
 
-### 2.2 Padrão de Service (API)
+### 2.2 Padrão de Chamadas HTTP
 
 ```typescript
-// services/api.ts
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+import axios from 'axios';
 
-async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
-  const token = localStorage.getItem('token');
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token && { 'Authorization': `Bearer ${token}` }),
-    },
-    ...options,
-  });
-  if (!response.ok) throw new ApiError(response);
-  return response.json();
-}
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || '/api/v1',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+export const budgetService = {
+  async create(data: BudgetRequest): Promise<BudgetResponse> {
+    const response = await api.post<BudgetResponse>('/budgets', data);
+    return response.data;
+  },
+};
 ```
-
-### 2.3 Formatação
-
-- **Indentação:** 2 espaços
-- **Ponto e vírgula:** Obrigatório
-- **Aspas:** Simples (`'`)
-- **Trailing comma:** Sempre
-- **Max line length:** 120 caracteres
 
 ---
 
-## 3. Convenções SQL (Migrações Flyway)
+## 3. Convenções de Banco de Dados (PostgreSQL 16 & Flyway)
 
 ```sql
--- V001__create_clientes.sql
-CREATE TABLE clientes (
-    id          BIGSERIAL       PRIMARY KEY,
-    nome_completo VARCHAR(200)  NOT NULL,
-    cpf_cnpj    VARCHAR(18)     NOT NULL,
-    -- ... demais colunas
-    created_at  TIMESTAMP       NOT NULL DEFAULT NOW(),
-    updated_at  TIMESTAMP       NOT NULL DEFAULT NOW(),
-    ativo       BOOLEAN         NOT NULL DEFAULT TRUE,
-
-    CONSTRAINT uk_clientes_cpf_cnpj UNIQUE (cpf_cnpj)
+-- Padrão de Migration Flyway: V{N}__{descricao_em_snake_case}.sql
+CREATE TABLE tb_customers (
+    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name        VARCHAR(150) NOT NULL,
+    person_type VARCHAR(20) NOT NULL,
+    cpf_cnpj    VARCHAR(20) UNIQUE,
+    phone       VARCHAR(20),
+    is_active   BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at  TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at  TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_clientes_nome ON clientes (nome_completo);
+CREATE INDEX idx_customers_name ON tb_customers(name);
+CREATE INDEX idx_customers_active ON tb_customers(is_active);
 ```
 
 ---
 
-## 4. Logs e Mensagens
+## 4. Qualidade e Análise Estática
 
-- **Logs:** SLF4J com Logback. Nível INFO em produção, DEBUG em desenvolvimento.
-- **Mensagens de validação:** Em português (`"Nome é obrigatório"`, `"Preço deve ser maior que zero"`).
-- **Mensagens de erro HTTP:** Em português, claras e acionáveis.
+* **Backend:** Validação contínua via **Checkstyle (`google_checks.xml`)**, **JaCoCo** e **SonarQube Scanner**.
+* **Frontend:** Validação via **Oxlint**, **TypeScript Compiler (`tsc`)** e testes **Cypress E2E**.
 
 ---
 
-*Documento elaborado pela Ítalo Jefferson / Equipe AlumiGest — IFPB CST em ADS — Agosto/2026*
+*Padrões de Código homologados pela Equipe AlumiGest — Versão 2.0 — 31/08/2026*

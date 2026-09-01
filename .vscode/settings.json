@@ -1,4 +1,7 @@
 {
     "java.compile.nullAnalysis.mode": "automatic",
-    "java.configuration.updateBuildConfiguration": "interactive"
+    "sonarlint.connectedMode.project": {
+        "connectionId": "https-sonar-italohub-cloud-",
+        "projectKey": "alumigest-frontend"
+    }
 }
