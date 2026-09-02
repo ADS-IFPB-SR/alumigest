@@ -17,65 +17,46 @@ Após a emissão dos títulos a receber (Sprint 10) e do módulo PIX (Sprint 9),
 
 ---
 
-## 2. Histórias de Usuário (User Stories)
+## 2. 👥 Histórias de Usuário (User Stories)
 
-### User Story 1 (P1) — Baixa Manual com Suporte Parcial e Descontos/Juros 🎯 MVP
+### 📌 US-34: Realizar Baixa Financeira Manual com Parciais, Juros e Descontos
 
-**Como** Operador Financeiro / Vendedor da Alumiportas,
-**Quero** liquidar total ou parcialmente um título informando o método de pagamento, descontos ou acréscimos,
-**Para que** o saldo financeiro do pedido e do cliente seja atualizado na hora.
+> Permitir baixa manual de títulos com suporte a pagamentos parciais, acréscimo de juros/multa ou concessão de descontos pontuais.
 
-#### Cenários de Aceitação (BDD / Gherkin)
+#### Sub-tarefas Técnicas (Sub-issues):
+- **US-34.1**: Criar migration Flyway `backend/src/main/resources/db/migration/V14__create_cash_flows_schema.sql` com tabela `cash_flows`
+- **US-34.2**: Criar entidade JPA `CashFlow` em `backend/src/main/java/br/edu/ifpb/alumigest/finance/domain/CashFlow.java`
+- **US-34.3**: Criar repositório `CashFlowRepository` com queries de agregação por período em `backend/src/main/java/br/edu/ifpb/alumigest/finance/repository/CashFlowRepository.java`
+- **US-34.4**: Criar record `SettlementRequest` (metodoPagamento, valorPago, descontoConcedido, jurosAcrescimo, operadorNome, observacoes) com Bean Validation em `backend/src/main/java/br/edu/ifpb/alumigest/finance/dto/SettlementRequest.java`
+- **US-34.5**: Implementar serviço `SettlementService.liquidarTitulo(Long receivableId, SettlementRequest request)` com suporte a baixa parcial e atualização do pedido pai em `backend/src/main/java/br/edu/ifpb/alumigest/finance/service/SettlementService.java`
+- **US-34.6**: Criar endpoint POST /api/finance/receivables/{id}/settle no `SettlementController` em `backend/src/main/java/br/edu/ifpb/alumigest/finance/controller/SettlementController.java`
+- **US-34.7**: Criar testes unitários do `SettlementServiceTest`
+- **US-34.8**: Criar modal `SettlementModal` no frontend com campos de valor, desconto e método de pagamento em `frontend/src/features/finance/components/SettlementModal.tsx`
+- **US-34.9**: Adicionar botão "Dar Baixa" na tabela de Contas a Receber (`ReceivablesTable.tsx`)
 
-```gherkin
-Cenário: Baixa integral com desconto por antecipação
-  Dado que existe um título de R$ 1.000,00
-  Quando o financeiro concede R$ 50,00 de desconto e registra pagamento de R$ 950,00 em "DINHEIRO"
-  Então o título deve ser marcado como "PAGO"
-  E o valor efetivamente recebido de R$ 950,00 é lançado no caixa da empresa
+### 📌 US-35: Acompanhar Fluxo de Caixa Diário e Mensal
 
-Cenário: Baixa parcial
-  Dado que existe um título de R$ 1.000,00
-  Quando o cliente paga R$ 600,00
-  Então o título fica com status "PAGO_PARCIAL", valor_pago = R$ 600,00 e saldo_devedor = R$ 400,00
-```
+> Painel visual de fluxo de caixa com projeção de entradas, saídas, saldo operacional diário e consolidado mensal.
 
----
+#### Sub-tarefas Técnicas (Sub-issues):
+- **US-35.1**: Criar record `CashFlowSummaryResponse` em `backend/src/main/java/br/edu/ifpb/alumigest/finance/dto/CashFlowSummaryResponse.java`
+- **US-35.2**: Implementar serviço `CashFlowService.obterResumoFluxoCaixa(LocalDate inicio, LocalDate fim)` agregando entradas e previsões em `backend/src/main/java/br/edu/ifpb/alumigest/finance/service/CashFlowService.java`
+- **US-35.3**: Criar endpoint GET /api/finance/cash-flow/summary no `CashFlowController` em `backend/src/main/java/br/edu/ifpb/alumigest/finance/controller/CashFlowController.java`
+- **US-35.4**: Criar componente `CashFlowSummaryCards` e `CashFlowProjectionChart` no frontend em `frontend/src/features/finance/components/`
+- **US-35.5**: Criar página `CashFlowPage` e registrar rota `/financeiro/fluxo-de-caixa` no React Router
 
-### User Story 2 (P1) — Painel de Fluxo de Caixa Diário e Mensal 🎯 MVP
+### 📌 US-36: Emitir Relatório de Fechamento de Caixa Diário em PDF
 
-**Como** Diretor da Alumiportas,
-**Quero** visualizar o resumo consolidado de entradas realizadas e a projeção de vencimentos futuros,
-**Para que** eu tenha controle do capital de giro e previsibilidade financeira.
+> Emitir relatório oficial de fechamento de caixa diário em PDF com conciliação por forma de pagamento (Dinheiro, PIX, Cartão, Transferência).
 
-#### Cenários de Aceitação (BDD / Gherkin)
-
-```gherkin
-Cenário: Resumo diário de entradas por forma de pagamento
-  Dado que no dia foram recebidos pagamentos em PIX, Dinheiro e Cartão
-  Quando o gestor acessa o Fluxo de Caixa
-  Então o painel exibe o total liquidado do dia agrupado por método
-  E a curva de recebimentos projetada para os próximos 30 dias
-```
-
----
-
-### User Story 3 (P2) — Relatório de Fechamento de Caixa Diário em PDF
-
-**Como** Gestor Financeiro,
-**Quero** emitir o relatório de Fechamento de Caixa Consolidado da empresa em PDF,
-**Para que** eu possa conferir os comprovantes físicos e extratos bancários ao final do dia.
-
-#### Cenários de Aceitação (BDD / Gherkin)
-
-```gherkin
-Cenário: Emissão do Fechamento de Caixa Geral do Dia
-  Dado que o expediente foi concluído
-  Quando o usuário clica em "Emitir Fechamento de Caixa"
-  Então o sistema gera um PDF A4 com resumo consolidado de todas as entradas da Alumiportas no dia
-```
-
----
+#### Sub-tarefas Técnicas (Sub-issues):
+- **US-36.1**: Criar serviço `DailyClosurePdfService` gerando PDF A4 de fechamento de caixa consolidado em `backend/src/main/java/br/edu/ifpb/alumigest/finance/service/DailyClosurePdfService.java`
+- **US-36.2**: Adicionar endpoint GET /api/finance/cash-flow/daily-closure-pdf no `CashFlowController`
+- **US-36.3**: Criar teste unitário do `DailyClosurePdfServiceTest`
+- **US-36.4**: Adicionar botão "Emitir Fechamento de Caixa" na página de Fluxo de Caixa
+- **US-36.5**: Documentar endpoints no OpenAPI/Swagger
+- **US-36.6**: Adicionar atalho "Fluxo de Caixa" no menu do frontend
+- **US-36.7**: Executar validação dos cenários de teste do `quickstart.md` da Sprint 11
 
 ## 3. Requisitos Funcionais
 

@@ -20,62 +20,46 @@ Para garantir que instaladores de campo e operadores de fábrica continuem traba
 
 ---
 
-## 2. Histórias de Usuário (User Stories)
+## 2. 👥 Histórias de Usuário (User Stories)
 
-### User Story 1 (P1) — Instalação PWA e Acesso Offline a OPs e OS 🎯 MVP
+### 📌 US-44: Instalar PWA e Consultar OPs e OS Offline via IndexedDB
 
-**Como** Instalador de Campo e Operador da Fábrica,
-**Quero** instalar o AlumiGest no meu smartphone e abrir minhas OSs mesmo sem sinal de internet,
-**Para que** eu veja o endereço da obra, especificações das esquadrias e medidas sem depender de conexão.
+> Instalação PWA na tela inicial de smartphones e cache local de Ordens de Produção e Ordens de Serviço via IndexedDB / Dexie.js.
 
-#### Cenários de Aceitação (BDD / Gherkin)
+#### Sub-tarefas Técnicas (Sub-issues):
+- **US-44.1**: Instalar e configurar `vite-plugin-pwa` no `frontend/vite.config.ts` com manifesto, ícones e splash screen
+- **US-44.2**: Criar schema do banco local IndexedDB com Dexie em `frontend/src/features/pwa/db/offlineDb.ts`
+- **US-44.3**: Criar custom hook `useNetworkStatus` para monitorar conectividade em `frontend/src/features/pwa/hooks/useNetworkStatus.ts`
+- **US-44.4**: Criar componente `NetworkStatusBanner` no layout principal em `frontend/src/features/pwa/components/NetworkStatusBanner.tsx`
+- **US-44.5**: Criar package `br.edu.ifpb.alumigest.sync` no backend
+- **US-44.6**: Criar record `FieldPackageResponse` em `backend/src/main/java/br/edu/ifpb/alumigest/sync/dto/FieldPackageResponse.java`
+- **US-44.7**: Implementar serviço `SyncService.obterPacoteCampo(Long teamId)` agregando OPs e OSs em `backend/src/main/java/br/edu/ifpb/alumigest/sync/service/SyncService.java`
+- **US-44.8**: Criar endpoint GET /api/sync/field-package no `SyncController` em `backend/src/main/java/br/edu/ifpb/alumigest/sync/controller/SyncController.java`
+- **US-44.9**: Implementar rotina de pré-carregamento no Dexie.js ao abrir o app online
 
-```gherkin
-Cenário: Acesso a dados de instalação sem internet
-  Dado que o instalador abriu suas OSs agendadas enquanto estava online
-  Quando ele chega na obra sem conexão de internet e abre o app
-  Então o sistema exibe os detalhes da OS e endereço a partir do cache local
-  E mostra um banner discreto "Modo Offline ativo"
-```
+### 📌 US-45: Sincronizar Fila de Alterações e Fotos em Segundo Plano (Offline Queue)
 
----
+> Fila de sincronização resiliente que armazena alterações de status e fotos offline e sincroniza automaticamente quando a conexão é restabelecida.
 
-### User Story 2 (P1) — Fila de Sincronização Automática (Offline Queue) 🎯 MVP
+#### Sub-tarefas Técnicas (Sub-issues):
+- **US-45.1**: Criar record `SyncBatchRequest` e `SyncBatchResponse` em `backend/src/main/java/br/edu/ifpb/alumigest/sync/dto/`
+- **US-45.2**: Implementar método `processarLote(SyncBatchRequest request)` no `SyncService`
+- **US-45.3**: Criar endpoint POST /api/sync/batch no `SyncController`
+- **US-45.4**: Criar testes unitários do `SyncServiceTest`
+- **US-45.5**: Criar custom hook `useOfflineQueue` com processamento em segundo plano e retry automático
+- **US-45.6**: Criar componente `SyncQueueDrawer` com lista de ações pendentes e botão "Sincronizar Agora"
 
-**Como** Instalador na Obra,
-**Quero** concluir a OS e anexar fotos mesmo desconectado,
-**Para que** o sistema guarde as informações e envie automaticamente ao servidor quando eu voltar a ter internet.
+### 📌 US-46: Comprimir Imagens no Dispositivo e Otimizar Performance Web
 
-#### Cenários de Aceitação (BDD / Gherkin)
+> Compressão no dispositivo de fotos capturadas na câmera antes do envio, lazy loading de rotas e Service Workers para alta performance.
 
-```gherkin
-Cenário: Conclusão offline e sincronização automática
-  Dado que o app está em modo offline
-  Quando o instalador anexa fotos e toca em "Concluir Instalação"
-  Então a ação é salva na fila local com status "Pendente de Sincronização (1 item)"
-  E assim que o celular detecta rede Wi-Fi/4G, a sincronização é executada em segundo plano
-  E o status da OS no servidor é atualizado com sucesso
-```
-
----
-
-### User Story 3 (P2) — Compressão no Dispositivo e Alta Performance Web
-
-**Como** Usuário do Sistema,
-**Quero** que as fotos carreguem rápido e as telas abram instantaneamente,
-**Para que** a experiência de uso seja fluida tanto no computador do escritório quanto no celular.
-
-#### Cenários de Aceitação (BDD / Gherkin)
-
-```gherkin
-Cenário: Compressão de foto na câmera do celular
-  Dado que o instalador tira uma foto de 6MB com a câmera
-  Quando a imagem é selecionada no app
-  Então o frontend comprime a foto para ~300KB antes de enfileirar para upload
-  E a qualidade visual dos detalhes da esquadria é preservada
-```
-
----
+#### Sub-tarefas Técnicas (Sub-issues):
+- **US-46.1**: Criar utilitário `useImageCompressor` redimensionando para máx 1600px via Canvas em `frontend/src/features/pwa/hooks/useImageCompressor.ts`
+- **US-46.2**: Integrar compressão no componente de captura de fotos da OS (`FieldExecutionModal.tsx`)
+- **US-46.3**: Habilitar compressão Gzip e cache de assets no Spring Boot (`application.yml`)
+- **US-46.4**: Configurar code-splitting com `React.lazy` nas rotas do React Router
+- **US-46.5**: Documentar endpoints de sincronização no OpenAPI/Swagger
+- **US-46.6**: Executar validação dos cenários de teste do `quickstart.md` da Sprint 14
 
 ## 3. Requisitos Funcionais
 

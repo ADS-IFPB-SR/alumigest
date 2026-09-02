@@ -17,60 +17,49 @@ Esta sprint consolida o ciclo de desenvolvimento das três releases principais d
 
 ---
 
-## 2. Histórias de Usuário (User Stories)
+## 2. 👥 Histórias de Usuário (User Stories)
 
-### User Story 1 (P1) — Carga Inicial Automatizada e Importador de Clientes 🎯 MVP
+### 📌 US-47: Executar Carga Inicial de Dados e Importador de Clientes via CSV
 
-**Como** Administrador do Sistema,
-**Quero** que a carga de perfis, vidros e estoque inicial seja aplicada automaticamente via migration e poder importar clientes via CSV,
-**Para que** o sistema entre em produção com dados 100% reais e sem cadastro manual cansativo.
+> Carga de dados mestres de produção (perfis, vidros, ferragens) via Flyway V16 e ferramenta de importação em lote de clientes via planilha CSV.
 
-#### Cenários de Aceitação (BDD / Gherkin)
+#### Sub-tarefas Técnicas (Sub-issues):
+- **US-47.1**: Criar package `br.edu.ifpb.alumigest.onboarding` e diretório `frontend/src/features/onboarding`
+- **US-47.2**: Criar migration Flyway `backend/src/main/resources/db/migration/V16__seed_initial_production_data.sql` populando perfis Suprema/Gold, vidros, acessórios e estoque inicial com `ON CONFLICT DO NOTHING`
+- **US-47.3**: Criar record `ClientImportSummaryResponse` (totalLinhas, importadosComSucesso, duplicadosIgnorados, erros) em `backend/src/main/java/br/edu/ifpb/alumigest/onboarding/dto/`
+- **US-47.4**: Implementar serviço `ClientCsvImportService.importarClientes(MultipartFile file)` com validação de CPF/CNPJ e transação em lote em `backend/src/main/java/br/edu/ifpb/alumigest/onboarding/service/ClientCsvImportService.java`
+- **US-47.5**: Criar endpoint POST /api/onboarding/import-clients-csv no `OnboardingController` em `backend/src/main/java/br/edu/ifpb/alumigest/onboarding/controller/OnboardingController.java`
+- **US-47.6**: Criar testes unitários do `ClientCsvImportServiceTest`
+- **US-47.7**: Criar modal `CsvClientImportModal` no frontend para upload de planilha de clientes em `frontend/src/features/onboarding/components/CsvClientImportModal.tsx`
 
-```gherkin
-Cenário: Carga inicial de catálogo e matérias-primas
-  Dado que a migration V16 é executada
-  Quando o backend inicializa
-  Então o banco é populado com linhas Suprema e Gold, tipos de vidro, perfis de alumínio e saldos de estoque iniciais
-  E a importação de uma planilha CSV de clientes cadastra todos os registros válidos
-```
+### 📌 US-48: Homologação Integrada Ponta a Ponta da Release 3 (v3.0.0)
 
----
+> Execução do roteiro completo de homologação E2E (Orçamento -> Sinal PIX -> OP & QR Code -> Corte -> Estoque -> OS de Campo -> Saldo -> DRE).
 
-### User Story 2 (P1) — Roteiro de Homologação Integrada Ponta a Ponta (E2E) 🎯 MVP
+#### Sub-tarefas Técnicas (Sub-issues):
+- **US-48.1**: Executar e validar Passo 1: Criação de Orçamento com Desconto e 2 vias de PDF (R1 - Sprint 4)
+- **US-48.2**: Executar e validar Passo 2: Conversão em Pedido com Lock de Preços (R2 - Sprint 5)
+- **US-48.3**: Executar e validar Passo 3: Cobrança do Sinal 50% via PIX Dinâmico e Liberação (R3 - Sprint 9)
+- **US-48.4**: Executar e validar Passo 4: Geração de OPs individuais com Etiquetas QR Code (R2 - Sprint 6)
+- **US-48.5**: Executar e validar Passo 5: Romaneio de Oficina e Lista de Corte em PDF (R2 - Sprint 7)
+- **US-48.6**: Executar e validar Passo 6: Baixa automática de estoque e registro de sucata (R2 - Sprint 8)
+- **US-48.7**: Executar e validar Passo 7: Agendamento da Instalação e Emissão de OS em PDF (R3 - Sprint 12)
+- **US-48.8**: Executar e validar Passo 8: Execução de Campo Offline no PWA com fotos e sincronização (R3 - Sprint 14)
+- **US-48.9**: Executar e validar Passo 9: Baixa do Saldo Final 50% em Dinheiro e Fechamento de Caixa (R3 - Sprints 10 e 11)
+- **US-48.10**: Executar e validar Passo 10: Auditoria dos KPIs no Dashboard e DRE Simplificado (R3 - Sprint 13)
 
-**Como** Diretor da Alumiportas e Equipe de Homologação,
-**Quero** executar o checklist do fluxo E2E unificado das Releases 1, 2 e 3,
-**Para que** tenhamos segurança total de que todas as etapas operacionais funcionam perfeitamente integradas.
+### 📌 US-49: Disponibilizar Guias de Treinamento por Perfil e Central de Ajuda
 
-#### Cenários de Aceitação (BDD / Gherkin)
+> Manuais operacionais em PDF por perfil de usuário (Vendas, Fábrica, Almoxarifado, Financeiro, Campo) e Central de Ajuda contextual.
 
-```gherkin
-Cenário: Execução do Roteiro E2E com Sucesso
-  Dado o início do roteiro de homologação da v3.0.0
-  Quando executadas as 10 etapas sequenciais (Orçamento → PIX → Produção → Estoque → Instalação → Finanças → DRE)
-  Então todos os passos são concluídos sem erros ou bloqueios
-  E os relatórios finais batem exatamente com as ordens geradas
-```
-
----
-
-### User Story 3 (P2) — Guias de Treinamento por Perfil e Central de Ajuda
-
-**Como** Usuário do Sistema (Vendedor, Operador de Fábrica, Almoxarife, Financeiro, Instalador),
-**Quero** acessar o Guia Rápido do meu perfil em PDF e consultar a Central de Ajuda contextual no app,
-**Para que** eu aprenda rapidamente as rotinas de trabalho.
-
-#### Cenários de Aceitação (BDD / Gherkin)
-
-```gherkin
-Cenário: Consulta ao Guia Rápido
-  Dado que um operador de fábrica abre a Central de Ajuda
-  Quando ele clica em "Guia do Chão de Fábrica"
-  Então o sistema exibe o manual em PDF ilustrado com uso do scanner QR Code e listas de corte
-```
-
----
+#### Sub-tarefas Técnicas (Sub-issues):
+- **US-49.1**: Criar serviço `OperationalManualPdfService` gerando manuais em PDF para Vendedor, Produção, Estoque, Financeiro e Instalador em `backend/src/main/java/br/edu/ifpb/alumigest/onboarding/service/OperationalManualPdfService.java`
+- **US-49.2**: Criar endpoint GET /api/onboarding/manuals/{role}/pdf no `OnboardingController`
+- **US-49.3**: Criar teste unitário do `OperationalManualPdfServiceTest`
+- **US-49.4**: Criar componente `HelpCenterModal` e página `HelpCenterPage` no frontend em `frontend/src/features/onboarding/`
+- **US-49.5**: Documentar endpoints no OpenAPI/Swagger
+- **US-49.6**: Adicionar botão "Central de Ajuda & Manuais" no cabeçalho do frontend
+- **US-49.7**: Ratificar termo de homologação da Release 3 (v3.0.0)
 
 ## 3. Requisitos Funcionais
 

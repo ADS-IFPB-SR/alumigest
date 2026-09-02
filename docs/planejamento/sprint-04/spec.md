@@ -18,7 +18,7 @@
 
 ## User Scenarios & Testing *(mandatory)*
 
-### User Story 1 - Aplicação de Descontos e Condições Comerciais no Orçamento (Priority: P1)
+### 📌 US-09: Aplicar Descontos e Condições Comerciais no Orçamento (Priority: P1) 🎯 MVP
 
 Como vendedor da Alumiportas, desejo aplicar descontos (em porcentagem ou valor fixo em R$) com autonomia, adicionar taxas extras (instalação/frete), selecionar condições padronizadas de pagamento e definir o prazo de validade da proposta (padrão 15 dias), para que o orçamento reflita fielmente o acordo comercial com o cliente.
 
@@ -35,7 +35,7 @@ Como vendedor da Alumiportas, desejo aplicar descontos (em porcentagem ou valor 
 
 ---
 
-### User Story 2 - Emissão e Download de Orçamento em PDF — Via Comercial (Priority: P1)
+### 📌 US-10: Emitir e Exportar Orçamento em PDF - Via Comercial e WhatsApp (Priority: P1)
 
 Como vendedor ou cliente da Alumiportas, desejo emitir e baixar o orçamento em formato PDF oficial com layout profissional e responsivo, contendo cabeçalho institucional, dados do cliente, especificações completas dos itens com valores discriminados, descontos, totais e condições comerciais, além de poder copiar o resumo para o WhatsApp.
 
@@ -51,7 +51,7 @@ Como vendedor ou cliente da Alumiportas, desejo emitir e baixar o orçamento em 
 
 ---
 
-### User Story 3 - Emissão de Orçamento em PDF — Via Técnica / Oficina (Priority: P2)
+### 📌 US-11: Emitir Orçamento em PDF - Via Técnica de Oficina (Priority: P2)
 
 Como serralheiro ou responsável técnico da oficina da Alumiportas, desejo emitir uma via técnica detalhada do orçamento com todas as medidas nominais (L x A mm), modelos de esquadrias, cores de perfil, especificações de vidros, lado/sentido de abertura e ferragens previstas, sem exibir nenhum valor financeiro (preços unitários ou totais), para conferência prévia e instrução técnica.
 
@@ -66,7 +66,7 @@ Como serralheiro ou responsável técnico da oficina da Alumiportas, desejo emit
 
 ---
 
-### User Story 4 - Homologação Integrada da Release 1 (v1.0.0) (Priority: P2)
+### 📌 US-12: Homologação Integrada e Validação da Release 1 (v1.0.0) (Priority: P2)
 
 Como equipe técnica e stakeholders da Alumiportas, desejamos validar a integração completa de ponta a ponta da Release 1 (Catálogo de Insumos ➔ Produto Paramétrico ➔ Motor de Cálculo ➔ Orçamento com Desconto ➔ Emissão de PDFs Comercial e Técnico), assegurando estabilidade, qualidade de código e conformidade com o SonarQube Quality Gate.
 

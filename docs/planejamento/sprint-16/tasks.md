@@ -1,69 +1,86 @@
-﻿# Tasks: Sprint 16 — Estabilização pós-implantação, Contingência e Documentação Final
+# 📋 Lista de Tarefas (Tasks) — Sprint 16 — Estabilização pós-implantação, Contingência e Documentação Final
 
-**Feature**: `013-estabilizacao-contingencia-final`
-**Generated**: 2026-08-27
-**Source**: spec.md, plan.md, data-model.md, contracts/api-admin.md, research.md
+> **Padrão**: User Stories sequenciais no projeto com Sub-tarefas decimais (`US-XX.Y`).
 
 ---
 
-## Phase 1: Setup & Foundational
+## 📦 US-50: Executar Rotinas de Backup Automático e Disaster Recovery em 1 Comando
 
-**Purpose**: Migration Flyway V17, Entidades JPA de Auditoria e Backup
+> **Descrição**: Rotinas agendadas de backup diário compactado do PostgreSQL com retenção de 30 dias e script de restauração em menos de 10 minutos.
 
-- [ ] T001 Criar package `br.edu.ifpb.alumigest.admin` e diretório `frontend/src/features/admin`
-- [ ] T002 Criar migration Flyway `backend/src/main/resources/db/migration/V17__create_audit_and_backup_schema.sql` com tabelas `audit_logs` e `system_backups`
-- [ ] T003 Criar entidades JPA `AuditLog` e `SystemBackup` em `backend/src/main/java/br/edu/ifpb/alumigest/admin/domain/`
-- [ ] T004 [P] Criar repositórios `AuditLogRepository` e `SystemBackupRepository` em `backend/src/main/java/br/edu/ifpb/alumigest/admin/repository/`
+| ID | Tarefa | Status |
+|---|---|:---:|
+| **US-50.1** | [US-50.1](issues/US-50.1-criar-package-br-edu-ifpb-alumigest-admin-e-d/issue.md) Criar package `br.edu.ifpb.alumigest.admin` e diretório `frontend/src/features/admin` | 🔲 Pendente |
+| **US-50.2** | [US-50.2](issues/US-50.2-criar-migration-flyway-backend-src-main-resou/issue.md) Criar migration Flyway `backend/src/main/resources/db/migration/V17__create_audit_and_backup_schema.sql` com tabelas `audit_logs` e `system_backups` | 🔲 Pendente |
+| **US-50.3** | [US-50.3](issues/US-50.3-criar-entidades-jpa-auditlog-e-systembackup-e/issue.md) Criar entidades JPA `AuditLog` e `SystemBackup` em `backend/src/main/java/br/edu/ifpb/alumigest/admin/domain/` | 🔲 Pendente |
+| **US-50.4** | [US-50.4](issues/US-50.4-criar-repositorios-auditlogrepository-e-syste/issue.md) Criar repositórios `AuditLogRepository` e `SystemBackupRepository` em `backend/src/main/java/br/edu/ifpb/alumigest/admin/repository/` | 🔲 Pendente |
+| **US-50.5** | [US-50.5](issues/US-50.5-criar-record-systembackupresponse-em-backend-/issue.md) Criar record `SystemBackupResponse` em `backend/src/main/java/br/edu/ifpb/alumigest/admin/dto/SystemBackupResponse.java` | 🔲 Pendente |
+| **US-50.6** | [US-50.6](issues/US-50.6-implementar-servico-systembackupservice-gerar/issue.md) Implementar serviço `SystemBackupService.gerarBackup()` com `ProcessBuilder` e retenção de 30 dias em `backend/src/main/java/br/edu/ifpb/alumigest/admin/service/SystemBackupService.java` | 🔲 Pendente |
+| **US-50.7** | [US-50.7](issues/US-50.7-configurar-rotina-agendada-scheduled-cron-0-0/issue.md) Configurar rotina agendada `@Scheduled(cron = "0 0 2 * * *")` para backup na madrugada | 🔲 Pendente |
+| **US-50.8** | [US-50.8](issues/US-50.8-criar-endpoints-post-api-admin-backups-genera/issue.md) Criar endpoints POST /api/admin/backups/generate e GET /api/admin/backups/{id}/download no `SystemBackupController` em `backend/src/main/java/br/edu/ifpb/alumigest/admin/controller/SystemBackupController.java` | 🔲 Pendente |
+| **US-50.9** | [US-50.9](issues/US-50.9-criar-script-de-restauracao-rapida-scripts-re/issue.md) Criar script de restauração rápida `scripts/restore-backup.sh` e `scripts/restore-backup.ps1` | 🔲 Pendente |
+| **US-50.10** | [US-50.10](issues/US-50.10-criar-testes-unitarios-do-systembackupservice/issue.md) Criar testes unitários do `SystemBackupServiceTest` | 🔲 Pendente |
 
----
+### Detalhamento das Tarefas (Checklist):
 
-## Phase 2: User Story 1 - Backup Automático e Restauração de Desastre (Priority: P1) 🎯 MVP
-
-**Goal**: Agendamento diário de backup, disparador manual e script de restore automatizado.
-
-**Independent Test**: Executar backup manual via endpoint e validar integridade do dump gerado.
-
-- [ ] T005 [P] [US1] Criar record `SystemBackupResponse` em `backend/src/main/java/br/edu/ifpb/alumigest/admin/dto/SystemBackupResponse.java`
-- [ ] T006 [US1] Implementar serviço `SystemBackupService.gerarBackup()` com `ProcessBuilder` e retenção de 30 dias em `backend/src/main/java/br/edu/ifpb/alumigest/admin/service/SystemBackupService.java`
-- [ ] T007 [US1] Configurar rotina agendada `@Scheduled(cron = "0 0 2 * * *")` para backup na madrugada
-- [ ] T008 [US1] Criar endpoints POST /api/admin/backups/generate e GET /api/admin/backups/{id}/download no `SystemBackupController` em `backend/src/main/java/br/edu/ifpb/alumigest/admin/controller/SystemBackupController.java`
-- [ ] T009 [US1] Criar script de restauração rápida `scripts/restore-backup.sh` e `scripts/restore-backup.ps1`
-- [ ] T010 [P] [US1] Criar testes unitários do `SystemBackupServiceTest`
-
----
-
-## Phase 3: User Story 2 - Trilha de Auditoria de Operações Sensíveis (Priority: P1) 🎯 MVP
-
-**Goal**: Interceptar métodos sensíveis com AOP e exibir logs de auditoria no frontend.
-
-**Independent Test**: Cancelar pedido de teste e verificar gravação de registro em `audit_logs`.
-
-- [ ] T011 [P] [US2] Criar anotação customizada `@AuditAction(acao, entidade)` em `backend/src/main/java/br/edu/ifpb/alumigest/admin/annotation/AuditAction.java`
-- [ ] T012 [US2] Implementar interceptor AOP `AuditAspect` capturando usuário logado e persistindo em `AuditLogService`
-- [ ] T013 [P] [US2] Criar record `AuditLogResponse`
-- [ ] T014 [US2] Criar endpoint GET /api/admin/audit-logs no `AuditLogController`
-- [ ] T015 [P] [US2] Criar testes unitários do `AuditAspectTest`
-- [ ] T016 [US2] Criar componente `AuditLogTable` no frontend com filtros por entidade e data
-- [ ] T017 [US2] Criar página `AuditLogsPage` no frontend
+- [ ] **US-50.1**: Criar package `br.edu.ifpb.alumigest.admin` e diretório `frontend/src/features/admin`
+- [ ] **US-50.2**: Criar migration Flyway `backend/src/main/resources/db/migration/V17__create_audit_and_backup_schema.sql` com tabelas `audit_logs` e `system_backups`
+- [ ] **US-50.3**: Criar entidades JPA `AuditLog` e `SystemBackup` em `backend/src/main/java/br/edu/ifpb/alumigest/admin/domain/`
+- [ ] **US-50.4**: Criar repositórios `AuditLogRepository` e `SystemBackupRepository` em `backend/src/main/java/br/edu/ifpb/alumigest/admin/repository/`
+- [ ] **US-50.5**: Criar record `SystemBackupResponse` em `backend/src/main/java/br/edu/ifpb/alumigest/admin/dto/SystemBackupResponse.java`
+- [ ] **US-50.6**: Implementar serviço `SystemBackupService.gerarBackup()` com `ProcessBuilder` e retenção de 30 dias em `backend/src/main/java/br/edu/ifpb/alumigest/admin/service/SystemBackupService.java`
+- [ ] **US-50.7**: Configurar rotina agendada `@Scheduled(cron = "0 0 2 * * *")` para backup na madrugada
+- [ ] **US-50.8**: Criar endpoints POST /api/admin/backups/generate e GET /api/admin/backups/{id}/download no `SystemBackupController` em `backend/src/main/java/br/edu/ifpb/alumigest/admin/controller/SystemBackupController.java`
+- [ ] **US-50.9**: Criar script de restauração rápida `scripts/restore-backup.sh` e `scripts/restore-backup.ps1`
+- [ ] **US-50.10**: Criar testes unitários do `SystemBackupServiceTest`
 
 ---
 
-## Phase 4: User Story 3 - Monitoramento de Saúde e Documentação Final (Priority: P2)
+## 📦 US-51: Registrar Trilha de Auditoria Imutável para Ações Críticas
 
-**Goal**: Configurar Actuator e gerar documentação arquitetural consolidada.
+> **Descrição**: Registro imutável de eventos sensíveis (alteração de tabelas de preços, descontos, cancelamento de pedidos, baixas manuais).
 
-**Independent Test**: Acessar `/actuator/health` e constatar status "UP".
+| ID | Tarefa | Status |
+|---|---|:---:|
+| **US-51.1** | [US-51.1](issues/US-51.1-criar-anotacao-customizada-auditaction-acao-e/issue.md) Criar anotação customizada `@AuditAction(acao, entidade)` em `backend/src/main/java/br/edu/ifpb/alumigest/admin/annotation/AuditAction.java` | 🔲 Pendente |
+| **US-51.2** | [US-51.2](issues/US-51.2-implementar-interceptor-aop-auditaspect-captu/issue.md) Implementar interceptor AOP `AuditAspect` capturando usuário logado e persistindo em `AuditLogService` | 🔲 Pendente |
+| **US-51.3** | [US-51.3](issues/US-51.3-criar-record-auditlogresponse/issue.md) Criar record `AuditLogResponse` | 🔲 Pendente |
+| **US-51.4** | [US-51.4](issues/US-51.4-criar-endpoint-get-api-admin-audit-logs-no-au/issue.md) Criar endpoint GET /api/admin/audit-logs no `AuditLogController` | 🔲 Pendente |
+| **US-51.5** | [US-51.5](issues/US-51.5-criar-testes-unitarios-do-auditaspecttest/issue.md) Criar testes unitários do `AuditAspectTest` | 🔲 Pendente |
+| **US-51.6** | [US-51.6](issues/US-51.6-criar-componente-auditlogtable-no-frontend-co/issue.md) Criar componente `AuditLogTable` no frontend com filtros por entidade e data | 🔲 Pendente |
+| **US-51.7** | [US-51.7](issues/US-51.7-criar-pagina-auditlogspage-no-frontend/issue.md) Criar página `AuditLogsPage` no frontend | 🔲 Pendente |
 
-- [ ] T018 [US3] Configurar Spring Boot Actuator no `pom.xml` e `application.yml`
-- [ ] T019 [US3] Criar componente `SystemHealthBadge` e tela `SystemSettingsPage` no frontend
-- [ ] T020 [US3] Criar Runbook de Contingência e Guia de Disaster Recovery em `docs/arquitetura/disaster-recovery.md`
-- [ ] T021 [US3] Criar Diagrama C4 Model consolidado da arquitetura do AlumiGest em `docs/arquitetura/c4-model.md`
+### Detalhamento das Tarefas (Checklist):
+
+- [ ] **US-51.1**: Criar anotação customizada `@AuditAction(acao, entidade)` em `backend/src/main/java/br/edu/ifpb/alumigest/admin/annotation/AuditAction.java`
+- [ ] **US-51.2**: Implementar interceptor AOP `AuditAspect` capturando usuário logado e persistindo em `AuditLogService`
+- [ ] **US-51.3**: Criar record `AuditLogResponse`
+- [ ] **US-51.4**: Criar endpoint GET /api/admin/audit-logs no `AuditLogController`
+- [ ] **US-51.5**: Criar testes unitários do `AuditAspectTest`
+- [ ] **US-51.6**: Criar componente `AuditLogTable` no frontend com filtros por entidade e data
+- [ ] **US-51.7**: Criar página `AuditLogsPage` no frontend
 
 ---
 
-## Phase 5: Polish & Project Governance
+## 📦 US-52: Monitorar Saúde do Sistema com Actuator e Publicar Documentação Final
 
-**Purpose**: Documentação OpenAPI e consolidação de governança
+> **Descrição**: Endpoints de métricas de saúde com Spring Boot Actuator, dicionário de dados consolidado e runbook de operações da sustentação.
 
-- [ ] T022 [P] Documentar endpoints no OpenAPI/Swagger
-- [ ] T023 [P] Atualizar mapa mestre de governança e documentação em `docs/planejamento/README.md`
+| ID | Tarefa | Status |
+|---|---|:---:|
+| **US-52.1** | [US-52.1](issues/US-52.1-configurar-spring-boot-actuator-no-pom-xml-e-/issue.md) Configurar Spring Boot Actuator no `pom.xml` e `application.yml` | 🔲 Pendente |
+| **US-52.2** | [US-52.2](issues/US-52.2-criar-componente-systemhealthbadge-e-tela-sys/issue.md) Criar componente `SystemHealthBadge` e tela `SystemSettingsPage` no frontend | 🔲 Pendente |
+| **US-52.3** | [US-52.3](issues/US-52.3-criar-runbook-de-contingencia-e-guia-de-disas/issue.md) Criar Runbook de Contingência e Guia de Disaster Recovery em `docs/arquitetura/disaster-recovery.md` | 🔲 Pendente |
+| **US-52.4** | [US-52.4](issues/US-52.4-criar-diagrama-c4-model-consolidado-da-arquit/issue.md) Criar Diagrama C4 Model consolidado da arquitetura do AlumiGest em `docs/arquitetura/c4-model.md` | 🔲 Pendente |
+| **US-52.5** | [US-52.5](issues/US-52.5-documentar-endpoints-no-openapi-swagger/issue.md) Documentar endpoints no OpenAPI/Swagger | 🔲 Pendente |
+| **US-52.6** | [US-52.6](issues/US-52.6-atualizar-mapa-mestre-de-governanca-e-documen/issue.md) Atualizar mapa mestre de governança e documentação em `docs/planejamento/README.md` | 🔲 Pendente |
+
+### Detalhamento das Tarefas (Checklist):
+
+- [ ] **US-52.1**: Configurar Spring Boot Actuator no `pom.xml` e `application.yml`
+- [ ] **US-52.2**: Criar componente `SystemHealthBadge` e tela `SystemSettingsPage` no frontend
+- [ ] **US-52.3**: Criar Runbook de Contingência e Guia de Disaster Recovery em `docs/arquitetura/disaster-recovery.md`
+- [ ] **US-52.4**: Criar Diagrama C4 Model consolidado da arquitetura do AlumiGest em `docs/arquitetura/c4-model.md`
+- [ ] **US-52.5**: Documentar endpoints no OpenAPI/Swagger
+- [ ] **US-52.6**: Atualizar mapa mestre de governança e documentação em `docs/planejamento/README.md`
+

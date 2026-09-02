@@ -18,83 +18,67 @@ Com o motor de produção e chão de fábrica operando (Sprints 5, 6 e 7), o Alu
 
 ---
 
-## 2. Histórias de Usuário (User Stories)
+## 2. 👥 Histórias de Usuário (User Stories)
 
-### User Story 1 (P1) — Reserva e Baixa Automática de Estoque 🎯 MVP
+### 📌 US-24: Reservar e Baixar Matéria-Prima no Estoque Automaticamente
 
-**Como** Almoxarife e Gerente de Produção,
-**Quero** que os materiais sejam automaticamente reservados na liberação da produção e baixados ao concluir o corte,
-**Para que** o saldo disponível de estoque reflita a realidade em tempo real sem lançamentos manuais repetitivos.
+> Reservar insumos no momento da confirmação do pedido e efetuar a baixa definitiva no estoque no início da produção da OP.
 
-#### Cenários de Aceitação (BDD / Gherkin)
+#### Sub-tarefas Técnicas (Sub-issues):
+- **US-24.1**: Criar package `br.edu.ifpb.alumigest.stock` e diretório `frontend/src/features/stock`
+- **US-24.2**: Criar migration Flyway `backend/src/main/resources/db/migration/V11__create_stock_schema.sql` com tabelas `stock_items`, `stock_movements` e `scrap_records`
+- **US-24.3**: Criar enum `StockMovementType` (ENTRADA_COMPRA, RESERVA_PRODUCAO, BAIXA_PRODUCAO, PERDA_SUCATA, AJUSTE_MANUAL, CANCELAMENTO_RESERVA) em `backend/src/main/java/br/edu/ifpb/alumigest/stock/domain/StockMovementType.java`
+- **US-24.4**: Criar enum `ScrapReason` (QUEBRA_MANUSEIO, ERRO_MEDIDA_CORTE, DEFEITO_FABRICA_MATERIAL, AVARIA_TRANSPORTE, OUTROS) em `backend/src/main/java/br/edu/ifpb/alumigest/stock/domain/ScrapReason.java`
+- **US-24.5**: Criar entidade JPA `StockItem` em `backend/src/main/java/br/edu/ifpb/alumigest/stock/domain/StockItem.java`
+- **US-24.6**: Criar entidade JPA `StockMovement` em `backend/src/main/java/br/edu/ifpb/alumigest/stock/domain/StockMovement.java`
+- **US-24.7**: Criar entidade JPA `ScrapRecord` em `backend/src/main/java/br/edu/ifpb/alumigest/stock/domain/ScrapRecord.java`
+- **US-24.8**: Criar repositório `StockItemRepository` em `backend/src/main/java/br/edu/ifpb/alumigest/stock/repository/StockItemRepository.java`
+- **US-24.9**: Criar repositório `StockMovementRepository` em `backend/src/main/java/br/edu/ifpb/alumigest/stock/repository/StockMovementRepository.java`
+- **US-24.10**: Criar repositório `ScrapRecordRepository` em `backend/src/main/java/br/edu/ifpb/alumigest/stock/repository/ScrapRecordRepository.java`
+- **US-24.11**: Criar record `StockItemResponse` (saldos físico, reservado, disponível e alerta) em `backend/src/main/java/br/edu/ifpb/alumigest/stock/dto/StockItemResponse.java`
+- **US-24.12**: Criar record `StockMovementRequest` e `StockMovementResponse` em `backend/src/main/java/br/edu/ifpb/alumigest/stock/dto/StockMovementRequest.java`
+- **US-24.13**: Criar mapper MapStruct `StockMapper` em `backend/src/main/java/br/edu/ifpb/alumigest/stock/mapper/StockMapper.java`
+- **US-24.14**: Implementar método `reservarMateriais(Long orderId)` no `StockService` em `backend/src/main/java/br/edu/ifpb/alumigest/stock/service/StockService.java`
+- **US-24.15**: Implementar método `baixarMateriais(Long productionOrderId)` no `StockService` convertendo reserva em baixa física
+- **US-24.16**: Implementar método `registrarMovimentacaoManual(StockMovementRequest request)` e `listarSaldos()` no `StockService`
+- **US-24.17**: Criar `StockController` com endpoints GET /api/stock, POST /api/stock/movement, GET /api/stock/{id}/movements em `backend/src/main/java/br/edu/ifpb/alumigest/stock/controller/StockController.java`
+- **US-24.18**: Criar testes unitários de reserva, baixa e concorrência no `StockServiceTest` em `backend/src/test/java/br/edu/ifpb/alumigest/stock/service/StockServiceTest.java`
 
-```gherkin
-Cenário: Reserva automática ao liberar produção
-  Dado que um pedido "PED-2026-0001" é liberado para produção gerando OPs
-  Quando o sistema cria as OPs
-  Então os materiais base associados aos itens devem ter suas quantidades reservadas
-  E o saldo disponível de cada material deve diminuir proporcionalmente
+### 📌 US-25: Apontar Perdas, Quebras e Descarte de Sucata
 
-Cenário: Baixa definitiva ao concluir o corte da OP
-  Dado que uma OP "OP-2026-0001-01" passa para o status "EM_MONTAGEM" (corte finalizado)
-  Quando a transição é confirmada pelo operador
-  Então as quantidades reservadas daquela peça são convertidas em baixa física definitiva do estoque
-```
+> Registrar perdas de perfis, quebras de vidro ou retrabalhos com justificativas padronizadas e solicitação de reposição de insumos.
 
----
+#### Sub-tarefas Técnicas (Sub-issues):
+- **US-25.1**: Criar record `ScrapRecordRequest` e `ScrapRecordResponse` em `backend/src/main/java/br/edu/ifpb/alumigest/stock/dto/ScrapRecordRequest.java`
+- **US-25.2**: Implementar método `registrarPerda(ScrapRecordRequest request)` no `ScrapService` com débito em `StockItem` em `backend/src/main/java/br/edu/ifpb/alumigest/stock/service/ScrapService.java`
+- **US-25.3**: Adicionar endpoint POST /api/stock/scrap no `StockController`
+- **US-25.4**: Criar teste unitário do `ScrapServiceTest`
 
-### User Story 2 (P1) — Apontamento de Perdas e Descarte de Sucata 🎯 MVP
+### 📌 US-26: Consultar Posição de Estoque e Kardex de Movimentações
 
-**Como** Cortador e Almoxarife da Alumiportas,
-**Quero** registrar a perda de um material (quebra de vidro, erro de corte de perfil) com justificativa e motivo padronizado,
-**Para que** a empresa quantifique o índice de desperdício e dê baixa contábil na matéria-prima descartada.
+> Consultar saldo atual, ponto de reposição, valorização de estoque e histórico cronológico (Kardex) de entradas, reservas e saídas de insumos.
 
-#### Cenários de Aceitação (BDD / Gherkin)
+#### Sub-tarefas Técnicas (Sub-issues):
+- **US-26.1**: Criar interfaces TypeScript e schemas Zod em `frontend/src/features/stock/types/stock.ts`
+- **US-26.2**: Criar serviço de API Axios (`stockApi.ts`) e hooks React Query (`useStock.ts`)
+- **US-26.3**: Criar componente `StockTable` com badges de alerta amarelo em `frontend/src/features/stock/components/StockTable.tsx`
+- **US-26.4**: Criar modal `StockMovementModal` para entrada de materiais em `frontend/src/features/stock/components/StockMovementModal.tsx`
+- **US-26.5**: Criar modal `ScrapRecordModal` para registro de perda/sucata em `frontend/src/features/stock/components/ScrapRecordModal.tsx`
+- **US-26.6**: Criar componente `KardexDrawer` com histórico de movimentações em `frontend/src/features/stock/components/KardexDrawer.tsx`
+- **US-26.7**: Criar página `StockPage` e registrar rota `/estoque` no React Router
 
-```gherkin
-Cenário: Registro de perda de material
-  Dado que ocorreu uma quebra de chapa de vidro temperado
-  Quando o almoxarife/cortador acessa "Registrar Perda de Estoque"
-  E seleciona o material "Vidro Temperado 8mm Incolor", informa quantidade "2.4 m²" e motivo "QUEBRA_MANUSEIO"
-  Então o sistema debita a quantidade do estoque físico como perda/sucata
-  E grava o registro com data/hora e operador responsável
-```
+### 📌 US-27: Homologação Integrada e Validação da Release 2 (v2.0.0)
 
----
+> Homologar o fluxo ponta a ponta da Release 2 (Pedido de Venda -> OP com QR Code -> Corte & Montagem -> Baixa de Estoque e Kardex).
 
-### User Story 3 (P2) — Painel de Posição de Estoque & Kardex de Movimentações
-
-**Como** Comprador e Diretor da Alumiportas,
-**Quero** consultar a posição consolidada de estoque (físico, reservado, disponível), alertas de estoque mínimo e extrato de movimentações (Kardex),
-**Para que** eu possa programar compras de perfis e vidros antes que ocorra desabastecimento na fábrica.
-
-#### Cenários de Aceitação (BDD / Gherkin)
-
-```gherkin
-Cenário: Alerta de saldo disponível crítico
-  Dado que o perfil de alumínio "Perfil Linha Suprema Branco" possui saldo disponível inferior ao estoque mínimo
-  Quando o usuário acessa o painel de estoque
-  Então o item deve ser destacado com badge de alerta em amarelo
-```
-
----
-
-### User Story 4 (P2) — Homologação Integrada da Release 2 (v2.0.0)
-
-**Como** Equipe de Engenharia e Stakeholders da Alumiportas,
-**Quero** validar o fluxo integrado ponta a ponta da Release 2 (Sprints 5 a 8) e assegurar os Quality Gates,
-**Para que** a versão v2.0.0 esteja pronta para uso em produção.
-
-#### Cenários de Aceitação (BDD / Gherkin)
-
-```gherkin
-Cenário: Execução dos Quality Gates da Release 2
-  Dado que os testes unitários e de integração de produção e estoque são executados
-  Quando o SonarQube Quality Gate e os builds de frontend/backend passam com 100% de sucesso
-  Então a Release 2 é homologada e o relatório TEA é arquivado
-```
-
----
+#### Sub-tarefas Técnicas (Sub-issues):
+- **US-27.1**: Executar `mvn clean verify` no backend e corrigir qualquer falha nos testes de todas as sprints da Release 2
+- **US-27.2**: Executar `npm run build` no frontend e validar tipagem estrita
+- **US-27.3**: Validar os cenários E2E da Release 2 no ambiente local
+- **US-27.4**: Documentar relatório de Testes de Aceitação da Release 2 em `docs/projeto-001/003-teste/TEA-Testes_de_Aceitacao_Release2.md`
+- **US-27.5**: Documentação OpenAPI/Swagger nos endpoints de estoque
+- **US-27.6**: Adicionar atalho "Estoque & Materiais" no menu do frontend
+- **US-27.7**: Validação final do `quickstart.md` da Sprint 8
 
 ## 3. Requisitos Funcionais
 

@@ -22,71 +22,44 @@ Na rotina da serralheria e vidraçaria da Alumiportas, após a geração das Ord
 
 ---
 
-## 2. Histórias de Usuário (User Stories)
+## 2. 👥 Histórias de Usuário (User Stories)
 
-### User Story 1 (P1) — Lista Consolidada de Corte do Pedido de Venda 🎯 MVP
+### 📌 US-21: Consolidar Lista Linear e Plana de Corte do Pedido
 
-**Como** Cortador de Alumínio e Vidro da Alumiportas,
-**Quero** visualizar a Lista Consolidada de Corte do Pedido contendo todas as peças a serem cortadas com suas medidas nominais, acabamentos e cores,
-**Para que** eu possa separar as barras de perfil e chapas de vidro do estoque e realizar os cortes do pedido com organização.
+> Agrupar e consolidar o plano de corte de perfis de alumínio e chapas de vidro de todas as peças de um pedido para minimizar o desperdício de matéria-prima.
 
-#### Cenários de Aceitação (BDD / Gherkin)
+#### Sub-tarefas Técnicas (Sub-issues):
+- **US-21.1**: Criar record `CuttingItemDTO` (codigoOP, numeroPeca, totalPecas, descricao, larguraMm, alturaMm, corAluminio, tipoVidro, orientacaoAbertura, ferragens, status) em `backend/src/main/java/br/edu/ifpb/alumigest/production/dto/CuttingItemDTO.java`
+- **US-21.2**: Criar record `CuttingListResponse` (orderId, orderCodigo, clienteNome, dataPrevisaoEntrega, itens) em `backend/src/main/java/br/edu/ifpb/alumigest/production/dto/CuttingListResponse.java`
+- **US-21.3**: Criar record `AssemblySheetResponse` em `backend/src/main/java/br/edu/ifpb/alumigest/production/dto/AssemblySheetResponse.java`
+- **US-21.4**: Implementar serviço `CuttingListService.gerarRomaneioPedido(Long orderId)` agregando dados das OPs e itens do pedido em `backend/src/main/java/br/edu/ifpb/alumigest/production/service/CuttingListService.java`
+- **US-21.5**: Criar endpoint GET /api/production/orders/{orderId}/cutting-list no `ProductionReportController` em `backend/src/main/java/br/edu/ifpb/alumigest/production/controller/ProductionReportController.java`
+- **US-21.6**: Criar testes unitários do `CuttingListService` em `backend/src/test/java/br/edu/ifpb/alumigest/production/service/CuttingListServiceTest.java`
+- **US-21.7**: Criar modal `CuttingListModal` no frontend exibindo a tabela consolidada de corte em `frontend/src/features/production/components/CuttingListModal.tsx`
+- **US-21.8**: Adicionar botão "Lista de Corte" na tela de detalhes do pedido (`OrderDetailPage.tsx`)
 
-```gherkin
-Cenário: Visualização do Romaneio Consolidado de Corte
-  Dado que existe um pedido "PED-2026-0001" em produção com 3 itens (Janelas e Portas)
-  Quando o cortador acessa o "Romaneio de Corte do Pedido"
-  Então o sistema deve exibir a tabela consolidada agrupando os itens por tipo de material
-  E cada linha deve detalhar: Código da OP, Descrição do Produto, Medidas Nominais (LxA mm), Quantidade, Cor do Alumínio, Especificação do Vidro e Lado de Abertura
-```
+### 📌 US-22: Gerar Ficha Técnica de Montagem por Ordem de Produção
 
----
+> Disponibilizar a ficha técnica de montagem passo a passo com esquemas de furação, gaxetas, roldanas e guarnições específicas para cada modelo de esquadria.
 
-### User Story 2 (P1) — Ficha Técnica de Montagem por Ordem de Produção 🎯 MVP
+#### Sub-tarefas Técnicas (Sub-issues):
+- **US-22.1**: Implementar método `gerarFichaMontagem(Long productionOrderId)` no `CuttingListService`
+- **US-22.2**: Adicionar endpoint GET /api/production/production-orders/{id}/assembly-sheet no `ProductionReportController`
+- **US-22.3**: Criar componente `AssemblySheetView` no frontend exibindo as orientações e acessórios da peça em `frontend/src/features/production/components/AssemblySheetView.tsx`
+- **US-22.4**: Integrar a visualização da Ficha Técnica na página de detalhes da OP (`ProductionOrderDetailPage.tsx`) e após leitura no scanner
 
-**Como** Montador de Esquadrias na bancada da oficina,
-**Quero** consultar a Ficha Técnica de Montagem de uma OP específica (na tela do PWA ou no papel),
-**Para que** eu identifique com precisão o lado de abertura, posicionamento de fechos/puxadores, ferragens e vidros a serem montados naquela peça.
+### 📌 US-23: Emitir Romaneio de Oficina em PDF com Checklist de Conferência
 
-#### Cenários de Aceitação (BDD / Gherkin)
+> Emitir romaneio de expedição e conferência de oficina em PDF com caixas de checagem (checklists) para controle de saída de esquadrias e ferragens avulsas.
 
-```gherkin
-Cenário: Ficha de Montagem detalhada por OP
-  Dado que o montador acessa a OP "OP-2026-0001-01"
-  Quando ele abre a "Ficha Técnica de Montagem"
-  Então o sistema deve apresentar os dados completos:
-    | Campo                | Valor Exemplo                 |
-    | OP                   | OP-2026-0001-01 (Peça 1 de 2) |
-    | Modelo               | Janela 2 Folhas Correr        |
-    | Medida Nominal       | 1200 x 1000 mm                |
-    | Cor do Alumínio      | Preto                         |
-    | Vidro                | Temperado 8mm Fume            |
-    | Sentido de Abertura  | Correr (Folha Direita Móvel)  |
-    | Ferragens/Acessórios | 1x Fecho Concha, 2x Roldanas  |
-```
-
----
-
-### User Story 3 (P2) — Emissão de Romaneio de Oficina em PDF com Checklist de Conferência
-
-**Como** Encarregado de Produção,
-**Quero** emitir o PDF do Romaneio de Oficina em folha A4 contendo colunas de conferência com checkboxes (`[ ] Cortado`, `[ ] Montado`),
-**Para que** os operadores assinalem fisicamente com caneta o avanço das peças na prancheta de trabalho.
-
-#### Cenários de Aceitação (BDD / Gherkin)
-
-```gherkin
-Cenário: Download do PDF do Romaneio de Oficina
-  Dado que o pedido "PED-2026-0001" existe
-  Quando o usuário clica em "Emitir Romaneio de Oficina (PDF)"
-  Então o sistema gera um PDF profissional em folha A4 contendo:
-    - Cabeçalho com dados do pedido, cliente e prazo de entrega
-    - Tabela de itens com medidas nominais (LxA mm), cores, vidros e aberturas
-    - Relação de ferragens e acessórios necessários
-    - Colunas de visto manual "[ ] Cortado" e "[ ] Montado"
-```
-
----
+#### Sub-tarefas Técnicas (Sub-issues):
+- **US-23.1**: Criar serviço `WorkshopPdfService` gerando PDF A4 de romaneio de corte com colunas de checklist físico em `backend/src/main/java/br/edu/ifpb/alumigest/production/service/WorkshopPdfService.java`
+- **US-23.2**: Adicionar método para gerar PDF individual da Ficha Técnica da OP no `WorkshopPdfService`
+- **US-23.3**: Adicionar endpoints GET /api/production/orders/{orderId}/cutting-list-pdf e GET /api/production/production-orders/{id}/assembly-sheet-pdf no `ProductionReportController`
+- **US-23.4**: Criar teste unitário do `WorkshopPdfServiceTest` validando geração de bytes não-vazios
+- **US-23.5**: Adicionar botões de download do PDF na interface do frontend
+- **US-23.6**: Documentar endpoints no OpenAPI/Swagger
+- **US-23.7**: Executar validação dos cenários de teste do `quickstart.md` da Sprint 7
 
 ## 3. Requisitos Funcionais
 

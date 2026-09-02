@@ -22,89 +22,74 @@ Esta sprint entrega:
 
 ---
 
-## 2. Histórias de Usuário (User Stories)
+## 2. 👥 Histórias de Usuário (User Stories)
 
-### User Story 1 (P1) — Aprovação de Orçamento e Geração de Pedido de Venda 🎯 MVP
+### 📌 US-13: Aprovar Orçamento e Converter em Pedido de Venda
 
-**Como** Vendedor ou Administrador da Alumiportas,
-**Quero** aprovar um orçamento formalmente selecionando o canal de confirmação e convertê-lo em um Pedido de Venda com um clique,
-**Para que** a negociação seja oficializada e encaminhada para o fluxo fabril e financeiro.
+> Permitir a conversão de um orçamento aprovado em Pedido de Venda oficial, registrando o canal de aprovação e gerando código sequencial de pedido.
 
-#### Cenários de Aceitação (BDD / Gherkin)
+#### Sub-tarefas Técnicas (Sub-issues):
+- **US-13.1**: Criar package `br.edu.ifpb.alumigest.orders` e diretório `frontend/src/features/orders`
+- **US-13.2**: Criar migration Flyway `backend/src/main/resources/db/migration/V9__create_orders_schema.sql` com tabelas `orders` e `order_items`, constraints UNIQUE e índices
+- **US-13.3**: Criar enum `OrderStatus` (CRIADO, AGUARDANDO_PRODUCAO, EM_PRODUCAO, CONCLUIDO, CANCELADO) em `backend/src/main/java/br/edu/ifpb/alumigest/orders/domain/OrderStatus.java`
+- **US-13.4**: Criar enum `ApprovalChannel` com labels em português (WHATSAPP, PRESENCIAL, TELEFONE, EMAIL) em `backend/src/main/java/br/edu/ifpb/alumigest/orders/domain/ApprovalChannel.java`
+- **US-13.5**: Criar entidade JPA `Order` com mapeamento de todos os campos financeiros, cliente, orcamentoId (UNIQUE) e soft delete em `backend/src/main/java/br/edu/ifpb/alumigest/orders/domain/Order.java`
+- **US-13.6**: Criar entidade JPA `OrderItem` com snapshot imutável de itens em `backend/src/main/java/br/edu/ifpb/alumigest/orders/domain/OrderItem.java`
+- **US-13.7**: Criar repositório `OrderRepository` com busca por código, status e cliente em `backend/src/main/java/br/edu/ifpb/alumigest/orders/repository/OrderRepository.java`
+- **US-13.8**: Criar repositório `OrderItemRepository` em `backend/src/main/java/br/edu/ifpb/alumigest/orders/repository/OrderItemRepository.java`
+- **US-13.9**: Criar gerador de código sequencial `OrderCodeGenerator` (padrão PED-YYYY-NNNN) em `backend/src/main/java/br/edu/ifpb/alumigest/orders/service/OrderCodeGenerator.java`
+- **US-13.10**: Criar record `OrderConvertRequest` (canalAprovacao, dataPrevisaoEntrega, observacoes) com Bean Validation em `backend/src/main/java/br/edu/ifpb/alumigest/orders/dto/OrderConvertRequest.java`
+- **US-13.11**: Criar record `OrderResponse` (resposta completa com lista de itens e labels) em `backend/src/main/java/br/edu/ifpb/alumigest/orders/dto/OrderResponse.java`
+- **US-13.12**: Criar record `OrderSummaryResponse` para listagem paginada em `backend/src/main/java/br/edu/ifpb/alumigest/orders/dto/OrderSummaryResponse.java`
+- **US-13.13**: Criar record `OrderItemResponse` em `backend/src/main/java/br/edu/ifpb/alumigest/orders/dto/OrderItemResponse.java`
+- **US-13.14**: Criar mapper MapStruct `OrderMapper` em `backend/src/main/java/br/edu/ifpb/alumigest/orders/mapper/OrderMapper.java`
+- **US-13.15**: Implementar método `converterOrcamentoEmPedido(Long orcamentoId, OrderConvertRequest request)` no `OrderService` com validação de status de orçamento e atualização para APROVADO em `backend/src/main/java/br/edu/ifpb/alumigest/orders/service/OrderService.java`
+- **US-13.16**: Implementar clonagem profunda (deep copy) dos itens do orçamento para `OrderItem` no `OrderService` garantindo lock de preços
+- **US-13.17**: Implementar métodos `buscarPorId()` e `listar()` com paginação e filtros no `OrderService`
+- **US-13.18**: Criar `OrderController` com endpoints POST /api/orders/from-budget/{budgetId}, GET /api/orders/{id}, GET /api/orders em `backend/src/main/java/br/edu/ifpb/alumigest/orders/controller/OrderController.java`
+- **US-13.19**: Criar testes unitários do `OrderService` cobrindo conversão bem-sucedida, bloqueio de conversão duplicada e teste de imutabilidade de itens em `backend/src/test/java/br/edu/ifpb/alumigest/orders/service/OrderServiceTest.java`
+- **US-13.20**: Criar testes de integração dos endpoints REST do `OrderController` com base H2 em `backend/src/test/java/br/edu/ifpb/alumigest/orders/controller/OrderControllerIntegrationTest.java`
+- **US-13.21**: Criar interfaces TypeScript (Order, OrderItem, OrderConvertRequest, etc.) em `frontend/src/features/orders/types/order.ts`
+- **US-13.22**: Criar schemas Zod de validação (orderConvertSchema) em `frontend/src/features/orders/schemas/orderSchema.ts`
+- **US-13.23**: Criar serviço de API Axios em `frontend/src/features/orders/services/orderApi.ts`
+- **US-13.24**: Criar custom hooks React Query (useOrders, useOrder, useConvertBudget) em `frontend/src/features/orders/hooks/useOrders.ts`
+- **US-13.25**: Criar modal `OrderApprovalModal` (seleção de canal de aprovação, sugestão automática de data +15 dias e confirmação) em `frontend/src/features/orders/components/OrderApprovalModal.tsx`
+- **US-13.26**: Integrar o botão "Aprovar e Gerar Pedido" na tela de detalhes do orçamento (`BudgetDetailPage.tsx`) abrindo o modal de aprovação
+- **US-13.27**: Criar componente `OrderStatusBadge` em `frontend/src/features/orders/components/OrderStatusBadge.tsx`
+- **US-13.28**: Criar componente `OrderItemsTable` exibindo a tabela dos itens contratados com valores congelados em `frontend/src/features/orders/components/OrderItemsTable.tsx`
+- **US-13.29**: Criar página `OrderListPage` com listagem paginada, busca e filtros em `frontend/src/pages/OrderListPage.tsx`
+- **US-13.30**: Criar página `OrderDetailPage` com visualização detalhada do pedido em `frontend/src/pages/OrderDetailPage.tsx`
+- **US-13.31**: Configurar rotas `/pedidos` e `/pedidos/:id` no React Router em `frontend/src/App.tsx`
 
-```gherkin
-Cenário: Aprovar orçamento com sucesso e gerar pedido
-  Dado que existe um orçamento com código "ORC-2026-0001" no status "ENVIADO" ou "RASCUNHO"
-  Quando o vendedor clica em "Aprovar Orçamento e Gerar Pedido"
-  E seleciona o canal de aprovação "WhatsApp"
-  E aceita ou edita a data de entrega sugerida (+15 dias corridos da aprovação)
-  Então o status do orçamento deve mudar para "APROVADO"
-  E um novo Pedido de Venda deve ser criado com código sequencial (ex: "PED-2026-0001")
-  E o pedido deve estar vinculado ao orçamento "ORC-2026-0001"
-  E o status inicial do pedido deve ser "AGUARDANDO_PRODUCAO"
+### 📌 US-14: Snapshot Imutável e Lock de Preços do Pedido
 
-Cenário: Tentativa de aprovar orçamento já rejeitado ou expirado
-  Dado que existe um orçamento no status "REJEITADO" ou "EXPIRADO"
-  Quando o usuário tenta aprová-lo
-  Então o sistema deve exibir uma mensagem de erro orientando a reabertura ou revalidação do orçamento
-```
+> Garantir o congelamento (snapshot imutável) dos preços dos insumos, mão de obra e especificações no momento da conversão, blindando o pedido contra reajustes futuros do catálogo.
 
----
+#### Sub-tarefas Técnicas (Sub-issues):
 
-### User Story 2 (P1) — Snapshot Imutável e Lock de Preços 🎯 MVP
+### 📌 US-15: Gestão de Status, Prazos e Cancelamento de Pedidos
 
-**Como** Diretor Comercial e Financeiro,
-**Quero** que os preços e dados técnicos dos itens do pedido permaneçam 100% inalterados mesmo que o catálogo de materiais seja reajustado,
-**Para que** a empresa não tenha divergências financeiras entre o valor cobrado do cliente e o relatório do pedido.
+> Acompanhar o ciclo de vida do pedido (CRIADO -> AGUARDANDO_PRODUCAO -> EM_PRODUCAO -> PRONTO -> EM_INSTALACAO -> CONCLUIDO / CANCELADO), com justificativa de cancelamento e reabertura de orçamento.
 
-#### Cenários de Aceitação (BDD / Gherkin)
+#### Sub-tarefas Técnicas (Sub-issues):
+- **US-15.1**: Criar record `OrderCancelRequest` (justificativa obrigatória com min 10 caracteres) com Bean Validation em `backend/src/main/java/br/edu/ifpb/alumigest/orders/dto/OrderCancelRequest.java`
+- **US-15.2**: Implementar método `cancelarPedido(Long id, OrderCancelRequest request)` no `OrderService` validando que o pedido não está em produção
+- **US-15.3**: Adicionar endpoint PATCH /api/orders/{id}/cancel no `OrderController`
+- **US-15.4**: Criar modal `OrderCancelModal` com campo de justificativa no frontend em `frontend/src/features/orders/components/OrderCancelModal.tsx`
+- **US-15.5**: Adicionar botão "Reabrir Orçamento para Edição" na tela do orçamento quando o pedido vinculado estiver cancelado
 
-```gherkin
-Cenário: Reajuste de materiais no catálogo não afeta pedido gerado
-  Dado que um pedido "PED-2026-0001" foi criado contendo um item "Janela 2F" com valor unitário R$ 450,00
-  Quando o administrador altera o preço do vidro ou do perfil de alumínio no catálogo de materiais
-  E visualiza os detalhes do pedido "PED-2026-0001"
-  Então o item "Janela 2F" no pedido deve continuar com o valor unitário de R$ 450,00
-  E os totais bruto, desconto e líquido do pedido devem permanecer exatamente iguais aos do momento da conversão
-```
+### 📌 US-16: Emissão do Comprovante do Pedido de Venda
 
----
+> Emitir comprovante institucional do pedido de venda em PDF com resumo financeiro, especificações técnicas e prazo de entrega prometido ao cliente.
 
-### User Story 3 (P2) — Gestão de Status, Prazos e Cancelamento
-
-**Como** Gerente de Produção e Vendedor,
-**Quero** visualizar a lista de pedidos em aberto com suas datas previstas de entrega, atualizar seus status ou cancelar pedidos não iniciados com justificativa,
-**Para que** eu possa planejar a fila de fabricação e manter a integridade dos registros.
-
-#### Cenários de Aceitação (BDD / Gherkin)
-
-```gherkin
-Cenário: Cancelamento de pedido de venda com justificativa
-  Dado que existe um pedido "PED-2026-0001" no status "AGUARDANDO_PRODUCAO"
-  Quando o vendedor solicita o cancelamento informando a justificativa "Cliente desistiu da obra por motivos financeiros"
-  Então o status do pedido deve mudar para "CANCELADO"
-  E a justificativa deve ficar registrada no histórico do pedido
-  E o orçamento de origem "ORC-2026-0001" permanece como "APROVADO", exibindo o botão "Reabrir Orçamento para Edição"
-```
-
----
-
-### User Story 4 (P2) — Emissão do Comprovante do Pedido de Venda
-
-**Como** Cliente e Vendedor,
-**Quero** emitir e imprimir o Comprovante do Pedido de Venda em PDF contendo o número do pedido, data prevista de entrega, canal de aprovação, resumo financeiro e itens contratados,
-**Para que** sirva como contrato formal e garantia da transação.
-
-#### Cenários de Aceitação (BDD / Gherkin)
-
-```gherkin
-Cenário: Download do Comprovante do Pedido
-  Dado que um pedido "PED-2026-0001" existe
-  Quando o usuário clica em "Emitir Comprovante do Pedido"
-  Então o sistema deve fazer o download do documento em PDF contendo cabeçalho institucional Alumiportas, código do pedido, dados do cliente, itens com medidas, prazos e condições financeiras congeladas
-```
-
----
+#### Sub-tarefas Técnicas (Sub-issues):
+- **US-16.1**: Criar `OrderPdfService` com layout institucional para comprovante do pedido usando OpenPDF em `backend/src/main/java/br/edu/ifpb/alumigest/orders/service/OrderPdfService.java`
+- **US-16.2**: Adicionar endpoint GET /api/orders/{id}/pdf/comprovante no `OrderController`
+- **US-16.3**: Criar teste unitário de geração do PDF do comprovante no `OrderPdfServiceTest`
+- **US-16.4**: Adicionar botão "Emitir Comprovante do Pedido" e integração de download na `OrderDetailPage`
+- **US-16.5**: Adicionar documentação OpenAPI/Swagger nos endpoints do `OrderController`
+- **US-16.6**: Adicionar item "Pedidos de Venda" no menu de navegação do frontend
+- **US-16.7**: Executar validação completa do `quickstart.md` da Sprint 5 e documentar checklist
 
 ## 3. Requisitos Funcionais
 

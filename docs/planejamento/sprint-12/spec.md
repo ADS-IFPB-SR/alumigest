@@ -22,77 +22,58 @@ Esta sprint entrega:
 
 ---
 
-## 2. Histórias de Usuário (User Stories)
+## 2. 👥 Histórias de Usuário (User Stories)
 
-### User Story 1 (P1) — Agendamento de Instalação e Geração da OS 🎯 MVP
+### 📌 US-37: Agendar Instalação e Gerar Ordem de Serviço (OS)
 
-**Como** Coordenador de Instalações da Alumiportas,
-**Quero** agendar a instalação de um pedido concluído selecionando a equipe e a data/turno,
-**Para que** a Ordem de Serviço seja gerada e alocada na agenda sem sobreposição de horários.
+> Vincular pedidos prontos a equipes de instalação com agendamento de data, turno, endereço de obra e geração da Ordem de Serviço (OS).
 
-#### Cenários de Aceitação (BDD / Gherkin)
+#### Sub-tarefas Técnicas (Sub-issues):
+- **US-37.1**: Criar package `br.edu.ifpb.alumigest.installation` e diretório `frontend/src/features/installation`
+- **US-37.2**: Criar migration Flyway `backend/src/main/resources/db/migration/V15__create_service_orders_schema.sql` com tabelas `installation_teams`, `service_orders` e `service_order_photos`
+- **US-37.3**: Criar enums `ServiceOrderStatus`, `ShiftType` e `TeamType` em `backend/src/main/java/br/edu/ifpb/alumigest/installation/domain/`
+- **US-37.4**: Criar entidades JPA `InstallationTeam`, `ServiceOrder` e `ServiceOrderPhoto` em `backend/src/main/java/br/edu/ifpb/alumigest/installation/domain/`
+- **US-37.5**: Criar repositórios `ServiceOrderRepository`, `InstallationTeamRepository` e `ServiceOrderPhotoRepository` em `backend/src/main/java/br/edu/ifpb/alumigest/installation/repository/`
+- **US-37.6**: Criar record `ServiceOrderCreateRequest` e `ServiceOrderResponse` em `backend/src/main/java/br/edu/ifpb/alumigest/installation/dto/`
+- **US-37.7**: Criar mapper MapStruct `ServiceOrderMapper` em `backend/src/main/java/br/edu/ifpb/alumigest/installation/mapper/ServiceOrderMapper.java`
+- **US-37.8**: Implementar serviço `ServiceOrderService.criarOS(ServiceOrderCreateRequest request)` com validação de status do pedido e sugestão automática em `backend/src/main/java/br/edu/ifpb/alumigest/installation/service/ServiceOrderService.java`
+- **US-37.9**: Criar endpoints POST /api/installation/service-orders e GET /api/installation/service-orders no `ServiceOrderController` em `backend/src/main/java/br/edu/ifpb/alumigest/installation/controller/ServiceOrderController.java`
+- **US-37.10**: Criar testes unitários do `ServiceOrderServiceTest`
 
-```gherkin
-Cenário: Agendamento de OS com equipe e turno
-  Dado que um pedido "PED-2026-0001" está com status "CONCLUIDO"
-  Quando o coordenador agenda para 22/09/2026 (Turno MANHA) com a "Equipe 1 - Carlos e Marcos"
-  Então o sistema cria a OS "OS-2026-0001" no status "AGENDADA"
-  E a OS aparece no calendário da Equipe 1
-```
+### 📌 US-38: Executar e Concluir OS em Campo com Registro Fotográfico (PWA)
 
----
+> Instalador acessa a OS no smartphone via PWA, realiza checklist de entrega, tira fotos do trabalho concluído e colhe assinatura do cliente.
 
-### User Story 2 (P1) — Execução e Conclusão da OS em Campo com Fotos (PWA) 🎯 MVP
+#### Sub-tarefas Técnicas (Sub-issues):
+- **US-38.1**: Criar record `ServiceOrderStatusUpdateRequest` e `ServiceOrderPhotoResponse`
+- **US-38.2**: Implementar serviço de upload de imagens e atualização de status no `ServiceOrderService`
+- **US-38.3**: Criar endpoints PATCH /api/installation/service-orders/{id}/status e POST /api/installation/service-orders/{id}/photos no `ServiceOrderController`
+- **US-38.4**: Criar modal `FieldExecutionModal` no frontend com upload de câmera do celular em `frontend/src/features/installation/components/FieldExecutionModal.tsx`
 
-**Como** Instalador de Campo,
-**Quero** acessar a OS pelo smartphone, marcar "Iniciado" e ao finalizar anexar fotos e registrar o nome de quem recebeu a obra,
-**Para que** a entrega técnica seja formalizada digitalmente.
+### 📌 US-39: Visualizar Calendário de Instalações e Prevenção de Conflitos
 
-#### Cenários de Aceitação (BDD / Gherkin)
+> Calendário visual interativo com visão diária/semanal de equipes alocadas e detecção de sobreposição de horários.
 
-```gherkin
-Cenário: Conclusão da instalação com fotos de evidência
-  Dado que a OS "OS-2026-0001" está no status "EM_EXECUCAO"
-  Quando o instalador aciona "Concluir Instalação", anexa 2 fotos e informa "Recebido por: Dr. Marcos"
-  Então a OS passa para o status "CONCLUIDA"
-  E as fotos ficam vinculadas permanentemente ao histórico do pedido
-```
+#### Sub-tarefas Técnicas (Sub-issues):
+- **US-39.1**: Criar record `CalendarEventResponse` em `backend/src/main/java/br/edu/ifpb/alumigest/installation/dto/CalendarEventResponse.java`
+- **US-39.2**: Implementar serviço `CalendarService.obterEventosMes(int mes, int ano, Long teamId)`
+- **US-39.3**: Criar endpoint GET /api/installation/service-orders/calendar no `ServiceOrderController`
+- **US-39.4**: Criar interfaces TypeScript e serviço Axios (`installationApi.ts`)
+- **US-39.5**: Criar componente `InstallationCalendar` no frontend com código de cores por status em `frontend/src/features/installation/components/InstallationCalendar.tsx`
+- **US-39.6**: Criar página `InstallationCalendarPage` e registrar rota `/instalacoes` no React Router
 
----
+### 📌 US-40: Emitir Ordem de Serviço (OS) em PDF
 
-### User Story 3 (P2) — Calendário Visual de Instalações e Conflitos
+> Emitir a Ordem de Serviço em PDF com via para a equipe técnica e via de aceite do cliente.
 
-**Como** Gerente Operacional,
-**Quero** visualizar o calendário de todas as equipes com código de cores por status e alertas de conflito de turno,
-**Para que** eu consiga organizar a frota e remanejar equipes rapidamente.
-
-#### Cenários de Aceitação (BDD / Gherkin)
-
-```gherkin
-Cenário: Alerta de conflito de horário na mesma equipe
-  Dado que a Equipe 1 já possui uma instalação agendada para 22/09 no Turno MANHA
-  Quando o coordenador tenta agendar outra OS para a mesma equipe e turno
-  Então o sistema exibe aviso de conflito de agenda sugerindo outro turno ou equipe
-```
-
----
-
-### User Story 4 (P2) — Emissão da Ordem de Serviço em PDF
-
-**Como** Instalador e Cliente,
-**Quero** emitir a OS de Instalação em PDF A4 com termo de entrega e garantia,
-**Para que** sirva como comprovante impresso de entrega técnica.
-
-#### Cenários de Aceitação (BDD / Gherkin)
-
-```gherkin
-Cenário: Download da OS em PDF
-  Dado que uma OS existe
-  Quando o usuário clica em "Emitir OS em PDF"
-  Então o sistema gera um PDF A4 institucional contendo dados da obra, lista de esquadrias, instruções e espaço para visto
-```
-
----
+#### Sub-tarefas Técnicas (Sub-issues):
+- **US-40.1**: Criar serviço `ServiceOrderPdfService` gerando PDF A4 de OS com OpenPDF em `backend/src/main/java/br/edu/ifpb/alumigest/installation/service/ServiceOrderPdfService.java`
+- **US-40.2**: Adicionar endpoint GET /api/installation/service-orders/{id}/pdf no `ServiceOrderController`
+- **US-40.3**: Criar teste unitário do `ServiceOrderPdfServiceTest`
+- **US-40.4**: Adicionar botão "Emitir OS em PDF" no frontend
+- **US-40.5**: Documentar endpoints no OpenAPI/Swagger
+- **US-40.6**: Adicionar atalho "Instalações & Agenda" no menu do frontend
+- **US-40.7**: Executar validação dos cenários de teste do `quickstart.md` da Sprint 12
 
 ## 3. Requisitos Funcionais
 

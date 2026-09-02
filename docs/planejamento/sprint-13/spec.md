@@ -17,59 +17,46 @@ Com todas as operações de Vendas, Fábrica, Estoque e Finanças integradas no 
 
 ---
 
-## 2. Histórias de Usuário (User Stories)
+## 2. 👥 Histórias de Usuário (User Stories)
 
-### User Story 1 (P1) — Dashboard Executivo e KPIs de Vendas 🎯 MVP
+### 📌 US-41: Visualizar Dashboard Executivo e Indicadores (KPIs) Comerciais
 
-**Como** Diretor e Vendedor da Alumiportas,
-**Quero** visualizar os KPIs de faturamento, ticket médio e taxa de conversão no painel inicial,
-**Para que** eu acompanhe os resultados comerciais e metas do período.
+> Painel de métricas estratégicas: faturamento total, ticket médio, taxa de conversão de orçamentos, produtos mais vendidos e prazos médios de entrega.
 
-#### Cenários de Aceitação (BDD / Gherkin)
+#### Sub-tarefas Técnicas (Sub-issues):
+- **US-41.1**: Criar package `br.edu.ifpb.alumigest.analytics` e diretório `frontend/src/features/analytics`
+- **US-41.2**: Criar records de resposta `DashboardMetricsResponse`, `DreReportResponse` e `ProductRankingItemResponse` em `backend/src/main/java/br/edu/ifpb/alumigest/analytics/dto/`
+- **US-41.3**: Criar serviço utilitário `CsvExportService` com suporte a BOM UTF-8 e delimitador `;` em `backend/src/main/java/br/edu/ifpb/alumigest/analytics/service/CsvExportService.java`
+- **US-41.4**: Implementar serviço `AnalyticsDashboardService.obterMetricasDashboard(int mes, int ano)` com queries de agregação em `backend/src/main/java/br/edu/ifpb/alumigest/analytics/service/AnalyticsDashboardService.java`
+- **US-41.5**: Criar endpoint GET /api/analytics/dashboard no `AnalyticsDashboardController` em `backend/src/main/java/br/edu/ifpb/alumigest/analytics/controller/AnalyticsDashboardController.java`
+- **US-41.6**: Criar testes unitários do `AnalyticsDashboardServiceTest`
+- **US-41.7**: Criar interfaces TypeScript e serviço Axios (`analyticsApi.ts`)
+- **US-41.8**: Criar componentes `KpiCardGrid` e `SalesTrendChart` com Recharts em `frontend/src/features/analytics/components/`
+- **US-41.9**: Atualizar página inicial `DashboardPage` no frontend
 
-```gherkin
-Cenário: Visualização de KPIs do mês
-  Dado que existem vendas registradas no mês corrente
-  Quando o usuário acessa o Dashboard
-  Então o sistema exibe os cards de Faturamento Líquido, Ticket Médio, Taxa de Conversão de Orçamentos (%) e Total de Esquadrias Entregues
-  E o gráfico de evolução de vendas diárias
-```
+### 📌 US-42: Apurar DRE Gerencial (Competência e Caixa)
 
----
+> Demonstrativo de Resultados do Exercício (DRE) com receita bruta, deduções, custo de materiais (CMV), mão de obra e margem de contribuição.
 
-### User Story 2 (P1) — DRE Simplificado com Regime de Competência e Caixa 🎯 MVP
+#### Sub-tarefas Técnicas (Sub-issues):
+- **US-42.1**: Implementar serviço `DreCalculationService.calcularDre(int mes, int ano, String regime)` em `backend/src/main/java/br/edu/ifpb/alumigest/analytics/service/DreCalculationService.java`
+- **US-42.2**: Criar endpoint GET /api/analytics/dre no `AnalyticsDashboardController` com validação de permissão administrativa
+- **US-42.3**: Criar testes unitários do `DreCalculationServiceTest`
+- **US-42.4**: Criar componente `DreReportTable` com toggle Competência/Caixa no frontend em `frontend/src/features/analytics/components/DreReportTable.tsx`
+- **US-42.5**: Criar página `DrePage` e registrar rota `/gestao/dre` no React Router
 
-**Como** Diretor da Alumiportas,
-**Quero** consultar o DRE do mês alternando entre regime de competência e regime de caixa,
-**Para que** eu analise a margem de contribuição das vendas e o resultado financeiro líquido.
+### 📌 US-43: Exportar Relatórios Executivos em PDF e Planilhas CSV/Excel
 
-#### Cenários de Aceitação (BDD / Gherkin)
+> Exportação parametrizada de relatórios financeiros e gerenciais em PDF formatado e planilhas estruturadas CSV/Excel.
 
-```gherkin
-Cenário: Alternar DRE para Regime de Caixa
-  Dado que o diretor está na tela de DRE no modo Competência
-  Quando ele seleciona a opção "Regime de Caixa"
-  Então o DRE é recalculado considerando apenas os recebimentos e liquidações efetivas do período selecionado
-```
-
----
-
-### User Story 3 (P2) — Exportação de Relatórios em PDF e CSV/Excel
-
-**Como** Gestor Administrativo,
-**Quero** exportar a listagem de vendas e relatórios analíticos em PDF e CSV,
-**Para que** eu possa cruzar dados no Excel e emitir relatórios impressos.
-
-#### Cenários de Aceitação (BDD / Gherkin)
-
-```gherkin
-Cenário: Exportação de Relatório de Vendas em CSV
-  Dado que o usuário filtrou as vendas de um período
-  Quando clica em "Exportar CSV"
-  Então o sistema gera e faz o download de arquivo CSV formatado com delimitador e cabeçalhos em português
-```
-
----
+#### Sub-tarefas Técnicas (Sub-issues):
+- **US-43.1**: Implementar serviço `AnalyticsPdfReportService` gerando PDF A4 do DRE em `backend/src/main/java/br/edu/ifpb/alumigest/analytics/service/AnalyticsPdfReportService.java`
+- **US-43.2**: Criar endpoint GET /api/analytics/reports/sales-csv e GET /api/analytics/reports/dre-pdf no `AnalyticsReportController`
+- **US-43.3**: Criar testes unitários de exportação `CsvExportServiceTest` e `AnalyticsPdfReportServiceTest`
+- **US-43.4**: Adicionar botões de "Exportar CSV" e "Exportar PDF" nas telas de relatórios do frontend
+- **US-43.5**: Documentar endpoints no OpenAPI/Swagger
+- **US-43.6**: Adicionar menu "Gestão & Relatórios" no frontend
+- **US-43.7**: Executar validação dos cenários de teste do `quickstart.md` da Sprint 13
 
 ## 3. Requisitos Funcionais
 

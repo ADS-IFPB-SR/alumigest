@@ -1,73 +1,94 @@
-﻿# Tasks: Sprint 9 — Módulo de Pagamento e Cobrança via PIX (QR Code Dinâmico + Copia e Cola)
+# 📋 Lista de Tarefas (Tasks) — Sprint 09 — Integração de Pagamento PIX e Confirmação Automática
 
-**Feature**: `006-pagamento-cobranca-pix`
-**Generated**: 2026-08-27
-**Source**: spec.md, plan.md, data-model.md, contracts/api-pix.md, research.md
+> **Padrão**: User Stories sequenciais no projeto com Sub-tarefas decimais (`US-XX.Y`).
 
 ---
 
-## Phase 1: Setup & Foundational
+## 📦 US-28: Gerar Cobrança PIX com QR Code Dinâmico e Copia e Cola
 
-**Purpose**: Migration Flyway V12, Entidades JPA, Repositories e Enums
+> **Descrição**: Gerar cobrança PIX dinâmica para sinal de entrada (50%) ou pagamento à vista, exibindo QR Code e código copia e cola no orçamento e pedido.
 
-- [ ] T001 Criar package `br.edu.ifpb.alumigest.finance` e diretório `frontend/src/features/finance`
-- [ ] T002 Criar migration Flyway `backend/src/main/resources/db/migration/V12__create_payments_and_pix_schema.sql` com tabelas `payments` e `pix_transactions`
-- [ ] T003 [P] Criar enums `PaymentType`, `PaymentMethod`, `PaymentStatus` e `PixStatus` em `backend/src/main/java/br/edu/ifpb/alumigest/finance/domain/`
-- [ ] T004 Criar entidade JPA `Payment` em `backend/src/main/java/br/edu/ifpb/alumigest/finance/domain/Payment.java`
-- [ ] T005 Criar entidade JPA `PixTransaction` em `backend/src/main/java/br/edu/ifpb/alumigest/finance/domain/PixTransaction.java`
-- [ ] T006 [P] Criar repositório `PaymentRepository` em `backend/src/main/java/br/edu/ifpb/alumigest/finance/repository/PaymentRepository.java`
-- [ ] T007 [P] Criar repositório `PixTransactionRepository` em `backend/src/main/java/br/edu/ifpb/alumigest/finance/repository/PixTransactionRepository.java`
-- [ ] T008 Criar gerador de payload EMV / BR Code `PixPayloadGenerator` com CRC16 CCITT em `backend/src/main/java/br/edu/ifpb/alumigest/finance/service/PixPayloadGenerator.java`
+| ID | Tarefa | Status |
+|---|---|:---:|
+| **US-28.1** | [US-28.1](issues/US-28.1-criar-package-br-edu-ifpb-alumigest-finance-e/issue.md) Criar package `br.edu.ifpb.alumigest.finance` e diretório `frontend/src/features/finance` | 🔲 Pendente |
+| **US-28.2** | [US-28.2](issues/US-28.2-criar-migration-flyway-backend-src-main-resou/issue.md) Criar migration Flyway `backend/src/main/resources/db/migration/V12__create_payments_and_pix_schema.sql` com tabelas `payments` e `pix_transactions` | 🔲 Pendente |
+| **US-28.3** | [US-28.3](issues/US-28.3-criar-enums-paymenttype-paymentmethod-payment/issue.md) Criar enums `PaymentType`, `PaymentMethod`, `PaymentStatus` e `PixStatus` em `backend/src/main/java/br/edu/ifpb/alumigest/finance/domain/` | 🔲 Pendente |
+| **US-28.4** | [US-28.4](issues/US-28.4-criar-entidade-jpa-payment-em-backend-src-mai/issue.md) Criar entidade JPA `Payment` em `backend/src/main/java/br/edu/ifpb/alumigest/finance/domain/Payment.java` | 🔲 Pendente |
+| **US-28.5** | [US-28.5](issues/US-28.5-criar-entidade-jpa-pixtransaction-em-backend-/issue.md) Criar entidade JPA `PixTransaction` em `backend/src/main/java/br/edu/ifpb/alumigest/finance/domain/PixTransaction.java` | 🔲 Pendente |
+| **US-28.6** | [US-28.6](issues/US-28.6-criar-repositorio-paymentrepository-em-backen/issue.md) Criar repositório `PaymentRepository` em `backend/src/main/java/br/edu/ifpb/alumigest/finance/repository/PaymentRepository.java` | 🔲 Pendente |
+| **US-28.7** | [US-28.7](issues/US-28.7-criar-repositorio-pixtransactionrepository-em/issue.md) Criar repositório `PixTransactionRepository` em `backend/src/main/java/br/edu/ifpb/alumigest/finance/repository/PixTransactionRepository.java` | 🔲 Pendente |
+| **US-28.8** | [US-28.8](issues/US-28.8-criar-gerador-de-payload-emv-br-code-pixpaylo/issue.md) Criar gerador de payload EMV / BR Code `PixPayloadGenerator` com CRC16 CCITT em `backend/src/main/java/br/edu/ifpb/alumigest/finance/service/PixPayloadGenerator.java` | 🔲 Pendente |
+| **US-28.9** | [US-28.9](issues/US-28.9-criar-record-pixgeneraterequest-tipopagamento/issue.md) Criar record `PixGenerateRequest` (tipoPagamento, valor, observacoes) com Bean Validation em `backend/src/main/java/br/edu/ifpb/alumigest/finance/dto/PixGenerateRequest.java` | 🔲 Pendente |
+| **US-28.10** | [US-28.10](issues/US-28.10-criar-record-pixchargeresponse-txid-valor-pay/issue.md) Criar record `PixChargeResponse` (txid, valor, payloadCopiaECola, qrCodeBase64, dataExpiracao) em `backend/src/main/java/br/edu/ifpb/alumigest/finance/dto/PixChargeResponse.java` | 🔲 Pendente |
+| **US-28.11** | [US-28.11](issues/US-28.11-criar-interface-pixgatewayservice-e-implement/issue.md) Criar interface `PixGatewayService` e implementação `MockPixGatewayServiceImpl` em `backend/src/main/java/br/edu/ifpb/alumigest/finance/service/impl/MockPixGatewayServiceImpl.java` | 🔲 Pendente |
+| **US-28.12** | [US-28.12](issues/US-28.12-implementar-servico-pixservice-gerarcobrancap/issue.md) Implementar serviço `PixService.gerarCobrancaPix(Long orderId, PixGenerateRequest request)` com validade de 24h em `backend/src/main/java/br/edu/ifpb/alumigest/finance/service/PixService.java` | 🔲 Pendente |
+| **US-28.13** | [US-28.13](issues/US-28.13-criar-endpoint-post-api-payments-pix-generate/issue.md) Criar endpoint POST /api/payments/pix/generate-for-order/{orderId} no `PixPaymentController` em `backend/src/main/java/br/edu/ifpb/alumigest/finance/controller/PixPaymentController.java` | 🔲 Pendente |
+| **US-28.14** | [US-28.14](issues/US-28.14-criar-testes-unitarios-do-pixpayloadgenerator/issue.md) Criar testes unitários do `PixPayloadGeneratorTest` e `PixServiceTest` | 🔲 Pendente |
 
----
+### Detalhamento das Tarefas (Checklist):
 
-## Phase 2: User Story 1 - Geração de Cobrança PIX com QR Code (Priority: P1) 🎯 MVP
-
-**Goal**: Gerar cobrança PIX com QR Code dinâmico e código Copia e Cola associados a um pedido.
-
-**Independent Test**: Gerar cobrança de R$ 1.000,00 para o pedido 1 e validar formato do payload EMV e imagem do QR Code.
-
-- [ ] T009 [P] [US1] Criar record `PixGenerateRequest` (tipoPagamento, valor, observacoes) com Bean Validation em `backend/src/main/java/br/edu/ifpb/alumigest/finance/dto/PixGenerateRequest.java`
-- [ ] T010 [P] [US1] Criar record `PixChargeResponse` (txid, valor, payloadCopiaECola, qrCodeBase64, dataExpiracao) em `backend/src/main/java/br/edu/ifpb/alumigest/finance/dto/PixChargeResponse.java`
-- [ ] T011 [US1] Criar interface `PixGatewayService` e implementação `MockPixGatewayServiceImpl` em `backend/src/main/java/br/edu/ifpb/alumigest/finance/service/impl/MockPixGatewayServiceImpl.java`
-- [ ] T012 [US1] Implementar serviço `PixService.gerarCobrancaPix(Long orderId, PixGenerateRequest request)` com validade de 24h em `backend/src/main/java/br/edu/ifpb/alumigest/finance/service/PixService.java`
-- [ ] T013 [US1] Criar endpoint POST /api/payments/pix/generate-for-order/{orderId} no `PixPaymentController` em `backend/src/main/java/br/edu/ifpb/alumigest/finance/controller/PixPaymentController.java`
-- [ ] T014 [P] [US1] Criar testes unitários do `PixPayloadGeneratorTest` e `PixServiceTest`
-
----
-
-## Phase 3: User Story 2 - Confirmação Automática de Pagamento e Liberação (Priority: P1) 🎯 MVP
-
-**Goal**: Liquidar cobrança PIX via webhook/simulação, atualizar o status do pedido para SINAL_PAGO e exibir confirmação no frontend.
-
-**Independent Test**: Simular liquidação da cobrança e constatar atualização em tempo real no frontend via polling.
-
-- [ ] T015 [P] [US2] Criar record `PixStatusResponse` em `backend/src/main/java/br/edu/ifpb/alumigest/finance/dto/PixStatusResponse.java`
-- [ ] T016 [US2] Implementar método `liquidarPix(String txid, String e2eid)` no `PixService` atualizando o pagamento e o status financeiro do pedido
-- [ ] T017 [US2] Criar endpoint GET /api/payments/pix/status/{txid} no `PixPaymentController` para polling de status
-- [ ] T018 [US2] Criar endpoint POST /api/webhooks/pix no `PixWebhookController`
-- [ ] T019 [US2] Criar endpoint POST /api/payments/pix/simulate/{txid} no `PixPaymentController` para testes no ambiente dev
-- [ ] T020 [P] [US2] Criar testes de integração REST do fluxo de liquidação PIX no `PixPaymentControllerIntegrationTest`
+- [ ] **US-28.1**: Criar package `br.edu.ifpb.alumigest.finance` e diretório `frontend/src/features/finance`
+- [ ] **US-28.2**: Criar migration Flyway `backend/src/main/resources/db/migration/V12__create_payments_and_pix_schema.sql` com tabelas `payments` e `pix_transactions`
+- [ ] **US-28.3**: Criar enums `PaymentType`, `PaymentMethod`, `PaymentStatus` e `PixStatus` em `backend/src/main/java/br/edu/ifpb/alumigest/finance/domain/`
+- [ ] **US-28.4**: Criar entidade JPA `Payment` em `backend/src/main/java/br/edu/ifpb/alumigest/finance/domain/Payment.java`
+- [ ] **US-28.5**: Criar entidade JPA `PixTransaction` em `backend/src/main/java/br/edu/ifpb/alumigest/finance/domain/PixTransaction.java`
+- [ ] **US-28.6**: Criar repositório `PaymentRepository` em `backend/src/main/java/br/edu/ifpb/alumigest/finance/repository/PaymentRepository.java`
+- [ ] **US-28.7**: Criar repositório `PixTransactionRepository` em `backend/src/main/java/br/edu/ifpb/alumigest/finance/repository/PixTransactionRepository.java`
+- [ ] **US-28.8**: Criar gerador de payload EMV / BR Code `PixPayloadGenerator` com CRC16 CCITT em `backend/src/main/java/br/edu/ifpb/alumigest/finance/service/PixPayloadGenerator.java`
+- [ ] **US-28.9**: Criar record `PixGenerateRequest` (tipoPagamento, valor, observacoes) com Bean Validation em `backend/src/main/java/br/edu/ifpb/alumigest/finance/dto/PixGenerateRequest.java`
+- [ ] **US-28.10**: Criar record `PixChargeResponse` (txid, valor, payloadCopiaECola, qrCodeBase64, dataExpiracao) em `backend/src/main/java/br/edu/ifpb/alumigest/finance/dto/PixChargeResponse.java`
+- [ ] **US-28.11**: Criar interface `PixGatewayService` e implementação `MockPixGatewayServiceImpl` em `backend/src/main/java/br/edu/ifpb/alumigest/finance/service/impl/MockPixGatewayServiceImpl.java`
+- [ ] **US-28.12**: Implementar serviço `PixService.gerarCobrancaPix(Long orderId, PixGenerateRequest request)` com validade de 24h em `backend/src/main/java/br/edu/ifpb/alumigest/finance/service/PixService.java`
+- [ ] **US-28.13**: Criar endpoint POST /api/payments/pix/generate-for-order/{orderId} no `PixPaymentController` em `backend/src/main/java/br/edu/ifpb/alumigest/finance/controller/PixPaymentController.java`
+- [ ] **US-28.14**: Criar testes unitários do `PixPayloadGeneratorTest` e `PixServiceTest`
 
 ---
 
-## Phase 4: User Story 3 - Modal PIX Interativo no Frontend (Priority: P1) 🎯 MVP
+## 📦 US-29: Confirmar Pagamento PIX via Webhook com Liberação Automática
 
-**Goal**: Modal com exibição do QR Code, botão de cópia com toast, contador de validade e polling a cada 3 segundos.
+> **Descrição**: Receber notificação de pagamento via Webhook seguro (Open Banking / PSP) e alterar automaticamente o status do pedido para liberado para produção.
 
-**Independent Test**: Abrir modal no frontend, copiar código PIX para a área de transferência e receber notificação visual de pagamento liquidado.
+| ID | Tarefa | Status |
+|---|---|:---:|
+| **US-29.1** | [US-29.1](issues/US-29.1-criar-record-pixstatusresponse-em-backend-src/issue.md) Criar record `PixStatusResponse` em `backend/src/main/java/br/edu/ifpb/alumigest/finance/dto/PixStatusResponse.java` | 🔲 Pendente |
+| **US-29.2** | [US-29.2](issues/US-29.2-implementar-metodo-liquidarpix-string-txid-st/issue.md) Implementar método `liquidarPix(String txid, String e2eid)` no `PixService` atualizando o pagamento e o status financeiro do pedido | 🔲 Pendente |
+| **US-29.3** | [US-29.3](issues/US-29.3-criar-endpoint-get-api-payments-pix-status-tx/issue.md) Criar endpoint GET /api/payments/pix/status/{txid} no `PixPaymentController` para polling de status | 🔲 Pendente |
+| **US-29.4** | [US-29.4](issues/US-29.4-criar-endpoint-post-api-webhooks-pix-no-pixwe/issue.md) Criar endpoint POST /api/webhooks/pix no `PixWebhookController` | 🔲 Pendente |
+| **US-29.5** | [US-29.5](issues/US-29.5-criar-endpoint-post-api-payments-pix-simulate/issue.md) Criar endpoint POST /api/payments/pix/simulate/{txid} no `PixPaymentController` para testes no ambiente dev | 🔲 Pendente |
+| **US-29.6** | [US-29.6](issues/US-29.6-criar-testes-de-integracao-rest-do-fluxo-de-l/issue.md) Criar testes de integração REST do fluxo de liquidação PIX no `PixPaymentControllerIntegrationTest` | 🔲 Pendente |
 
-- [ ] T021 [P] [US3] Criar interfaces TypeScript e serviço Axios (`pixApi.ts`) em `frontend/src/features/finance/services/pixApi.ts`
-- [ ] T022 [US3] Criar custom hook `usePixPayment` com polling automático a cada 3 segundos em `frontend/src/features/finance/hooks/usePixPayment.ts`
-- [ ] T023 [US3] Criar componente `PixPaymentModal` com QR Code, botão "Copiar Chave PIX" e timer regressivo em `frontend/src/features/finance/components/PixPaymentModal.tsx`
-- [ ] T024 [US3] Criar componente `PixPaymentSuccessAlert` com animação de confirmação em `frontend/src/features/finance/components/PixPaymentSuccessAlert.tsx`
-- [ ] T025 [US3] Integrar botão "Gerar PIX" na página de detalhes do pedido (`OrderDetailPage.tsx`) e destacar o botão "Liberar para Produção" quando o status for `SINAL_PAGO`
+### Detalhamento das Tarefas (Checklist):
+
+- [ ] **US-29.1**: Criar record `PixStatusResponse` em `backend/src/main/java/br/edu/ifpb/alumigest/finance/dto/PixStatusResponse.java`
+- [ ] **US-29.2**: Implementar método `liquidarPix(String txid, String e2eid)` no `PixService` atualizando o pagamento e o status financeiro do pedido
+- [ ] **US-29.3**: Criar endpoint GET /api/payments/pix/status/{txid} no `PixPaymentController` para polling de status
+- [ ] **US-29.4**: Criar endpoint POST /api/webhooks/pix no `PixWebhookController`
+- [ ] **US-29.5**: Criar endpoint POST /api/payments/pix/simulate/{txid} no `PixPaymentController` para testes no ambiente dev
+- [ ] **US-29.6**: Criar testes de integração REST do fluxo de liquidação PIX no `PixPaymentControllerIntegrationTest`
 
 ---
 
-## Phase 5: Polish & Cross-Cutting Concerns
+## 📦 US-30: Modal PIX Interativo no Frontend e Histórico de Transações
 
-**Purpose**: Documentação OpenAPI e validação final
+> **Descrição**: Interface interativa no frontend com polling/SSE para detecção automática de pagamento e painel de histórico de transações PIX com simulador.
 
-- [ ] T026 [P] Documentar endpoints no OpenAPI/Swagger
-- [ ] T027 Executar validação dos cenários de teste do `quickstart.md` da Sprint 9
+| ID | Tarefa | Status |
+|---|---|:---:|
+| **US-30.1** | [US-30.1](issues/US-30.1-criar-interfaces-typescript-e-servico-axios-p/issue.md) Criar interfaces TypeScript e serviço Axios (`pixApi.ts`) em `frontend/src/features/finance/services/pixApi.ts` | 🔲 Pendente |
+| **US-30.2** | [US-30.2](issues/US-30.2-criar-custom-hook-usepixpayment-com-polling-a/issue.md) Criar custom hook `usePixPayment` com polling automático a cada 3 segundos em `frontend/src/features/finance/hooks/usePixPayment.ts` | 🔲 Pendente |
+| **US-30.3** | [US-30.3](issues/US-30.3-criar-componente-pixpaymentmodal-com-qr-code-/issue.md) Criar componente `PixPaymentModal` com QR Code, botão "Copiar Chave PIX" e timer regressivo em `frontend/src/features/finance/components/PixPaymentModal.tsx` | 🔲 Pendente |
+| **US-30.4** | [US-30.4](issues/US-30.4-criar-componente-pixpaymentsuccessalert-com-a/issue.md) Criar componente `PixPaymentSuccessAlert` com animação de confirmação em `frontend/src/features/finance/components/PixPaymentSuccessAlert.tsx` | 🔲 Pendente |
+| **US-30.5** | [US-30.5](issues/US-30.5-integrar-botao-gerar-pix-na-pagina-de-detalhe/issue.md) Integrar botão "Gerar PIX" na página de detalhes do pedido (`OrderDetailPage.tsx`) e destacar o botão "Liberar para Produção" quando o status for `SINAL_PAGO` | 🔲 Pendente |
+| **US-30.6** | [US-30.6](issues/US-30.6-documentar-endpoints-no-openapi-swagger/issue.md) Documentar endpoints no OpenAPI/Swagger | 🔲 Pendente |
+| **US-30.7** | [US-30.7](issues/US-30.7-executar-validacao-dos-cenarios-de-teste-do-q/issue.md) Executar validação dos cenários de teste do `quickstart.md` da Sprint 9 | 🔲 Pendente |
+
+### Detalhamento das Tarefas (Checklist):
+
+- [ ] **US-30.1**: Criar interfaces TypeScript e serviço Axios (`pixApi.ts`) em `frontend/src/features/finance/services/pixApi.ts`
+- [ ] **US-30.2**: Criar custom hook `usePixPayment` com polling automático a cada 3 segundos em `frontend/src/features/finance/hooks/usePixPayment.ts`
+- [ ] **US-30.3**: Criar componente `PixPaymentModal` com QR Code, botão "Copiar Chave PIX" e timer regressivo em `frontend/src/features/finance/components/PixPaymentModal.tsx`
+- [ ] **US-30.4**: Criar componente `PixPaymentSuccessAlert` com animação de confirmação em `frontend/src/features/finance/components/PixPaymentSuccessAlert.tsx`
+- [ ] **US-30.5**: Integrar botão "Gerar PIX" na página de detalhes do pedido (`OrderDetailPage.tsx`) e destacar o botão "Liberar para Produção" quando o status for `SINAL_PAGO`
+- [ ] **US-30.6**: Documentar endpoints no OpenAPI/Swagger
+- [ ] **US-30.7**: Executar validação dos cenários de teste do `quickstart.md` da Sprint 9
+

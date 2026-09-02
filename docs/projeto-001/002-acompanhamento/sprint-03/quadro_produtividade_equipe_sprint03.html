@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quadro Geral de Produtividade da Equipe — AlumiGest</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    body {
+      background-color: #080c14;
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.12) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.12) 0px, transparent 50%),
+        radial-gradient(at 50% 50%, rgba(15, 23, 42, 0.5) 0px, transparent 100%);
+      color: #f8fafc;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 32px;
+    }
+
+    .dashboard-container {
+      width: 1440px;
+      max-width: 1440px;
+      background: rgba(13, 19, 33, 0.90);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 24px;
+      padding: 36px 40px;
+      box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.04);
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 24px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .logo-badge {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      font-weight: 800;
+      color: #ffffff;
+      box-shadow: 0 8px 16px -4px rgba(59, 130, 246, 0.4);
+    }
+
+    .header-title-wrap h1 {
+      font-size: 22px;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: -0.02em;
+      margin-bottom: 4px;
+    }
+
+    .header-title-wrap p {
+      font-size: 13px;
+      color: #94a3b8;
+      font-weight: 500;
+    }
+
+    .header-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(37, 99, 235, 0.12);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      padding: 8px 16px;
+      border-radius: 9999px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #60a5fa;
+    }
+
+    .header-badge .dot {
+      width: 8px;
+      height: 8px;
+      background: #3b82f6;
+      border-radius: 50%;
+      box-shadow: 0 0 10px #3b82f6;
+    }
+
+    /* KPI Cards Grid */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 18px;
+      margin: 28px 0 32px 0;
+    }
+
+    .kpi-card {
+      background: rgba(18, 26, 45, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 16px;
+      padding: 20px 22px;
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+
+    .kpi-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #818cf8;
+      margin-bottom: 10px;
+    }
+
+    .kpi-value {
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: #ffffff;
+      margin-bottom: 6px;
+    }
+
+    .kpi-value.green {
+      color: #34d399;
+    }
+
+    .kpi-value.cyan {
+      color: #38bdf8;
+    }
+
+    .kpi-subtext {
+      font-size: 12px;
+      color: #64748b;
+      font-weight: 500;
+    }
+
+    /* Table */
+    .table-container {
+      width: 100%;
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+
+    thead th {
+      padding: 14px 10px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #64748b;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      white-space: nowrap;
+    }
+
+    thead th.center, tbody td.center {
+      text-align: center;
+    }
+
+    thead th.right, tbody td.right {
+      text-align: right;
+    }
+
+    tbody tr {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      transition: background-color 0.15s ease;
+    }
+
+    tbody tr:hover {
+      background-color: rgba(255, 255, 255, 0.02);
+    }
+
+    tbody td {
+      padding: 14px 10px;
+      font-size: 13px;
+      vertical-align: middle;
+      color: #cbd5e1;
+    }
+
+    /* Developer Cell */
+    .dev-cell {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 700;
+      color: #ffffff;
+      flex-shrink: 0;
+    }
+
+    .avatar.nc { background: linear-gradient(135deg, #f59e0b, #d97706); }
+    .avatar.is { background: linear-gradient(135deg, #10b981, #059669); }
+    .avatar.ms { background: linear-gradient(135deg, #0ea5e9, #0284c7); }
+    .avatar.hc { background: linear-gradient(135deg, #8b5cf6, #6d28d9); }
+    .avatar.gk { background: linear-gradient(135deg, #14b8a6, #0d9488); }
+    .avatar.jg { background: linear-gradient(135deg, #ec4899, #db2777); }
+    .avatar.jk { background: linear-gradient(135deg, #ef4444, #dc2626); }
+    .avatar.gs { background: #334155; color: #94a3b8; }
+    .avatar.total { background: linear-gradient(135deg, #4f46e5, #3b82f6); }
+
+    .dev-info .dev-name {
+      font-weight: 700;
+      color: #f8fafc;
+      font-size: 14px;
+      margin-bottom: 2px;
+    }
+
+    .dev-info .dev-email {
+      font-size: 11.5px;
+      color: #64748b;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Numbers Styling */
+    .mono-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
+    }
+
+    .num-added {
+      color: #34d399;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
+    }
+
+    .num-deleted {
+      color: #f87171;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
+    }
+
+    .num-net {
+      color: #38bdf8;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+    }
+
+    .num-total-commits {
+      color: #f8fafc;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+    }
+
+    .period-text {
+      font-size: 12px;
+      color: #94a3b8;
+      white-space: nowrap;
+    }
+
+    /* Badges */
+    .badge-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 9999px;
+      font-size: 11.5px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .badge-core {
+      background: rgba(245, 158, 11, 0.12);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      color: #fbbf24;
+    }
+
+    .badge-high {
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      color: #34d399;
+    }
+
+    .badge-medium {
+      background: rgba(234, 179, 8, 0.12);
+      border: 1px solid rgba(234, 179, 8, 0.35);
+      color: #facc15;
+    }
+
+    .badge-low {
+      background: rgba(239, 68, 68, 0.12);
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      color: #f87171;
+    }
+
+    .badge-inactive {
+      background: rgba(100, 116, 139, 0.12);
+      border: 1px solid rgba(100, 116, 139, 0.3);
+      color: #94a3b8;
+    }
+
+    .badge-sprint {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      color: #34d399;
+    }
+
+    /* Total Row */
+    tr.total-row {
+      background: rgba(30, 41, 59, 0.4);
+      border-top: 2px solid rgba(255, 255, 255, 0.1);
+      border-bottom: none;
+    }
+
+    tr.total-row td {
+      padding: 16px 14px;
+      font-weight: 700;
+    }
+
+    /* Footer */
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 28px;
+      padding-top: 18px;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      font-size: 11.5px;
+      color: #64748b;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="dashboard-container">
+    
+    <!-- Header -->
+    <header class="header">
+      <div class="header-left">
+        <div class="logo-badge">AG</div>
+        <div class="header-title-wrap">
+          <h1>Quadro Geral de Produtividade da Equipe</h1>
+          <p>AlumiGest — Sistema de Gestão para Vidraçaria e Esquadrias (Engenharia de Software IFPB)</p>
+        </div>
+      </div>
+      <div class="header-badge">
+        <span class="dot"></span>
+        Auditoria Git: Todas as Branches
+      </div>
+    </header>
+
+    <!-- Top KPI Cards -->
+    <section class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">TOTAL DE COMMITS</div>
+        <div class="kpi-value">210</div>
+        <div class="kpi-subtext">140 diretos • 70 merges</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">LINHAS ADICIONADAS (+)</div>
+        <div class="kpi-value green">+128.284</div>
+        <div class="kpi-subtext">Código bruto em todas as branches</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">SALDO LÍQUIDO (NET LOC)</div>
+        <div class="kpi-value cyan">96.587</div>
+        <div class="kpi-subtext">Linhas efetivas no repositório</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">MEMBROS ANALISADOS</div>
+        <div class="kpi-value">8</div>
+        <div class="kpi-subtext">7 ativos com commits • 1 inativo</div>
+      </div>
+    </section>
+
+    <!-- Data Table -->
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>DESENVOLVEDOR</th>
+            <th class="center">COMMITS DIRETOS</th>
+            <th class="center">MERGES</th>
+            <th class="center">TOTAL COMMITS</th>
+            <th class="right">LINHAS (+)</th>
+            <th class="right">LINHAS (-)</th>
+            <th class="right">SALDO LÍQUIDO</th>
+            <th class="center">ARQUIVOS</th>
+            <th class="center">PERÍODO ATIVO</th>
+            <th class="center">NÍVEL DE ENGAJAMENTO</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Nichollas -->
+          <tr>
+            <td>
+              <div class="dev-cell">
+                <div class="avatar nc">NC</div>
+                <div class="dev-info">
+                  <div class="dev-name">Nichollas Cavalcante</div>
+                  <div class="dev-email">nichollascavalcante@gmail.com</div>
+                </div>
+              </div>
+            </td>
+            <td class="center mono-num">69</td>
+            <td class="center mono-num">20</td>
+            <td class="center num-total-commits">89</td>
+            <td class="right num-added">+25.223</td>
+            <td class="right num-deleted">-11.162</td>
+            <td class="right num-net">14.061</td>
+            <td class="center mono-num">270</td>
+            <td class="center period-text">04/08 a 01/09</td>
+            <td class="center">
+              <span class="badge-status badge-core">🔥 Muito Alto (Core)</span>
+            </td>
+          </tr>
+
+          <!-- Ítalo -->
+          <tr>
+            <td>
+              <div class="dev-cell">
+                <div class="avatar is">IS</div>
+                <div class="dev-info">
+                  <div class="dev-name">Ítalo Santos</div>
+                  <div class="dev-email">italo520@gmail.com</div>
+                </div>
+              </div>
+            </td>
+            <td class="center mono-num">28</td>
+            <td class="center mono-num">36</td>
+            <td class="center num-total-commits">64</td>
+            <td class="right num-added">+48.939</td>
+            <td class="right num-deleted">-10.344</td>
+            <td class="right num-net">38.595</td>
+            <td class="center mono-num">747</td>
+            <td class="center period-text">05/08 a 01/09</td>
+            <td class="center">
+              <span class="badge-status badge-high">🟢 Alto / Consistente</span>
+            </td>
+          </tr>
+
+          <!-- Maylson -->
+          <tr>
+            <td>
+              <div class="dev-cell">
+                <div class="avatar ms">MS</div>
+                <div class="dev-info">
+                  <div class="dev-name">Maylson Rodrigues</div>
+                  <div class="dev-email">maylsons274@gmail.com</div>
+                </div>
+              </div>
+            </td>
+            <td class="center mono-num">16</td>
+            <td class="center mono-num">8</td>
+            <td class="center num-total-commits">24</td>
+            <td class="right num-added">+2.636</td>
+            <td class="right num-deleted">-156</td>
+            <td class="right num-net">2.480</td>
+            <td class="center mono-num">54</td>
+            <td class="center period-text">06/08 a 29/08</td>
+            <td class="center">
+              <span class="badge-status badge-high">🟢 Alto / Consistente</span>
+            </td>
+          </tr>
+
+          <!-- Herbert -->
+          <tr>
+            <td>
+              <div class="dev-cell">
+                <div class="avatar hc">HC</div>
+                <div class="dev-info">
+                  <div class="dev-name">Herbert Carvalho</div>
+                  <div class="dev-email">herbertcarvalhoxxi@gmail.com</div>
+                </div>
+              </div>
+            </td>
+            <td class="center mono-num">8</td>
+            <td class="center mono-num">3</td>
+            <td class="center num-total-commits">11</td>
+            <td class="right num-added">+23.008</td>
+            <td class="right num-deleted">-2.456</td>
+            <td class="right num-net">20.552</td>
+            <td class="center mono-num">171</td>
+            <td class="center period-text">08/08 a 30/08</td>
+            <td class="center">
+              <span class="badge-status badge-medium">🟡 Médio / Pontual</span>
+            </td>
+          </tr>
+
+          <!-- Guilherme Kauã -->
+          <tr>
+            <td>
+              <div class="dev-cell">
+                <div class="avatar gk">GK</div>
+                <div class="dev-info">
+                  <div class="dev-name">Guilherme Kauã</div>
+                  <div class="dev-email">guilherme.kaua.matos@gmail.com</div>
+                </div>
+              </div>
+            </td>
+            <td class="center mono-num">10</td>
+            <td class="center mono-num">1</td>
+            <td class="center num-total-commits">11</td>
+            <td class="right num-added">+24.100</td>
+            <td class="right num-deleted">-7.371</td>
+            <td class="right num-net">16.729</td>
+            <td class="center mono-num">62</td>
+            <td class="center period-text">07/08 a 01/09</td>
+            <td class="center">
+              <span class="badge-status badge-medium">🟡 Médio / Pontual</span>
+            </td>
+          </tr>
+
+          <!-- José Guylherme -->
+          <tr>
+            <td>
+              <div class="dev-cell">
+                <div class="avatar jg">JG</div>
+                <div class="dev-info">
+                  <div class="dev-name">José Guylherme</div>
+                  <div class="dev-email">santos2209244@gmail.com</div>
+                </div>
+              </div>
+            </td>
+            <td class="center mono-num">6</td>
+            <td class="center mono-num">2</td>
+            <td class="center num-total-commits">8</td>
+            <td class="right num-added">+1.923</td>
+            <td class="right num-deleted">-25</td>
+            <td class="right num-net">1.898</td>
+            <td class="center mono-num">26</td>
+            <td class="center period-text">19/08 a 01/09</td>
+            <td class="center">
+              <span class="badge-status badge-medium">🟡 Médio / Pontual</span>
+            </td>
+          </tr>
+
+          <!-- Júlio Kennedy -->
+          <tr>
+            <td>
+              <div class="dev-cell">
+                <div class="avatar jk">JK</div>
+                <div class="dev-info">
+                  <div class="dev-name">Júlio Kennedy</div>
+                  <div class="dev-email">kennedyy.devv@gmail.com</div>
+                </div>
+              </div>
+            </td>
+            <td class="center mono-num">3</td>
+            <td class="center mono-num">0</td>
+            <td class="center num-total-commits">3</td>
+            <td class="right num-added">+2.455</td>
+            <td class="right num-deleted">-183</td>
+            <td class="right num-net">2.272</td>
+            <td class="center mono-num">24</td>
+            <td class="center period-text">10/08 a 31/08</td>
+            <td class="center">
+              <span class="badge-status badge-low">🟠 Baixo / Pontual</span>
+            </td>
+          </tr>
+
+          <!-- Gabriel de Souza -->
+          <tr>
+            <td>
+              <div class="dev-cell">
+                <div class="avatar gs">GS</div>
+                <div class="dev-info">
+                  <div class="dev-name">Gabriel de Souza</div>
+                  <div class="dev-email">gabriel.souza@alumigest.local</div>
+                </div>
+              </div>
+            </td>
+            <td class="center mono-num" style="color: #64748b;">0</td>
+            <td class="center mono-num" style="color: #64748b;">0</td>
+            <td class="center mono-num" style="color: #64748b;">0</td>
+            <td class="right mono-num" style="color: #64748b;">+0</td>
+            <td class="right mono-num" style="color: #64748b;">-0</td>
+            <td class="right mono-num" style="color: #64748b;">0</td>
+            <td class="center mono-num" style="color: #64748b;">0</td>
+            <td class="center period-text" style="color: #64748b;">Sem atividade</td>
+            <td class="center">
+              <span class="badge-status badge-inactive">🔴 Sem Contribuição</span>
+            </td>
+          </tr>
+
+          <!-- Total Row -->
+          <tr class="total-row">
+            <td>
+              <div class="dev-cell">
+                <div class="avatar total">Σ</div>
+                <div class="dev-info">
+                  <div class="dev-name" style="color: #ffffff; font-size: 14.5px;">TOTAL GERAL DO PROJETO</div>
+                  <div class="dev-email" style="color: #94a3b8;">8 Membros da Equipe</div>
+                </div>
+              </div>
+            </td>
+            <td class="center mono-num" style="color: #ffffff; font-size: 14px;">140</td>
+            <td class="center mono-num" style="color: #ffffff; font-size: 14px;">70</td>
+            <td class="center mono-num" style="color: #38bdf8; font-size: 15px;">210</td>
+            <td class="right num-added" style="font-size: 14px;">+128.284</td>
+            <td class="right num-deleted" style="font-size: 14px;">-31.697</td>
+            <td class="right num-net" style="font-size: 15px;">96.587</td>
+            <td class="center mono-num" style="color: #ffffff;">—</td>
+            <td class="center period-text" style="color: #f8fafc; font-weight: 700;">04/08 a 01/09</td>
+            <td class="center">
+              <span class="badge-status badge-sprint">🚀 Sprint 1, 2 e 3</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div>Fonte: Git Log Audit (<code>git log --all --numstat</code>) • AlumiGest IFPB</div>
+      <div>Gerado automaticamente em 01/09/2026</div>
+    </footer>
+
+  </div>
+
+</body>
+</html>

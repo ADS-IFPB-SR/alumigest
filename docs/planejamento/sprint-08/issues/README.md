@@ -1,62 +1,60 @@
-# 📋 Issues da Sprint 8 — Estoque, Perdas e Homologação R2
+# 📌 Issues de Implementação — Sprint 08 — Controle de Estoque de Matéria-Prima, Kardex e Homologação R2
 
-Este diretório contém todas as **36 issues** detalhadas da Sprint 8 prontas para desenvolvimento, organizadas por pastas individuais para cada tarefa.
+> Todas as sub-tarefas seguem o padrão decimal vinculadas às User Stories correspondentes.
 
----
+## 📦 US-24: Reservar e Baixar Matéria-Prima no Estoque Automaticamente
 
-## 📑 Lista de Issues por Fase
+| Sub-Task | Tarefa | Alvo / Módulo | Status |
+|---|---|---|:---:|
+| [US-24.1](US-24.1-criar-package-br-edu-ifpb-alumigest-stock-e-d/issue.md) | Criar package `br.edu.ifpb.alumigest.stock` e diretório `frontend/src/features/stock` | `sprint-08` | 🔲 Aberta |
+| [US-24.2](US-24.2-criar-migration-flyway-backend-src-main-resou/issue.md) | Criar migration Flyway `backend/src/main/resources/db/migration/V11__create_stock_schema.sql` com tabelas `stock_items`, `stock_movements` e `scrap_records` | `sprint-08` | 🔲 Aberta |
+| [US-24.3](US-24.3-criar-enum-stockmovementtype-entrada-compra-r/issue.md) | Criar enum `StockMovementType` (ENTRADA_COMPRA, RESERVA_PRODUCAO, BAIXA_PRODUCAO, PERDA_SUCATA, AJUSTE_MANUAL, CANCELAMENTO_RESERVA) em `backend/src/main/java/br/edu/ifpb/alumigest/stock/domain/StockMovementType.java` | `sprint-08` | 🔲 Aberta |
+| [US-24.4](US-24.4-criar-enum-scrapreason-quebra-manuseio-erro-m/issue.md) | Criar enum `ScrapReason` (QUEBRA_MANUSEIO, ERRO_MEDIDA_CORTE, DEFEITO_FABRICA_MATERIAL, AVARIA_TRANSPORTE, OUTROS) em `backend/src/main/java/br/edu/ifpb/alumigest/stock/domain/ScrapReason.java` | `sprint-08` | 🔲 Aberta |
+| [US-24.5](US-24.5-criar-entidade-jpa-stockitem-em-backend-src-m/issue.md) | Criar entidade JPA `StockItem` em `backend/src/main/java/br/edu/ifpb/alumigest/stock/domain/StockItem.java` | `sprint-08` | 🔲 Aberta |
+| [US-24.6](US-24.6-criar-entidade-jpa-stockmovement-em-backend-s/issue.md) | Criar entidade JPA `StockMovement` em `backend/src/main/java/br/edu/ifpb/alumigest/stock/domain/StockMovement.java` | `sprint-08` | 🔲 Aberta |
+| [US-24.7](US-24.7-criar-entidade-jpa-scraprecord-em-backend-src/issue.md) | Criar entidade JPA `ScrapRecord` em `backend/src/main/java/br/edu/ifpb/alumigest/stock/domain/ScrapRecord.java` | `sprint-08` | 🔲 Aberta |
+| [US-24.8](US-24.8-criar-repositorio-stockitemrepository-em-back/issue.md) | Criar repositório `StockItemRepository` em `backend/src/main/java/br/edu/ifpb/alumigest/stock/repository/StockItemRepository.java` | `sprint-08` | 🔲 Aberta |
+| [US-24.9](US-24.9-criar-repositorio-stockmovementrepository-em-/issue.md) | Criar repositório `StockMovementRepository` em `backend/src/main/java/br/edu/ifpb/alumigest/stock/repository/StockMovementRepository.java` | `sprint-08` | 🔲 Aberta |
+| [US-24.10](US-24.10-criar-repositorio-scraprecordrepository-em-ba/issue.md) | Criar repositório `ScrapRecordRepository` em `backend/src/main/java/br/edu/ifpb/alumigest/stock/repository/ScrapRecordRepository.java` | `sprint-08` | 🔲 Aberta |
+| [US-24.11](US-24.11-criar-record-stockitemresponse-saldos-fisico-/issue.md) | Criar record `StockItemResponse` (saldos físico, reservado, disponível e alerta) em `backend/src/main/java/br/edu/ifpb/alumigest/stock/dto/StockItemResponse.java` | `sprint-08` | 🔲 Aberta |
+| [US-24.12](US-24.12-criar-record-stockmovementrequest-e-stockmove/issue.md) | Criar record `StockMovementRequest` e `StockMovementResponse` em `backend/src/main/java/br/edu/ifpb/alumigest/stock/dto/StockMovementRequest.java` | `sprint-08` | 🔲 Aberta |
+| [US-24.13](US-24.13-criar-mapper-mapstruct-stockmapper-em-backend/issue.md) | Criar mapper MapStruct `StockMapper` em `backend/src/main/java/br/edu/ifpb/alumigest/stock/mapper/StockMapper.java` | `sprint-08` | 🔲 Aberta |
+| [US-24.14](US-24.14-implementar-metodo-reservarmateriais-long-ord/issue.md) | Implementar método `reservarMateriais(Long orderId)` no `StockService` em `backend/src/main/java/br/edu/ifpb/alumigest/stock/service/StockService.java` | `sprint-08` | 🔲 Aberta |
+| [US-24.15](US-24.15-implementar-metodo-baixarmateriais-long-produ/issue.md) | Implementar método `baixarMateriais(Long productionOrderId)` no `StockService` convertendo reserva em baixa física | `sprint-08` | 🔲 Aberta |
+| [US-24.16](US-24.16-implementar-metodo-registrarmovimentacaomanua/issue.md) | Implementar método `registrarMovimentacaoManual(StockMovementRequest request)` e `listarSaldos()` no `StockService` | `sprint-08` | 🔲 Aberta |
+| [US-24.17](US-24.17-criar-stockcontroller-com-endpoints-get-api-s/issue.md) | Criar `StockController` com endpoints GET /api/stock, POST /api/stock/movement, GET /api/stock/{id}/movements em `backend/src/main/java/br/edu/ifpb/alumigest/stock/controller/StockController.java` | `sprint-08` | 🔲 Aberta |
+| [US-24.18](US-24.18-criar-testes-unitarios-de-reserva-baixa-e-con/issue.md) | Criar testes unitários de reserva, baixa e concorrência no `StockServiceTest` em `backend/src/test/java/br/edu/ifpb/alumigest/stock/service/StockServiceTest.java` | `sprint-08` | 🔲 Aberta |
 
+## 📦 US-25: Apontar Perdas, Quebras e Descarte de Sucata
 
-### Phase 1: Setup & Foundational
+| Sub-Task | Tarefa | Alvo / Módulo | Status |
+|---|---|---|:---:|
+| [US-25.1](US-25.1-criar-record-scraprecordrequest-e-scraprecord/issue.md) | Criar record `ScrapRecordRequest` e `ScrapRecordResponse` em `backend/src/main/java/br/edu/ifpb/alumigest/stock/dto/ScrapRecordRequest.java` | `sprint-08` | 🔲 Aberta |
+| [US-25.2](US-25.2-implementar-metodo-registrarperda-scraprecord/issue.md) | Implementar método `registrarPerda(ScrapRecordRequest request)` no `ScrapService` com débito em `StockItem` em `backend/src/main/java/br/edu/ifpb/alumigest/stock/service/ScrapService.java` | `sprint-08` | 🔲 Aberta |
+| [US-25.3](US-25.3-adicionar-endpoint-post-api-stock-scrap-no-st/issue.md) | Adicionar endpoint POST /api/stock/scrap no `StockController` | `sprint-08` | 🔲 Aberta |
+| [US-25.4](US-25.4-criar-teste-unitario-do-scrapservicetest/issue.md) | Criar teste unitário do `ScrapServiceTest` | `sprint-08` | 🔲 Aberta |
 
-- [T001: Criar package `br.edu.ifpb.alumigest.stock` e diretório `frontend/src/features/stock`](T001-criar-package-br-edu-ifpb-alumigest-stock-e-d/issue.md)
-- [T002: Criar migration Flyway `backend/src/main/resources/db/migration/V11__create_stock_schema.sql` com tabelas `stock_items`, `stock_movements` e `scrap_records`](T002-criar-migration-flyway-backend-src-main-resou/issue.md)
-- [T003: Criar enum `StockMovementType` (ENTRADA_COMPRA, RESERVA_PRODUCAO, BAIXA_PRODUCAO, PERDA_SUCATA, AJUSTE_MANUAL, CANCELAMENTO_RESERVA) em `backend/src/main/java/br/edu/ifpb/alumigest/stock/domain/StockMovementType.java`](T003-criar-enum-stockmovementtype-entrada-compra-r/issue.md) `[P]`
-- [T004: Criar enum `ScrapReason` (QUEBRA_MANUSEIO, ERRO_MEDIDA_CORTE, DEFEITO_FABRICA_MATERIAL, AVARIA_TRANSPORTE, OUTROS) em `backend/src/main/java/br/edu/ifpb/alumigest/stock/domain/ScrapReason.java`](T004-criar-enum-scrapreason-quebra-manuseio-erro-m/issue.md) `[P]`
-- [T005: Criar entidade JPA `StockItem` em `backend/src/main/java/br/edu/ifpb/alumigest/stock/domain/StockItem.java`](T005-criar-entidade-jpa-stockitem-em-backend-src-m/issue.md)
-- [T006: Criar entidade JPA `StockMovement` em `backend/src/main/java/br/edu/ifpb/alumigest/stock/domain/StockMovement.java`](T006-criar-entidade-jpa-stockmovement-em-backend-s/issue.md)
-- [T007: Criar entidade JPA `ScrapRecord` em `backend/src/main/java/br/edu/ifpb/alumigest/stock/domain/ScrapRecord.java`](T007-criar-entidade-jpa-scraprecord-em-backend-src/issue.md)
-- [T008: Criar repositório `StockItemRepository` em `backend/src/main/java/br/edu/ifpb/alumigest/stock/repository/StockItemRepository.java`](T008-criar-repositorio-stockitemrepository-em-back/issue.md) `[P]`
-- [T009: Criar repositório `StockMovementRepository` em `backend/src/main/java/br/edu/ifpb/alumigest/stock/repository/StockMovementRepository.java`](T009-criar-repositorio-stockmovementrepository-em-/issue.md) `[P]`
-- [T010: Criar repositório `ScrapRecordRepository` em `backend/src/main/java/br/edu/ifpb/alumigest/stock/repository/ScrapRecordRepository.java`](T010-criar-repositorio-scraprecordrepository-em-ba/issue.md) `[P]`
+## 📦 US-26: Consultar Posição de Estoque e Kardex de Movimentações
 
-### Phase 2: User Story 1 - Reserva e Baixa Automática de Estoque (Priority: P1) 🎯 MVP
+| Sub-Task | Tarefa | Alvo / Módulo | Status |
+|---|---|---|:---:|
+| [US-26.1](US-26.1-criar-interfaces-typescript-e-schemas-zod-em-/issue.md) | Criar interfaces TypeScript e schemas Zod em `frontend/src/features/stock/types/stock.ts` | `sprint-08` | 🔲 Aberta |
+| [US-26.2](US-26.2-criar-servico-de-api-axios-stockapi-ts-e-hook/issue.md) | Criar serviço de API Axios (`stockApi.ts`) e hooks React Query (`useStock.ts`) | `sprint-08` | 🔲 Aberta |
+| [US-26.3](US-26.3-criar-componente-stocktable-com-badges-de-ale/issue.md) | Criar componente `StockTable` com badges de alerta amarelo em `frontend/src/features/stock/components/StockTable.tsx` | `sprint-08` | 🔲 Aberta |
+| [US-26.4](US-26.4-criar-modal-stockmovementmodal-para-entrada-d/issue.md) | Criar modal `StockMovementModal` para entrada de materiais em `frontend/src/features/stock/components/StockMovementModal.tsx` | `sprint-08` | 🔲 Aberta |
+| [US-26.5](US-26.5-criar-modal-scraprecordmodal-para-registro-de/issue.md) | Criar modal `ScrapRecordModal` para registro de perda/sucata em `frontend/src/features/stock/components/ScrapRecordModal.tsx` | `sprint-08` | 🔲 Aberta |
+| [US-26.6](US-26.6-criar-componente-kardexdrawer-com-historico-d/issue.md) | Criar componente `KardexDrawer` com histórico de movimentações em `frontend/src/features/stock/components/KardexDrawer.tsx` | `sprint-08` | 🔲 Aberta |
+| [US-26.7](US-26.7-criar-pagina-stockpage-e-registrar-rota-estoq/issue.md) | Criar página `StockPage` e registrar rota `/estoque` no React Router | `sprint-08` | 🔲 Aberta |
 
-- [T011: Criar record `StockItemResponse` (saldos físico, reservado, disponível e alerta) em `backend/src/main/java/br/edu/ifpb/alumigest/stock/dto/StockItemResponse.java`](T011-criar-record-stockitemresponse-saldos-fisico-/issue.md) `[P]` `[US1]`
-- [T012: Criar record `StockMovementRequest` e `StockMovementResponse` em `backend/src/main/java/br/edu/ifpb/alumigest/stock/dto/StockMovementRequest.java`](T012-criar-record-stockmovementrequest-e-stockmove/issue.md) `[P]` `[US1]`
-- [T013: Criar mapper MapStruct `StockMapper` em `backend/src/main/java/br/edu/ifpb/alumigest/stock/mapper/StockMapper.java`](T013-criar-mapper-mapstruct-stockmapper-em-backend/issue.md) `[US1]`
-- [T014: Implementar método `reservarMateriais(Long orderId)` no `StockService` em `backend/src/main/java/br/edu/ifpb/alumigest/stock/service/StockService.java`](T014-implementar-metodo-reservarmateriais-long-ord/issue.md) `[US1]`
-- [T015: Implementar método `baixarMateriais(Long productionOrderId)` no `StockService` convertendo reserva em baixa física](T015-implementar-metodo-baixarmateriais-long-produ/issue.md) `[US1]`
-- [T016: Implementar método `registrarMovimentacaoManual(StockMovementRequest request)` e `listarSaldos()` no `StockService`](T016-implementar-metodo-registrarmovimentacaomanua/issue.md) `[US1]`
-- [T017: Criar `StockController` com endpoints GET /api/stock, POST /api/stock/movement, GET /api/stock/{id}/movements em `backend/src/main/java/br/edu/ifpb/alumigest/stock/controller/StockController.java`](T017-criar-stockcontroller-com-endpoints-get-api-s/issue.md) `[US1]`
-- [T018: Criar testes unitários de reserva, baixa e concorrência no `StockServiceTest` em `backend/src/test/java/br/edu/ifpb/alumigest/stock/service/StockServiceTest.java`](T018-criar-testes-unitarios-de-reserva-baixa-e-con/issue.md) `[P]` `[US1]`
+## 📦 US-27: Homologação Integrada e Validação da Release 2 (v2.0.0)
 
-### Phase 3: User Story 2 - Apontamento de Perdas & Sucata (Priority: P1) 🎯 MVP
+| Sub-Task | Tarefa | Alvo / Módulo | Status |
+|---|---|---|:---:|
+| [US-27.1](US-27.1-executar-mvn-clean-verify-no-backend-e-corrig/issue.md) | Executar `mvn clean verify` no backend e corrigir qualquer falha nos testes de todas as sprints da Release 2 | `sprint-08` | 🔲 Aberta |
+| [US-27.2](US-27.2-executar-npm-run-build-no-frontend-e-validar-/issue.md) | Executar `npm run build` no frontend e validar tipagem estrita | `sprint-08` | 🔲 Aberta |
+| [US-27.3](US-27.3-validar-os-cenarios-e2e-da-release-2-no-ambie/issue.md) | Validar os cenários E2E da Release 2 no ambiente local | `sprint-08` | 🔲 Aberta |
+| [US-27.4](US-27.4-documentar-relatorio-de-testes-de-aceitacao-d/issue.md) | Documentar relatório de Testes de Aceitação da Release 2 em `docs/projeto-001/003-teste/TEA-Testes_de_Aceitacao_Release2.md` | `sprint-08` | 🔲 Aberta |
+| [US-27.5](US-27.5-documentacao-openapi-swagger-nos-endpoints-de/issue.md) | Documentação OpenAPI/Swagger nos endpoints de estoque | `sprint-08` | 🔲 Aberta |
+| [US-27.6](US-27.6-adicionar-atalho-estoque-materiais-no-menu-do/issue.md) | Adicionar atalho "Estoque & Materiais" no menu do frontend | `sprint-08` | 🔲 Aberta |
+| [US-27.7](US-27.7-validacao-final-do-quickstart-md-da-sprint-8/issue.md) | Validação final do `quickstart.md` da Sprint 8 | `sprint-08` | 🔲 Aberta |
 
-- [T019: Criar record `ScrapRecordRequest` e `ScrapRecordResponse` em `backend/src/main/java/br/edu/ifpb/alumigest/stock/dto/ScrapRecordRequest.java`](T019-criar-record-scraprecordrequest-e-scraprecord/issue.md) `[P]` `[US2]`
-- [T020: Implementar método `registrarPerda(ScrapRecordRequest request)` no `ScrapService` com débito em `StockItem` em `backend/src/main/java/br/edu/ifpb/alumigest/stock/service/ScrapService.java`](T020-implementar-metodo-registrarperda-scraprecord/issue.md) `[US2]`
-- [T021: Adicionar endpoint POST /api/stock/scrap no `StockController`](T021-adicionar-endpoint-post-api-stock-scrap-no-st/issue.md) `[US2]`
-- [T022: Criar teste unitário do `ScrapServiceTest`](T022-criar-teste-unitario-do-scrapservicetest/issue.md) `[P]` `[US2]`
-
-### Phase 4: User Story 3 - Painel de Posição de Estoque no Frontend (Priority: P2)
-
-- [T023: Criar interfaces TypeScript e schemas Zod em `frontend/src/features/stock/types/stock.ts`](T023-criar-interfaces-typescript-e-schemas-zod-em-/issue.md) `[P]` `[US3]`
-- [T024: Criar serviço de API Axios (`stockApi.ts`) e hooks React Query (`useStock.ts`)](T024-criar-servico-de-api-axios-stockapi-ts-e-hook/issue.md) `[US3]`
-- [T025: Criar componente `StockTable` com badges de alerta amarelo em `frontend/src/features/stock/components/StockTable.tsx`](T025-criar-componente-stocktable-com-badges-de-ale/issue.md) `[US3]`
-- [T026: Criar modal `StockMovementModal` para entrada de materiais em `frontend/src/features/stock/components/StockMovementModal.tsx`](T026-criar-modal-stockmovementmodal-para-entrada-d/issue.md) `[US3]`
-- [T027: Criar modal `ScrapRecordModal` para registro de perda/sucata em `frontend/src/features/stock/components/ScrapRecordModal.tsx`](T027-criar-modal-scraprecordmodal-para-registro-de/issue.md) `[US3]`
-- [T028: Criar componente `KardexDrawer` com histórico de movimentações em `frontend/src/features/stock/components/KardexDrawer.tsx`](T028-criar-componente-kardexdrawer-com-historico-d/issue.md) `[US3]`
-- [T029: Criar página `StockPage` e registrar rota `/estoque` no React Router](T029-criar-pagina-stockpage-e-registrar-rota-estoq/issue.md) `[US3]`
-
-### Phase 5: User Story 4 - Homologação Integrada da Release 2 (Priority: P2)
-
-- [T030: Executar `mvn clean verify` no backend e corrigir qualquer falha nos testes de todas as sprints da Release 2](T030-executar-mvn-clean-verify-no-backend-e-corrig/issue.md) `[US4]`
-- [T031: Executar `npm run build` no frontend e validar tipagem estrita](T031-executar-npm-run-build-no-frontend-e-validar-/issue.md) `[US4]`
-- [T032: Validar os cenários E2E da Release 2 no ambiente local](T032-validar-os-cenarios-e2e-da-release-2-no-ambie/issue.md) `[US4]`
-- [T033: Documentar relatório de Testes de Aceitação da Release 2 em `docs/projeto-001/003-teste/TEA-Testes_de_Aceitacao_Release2.md`](T033-documentar-relatorio-de-testes-de-aceitacao-d/issue.md) `[US4]`
-
-### Phase 6: Polish & Cross-Cutting Concerns
-
-- [T034: Documentação OpenAPI/Swagger nos endpoints de estoque](T034-documentacao-openapi-swagger-nos-endpoints-de/issue.md) `[P]`
-- [T035: Adicionar atalho "Estoque & Materiais" no menu do frontend](T035-adicionar-atalho-estoque-materiais-no-menu-do/issue.md) `[P]`
-- [T036: Validação final do `quickstart.md` da Sprint 8](T036-validacao-final-do-quickstart-md-da-sprint-8/issue.md)

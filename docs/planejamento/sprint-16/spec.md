@@ -17,60 +17,48 @@ Com a Release 3 entregue e em operação na Alumiportas, esta sprint de reserva 
 
 ---
 
-## 2. Histórias de Usuário (User Stories)
+## 2. 👥 Histórias de Usuário (User Stories)
 
-### User Story 1 (P1) — Backup Automático e Restauração de Desastre 🎯 MVP
+### 📌 US-50: Executar Rotinas de Backup Automático e Disaster Recovery em 1 Comando
 
-**Como** Administrador do AlumiGest,
-**Quero** que o sistema execute backups automáticos diários e permita gerar backups manuais e restaurar com 1 comando,
-**Para que** a empresa esteja 100% protegida contra perda de dados ou falhas de servidor.
+> Rotinas agendadas de backup diário compactado do PostgreSQL com retenção de 30 dias e script de restauração em menos de 10 minutos.
 
-#### Cenários de Aceitação (BDD / Gherkin)
+#### Sub-tarefas Técnicas (Sub-issues):
+- **US-50.1**: Criar package `br.edu.ifpb.alumigest.admin` e diretório `frontend/src/features/admin`
+- **US-50.2**: Criar migration Flyway `backend/src/main/resources/db/migration/V17__create_audit_and_backup_schema.sql` com tabelas `audit_logs` e `system_backups`
+- **US-50.3**: Criar entidades JPA `AuditLog` e `SystemBackup` em `backend/src/main/java/br/edu/ifpb/alumigest/admin/domain/`
+- **US-50.4**: Criar repositórios `AuditLogRepository` e `SystemBackupRepository` em `backend/src/main/java/br/edu/ifpb/alumigest/admin/repository/`
+- **US-50.5**: Criar record `SystemBackupResponse` em `backend/src/main/java/br/edu/ifpb/alumigest/admin/dto/SystemBackupResponse.java`
+- **US-50.6**: Implementar serviço `SystemBackupService.gerarBackup()` com `ProcessBuilder` e retenção de 30 dias em `backend/src/main/java/br/edu/ifpb/alumigest/admin/service/SystemBackupService.java`
+- **US-50.7**: Configurar rotina agendada `@Scheduled(cron = "0 0 2 * * *")` para backup na madrugada
+- **US-50.8**: Criar endpoints POST /api/admin/backups/generate e GET /api/admin/backups/{id}/download no `SystemBackupController` em `backend/src/main/java/br/edu/ifpb/alumigest/admin/controller/SystemBackupController.java`
+- **US-50.9**: Criar script de restauração rápida `scripts/restore-backup.sh` e `scripts/restore-backup.ps1`
+- **US-50.10**: Criar testes unitários do `SystemBackupServiceTest`
 
-```gherkin
-Cenário: Geração de backup manual
-  Dado que o administrador está na tela de Configurações do Sistema
-  Quando clica em "Gerar Backup Agora"
-  Então o sistema executa o dump compactado do PostgreSQL (.sql.gz)
-  E disponibiliza o download seguro e registra no histórico de backups
-```
+### 📌 US-51: Registrar Trilha de Auditoria Imutável para Ações Críticas
 
----
+> Registro imutável de eventos sensíveis (alteração de tabelas de preços, descontos, cancelamento de pedidos, baixas manuais).
 
-### User Story 2 (P1) — Trilha de Auditoria de Ações Críticas 🎯 MVP
+#### Sub-tarefas Técnicas (Sub-issues):
+- **US-51.1**: Criar anotação customizada `@AuditAction(acao, entidade)` em `backend/src/main/java/br/edu/ifpb/alumigest/admin/annotation/AuditAction.java`
+- **US-51.2**: Implementar interceptor AOP `AuditAspect` capturando usuário logado e persistindo em `AuditLogService`
+- **US-51.3**: Criar record `AuditLogResponse`
+- **US-51.4**: Criar endpoint GET /api/admin/audit-logs no `AuditLogController`
+- **US-51.5**: Criar testes unitários do `AuditAspectTest`
+- **US-51.6**: Criar componente `AuditLogTable` no frontend com filtros por entidade e data
+- **US-51.7**: Criar página `AuditLogsPage` no frontend
 
-**Como** Diretor da Alumiportas,
-**Quero** consultar o histórico detalhado de quem concedeu descontos, cancelou pedidos ou alterou preços,
-**Para que** haja governança, controle e auditoria interna em tempo real.
+### 📌 US-52: Monitorar Saúde do Sistema com Actuator e Publicar Documentação Final
 
-#### Cenários de Aceitação (BDD / Gherkin)
+> Endpoints de métricas de saúde com Spring Boot Actuator, dicionário de dados consolidado e runbook de operações da sustentação.
 
-```gherkin
-Cenário: Auditoria de cancelamento de pedido
-  Dado que um usuário cancela um pedido de venda
-  Quando a ação é concluída
-  Então um registro é gravado em "audit_logs" com usuário, data/hora, motivo e ID do pedido
-  E o log é listado no painel de auditoria da diretoria
-```
-
----
-
-### User Story 3 (P2) — Monitoramento de Saúde e Documentação Final
-
-**Como** Encarregado de TI / Suporte,
-**Quero** monitorar a saúde da aplicação via Actuator e consultar o Runbook de contingência,
-**Para que** incidentes sejam prevenidos ou resolvidos em poucos minutos.
-
-#### Cenários de Aceitação (BDD / Gherkin)
-
-```gherkin
-Cenário: Health check do sistema
-  Dado que o monitoramento consulta "/actuator/health"
-  Quando o banco e disco estão saudáveis
-  Então a resposta é 200 OK com status "UP"
-```
-
----
+#### Sub-tarefas Técnicas (Sub-issues):
+- **US-52.1**: Configurar Spring Boot Actuator no `pom.xml` e `application.yml`
+- **US-52.2**: Criar componente `SystemHealthBadge` e tela `SystemSettingsPage` no frontend
+- **US-52.3**: Criar Runbook de Contingência e Guia de Disaster Recovery em `docs/arquitetura/disaster-recovery.md`
+- **US-52.4**: Criar Diagrama C4 Model consolidado da arquitetura do AlumiGest em `docs/arquitetura/c4-model.md`
+- **US-52.5**: Documentar endpoints no OpenAPI/Swagger
+- **US-52.6**: Atualizar mapa mestre de governança e documentação em `docs/planejamento/README.md`
 
 ## 3. Requisitos Funcionais
 

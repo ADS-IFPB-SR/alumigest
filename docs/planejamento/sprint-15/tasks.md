@@ -1,70 +1,88 @@
-﻿# Tasks: Sprint 15 — Treinamento dos Usuários Alumiportas, Carga Real e Homologação R3
+# 📋 Lista de Tarefas (Tasks) — Sprint 15 — Treinamento dos Usuários Alumiportas, Carga Real e Homologação R3
 
-**Feature**: `012-treinamento-carga-homologacao-r3`
-**Generated**: 2026-08-27
-**Source**: spec.md, plan.md, data-model.md, contracts/api-onboarding.md, research.md
+> **Padrão**: User Stories sequenciais no projeto com Sub-tarefas decimais (`US-XX.Y`).
 
 ---
 
-## Phase 1: Setup & Foundational
+## 📦 US-47: Executar Carga Inicial de Dados e Importador de Clientes via CSV
 
-**Purpose**: Migration Flyway V16 de Carga de Dados Real de Produção
+> **Descrição**: Carga de dados mestres de produção (perfis, vidros, ferragens) via Flyway V16 e ferramenta de importação em lote de clientes via planilha CSV.
 
-- [ ] T001 Criar package `br.edu.ifpb.alumigest.onboarding` e diretório `frontend/src/features/onboarding`
-- [ ] T002 Criar migration Flyway `backend/src/main/resources/db/migration/V16__seed_initial_production_data.sql` populando perfis Suprema/Gold, vidros, acessórios e estoque inicial com `ON CONFLICT DO NOTHING`
+| ID | Tarefa | Status |
+|---|---|:---:|
+| **US-47.1** | [US-47.1](issues/US-47.1-criar-package-br-edu-ifpb-alumigest-onboardin/issue.md) Criar package `br.edu.ifpb.alumigest.onboarding` e diretório `frontend/src/features/onboarding` | 🔲 Pendente |
+| **US-47.2** | [US-47.2](issues/US-47.2-criar-migration-flyway-backend-src-main-resou/issue.md) Criar migration Flyway `backend/src/main/resources/db/migration/V16__seed_initial_production_data.sql` populando perfis Suprema/Gold, vidros, acessórios e estoque inicial com `ON CONFLICT DO NOTHING` | 🔲 Pendente |
+| **US-47.3** | [US-47.3](issues/US-47.3-criar-record-clientimportsummaryresponse-tota/issue.md) Criar record `ClientImportSummaryResponse` (totalLinhas, importadosComSucesso, duplicadosIgnorados, erros) em `backend/src/main/java/br/edu/ifpb/alumigest/onboarding/dto/` | 🔲 Pendente |
+| **US-47.4** | [US-47.4](issues/US-47.4-implementar-servico-clientcsvimportservice-im/issue.md) Implementar serviço `ClientCsvImportService.importarClientes(MultipartFile file)` com validação de CPF/CNPJ e transação em lote em `backend/src/main/java/br/edu/ifpb/alumigest/onboarding/service/ClientCsvImportService.java` | 🔲 Pendente |
+| **US-47.5** | [US-47.5](issues/US-47.5-criar-endpoint-post-api-onboarding-import-cli/issue.md) Criar endpoint POST /api/onboarding/import-clients-csv no `OnboardingController` em `backend/src/main/java/br/edu/ifpb/alumigest/onboarding/controller/OnboardingController.java` | 🔲 Pendente |
+| **US-47.6** | [US-47.6](issues/US-47.6-criar-testes-unitarios-do-clientcsvimportserv/issue.md) Criar testes unitários do `ClientCsvImportServiceTest` | 🔲 Pendente |
+| **US-47.7** | [US-47.7](issues/US-47.7-criar-modal-csvclientimportmodal-no-frontend-/issue.md) Criar modal `CsvClientImportModal` no frontend para upload de planilha de clientes em `frontend/src/features/onboarding/components/CsvClientImportModal.tsx` | 🔲 Pendente |
 
----
+### Detalhamento das Tarefas (Checklist):
 
-## Phase 2: User Story 1 - Importador de Clientes via CSV (Priority: P1) 🎯 MVP
-
-**Goal**: Importar clientes em lote via planilha CSV com validação de duplicidade.
-
-**Independent Test**: Fazer upload de planilha CSV com 10 clientes e constatar inserção no banco de dados.
-
-- [ ] T003 [P] [US1] Criar record `ClientImportSummaryResponse` (totalLinhas, importadosComSucesso, duplicadosIgnorados, erros) em `backend/src/main/java/br/edu/ifpb/alumigest/onboarding/dto/`
-- [ ] T004 [US1] Implementar serviço `ClientCsvImportService.importarClientes(MultipartFile file)` com validação de CPF/CNPJ e transação em lote em `backend/src/main/java/br/edu/ifpb/alumigest/onboarding/service/ClientCsvImportService.java`
-- [ ] T005 [US1] Criar endpoint POST /api/onboarding/import-clients-csv no `OnboardingController` em `backend/src/main/java/br/edu/ifpb/alumigest/onboarding/controller/OnboardingController.java`
-- [ ] T006 [P] [US1] Criar testes unitários do `ClientCsvImportServiceTest`
-- [ ] T007 [US1] Criar modal `CsvClientImportModal` no frontend para upload de planilha de clientes em `frontend/src/features/onboarding/components/CsvClientImportModal.tsx`
-
----
-
-## Phase 3: User Story 2 - Roteiro de Homologação Ponta a Ponta (Priority: P1) 🎯 MVP
-
-**Goal**: Executar e certificar os 10 passos do fluxo E2E integrado da Release 3 (v3.0.0).
-
-**Independent Test**: Executar os 10 passos sequenciais descritos no `quickstart.md` e validar persistência e coerência de dados.
-
-- [ ] T008 [US2] Executar e validar Passo 1: Criação de Orçamento com Desconto e 2 vias de PDF (R1 - Sprint 4)
-- [ ] T009 [US2] Executar e validar Passo 2: Conversão em Pedido com Lock de Preços (R2 - Sprint 5)
-- [ ] T010 [US2] Executar e validar Passo 3: Cobrança do Sinal 50% via PIX Dinâmico e Liberação (R3 - Sprint 9)
-- [ ] T011 [US2] Executar e validar Passo 4: Geração de OPs individuais com Etiquetas QR Code (R2 - Sprint 6)
-- [ ] T012 [US2] Executar e validar Passo 5: Romaneio de Oficina e Lista de Corte em PDF (R2 - Sprint 7)
-- [ ] T013 [US2] Executar e validar Passo 6: Baixa automática de estoque e registro de sucata (R2 - Sprint 8)
-- [ ] T014 [US2] Executar e validar Passo 7: Agendamento da Instalação e Emissão de OS em PDF (R3 - Sprint 12)
-- [ ] T015 [US2] Executar e validar Passo 8: Execução de Campo Offline no PWA com fotos e sincronização (R3 - Sprint 14)
-- [ ] T016 [US2] Executar e validar Passo 9: Baixa do Saldo Final 50% em Dinheiro e Fechamento de Caixa (R3 - Sprints 10 e 11)
-- [ ] T017 [US2] Executar e validar Passo 10: Auditoria dos KPIs no Dashboard e DRE Simplificado (R3 - Sprint 13)
+- [ ] **US-47.1**: Criar package `br.edu.ifpb.alumigest.onboarding` e diretório `frontend/src/features/onboarding`
+- [ ] **US-47.2**: Criar migration Flyway `backend/src/main/resources/db/migration/V16__seed_initial_production_data.sql` populando perfis Suprema/Gold, vidros, acessórios e estoque inicial com `ON CONFLICT DO NOTHING`
+- [ ] **US-47.3**: Criar record `ClientImportSummaryResponse` (totalLinhas, importadosComSucesso, duplicadosIgnorados, erros) em `backend/src/main/java/br/edu/ifpb/alumigest/onboarding/dto/`
+- [ ] **US-47.4**: Implementar serviço `ClientCsvImportService.importarClientes(MultipartFile file)` com validação de CPF/CNPJ e transação em lote em `backend/src/main/java/br/edu/ifpb/alumigest/onboarding/service/ClientCsvImportService.java`
+- [ ] **US-47.5**: Criar endpoint POST /api/onboarding/import-clients-csv no `OnboardingController` em `backend/src/main/java/br/edu/ifpb/alumigest/onboarding/controller/OnboardingController.java`
+- [ ] **US-47.6**: Criar testes unitários do `ClientCsvImportServiceTest`
+- [ ] **US-47.7**: Criar modal `CsvClientImportModal` no frontend para upload de planilha de clientes em `frontend/src/features/onboarding/components/CsvClientImportModal.tsx`
 
 ---
 
-## Phase 4: User Story 3 - Guias de Treinamento por Perfil e Central de Ajuda (Priority: P2)
+## 📦 US-48: Homologação Integrada Ponta a Ponta da Release 3 (v3.0.0)
 
-**Goal**: Gerar manuais operacionais ilustrados em PDF por perfil e criar Central de Ajuda no frontend.
+> **Descrição**: Execução do roteiro completo de homologação E2E (Orçamento -> Sinal PIX -> OP & QR Code -> Corte -> Estoque -> OS de Campo -> Saldo -> DRE).
 
-**Independent Test**: Baixar manual do Vendedor em PDF e validar formatação e passo a passo.
+| ID | Tarefa | Status |
+|---|---|:---:|
+| **US-48.1** | [US-48.1](issues/US-48.1-executar-e-validar-passo-1-criacao-de-orcamen/issue.md) Executar e validar Passo 1: Criação de Orçamento com Desconto e 2 vias de PDF (R1 - Sprint 4) | 🔲 Pendente |
+| **US-48.2** | [US-48.2](issues/US-48.2-executar-e-validar-passo-2-conversao-em-pedid/issue.md) Executar e validar Passo 2: Conversão em Pedido com Lock de Preços (R2 - Sprint 5) | 🔲 Pendente |
+| **US-48.3** | [US-48.3](issues/US-48.3-executar-e-validar-passo-3-cobranca-do-sinal-/issue.md) Executar e validar Passo 3: Cobrança do Sinal 50% via PIX Dinâmico e Liberação (R3 - Sprint 9) | 🔲 Pendente |
+| **US-48.4** | [US-48.4](issues/US-48.4-executar-e-validar-passo-4-geracao-de-ops-ind/issue.md) Executar e validar Passo 4: Geração de OPs individuais com Etiquetas QR Code (R2 - Sprint 6) | 🔲 Pendente |
+| **US-48.5** | [US-48.5](issues/US-48.5-executar-e-validar-passo-5-romaneio-de-oficin/issue.md) Executar e validar Passo 5: Romaneio de Oficina e Lista de Corte em PDF (R2 - Sprint 7) | 🔲 Pendente |
+| **US-48.6** | [US-48.6](issues/US-48.6-executar-e-validar-passo-6-baixa-automatica-d/issue.md) Executar e validar Passo 6: Baixa automática de estoque e registro de sucata (R2 - Sprint 8) | 🔲 Pendente |
+| **US-48.7** | [US-48.7](issues/US-48.7-executar-e-validar-passo-7-agendamento-da-ins/issue.md) Executar e validar Passo 7: Agendamento da Instalação e Emissão de OS em PDF (R3 - Sprint 12) | 🔲 Pendente |
+| **US-48.8** | [US-48.8](issues/US-48.8-executar-e-validar-passo-8-execucao-de-campo-/issue.md) Executar e validar Passo 8: Execução de Campo Offline no PWA com fotos e sincronização (R3 - Sprint 14) | 🔲 Pendente |
+| **US-48.9** | [US-48.9](issues/US-48.9-executar-e-validar-passo-9-baixa-do-saldo-fin/issue.md) Executar e validar Passo 9: Baixa do Saldo Final 50% em Dinheiro e Fechamento de Caixa (R3 - Sprints 10 e 11) | 🔲 Pendente |
+| **US-48.10** | [US-48.10](issues/US-48.10-executar-e-validar-passo-10-auditoria-dos-kpi/issue.md) Executar e validar Passo 10: Auditoria dos KPIs no Dashboard e DRE Simplificado (R3 - Sprint 13) | 🔲 Pendente |
 
-- [ ] T018 [US3] Criar serviço `OperationalManualPdfService` gerando manuais em PDF para Vendedor, Produção, Estoque, Financeiro e Instalador em `backend/src/main/java/br/edu/ifpb/alumigest/onboarding/service/OperationalManualPdfService.java`
-- [ ] T019 [US3] Criar endpoint GET /api/onboarding/manuals/{role}/pdf no `OnboardingController`
-- [ ] T020 [P] [US3] Criar teste unitário do `OperationalManualPdfServiceTest`
-- [ ] T021 [US3] Criar componente `HelpCenterModal` e página `HelpCenterPage` no frontend em `frontend/src/features/onboarding/`
+### Detalhamento das Tarefas (Checklist):
+
+- [ ] **US-48.1**: Executar e validar Passo 1: Criação de Orçamento com Desconto e 2 vias de PDF (R1 - Sprint 4)
+- [ ] **US-48.2**: Executar e validar Passo 2: Conversão em Pedido com Lock de Preços (R2 - Sprint 5)
+- [ ] **US-48.3**: Executar e validar Passo 3: Cobrança do Sinal 50% via PIX Dinâmico e Liberação (R3 - Sprint 9)
+- [ ] **US-48.4**: Executar e validar Passo 4: Geração de OPs individuais com Etiquetas QR Code (R2 - Sprint 6)
+- [ ] **US-48.5**: Executar e validar Passo 5: Romaneio de Oficina e Lista de Corte em PDF (R2 - Sprint 7)
+- [ ] **US-48.6**: Executar e validar Passo 6: Baixa automática de estoque e registro de sucata (R2 - Sprint 8)
+- [ ] **US-48.7**: Executar e validar Passo 7: Agendamento da Instalação e Emissão de OS em PDF (R3 - Sprint 12)
+- [ ] **US-48.8**: Executar e validar Passo 8: Execução de Campo Offline no PWA com fotos e sincronização (R3 - Sprint 14)
+- [ ] **US-48.9**: Executar e validar Passo 9: Baixa do Saldo Final 50% em Dinheiro e Fechamento de Caixa (R3 - Sprints 10 e 11)
+- [ ] **US-48.10**: Executar e validar Passo 10: Auditoria dos KPIs no Dashboard e DRE Simplificado (R3 - Sprint 13)
 
 ---
 
-## Phase 5: Polish & Release 3 Certification
+## 📦 US-49: Disponibilizar Guias de Treinamento por Perfil e Central de Ajuda
 
-**Purpose**: Documentação OpenAPI e encerramento oficial da Release 3 (v3.0.0)
+> **Descrição**: Manuais operacionais em PDF por perfil de usuário (Vendas, Fábrica, Almoxarifado, Financeiro, Campo) e Central de Ajuda contextual.
 
-- [ ] T022 [P] Documentar endpoints no OpenAPI/Swagger
-- [ ] T023 [P] Adicionar botão "Central de Ajuda & Manuais" no cabeçalho do frontend
-- [ ] T024 Ratificar termo de homologação da Release 3 (v3.0.0)
+| ID | Tarefa | Status |
+|---|---|:---:|
+| **US-49.1** | [US-49.1](issues/US-49.1-criar-servico-operationalmanualpdfservice-ger/issue.md) Criar serviço `OperationalManualPdfService` gerando manuais em PDF para Vendedor, Produção, Estoque, Financeiro e Instalador em `backend/src/main/java/br/edu/ifpb/alumigest/onboarding/service/OperationalManualPdfService.java` | 🔲 Pendente |
+| **US-49.2** | [US-49.2](issues/US-49.2-criar-endpoint-get-api-onboarding-manuals-rol/issue.md) Criar endpoint GET /api/onboarding/manuals/{role}/pdf no `OnboardingController` | 🔲 Pendente |
+| **US-49.3** | [US-49.3](issues/US-49.3-criar-teste-unitario-do-operationalmanualpdfs/issue.md) Criar teste unitário do `OperationalManualPdfServiceTest` | 🔲 Pendente |
+| **US-49.4** | [US-49.4](issues/US-49.4-criar-componente-helpcentermodal-e-pagina-hel/issue.md) Criar componente `HelpCenterModal` e página `HelpCenterPage` no frontend em `frontend/src/features/onboarding/` | 🔲 Pendente |
+| **US-49.5** | [US-49.5](issues/US-49.5-documentar-endpoints-no-openapi-swagger/issue.md) Documentar endpoints no OpenAPI/Swagger | 🔲 Pendente |
+| **US-49.6** | [US-49.6](issues/US-49.6-adicionar-botao-central-de-ajuda-manuais-no-c/issue.md) Adicionar botão "Central de Ajuda & Manuais" no cabeçalho do frontend | 🔲 Pendente |
+| **US-49.7** | [US-49.7](issues/US-49.7-ratificar-termo-de-homologacao-da-release-3-v/issue.md) Ratificar termo de homologação da Release 3 (v3.0.0) | 🔲 Pendente |
+
+### Detalhamento das Tarefas (Checklist):
+
+- [ ] **US-49.1**: Criar serviço `OperationalManualPdfService` gerando manuais em PDF para Vendedor, Produção, Estoque, Financeiro e Instalador em `backend/src/main/java/br/edu/ifpb/alumigest/onboarding/service/OperationalManualPdfService.java`
+- [ ] **US-49.2**: Criar endpoint GET /api/onboarding/manuals/{role}/pdf no `OnboardingController`
+- [ ] **US-49.3**: Criar teste unitário do `OperationalManualPdfServiceTest`
+- [ ] **US-49.4**: Criar componente `HelpCenterModal` e página `HelpCenterPage` no frontend em `frontend/src/features/onboarding/`
+- [ ] **US-49.5**: Documentar endpoints no OpenAPI/Swagger
+- [ ] **US-49.6**: Adicionar botão "Central de Ajuda & Manuais" no cabeçalho do frontend
+- [ ] **US-49.7**: Ratificar termo de homologação da Release 3 (v3.0.0)
+

@@ -21,60 +21,50 @@ Esta sprint entrega:
 
 ---
 
-## 2. Histórias de Usuário (User Stories)
+## 2. 👥 Histórias de Usuário (User Stories)
 
-### User Story 1 (P1) — Desdobramento Automático e Edição de Parcelas 🎯 MVP
+### 📌 US-31: Desdobrar e Gerenciar Parcelamento de Pedidos
 
-**Como** Vendedor e Financeiro da Alumiportas,
-**Quero** que a criação do Pedido de Venda gere automaticamente os títulos a receber, permitindo ajustes manuais de datas e valores,
-**Para que** o plano de recebimento reflita fielmente o acordo com o cliente.
+> Gerar automaticamente os títulos a receber com base na condição de pagamento (Entrada + Saldo, Cartão em N vezes, etc.) com datas de vencimento configuráveis.
 
-#### Cenários de Aceitação (BDD / Gherkin)
+#### Sub-tarefas Técnicas (Sub-issues):
+- **US-31.1**: Criar migration Flyway `backend/src/main/resources/db/migration/V13__create_account_receivables_schema.sql` com tabela `account_receivables`
+- **US-31.2**: Criar enums `ReceivableStatus` (A_VENCER, VENCIDO, PAGO_PARCIAL, PAGO, CANCELADO) e `InstallmentType` em `backend/src/main/java/br/edu/ifpb/alumigest/finance/domain/`
+- **US-31.3**: Criar entidade JPA `AccountReceivable` em `backend/src/main/java/br/edu/ifpb/alumigest/finance/domain/AccountReceivable.java`
+- **US-31.4**: Criar repositório `AccountReceivableRepository` em `backend/src/main/java/br/edu/ifpb/alumigest/finance/repository/AccountReceivableRepository.java`
+- **US-31.5**: Criar serviço utilitário `InstallmentCalculator` com algoritmo de rateio com resto na 1ª parcela em `backend/src/main/java/br/edu/ifpb/alumigest/finance/service/InstallmentCalculator.java`
+- **US-31.6**: Criar record `AccountReceivableResponse` em `backend/src/main/java/br/edu/ifpb/alumigest/finance/dto/AccountReceivableResponse.java`
+- **US-31.7**: Criar record `InstallmentPlanCustomRequest` em `backend/src/main/java/br/edu/ifpb/alumigest/finance/dto/InstallmentPlanCustomRequest.java`
+- **US-31.8**: Criar mapper MapStruct `AccountReceivableMapper` em `backend/src/main/java/br/edu/ifpb/alumigest/finance/mapper/AccountReceivableMapper.java`
+- **US-31.9**: Implementar serviço `AccountReceivableService.gerarPlanoParcelas(Long orderId, InstallmentPlanCustomRequest customRequest)` em `backend/src/main/java/br/edu/ifpb/alumigest/finance/service/AccountReceivableService.java`
+- **US-31.10**: Criar endpoint POST /api/finance/receivables/order/{orderId}/generate no `AccountReceivableController` em `backend/src/main/java/br/edu/ifpb/alumigest/finance/controller/AccountReceivableController.java`
+- **US-31.11**: Criar testes unitários do `InstallmentCalculatorTest` e `AccountReceivableServiceTest`
 
-```gherkin
-Cenário: Geração de 2 parcelas (50% + 50%) com centavo residual
-  Dado que um pedido de R$ 100,01 é criado com condição "50% Entrada"
-  Quando o plano de contas a receber é gerado
-  Então a 1ª parcela (Entrada) deve ser de R$ 50,01 com vencimento imediato
-  E a 2ª parcela (Saldo) deve ser de R$ 50,00 com vencimento na data de entrega
-  E a soma exata das parcelas deve ser R$ 100,01
-```
+### 📌 US-32: Controlar Contas a Receber, Vencimentos e Inadimplência
 
----
+> Painel gerencial de contas a receber com visão de títulos a vencer, vencidos, taxas de inadimplência e alertas visuais.
 
-### User Story 2 (P1) — Painel de Contas a Receber e Inadimplência 🎯 MVP
+#### Sub-tarefas Técnicas (Sub-issues):
+- **US-32.1**: Implementar método `listar(Pageable, status, clienteId, dataInicio, dataFim, busca)` no `AccountReceivableService` com atualização dinâmica de status `VENCIDO`
+- **US-32.2**: Criar endpoint GET /api/finance/receivables no `AccountReceivableController`
+- **US-32.3**: Criar interfaces TypeScript e serviço Axios (`receivablesApi.ts`) em `frontend/src/features/finance/services/receivablesApi.ts`
+- **US-32.4**: Criar componente `ReceivablesTable` com badges de alerta de vencimento em `frontend/src/features/finance/components/ReceivablesTable.tsx`
+- **US-32.5**: Criar página `ReceivablesPage` e registrar rota `/financeiro/contas-a-receber` no React Router
 
-**Como** Diretor Financeiro,
-**Quero** visualizar todas as parcelas a vencer, recebidas e vencidas em atraso, com alerta para clientes inadimplentes,
-**Para que** eu possa realizar cobrança proativa e prever o fluxo de caixa.
+### 📌 US-33: Emitir Extrato Financeiro do Cliente e Recibo de Quitação
 
-#### Cenários de Aceitação (BDD / Gherkin)
+> Gerar extrato financeiro detalhado por cliente e emitir recibos oficiais de quitação total ou parcial em PDF.
 
-```gherkin
-Cenário: Identificação de títulos vencidos
-  Dado que existem parcelas com vencimento anterior a hoje sem pagamento
-  Quando o financeiro acessa o painel de Contas a Receber
-  Então esses títulos devem ser exibidos em vermelho com status "VENCIDO" e cálculo de dias em atraso
-```
-
----
-
-### User Story 3 (P2) — Extrato Financeiro do Cliente e Recibo de Quitação
-
-**Como** Cliente e Financeiro,
-**Quero** emitir o Recibo de Pagamento e Extrato do Cliente em PDF,
-**Para que** sirva como comprovante formal de quitação total ou parcial.
-
-#### Cenários de Aceitação (BDD / Gherkin)
-
-```gherkin
-Cenário: Emissão do Recibo de Quitação de Parcela
-  Dado que uma parcela foi paga
-  Quando o usuário clica em "Emitir Recibo"
-  Então o sistema faz o download de um PDF A4 com dados da Alumiportas, cliente, valor por extenso e quitação
-```
-
----
+#### Sub-tarefas Técnicas (Sub-issues):
+- **US-33.1**: Criar record `ClientFinancialStatementResponse` (totalFaturado, totalPago, saldoDevedor, possuiInadimplencia) em `backend/src/main/java/br/edu/ifpb/alumigest/finance/dto/ClientFinancialStatementResponse.java`
+- **US-33.2**: Implementar método `obterExtratoCliente(Long clienteId)` no `AccountReceivableService`
+- **US-33.3**: Criar serviço `ReceiptPdfService` gerando Recibo de Quitação em PDF A4 institucional em `backend/src/main/java/br/edu/ifpb/alumigest/finance/service/ReceiptPdfService.java`
+- **US-33.4**: Adicionar endpoints GET /api/finance/receivables/client/{clienteId}/statement e GET /api/finance/receivables/{id}/receipt-pdf no `AccountReceivableController`
+- **US-33.5**: Criar teste unitário do `ReceiptPdfServiceTest`
+- **US-33.6**: Criar componente `ClientFinancialStatementCard` no frontend
+- **US-33.7**: Documentar endpoints no OpenAPI/Swagger
+- **US-33.8**: Adicionar atalho "Contas a Receber" no submenu Financeiro do frontend
+- **US-33.9**: Executar validação dos cenários de teste do `quickstart.md` da Sprint 10
 
 ## 3. Requisitos Funcionais
 
