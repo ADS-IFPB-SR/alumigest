@@ -56,7 +56,6 @@ public class ProductService implements IProductService {
         Product product = new Product();
         product.setName(request.name());
         product.setCategory(category);
-        product.setLaborCost(request.laborCost());
         product.setTemplateType(request.templateType());
         product.setTemplateConfig(productMapper.toTemplateConfig(request.templateConfig()));
         product.setCategoryRequirements(request.categoryRequirements());
@@ -104,7 +103,6 @@ public class ProductService implements IProductService {
 
         product.setName(request.name());
         product.setCategory(category);
-        product.setLaborCost(request.laborCost());
         product.setTemplateType(request.templateType());
         product.setTemplateConfig(productMapper.toTemplateConfig(request.templateConfig()));
         product.setCategoryRequirements(request.categoryRequirements());

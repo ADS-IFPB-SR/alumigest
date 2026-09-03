@@ -109,7 +109,6 @@ export function ProductBuilderPage() {
     const payload = {
       name: name.trim(),
       categoryId,
-      laborCost: 0,
       templateType: templateType || undefined,
       templateConfig: finalTemplateConfig,
       categoryRequirements: templateType ? categoryRequirements : undefined,

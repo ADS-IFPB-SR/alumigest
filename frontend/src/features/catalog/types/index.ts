@@ -104,7 +104,6 @@ export interface Product {
   name: string;
   categoryId: string;
   categoryName: string;
-  laborCost: number;
   templateType?: import('./templates').DoorTemplateType;
   templateConfig?: import('./templates').TemplateConfig;
   categoryRequirements?: import('./templates').MaterialCategoryType[];
@@ -120,7 +119,6 @@ export interface ProductItemRequest {
 export interface ProductRequest {
   name: string;
   categoryId: string;
-  laborCost: number;
   templateType?: import('./templates').DoorTemplateType;
   templateConfig?: import('./templates').TemplateConfig;
   categoryRequirements?: import('./templates').MaterialCategoryType[];

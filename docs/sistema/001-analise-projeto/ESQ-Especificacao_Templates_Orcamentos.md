@@ -4,25 +4,25 @@
 |---|---|
 | **Projeto** | AlumiGest — Sistema de Gestão para Vidraçaria e Esquadrias |
 | **Documento** | Especificação Técnica e Arquitetural de Templates, Orçamentos e Romaneio |
-| **Versão** | 1.0 (Sprint 3) |
-| **Data** | 21/08/2026 |
-| **Autor** | Equipe de Engenharia AlumiGest |
+| **Versão** | 2.0 (Consolidado com Motor de Cálculo, Descontos %/R$ e PDF em Duas Vias) |
+| **Data** | 31/08/2026 |
+| **Autor** | Equipe de Engenharia AlumiGest (Scrum Master: Italo Santos) |
 
 ---
 
 ## 1. 🎯 Visão Geral do Módulo
 
-Este documento especifica a modelagem técnica, arquitetura de dados, endpoints REST e regras visuais/gráficas para o desenvolvimento da **Sprint 3**, abrangendo:
-1. **Templates de Produtos (Esquadrias Paramétricas)**: Modelos de portas, janelas e fachadas com desenho vetorial SVG, furação e puxadores.
+Este documento especifica a modelagem técnica, arquitetura de dados, contratos REST e regras visuais/gráficas de engenharia de fabricação para a **Alumiportas**:
+1. **Templates de Esquadrias Paramétricas**: Modelos de portas, janelas e boxes com desenho vetorial SVG, furação e puxadores.
 2. **Requisitos de Categorias de Insumos**: Vínculo dinâmico por categorias de material (`GLASS`, `PROFILE`, `HARDWARE`, `FILM`).
-3. **Orçamentos Comerciais**: Montagem de propostas, seleção de insumos específicos por categoria, cálculo automático e gestão de status.
-4. **Relatório Comercial e Romaneio de Oficina**: Visualização detalhada para cliente e lista de corte/fabricação com exportação/impressão em folha A4.
+3. **Motor de Precificação e Orçamentos**: Montagem de propostas no Wizard com subtotal reativo, descontos em %/R$ e máquina de estados.
+4. **Proposta Comercial e Romaneio de Oficina em PDF**: Emissão em folha A4 com segregação de via comercial (com valores) e via técnica (sem valores).
 
 ---
 
 ## 2. 🚪 Modelagem dos Templates de Esquadria
 
-### 2.1 Tipos de Esquadria Suportados (`DoorTemplateType`)
+### 2.1 Tipos de Esquadria Suportados (`TemplateType`)
 
 | Enum | Descrição Técnica | Sentido de Abertura Suportado |
 | :--- | :--- | :--- |
@@ -66,15 +66,15 @@ Este documento especifica a modelagem técnica, arquitetura de dados, endpoints 
 ```
 
 #### Regras de Furação e Puxadores:
-- **Puxador:** Localizado na folha móvel, no lado de abertura. Pode ser `BAR_TUBULAR` (Inox), `SHELL_LOCK` (Fecho concha) ou `LEVER_HANDLE` (Maçaneta). Cobertura pode ser `FULL` (extensão inteira) ou `PIECE` (pedaço em cm). Lados: `ONE_SIDE` (1 lado) ou `BOTH_SIDES` (ambos os lados).
-- **Furação:** Renderizada com retículos `Ø` na **borda externa da folha**, obrigatoriamente no **lado oposto ao puxador**.
-- **Inversão de Abertura:** Quando o sentido de abertura é invertido (Direita $\leftrightarrow$ Esquerda), o template SVG inverte dinamicamente as posições da folha móvel, puxador, folha fixa, furação e setas de indicação.
+* **Puxador:** Localizado na folha móvel, no lado de abertura. Pode ser `BAR_TUBULAR` (Inox), `SHELL_LOCK` (Fecho concha) ou `LEVER_HANDLE` (Maçaneta).
+* **Furação:** Renderizada com retículos `Ø` na **borda externa da folha**, obrigatoriamente no **lado oposto ao puxador**.
+* **Inversão Dinâmica de Abertura:** Quando o sentido de abertura é alterado, o componente SVG inverte dinamicamente as posições da folha móvel, puxador, folha fixa, furação e setas de indicação.
 
 ---
 
 ## 3. 🧩 Desacoplamento por Categorias de Insumos
 
-Ao cadastrar um Produto/Template, o usuário **NÃO fixa materiais específicos**, mas sim as **Categorias Obrigatórias** que devem ser cotadas no momento do orçamento:
+Ao cadastrar um Produto/Template, o sistema **NÃO fixa materiais específicos**, mas sim as **Categorias Obrigatórias** requeridas na montagem:
 
 ```json
 [
@@ -85,70 +85,48 @@ Ao cadastrar um Produto/Template, o usuário **NÃO fixa materiais específicos*
 ]
 ```
 
-No momento da criação do Orçamento:
-1. O usuário escolhe o Template (ex: *Box Frontal F1*).
-2. O sistema lista cada categoria requerida.
-3. Para `GLASS`, o usuário escolhe a espessura/acabamento (ex: *Temperado 8mm Incolor*).
-4. Para `PROFILE`, o usuário escolhe a linha/cor (ex: *Perfil Linha Box Preto*).
-5. Para `HARDWARE`, o usuário escolhe o kit (ex: *Kit Box Frontal Alumínio*).
-6. Para `FILM`, o usuário escolhe se aplica película ou não.
-
 ---
 
 ## 4. 🧮 Modelagem e Ciclo de Vida do Orçamento (`Budget`)
 
 ### 4.1 Máquina de Estados do Orçamento
-```
-[DRAFT] (Rascunho)
-   │
-   ▼
-[SENT] (Enviado ao Cliente)
-   ├──► [APPROVED] (Aprovado pelo Cliente ➔ Libera Romaneio e Pedido)
-   ├──► [REJECTED] (Rejeitado pelo Cliente)
-   └──► [CANCELLED] (Cancelado)
+```mermaid
+stateDiagram-v2
+    [*] --> DRAFT: Criação (Wizard)
+    DRAFT --> SENT: Emissão / Envio ao Cliente
+    SENT --> APPROVED: Aprovação (Congelamento de Valores)
+    SENT --> CANCELLED: Recusa / Cancelamento
+    DRAFT --> CANCELLED: Exclusão Lógica
+    APPROVED --> [*]
 ```
 
-### 4.2 Entidades e Relacionamentos
-
-```
-Client (1) ──────────◄ (N) Budget (1) ──────────◄ (N) BudgetItem (1) ──────────◄ (N) BudgetItemOption
-                             │
-                             ├─ code: "ORC-2026-001"
-                             ├─ subtotal, discountPercent, total
-                             ├─ status: DRAFT | SENT | APPROVED | REJECTED
-                             └─ validUntil: Date
-```
+### 4.2 Congelamento de Valores (`RN-CONG01`)
+Após o status transitar para `APPROVED`:
+* Todos os preços unitários, quantidades calculadas, medidas nominais e totais tornam-se **estritamente imutáveis**.
+* A API rejeita requisições de alteração com código `HTTP 422 Unprocessable Entity`.
 
 ---
 
-## 5. 🖨️ Especificação de Relatório Comercial, Romaneio e Impressão A4
+## 5. 🖨️ Proposta Comercial, Romaneio e Impressão A4
 
-### 5.1 Relatório Comercial (Proposta do Cliente)
-- **Cabeçalho Timbrado:** Razão Social, CNPJ, telefone, e-mail da vidraçaria, código do orçamento e data/validade.
-- **Dados do Cliente e Obra:** Nome, telefone, CPF/CNPJ e endereço completo da instalação.
-- **Tabela de Itens:** Miniatura técnica SVG de cada esquadria, cotas em mm ($L \times A$), área em $m^2$, quantidade, especificações de materiais, puxadores, furação e valor subtotal.
-- **Resumo Financeiro:** Subtotal, percentual e valor de desconto aplicado, e valor total líquido.
-- **Condições Comerciais & Aceite:** Campo de observações, prazos de entrega/pagamento e linhas para assinatura do cliente e do responsável técnico.
+### 5.1 Proposta Comercial (Via Cliente)
+* **Cabeçalho Timbrado:** Logotipo Alumiportas, CNPJ, telefone, e-mail institucional e dados da proposta (`ORC-YYYYMMDD-NNNN`).
+* **Dados do Cliente:** Nome completo, CPF/CNPJ, WhatsApp e endereço da obra.
+* **Tabela de Itens:** Modelo da esquadria, dimensões em milímetros ($L \times A$), tipo e espessura do vidro, cor dos perfis, puxadores, furação, mão de obra e valor subtotal.
+* **Totais e Condições:** Subtotal bruto, desconto em % ou R$, total líquido final, condições de pagamento (À Vista PIX, 50%+50%, Cartão) e validade de 15 dias.
+* **Compartilhamento WhatsApp:** Botão para copiar texto estruturado e pronto para envio via WhatsApp.
 
-### 5.2 Romaneio de Peças (Oficina)
-- **Gabarito de Fabricação:** Desenho SVG ampliado com cotas de corte, indicação de furos e posição de puxadores.
-- **Lista de Peças e Insumos:** Tabela com nome de cada insumo, unidade física ($m^2$, $m$, $un$, $par$), quantidade total multiplicada pelo número de esquadrias, tipo/especificação e cor.
-- **Observações de Produção:** Instruções especiais para a equipe de corte e montagem.
+### 5.2 Romaneio Técnico de Peças (Via Oficina / Fábrica)
+* **Regra de Omissão de Valores (`RN-PDF01`):** Esta via **omite estritamente todos os preços e valores financeiros (R$)**.
+* **Gabarito de Fabricação:** Ficha de corte com dimensões em mm, fórmulas lineares de perfis, tipos de vidro, roldanas e indicação de furos.
 
 ### 5.3 Regras de Impressão e Exportação PDF (`@media print`)
-1. **Ocultação de Chrome:** `aside`, `header`, `nav`, botões de ação e tabs recebem `display: none !important`.
-2. **Container Reset:** Remove `overflow: hidden` e alturas fixas de modo a permitir paginação nativa contínua em folhas A4 (`@page { size: A4 portrait; margin: 12mm 10mm 15mm 10mm; }`).
-3. **Não-Corte de Elementos (`break-inside: avoid`):**
-   - Cada linha `<tr>` de produto ou card de esquadria possui `page-break-inside: avoid !important`.
-   - As imagens SVG nunca são seccionadas no meio da página.
-   - Cabeçalhos de tabela repetem no início de cada folha (`thead { display: table-header-group; }`).
-   - Bloco de totais e assinaturas não se quebram isoladamente.
+1. **Ocultação de Elementos Web:** `header`, `nav`, `aside`, botões e tabs recebem `display: none !important`.
+2. **Paginação A4 Contínua:** `@page { size: A4 portrait; margin: 12mm 10mm 15mm 10mm; }`.
+3. **Não-Corte de Elementos:**
+   * Linhas de tabela `<tr>` e cards possuem `page-break-inside: avoid !important`.
+   * Cabeçalhos de tabela se repetem no topo de novas páginas (`thead { display: table-header-group; }`).
 
 ---
 
-## 6. 🔗 Rastreabilidade e Documentação Relacionada
-
-- [Documento de Requisitos (REQ)](../000-requisitos/REQ-Documento_de_Requisitos.md) — RF-022 a RF-035 (Módulo de Orçamentos) e RF-016 a RF-021 (Catálogo).
-- [Regras de Cálculo (RN)](../000-requisitos/RN-Regras_de_Calculo.md) — Fórmulas de $m^2$, metros lineares e composição.
-- [Especificação de API REST (API)](API-Especificacao_API_REST.md) — Contratos dos endpoints `/api/produtos`, `/api/clientes` e `/api/orcamentos`.
-- [Requisitos Técnicos de Portas e Esquadrias (PDF)](../../requisitos_produto_portas_final.pdf) — Catálogo de tipos de portas e perfis.
+*Especificação Técnica homologada com os motores da Sprint 3 — Versão 2.0 — 31/08/2026*

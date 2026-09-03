@@ -1,73 +1,116 @@
 # 📐 RN — Regras de Cálculo e Negócio (AlumiGest)
 **Projeto:** AlumiGest — Sistema de Gestão para Vidraçaria e Esquadrias  
 **Cliente / Parceiro Social:** Alumiportas  
-**Versão:** 2.0 (Atualizado conforme Planning Sprint 2 em 05/08/2026)  
-**Autor:** Equipe de Engenharia de Software (Scrum Master: Nichollas Cavalcante)  
+**Versão:** 3.0 (Atualizado com o Motor de Cálculo e Formulas da Sprint 3)  
+**Data:** 31 de Agosto de 2026  
+**Autor:** Equipe de Engenharia de Software (Scrum Master: Italo Santos)  
 
 ---
 
 ## 1. 🎯 Introdução e Desacoplamento Arquitetural
 
-Este documento detalha as **regras de negócio e fórmulas matemáticas de precificação e montagem** do AlumiGest.
+Este documento detalha as **regras de negócio operacionais e fórmulas matemáticas exatas** implementadas no motor de cálculo do AlumiGest (`br.edu.ifpb.alumigest.budgets.calculator`).
 
-### 🌟 Conceito Fundamental: Insumos Básicos vs. Produtos Finais Compostos
-1. **Insumos / Materiais Básicos (Sprint 2):** São os itens atômicos do catálogo comercializados por sua unidade física fundamental:
-   * **Vidros:** Cobrados por área ($m^2$) com ênfase em espessuras para móveis (**2mm e 4mm**) e comuns/temperados (**6mm, 8mm, 10mm**).
-   * **Perfis de Alumínio:** Cobrados por metro linear ($m$) e fornecidos em barras de **3.00m (comércio local)** ou **6.00m (indústria)**, abrangendo as linhas **Rometal** e **Alternativa**, além de **Puxadores**.
-   * **Películas:** Cobradas por área de aplicação ($m^2$).
-   * **Ferragens e Componentes:** Cobrados por **Unidade (`UN`)**, **Par (`PAR`)** (dobradiças, rodízios) ou **Metro (`METRO`)** (trilhos e escovas).
-2. **Produtos Finais / Templates Compostos (Sprint 3):** Portas, janelas e esquadrias **NÃO são materiais**, mas sim **Templates (Receitas de Montagem)** que agregam múltiplos perfis (superior, inferior, laterais, travessas), vidros cortados sob medida, películas e puxadores.
+### 🌟 Conceito Fundamental: Insumos Básicos vs. Templates de Esquadrias
+1. **Insumos Atômicos do Catálogo:**
+   * **Vidros:** Medidos por área ($m^2$) com suporte a espessuras de **2mm a 10mm** e regra de faturamento mínimo.
+   * **Perfis de Alumínio:** Medidos por metro linear ($m$), fornecidos em barras de **3.00m** (revenda/local) ou **6.00m** (indústria), cobrindo as linhas **Rometal**, **Alternativa** e **Puxadores**.
+   * **Películas:** Medidas por área de aplicação ($m^2$) sobre o vidro (Fumê, Jateada, Leitosa, Espelhada).
+   * **Ferragens e Acessórios:** Medidos por **Unidade (`UN`)**, **Par (`PAR`)** (dobradiças, roldanas) ou **Metro Linear (`METRO`)** (trilhos e escovas de vedação).
+2. **Templates de Esquadrias (Modelos Paramétricos):**
+   * Produtos finais representam receitas de corte e montagem (`TemplateType`).
+   * As medidas nominais de entrada no orçamento são fornecidas estritamente em **milímetros ($mm$)** pelo vendedor.
+   * A mão de obra (`laborCost`) é calculada e informada dinamicamente no item do orçamento, estando desacoplada do catálogo de produtos.
 
 ---
 
-## 2. 🪟 Cálculo de Vidros (Área em m²)
+## 2. 🪟 Cálculo de Vidros (Área em $m^2$)
 
-### 2.1 Fórmula Base
-$$	ext{Área } (m^2) = \left(rac{	ext{Largura (mm)}}{1000}
-ight) 	imes \left(rac{	ext{Altura (mm)}}{1000}
-ight)$$
+### 2.1 Fórmula Matemática Base
+$$\text{Área Nominal } (m^2) = \left(\frac{\text{Largura (mm)}}{1000}\right) \times \left(\frac{\text{Altura (mm)}}{1000}\right)$$
 
-### 2.2 Regras Operacionais da Alumiportas
-| ID | Regra | Descrição |
+$$\text{Preço Base Vidro (R\$)} = \text{Área Faturada } (m^2) \times \text{Preço Unitário do } m^2 \times \text{Quantidade}$$
+
+### 2.2 Regras Operacionais de Vidraçaria
+| ID | Regra | Descrição e Comportamento no Sistema |
 | :--- | :--- | :--- |
-| **RN-V01** | **Espessuras Nativas** | O sistema suporta nativamente vidros finos para portas de móveis (**2.00mm** e **4.00mm**), além de temperados (**6.00mm, 8.00mm e 10.00mm**). |
-| **RN-V02** | **Custo do Vidro** | $	ext{Preço Base} = 	ext{Área } (m^2) 	imes 	ext{Preço Venda por } m^2 	imes 	ext{Quantidade}$. |
-| **RN-V03** | **Área Mínima de Faturamento** | Se a área calculada for inferior a **0,25 m²**, adota-se 0,25 m² para fins de custo mínimo de corte. |
-| **RN-V04** | **Flexibilidade no Orçamento** | O preço por $m^2$ pode ser ajustado pontualmente para um cliente no momento do orçamento sem alterar o valor base do catálogo mestre. |
+| **RN-V01** | **Espessuras Homologadas** | O sistema suporta nativamente vidros finos para móveis (**2.00mm e 4.00mm**) e vidros temperados estruturais (**6.00mm, 8.00mm e 10.00mm**). |
+| **RN-V02** | **Cálculo da Massa do Vidro** | $\text{Peso (kg)} = \text{Área } (m^2) \times \text{Espessura (mm)} \times 2,5 \text{ kg/m²}$. Utilizado para dimensionamento de ferragens e roldanas. |
+| **RN-V03** | **Área Mínima de Faturamento** | Se a área calculada de uma peça for inferior a **$0,25 m^2$**, adota-se **$0,25 m^2$** para absorver o custo fixo de corte e perda de chapa. |
+| **RN-V04** | **Flexibilidade Comercial** | O vendedor pode ajustar pontualmente o preço unitário do $m^2$ no orçamento sem alterar a tabela mestre de catálogo. |
 
 ---
 
 ## 3. 🔩 Cálculo de Perfis de Alumínio e Puxadores (Metro Linear)
 
-### 3.1 Fórmula Base
-$$	ext{Comprimento } (m) = rac{	ext{Comprimento Necessário (mm)}}{1000}$$
-$$	ext{Custo} = 	ext{Comprimento } (m) 	imes 	ext{Preço por Metro} 	imes 	ext{Quantidade de Perfis}$$
+### 3.1 Fórmulas Paramétricas por Modelo de Template
 
-### 3.2 Regras Operacionais da Alumiportas
+O consumo de perfis é calculado pelo motor `ProfileQuantityCalculator` com base no `TemplateType`:
+
+```mermaid
+graph TD
+    Template["Seleção de Template"]
+    Template --> S2F["Correr 2 Folhas (SLIDING_2_LEAF)<br>Consumo = (4W + 6H) / 1000"]
+    Template --> PIV["Pivotante (PIVOTING_DOOR)<br>Consumo = (2W + 2H) / 1000 + Puxador"]
+    Template --> BOX["Box Frontal (GLASS_BOX_FRONTAL)<br>Consumo = (2W + 2H) / 1000"]
+```
+
+1. **Porta/Janela de Correr 2 Folhas (`SLIDING_DOOR_2F` / `SLIDING_2_LEAF`):**
+   $$\text{Consumo Linear (m)} = \frac{4 \times \text{Largura (mm)} + 6 \times \text{Altura (mm)}}{1000}$$
+   *(Contempla trilho superior duplo, guia inferior, 4 montantes laterais e 2 travessas intermediárias).*
+
+2. **Porta Pivotante (`PIVOTING_DOOR`):**
+   $$\text{Consumo Linear (m)} = \frac{2 \times \text{Largura (mm)} + 2 \times \text{Altura (mm)}}{1000} + \text{Comprimento do Puxador (m)}$$
+
+3. **Box de Banheiro Frontal (`GLASS_BOX_FRONTAL`):**
+   $$\text{Consumo Linear (m)} = \frac{2 \times \text{Largura (mm)} + 2 \times \text{Altura (mm)}}{1000}$$
+
+### 3.2 Regras Operacionais de Perfis
 | ID | Regra | Descrição |
 | :--- | :--- | :--- |
-| **RN-AL01** | **Linhas Homologadas** | Suporte às linhas de catálogo **Rometal** e **Alternativa**. |
-| **RN-AL02** | **Comprimento de Barra Comercial** | As barras padrão são cadastradas com comprimento de **3.00m (revenda/local)** ou **6.00m (indústria)**. |
-| **RN-AL03** | **Código de Referência e NCM** | Todo perfil deve possuir código de referência de fábrica (ex: `SU-001`, `S83`, `SPR-060`) e NCM opcional para nota fiscal. |
-| **RN-AL04** | **Puxadores** | Puxadores de alumínio são modelados como perfis lineares com acabamento específico. |
+| **RN-AL01** | **Linhas Homologadas** | Suporte às linhas de catálogo comercial **Rometal**, **Alternativa** e **Suprema**. |
+| **RN-AL02** | **Barras Comerciais** | Comprimento cadastrado como **3.00m** (comércio local) ou **6.00m** (indústria). |
+| **RN-AL03** | **Classificação de Catálogo** | Todo perfil deve possuir código de referência de fábrica (ex: `SU-001`, `S83`, `SPR-060`) e código NCM opcional. |
+| **RN-AL04** | **Puxadores Integrados** | Puxadores lineares (perfil concha ou tubular) são calculados conforme a altura da folha ou comprimento nominal informado. |
 
 ---
 
-## 4. 🎨 Cálculo de Películas de Proteção e Acabamento (m²)
+## 4. 🎨 Cálculo de Películas de Proteção e Acabamento ($m^2$)
 
-### 4.1 Fórmula Base
-$$	ext{Custo Película} = 	ext{Área do Vidro } (m^2) 	imes 	ext{Preço de Aplicação por } m^2$$
+### 4.1 Fórmula
+$$\text{Preço Película (R\$)} = \text{Área Real do Vidro } (m^2) \times \text{Preço Unitário de Aplicação por } m^2 \times \text{Qtd}$$
 * **Tipos Nativos:** Fumê G5/G20, Jateada, Leitosa e Espelhada.
+* **Nota Operacional:** Na película não se aplica a regra de área mínima do vidro (fatura-se a metragem real aplicada).
 
 ---
 
-## 5. 🚪 Templates de Produtos Finais (Portas e Esquadrias Compostas - Sprint 3)
+## 5. 🧰 Cálculo de Ferragens e Acessórios
 
-Um **Template de Porta de Correr (ex: Linha Rometal)** é calculado agregando dinamicamente:
-1. **Perfis Superiores e Inferiores:** $	ext{Comprimento} = 	ext{Largura Total da Porta}$.
-2. **Perfis Laterais (Montantes/Puxadores):** $	ext{Comprimento} = 	ext{Altura Total da Porta}$.
-3. **Chapa de Vidro:** $	ext{Área} = (	ext{Largura} - 	ext{Desconto Perfil}) 	imes (	ext{Altura} - 	ext{Desconto Perfil})$.
-4. **Película Opcional:** Aplicada sobre a área do vidro.
-5. **Kit de Ferragens:** 1 Par de Roldanas/Rodízios + Escova de Vedação ($2 	imes 	ext{Altura}$).
+O motor `HardwareQuantityCalculator` resolve a quantidade de ferragens por 3 estratégias:
+1. **Unidade Fixa (`UN`):** Quantidade declarada multiplicada pelo número de peças (ex: fechaduras, batedores).
+2. **Par (`PAR`):** Roldanas e dobradiças aplicadas em pares por folha móvel (ex: 1 par a cada 50kg de vidro calculado pela **RN-V02**).
+3. **Metro Linear (`METRO`):** Escovas de vedação e borrachas calculadas como $2 \times \text{Altura (m)}$ por folha.
 
-$$	ext{Preço Total do Produto Final} = \sum 	ext{Perfis} + 	ext{Vidro} + 	ext{Película} + 	ext{Ferragens} + 	ext{Mão de Obra/Margem}$$
+---
+
+## 6. 💰 Precificação Consolidada do Orçamento
+
+O serviço `BudgetPricingService` consolida o valor total do orçamento através da composição:
+
+$$\text{Subtotal do Item} = \sum (\text{Vidros} + \text{Perfis} + \text{Ferragens} + \text{Películas}) + \text{Mão de Obra do Item (R\$)}$$
+
+$$\text{Total Bruto} = \sum_{i=1}^{n} \text{Subtotal do Item}_i$$
+
+$$\text{Total Final do Orçamento} = \text{Total Bruto} - \text{Desconto Comercial (R\$ ou \%)} + \text{Taxas Adicionais (Instalação/Frete)}$$
+
+### 6.1 Regras Comerciais e de Status
+| ID | Regra | Descrição |
+| :--- | :--- | :--- |
+| **RN-DESC01** | **Autonomia de Desconto** | O vendedor pode aplicar descontos em porcentagem (0% a 100%) ou valor fixo em reais (R$) com autonomia total na Release 1. |
+| **RN-STAT01** | **Máquina de Estados** | O orçamento transita entre **`DRAFT` (Rascunho) → `SENT` (Enviado) → `APPROVED` (Aprovado) / `CANCELLED` (Cancelado)**. |
+| **RN-CONG01** | **Congelamento de Valores** | Uma vez marcado como `APPROVED`, todos os preços, insumos e medidas tornam-se imutáveis para garantir a integridade da ordem de produção. |
+| **RN-PDF01** | **Segregação de Vias** | O documento técnico para a oficina omite estritamente todos os valores financeiros (R$), exibindo apenas medidas em mm e especificações de corte. |
+
+---
+
+*Documento de Regras de Cálculo homologado com o código da Sprint 3 — Versão 3.0 — 31/08/2026*

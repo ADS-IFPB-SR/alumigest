@@ -28,11 +28,18 @@ public class ProductController {
     }
 
     @PostMapping
-    @Operation(summary = "Cadastrar Produto ou Template", description = "Cria um novo produto ou template de esquadria (GIRO, CORRER, BASCULANTE, GAVETA) com seu esquema de opções e requisitos de categorias de insumos.")
+    @Operation(summary = "Cadastrar Produto ou Template", description = "Cria um novo produto ou template de esquadria (SWING, SLIDING, TILT, DRAWER) com seu esquema de opções e requisitos de categorias de insumos.")
     public ResponseEntity<ApiResponse<ProductResponseDTO>> createProduct(@Valid @RequestBody ProductRequestDTO request) {
         ProductResponseDTO response = productService.createProduct(request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.created("Produto cadastrado com sucesso", response));
+    }
+
+    @GetMapping("/{id}")
+    @Operation(summary = "Buscar Produto por ID", description = "Retorna os detalhes de um produto específico e sua ficha técnica.")
+    public ResponseEntity<ApiResponse<ProductResponseDTO>> getProductById(@PathVariable UUID id) {
+        ProductResponseDTO product = productService.findById(id);
+        return ResponseEntity.ok(ApiResponse.ok("Produto encontrado com sucesso", product));
     }
 
     @GetMapping
@@ -43,13 +50,6 @@ public class ProductController {
 
         Page<ProductResponseDTO> page = productService.findProducts(pageable, activeOnly);
         return ResponseEntity.ok(ApiResponse.ok("Produtos listados com sucesso", PageResponse.of(page)));
-    }
-
-    @GetMapping("/{id}")
-    @Operation(summary = "Buscar Produto por ID", description = "Retorna os detalhes completos de um produto ou template de esquadria.")
-    public ResponseEntity<ApiResponse<ProductResponseDTO>> getProductById(@PathVariable UUID id) {
-        ProductResponseDTO response = productService.findById(id);
-        return ResponseEntity.ok(ApiResponse.ok("Produto recuperado com sucesso", response));
     }
 
     @PutMapping("/{id}")

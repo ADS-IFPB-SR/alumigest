@@ -1,15 +1,15 @@
 # 📐 Documento de Arquitetura e Modelagem de Dados (DER)
-## Módulo: Catálogo de Materiais e Insumos Genéricos
+## Módulo: Catálogo de Materiais e Produtos (Templates de Esquadrias)
 **Projeto:** AlumiGest (Gestão Operacional e Orçamentária para Esquadrias e Vidraçaria)  
-**Versão:** 2.0.0  
-**Data:** 12 de Agosto de 2026  
-**Autor:** Equipe de Engenharia de Software (Scrum Master: Nichollas Cavalcante)  
+**Versão:** 3.0.0 (Atualizado com migrações V8 a V10 da Sprint 3)  
+**Data:** 31 de Agosto de 2026  
+**Autor:** Equipe de Engenharia de Software (Scrum Master: Italo Jefferson Lima dos Santos)  
 
 ---
 
 ## 1. 🎯 Visão Geral e Objetivos Arquiteturais
 
-O módulo de **Catálogo de Materiais** é o alicerce de dados do AlumiGest. Seu objetivo principal é fornecer uma base sólida, flexível e performática para o cadastro, precificação e consulta de todos os insumos utilizados na fabricação de esquadrias e vidros pela **Alumiportas**.
+O módulo de **Catálogo de Materiais e Produtos** é o alicerce de dados do AlumiGest. Seu objetivo principal é fornecer uma base sólida, flexível e performática para o cadastro, precificação e consulta de todos os insumos e templates de esquadrias utilizados pela **Alumiportas**.
 
 ### 🌟 Princípios de Design e Extensibilidade
 1. **Atendimento Imediato à Alumiportas:** Suporte nativo e otimizado para os 4 grupos essenciais de materiais:
@@ -17,8 +17,9 @@ O módulo de **Catálogo de Materiais** é o alicerce de dados do AlumiGest. Seu
    * **Perfis de Alumínio e Puxadores:** Medidos por metro linear ($m$) com suporte a barras comerciais (**3.00m e 6.00m**), referências comerciais de perfis (ex: `SU-001`, `S83`, `SPR-060`) e código NCM opcional para conformidade fiscal.
    * **Películas:** Medidas por área de aplicação ($m^2$) sobre os vidros (Fumê G5/G20, Jateada, Leitosa, Espelhada).
    * **Ferragens e Acessórios:** Medidos por **Unidade (`UN`)**, **Par (`PAR`)** (dobradiças, rodízios) ou **Metro (`METRO`)** (trilhos e escovas).
-2. **Extensibilidade Futura (*Type-Object Pattern*):** A arquitetura foi projetada para que a expansão para outros setores da indústria moveleira ou serralheria (ex: **Marcenaria** com chapas de MDF, fitas de borda e corrediças) ocorra **sem necessidade de alterar o esquema do banco de dados ou recompilar o backend**.
-3. **Desacoplamento entre Insumo e Produto Final:** Materiais são os componentes atômicos; portas e esquadrias são **Produtos Finais / Templates (Compostos)** montados a partir desses materiais através da ficha técnica (`tb_product_items`).
+2. **Templates Paramétricos de Esquadrias (Sprint 3):** Produtos finais no catálogo representam modelos de montagem (portas de correr, pivotantes, boxes, janelas) armazenados com esquemas gráficos paramétricos (`template_config`) e categorias requeridas (`category_requirements`), desacoplados de marcas específicas.
+3. **Mão de Obra no Orçamento:** A mão de obra é dinâmica por projeto/instalação e foi transferida exclusivamente para a camada de orçamentos (`BudgetItem.laborCost`), mantendo o catálogo de produtos focado na engenharia base.
+4. **Extensibilidade (*Type-Object Pattern*):** Expansão para outros setores (Marcenaria, Serralheria fina) sem alteração de schema.
 
 ---
 
@@ -63,23 +64,29 @@ erDiagram
 
     tb_product_categories {
         uuid id PK
-        string name "Nome da categoria (ex: Esquadrias)"
+        string name "Nome da categoria (ex: Esquadrias, Portas, Boxes)"
         boolean is_active
+        timestamp created_at
+        timestamp updated_at
     }
 
     tb_products {
         uuid id PK
         uuid category_id FK
-        string name "Nome do produto final"
-        decimal labor_cost "Custo de mão de obra"
+        string name "Nome do produto/template (ex: Porta de Correr 2F)"
+        string template_type "Tipo/Modelo: SLIDING_DOOR_2F, PIVOTING_DOOR, BOX_FRONTAL"
+        jsonb template_config "Configuração paramétrica de puxador, furação e abertura"
+        jsonb category_requirements "Lista de categorias de insumos requeridas (GLASS, PROFILE...)"
         boolean is_active
+        timestamp created_at
+        timestamp updated_at
     }
 
     tb_product_items {
         uuid id PK
         uuid product_id FK
         uuid material_id FK
-        decimal quantity "Quantidade consumida na ficha técnica"
+        decimal quantity "Quantidade consumida na ficha técnica base"
     }
 ```
 
@@ -100,6 +107,8 @@ Armazena as famílias de insumos e define a estratégia matemática de medição
 | `is_system_default`| `BOOLEAN` | `DEFAULT FALSE` | `TRUE` para proteger os 4 grupos nativos da Alumiportas contra exclusão. |
 | `is_active` | `BOOLEAN` | `DEFAULT TRUE` | Soft delete para desativação de grupos. |
 | `created_at` | `TIMESTAMP WITH TIME ZONE` | `DEFAULT NOW()` | Auditoria de criação. |
+
+---
 
 ### 3.2 Tabela `tb_materials` (Insumos e Materiais do Catálogo)
 Armazena a listagem de todos os materiais comercializados, associados ao seu respectivo grupo.
@@ -123,28 +132,40 @@ Armazena a listagem de todos os materiais comercializados, associados ao seu res
 | `created_at` | `TIMESTAMP WITH TIME ZONE` | `DEFAULT NOW()` | Data de criação. |
 | `updated_at` | `TIMESTAMP WITH TIME ZONE` | `DEFAULT NOW()` | Data da última atualização. |
 
+---
+
 ### 3.3 Tabela `tb_product_categories` (Categorias de Produtos)
-Agrupamento e organização dos produtos finais (ex: Esquadrias, Portas, Janelas, Box).
+Agrupamento e organização dos produtos e templates (ex: Esquadrias, Portas, Janelas, Box).
 
 | Campo | Tipo | Restrições | Descrição / Exemplo |
 | :--- | :--- | :--- | :--- |
 | `id` | `UUID` | `PK` | Chave primária universal. |
-| `name` | `VARCHAR(100)` | `NOT NULL` | Nome da categoria. |
+| `name` | `VARCHAR(100)` | `NOT NULL` | Nome da categoria (*"Esquadrias de Alumínio"*). |
 | `is_active` | `BOOLEAN` | `DEFAULT TRUE` | Soft delete. |
+| `created_at` | `TIMESTAMP WITH TIME ZONE` | `NOT NULL` | Data de criação. |
+| `updated_at` | `TIMESTAMP WITH TIME ZONE` | `NOT NULL` | Data da última modificação. |
 
-### 3.4 Tabela `tb_products` (Produtos Finais)
-Modelagem do produto final (template), definindo informações de custo e classificação.
+---
+
+### 3.4 Tabela `tb_products` (Templates de Produtos / Esquadrias)
+Modelagem do produto/template paramétrico de montagem.
 
 | Campo | Tipo | Restrições | Descrição / Exemplo |
 | :--- | :--- | :--- | :--- |
 | `id` | `UUID` | `PK` | Chave primária universal. |
 | `category_id` | `UUID` | `FK -> tb_product_categories(id)` | Categoria a qual o produto pertence. |
-| `name` | `VARCHAR(150)` | `NOT NULL` | Nome do produto final (*"Janela 4 Folhas"*). |
-| `labor_cost` | `DECIMAL(12,2)`| `DEFAULT 0.00` | Custo de mão de obra de produção. |
+| `name` | `VARCHAR(150)` | `NOT NULL` | Nome descritivo (*"Porta de Correr 2 Folhas Linha Rometal"*). |
+| `template_type` | `VARCHAR(50)` | `NULL` | Enum/Tipo de Esquadria (`SLIDING_DOOR_2F`, `PIVOTING_DOOR`, `GLASS_BOX_FRONTAL`). |
+| `template_config` | `JSONB` | `NULL` | Configuração paramétrica de puxador, sentido de abertura e furação. |
+| `category_requirements` | `JSONB` | `NULL` | Lista de categorias obrigatórias (`["GLASS", "PROFILE", "HARDWARE", "FILM"]`). |
 | `is_active` | `BOOLEAN` | `DEFAULT TRUE` | Soft delete. |
+| `created_at` | `TIMESTAMP WITH TIME ZONE` | `NOT NULL` | Data de criação. |
+| `updated_at` | `TIMESTAMP WITH TIME ZONE` | `NOT NULL` | Data da última modificação. |
 
-### 3.5 Tabela `tb_product_items` (Ficha Técnica / Composição)
-Receita de materiais: relaciona as quantidades necessárias de cada insumo do catálogo para fabricar um Produto Final.
+---
+
+### 3.5 Tabela `tb_product_items` (Ficha Técnica / Composição Fixa)
+Relação de itens fixos consumidos na montagem de um produto.
 
 | Campo | Tipo | Restrições | Descrição / Exemplo |
 | :--- | :--- | :--- | :--- |
@@ -155,17 +176,17 @@ Receita de materiais: relaciona as quantidades necessárias de cada insumo do ca
 
 ---
 
-## 4. 🗄️ Script DDL Oficial (PostgreSQL 16 & Flyway)
+## 4. 🗄️ Script DDL Oficial (PostgreSQL 16 & Flyway V1 a V10)
 
 ```sql
 -- ============================================================================
--- AlumiGest Database Migration
--- Módulo: Catálogo de Materiais Genéricos, Produtos e Ficha Técnica
+-- AlumiGest Database Migration (Consolidado V1 a V10)
+-- Módulo: Catálogo de Materiais, Categorias e Templates de Produtos
 -- ============================================================================
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- 1. Criação da Tabela de Grupos de Materiais
+-- 1. Tabela de Grupos de Materiais (V1)
 CREATE TABLE tb_material_groups (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     code VARCHAR(50) NOT NULL UNIQUE,
@@ -177,7 +198,7 @@ CREATE TABLE tb_material_groups (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- 2. Tabela Universal de Materiais
+-- 2. Tabela Universal de Materiais (V1 / V3 / V6)
 CREATE TABLE tb_materials (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     group_id UUID NOT NULL,
@@ -199,37 +220,39 @@ CREATE TABLE tb_materials (
     CONSTRAINT fk_materials_group FOREIGN KEY (group_id) REFERENCES tb_material_groups (id) ON DELETE RESTRICT
 );
 
--- 3. Índices de Otimização para Consultas de Material
+-- 3. Índices de Otimização
 CREATE INDEX idx_materials_group_id ON tb_materials(group_id);
 CREATE INDEX idx_materials_name ON tb_materials(name);
 CREATE INDEX idx_materials_commercial_ref ON tb_materials(commercial_reference);
 CREATE INDEX idx_materials_active ON tb_materials(is_active);
 
--- 4. Criação das Categorias de Produtos
+-- 4. Tabela de Categorias de Produtos (V4)
 CREATE TABLE tb_product_categories (
     id UUID NOT NULL,
     name VARCHAR(100) NOT NULL,
-    is_active BOOLEAN NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id)
 );
 
--- 5. Criação da Tabela principal de Produtos Finais (Esquadrias)
+-- 5. Tabela de Produtos / Templates de Esquadria (V2 / V8 / V10)
 CREATE TABLE tb_products (
     id UUID NOT NULL,
     name VARCHAR(150) NOT NULL,
     category_id UUID NOT NULL,
-    labor_cost NUMERIC(12,2) DEFAULT 0.00,
-    is_active BOOLEAN NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    template_type VARCHAR(50),
+    template_config JSONB,
+    category_requirements JSONB,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     
     PRIMARY KEY (id),
     CONSTRAINT fk_product_category FOREIGN KEY (category_id) REFERENCES tb_product_categories (id)
 );
 
--- 6. Tabela de Itens (Ficha Técnica / Composição)
+-- 6. Tabela de Itens da Ficha Técnica (V2)
 CREATE TABLE tb_product_items (
     id UUID NOT NULL,
     product_id UUID NOT NULL,
@@ -259,3 +282,7 @@ SELECT id, 'Chapa MDF Branco TX', 15.00, 'Branco', 70.00, 110.00, 'M2'
 FROM tb_material_groups WHERE code = 'MDF';
 ```
 O sistema processará o cálculo de área do MDF automaticamente pelo motor de cálculo genérico!
+
+---
+
+*Documento atualizado e sincronizado com o banco de dados oficial do AlumiGest — 31/08/2026*
