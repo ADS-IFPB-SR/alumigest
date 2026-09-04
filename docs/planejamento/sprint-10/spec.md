@@ -23,48 +23,48 @@ Esta sprint entrega:
 
 ## 2. 👥 Histórias de Usuário (User Stories)
 
-### 📌 US-31: Desdobrar e Gerenciar Parcelamento de Pedidos
+### 📌 US-27: Desdobrar e Gerenciar Parcelamento de Pedidos
 
 > Gerar automaticamente os títulos a receber com base na condição de pagamento (Entrada + Saldo, Cartão em N vezes, etc.) com datas de vencimento configuráveis.
 
 #### Sub-tarefas Técnicas (Sub-issues):
-- **US-31.1**: Criar migration Flyway `backend/src/main/resources/db/migration/V13__create_account_receivables_schema.sql` com tabela `account_receivables`
-- **US-31.2**: Criar enums `ReceivableStatus` (A_VENCER, VENCIDO, PAGO_PARCIAL, PAGO, CANCELADO) e `InstallmentType` em `backend/src/main/java/br/edu/ifpb/alumigest/finance/domain/`
-- **US-31.3**: Criar entidade JPA `AccountReceivable` em `backend/src/main/java/br/edu/ifpb/alumigest/finance/domain/AccountReceivable.java`
-- **US-31.4**: Criar repositório `AccountReceivableRepository` em `backend/src/main/java/br/edu/ifpb/alumigest/finance/repository/AccountReceivableRepository.java`
-- **US-31.5**: Criar serviço utilitário `InstallmentCalculator` com algoritmo de rateio com resto na 1ª parcela em `backend/src/main/java/br/edu/ifpb/alumigest/finance/service/InstallmentCalculator.java`
-- **US-31.6**: Criar record `AccountReceivableResponse` em `backend/src/main/java/br/edu/ifpb/alumigest/finance/dto/AccountReceivableResponse.java`
-- **US-31.7**: Criar record `InstallmentPlanCustomRequest` em `backend/src/main/java/br/edu/ifpb/alumigest/finance/dto/InstallmentPlanCustomRequest.java`
-- **US-31.8**: Criar mapper MapStruct `AccountReceivableMapper` em `backend/src/main/java/br/edu/ifpb/alumigest/finance/mapper/AccountReceivableMapper.java`
-- **US-31.9**: Implementar serviço `AccountReceivableService.gerarPlanoParcelas(Long orderId, InstallmentPlanCustomRequest customRequest)` em `backend/src/main/java/br/edu/ifpb/alumigest/finance/service/AccountReceivableService.java`
-- **US-31.10**: Criar endpoint POST /api/finance/receivables/order/{orderId}/generate no `AccountReceivableController` em `backend/src/main/java/br/edu/ifpb/alumigest/finance/controller/AccountReceivableController.java`
-- **US-31.11**: Criar testes unitários do `InstallmentCalculatorTest` e `AccountReceivableServiceTest`
+- **US-27.1**: Criar migration Flyway `backend/src/main/resources/db/migration/V13__create_account_receivables_schema.sql` com tabela `account_receivables`
+- **US-27.2**: Criar enums `ReceivableStatus` (A_VENCER, VENCIDO, PAGO_PARCIAL, PAGO, CANCELADO) e `InstallmentType` em `backend/src/main/java/br/edu/ifpb/alumigest/finance/domain/`
+- **US-27.3**: Criar entidade JPA `AccountReceivable` em `backend/src/main/java/br/edu/ifpb/alumigest/finance/domain/AccountReceivable.java`
+- **US-27.4**: Criar repositório `AccountReceivableRepository` em `backend/src/main/java/br/edu/ifpb/alumigest/finance/repository/AccountReceivableRepository.java`
+- **US-27.5**: Criar serviço utilitário `InstallmentCalculator` com algoritmo de rateio com resto na 1ª parcela em `backend/src/main/java/br/edu/ifpb/alumigest/finance/service/InstallmentCalculator.java`
+- **US-27.6**: Criar record `AccountReceivableResponse` em `backend/src/main/java/br/edu/ifpb/alumigest/finance/dto/AccountReceivableResponse.java`
+- **US-27.7**: Criar record `InstallmentPlanCustomRequest` em `backend/src/main/java/br/edu/ifpb/alumigest/finance/dto/InstallmentPlanCustomRequest.java`
+- **US-27.8**: Criar mapper MapStruct `AccountReceivableMapper` em `backend/src/main/java/br/edu/ifpb/alumigest/finance/mapper/AccountReceivableMapper.java`
+- **US-27.9**: Implementar serviço `AccountReceivableService.gerarPlanoParcelas(Long orderId, InstallmentPlanCustomRequest customRequest)` em `backend/src/main/java/br/edu/ifpb/alumigest/finance/service/AccountReceivableService.java`
+- **US-27.10**: Criar endpoint POST /api/finance/receivables/order/{orderId}/generate no `AccountReceivableController` em `backend/src/main/java/br/edu/ifpb/alumigest/finance/controller/AccountReceivableController.java`
+- **US-27.11**: Criar testes unitários do `InstallmentCalculatorTest` e `AccountReceivableServiceTest`
 
-### 📌 US-32: Controlar Contas a Receber, Vencimentos e Inadimplência
+### 📌 US-28: Controlar Contas a Receber, Vencimentos e Inadimplência
 
 > Painel gerencial de contas a receber com visão de títulos a vencer, vencidos, taxas de inadimplência e alertas visuais.
 
 #### Sub-tarefas Técnicas (Sub-issues):
-- **US-32.1**: Implementar método `listar(Pageable, status, clienteId, dataInicio, dataFim, busca)` no `AccountReceivableService` com atualização dinâmica de status `VENCIDO`
-- **US-32.2**: Criar endpoint GET /api/finance/receivables no `AccountReceivableController`
-- **US-32.3**: Criar interfaces TypeScript e serviço Axios (`receivablesApi.ts`) em `frontend/src/features/finance/services/receivablesApi.ts`
-- **US-32.4**: Criar componente `ReceivablesTable` com badges de alerta de vencimento em `frontend/src/features/finance/components/ReceivablesTable.tsx`
-- **US-32.5**: Criar página `ReceivablesPage` e registrar rota `/financeiro/contas-a-receber` no React Router
+- **US-28.1**: Implementar método `listar(Pageable, status, clienteId, dataInicio, dataFim, busca)` no `AccountReceivableService` com atualização dinâmica de status `VENCIDO`
+- **US-28.2**: Criar endpoint GET /api/finance/receivables no `AccountReceivableController`
+- **US-28.3**: Criar interfaces TypeScript e serviço Axios (`receivablesApi.ts`) em `frontend/src/features/finance/services/receivablesApi.ts`
+- **US-28.4**: Criar componente `ReceivablesTable` com badges de alerta de vencimento em `frontend/src/features/finance/components/ReceivablesTable.tsx`
+- **US-28.5**: Criar página `ReceivablesPage` e registrar rota `/financeiro/contas-a-receber` no React Router
 
-### 📌 US-33: Emitir Extrato Financeiro do Cliente e Recibo de Quitação
+### 📌 US-29: Emitir Extrato Financeiro do Cliente e Recibo de Quitação
 
 > Gerar extrato financeiro detalhado por cliente e emitir recibos oficiais de quitação total ou parcial em PDF.
 
 #### Sub-tarefas Técnicas (Sub-issues):
-- **US-33.1**: Criar record `ClientFinancialStatementResponse` (totalFaturado, totalPago, saldoDevedor, possuiInadimplencia) em `backend/src/main/java/br/edu/ifpb/alumigest/finance/dto/ClientFinancialStatementResponse.java`
-- **US-33.2**: Implementar método `obterExtratoCliente(Long clienteId)` no `AccountReceivableService`
-- **US-33.3**: Criar serviço `ReceiptPdfService` gerando Recibo de Quitação em PDF A4 institucional em `backend/src/main/java/br/edu/ifpb/alumigest/finance/service/ReceiptPdfService.java`
-- **US-33.4**: Adicionar endpoints GET /api/finance/receivables/client/{clienteId}/statement e GET /api/finance/receivables/{id}/receipt-pdf no `AccountReceivableController`
-- **US-33.5**: Criar teste unitário do `ReceiptPdfServiceTest`
-- **US-33.6**: Criar componente `ClientFinancialStatementCard` no frontend
-- **US-33.7**: Documentar endpoints no OpenAPI/Swagger
-- **US-33.8**: Adicionar atalho "Contas a Receber" no submenu Financeiro do frontend
-- **US-33.9**: Executar validação dos cenários de teste do `quickstart.md` da Sprint 10
+- **US-29.1**: Criar record `ClientFinancialStatementResponse` (totalFaturado, totalPago, saldoDevedor, possuiInadimplencia) em `backend/src/main/java/br/edu/ifpb/alumigest/finance/dto/ClientFinancialStatementResponse.java`
+- **US-29.2**: Implementar método `obterExtratoCliente(Long clienteId)` no `AccountReceivableService`
+- **US-29.3**: Criar serviço `ReceiptPdfService` gerando Recibo de Quitação em PDF A4 institucional em `backend/src/main/java/br/edu/ifpb/alumigest/finance/service/ReceiptPdfService.java`
+- **US-29.4**: Adicionar endpoints GET /api/finance/receivables/client/{clienteId}/statement e GET /api/finance/receivables/{id}/receipt-pdf no `AccountReceivableController`
+- **US-29.5**: Criar teste unitário do `ReceiptPdfServiceTest`
+- **US-29.6**: Criar componente `ClientFinancialStatementCard` no frontend
+- **US-29.7**: Documentar endpoints no OpenAPI/Swagger
+- **US-29.8**: Adicionar atalho "Contas a Receber" no submenu Financeiro do frontend
+- **US-29.9**: Executar validação dos cenários de teste do `quickstart.md` da Sprint 10
 
 ## 3. Requisitos Funcionais
 

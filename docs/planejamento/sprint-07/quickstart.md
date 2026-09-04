@@ -1,12 +1,13 @@
-﻿# Quickstart Validation Guide: Sprint 7 — Lista de Corte e Ficha Técnica
+# Quickstart Validation Guide: Sprint 7 — Lista de Corte e Ficha Técnica
 
-**Feature**: `004-lista-corte-ficha-montagem`
-**Date**: 2026-08-27
+**Feature**: `004-lista-corte-ficha-montagem`  
+**Date**: 2026-08-27  
+**Updated**: 2026-09-04  
 
 ## Prerequisites
 
 - Backend e Frontend rodando
-- Existência de 1 Pedido em produção com OPs geradas (ex: ID 1)
+- Existência de 1 Pedido aprovado (ex: ID 1)
 
 ## Validation Scenarios
 
@@ -26,10 +27,10 @@ curl -s -o romaneio-corte.pdf http://localhost:8080/api/production/orders/1/cutt
 # Resultado esperado: Arquivo PDF A4 contendo tabela de corte e colunas de visto físico
 ```
 
-### Cenário 3: Consultar Ficha Técnica de Montagem de uma OP
+### Cenário 3: Consultar Ficha Técnica de Montagem de um Item
 
 ```bash
-curl -s http://localhost:8080/api/production/production-orders/1/assembly-sheet
+curl -s http://localhost:8080/api/production/order-items/1/assembly-sheet
 
 # Resultado esperado: HTTP 200 OK com detalhes completos de abertura, ferragens e medidas da peça
 ```

@@ -45,18 +45,18 @@ backend/
 │   ├── repository/
 │   │   ├── StockItemRepository.java            # Consultas com lock e busca por material
 │   │   ├── StockMovementRepository.java        # Histórico Kardex
-│   │   └── ScrapRecordRepository.java          # Registros de perdas
+│   │   └── Repository.java          # Registros de perdas
 │   ├── domain/
 │   │   ├── StockItem.java                      # @Entity Item de Estoque
 │   │   ├── StockMovement.java                  # @Entity Movimentação
-│   │   ├── ScrapRecord.java                    # @Entity Perda/Sucata
+│   │   ├── .java                    # @Entity Perda/Sucata
 │   │   ├── StockMovementType.java              # Enum tipo de movimentação
 │   │   └── ScrapReason.java                    # Enum motivo de perda
 │   ├── dto/
 │   │   ├── StockItemResponse.java              # Record com saldos
 │   │   ├── StockMovementRequest.java           # Record de entrada/ajuste
 │   │   ├── StockMovementResponse.java          # Record movimentação
-│   │   └── ScrapRecordRequest.java             # Record de perda
+│   │   └── Request.java             # Record de perda
 │   └── mapper/
 │       └── StockMapper.java                    # MapStruct mapper
 └── src/main/resources/db/migration/
@@ -71,7 +71,7 @@ frontend/
 │   ├── components/
 │   │   ├── StockTable.tsx                      # Tabela com saldos e alertas
 │   │   ├── StockMovementModal.tsx              # Modal de entrada de mercadoria
-│   │   ├── ScrapRecordModal.tsx                # Modal de registro de perda
+│   │   ├── Modal.tsx                # Modal de registro de perda
 │   │   └── KardexDrawer.tsx                    # Painel lateral com extrato
 │   ├── hooks/
 │   │   └── useStock.ts                         # React Query hooks

@@ -3,9 +3,8 @@
 ## 📌 Metadados da Issue
 - **ID da Tarefa**: `US-05.2`
 - **US Pai**: `US US-05`
-- **Sprint**: Sprint 03 — Clientes, Motor de Orçamentos e Templates
 - **Fase**: `Phase 2: Product Templates`
-- **Labels**: `task`, `sprint-03`, `backend`, `refactor`
+- **Labels**: `task`,  `backend`, `refactor`
 
 ## 🎯 Objetivo & Descrição
 Remover a coluna `labor_cost` do catálogo base de produtos através da migration Flyway V10, tornando o custo de mão de obra dinâmico por item de orçamento.

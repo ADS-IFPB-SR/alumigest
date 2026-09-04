@@ -23,5 +23,5 @@
 ### Tabela: `cached_service_orders`
 - Cache das OSs agendadas para o instalador logado.
 
-### Tabela: `cached_production_orders`
+### Tabela: `cached_orders`
 - Cache das OPs do dia e listas de corte.

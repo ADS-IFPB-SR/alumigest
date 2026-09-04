@@ -24,56 +24,56 @@ Esta sprint entrega:
 
 ## 2. 👥 Histórias de Usuário (User Stories)
 
-### 📌 US-37: Agendar Instalação e Gerar Ordem de Serviço (OS)
+### 📌 US-31: Agendar Instalação e Gerar Ordem de Serviço (OS)
 
 > Vincular pedidos prontos a equipes de instalação com agendamento de data, turno, endereço de obra e geração da Ordem de Serviço (OS).
 
 #### Sub-tarefas Técnicas (Sub-issues):
-- **US-37.1**: Criar package `br.edu.ifpb.alumigest.installation` e diretório `frontend/src/features/installation`
-- **US-37.2**: Criar migration Flyway `backend/src/main/resources/db/migration/V15__create_service_orders_schema.sql` com tabelas `installation_teams`, `service_orders` e `service_order_photos`
-- **US-37.3**: Criar enums `ServiceOrderStatus`, `ShiftType` e `TeamType` em `backend/src/main/java/br/edu/ifpb/alumigest/installation/domain/`
-- **US-37.4**: Criar entidades JPA `InstallationTeam`, `ServiceOrder` e `ServiceOrderPhoto` em `backend/src/main/java/br/edu/ifpb/alumigest/installation/domain/`
-- **US-37.5**: Criar repositórios `ServiceOrderRepository`, `InstallationTeamRepository` e `ServiceOrderPhotoRepository` em `backend/src/main/java/br/edu/ifpb/alumigest/installation/repository/`
-- **US-37.6**: Criar record `ServiceOrderCreateRequest` e `ServiceOrderResponse` em `backend/src/main/java/br/edu/ifpb/alumigest/installation/dto/`
-- **US-37.7**: Criar mapper MapStruct `ServiceOrderMapper` em `backend/src/main/java/br/edu/ifpb/alumigest/installation/mapper/ServiceOrderMapper.java`
-- **US-37.8**: Implementar serviço `ServiceOrderService.criarOS(ServiceOrderCreateRequest request)` com validação de status do pedido e sugestão automática em `backend/src/main/java/br/edu/ifpb/alumigest/installation/service/ServiceOrderService.java`
-- **US-37.9**: Criar endpoints POST /api/installation/service-orders e GET /api/installation/service-orders no `ServiceOrderController` em `backend/src/main/java/br/edu/ifpb/alumigest/installation/controller/ServiceOrderController.java`
-- **US-37.10**: Criar testes unitários do `ServiceOrderServiceTest`
+- **US-31.1**: Criar package `br.edu.ifpb.alumigest.installation` e diretório `frontend/src/features/installation`
+- **US-31.2**: Criar migration Flyway `backend/src/main/resources/db/migration/V15__create_service_orders_schema.sql` com tabelas `installation_teams`, `service_orders` e `service_order_photos`
+- **US-31.3**: Criar enums `ServiceOrderStatus`, `ShiftType` e `TeamType` em `backend/src/main/java/br/edu/ifpb/alumigest/installation/domain/`
+- **US-31.4**: Criar entidades JPA `InstallationTeam`, `ServiceOrder` e `ServiceOrderPhoto` em `backend/src/main/java/br/edu/ifpb/alumigest/installation/domain/`
+- **US-31.5**: Criar repositórios `ServiceOrderRepository`, `InstallationTeamRepository` e `ServiceOrderPhotoRepository` em `backend/src/main/java/br/edu/ifpb/alumigest/installation/repository/`
+- **US-31.6**: Criar record `ServiceOrderCreateRequest` e `ServiceOrderResponse` em `backend/src/main/java/br/edu/ifpb/alumigest/installation/dto/`
+- **US-31.7**: Criar mapper MapStruct `ServiceOrderMapper` em `backend/src/main/java/br/edu/ifpb/alumigest/installation/mapper/ServiceOrderMapper.java`
+- **US-31.8**: Implementar serviço `ServiceOrderService.criarOS(ServiceOrderCreateRequest request)` com validação de status do pedido e sugestão automática em `backend/src/main/java/br/edu/ifpb/alumigest/installation/service/ServiceOrderService.java`
+- **US-31.9**: Criar endpoints POST /api/installation/service-orders e GET /api/installation/service-orders no `ServiceOrderController` em `backend/src/main/java/br/edu/ifpb/alumigest/installation/controller/ServiceOrderController.java`
+- **US-31.10**: Criar testes unitários do `ServiceOrderServiceTest`
 
-### 📌 US-38: Executar e Concluir OS em Campo com Registro Fotográfico (PWA)
+### 📌 US-32: Executar e Concluir OS em Campo com Registro Fotográfico (PWA)
 
 > Instalador acessa a OS no smartphone via PWA, realiza checklist de entrega, tira fotos do trabalho concluído e colhe assinatura do cliente.
 
 #### Sub-tarefas Técnicas (Sub-issues):
-- **US-38.1**: Criar record `ServiceOrderStatusUpdateRequest` e `ServiceOrderPhotoResponse`
-- **US-38.2**: Implementar serviço de upload de imagens e atualização de status no `ServiceOrderService`
-- **US-38.3**: Criar endpoints PATCH /api/installation/service-orders/{id}/status e POST /api/installation/service-orders/{id}/photos no `ServiceOrderController`
-- **US-38.4**: Criar modal `FieldExecutionModal` no frontend com upload de câmera do celular em `frontend/src/features/installation/components/FieldExecutionModal.tsx`
+- **US-32.1**: Criar record `ServiceOrderStatusUpdateRequest` e `ServiceOrderPhotoResponse`
+- **US-32.2**: Implementar serviço de upload de imagens e atualização de status no `ServiceOrderService`
+- **US-32.3**: Criar endpoints PATCH /api/installation/service-orders/{id}/status e POST /api/installation/service-orders/{id}/photos no `ServiceOrderController`
+- **US-32.4**: Criar modal `FieldExecutionModal` no frontend com upload de câmera do celular em `frontend/src/features/installation/components/FieldExecutionModal.tsx`
 
-### 📌 US-39: Visualizar Calendário de Instalações e Prevenção de Conflitos
+### 📌 US-33: Visualizar Calendário de Instalações e Prevenção de Conflitos
 
 > Calendário visual interativo com visão diária/semanal de equipes alocadas e detecção de sobreposição de horários.
 
 #### Sub-tarefas Técnicas (Sub-issues):
-- **US-39.1**: Criar record `CalendarEventResponse` em `backend/src/main/java/br/edu/ifpb/alumigest/installation/dto/CalendarEventResponse.java`
-- **US-39.2**: Implementar serviço `CalendarService.obterEventosMes(int mes, int ano, Long teamId)`
-- **US-39.3**: Criar endpoint GET /api/installation/service-orders/calendar no `ServiceOrderController`
-- **US-39.4**: Criar interfaces TypeScript e serviço Axios (`installationApi.ts`)
-- **US-39.5**: Criar componente `InstallationCalendar` no frontend com código de cores por status em `frontend/src/features/installation/components/InstallationCalendar.tsx`
-- **US-39.6**: Criar página `InstallationCalendarPage` e registrar rota `/instalacoes` no React Router
+- **US-33.1**: Criar record `CalendarEventResponse` em `backend/src/main/java/br/edu/ifpb/alumigest/installation/dto/CalendarEventResponse.java`
+- **US-33.2**: Implementar serviço `CalendarService.obterEventosMes(int mes, int ano, Long teamId)`
+- **US-33.3**: Criar endpoint GET /api/installation/service-orders/calendar no `ServiceOrderController`
+- **US-33.4**: Criar interfaces TypeScript e serviço Axios (`installationApi.ts`)
+- **US-33.5**: Criar componente `InstallationCalendar` no frontend com código de cores por status em `frontend/src/features/installation/components/InstallationCalendar.tsx`
+- **US-33.6**: Criar página `InstallationCalendarPage` e registrar rota `/instalacoes` no React Router
 
-### 📌 US-40: Emitir Ordem de Serviço (OS) em PDF
+### 📌 US-34: Emitir Ordem de Serviço (OS) em PDF
 
 > Emitir a Ordem de Serviço em PDF com via para a equipe técnica e via de aceite do cliente.
 
 #### Sub-tarefas Técnicas (Sub-issues):
-- **US-40.1**: Criar serviço `ServiceOrderPdfService` gerando PDF A4 de OS com OpenPDF em `backend/src/main/java/br/edu/ifpb/alumigest/installation/service/ServiceOrderPdfService.java`
-- **US-40.2**: Adicionar endpoint GET /api/installation/service-orders/{id}/pdf no `ServiceOrderController`
-- **US-40.3**: Criar teste unitário do `ServiceOrderPdfServiceTest`
-- **US-40.4**: Adicionar botão "Emitir OS em PDF" no frontend
-- **US-40.5**: Documentar endpoints no OpenAPI/Swagger
-- **US-40.6**: Adicionar atalho "Instalações & Agenda" no menu do frontend
-- **US-40.7**: Executar validação dos cenários de teste do `quickstart.md` da Sprint 12
+- **US-34.1**: Criar serviço `ServiceOrderPdfService` gerando PDF A4 de OS com OpenPDF em `backend/src/main/java/br/edu/ifpb/alumigest/installation/service/ServiceOrderPdfService.java`
+- **US-34.2**: Adicionar endpoint GET /api/installation/service-orders/{id}/pdf no `ServiceOrderController`
+- **US-34.3**: Criar teste unitário do `ServiceOrderPdfServiceTest`
+- **US-34.4**: Adicionar botão "Emitir OS em PDF" no frontend
+- **US-34.5**: Documentar endpoints no OpenAPI/Swagger
+- **US-34.6**: Adicionar atalho "Instalações & Agenda" no menu do frontend
+- **US-34.7**: Executar validação dos cenários de teste do `quickstart.md` da Sprint 12
 
 ## 3. Requisitos Funcionais
 

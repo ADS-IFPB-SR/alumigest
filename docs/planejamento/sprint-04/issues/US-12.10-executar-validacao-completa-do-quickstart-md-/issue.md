@@ -4,13 +4,12 @@
 
 - **ID da Tarefa**: `US-12.10`
 - **US Pai**: `US-12: Homologação Integrada e Validação da Release 1 (v1.0.0)`
-- **Sprint**: Sprint 04 — Descontos, PDF e Homologação R1
 - **Fase**: `Phase 7: Polish & Cross-Cutting Concerns`
 - **User Story**: Não aplicável (Infra/Fundação/Polish)
 - **Sub-área**: `Geral`
 - **Execução Paralela**: ❌ Não (Execução sequencial recomendada)
 - **Arquivo / Alvo Principal**: `quickstart.md`
-- **Labels Sugeridas**: `sprint-04`, `release-1`
+- **Labels Sugeridas**: `release-1`
 
 ---
 
@@ -21,7 +20,7 @@ Executar validação completa do `quickstart.md` e marcar checklist final.
 ### Contexto da Fase / Épico
 **Propósito da Fase**: Refinamentos que afetam múltiplas User Stories
 
-Esta issue faz parte da entrega da **Sprint 4 (Release 1 - v1.0.0)** do AlumiGest. Deve seguir rigorosamente as diretrizes arquiteturais da Constituição do Projeto (Clean Architecture / Package-by-Feature, DTOs em Records Java, Bean Validation, BigDecimal HALF_EVEN e commits em PT-BR).
+Esta issue faz parte da entrega da **Release 1 - v1.0.0** do AlumiGest. Deve seguir rigorosamente as diretrizes arquiteturais da Constituição do Projeto (Clean Architecture / Package-by-Feature, DTOs em Records Java, Bean Validation, BigDecimal HALF_EVEN e commits em PT-BR).
 
 ---
 

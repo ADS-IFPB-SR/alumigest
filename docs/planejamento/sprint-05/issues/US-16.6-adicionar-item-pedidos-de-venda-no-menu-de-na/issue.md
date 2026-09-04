@@ -4,14 +4,13 @@
 
 - **ID da Tarefa**: `US-16.6`
 - **US Pai**: `US-16: Emissão do Comprovante do Pedido de Venda`
-- **Sprint**: Sprint 05 — Aprovação de Orçamentos e Pedidos (Lock de Preços)
 - **Release**: Release 2 (v2.0.0) — Gestão de Produção & Fábrica
 - **Fase**: `Phase 6: Polish & Cross-Cutting Concerns`
 - **User Story**: Não aplicável (Infra/Fundação/Polish)
 - **Sub-área**: `Geral`
 - **Execução Paralela**: ✅ Sim (Pode ser executada em paralelo com outras tasks [P])
 - **Arquivo / Alvo Principal**: `Conforme especificação da tarefa`
-- **Labels Sugeridas**: `sprint-05`, `release-2`, `orders`, `frontend`, `typescript`, `react`
+- **Labels Sugeridas**: `release-2`, `orders`, `frontend`, `typescript`, `react`
 
 ---
 
@@ -22,7 +21,7 @@ Adicionar item "Pedidos de Venda" no menu de navegação do frontend.
 ### Contexto da Fase / Épico
 **Propósito da Fase**: Documentação, menu e validação geral
 
-Esta issue faz parte da entrega da **Sprint 5 (Release 2)** do AlumiGest. Deve seguir rigorosamente as diretrizes arquiteturais da Constituição do Projeto (Clean Architecture / Package-by-Feature no módulo `orders`, DTOs em Records Java, Bean Validation, BigDecimal HALF_EVEN e commits em PT-BR).
+Esta issue faz parte da entrega da **Release 2** do AlumiGest. Deve seguir rigorosamente as diretrizes arquiteturais da Constituição do Projeto (Clean Architecture / Package-by-Feature no módulo `ordersDTOs em Records Java, Bean Validation, BigDecimal HALF_EVEN e commits em PT-BR).
 
 ---
 

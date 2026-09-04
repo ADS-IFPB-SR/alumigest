@@ -4,13 +4,12 @@
 
 - **ID da Tarefa**: `US-09.24`
 - **US Pai**: `US-09: Aplicar Descontos e Condições Comerciais no Orçamento`
-- **Sprint**: Sprint 04 — Descontos, PDF e Homologação R1
 - **Fase**: `Phase 3: User Story 1 - Descontos e Condições Comerciais (Priority: P1) 🎯 MVP`
 - **User Story**: [US1]
 - **Sub-área**: `Service Layer`
 - **Execução Paralela**: ❌ Não (Execução sequencial recomendada)
 - **Arquivo / Alvo Principal**: `BudgetService`
-- **Labels Sugeridas**: `sprint-04`, `release-1`, `backend`, `java`, `mvp`, `user-story-1`
+- **Labels Sugeridas**: `release-1`, `backend`, `java`, `mvp`, `user-story-1`
 
 ---
 
@@ -21,7 +20,7 @@ Implementar método `listar()` no `BudgetService` com paginação, filtro por st
 ### Contexto da Fase / Épico
 **Objetivo da User Story**: Permitir criar orçamentos, adicionar itens, aplicar descontos (% ou R$), selecionar condição de pagamento e recalcular totais em tempo real.
 
-Esta issue faz parte da entrega da **Sprint 4 (Release 1 - v1.0.0)** do AlumiGest. Deve seguir rigorosamente as diretrizes arquiteturais da Constituição do Projeto (Clean Architecture / Package-by-Feature, DTOs em Records Java, Bean Validation, BigDecimal HALF_EVEN e commits em PT-BR).
+Esta issue faz parte da entrega da **Release 1 - v1.0.0** do AlumiGest. Deve seguir rigorosamente as diretrizes arquiteturais da Constituição do Projeto (Clean Architecture / Package-by-Feature, DTOs em Records Java, Bean Validation, BigDecimal HALF_EVEN e commits em PT-BR).
 
 ---
 

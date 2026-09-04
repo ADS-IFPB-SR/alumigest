@@ -1,7 +1,8 @@
-﻿# Data Model: Sprint 7 — Lista de Corte e Ficha Técnica de Montagem (Romaneio de Oficina)
+# Data Model: Sprint 7 — Lista de Corte e Ficha Técnica de Montagem (Romaneio de Oficina)
 
-**Feature**: `004-lista-corte-ficha-montagem`
-**Date**: 2026-08-27
+**Feature**: `004-lista-corte-ficha-montagem`  
+**Date**: 2026-08-27  
+**Updated**: 2026-09-04  
 
 ## Projeções e DTOs (Sem novas tabelas de banco)
 
@@ -15,27 +16,25 @@
   "totalPecas": 3,
   "itens": [
     {
-      "productionOrderCodigo": "OP-2026-0001-01",
-      "numeroPeca": 1,
-      "totalPecasItem": 2,
+      "orderItemId": 10,
+      "numeroItem": 1,
+      "totalItens": 2,
       "descricao": "Janela 2 Folhas Correr",
       "larguraMm": 1200,
       "alturaMm": 1000,
       "corAluminio": "Branco",
       "tipoVidro": "Temperado 8mm Incolor",
       "orientacaoAbertura": "CORRER (Folha Direita)",
-      "ferragens": "1x Fecho Concha, 2x Roldanas",
-      "status": "AGUARDANDO_CORTE"
+      "ferragens": "1x Fecho Concha, 2x Roldanas"
     }
   ]
 }
 ```
 
-### AssemblySheetResponse (Ficha Técnica Individual da OP)
+### AssemblySheetResponse (Ficha Técnica Individual do Item)
 ```json
 {
-  "productionOrderId": 1,
-  "productionOrderCodigo": "OP-2026-0001-01",
+  "orderItemId": 10,
   "orderCodigo": "PED-2026-0001",
   "clienteNome": "João Silva",
   "descricaoPeca": "Janela 2 Folhas Correr",

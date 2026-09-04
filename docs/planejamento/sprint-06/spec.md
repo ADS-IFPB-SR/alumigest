@@ -1,101 +1,91 @@
-﻿# Feature Specification: Sprint 6 — Ordens de Produção (OP), Rastreamento de Status e Etiquetas QR Code
+# Feature Specification: Sprint 6 — Etiquetas de Identificação de Peças e Kanban de Produção
 
-**Feature**: `003-ordens-producao-qrcode`
-**Release**: Release 2 (v2.0.0) — Gestão de Produção & Fábrica
-**Created**: 2026-08-27
-**Status**: APPROVED (Esclarecimentos Resolvidos)
+**Feature**: `003-producao-kanban-etiquetas`  
+**Release**: Release 2 (v2.0.0) — Gestão de Produção & Fábrica  
+**Created**: 2026-08-27  
+**Updated**: 2026-09-04  
+**Status**: APPROVED (Reestruturada após Decisão de Escopo)  
 
 ---
 
 ## 1. Visão Geral & Contexto de Negócio
 
-Após a conversão de um orçamento em Pedido de Venda (`Order`), o AlumiGest inicia a gestão do chão de fábrica da Alumiportas. 
+Após a conversão de um orçamento em Pedido de Venda (`Order`), o AlumiGest dá suporte à gestão da oficina da Alumiportas de forma direta, prática e sem burocracia excessiva.
 
-A fabricação de esquadrias de alumínio e vidros temperados exige controle rigoroso de cada peça individualmente desde o corte dos perfis até a montagem e expedição. Para eliminar papéis soltos e peças perdidas na oficina, esta sprint introduz:
-1. **Geração de Ordens de Produção (OP) Individuais por Peça**: Cada esquadria física do pedido recebe seu próprio código sequencial (`OP-YYYY-NNNN-XX`) e ciclo de vida independente.
-2. **Rastreamento de Etapas de Fabricação**: Controle de status em tempo real (`AGUARDANDO_CORTE`, `EM_CORTE`, `EM_MONTAGEM`, `CONTROLE_QUALIDADE`, `PRONTO_EXPEDICAO`, `EXPEDIDO`).
-3. **Etiquetas com QR Code (100x50mm)**: Emissão de etiquetas adesivas térmicas contendo medidas nominais (L x A mm), cor do perfil, tipo de vidro, código do pedido e QR Code de alta densidade.
-4. **Scanner Rápido de Chão de Fábrica (PWA)**: Leitura de QR Code via câmera do smartphone/tablet para transicionar o status da peça em 1 toque com seleção simplificada do operador.
+> ⚠️ **Nota de Decisão Arquitetural (ADR - Simplificação de Escopo)**:  
+> Por decisão unânime da equipe de engenharia e produto, as propostas iniciais de geração de dezenas de entidades individuais de "Ordem de Produção (OP)" por esquadria física e uso de "Scanner móvel de QR Code com câmera" foram descartadas do projeto. Identificou-se que esse modelo adicionava overhead operacional e complexidade desnecessária para a rotina da vidraçaria/serralheria.  
+> **Novo modelo adotado**: A gestão de chão de fábrica é centrada no **Pedido de Venda (`Order`)** como um todo através de um **Painel Kanban de Produção** e na **identificação física imediata das peças cortadas/montadas através de etiquetas adesivas impressas diretamente a partir dos itens do pedido (`OrderItem`)**.
+
+Esta sprint introduz:
+1. **Emissão de Etiquetas Físicas de Identificação de Peças (100x50mm)**: Geração de etiquetas adesivas com dados 100% legíveis (cliente, código do pedido, modelo da esquadria, dimensões nominais L x A mm, cor do alumínio, tipo de vidro e numeração da peça no lote).
+2. **Painel Kanban de Produção por Pedido de Venda**: Acompanhamento visual do fluxo de produção nas colunas oficiais de ciclo de vida do pedido (`AGUARDANDO_PRODUCAO`, `EM_PRODUCAO`, `CONCLUIDO`).
 
 ---
 
 ## 2. 👥 Histórias de Usuário (User Stories)
 
-### 📌 US-17: Gerar Ordens de Produção (OP) Individuais por Peça
+### 📌 US-17: Emitir Etiquetas de Identificação de Peças por Item do Pedido
 
-> Gerar Ordens de Produção individuais para cada esquadria de um pedido de venda aprovado, permitindo o rastreamento isolado de fabricação.
-
-#### Sub-tarefas Técnicas (Sub-issues):
-- **US-17.1**: Adicionar dependências `com.google.zxing:core:3.5.3` e `com.google.zxing:javase:3.5.3` no `backend/pom.xml`
-- **US-17.2**: Adicionar dependência `html5-qrcode` no `frontend/package.json`
-- **US-17.3**: Criar migration Flyway `backend/src/main/resources/db/migration/V10__create_production_orders_schema.sql` com tabelas `production_orders` e `production_order_histories`
-- **US-17.4**: Criar enum `ProductionOrderStatus` (AGUARDANDO_CORTE, EM_CORTE, EM_MONTAGEM, CONTROLE_QUALIDADE, PRONTO_EXPEDICAO, EXPEDIDO) em `backend/src/main/java/br/edu/ifpb/alumigest/production/domain/ProductionOrderStatus.java`
-- **US-17.5**: Criar entidade JPA `ProductionOrder` em `backend/src/main/java/br/edu/ifpb/alumigest/production/domain/ProductionOrder.java`
-- **US-17.6**: Criar entidade JPA `ProductionOrderHistory` em `backend/src/main/java/br/edu/ifpb/alumigest/production/domain/ProductionOrderHistory.java`
-- **US-17.7**: Criar repositório `ProductionOrderRepository` em `backend/src/main/java/br/edu/ifpb/alumigest/production/repository/ProductionOrderRepository.java`
-- **US-17.8**: Criar repositório `ProductionOrderHistoryRepository` em `backend/src/main/java/br/edu/ifpb/alumigest/production/repository/ProductionOrderHistoryRepository.java`
-- **US-17.9**: Criar serviço gerador de imagens QR Code `QrCodeGeneratorService` usando ZXing em `backend/src/main/java/br/edu/ifpb/alumigest/production/service/QrCodeGeneratorService.java`
-- **US-17.10**: Criar record `ProductionOrderResponse` com todos os dados da peça, cliente, status e datas em `backend/src/main/java/br/edu/ifpb/alumigest/production/dto/ProductionOrderResponse.java`
-- **US-17.11**: Criar record `ProductionOrderHistoryResponse` em `backend/src/main/java/br/edu/ifpb/alumigest/production/dto/ProductionOrderHistoryResponse.java`
-- **US-17.12**: Criar mapper MapStruct `ProductionOrderMapper` em `backend/src/main/java/br/edu/ifpb/alumigest/production/mapper/ProductionOrderMapper.java`
-- **US-17.13**: Implementar método `gerarOrdensDeProducao(Long orderId)` no `ProductionOrderService` decompondo cada item em $N$ OPs físicas e atualizando o status do Pedido para `EM_PRODUCAO` em `backend/src/main/java/br/edu/ifpb/alumigest/production/service/ProductionOrderService.java`
-- **US-17.14**: Implementar métodos `buscarPorCodigo(String codigo)` e `listar(Pageable, status, orderId, busca)` no `ProductionOrderService`
-- **US-17.15**: Criar `ProductionOrderController` com endpoints POST /api/production-orders/generate-from-order/{orderId}, GET /api/production-orders/by-code/{codigo}, GET /api/production-orders em `backend/src/main/java/br/edu/ifpb/alumigest/production/controller/ProductionOrderController.java`
-- **US-17.16**: Criar testes unitários do `ProductionOrderService` para decomposição de itens em `backend/src/test/java/br/edu/ifpb/alumigest/production/service/ProductionOrderServiceTest.java`
-
-### 📌 US-18: Emitir Etiquetas com QR Code para Identificação de Peças
-
-> Emitir etiquetas adesivas térmicas (100x50mm) contendo QR Code exclusivo, medidas nominais, modelo da esquadria, cor do perfil e dados do pedido.
+> Como encarregado de produção da oficina,  
+> Quero emitir etiquetas adesivas térmicas de identificação para cada esquadria de um pedido de venda aprovado,  
+> Para colar nos perfis/peças cortadas, garantindo que os montadores identifiquem claramente as medidas, cliente e especificações sem confusão na oficina.
 
 #### Sub-tarefas Técnicas (Sub-issues):
-- **US-18.1**: Criar serviço `LabelPdfService` usando OpenPDF com tamanho de página 100x50mm, embutindo imagem gerada pelo `QrCodeGeneratorService`, logo, código da OP, cliente, descrição e medidas em `backend/src/main/java/br/edu/ifpb/alumigest/production/service/LabelPdfService.java`
-- **US-18.2**: Adicionar endpoint GET /api/production-orders/order/{orderId}/labels-pdf no `ProductionOrderController` (retorna application/pdf)
-- **US-18.3**: Criar teste unitário do `LabelPdfService` validando geração de bytes não-vazios em `backend/src/test/java/br/edu/ifpb/alumigest/production/service/LabelPdfServiceTest.java`
-- **US-18.4**: Adicionar botão "Imprimir Etiquetas com QR Code" na tela de detalhes do pedido no frontend (`OrderDetailPage.tsx`)
-
-### 📌 US-19: Atualizar Status de Produção via Scanner de QR Code
-
-> Permitir que operadores da fábrica leiam o QR Code na etiqueta via câmera do smartphone/tablet para registrar o avanço de etapas de fabricação (CORTE -> MONTAGEM -> VIDRO -> EMBALADO).
-
-#### Sub-tarefas Técnicas (Sub-issues):
-- **US-19.1**: Criar record `ProductionOrderTransitionRequest` (novoStatus, operadorNome, observacao) com Bean Validation em `backend/src/main/java/br/edu/ifpb/alumigest/production/dto/ProductionOrderTransitionRequest.java`
-- **US-19.2**: Implementar método `transicionarStatus(Long id, ProductionOrderTransitionRequest request)` no `ProductionOrderService` registrando histórico e verificando conclusão geral do pedido
-- **US-19.3**: Adicionar endpoint PATCH /api/production-orders/{id}/transition no `ProductionOrderController`
-- **US-19.4**: Criar interfaces TypeScript e serviço de API Axios (`productionApi.ts`) em `frontend/src/features/production/services/productionApi.ts`
-- **US-19.5**: Criar hooks React Query (`useProductionOrders.ts`) em `frontend/src/features/production/hooks/useProductionOrders.ts`
-- **US-19.6**: Criar componente `QrScannerModal` com `html5-qrcode` para leitura via câmera traseira do dispositivo em `frontend/src/features/production/components/QrScannerModal.tsx`
-- **US-19.7**: Criar página `ProductionScannerPage` para operação rápida de chão de fábrica com bipagem e seleção de operador em `frontend/src/pages/ProductionScannerPage.tsx`
-- **US-19.8**: Criar página `ProductionOrderDetailPage` com ficha técnica completa da peça e histórico de etapas em `frontend/src/pages/ProductionOrderDetailPage.tsx`
-
-### 📌 US-20: Acompanhar Produção via Painel Kanban de OPs
-
-> Disponibilizar painel visual Kanban em tempo real para a diretoria e encarregado de fábrica monitorarem o fluxo de todas as OPs em fabricação.
-
-#### Sub-tarefas Técnicas (Sub-issues):
-- **US-20.1**: Criar componente `ProductionStatusBadge` em `frontend/src/features/production/components/ProductionStatusBadge.tsx`
-- **US-20.2**: Criar componente `ProductionOrderCard` em `frontend/src/features/production/components/ProductionOrderCard.tsx`
-- **US-20.3**: Criar componente `ProductionKanbanBoard` com colunas (Aguardando Corte, Corte, Montagem, CQ, Pronto) em `frontend/src/features/production/components/ProductionKanbanBoard.tsx`
-- **US-20.4**: Criar página `ProductionKanbanPage` com filtros de busca e botão de atalho para o Scanner em `frontend/src/pages/ProductionKanbanPage.tsx`
-- **US-20.5**: Configurar rotas `/producao`, `/producao/scanner`, `/producao/op/:codigo` no React Router em `frontend/src/App.tsx`
-- **US-20.6**: Documentar endpoints do `ProductionOrderController` com OpenAPI/Swagger
-- **US-20.7**: Adicionar atalhos de "Chão de Fábrica" e "Scanner QR" no menu lateral do frontend
-- **US-20.8**: Executar validação dos cenários de teste do `quickstart.md` da Sprint 6
-
-## 3. Requisitos Funcionais
-
-1. **RF01 - Decomposição Individual de Peças**: Para cada `OrderItem` com `quantidade = N`, o sistema deve gerar $N$ registros em `ProductionOrder` com sufixo sequencial (`-01`, `-02`, etc.).
-2. **RF02 - Rastreabilidade com Pedido**: Cada OP mantém chave estrangeira obrigatória para `OrderItem` e `Order`.
-3. **RF03 - Máquina de Estados da OP**:
-   - `AGUARDANDO_CORTE` → `EM_CORTE` → `EM_MONTAGEM` → `CONTROLE_QUALIDADE` → `PRONTO_EXPEDICAO` → `EXPEDIDO`.
-4. **RF04 - Geração de QR Code**: Geração de imagem QR Code em alta resolução (ZXing no backend ou canvas no frontend) contendo link para o endpoint de detalhe da OP.
-5. **RF05 - Impressão Térmica 100x50mm**: Layout de PDF de etiqueta em tamanho exato de 100x50mm para impressoras térmicas (Zebra/Argox/Elgin).
-6. **RF06 - Scanner de Câmera no Frontend**: Componente de scanner contínuo usando HTML5 `getUserMedia` com feedback sonoro e visual ao bipar.
-7. **RF07 - Sincronização Automática com o Pedido**: Quando todas as OPs de um pedido forem concluídas (`PRONTO_EXPEDICAO` ou `EXPEDIDO`), o status do pedido pai é atualizado automaticamente para `CONCLUIDO`.
+- **US-17.1**: Criar serviço `LabelPdfService` usando OpenPDF com layout de etiqueta física (100x50mm) contendo dados do pedido, cliente, medidas nominais (L x A mm), cor do perfil, tipo de vidro e numeração da peça (ex: Peça 1 de 2) em `backend/src/main/java/br/edu/ifpb/alumigest/production/service/LabelPdfService.java`
+- **US-17.2**: Adicionar endpoint `GET /api/orders/{orderId}/labels-pdf` no `OrderController` retornando o documento `application/pdf`
+- **US-17.3**: Criar teste unitário do `LabelPdfService` validando geração de bytes não-vazios e paginação exata pela quantidade de peças em `backend/src/test/java/br/edu/ifpb/alumigest/production/service/LabelPdfServiceTest.java`
+- **US-17.4**: Adicionar botão "Imprimir Etiquetas" na tela de detalhes do pedido no frontend (`OrderDetailPage.tsx`) disparando o download do arquivo PDF
 
 ---
 
-## 4. Decisões dos Esclarecimentos (Clarifications Resolved)
+### 📌 US-18: Acompanhar Produção via Painel Kanban de Pedidos de Venda
 
-- **Q1 (Granularidade das OPs)**: 1 OP individual por peça física (`OP-2026-0001-01`, `OP-2026-0001-02`), permitindo rastreamento autônomo de cada esquadria.
-- **Q2 (Formato da Etiqueta)**: Etiqueta térmica adesiva 100x50mm com QR Code de alta densidade + visualização em PDF.
-- **Q3 (Identificação do Operador)**: Avanço rápido de 1 clique com seleção simples de operador em lista suspensa na tela do scanner.
+> Como encarregado de fábrica e gestor comercial,  
+> Quero acompanhar o andamento dos pedidos de venda aprovados através de um painel visual Kanban,  
+> Para monitorar gargalos, prazos de entrega acordados e transicionar pedidos entre as etapas de produção de forma ágil.
+
+#### Sub-tarefas Técnicas (Sub-issues):
+- **US-18.1**: Implementar endpoint `PATCH /api/orders/{id}/production-status` no `OrderController` com validação das transições permitidas (`AGUARDANDO_PRODUCAO` → `EM_PRODUCAO` → `CONCLUIDO`) e atualização automática da `data_conclusao`
+- **US-18.2**: Criar hook React Query (`useProductionKanban.ts`) e serviços de API para listar pedidos agrupados por status de produção
+- **US-18.3**: Criar componente `OrderProductionCard` no frontend exibindo código do pedido, cliente, data prevista de entrega, badges de alerta de prazo e total de esquadrias
+- **US-18.4**: Criar componente `ProductionKanbanBoard` com colunas (`AGUARDANDO_PRODUCAO`, `EM_PRODUCAO`, `CONCLUIDO`) e movimentação ágil de cartões
+- **US-18.5**: Criar página `ProductionKanbanPage` com filtros de busca por cliente, período de entrega e código do pedido em `frontend/src/pages/ProductionKanbanPage.tsx`
+- **US-18.6**: Configurar rota `/producao` no React Router e adicionar atalho "Produção (Kanban)" no menu lateral do frontend
+- **US-18.7**: Documentar endpoints no OpenAPI/Swagger e criar testes unitários para a transição de status no backend
+
+---
+
+## 3. Requisitos Funcionais
+
+1. **RF01 - Decomposição em Etiquetas Físicas**: Para cada `OrderItem` com `quantidade = N`, o gerador de etiquetas emite $N$ etiquetas individuais com indicação do índice (ex: `1/2`, `2/2`).
+2. **RF02 - Dados da Etiqueta**: A etiqueta contém: Código do Pedido (`PED-YYYY-NNNN`), Nome do Cliente, Descrição do Produto, Medidas Nominais (`Largura x Altura mm`), Cor do Perfil, Tipo do Vidro e Sentido de Abertura.
+3. **RF03 - Colunas do Kanban**: O painel Kanban reflete exatamente os status industriais do Pedido:
+   - `AGUARDANDO_PRODUCAO`: Pedido aprovado aguardando início do corte/fabricação.
+   - `EM_PRODUCAO`: Pedido em processo ativo de corte e montagem na oficina.
+   - `CONCLUIDO`: Pedido fabricado e disponível para expedição/instalação.
+4. **RF04 - Auditoria de Conclusão**: Ao mover um pedido para `CONCLUIDO`, o sistema preenche automaticamente o campo `data_conclusao = CURRENT_DATE`.
+5. **RF05 - Identificação Visual de Atraso**: Pedidos com `data_previsao_entrega` anterior à data atual ou vencendo nos próximos 2 dias recebem destaque visual de prioridade no Kanban.
+
+---
+
+## 4. Cenários BDD / Gherkin
+
+### Cenário 1: Emissão de etiquetas para pedido com múltiplos itens
+```gherkin
+Dado que existe um pedido aprovado "PED-2026-0005" contendo:
+  | Item | Descrição | Quantidade | Largura | Altura | Cor |
+  | 1    | Janela 2 Folhas | 2 | 1200 | 1000 | Branco |
+  | 2    | Porta Pivotante | 1 | 900  | 2100 | Preto  |
+Quando o encarregado clica em "Imprimir Etiquetas"
+Então o sistema gera um arquivo PDF de 3 páginas (formato 100x50mm)
+E as páginas 1 e 2 identificam as unidades da "Janela 2 Folhas" com "Peça 1 de 2" e "Peça 2 de 2"
+E a página 3 identifica a "Porta Pivotante" com "Peça 1 de 1"
+```
+
+### Cenário 2: Movimentação de pedido no Kanban de Produção
+```gherkin
+Dado que o pedido "PED-2026-0010" está com status "AGUARDANDO_PRODUCAO"
+Quando o operador arrasta o card para a coluna "EM_PRODUCAO"
+Então o status do pedido no backend é atualizado para "EM_PRODUCAO"
+E o card passa a ser exibido na respectiva coluna sem necessidade de recarregar a página
+```

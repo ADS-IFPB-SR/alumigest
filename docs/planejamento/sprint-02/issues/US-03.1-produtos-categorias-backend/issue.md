@@ -3,9 +3,8 @@
 ## 📌 Metadados da Issue
 - **ID da Tarefa**: `US-03.1`
 - **US Pai**: `US US-03`
-- **Sprint**: Sprint 02 — Catálogo de Materiais
 - **Fase**: `Phase 5: Products Domain`
-- **Labels**: `task`, `sprint-02`, `backend`, `products`
+- **Labels**: `task`,  `backend`, `products`
 
 ## 🎯 Objetivo & Descrição
 Criar estrutura de banco de dados e endpoints backend para gestão de categorias de produtos e modelos base de esquadrias (`tb_products`).

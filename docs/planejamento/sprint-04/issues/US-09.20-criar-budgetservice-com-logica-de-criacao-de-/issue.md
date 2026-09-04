@@ -1,27 +1,26 @@
-# [US-09.20] Criar `BudgetService` com lógica de criação de orçamento (geração de código sequencial, dataValidade = emissão + 15 dias), `@Transactional(readOnly=true)` na classe e `@Transactional` nos métodos de mutação em `backend/src/main/java/br/edu/ifpb/alumigest/budgets/service/BudgetService.java`
+# [US-09.20] Criar `BudgetService` com lógica de criação de orçamento (geração de código sequencial, dataValidade = emissão + 15 dias)@Transactional(readOnly=true)` na classe e `@Transactional` nos métodos de mutação em `backend/src/main/java/br/edu/ifpb/alumigest/budgets/service/BudgetService.java`
 
 ## 📌 Metadados da Issue
 
 - **ID da Tarefa**: `US-09.20`
 - **US Pai**: `US-09: Aplicar Descontos e Condições Comerciais no Orçamento`
-- **Sprint**: Sprint 04 — Descontos, PDF e Homologação R1
 - **Fase**: `Phase 3: User Story 1 - Descontos e Condições Comerciais (Priority: P1) 🎯 MVP`
 - **User Story**: [US1]
 - **Sub-área**: `Service Layer`
 - **Execução Paralela**: ❌ Não (Execução sequencial recomendada)
 - **Arquivo / Alvo Principal**: `backend/src/main/java/br/edu/ifpb/alumigest/budgets/service/BudgetService.java`
-- **Labels Sugeridas**: `sprint-04`, `release-1`, `backend`, `java`, `devops-docs`, `mvp`, `user-story-1`
+- **Labels Sugeridas**: `release-1`, `backend`, `java`, `devops-docs`, `mvp`, `user-story-1`
 
 ---
 
 ## 🎯 Objetivo & Descrição
 
-Criar `BudgetService` com lógica de criação de orçamento (geração de código sequencial, dataValidade = emissão + 15 dias), `@Transactional(readOnly=true)` na classe e `@Transactional` nos métodos de mutação em `backend/src/main/java/br/edu/ifpb/alumigest/budgets/service/BudgetService.java`.
+Criar `BudgetService` com lógica de criação de orçamento (geração de código sequencial, dataValidade = emissão + 15 dias)@Transactional(readOnly=true)` na classe e `@Transactional` nos métodos de mutação em `backend/src/main/java/br/edu/ifpb/alumigest/budgets/service/BudgetService.java`.
 
 ### Contexto da Fase / Épico
 **Objetivo da User Story**: Permitir criar orçamentos, adicionar itens, aplicar descontos (% ou R$), selecionar condição de pagamento e recalcular totais em tempo real.
 
-Esta issue faz parte da entrega da **Sprint 4 (Release 1 - v1.0.0)** do AlumiGest. Deve seguir rigorosamente as diretrizes arquiteturais da Constituição do Projeto (Clean Architecture / Package-by-Feature, DTOs em Records Java, Bean Validation, BigDecimal HALF_EVEN e commits em PT-BR).
+Esta issue faz parte da entrega da **Release 1 - v1.0.0** do AlumiGest. Deve seguir rigorosamente as diretrizes arquiteturais da Constituição do Projeto (Clean Architecture / Package-by-Feature, DTOs em Records Java, Bean Validation, BigDecimal HALF_EVEN e commits em PT-BR).
 
 ---
 

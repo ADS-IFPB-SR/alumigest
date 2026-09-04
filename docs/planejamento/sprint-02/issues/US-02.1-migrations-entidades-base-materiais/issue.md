@@ -3,9 +3,8 @@
 ## 📌 Metadados da Issue
 - **ID da Tarefa**: `US-02.1`
 - **US Pai**: `US US-02`
-- **Sprint**: Sprint 02 — Catálogo de Materiais
 - **Fase**: `Phase 1: Database & Entities`
-- **Labels**: `task`, `sprint-02`, `backend`, `flyway`, `jpa`
+- **Labels**: `task`,  `backend`, `flyway`, `jpa`
 
 ## 🎯 Objetivo & Descrição
 Criar migrations Flyway V1 a V3 estruturando as tabelas de vidros, perfis, películas, ferragens e insumos unificados, além do mapeamento JPA.

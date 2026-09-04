@@ -4,14 +4,13 @@
 
 - **ID da Tarefa**: `US-15.2`
 - **US Pai**: `US-15: Gestão de Status, Prazos e Cancelamento de Pedidos`
-- **Sprint**: Sprint 05 — Aprovação de Orçamentos e Pedidos (Lock de Preços)
 - **Release**: Release 2 (v2.0.0) — Gestão de Produção & Fábrica
 - **Fase**: `Phase 4: User Story 3 - Gestão de Status e Cancelamento de Pedidos (Priority: P2)`
 - **User Story**: [US3]
 - **Sub-área**: `Geral`
 - **Execução Paralela**: ❌ Não (Execução sequencial recomendada)
 - **Arquivo / Alvo Principal**: `OrderService`
-- **Labels Sugeridas**: `sprint-05`, `release-2`, `orders`, `backend`, `java`, `user-story-3`, `cancellation`
+- **Labels Sugeridas**: `release-2`, `orders`, `backend`, `java`, `user-story-3`, `cancellation`
 
 ---
 
@@ -22,7 +21,7 @@ Implementar método `cancelarPedido(Long id, OrderCancelRequest request)` no `Or
 ### Contexto da Fase / Épico
 **Objetivo da User Story**: Permitir cancelar pedidos com justificativa obrigatória e gerenciar o ciclo de vida do pedido.
 
-Esta issue faz parte da entrega da **Sprint 5 (Release 2)** do AlumiGest. Deve seguir rigorosamente as diretrizes arquiteturais da Constituição do Projeto (Clean Architecture / Package-by-Feature no módulo `orders`, DTOs em Records Java, Bean Validation, BigDecimal HALF_EVEN e commits em PT-BR).
+Esta issue faz parte da entrega da **Release 2** do AlumiGest. Deve seguir rigorosamente as diretrizes arquiteturais da Constituição do Projeto (Clean Architecture / Package-by-Feature no módulo `ordersDTOs em Records Java, Bean Validation, BigDecimal HALF_EVEN e commits em PT-BR).
 
 ---
 

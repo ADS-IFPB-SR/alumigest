@@ -46,7 +46,7 @@
 | :--- | :--- | :--- | :--- | :--- |
 | `id` | `BIGSERIAL` | NOT NULL | PK | Identificador único |
 | `stock_item_id` | `BIGINT` | NOT NULL | FK → `stock_items(id)` | Material descartado |
-| `production_order_id` | `BIGINT` | NULL | FK → `production_orders(id)` | OP associada (opcional) |
+| `order_id` | `BIGINT` | NULL | FK → `orders(id)` | Pedido associado (opcional) |
 | `quantidade` | `NUMERIC(12,3)` | NOT NULL | CHECK > 0 | Quantidade perdida |
 | `motivo` | `VARCHAR(40)` | NOT NULL | — | Enum: QUEBRA_MANUSEIO, ERRO_MEDIDA_CORTE, DEFEITO_FABRICA_MATERIAL, AVARIA_TRANSPORTE, OUTROS |
 | `operador_nome` | `VARCHAR(100)` | NOT NULL | — | Operador que registrou |

@@ -4,14 +4,13 @@
 
 - **ID da Tarefa**: `US-13.4`
 - **US Pai**: `US-13: Aprovar Orçamento e Converter em Pedido de Venda`
-- **Sprint**: Sprint 05 — Aprovação de Orçamentos e Pedidos (Lock de Preços)
 - **Release**: Release 2 (v2.0.0) — Gestão de Produção & Fábrica
 - **Fase**: `Phase 2: Foundational (Blocking Prerequisites)`
 - **User Story**: Não aplicável (Infra/Fundação/Polish)
 - **Sub-área**: `Geral`
 - **Execução Paralela**: ✅ Sim (Pode ser executada em paralelo com outras tasks [P])
 - **Arquivo / Alvo Principal**: `backend/src/main/java/br/edu/ifpb/alumigest/orders/domain/ApprovalChannel.java`
-- **Labels Sugeridas**: `sprint-05`, `release-2`, `orders`, `backend`, `java`
+- **Labels Sugeridas**: `release-2`, `orders`, `backend`, `java`
 
 ---
 
@@ -22,7 +21,7 @@ Criar enum `ApprovalChannel` com labels em português (WHATSAPP, PRESENCIAL, TEL
 ### Contexto da Fase / Épico
 **Propósito da Fase**: Migration Flyway V9, Entidades JPA, Repositories e Enums fundamentais
 
-Esta issue faz parte da entrega da **Sprint 5 (Release 2)** do AlumiGest. Deve seguir rigorosamente as diretrizes arquiteturais da Constituição do Projeto (Clean Architecture / Package-by-Feature no módulo `orders`, DTOs em Records Java, Bean Validation, BigDecimal HALF_EVEN e commits em PT-BR).
+Esta issue faz parte da entrega da **Release 2** do AlumiGest. Deve seguir rigorosamente as diretrizes arquiteturais da Constituição do Projeto (Clean Architecture / Package-by-Feature no módulo `ordersDTOs em Records Java, Bean Validation, BigDecimal HALF_EVEN e commits em PT-BR).
 
 ---
 

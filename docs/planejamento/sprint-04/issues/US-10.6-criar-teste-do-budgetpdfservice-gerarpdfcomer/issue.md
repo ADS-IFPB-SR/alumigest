@@ -4,13 +4,12 @@
 
 - **ID da Tarefa**: `US-10.6`
 - **US Pai**: `US-10: Emitir e Exportar Orçamento em PDF - Via Comercial e WhatsApp`
-- **Sprint**: Sprint 04 — Descontos, PDF e Homologação R1
 - **Fase**: `Phase 4: User Story 2 - Emissão de PDF Comercial (Priority: P1)`
 - **User Story**: [US2]
 - **Sub-área**: `Testes Backend — PDF`
 - **Execução Paralela**: ✅ Sim (Pode ser executada em paralelo com outras tasks [P])
 - **Arquivo / Alvo Principal**: `backend/src/test/java/br/edu/ifpb/alumigest/budgets/service/BudgetPdfServiceTest.java`
-- **Labels Sugeridas**: `sprint-04`, `release-1`, `backend`, `java`, `testing`, `pdf`, `devops-docs`, `user-story-2`
+- **Labels Sugeridas**: `release-1`, `backend`, `java`, `testing`, `pdf`, `devops-docs`, `user-story-2`
 
 ---
 
@@ -21,7 +20,7 @@ Criar teste do `BudgetPdfService.gerarPdfComercial()` (verificar bytes não-vazi
 ### Contexto da Fase / Épico
 **Objetivo da User Story**: Gerar e baixar o PDF oficial do orçamento com layout profissional, incluindo logotipo, dados do cliente, itens com valores, descontos e condições comerciais. Opção de copiar resumo para WhatsApp.
 
-Esta issue faz parte da entrega da **Sprint 4 (Release 1 - v1.0.0)** do AlumiGest. Deve seguir rigorosamente as diretrizes arquiteturais da Constituição do Projeto (Clean Architecture / Package-by-Feature, DTOs em Records Java, Bean Validation, BigDecimal HALF_EVEN e commits em PT-BR).
+Esta issue faz parte da entrega da **Release 1 - v1.0.0** do AlumiGest. Deve seguir rigorosamente as diretrizes arquiteturais da Constituição do Projeto (Clean Architecture / Package-by-Feature, DTOs em Records Java, Bean Validation, BigDecimal HALF_EVEN e commits em PT-BR).
 
 ---
 

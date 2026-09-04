@@ -4,13 +4,12 @@
 
 - **ID da Tarefa**: `US-12.1`
 - **US Pai**: `US-12: Homologação Integrada e Validação da Release 1 (v1.0.0)`
-- **Sprint**: Sprint 04 — Descontos, PDF e Homologação R1
 - **Fase**: `Phase 6: User Story 4 - Homologação da Release 1 (Priority: P2)`
 - **User Story**: [US4]
 - **Sub-área**: `Geral`
 - **Execução Paralela**: ❌ Não (Execução sequencial recomendada)
 - **Arquivo / Alvo Principal**: `Conforme especificação da tarefa`
-- **Labels Sugeridas**: `sprint-04`, `release-1`, `backend`, `java`, `testing`, `user-story-4`, `homologation`
+- **Labels Sugeridas**: `release-1`, `backend`, `java`, `testing`, `user-story-4`, `homologation`
 
 ---
 
@@ -21,7 +20,7 @@ Executar `mvn clean verify` e corrigir qualquer falha nos testes unitários e de
 ### Contexto da Fase / Épico
 **Objetivo da User Story**: Validar o fluxo completo E2E da Release 1: Catálogo → Produto → Motor de Cálculo → Orçamento → Desconto → PDF.
 
-Esta issue faz parte da entrega da **Sprint 4 (Release 1 - v1.0.0)** do AlumiGest. Deve seguir rigorosamente as diretrizes arquiteturais da Constituição do Projeto (Clean Architecture / Package-by-Feature, DTOs em Records Java, Bean Validation, BigDecimal HALF_EVEN e commits em PT-BR).
+Esta issue faz parte da entrega da **Release 1 - v1.0.0** do AlumiGest. Deve seguir rigorosamente as diretrizes arquiteturais da Constituição do Projeto (Clean Architecture / Package-by-Feature, DTOs em Records Java, Bean Validation, BigDecimal HALF_EVEN e commits em PT-BR).
 
 ---
 

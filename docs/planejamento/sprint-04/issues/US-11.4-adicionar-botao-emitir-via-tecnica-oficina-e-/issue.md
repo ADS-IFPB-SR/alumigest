@@ -4,13 +4,12 @@
 
 - **ID da Tarefa**: `US-11.4`
 - **US Pai**: `US-11: Emitir Orçamento em PDF - Via Técnica de Oficina`
-- **Sprint**: Sprint 04 — Descontos, PDF e Homologação R1
 - **Fase**: `Phase 5: User Story 3 - Emissão de PDF Técnico / Oficina (Priority: P2)`
 - **User Story**: [US3]
 - **Sub-área**: `Frontend`
 - **Execução Paralela**: ❌ Não (Execução sequencial recomendada)
 - **Arquivo / Alvo Principal**: `frontend/src/pages/BudgetDetailPage.tsx`
-- **Labels Sugeridas**: `sprint-04`, `release-1`, `frontend`, `typescript`, `react`, `pdf`, `devops-docs`, `user-story-3`
+- **Labels Sugeridas**: `release-1`, `frontend`, `typescript`, `react`, `pdf`, `devops-docs`, `user-story-3`
 
 ---
 
@@ -21,7 +20,7 @@ Adicionar botão "Emitir Via Técnica (Oficina)" e função `downloadPdfTecnico(
 ### Contexto da Fase / Épico
 **Objetivo da User Story**: Gerar PDF com todas as especificações técnicas (medidas, modelos, cores, vidros, aberturas, ferragens) sem nenhum valor monetário.
 
-Esta issue faz parte da entrega da **Sprint 4 (Release 1 - v1.0.0)** do AlumiGest. Deve seguir rigorosamente as diretrizes arquiteturais da Constituição do Projeto (Clean Architecture / Package-by-Feature, DTOs em Records Java, Bean Validation, BigDecimal HALF_EVEN e commits em PT-BR).
+Esta issue faz parte da entrega da **Release 1 - v1.0.0** do AlumiGest. Deve seguir rigorosamente as diretrizes arquiteturais da Constituição do Projeto (Clean Architecture / Package-by-Feature, DTOs em Records Java, Bean Validation, BigDecimal HALF_EVEN e commits em PT-BR).
 
 ---
 

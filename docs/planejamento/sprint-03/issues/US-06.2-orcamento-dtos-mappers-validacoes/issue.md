@@ -3,9 +3,8 @@
 ## 📌 Metadados da Issue
 - **ID da Tarefa**: `US-06.2`
 - **US Pai**: `US US-06`
-- **Sprint**: Sprint 03 — Clientes, Motor de Orçamentos e Templates
 - **Fase**: `Phase 3: Budgets Architecture`
-- **Labels**: `task`, `sprint-03`, `backend`, `dto`, `mapstruct`
+- **Labels**: `task`,  `backend`, `dto`, `mapstruct`
 
 ## 🎯 Objetivo & Descrição
 Implementar DTOs imutáveis via Java Records, mappers MapStruct e validações Bean Validation (JSR-380) para criação, atualização e respostas de orçamentos.

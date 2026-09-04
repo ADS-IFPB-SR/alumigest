@@ -4,14 +4,13 @@
 
 - **ID da Tarefa**: `US-16.7`
 - **US Pai**: `US-16: Emissão do Comprovante do Pedido de Venda`
-- **Sprint**: Sprint 05 — Aprovação de Orçamentos e Pedidos (Lock de Preços)
 - **Release**: Release 2 (v2.0.0) — Gestão de Produção & Fábrica
 - **Fase**: `Phase 6: Polish & Cross-Cutting Concerns`
 - **User Story**: Não aplicável (Infra/Fundação/Polish)
 - **Sub-área**: `Geral`
 - **Execução Paralela**: ❌ Não (Execução sequencial recomendada)
 - **Arquivo / Alvo Principal**: `quickstart.md`
-- **Labels Sugeridas**: `sprint-05`, `release-2`, `orders`
+- **Labels Sugeridas**: `release-2`, `orders`
 
 ---
 
@@ -22,7 +21,7 @@ Executar validação completa do `quickstart.md` da Sprint 5 e documentar checkl
 ### Contexto da Fase / Épico
 **Propósito da Fase**: Documentação, menu e validação geral
 
-Esta issue faz parte da entrega da **Sprint 5 (Release 2)** do AlumiGest. Deve seguir rigorosamente as diretrizes arquiteturais da Constituição do Projeto (Clean Architecture / Package-by-Feature no módulo `orders`, DTOs em Records Java, Bean Validation, BigDecimal HALF_EVEN e commits em PT-BR).
+Esta issue faz parte da entrega da **Release 2** do AlumiGest. Deve seguir rigorosamente as diretrizes arquiteturais da Constituição do Projeto (Clean Architecture / Package-by-Feature no módulo `ordersDTOs em Records Java, Bean Validation, BigDecimal HALF_EVEN e commits em PT-BR).
 
 ---
 

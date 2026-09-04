@@ -3,9 +3,8 @@
 ## 📌 Metadados da Issue
 - **ID da Tarefa**: `US-08.1`
 - **US Pai**: `US US-08`
-- **Sprint**: Sprint 03 — Clientes, Motor de Orçamentos e Templates
 - **Fase**: `Phase 6: Quality & CI/CD`
-- **Labels**: `task`, `sprint-03`, `devops`, `ci-cd`, `sonarqube`
+- **Labels**: `task`,  `devops`, `ci-cd`, `sonarqube`
 
 ## 🎯 Objetivo & Descrição
 Configurar pipeline de CI/CD segregado no GitHub Actions com SonarQube Community para Backend (relatórios JaCoCo) e Frontend, com Quality Gate obrigatório.

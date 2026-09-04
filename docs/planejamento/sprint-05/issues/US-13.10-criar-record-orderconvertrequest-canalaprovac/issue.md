@@ -4,14 +4,13 @@
 
 - **ID da Tarefa**: `US-13.10`
 - **US Pai**: `US-13: Aprovar Orçamento e Converter em Pedido de Venda`
-- **Sprint**: Sprint 05 — Aprovação de Orçamentos e Pedidos (Lock de Preços)
 - **Release**: Release 2 (v2.0.0) — Gestão de Produção & Fábrica
 - **Fase**: `Phase 3: User Story 1 & 2 - Conversão de Orçamento em Pedido e Lock de Preços (Priority: P1) 🎯 MVP`
 - **User Story**: [US1]
 - **Sub-área**: `DTOs & Mapper`
 - **Execução Paralela**: ✅ Sim (Pode ser executada em paralelo com outras tasks [P])
 - **Arquivo / Alvo Principal**: `backend/src/main/java/br/edu/ifpb/alumigest/orders/dto/OrderConvertRequest.java`
-- **Labels Sugeridas**: `sprint-05`, `release-2`, `orders`, `backend`, `java`, `mvp`, `user-story-1`
+- **Labels Sugeridas**: `release-2`, `orders`, `backend`, `java`, `mvp`, `user-story-1`
 
 ---
 
@@ -22,7 +21,7 @@ Criar record `OrderConvertRequest` (canalAprovacao, dataPrevisaoEntrega, observa
 ### Contexto da Fase / Épico
 **Objetivo da User Story**: Aprovar orçamento, gerar pedido de venda oficial com código sequencial, clonar itens (deep copy) e garantir o congelamento de preços e medidas.
 
-Esta issue faz parte da entrega da **Sprint 5 (Release 2)** do AlumiGest. Deve seguir rigorosamente as diretrizes arquiteturais da Constituição do Projeto (Clean Architecture / Package-by-Feature no módulo `orders`, DTOs em Records Java, Bean Validation, BigDecimal HALF_EVEN e commits em PT-BR).
+Esta issue faz parte da entrega da **Release 2** do AlumiGest. Deve seguir rigorosamente as diretrizes arquiteturais da Constituição do Projeto (Clean Architecture / Package-by-Feature no módulo `ordersDTOs em Records Java, Bean Validation, BigDecimal HALF_EVEN e commits em PT-BR).
 
 ---
 

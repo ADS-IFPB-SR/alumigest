@@ -4,13 +4,12 @@
 
 - **ID da Tarefa**: `US-09.1`
 - **US Pai**: `US-09: Aplicar Descontos e Condições Comerciais no Orçamento`
-- **Sprint**: Sprint 04 — Descontos, PDF e Homologação R1
 - **Fase**: `Phase 1: Setup (Shared Infrastructure)`
 - **User Story**: Não aplicável (Infra/Fundação/Polish)
 - **Sub-área**: `Geral`
 - **Execução Paralela**: ❌ Não (Execução sequencial recomendada)
 - **Arquivo / Alvo Principal**: `backend/pom.xml`
-- **Labels Sugeridas**: `sprint-04`, `release-1`, `backend`, `java`, `pdf`, `devops-docs`
+- **Labels Sugeridas**: `release-1`, `backend`, `java`, `pdf`, `devops-docs`
 
 ---
 
@@ -21,7 +20,7 @@ Adicionar dependência `com.github.librepdf:openpdf:2.0.3` no `backend/pom.xml`.
 ### Contexto da Fase / Épico
 **Propósito da Fase**: Dependência do OpenPDF e recurso estático do logotipo
 
-Esta issue faz parte da entrega da **Sprint 4 (Release 1 - v1.0.0)** do AlumiGest. Deve seguir rigorosamente as diretrizes arquiteturais da Constituição do Projeto (Clean Architecture / Package-by-Feature, DTOs em Records Java, Bean Validation, BigDecimal HALF_EVEN e commits em PT-BR).
+Esta issue faz parte da entrega da **Release 1 - v1.0.0** do AlumiGest. Deve seguir rigorosamente as diretrizes arquiteturais da Constituição do Projeto (Clean Architecture / Package-by-Feature, DTOs em Records Java, Bean Validation, BigDecimal HALF_EVEN e commits em PT-BR).
 
 ---
 

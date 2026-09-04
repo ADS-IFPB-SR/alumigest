@@ -3,9 +3,8 @@
 ## 📌 Metadados da Issue
 - **ID da Tarefa**: `US-06.4`
 - **US Pai**: `US US-06`
-- **Sprint**: Sprint 03 — Clientes, Motor de Orçamentos e Templates
 - **Fase**: `Phase 3: Budgets Architecture`
-- **Labels**: `task`, `sprint-03`, `backend`, `controller`, `rest`
+- **Labels**: `task`,  `backend`, `controller`, `rest`
 
 ## 🎯 Objetivo & Descrição
 Disponibilizar endpoints REST para operações de orçamento (`POST /api/v1/budgets`, `GET /{id}`, `POST /recalcular`, `DELETE /{id}`) integrados ao GlobalExceptionHandler.

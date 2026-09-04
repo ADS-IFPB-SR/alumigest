@@ -1,12 +1,12 @@
-﻿# Implementation Plan: Sprint 7 — Lista de Corte e Ficha Técnica de Montagem
+# Implementation Plan: Sprint 7 — Lista de Corte e Ficha Técnica de Montagem
 
-**Branch**: `004-lista-corte-ficha-montagem` | **Date**: 2026-08-27 | **Spec**: [spec.md](spec.md)
+**Branch**: `004-lista-corte-ficha-montagem` | **Date**: 2026-08-27 | **Updated**: 2026-09-04 | **Spec**: [spec.md](spec.md)
 
-**Input**: Feature specification from `specs/004-lista-corte-ficha-montagem/spec.md`
+**Input**: Feature specification from `docs/planejamento/sprint-07/spec.md`
 
 ## Summary
 
-Implementar a geração e emissão do Romaneio Consolidado de Corte por Pedido e da Ficha Técnica de Montagem por Ordem de Produção (OP), exibindo medidas nominais (LxA mm), cores dos perfis, especificações de vidros, orientações de abertura e listas de ferragens, com suporte a PDF para prancheta de oficina com checkboxes de visto manual.
+Implementar a geração e emissão do Romaneio Consolidado de Corte por Pedido e da Ficha Técnica de Montagem por Item de Pedido (`OrderItem`), exibindo medidas nominais (LxA mm), cores dos perfis, especificações de vidros, orientações de abertura e listas de ferragens, com suporte a PDF para prancheta de oficina com checkboxes de visto manual.
 
 ## Technical Context
 

@@ -1,4 +1,4 @@
-﻿# Research: Sprint 8 — Estoque, Perdas e Homologação R2
+# Research: Sprint 8 — Estoque, Perdas e Homologação R2
 
 **Feature**: `005-estoque-perdas-homologacao-r2`
 **Date**: 2026-08-27
@@ -17,7 +17,7 @@
 ### Decision: `V11__create_stock_schema.sql`
 
 **Rationale**:
-- Sequencial após `V10__create_production_orders_schema.sql`.
+- Sequencial após as migrations da Sprint 05 (`V9__create_orders_schema.sql`).
 - Cria as tabelas `stock_items`, `stock_movements` e `scrap_records`.
 
 ## R3: Transações Atômicas e Concorrência

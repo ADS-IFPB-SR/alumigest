@@ -4,14 +4,13 @@
 
 - **ID da Tarefa**: `US-13.23`
 - **US Pai**: `US-13: Aprovar Orçamento e Converter em Pedido de Venda`
-- **Sprint**: Sprint 05 — Aprovação de Orçamentos e Pedidos (Lock de Preços)
 - **Release**: Release 2 (v2.0.0) — Gestão de Produção & Fábrica
 - **Fase**: `Phase 3: User Story 1 & 2 - Conversão de Orçamento em Pedido e Lock de Preços (Priority: P1) 🎯 MVP`
 - **User Story**: [US1]
 - **Sub-área**: `Frontend — Tipos, Serviços e Componentes`
 - **Execução Paralela**: ❌ Não (Execução sequencial recomendada)
 - **Arquivo / Alvo Principal**: `frontend/src/features/orders/services/orderApi.ts`
-- **Labels Sugeridas**: `sprint-05`, `release-2`, `orders`, `backend`, `java`, `frontend`, `typescript`, `react`, `mvp`, `user-story-1`
+- **Labels Sugeridas**: `release-2`, `orders`, `backend`, `java`, `frontend`, `typescript`, `react`, `mvp`, `user-story-1`
 
 ---
 
@@ -22,7 +21,7 @@ Criar serviço de API Axios em `frontend/src/features/orders/services/orderApi.t
 ### Contexto da Fase / Épico
 **Objetivo da User Story**: Aprovar orçamento, gerar pedido de venda oficial com código sequencial, clonar itens (deep copy) e garantir o congelamento de preços e medidas.
 
-Esta issue faz parte da entrega da **Sprint 5 (Release 2)** do AlumiGest. Deve seguir rigorosamente as diretrizes arquiteturais da Constituição do Projeto (Clean Architecture / Package-by-Feature no módulo `orders`, DTOs em Records Java, Bean Validation, BigDecimal HALF_EVEN e commits em PT-BR).
+Esta issue faz parte da entrega da **Release 2** do AlumiGest. Deve seguir rigorosamente as diretrizes arquiteturais da Constituição do Projeto (Clean Architecture / Package-by-Feature no módulo `ordersDTOs em Records Java, Bean Validation, BigDecimal HALF_EVEN e commits em PT-BR).
 
 ---
 

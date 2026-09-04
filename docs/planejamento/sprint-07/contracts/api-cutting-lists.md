@@ -1,7 +1,7 @@
-﻿# API Contract: Cutting Lists & Assembly Sheets REST Endpoints
+# API Contract: Cutting Lists & Assembly Sheets REST Endpoints
 
-**Base Path**: `/api/production`
-**Content-Type**: `application/json`
+**Base Path**: `/api/production`  
+**Content-Type**: `application/json`  
 
 ---
 
@@ -21,14 +21,14 @@
 
 ---
 
-### 3. GET /api/production/production-orders/{id}/assembly-sheet — Obter Ficha Técnica de Montagem da OP
+### 3. GET /api/production/order-items/{id}/assembly-sheet — Obter Ficha Técnica de Montagem do Item
 
 **Response** (200 OK): `AssemblySheetResponse`
 
 ---
 
-### 4. GET /api/production/production-orders/{id}/assembly-sheet-pdf — Download da Ficha Técnica da OP em PDF
+### 4. GET /api/production/order-items/{id}/assembly-sheet-pdf — Download da Ficha Técnica do Item em PDF
 
 **Response** (200 OK):
 - `Content-Type: application/pdf`
-- `Content-Disposition: attachment; filename="OP-2026-0001-01-ficha-montagem.pdf"`
+- `Content-Disposition: attachment; filename="PED-2026-0001-item-1-ficha-montagem.pdf"`

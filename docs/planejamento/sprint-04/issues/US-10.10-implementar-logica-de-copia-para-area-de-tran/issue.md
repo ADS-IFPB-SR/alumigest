@@ -4,13 +4,12 @@
 
 - **ID da Tarefa**: `US-10.10`
 - **US Pai**: `US-10: Emitir e Exportar Orçamento em PDF - Via Comercial e WhatsApp`
-- **Sprint**: Sprint 04 — Descontos, PDF e Homologação R1
 - **Fase**: `Phase 4: User Story 2 - Emissão de PDF Comercial (Priority: P1)`
 - **User Story**: [US2]
 - **Sub-área**: `Frontend — Ações de PDF e WhatsApp`
 - **Execução Paralela**: ❌ Não (Execução sequencial recomendada)
 - **Arquivo / Alvo Principal**: `BudgetDetailPage`
-- **Labels Sugeridas**: `sprint-04`, `release-1`, `frontend`, `typescript`, `react`, `whatsapp-integration`, `devops-docs`, `user-story-2`
+- **Labels Sugeridas**: `release-1`, `frontend`, `typescript`, `react`, `whatsapp-integration`, `devops-docs`, `user-story-2`
 
 ---
 
@@ -21,7 +20,7 @@ Implementar lógica de cópia para área de transferência (Clipboard API) e lin
 ### Contexto da Fase / Épico
 **Objetivo da User Story**: Gerar e baixar o PDF oficial do orçamento com layout profissional, incluindo logotipo, dados do cliente, itens com valores, descontos e condições comerciais. Opção de copiar resumo para WhatsApp.
 
-Esta issue faz parte da entrega da **Sprint 4 (Release 1 - v1.0.0)** do AlumiGest. Deve seguir rigorosamente as diretrizes arquiteturais da Constituição do Projeto (Clean Architecture / Package-by-Feature, DTOs em Records Java, Bean Validation, BigDecimal HALF_EVEN e commits em PT-BR).
+Esta issue faz parte da entrega da **Release 1 - v1.0.0** do AlumiGest. Deve seguir rigorosamente as diretrizes arquiteturais da Constituição do Projeto (Clean Architecture / Package-by-Feature, DTOs em Records Java, Bean Validation, BigDecimal HALF_EVEN e commits em PT-BR).
 
 ---
 

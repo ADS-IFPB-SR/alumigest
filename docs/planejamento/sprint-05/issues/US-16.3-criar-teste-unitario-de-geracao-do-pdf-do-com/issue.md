@@ -4,14 +4,13 @@
 
 - **ID da Tarefa**: `US-16.3`
 - **US Pai**: `US-16: Emissão do Comprovante do Pedido de Venda`
-- **Sprint**: Sprint 05 — Aprovação de Orçamentos e Pedidos (Lock de Preços)
 - **Release**: Release 2 (v2.0.0) — Gestão de Produção & Fábrica
 - **Fase**: `Phase 5: User Story 4 - Emissão do Comprovante do Pedido em PDF (Priority: P2)`
 - **User Story**: [US4]
 - **Sub-área**: `Geral`
 - **Execução Paralela**: ✅ Sim (Pode ser executada em paralelo com outras tasks [P])
 - **Arquivo / Alvo Principal**: `OrderPdfServiceTest`
-- **Labels Sugeridas**: `sprint-05`, `release-2`, `orders`, `backend`, `java`, `testing`, `pdf`, `user-story-4`
+- **Labels Sugeridas**: `release-2`, `orders`, `backend`, `java`, `testing`, `pdf`, `user-story-4`
 
 ---
 
@@ -22,7 +21,7 @@ Criar teste unitário de geração do PDF do comprovante no `OrderPdfServiceTest
 ### Contexto da Fase / Épico
 **Objetivo da User Story**: Emitir e baixar o PDF oficial do Comprovante do Pedido de Venda.
 
-Esta issue faz parte da entrega da **Sprint 5 (Release 2)** do AlumiGest. Deve seguir rigorosamente as diretrizes arquiteturais da Constituição do Projeto (Clean Architecture / Package-by-Feature no módulo `orders`, DTOs em Records Java, Bean Validation, BigDecimal HALF_EVEN e commits em PT-BR).
+Esta issue faz parte da entrega da **Release 2** do AlumiGest. Deve seguir rigorosamente as diretrizes arquiteturais da Constituição do Projeto (Clean Architecture / Package-by-Feature no módulo `ordersDTOs em Records Java, Bean Validation, BigDecimal HALF_EVEN e commits em PT-BR).
 
 ---
 

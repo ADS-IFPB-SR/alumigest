@@ -4,13 +4,12 @@
 
 - **ID da Tarefa**: `US-09.7`
 - **US Pai**: `US-09: Aplicar Descontos e Condições Comerciais no Orçamento`
-- **Sprint**: Sprint 04 — Descontos, PDF e Homologação R1
 - **Fase**: `Phase 2: Foundational (Blocking Prerequisites)`
 - **User Story**: Não aplicável (Infra/Fundação/Polish)
 - **Sub-área**: `Geral`
 - **Execução Paralela**: ❌ Não (Execução sequencial recomendada)
 - **Arquivo / Alvo Principal**: `backend/src/main/java/br/edu/ifpb/alumigest/budgets/domain/Budget.java`
-- **Labels Sugeridas**: `sprint-04`, `release-1`, `backend`, `java`, `devops-docs`
+- **Labels Sugeridas**: `release-1`, `backend`, `java`, `devops-docs`
 
 ---
 
@@ -21,7 +20,7 @@ Criar entidade JPA `Budget` com todos os campos, relacionamentos, auditoria (cre
 ### Contexto da Fase / Épico
 **Propósito da Fase**: Migration Flyway, Entidades JPA e Enums que são pré-requisito para TODAS as User Stories
 
-Esta issue faz parte da entrega da **Sprint 4 (Release 1 - v1.0.0)** do AlumiGest. Deve seguir rigorosamente as diretrizes arquiteturais da Constituição do Projeto (Clean Architecture / Package-by-Feature, DTOs em Records Java, Bean Validation, BigDecimal HALF_EVEN e commits em PT-BR).
+Esta issue faz parte da entrega da **Release 1 - v1.0.0** do AlumiGest. Deve seguir rigorosamente as diretrizes arquiteturais da Constituição do Projeto (Clean Architecture / Package-by-Feature, DTOs em Records Java, Bean Validation, BigDecimal HALF_EVEN e commits em PT-BR).
 
 ---
 
