@@ -4,8 +4,8 @@
 |---|---|
 | **Projeto** | AlumiGest — Sistema de Gestão para Vidraçaria e Esquadrias |
 | **Sigla** | ALG |
-| **Versão** | 1.0 |
-| **Data** | 05/08/2026 |
+| **Versão** | 2.0 |
+| **Data** | 04/09/2026 |
 
 ---
 
@@ -14,6 +14,8 @@
 | Data | Versão | Descrição | Autor |
 |---|---|---|---|
 | 05/08/2026 | 1.0 | Versão inicial do Documento de Requisitos | Ítalo Jefferson / Equipe AlumiGest |
+| 04/09/2026 | 2.0 | Alinhamento com decisões de escopo (Kanban de pedidos, estoque sem sucata, PIX e fluxo mensal) | Ítalo Jefferson / Equipe AlumiGest |
+
 
 ---
 
@@ -122,10 +124,10 @@ O sistema AlumiGest cobre os módulos de Cadastros, Orçamentos, Pedidos/PCP, Es
 | RF-036 | O sistema deve permitir converter um orçamento aprovado em pedido, **congelando** todos os dados (preços, medidas, quantidades, descontos) na data da conversão. | 🔴 Must | R2 |
 | RF-037 | O sistema deve gerar número sequencial único para pedidos no formato `PED-YYYYMMDD-NNNN`. | 🔴 Must | R2 |
 | RF-038 | O sistema deve registrar e exibir o status do pedido: **Aprovado** → **Em Produção** → **Pronto** → **Instalado/Retirado**. | 🔴 Must | R2 |
-| RF-039 | O sistema deve gerar uma **Ordem de Produção (OP)** a partir do pedido, listando todos os itens a produzir com materiais necessários. | 🔴 Must | R2 |
+| RF-039 | O sistema deve permitir acompanhar a produção diretamente a partir do Pedido de Venda e seus itens através de painel Kanban operacional, sem necessidade de emissão de Ordens de Produção (OP) individuais por peça. | 🔴 Must | R2 |
 | RF-040 | O sistema deve gerar **listas de corte de perfis de alumínio** agrupados por tipo e comprimento da barra. | 🔴 Must | R2 |
 | RF-041 | O sistema deve gerar **listas de corte de vidro** com as medidas de cada peça. | 🔴 Must | R2 |
-| RF-042 | O sistema deve gerar etiquetas de identificação por peça (número do pedido, cliente, medidas, tipo). | 🟡 Should | R2 |
+| RF-042 | O sistema deve gerar etiquetas de identificação adesivas por peça/item do pedido (código do pedido, cliente, medidas nominais, cor do alumínio, tipo de vidro e sentido de abertura). | 🟡 Should | R2 |
 
 ### 2.7 Módulo de Estoque
 
@@ -134,8 +136,8 @@ O sistema AlumiGest cobre os módulos de Cadastros, Orçamentos, Pedidos/PCP, Es
 | RF-043 | O sistema deve permitir registrar **entrada de materiais** com quantidade, fornecedor, número da nota fiscal e data de entrada. | 🔴 Must | R2 |
 | RF-044 | O sistema deve exibir o **saldo atual** de cada material (quantidade total - reservas - consumo + entradas). | 🔴 Must | R2 |
 | RF-045 | O sistema deve **reservar automaticamente** os materiais necessários quando um pedido é aprovado. | 🔴 Must | R2 |
-| RF-046 | O sistema deve permitir registrar **consumo real** de materiais ao executar a OP, dando baixa no estoque. | 🔴 Must | R2 |
-| RF-047 | O sistema deve permitir registrar **perdas e quebras** durante a produção com motivo. | 🟡 Should | R2 |
+| RF-046 | O sistema deve efetivar a **baixa automática no estoque** no início do processo de fabricação dos itens do pedido. | 🔴 Must | R2 |
+| RF-047 | O sistema deve registrar todas as entradas, reservas e saídas em **histórico cronológico (Kardex)** auditável para controle patrimonial de insumos. | 🔴 Must | R2 |
 | RF-048 | O sistema deve alertar quando o estoque de um material atingir o **estoque mínimo** configurado. | 🟡 Should | R2 |
 
 ### 2.8 Módulo Financeiro
@@ -144,9 +146,10 @@ O sistema AlumiGest cobre os módulos de Cadastros, Orçamentos, Pedidos/PCP, Es
 |---|---|---|---|
 | RF-049 | O sistema deve gerar **contas a receber** automaticamente a partir de pedidos aprovados. | 🔴 Must | R3 |
 | RF-050 | O sistema deve permitir configurar **parcelamentos** (entrada + N parcelas) com datas e valores. | 🔴 Must | R3 |
-| RF-051 | O sistema deve permitir registrar **baixa de pagamentos** com data, valor, forma de pagamento (dinheiro, PIX, cartão, boleto, cheque). | 🔴 Must | R3 |
-| RF-052 | O sistema deve exibir **fluxo de caixa** diário, semanal e mensal com entradas e saídas previstas vs. realizadas. | 🔴 Must | R3 |
+| RF-051 | O sistema deve processar a confirmação de recebimentos e **quitação automática via PIX** com webhook e registro de comprovante. | 🔴 Must | R3 |
+| RF-052 | O sistema deve exibir **fluxo de caixa mensal** consolidando receitas realizadas, saídas operacionais e saldo com comparativo da evolução do exercício anual. | 🔴 Must | R3 |
 | RF-053 | O sistema deve gerar **relatórios gerenciais**: faturamento por período, ticket médio, taxa de conversão (orçamento → pedido), ranking de clientes. | 🟡 Should | R3 |
+
 
 ### 2.9 Módulo de Instalação e OS
 
@@ -233,18 +236,21 @@ O sistema AlumiGest cobre os módulos de Cadastros, Orçamentos, Pedidos/PCP, Es
 
 ### 5.1 Requisitos × User Stories
 
-| Requisito | User Story |
-|---|---|
-| RF-001 a RF-006 | US-004 a US-006 |
-| RF-007 a RF-012 | US-007 a US-010 |
-| RF-013 a RF-015 | US-011 a US-012 |
-| RF-016 a RF-021 | US-013 a US-021 |
-| RF-022 a RF-035 | US-022 a US-034 |
-| RF-036 a RF-042 | US-035 a US-041 |
-| RF-043 a RF-048 | US-042 a US-046 |
-| RF-049 a RF-053 | US-047 a US-051 |
-| RF-054 a RF-056 | US-052 a US-054 |
+> 💡 Para consultar a equivalência detalhada entre a numeração antiga do PO e a numeração consolidada, consulte a [Tabela De-Para Oficial de User Stories](file:///c:/Users/italo/Desktop/Projects/alumigest/docs/planejamento/de-para-user-stories.md).
+
+| Requisitos Funcionais | Módulo / Área | User Stories Ativas (Planejamento) |
+|---|---|---|
+| RF-001 a RF-006 | Autenticação, Infraestrutura & Governança | `US-01`, `US-45`, `US-46` |
+| RF-007 a RF-012 | Gestão de Clientes PF e PJ | `US-04`, `US-41` |
+| RF-013 a RF-015 | Cadastro e Associação de Fornecedores | `US-02` (Catálogo Genérico) |
+| RF-016 a RF-021 | Catálogo de Materiais, Fichas & Templates | `US-02`, `US-03`, `US-05` |
+| RF-022 a RF-035 | Orçamentos, Motor de Cálculo, Descontos & PDFs | `US-06`, `US-07`, `US-08`, `US-09`, `US-10`, `US-11`, `US-12` |
+| RF-036 a RF-042 | Pedidos de Venda, Lock, Etiquetas & Kanban | `US-13`, `US-14`, `US-15`, `US-16`, `US-17`, `US-18`, `US-19`, `US-20` |
+| RF-043 a RF-048 | Gestão de Estoque, Reservas & Kardex | `US-21`, `US-22`, `US-23` |
+| RF-049 a RF-053 | Financeiro, Cobrança PIX, Recebíveis & Fluxo Mensal | `US-24`, `US-25`, `US-26`, `US-27`, `US-28`, `US-29`, `US-30` |
+| RF-054 a RF-056 | Gestão de Instalações, OS em Campo & PWA Offline | `US-31`, `US-32`, `US-33`, `US-34`, `US-38`, `US-39`, `US-40` |
 
 ---
 
-*Documento elaborado pela Ítalo Jefferson / Equipe AlumiGest — IFPB CST em ADS — Agosto/2026*
+*Documento elaborado pela Equipe AlumiGest — IFPB CST em ADS — Versão 2.0 (Setembro/2026)*
+
