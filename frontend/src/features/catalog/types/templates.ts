@@ -4,7 +4,7 @@
 
 // --- Enums ---
 
-export type DoorTemplateType = 'GIRO' | 'CORRER' | 'BASCULANTE' | 'GAVETA';
+export type DoorTemplateType = 'SWING' | 'SLIDING' | 'TILT' | 'DRAWER';
 export type MaterialCategoryType = 'GLASS' | 'PROFILE' | 'HARDWARE' | 'ROLLERS' | 'FILM';
 export type OpeningDirection = 'LEFT_TO_RIGHT' | 'RIGHT_TO_LEFT' | 'OUTSIDE' | 'INSIDE' | 'CENTER_TO_SIDES';
 export type SlidingMode = 'BOTH_SLIDING' | 'LEFT_FIXED_RIGHT_SLIDING' | 'RIGHT_FIXED_LEFT_SLIDING';
@@ -55,10 +55,10 @@ export interface TemplateConfig {
 // --- Labels e Metadados para UI ---
 
 export const DOOR_TEMPLATE_LABELS: Record<DoorTemplateType, string> = {
-  GIRO: 'Porta de Giro',
-  CORRER: 'Porta de Correr (2 Folhas)',
-  BASCULANTE: 'Basculante',
-  GAVETA: 'Frente de Gaveta',
+  SWING: 'Porta de Giro',
+  SLIDING: 'Porta de Correr (2 Folhas)',
+  TILT: 'Basculante',
+  DRAWER: 'Frente de Gaveta',
 };
 
 export const MATERIAL_CATEGORY_LABELS: Record<MaterialCategoryType, string> = {
@@ -135,10 +135,10 @@ export const GLASS_COLORS = [
 // --- Defaults inteligentes por template ---
 
 export const TEMPLATE_DEFAULT_CATEGORIES: Record<DoorTemplateType, MaterialCategoryType[]> = {
-  GIRO: ['GLASS', 'PROFILE', 'HARDWARE'],
-  CORRER: ['GLASS', 'PROFILE', 'HARDWARE', 'ROLLERS'],
-  BASCULANTE: ['GLASS', 'PROFILE', 'HARDWARE'],
-  GAVETA: ['GLASS', 'PROFILE', 'HARDWARE'],
+  SWING: ['GLASS', 'PROFILE', 'HARDWARE'],
+  SLIDING: ['GLASS', 'PROFILE', 'HARDWARE', 'ROLLERS'],
+  TILT: ['GLASS', 'PROFILE', 'HARDWARE'],
+  DRAWER: ['GLASS', 'PROFILE', 'HARDWARE'],
 };
 
 /** Quais toggles de opção são aplicáveis por tipo de template */
@@ -148,8 +148,8 @@ export const TEMPLATE_APPLICABLE_OPTIONS: Record<DoorTemplateType, {
   handle: boolean;
   drilling: boolean;
 }> = {
-  GIRO: { openingDirection: true, slidingMode: false, handle: true, drilling: true },
-  CORRER: { openingDirection: false, slidingMode: true, handle: true, drilling: false },
-  BASCULANTE: { openingDirection: false, slidingMode: false, handle: true, drilling: true },
-  GAVETA: { openingDirection: false, slidingMode: false, handle: true, drilling: false },
+  SWING: { openingDirection: true, slidingMode: false, handle: true, drilling: true },
+  SLIDING: { openingDirection: false, slidingMode: true, handle: true, drilling: false },
+  TILT: { openingDirection: false, slidingMode: false, handle: true, drilling: true },
+  DRAWER: { openingDirection: false, slidingMode: false, handle: true, drilling: false },
 };

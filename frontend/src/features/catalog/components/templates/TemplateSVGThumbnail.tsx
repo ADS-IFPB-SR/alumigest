@@ -21,7 +21,6 @@ export function TemplateSVGThumbnail({
       <div
         className={`flex items-center justify-center rounded-md bg-surface-container-low border border-dashed border-outline-variant/60 ${className}`}
         style={{ width: size, height: size }}
-        role="img"
         aria-label="Produto sem template"
       >
         <span className="material-symbols-outlined text-on-surface-variant/40" style={{ fontSize: size * 0.5 }}>

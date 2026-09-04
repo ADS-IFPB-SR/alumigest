@@ -160,9 +160,9 @@ export function Table<
           <thead className="sticky top-0 z-10">
             <tr className="bg-surface-container-low border-b border-outline-variant">
 
-              {columns.map((column, index) => (
+              {columns.map((column) => (
                 <th
-                  key={index}
+                  key={column.header}
                   className={`
                     p-xs sm:p-sm lg:p-md
                     font-label-bold
@@ -222,9 +222,9 @@ export function Table<
                   {/* =========================================
                       Colunas
                       ========================================= */}
-                  {columns.map((column, index) => (
+                  {columns.map((column) => (
                     <td
-                      key={index}
+                      key={column.header}
                       className={`
                         p-xs sm:p-sm lg:p-md
                         text-on-surface

@@ -135,7 +135,6 @@ export function ProductGeneralInfo({
               placeholder="Ex: Gavetas, Fachadas, Divisórias..."
               value={newCategoryName}
               onChange={(e) => setNewCategoryName(e.target.value)}
-              autoFocus
             />
           </div>
 

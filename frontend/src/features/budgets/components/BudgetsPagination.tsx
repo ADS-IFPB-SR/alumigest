@@ -16,16 +16,16 @@ export function BudgetsPagination({
   const startItem = totalElements === 0 ? 0 : currentPage * pageSize + 1;
   const endItem = Math.min((currentPage + 1) * pageSize, totalElements);
 
-  const getVisiblePages = (): (number | '...')[] => {
+  const getVisiblePages = (): (number | 'ellipsis-start' | 'ellipsis-end')[] => {
     if (totalPages <= 7) {
       return Array.from({ length: totalPages }, (_, i) => i);
     }
 
-    const pages: (number | '...')[] = [];
+    const pages: (number | 'ellipsis-start' | 'ellipsis-end')[] = [];
     pages.push(0);
 
     if (currentPage > 2) {
-      pages.push('...');
+      pages.push('ellipsis-start');
     }
 
     const start = Math.max(1, currentPage - 1);
@@ -36,7 +36,7 @@ export function BudgetsPagination({
     }
 
     if (currentPage < totalPages - 3) {
-      pages.push('...');
+      pages.push('ellipsis-end');
     }
 
     pages.push(totalPages - 1);
@@ -72,10 +72,10 @@ export function BudgetsPagination({
         </button>
 
         <div className="flex items-center gap-xs">
-          {getVisiblePages().map((page, idx) => {
-            if (page === '...') {
+          {getVisiblePages().map((page) => {
+            if (typeof page === 'string') {
               return (
-                <span key={`ellipsis-${idx}`} className="px-xs text-secondary text-xs select-none">
+                <span key={page} className="px-xs text-secondary text-xs select-none">
                   …
                 </span>
               );

@@ -118,12 +118,12 @@ export function DoorTemplateSvg({
       customVals.forEach(val => positionsY.push(h - val));
     }
 
-    return positionsY.map((cy, i) => {
+    return positionsY.map((cy) => {
       const cx = isVertical ? edgeX : w / 2;
       const yPos = isVertical ? cy : edgeX;
       const xPos = isVertical ? cx : cy;
       return (
-        <g key={i}>
+        <g key={`hole-${xPos}-${yPos}`}>
           <circle cx={xPos} cy={yPos} r={holeRadius} fill="#111" stroke="#fff" strokeWidth={3} />
           <circle cx={xPos} cy={yPos} r={holeRadius * 0.4} fill="#000" />
         </g>
@@ -190,23 +190,23 @@ export function DoorTemplateSvg({
 
   // --- Renderização por tipo de template ---
   const renderTemplate = () => {
-    if (templateType === 'GIRO' || templateType === 'BASCULANTE' || templateType === 'GAVETA') {
+    if (templateType === 'SWING' || templateType === 'TILT' || templateType === 'DRAWER') {
       const { hX, hY, hw, hh } = computeHandlePosition();
 
       return (
         <>
           {renderFrame(0, 0, w, h)}
-          {templateType === 'GIRO' && renderHoles(
+          {templateType === 'SWING' && renderHoles(
             handlePos === 'left' ? w - profile / 2 : profile / 2,
             true
           )}
-          {templateType === 'BASCULANTE' && renderHoles(profile / 2, false)}
+          {templateType === 'TILT' && renderHoles(profile / 2, false)}
           {renderHandle(hX, hY, hw, hh)}
         </>
       );
     }
 
-    if (templateType === 'CORRER') {
+    if (templateType === 'SLIDING') {
       const w2 = w / 2;
       const hw = handleThickness;
       const hh = handleLength;
@@ -230,10 +230,10 @@ export function DoorTemplateSvg({
   };
 
   const templateLabel = {
-    GIRO: 'Porta de Giro',
-    CORRER: 'Porta de Correr',
-    BASCULANTE: 'Basculante',
-    GAVETA: 'Frente de Gaveta',
+    SWING: 'Porta de Giro',
+    SLIDING: 'Porta de Correr',
+    TILT: 'Basculante',
+    DRAWER: 'Frente de Gaveta',
   }[templateType];
 
   return (
@@ -241,7 +241,6 @@ export function DoorTemplateSvg({
       viewBox={`${-marginX} ${-marginY} ${vbW} ${vbH}`}
       width="100%"
       height="100%"
-      role="img"
       aria-label={`Preview SVG: ${templateLabel} ${w}×${h}mm`}
       className={className}
     >

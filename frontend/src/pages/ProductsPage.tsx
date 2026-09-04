@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Table } from '../components/ui/Table';
 import { Button } from '../components/ui/Button';
@@ -8,44 +7,44 @@ import { CategoryBadges } from '../features/catalog/components/CategoryBadges';
 import { DOOR_TEMPLATE_LABELS } from '../features/catalog/types/templates';
 import type { Product } from '../features/catalog/types';
 
+const renderPreview = (row: Product) => (
+  <TemplateSVGThumbnail templateType={row.templateType} size={44} />
+);
+
+const renderName = (row: Product) => (
+  <div className="flex flex-col">
+    <span className="font-title-sm text-title-sm text-on-surface font-semibold">{row.name}</span>
+    {row.templateType && (
+      <span className="font-body-sm text-[11px] text-primary font-medium mt-[2px]">
+        {DOOR_TEMPLATE_LABELS[row.templateType]}
+      </span>
+    )}
+  </div>
+);
+
+const renderCategory = (row: Product) => (
+  <span className="font-body text-body-sm text-secondary">{row.categoryName}</span>
+);
+
+const renderRequirements = (row: Product) => (
+  <CategoryBadges categories={row.categoryRequirements} />
+);
+
+const PRODUCT_COLUMNS = [
+  { header: 'Preview', accessor: renderPreview, className: 'w-14' },
+  { header: 'Nome da Esquadria', accessor: renderName },
+  { header: 'Categoria', accessor: renderCategory },
+  { header: 'Insumos no Orçamento', accessor: renderRequirements },
+];
+
+const SKELETON_ITEMS = ['sk-1', 'sk-2', 'sk-3', 'sk-4', 'sk-5'] as const;
+
 export function ProductTab() {
   const navigate = useNavigate();
   const { data: productsData, isLoading: isLoadingProducts } = useProducts();
 
   const products = productsData?.content || [];
-
-  const columns = useMemo(() => [
-    { 
-      header: 'Preview', 
-      accessor: (row: Product) => (
-        <TemplateSVGThumbnail templateType={row.templateType} size={44} />
-      ),
-      className: 'w-14'
-    },
-    { 
-      header: 'Nome da Esquadria', 
-      accessor: (row: Product) => (
-        <div className="flex flex-col">
-          <span className="font-title-sm text-title-sm text-on-surface font-semibold">{row.name}</span>
-          {row.templateType && (
-            <span className="font-body-sm text-[11px] text-primary font-medium mt-[2px]">
-              {DOOR_TEMPLATE_LABELS[row.templateType]}
-            </span>
-          )}
-        </div>
-      )
-    },
-    { 
-      header: 'Categoria', 
-      accessor: (row: Product) => <span className="font-body text-body-sm text-secondary">{row.categoryName}</span> 
-    },
-    {
-      header: 'Insumos no Orçamento',
-      accessor: (row: Product) => (
-        <CategoryBadges categories={row.categoryRequirements} />
-      ),
-    }
-  ], []);
+  const columns = PRODUCT_COLUMNS;
 
   const handleCreate = () => {
     navigate('/produtos/novo');
@@ -65,8 +64,8 @@ export function ProductTab() {
           </div>
         </div>
         <div className="flex-1 overflow-hidden flex flex-col bg-white border border-outline-variant/60 rounded-lg shadow-sm">
-          {[...Array(5)].map((_, i) => (
-            <div key={i} className="flex items-center gap-md px-md py-sm border-b border-outline-variant/40">
+          {SKELETON_ITEMS.map((skId) => (
+            <div key={skId} className="flex items-center gap-md px-md py-sm border-b border-outline-variant/40">
               <div className="w-11 h-11 bg-surface-container-high rounded-md animate-pulse" />
               <div className="flex-1">
                 <div className="h-4 w-40 bg-surface-container-high rounded animate-pulse" />

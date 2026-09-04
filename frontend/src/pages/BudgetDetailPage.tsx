@@ -222,6 +222,9 @@ export function BudgetDetailPage() {
                           openingDirection={item.templateConfig?.openingDirection ?? 'LEFT_TO_RIGHT'}
                           handleConfig={item.handleConfig ?? { handleType: 'NONE' }}
                           drillingConfig={item.drillingConfig ?? { holeCount: 0, divisionType: 'EQUAL' }}
+                          templateName={item.productName}
+                          aluminumColor={item.templateConfig?.aluminumColor}
+                          glassFinish={item.templateConfig?.glassFinish}
                         />
                       </div>
                     )}
@@ -264,8 +267,8 @@ export function BudgetDetailPage() {
                           <p className="text-[11px] font-label font-semibold text-on-surface-variant uppercase tracking-wider mb-xs">
                             Composição de Materiais
                           </p>
-                          {item.options.map((opt, oi) => (
-                            <div key={oi} className="flex justify-between items-center text-xs text-on-surface-variant py-[2px] border-b border-outline-variant/30 last:border-0">
+                          {item.options.map((opt) => (
+                            <div key={opt.id ?? `${opt.materialId}-${opt.materialName}`} className="flex justify-between items-center text-xs text-on-surface-variant py-[2px] border-b border-outline-variant/30 last:border-0">
                               <span className="font-body text-on-surface">{opt.materialName}</span>
                               <span className="font-data-mono">
                                 {opt.quantity !== undefined ? (
