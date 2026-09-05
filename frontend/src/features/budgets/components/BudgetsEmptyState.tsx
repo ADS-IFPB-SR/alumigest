@@ -79,27 +79,37 @@ export function BudgetsEmptyState({ type, onRetry }: BudgetsEmptyStateProps) {
   );
 }
 
-export function BudgetsLoadingSkeleton() {
-  const rows = Array.from({ length: 5 }, (_, i) => i);
+const SKELETON_COL_WIDTHS = [
+  { id: 'col-code', width: 120 },
+  { id: 'col-client', width: 160 },
+  { id: 'col-date', width: 100 },
+  { id: 'col-status', width: 100 },
+  { id: 'col-items', width: 80 },
+  { id: 'col-total', width: 110 },
+  { id: 'col-actions', width: 100 },
+] as const;
 
+const SKELETON_ROWS = ['row-1', 'row-2', 'row-3', 'row-4', 'row-5'] as const;
+
+export function BudgetsLoadingSkeleton() {
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       <div className="overflow-hidden">
         <div className="flex gap-md p-sm bg-surface-container-low border-b border-outline-variant">
-          {[120, 160, 100, 100, 80, 110, 100].map((w, i) => (
+          {SKELETON_COL_WIDTHS.map((col) => (
             <div
-              key={i}
+              key={col.id}
               className="h-4 bg-surface-container-high rounded animate-pulse"
-              style={{ width: `${w}px` }}
+              style={{ width: `${col.width}px` }}
             />
           ))}
         </div>
 
-        {rows.map((i) => (
+        {SKELETON_ROWS.map((rowId, index) => (
           <div
-            key={i}
+            key={rowId}
             className="flex gap-md p-sm border-b border-outline-variant/40"
-            style={{ animationDelay: `${i * 75}ms` }}
+            style={{ animationDelay: `${index * 75}ms` }}
           >
             <div className="h-4 bg-surface-container-high/70 rounded animate-pulse" style={{ width: '120px' }} />
             <div className="h-4 bg-surface-container-high/70 rounded animate-pulse" style={{ width: '150px' }} />

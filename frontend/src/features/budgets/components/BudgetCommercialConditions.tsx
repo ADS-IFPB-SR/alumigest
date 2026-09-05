@@ -24,6 +24,8 @@ interface BudgetCommercialConditionsProps {
  * Responsabilidade semântica separada de BudgetFinancialSummary,
  * que cuida apenas dos valores derivados e da ação final de salvar.
  */
+const DEFAULT_ERRORS: Record<string, string> = {};
+
 export const BudgetCommercialConditions: React.FC<BudgetCommercialConditionsProps> = ({
   laborCost,
   onLaborCostChange,
@@ -34,7 +36,7 @@ export const BudgetCommercialConditions: React.FC<BudgetCommercialConditionsProp
   commercialConditions,
   onCommercialConditionsChange,
   subtotal,
-  errors = {},
+  errors = DEFAULT_ERRORS,
 }) => {
   const handleLaborCostChange = (str: string) => {
     const cleaned = str.replace(',', '.').replace(/[^0-9.]/g, '');
