@@ -6,34 +6,98 @@ O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.
 
 ---
 
-## [Unreleased] — Sprint 02 (Em Andamento)
-
-### 🐳 Infraestrutura & Setup
-- **Dockerização (Issue #20):** Configuração local unificada através do `docker-compose.yml` provendo o `PostgreSQL 16` e interface visual do `Adminer`.
-- **Flyway Migrations (Issues #21, #22):** Modelagem e rastreamento completo de banco relacional na pasta `/db/migration` (V1 a V6). Implementadas migrações de estrutura (DDL) e inserções automáticas iniciais de carga de Categorias e constraints exclusivas.
-
-### 📚 Documentação & Arquitetura (Docs)
-- **Pacote Completo de Documentação (Elaborado por Ítalo Jefferson):** Integração de 28 arquivos técnicos e diagramas elaborados por **Ítalo Jefferson** em `/docs`, cobrindo Requisitos (`REQ`, `UCS`, `RN`, `PBL`), Análise & Arquitetura (`API`, `ARQ`, `DCC`, `MER`, `DER`), Implementação (`GIT`, `PAD`), Testes de Aceitação (`TEA-Sprint01`, `TEA-Sprint02`), Gestão de Riscos (`DRI`, `PPJ`, `PIT`), Atas e Diagramas SVG (Deploy OCI, CI/CD Actions e Fluxos BPMN).
-- **Desacoplamento de Produto Final e Alinhamento de Sprints:** Atualização do `PBL`, `PIT-Sprint02` e `RN-Regras_de_Calculo` formalizando os **Templates de Produtos Finais (Portas e Esquadrias Compostas)** como escopo da Sprint 3, e mantendo a Sprint 2 com foco total no Catálogo de Materiais e Clientes.
-- **Ata de Planejamento da Sprint 2:** Criação dos arquivos `ATA-Sprint_02_Planning.md` e `ATA-Sprint_02_Planning.docx` (Redação: Guilherme Kauã / Revisão: Nichollas Cavalcante) com os alinhamentos operacionais da Alumiportas, decomposição da User Story `#4` e distribuição da equipe.
-- **Modelagem DER do Catálogo:** Criação do documento `DER-Catalogo_Materiais.md` detalhando o padrão *Type-Object Pattern* (`tb_material_groups` e `tb_materials`), dicionário de dados, extensibilidade para marcenaria e script DDL.
-
-### 💻 Backend (Spring Boot)
-- **Catálogo Genérico de Insumos (Issues #11, #12, #13, #14, #15):** Implementação do padrão *Type-Object Pattern* permitindo CRUD completo de Vidros, Perfis de Alumínio, Películas e Ferragens com campos dinâmicos e controle de exclusão lógica (soft delete).
-- **Validação e Segurança:** Inclusão de tratamentos globais de exceção (`GlobalExceptionHandler`), padronização de formatação do código NCM (`@Pattern` exigindo exatos 8 dígitos) para todos os materiais e validação contra Fichas Técnicas vazias e preços negativos.
-- **Swagger / OpenAPI:** Configuração do pacote `springdoc` e mapeamento de rotas e Responses via anotações dinâmicas `@Tag` e `@Operation`.
-- **Padronização de Respostas:** Criação e integração dos objetos genéricos padrão corporativo `ApiResponse<T>` e `PageResponse<T>`.
-- **Cadastro de Ficha Técnica de Produtos (BOM) (Issues #30, #31):** Migração do campo `category` para uma nova entidade e tabela dinâmica `ProductCategory` (Migration `V4__create_product_categories.sql`) e implementação do motor de Fichas Técnicas (`ProductItem`) permitindo o agrupamento inteligente de itens iguais e amarração entre produto final e insumo.
-- **Suite de Testes (Issue #17):** Escrita e refatoração massiva de testes para *Controllers* e *Services* de materiais e produtos. Resolvidos problemas de incompatibilidade de *Mocks* In-line na JVM do Java 25 através da extração de interfaces limpas (`IGlassService`, `IProductService`). Aprovado com sucesso (`BUILD SUCCESS`) e com alta cobertura.
-
-### 🎨 Frontend (React/TypeScript)
-- **Stack Consolidada:** Adoção de `@tanstack/react-query` para o motor de busca HTTP e cache, `react-router-dom` para navegação SPA e `lucide-react` para iconografia sem perda de definição.
-- **Telas de Gestão do Catálogo (PWA) (Issue #16):** Desenvolvimento de abas (`Tabs`) modulares (`MaterialsCatalog.tsx`) com interface unificada e responsiva (Tailwind CSS Vanilla) para cadastro e visualização de todos os tipos de materiais utilizando Modais reutilizáveis (`MaterialFormModal.tsx`).
-- **Tela de Ficha Técnica (Issue #32):** Implementação da interface completa do construtor de Produtos (`ProductBuilderPage.tsx`, `ProductTechSheet.tsx`, `ProductCostSummary.tsx`) bloqueando o cadastro de itens inválidos ou quantidades além de `99.999`.
+## [Unreleased] — Sprint 04 (Em Planejamento / Execução)
 
 ### 🚀 Planejado / Em Desenvolvimento
-- Módulo de Orçamentos e Clientes (Sprint 2 - Restante).
-- Deploy na Oracle Cloud Infrastructure (OCI).
+- **Aplicação de Descontos e Condições Comerciais (US-09 / Issue #133):** Descontos em % e R$, taxas de frete e instalação, validade da proposta e recálculo reativo.
+- **Emissão de Orçamento em PDF — Via Comercial e WhatsApp (US-10 / Issue #134):** Geração de proposta formal em PDF via OpenPDF e formatação de texto para envio via WhatsApp.
+- **Emissão de Orçamento em PDF — Via Técnica de Oficina (US-11 / Issue #135):** Romaneio e layout técnico de produção com cotas milimétricas, sentidos de abertura e supressão de valores financeiros.
+- **Homologação Integrada da Release 1 v1.0.0 (US-12 / Issue #136):** Testes integrados ponta a ponta (Insumos ➔ Produto ➔ Orçamento ➔ PDF Comercial/Técnico).
+
+### 📊 Governança & Planejamento
+- **Matriz Mestre de Estimativas do Backlog Geral (US-01 a US-45):** Elaboração do documento canônico [`docs/planejamento/estimativa-backlog-geral.md`](docs/planejamento/estimativa-backlog-geral.md) com pontuação pela escala Fibonacci (1 a 13 pts), justificativas arquiteturais e espaço para consenso de Planning Poker da equipe (total sugerido: 279 pts / média de ~17.4 pts/sprint).
+- **Consolidação do Escopo:** Formalização do descarte de 7 histórias de negócio (antigas US-17, US-19, US-23, US-25, US-34, US-36 e US-37), mantendo o fluxo ágil focado em 45 User Stories ativas cadastradas no GitHub remoto.
+
+---
+
+## [0.3.0] - 2026-09-01 — Baseline Sprint 03 (B-ALG-v0.3.0-S03-01)
+
+### ✨ Adicionado (Added)
+- **Motor de Cálculo Físico e Precificação de Orçamentos (Backend - PR #116, #117):**
+  - Implementação do padrão de projeto *Strategy* para cálculo dinâmico de materiais (`GlassCalculator`, `AluminumCalculator`, `FilmCalculator`, `HardwareCalculator` instanciados via `MaterialCalculatorFactory`).
+  - Fórmulas matemáticas paramétricas considerando área de vidro em $m^2$ (com margem de segurança e arredondamento), perfis lineares com perímetro e montantes ($4W+6H$), componentes de ferragens e películas.
+  - Endpoints REST para `/api/v1/budgets` e `/api/v1/budgets/recalcular` com paginação, filtros e cálculo prévio de propostas.
+- **Entidades e Máquina de Estados de Orçamentos (Backend - PR #108, #112, #113):**
+  - Criação do modelo relacional de propostas: `tb_budgets`, `tb_budget_items`, `tb_budget_item_options` e `tb_budget_item_components` com chaves estrangeiras e integridade referencial.
+  - Ciclo de vida da proposta com enum `BudgetStatus`: `DRAFT` (Rascunho), `SENT` (Enviado), `APPROVED` (Aprovado), `REJECTED` (Rejeitado) e `CANCELLED` (Cancelado).
+  - Camada de serviço de orçamentos com DTOs tipados, mappers e validações de consistência.
+- **Gestão de Clientes PF e PJ (Backend - PR #79):**
+  - Criação da tabela `tb_customers` (Migration Flyway `V7`).
+  - Validação estrita de documentos CPF e CNPJ via Jakarta Bean Validation.
+  - Endpoints REST `/api/v1/customers` com paginação, ordenação e busca instantânea por nome ou documento.
+- **Templates Paramétricos de Esquadrias (Backend - PR #104):**
+  - Suporte a templates paramétricos com tipos `JSONB` no PostgreSQL mapeados via Hibernate `@JdbcTypeCode(SqlTypes.JSON)` (Migration Flyway `V8`).
+  - Definição estrutural de modelos para Portas, Janelas, Maxim-ar e Basculantes.
+- **Wizard de Orçamentos e Seletor de Clientes (Frontend - PR #110):**
+  - Desenvolvimento do fluxo wizard em etapas (`BudgetWizardPage`, `WindowBuilderModal`) com layout em 2 colunas.
+  - Pré-visualização gráfica paramétrica SVG de esquadrias com cotas dinâmicas e suporte a modo de exibição em tela cheia.
+  - Componentes `CustomerSelector` e `CustomerQuickCreateModal` integrados diretamente à API de clientes.
+- **Listagem de Orçamentos (Frontend - PR #111):**
+  - Tela de listagem e acompanhamento comercial (`BudgetsListPage`) com paginação, filtros por status e busca textual.
+- **Pipeline CI/CD com SonarQube Self-Hosted (PR #78):**
+  - Workflows automatizados no GitHub Actions (`ci.yml`, `sonar-backend.yml`, `sonar-frontend.yml`) com quality gate rigoroso.
+  - Geração e publicação de relatórios independentes de cobertura de testes: JaCoCo para o backend e lcov para o frontend.
+  - Configuração explícita do plugin `sonar-maven-plugin` no `pom.xml`.
+- **Testes Automatizados E2E e Integração (PR #103, #115, #118):**
+  - Criação de 23 suítes de testes automatizados Cypress E2E cobrindo o catálogo de materiais (vidros, perfis, ferragens, películas) e o fluxo integrado de orçamentos.
+  - 141 testes automatizados JUnit 5 no backend atingindo 93,4% de cobertura no SonarQube.
+- **Consolidação de Governança e Engenharia de Software (PR #74, #121):**
+  - Sincronização e atualização de 28 documentos técnicos institucionais em `/docs`: `REQ` v2.0, `RN` v3.0, `UCS` v2.0, `API` v3.0, `MER/DER` v3.0, `ARQ` v2.0 e `PAD` v2.0.
+  - Atas completas de Planning, Dailies, Review e Retrospectiva da Sprint 3 em `/docs/projeto-001/001-atas-reuniao/`.
+  - Homologação de 20 cenários de aceitação documentados no `TEA-03`.
+
+### 🔄 Modificado / Refatorado (Changed)
+- **Desacoplamento de Custo de Mão de Obra (PR #119, #120):**
+  - Remoção da coluna e atributo `labor_cost` da tabela `tb_products` (Migration Flyway `V10`), convertendo o catálogo de produtos em modelos paramétricos base e transferindo a composição de mão de obra para a proposta comercial (`BudgetItem`).
+- **Padronização de Nomenclatura:**
+  - Unificação de identificadores e status de orçamentos para inglês nos contratos de API e modelos TypeScript (PR #111).
+
+---
+
+## [0.2.2] - 2026-08-20 — Hotfix Criptografia HTTP (Tag v0.2.2-sprint2)
+
+### 🐛 Corrigido (Fixed)
+- **Fallback de Identificadores de UI (Frontend - PR #59, #60):** Implementação de fallback para `Math.random()` na geração de IDs de interface quando `crypto.randomUUID()` é bloqueado pelo navegador em ambientes de rede local ou conexões HTTP sem certificado SSL.
+
+---
+
+## [0.2.1] - 2026-08-19 — Dockerização Completa e Suporte Coolify (Tag v0.2.1-sprint2)
+
+### ✨ Adicionado (Added)
+- **Dockerização Multi-Stage do Backend (PR #55):** Dockerfile otimizado com Java 21 / Spring Boot, Maven e Eclipse Temurin.
+- **Dockerização Multi-Stage do Frontend (PR #55):** Dockerfile com Node.js/Vite e Nginx configurado com proxy reverso e suporte a rotas SPA (`try_files $uri $uri/ /index.html`).
+- **Orquestração com Docker Compose (PR #55):** Arquivo `docker-compose.yml` integrando os serviços de Backend, Frontend, PostgreSQL 16 e pgAdmin, acompanhado de `.env.example`.
+
+### 🐛 Corrigido (Fixed)
+- **Compatibilização de Portas para Coolify (PR #55, #58):** Ajuste nos binds e exposição de portas para evitar conflitos com a porta do host em ambientes de deploy automatizado.
+- **Tratamento de Payload da API no Frontend (PR #56):** Correção no unwrap dos dados recebidos da API nos módulos de produtos e categorias para compatibilidade estrita com o envelope `ApiResponse<T>`.
+- **Build TypeScript no CI (PR #55):** Remoção de imports React não utilizados que causavam falhas de compilação estrita no pipeline.
+
+---
+
+## [0.2.0] - 2026-08-18 — Baseline Sprint 02: Catálogo de Materiais e Fichas Técnicas (B-ALG-v0.2.0-S02-01 / Tag v0.2.0-sprint2)
+
+### ✨ Adicionado (Added)
+- **Catálogo Genérico de Insumos (Backend - Issues #11, #12, #13, #14, #15):** Implementação do padrão *Type-Object Pattern* permitindo CRUD completo de Vidros, Perfis de Alumínio, Películas e Ferragens com campos dinâmicos e controle de exclusão lógica (soft delete).
+- **Cadastro de Ficha Técnica de Produtos (BOM) (Backend - Issues #30, #31):** Migração do campo `category` para a nova entidade `ProductCategory` (Migration Flyway `V4`) e implementação do motor de Fichas Técnicas (`ProductItem`) permitindo agrupamento de itens e amarração entre produto final e insumos.
+- **Validação e Tratamento Global de Erros (Backend):** Implementação de `GlobalExceptionHandler`, validação estrita de código NCM (`@Pattern` exigindo exatos 8 dígitos numéricos) e bloqueio de fichas técnicas vazias e preços negativos.
+- **Documentação Swagger / OpenAPI:** Configuração do `springdoc-openapi` com anotações `@Tag` e `@Operation`.
+- **Padronização de Respostas (Backend):** Criação das classes genéricas utilitárias `ApiResponse<T>` e `PageResponse<T>`.
+- **Interface de Gestão do Catálogo (Frontend - Issue #16, PR #40):** Telas em abas modulares (`MaterialsCatalog.tsx`) com interface unificada e responsiva em Tailwind CSS para gestão de insumos utilizando modais reutilizáveis.
+- **Interface de Ficha Técnica de Produtos (Frontend - Issue #32, PR #51):** Interface completa do construtor de produtos (`ProductBuilderPage.tsx`, `ProductTechSheet.tsx`, `ProductCostSummary.tsx`).
+- **Validação com Zod e React Hook Form (Frontend - PR #77):** Refatoração dos modais do catálogo com validação em tempo real e correção de máscara na tabela de ferragens.
+- **Pipeline CI e Suíte de Testes (Issue #17, PR #53):** Escrita e refatoração de testes para *Controllers* e *Services* de materiais e produtos com extração de interfaces (`IGlassService`, `IProductService`) e execução com sucesso no pipeline de CI.
+- **Documentação Técnica e Governança:** Elaboração da Ata de Planning da Sprint 02 (`ATA-Sprint_02_Planning.md`), DER do Catálogo (`DER-Catalogo_Materiais.md`) e casos de teste de aceitação `TEA-Sprint02`.
 
 ---
 
