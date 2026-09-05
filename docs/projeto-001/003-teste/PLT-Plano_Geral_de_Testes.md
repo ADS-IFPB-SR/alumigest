@@ -58,6 +58,7 @@ Um item só é considerado pronto e elegível para merge quando:
 2. **Cobertura de linhas de código superior a 80%** nos serviços críticos de negócio (`BudgetService`, `BudgetQuantityService`, `ProductService`).
 3. **Specs Cypress executando com 100% de sucesso** em modo headless (`npm run test:e2e`).
 4. **Relatório de Testes (RET) gerado e arquivado** na pasta da respectiva sprint em `docs/projeto-001/003-teste/`.
+5. **Defeitos e incidentes catalogados** no [`RBD-Registro_de_Bugs_e_Defeitos.md`](RBD-Registro_de_Bugs_e_Defeitos.md) e reportados via template interativo YAML (`.github/ISSUE_TEMPLATE/bug_report.yml`).
 
 ---
 

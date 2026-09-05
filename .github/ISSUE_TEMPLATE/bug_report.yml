@@ -1,0 +1,119 @@
+name: 🐞 Relato de Bug (Defeito)
+description: Registre uma falha, comportamento inesperado ou erro no AlumiGest.
+title: "[BUG]: "
+labels: ["fix", "triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ### 🛡️ Boas Práticas de Relato de Bugs — AlumiGest
+        Obrigado por nos ajudar a manter o sistema robusto, confiável e estável!
+        Antes de submeter, certifique-se de que os dados sensíveis foram mascarados e forneça o máximo de detalhes para reprodução.
+
+  - type: dropdown
+    id: module
+    attributes:
+      label: 📦 Módulo Afetado
+      description: Selecione o módulo funcional ou técnico onde o problema ocorreu.
+      options:
+        - "📦 Catálogo de Materiais (Vidros, Perfis, Ferragens, Películas)"
+        - "📐 Templates de Produtos e Fichas Técnicas (BOM)"
+        - "💰 Motor de Orçamentos, Precificação e Wizard"
+        - "👥 Gestão de Clientes (PF e PJ)"
+        - "📄 Emissão de Documentos e PDFs (Comercial / Técnico / OS)"
+        - "📱 Modo PWA / Suporte Offline / Service Worker"
+        - "🐳 Docker / PostgreSQL / Infraestrutura / Coolify"
+        - "⚙️ Pipeline CI/CD / SonarQube / Testes Automatizados"
+        - "🎨 Layout, Navegação e Acessibilidade (Frontend Geral)"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: 🚨 Nível de Severidade (Prioridade)
+      description: Classificação objetiva do impacto da falha no sistema.
+      options:
+        - "P1 - Crítico (Sistema inoperante, tela vermelha/crash, perda de dados)"
+        - "P2 - Alto (Funcionalidade principal bloqueada sem contorno disponível)"
+        - "P3 - Médio (Falha funcional relevante, mas existe contorno operacional)"
+        - "P4 - Baixo (Inconsistência visual, erro estético, alinhamento ou typo textual)"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: 📝 Descrição do Problema
+      description: Um resumo claro e objetivo do comportamento incorreto observado.
+      placeholder: "Ex: Ao submeter o formulário de orçamentos com dimensões 1200x1000mm, a aplicação retorna erro 500..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction_steps
+    attributes:
+      label: 🔄 Passos para Reproduzir
+      description: Liste a sequência exata de ações necessárias para reproduzir a falha.
+      placeholder: |
+        1. Acessar a tela '/orcamentos/novo'
+        2. Selecionar o cliente 'Vidraçaria Exemplo'
+        3. Configurar esquadria Janela 2 Folhas (1200 x 1000 mm)
+        4. Clicar em 'Calcular e Salvar'
+        5. Observar o erro na tela
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected_behavior
+    attributes:
+      label: 🎯 Comportamento Esperado
+      description: O que deveria acontecer na ausência do erro?
+      placeholder: "Ex: O sistema deve calcular o preço total e avançar para a etapa de confirmação do orçamento sem erros."
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: 💻 Contexto de Ambiente
+      description: Informações do ambiente onde o problema foi detectado.
+      value: |
+        - **Ambiente:** [ ] Local (Docker/Vite) | [ ] Homologação/Staging | [ ] Produção
+        - **Navegador / SO:** Google Chrome / Windows 11
+        - **Branch / Commit:** `develop`
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs_payload
+    attributes:
+      label: 📄 Payload da Requisição ou Logs de Erro (Sanitizado)
+      description: Anexe o JSON da requisição/resposta ou o stacktrace do Spring Boot / Console do Navegador. Não exponha senhas, tokens JWT ou CPFs reais!
+      render: json
+      placeholder: |
+        {
+          "client": { "id": "uuid-aqui" },
+          "items": [...]
+        }
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: 📸 Evidências / Capturas de Tela
+      description: Arraste ou cole aqui prints da tela, gráficos ou mensagens de erro do console (DevTools).
+      placeholder: "Arraste as imagens aqui ou cole URLs de evidência..."
+
+  - type: checkboxes
+    id: checkboxes
+    attributes:
+      label: ✅ Checklist de Confirmação e Governança
+      options:
+        - label: Busquei nas issues abertas e confirmei que este bug não está duplicado.
+          required: true
+        - label: Confirmo que mascarei dados sensíveis (tokens de autenticação, senhas, chaves de API).
+          required: true
+        - label: O relato contém passos determinísticos suficientes para a equipe reproduzir a falha.
+          required: true
