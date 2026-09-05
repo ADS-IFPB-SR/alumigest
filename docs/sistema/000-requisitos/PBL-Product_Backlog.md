@@ -40,7 +40,7 @@ gantt
 
 ---
 
-## 2. 📦 Estrutura de Épicos e User Stories Ativas (US-01 a US-46)
+## 2. 📦 Estrutura de Épicos e User Stories Ativas (US-01 a US-45)
 
 ### 🟢 Release 1 (v1.0.0) — Fundação, Catálogo & Orçamentos Comerciais
 
@@ -96,28 +96,27 @@ gantt
 * **EP-11: Gestão Financeira & Fluxo de Caixa Consolidado (Sprint 11)**
   * `US-30`: Acompanhar Fluxo de Caixa Mensal
 * **EP-12: Instalações & Ordens de Serviço em Campo (Sprint 12)**
-  * `US-31`: Agendar Instalação e Gerar Ordem de Serviço (OS)
-  * `US-32`: Executar e Concluir OS em Campo com Registro Fotográfico (PWA)
-  * `US-33`: Visualizar Calendário de Instalações e Prevenção de Conflitos
-  * `US-34`: Emitir Ordem de Serviço (OS) em PDF
+  * `US-31`: Executar e Concluir OS em Campo com Registro Fotográfico (PWA)
+  * `US-32`: Visualizar Calendário de Instalações e Prevenção de Conflitos
+  * `US-33`: Emitir Ordem de Serviço (OS) em PDF
 * **EP-13: Inteligência de Negócio, KPIs & DRE (Sprint 13)**
-  * `US-35`: Visualizar Dashboard Executivo e Indicadores (KPIs) Comerciais
-  * `US-36`: Apurar DRE Gerencial (Competência e Caixa)
-  * `US-37`: Exportar Relatórios Executivos em PDF e Planilhas CSV/Excel
+  * `US-34`: Visualizar Dashboard Executivo e Indicadores (KPIs) Comerciais
+  * `US-35`: Apurar DRE Gerencial (Competência e Caixa)
+  * `US-36`: Exportar Relatórios Executivos em PDF e Planilhas CSV/Excel
 * **EP-14: Operação Offline & Sincronização PWA (Sprint 14)**
-  * `US-38`: Instalar PWA e Consultar Pedidos e OS Offline via IndexedDB
-  * `US-39`: Sincronizar Fila de Alterações e Fotos em Segundo Plano
-  * `US-40`: Comprimir Imagens no Dispositivo e Otimizar Performance Web
+  * `US-37`: Instalar PWA e Consultar Pedidos e OS Offline via IndexedDB
+  * `US-38`: Sincronizar Fila de Alterações e Fotos em Segundo Plano
+  * `US-39`: Comprimir Imagens no Dispositivo e Otimizar Performance Web
 * **EP-15: Carga de Dados, Treinamento & Homologação R3 (Sprint 15)**
-  * `US-41`: Executar Carga Inicial de Dados e Importador de Clientes via CSV
-  * `US-42`: Homologação Integrada Ponta a Ponta da Release 3 (v3.0.0)
-  * `US-43`: Disponibilizar Guias de Treinamento por Perfil e Central de Ajuda
+  * `US-40`: Executar Carga Inicial de Dados e Importador de Clientes via CSV
+  * `US-41`: Homologação Integrada Ponta a Ponta da Release 3 (v3.0.0)
+  * `US-42`: Disponibilizar Guias de Treinamento por Perfil e Central de Ajuda
 
 ---
 
 ### 🟣 Sustentação & Governança Corporativa
 
 * **EP-16: Estabilização, Recuperação de Desastres & Auditoria (Sprint 16)**
-  * `US-44`: Executar Rotinas de Backup Automático e Disaster Recovery
-  * `US-45`: Registrar Trilha de Auditoria Imutável para Ações Críticas
-  * `US-46`: Monitorar Saúde do Sistema com Actuator e Publicar Documentação
+  * `US-43`: Executar Rotinas de Backup Automático e Disaster Recovery
+  * `US-44`: Registrar Trilha de Auditoria Imutável para Ações Críticas
+  * `US-45`: Monitorar Saúde do Sistema com Actuator e Publicar Documentação

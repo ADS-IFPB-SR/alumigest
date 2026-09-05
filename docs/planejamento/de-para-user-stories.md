@@ -1,6 +1,6 @@
 # 🗺️ Tabela De-Para / Mapeamento de User Stories — AlumiGest
 
-Este documento é a **referência oficial de sincronização** entre a numeração antiga das User Stories (utilizada pelo Product Owner e nas branches legadas) e a numeração atualizada após os reajustes de escopo das Sprints 06, 07, 08 e 11.
+Este documento é a **referência oficial de sincronização** entre a numeração antiga das User Stories (utilizada pelo Product Owner e nas branches legadas) e a numeração atualizada após os reajustes de escopo das Sprints 06, 07, 08, 11 e 12.
 
 > 💡 **Como usar**: Para qualquer alteração futura ou comunicação com o PO, consulte esta tabela para correlacionar imediatamente a **US Antiga (PO)** com a **US Atual (Planejamento)** e a **Issue no GitHub Remoto**.
 
@@ -46,22 +46,22 @@ Este documento é a **referência oficial de sincronização** entre a numeraç�
 | **US-34** | ❌ **DESCARTADA** | Sprint 11 | Realizar Baixa Financeira Manual com Parciais, Juros e Descontos | — | 🚫 Removida do Escopo |
 | **US-35** | **US-30** | Sprint 11 | Acompanhar Fluxo de Caixa Mensal | [#155](https://github.com/ADS-IFPB-SR/alumigest/issues/155) | 🔄 Adaptada (Apenas Mensal, -5) |
 | **US-36** | ❌ **DESCARTADA** | Sprint 11 | Emitir Relatório de Fechamento de Caixa Diário em PDF | — | 🚫 Removida do Escopo |
-| **US-37** | **US-31** | Sprint 12 | Agendar Instalação e Gerar Ordem de Serviço (OS) | *Backlog* | 🔄 Renumerada (-6) |
-| **US-38** | **US-32** | Sprint 12 | Executar e Concluir OS em Campo com Registro Fotográfico (PWA) | *Backlog* | 🔄 Renumerada (-6) |
-| **US-39** | **US-33** | Sprint 12 | Visualizar Calendário de Instalações e Prevenção de Conflitos | *Backlog* | 🔄 Renumerada (-6) |
-| **US-40** | **US-34** | Sprint 12 | Emitir Ordem de Serviço (OS) em PDF | *Backlog* | 🔄 Renumerada (-6) |
-| **US-41** | **US-35** | Sprint 13 | Visualizar Dashboard Executivo e Indicadores (KPIs) Comerciais | *Backlog* | 🔄 Renumerada (-6) |
-| **US-42** | **US-36** | Sprint 13 | Apurar DRE Gerencial (Competência e Caixa) | *Backlog* | 🔄 Renumerada (-6) |
-| **US-43** | **US-37** | Sprint 13 | Exportar Relatórios Executivos em PDF e Planilhas CSV/Excel | *Backlog* | 🔄 Renumerada (-6) |
-| **US-44** | **US-38** | Sprint 14 | Instalar PWA e Consultar Pedidos e OS Offline via IndexedDB | *Backlog* | 🔄 Renumerada (-6) |
-| **US-45** | **US-39** | Sprint 14 | Sincronizar Fila de Alterações e Fotos em Segundo Plano | *Backlog* | 🔄 Renumerada (-6) |
-| **US-46** | **US-40** | Sprint 14 | Comprimir Imagens no Dispositivo e Otimizar Performance Web | *Backlog* | 🔄 Renumerada (-6) |
-| **US-47** | **US-41** | Sprint 15 | Executar Carga Inicial de Dados e Importador de Clientes via CSV | *Backlog* | 🔄 Renumerada (-6) |
-| **US-48** | **US-42** | Sprint 15 | Homologação Integrada Ponta a Ponta da Release 3 (v3.0.0) | *Backlog* | 🔄 Renumerada (-6) |
-| **US-49** | **US-43** | Sprint 15 | Disponibilizar Guias de Treinamento por Perfil e Central de Ajuda | *Backlog* | 🔄 Renumerada (-6) |
-| **US-50** | **US-44** | Sprint 16 | Executar Rotinas de Backup Automático e Disaster Recovery | *Backlog* | 🔄 Renumerada (-6) |
-| **US-51** | **US-45** | Sprint 16 | Registrar Trilha de Auditoria Imutável para Ações Críticas | *Backlog* | 🔄 Renumerada (-6) |
-| **US-52** | **US-46** | Sprint 16 | Monitorar Saúde do Sistema com Actuator e Publicar Documentação | *Backlog* | 🔄 Renumerada (-6) |
+| **US-37** | ❌ **DESCARTADA** | Sprint 12 | Agendar Instalação e Gerar Ordem de Serviço (OS) | — | 🚫 Removida do Escopo |
+| **US-38** | **US-31** | Sprint 12 | Executar e Concluir OS em Campo com Registro Fotográfico (PWA) | [#156](https://github.com/ADS-IFPB-SR/alumigest/issues/156) | 🔄 Renumerada (-7) |
+| **US-39** | **US-32** | Sprint 12 | Visualizar Calendário de Instalações e Prevenção de Conflitos | [#157](https://github.com/ADS-IFPB-SR/alumigest/issues/157) | 🔄 Renumerada (-7) |
+| **US-40** | **US-33** | Sprint 12 | Emitir Ordem de Serviço (OS) em PDF | [#158](https://github.com/ADS-IFPB-SR/alumigest/issues/158) | 🔄 Renumerada (-7) |
+| **US-41** | **US-34** | Sprint 13 | Visualizar Dashboard Executivo e Indicadores (KPIs) Comerciais | [#159](https://github.com/ADS-IFPB-SR/alumigest/issues/159) | 🔄 Renumerada (-7) |
+| **US-42** | **US-35** | Sprint 13 | Apurar DRE Gerencial (Competência e Caixa) | [#160](https://github.com/ADS-IFPB-SR/alumigest/issues/160) | 🔄 Renumerada (-7) |
+| **US-43** | **US-36** | Sprint 13 | Exportar Relatórios Executivos em PDF e Planilhas CSV/Excel | [#161](https://github.com/ADS-IFPB-SR/alumigest/issues/161) | 🔄 Renumerada (-7) |
+| **US-44** | **US-37** | Sprint 14 | Instalar PWA e Consultar Pedidos e OS Offline via IndexedDB | [#162](https://github.com/ADS-IFPB-SR/alumigest/issues/162) | 🔄 Renumerada (-7) |
+| **US-45** | **US-38** | Sprint 14 | Sincronizar Fila de Alterações e Fotos em Segundo Plano | [#163](https://github.com/ADS-IFPB-SR/alumigest/issues/163) | 🔄 Renumerada (-7) |
+| **US-46** | **US-39** | Sprint 14 | Comprimir Imagens no Dispositivo e Otimizar Performance Web | [#164](https://github.com/ADS-IFPB-SR/alumigest/issues/164) | 🔄 Renumerada (-7) |
+| **US-47** | **US-40** | Sprint 15 | Executar Carga Inicial de Dados e Importador de Clientes via CSV | [#165](https://github.com/ADS-IFPB-SR/alumigest/issues/165) | 🔄 Renumerada (-7) |
+| **US-48** | **US-41** | Sprint 15 | Homologação Integrada Ponta a Ponta da Release 3 (v3.0.0) | [#166](https://github.com/ADS-IFPB-SR/alumigest/issues/166) | 🔄 Renumerada (-7) |
+| **US-49** | **US-42** | Sprint 15 | Disponibilizar Guias de Treinamento por Perfil e Central de Ajuda | [#167](https://github.com/ADS-IFPB-SR/alumigest/issues/167) | 🔄 Renumerada (-7) |
+| **US-50** | **US-43** | Sprint 16 | Executar Rotinas de Backup Automático e Disaster Recovery | [#168](https://github.com/ADS-IFPB-SR/alumigest/issues/168) | 🔄 Renumerada (-7) |
+| **US-51** | **US-44** | Sprint 16 | Registrar Trilha de Auditoria Imutável para Ações Críticas | [#169](https://github.com/ADS-IFPB-SR/alumigest/issues/169) | 🔄 Renumerada (-7) |
+| **US-52** | **US-45** | Sprint 16 | Monitorar Saúde do Sistema com Actuator e Publicar Documentação | [#170](https://github.com/ADS-IFPB-SR/alumigest/issues/170) | 🔄 Renumerada (-7) |
 
 ---
 
@@ -89,5 +89,10 @@ Este documento é a **referência oficial de sincronização** entre a numeraç�
   - Antiga `US-34` (Baixa Manual): **Descartada**.
   - Antiga `US-35` (Fluxo de Caixa): virou **`US-30`** ([#155](https://github.com/ADS-IFPB-SR/alumigest/issues/155), `-5`) adaptada para **apenas Fluxo Mensal**.
   - Antiga `US-36` (Fechamento Diário PDF): **Descartada**.
-- **Sprints 12 a 16 (`US-37` a `US-52` antigas)**:
-  - Todas deslocadas em **`-6`**: `US_Nova = US_Antiga - 6` (totalizando até a **`US-46`**).
+- **Sprint 12**:
+  - Antiga `US-37` (Agendar Instalação e Gerar OS): **Descartada**.
+  - Antiga `US-38` (Executar e Concluir OS em Campo): virou **`US-31`** (`-7`), incorporando a base técnica da sprint.
+  - Antiga `US-39` (Calendário de Instalações): virou **`US-32`** (`-7`).
+  - Antiga `US-40` (OS em PDF): virou **`US-33`** (`-7`).
+- **Sprints 13 a 16 (`US-41` a `US-52` antigas)**:
+  - Todas deslocadas em **`-7`**: `US_Nova = US_Antiga - 7` (totalizando até a **`US-45`**).

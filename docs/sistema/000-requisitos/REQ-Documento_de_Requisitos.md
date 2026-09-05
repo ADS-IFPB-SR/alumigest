@@ -240,15 +240,15 @@ O sistema AlumiGest cobre os módulos de Cadastros, Orçamentos, Pedidos/PCP, Es
 
 | Requisitos Funcionais | Módulo / Área | User Stories Ativas (Planejamento) |
 |---|---|---|
-| RF-001 a RF-006 | Autenticação, Infraestrutura & Governança | `US-01`, `US-45`, `US-46` |
-| RF-007 a RF-012 | Gestão de Clientes PF e PJ | `US-04`, `US-41` |
+| RF-001 a RF-006 | Autenticação, Infraestrutura & Governança | `US-01`, `US-44`, `US-45` |
+| RF-007 a RF-012 | Gestão de Clientes PF e PJ | `US-04`, `US-40` |
 | RF-013 a RF-015 | Cadastro e Associação de Fornecedores | `US-02` (Catálogo Genérico) |
 | RF-016 a RF-021 | Catálogo de Materiais, Fichas & Templates | `US-02`, `US-03`, `US-05` |
 | RF-022 a RF-035 | Orçamentos, Motor de Cálculo, Descontos & PDFs | `US-06`, `US-07`, `US-08`, `US-09`, `US-10`, `US-11`, `US-12` |
 | RF-036 a RF-042 | Pedidos de Venda, Lock, Etiquetas & Kanban | `US-13`, `US-14`, `US-15`, `US-16`, `US-17`, `US-18`, `US-19`, `US-20` |
 | RF-043 a RF-048 | Gestão de Estoque, Reservas & Kardex | `US-21`, `US-22`, `US-23` |
 | RF-049 a RF-053 | Financeiro, Cobrança PIX, Recebíveis & Fluxo Mensal | `US-24`, `US-25`, `US-26`, `US-27`, `US-28`, `US-29`, `US-30` |
-| RF-054 a RF-056 | Gestão de Instalações, OS em Campo & PWA Offline | `US-31`, `US-32`, `US-33`, `US-34`, `US-38`, `US-39`, `US-40` |
+| RF-054 a RF-056 | Gestão de Instalações, OS em Campo & PWA Offline | `US-31`, `US-32`, `US-33`, `US-37`, `US-38`, `US-39` |
 
 ---
 

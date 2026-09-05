@@ -2,7 +2,7 @@
 
 Este diretório centraliza a documentação de planejamento, especificações de negócio, decisões arquiteturais, modelos de dados e contratos de API organizados por sprint e release do projeto **AlumiGest**.
 
-> **Padrão de Governança**: User Stories sequenciais no projeto inteiro (`US-01` a `US-46`) com Sub-tarefas decimais (`US-XX.Y`), integrando Backend, Frontend e QA sob cada história funcional.
+> **Padrão de Governança**: User Stories sequenciais no projeto inteiro (`US-01` a `US-45`) com Sub-tarefas decimais (`US-XX.Y`), integrando Backend, Frontend e QA sob cada história funcional.
 
 ---
 
@@ -27,19 +27,19 @@ Este diretório centraliza a documentação de planejamento, especificações de
 | **Release 3 (v3.0.0)** | [Sprint 09](sprint-09/spec.md) | Integração de Pagamento PIX e Webhooks | `US-24`, `US-25`, `US-26` | **27** | 🔵 Planejada |
 | **Release 3 (v3.0.0)** | [Sprint 10](sprint-10/spec.md) | Contas a Receber, Parcelamento e Inadimplência | `US-27`, `US-28`, `US-29` | **25** | 🔵 Planejada |
 | **Release 3 (v3.0.0)** | [Sprint 11](sprint-11/spec.md) | Fluxo de Caixa Mensal | `US-30` | **10** | 🔵 Planejada |
-| **Release 3 (v3.0.0)** | [Sprint 12](sprint-12/spec.md) | Gestão de Instalações, Ordens de Serviço (OS) e Agenda | `US-31`, `US-32`, `US-33`, `US-34` | **27** | 🔵 Planejada |
-| **Release 3 (v3.0.0)** | [Sprint 13](sprint-13/spec.md) | Dashboard Executivo, KPIs e DRE Gerencial | `US-35`, `US-36`, `US-37` | **21** | 🔵 Planejada |
-| **Release 3 (v3.0.0)** | [Sprint 14](sprint-14/spec.md) | Modo PWA/Offline para Instaladores e Performance | `US-38`, `US-39`, `US-40` | **21** | 🔵 Planejada |
-| **Release 3 (v3.0.0)** | [Sprint 15](sprint-15/spec.md) | Treinamento dos Usuários, Carga Real e Homologação R3 | `US-41`, `US-42`, `US-43` | **24** | 🔵 Planejada |
-| **Sustentação** | [Sprint 16](sprint-16/spec.md) | Estabilização pós-implantação, Backup e Auditoria | `US-44`, `US-45`, `US-46` | **23** | 🔵 Planejada |
+| **Release 3 (v3.0.0)** | [Sprint 12](sprint-12/spec.md) | Gestão de Instalações, Execução em Campo (OS) e Agenda | `US-31`, `US-32`, `US-33` | **24** | 🔵 Planejada |
+| **Release 3 (v3.0.0)** | [Sprint 13](sprint-13/spec.md) | Dashboard Executivo, KPIs e DRE Gerencial | `US-34`, `US-35`, `US-36` | **21** | 🔵 Planejada |
+| **Release 3 (v3.0.0)** | [Sprint 14](sprint-14/spec.md) | Modo PWA/Offline para Instaladores e Performance | `US-37`, `US-38`, `US-39` | **21** | 🔵 Planejada |
+| **Release 3 (v3.0.0)** | [Sprint 15](sprint-15/spec.md) | Treinamento dos Usuários, Carga Real e Homologação R3 | `US-40`, `US-41`, `US-42` | **24** | 🔵 Planejada |
+| **Sustentação** | [Sprint 16](sprint-16/spec.md) | Estabilização pós-implantação, Backup e Auditoria | `US-43`, `US-44`, `US-45` | **23** | 🔵 Planejada |
 
 ---
 
 ### 📊 Resumo Consolidado do Projeto AlumiGest
 
 - **Total de Sprints**: **16 Sprints (Sprints 01 a 16)**
-- **Total de User Stories (Pais)**: **46 User Stories Sequenciais (`US-01` a `US-46`)**
-- **Total Geral de Sub-Tarefas / Issues Ativas**: **360 Issues individuais** com checklists executáveis
+- **Total de User Stories (Pais)**: **45 User Stories Sequenciais (`US-01` a `US-45`)**
+- **Total Geral de Sub-Tarefas / Issues Ativas**: **357 Issues individuais** com checklists executáveis
 - **Padrão de Sub-tarefas**: **Decimal (`US-XX.Y`)**
 - **Arquitetura & Qualidade**: Clean Architecture, Package-by-Feature, Records Java, Spring Boot 3.4, React PWA, BDD/Gherkin e SonarQube Quality Gate.
 

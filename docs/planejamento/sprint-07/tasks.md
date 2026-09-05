@@ -52,26 +52,7 @@
 
 ---
 
-## 📦 US-21: Emitir Romaneio de Oficina em PDF com Checklist de Conferência
+---
 
-> **Descrição**: Emitir romaneio de expedição e conferência de oficina em PDF com caixas de checagem (checklists) para controle de saída de esquadrias e ferragens avulsas.
-
-| ID | Tarefa | Status |
-|---|---|:---:|
-| **US-21.1** | [US-21.1](issues/US-21.1-criar-servico-workshoppdfservice-gerando-pdf-/issue.md) Criar serviço `WorkshopPdfService` gerando PDF A4 de romaneio de corte | 🔲 Pendente |
-| **US-21.2** | [US-21.2](issues/US-21.2-adicionar-metodo-para-gerar-pdf-individual-da/issue.md) Adicionar método para gerar PDF da Ficha Técnica do item no `WorkshopPdfService` | 🔲 Pendente |
-| **US-21.3** | [US-21.3](issues/US-21.3-adicionar-endpoints-get-api-production-orders/issue.md) Adicionar endpoints GET /api/production/orders/{orderId}/cutting-list-pdf e GET /api/production/order-items/{id}/assembly-sheet-pdf | 🔲 Pendente |
-| **US-21.4** | [US-21.4](issues/US-21.4-criar-teste-unitario-do-workshoppdfservicetes/issue.md) Criar teste unitário do `WorkshopPdfServiceTest` validando geração de bytes não-vazios | 🔲 Pendente |
-| **US-21.5** | [US-21.5](issues/US-21.5-adicionar-botoes-de-download-do-pdf-na-interf/issue.md) Adicionar botões de download do PDF na interface do frontend | 🔲 Pendente |
-| **US-21.6** | [US-21.6](issues/US-21.6-documentar-endpoints-no-openapi-swagger/issue.md) Documentar endpoints no OpenAPI/Swagger | 🔲 Pendente |
-| **US-21.7** | [US-21.7](issues/US-21.7-executar-validacao-dos-cenarios-de-teste-do-q/issue.md) Executar validação dos cenários de teste do `quickstart.md` da Sprint 7 | 🔲 Pendente |
-
-### Detalhamento das Tarefas (Checklist):
-
-- [ ] **US-21.1**: Criar serviço `WorkshopPdfService` gerando PDF A4 de romaneio de corte com colunas de checklist físico
-- [ ] **US-21.2**: Adicionar método para gerar PDF da Ficha Técnica do item no `WorkshopPdfService`
-- [ ] **US-21.3**: Adicionar endpoints GET /api/production/orders/{orderId}/cutting-list-pdf e GET /api/production/order-items/{id}/assembly-sheet-pdf
-- [ ] **US-21.4**: Criar teste unitário do `WorkshopPdfServiceTest` validando geração de bytes não-vazios
-- [ ] **US-21.5**: Adicionar botões de download do PDF na interface do frontend
-- [ ] **US-21.6**: Documentar endpoints no OpenAPI/Swagger
-- [ ] **US-21.7**: Executar validação dos cenários de teste do `quickstart.md` da Sprint 7
+## 🚫 Tarefas Descartadas (Decisão de Escopo)
+- As sub-tarefas de romaneio em PDF da antiga US-23 foram arquivadas em [descartadas/](issues/descartadas/).

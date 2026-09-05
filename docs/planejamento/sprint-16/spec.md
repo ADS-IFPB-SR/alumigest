@@ -19,46 +19,46 @@ Com a Release 3 entregue e em operação na Alumiportas, esta sprint de reserva 
 
 ## 2. 👥 Histórias de Usuário (User Stories)
 
-### 📌 US-44: Executar Rotinas de Backup Automático e Disaster Recovery em 1 Comando
+### 📌 US-43: Executar Rotinas de Backup Automático e Disaster Recovery em 1 Comando
 
 > Rotinas agendadas de backup diário compactado do PostgreSQL com retenção de 30 dias e script de restauração em menos de 10 minutos.
 
 #### Sub-tarefas Técnicas (Sub-issues):
-- **US-44.1**: Criar package `br.edu.ifpb.alumigest.admin` e diretório `frontend/src/features/admin`
-- **US-44.2**: Criar migration Flyway `backend/src/main/resources/db/migration/V17__create_audit_and_backup_schema.sql` com tabelas `audit_logs` e `system_backups`
-- **US-44.3**: Criar entidades JPA `AuditLog` e `SystemBackup` em `backend/src/main/java/br/edu/ifpb/alumigest/admin/domain/`
-- **US-44.4**: Criar repositórios `AuditLogRepository` e `SystemBackupRepository` em `backend/src/main/java/br/edu/ifpb/alumigest/admin/repository/`
-- **US-44.5**: Criar record `SystemBackupResponse` em `backend/src/main/java/br/edu/ifpb/alumigest/admin/dto/SystemBackupResponse.java`
-- **US-44.6**: Implementar serviço `SystemBackupService.gerarBackup()` com `ProcessBuilder` e retenção de 30 dias em `backend/src/main/java/br/edu/ifpb/alumigest/admin/service/SystemBackupService.java`
-- **US-44.7**: Configurar rotina agendada `@Scheduled(cron = "0 0 2 * * *")` para backup na madrugada
-- **US-44.8**: Criar endpoints POST /api/admin/backups/generate e GET /api/admin/backups/{id}/download no `SystemBackupController` em `backend/src/main/java/br/edu/ifpb/alumigest/admin/controller/SystemBackupController.java`
-- **US-44.9**: Criar script de restauração rápida `scripts/restore-backup.sh` e `scripts/restore-backup.ps1`
-- **US-44.10**: Criar testes unitários do `SystemBackupServiceTest`
+- **US-43.1**: Criar package `br.edu.ifpb.alumigest.admin` e diretório `frontend/src/features/admin`
+- **US-43.2**: Criar migration Flyway `backend/src/main/resources/db/migration/V17__create_audit_and_backup_schema.sql` com tabelas `audit_logs` e `system_backups`
+- **US-43.3**: Criar entidades JPA `AuditLog` e `SystemBackup` em `backend/src/main/java/br/edu/ifpb/alumigest/admin/domain/`
+- **US-43.4**: Criar repositórios `AuditLogRepository` e `SystemBackupRepository` em `backend/src/main/java/br/edu/ifpb/alumigest/admin/repository/`
+- **US-43.5**: Criar record `SystemBackupResponse` em `backend/src/main/java/br/edu/ifpb/alumigest/admin/dto/SystemBackupResponse.java`
+- **US-43.6**: Implementar serviço `SystemBackupService.gerarBackup()` com `ProcessBuilder` e retenção de 30 dias em `backend/src/main/java/br/edu/ifpb/alumigest/admin/service/SystemBackupService.java`
+- **US-43.7**: Configurar rotina agendada `@Scheduled(cron = "0 0 2 * * *")` para backup na madrugada
+- **US-43.8**: Criar endpoints POST /api/admin/backups/generate e GET /api/admin/backups/{id}/download no `SystemBackupController` em `backend/src/main/java/br/edu/ifpb/alumigest/admin/controller/SystemBackupController.java`
+- **US-43.9**: Criar script de restauração rápida `scripts/restore-backup.sh` e `scripts/restore-backup.ps1`
+- **US-43.10**: Criar testes unitários do `SystemBackupServiceTest`
 
-### 📌 US-45: Registrar Trilha de Auditoria Imutável para Ações Críticas
+### 📌 US-44: Registrar Trilha de Auditoria Imutável para Ações Críticas
 
 > Registro imutável de eventos sensíveis (alteração de tabelas de preços, descontos, cancelamento de pedidos, baixas manuais).
 
 #### Sub-tarefas Técnicas (Sub-issues):
-- **US-45.1**: Criar anotação customizada `@AuditAction(acao, entidade)` em `backend/src/main/java/br/edu/ifpb/alumigest/admin/annotation/AuditAction.java`
-- **US-45.2**: Implementar interceptor AOP `AuditAspect` capturando usuário logado e persistindo em `AuditLogService`
-- **US-45.3**: Criar record `AuditLogResponse`
-- **US-45.4**: Criar endpoint GET /api/admin/audit-logs no `AuditLogController`
-- **US-45.5**: Criar testes unitários do `AuditAspectTest`
-- **US-45.6**: Criar componente `AuditLogTable` no frontend com filtros por entidade e data
-- **US-45.7**: Criar página `AuditLogsPage` no frontend
+- **US-44.1**: Criar anotação customizada `@AuditAction(acao, entidade)` em `backend/src/main/java/br/edu/ifpb/alumigest/admin/annotation/AuditAction.java`
+- **US-44.2**: Implementar interceptor AOP `AuditAspect` capturando usuário logado e persistindo em `AuditLogService`
+- **US-44.3**: Criar record `AuditLogResponse`
+- **US-44.4**: Criar endpoint GET /api/admin/audit-logs no `AuditLogController`
+- **US-44.5**: Criar testes unitários do `AuditAspectTest`
+- **US-44.6**: Criar componente `AuditLogTable` no frontend com filtros por entidade e data
+- **US-44.7**: Criar página `AuditLogsPage` no frontend
 
-### 📌 US-46: Monitorar Saúde do Sistema com Actuator e Publicar Documentação Final
+### 📌 US-45: Monitorar Saúde do Sistema com Actuator e Publicar Documentação Final
 
 > Endpoints de métricas de saúde com Spring Boot Actuator, dicionário de dados consolidado e runbook de operações da sustentação.
 
 #### Sub-tarefas Técnicas (Sub-issues):
-- **US-46.1**: Configurar Spring Boot Actuator no `pom.xml` e `application.yml`
-- **US-46.2**: Criar componente `SystemHealthBadge` e tela `SystemSettingsPage` no frontend
-- **US-46.3**: Criar Runbook de Contingência e Guia de Disaster Recovery em `docs/arquitetura/disaster-recovery.md`
-- **US-46.4**: Criar Diagrama C4 Model consolidado da arquitetura do AlumiGest em `docs/arquitetura/c4-model.md`
-- **US-46.5**: Documentar endpoints no OpenAPI/Swagger
-- **US-46.6**: Atualizar mapa mestre de governança e documentação em `docs/planejamento/README.md`
+- **US-45.1**: Configurar Spring Boot Actuator no `pom.xml` e `application.yml`
+- **US-45.2**: Criar componente `SystemHealthBadge` e tela `SystemSettingsPage` no frontend
+- **US-45.3**: Criar Runbook de Contingência e Guia de Disaster Recovery em `docs/arquitetura/disaster-recovery.md`
+- **US-45.4**: Criar Diagrama C4 Model consolidado da arquitetura do AlumiGest em `docs/arquitetura/c4-model.md`
+- **US-45.5**: Documentar endpoints no OpenAPI/Swagger
+- **US-45.6**: Atualizar mapa mestre de governança e documentação em `docs/planejamento/README.md`
 
 ## 3. Requisitos Funcionais
 
