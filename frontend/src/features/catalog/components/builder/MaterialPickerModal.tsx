@@ -10,7 +10,9 @@ interface Props {
   addedMaterialIds?: string[];
 }
 
-export function MaterialPickerModal({ isOpen, onClose, onSelect, materials, addedMaterialIds = [] }: Props) {
+const EMPTY_IDS: string[] = [];
+
+export function MaterialPickerModal({ isOpen, onClose, onSelect, materials, addedMaterialIds = EMPTY_IDS }: Props) {
   const [search, setSearch] = useState('');
 
   const filteredMaterials = useMemo(() => {

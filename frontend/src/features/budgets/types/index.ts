@@ -9,6 +9,7 @@ export type DoorTemplateType =
   | 'MAXIM_AR_WINDOW'
   | 'GLASS_BOX_FRONTAL'
   | 'GLASS_BOX_CORNER'
+  | 'DRAWER_FRONT'
   | 'FIXED_GLASS_FACADE';
 
 export type OpeningDirection =
@@ -22,7 +23,7 @@ export type HandleType = 'BAR_TUBULAR' | 'SHELL_LOCK' | 'LEVER_HANDLE' | 'NONE';
 export type HandleSide = 'ONE_SIDE' | 'BOTH_SIDES';
 export type HandleCoverage = 'FULL' | 'PIECE';
 export type DivisionType = 'EQUAL' | 'CUSTOM_DISTANCE';
-export type CategoryType = 'GLASS' | 'PROFILE' | 'HARDWARE' | 'FILM';
+export type CategoryType = 'GLASS' | 'PROFILE' | 'HARDWARE' | 'FILM' | 'ROLLERS';
 
 export type BudgetStatus =
   | 'DRAFT'
@@ -84,8 +85,8 @@ export interface WindowTemplate {
   isActive: boolean;
   templateType?: string;
   catalogTemplateType?: string | null;
-  templateConfig?: TemplateConfig;
-  categoryRequirements?: CategoryRequirement[];
+  templateConfig?: any;
+  categoryRequirements?: any[];
   items?: { id: string; materialId: string; materialName: string; quantity: number }[];
 }
 
@@ -112,6 +113,7 @@ export interface MaterialSelection {
 
 export interface BuilderState {
   template: WindowTemplate | null;
+  templateType?: DoorTemplateType;
   widthMm: number | '';
   heightMm: number | '';
   quantity: number | '';
@@ -129,6 +131,7 @@ export interface BuilderState {
 // ITEM DO ORÇAMENTO — estrutura persistida e enviada à API
 // ============================================================
 export interface BudgetItemOption {
+  id?: string;
   materialId: string;
   materialName: string;
   categoryType: CategoryType;
@@ -326,21 +329,21 @@ export const TEMPLATE_TYPE_INFO: Record<DoorTemplateType, TemplateTypeInfo> = {
     label: 'Porta Pivotante',
     description: 'Eixo Deslocado',
     icon: 'door_back',
-    supportedDirections: ['OUTSIDE', 'INSIDE'],
+    supportedDirections: ['LEFT_TO_RIGHT', 'RIGHT_TO_LEFT'],
   },
   SWING_DOOR_1F: {
     type: 'SWING_DOOR_1F',
     label: 'Porta de Abrir 1 Folha',
     description: 'Porta de Giro com 1 Folha',
     icon: 'door_front',
-    supportedDirections: ['OUTSIDE', 'INSIDE'],
+    supportedDirections: ['LEFT_TO_RIGHT', 'RIGHT_TO_LEFT'],
   },
   SWING_DOOR_2F: {
     type: 'SWING_DOOR_2F',
     label: 'Porta de Abrir 2 Folhas',
     description: 'Porta de Giro com 2 Folhas',
     icon: 'door_front',
-    supportedDirections: ['OUTSIDE', 'INSIDE'],
+    supportedDirections: ['LEFT_TO_RIGHT', 'RIGHT_TO_LEFT'],
   },
   SLIDING_WINDOW_2F: {
     type: 'SLIDING_WINDOW_2F',
@@ -382,6 +385,13 @@ export const TEMPLATE_TYPE_INFO: Record<DoorTemplateType, TemplateTypeInfo> = {
     label: 'Painel Fixo / Fachada',
     description: 'Painel em Vidro Fixo',
     icon: 'image',
+    supportedDirections: ['OUTSIDE'],
+  },
+  DRAWER_FRONT: {
+    type: 'DRAWER_FRONT',
+    label: 'Frente de Gaveta',
+    description: 'Perfil Alumínio c/ Puxador',
+    icon: 'table_rows',
     supportedDirections: ['OUTSIDE'],
   },
 };

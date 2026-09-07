@@ -1,3 +1,6 @@
+// Re-export template types
+export * from './templates';
+
 export type MaterialType = 'Glass' | 'Profile' | 'Film' | 'Hardware' | 'Product';
 
 export type UnitMeasure = 'M2' | 'METRO' | 'BARRA_3M' | 'BARRA_6M' | 'UN' | 'PAR' | 'PAIR' | 'KG' | 'LITRO';
@@ -101,6 +104,9 @@ export interface Product {
   name: string;
   categoryId: string;
   categoryName: string;
+  templateType?: import('./templates').DoorTemplateType;
+  templateConfig?: import('./templates').TemplateConfig;
+  categoryRequirements?: import('./templates').MaterialCategoryType[];
   isActive: boolean;
   items: ProductItem[];
 }
@@ -113,5 +119,8 @@ export interface ProductItemRequest {
 export interface ProductRequest {
   name: string;
   categoryId: string;
+  templateType?: import('./templates').DoorTemplateType;
+  templateConfig?: import('./templates').TemplateConfig;
+  categoryRequirements?: import('./templates').MaterialCategoryType[];
   items: ProductItemRequest[];
 }

@@ -1,15 +1,19 @@
-import React, { useEffect, useCallback, useMemo, useState } from 'react';
+import React, { useEffect, useCallback, useMemo, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import type {
-  BuilderState,
-  BudgetItem,
-  HandleType,
-  HandleSide,
-  HandleCoverage,
-  DivisionType,
-  MaterialSelection,
-  CategoryType,
-  WindowTemplate,
+import {
+  TEMPLATE_TYPE_INFO,
+  type DoorTemplateType,
+  type BuilderState,
+  type BudgetItem,
+  type HandleConfig,
+  type DrillingConfig,
+  type HandleType,
+  type HandleSide,
+  type HandleCoverage,
+  type DivisionType,
+  type MaterialSelection,
+  type CategoryType,
+  type WindowTemplate,
 } from '../../types';
 import type { Product } from '../../../catalog/types';
 import {
@@ -21,6 +25,12 @@ import {
 } from '../../../catalog/hooks/useCatalog';
 import { calcItemSubtotal, formatBRL } from '../../utils/calculations';
 import { WindowSvgPreview } from './WindowSvgPreview';
+import {
+  getAvailableSvgTemplatesForCatalogType,
+  getDefaultSvgTemplateForCatalogType,
+  mapCatalogAluminumColor,
+  mapCatalogGlassColor,
+} from '../../utils/mapCatalogTemplate';
 import { Button } from '../../../../components/ui/Button';
 import toast from 'react-hot-toast';
 
@@ -31,6 +41,7 @@ const BASE_ALUMINUM_COLORS = [
   'Branco Brilhante',
   'Bronze / Champanhe',
   'Cromado / Polido',
+  'Dourado / Gold',
 ];
 
 const BASE_GLASS_FINISHES = [
@@ -46,6 +57,7 @@ const CATEGORY_ICONS: Record<CategoryType, string> = {
   PROFILE: 'view_stream',
   HARDWARE: 'hardware',
   FILM: 'layers',
+  ROLLERS: 'tune',
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -53,6 +65,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   PROFILE: 'Perfis de Alumínio',
   HARDWARE: 'Ferragens / Componentes',
   FILM: 'Películas',
+  ROLLERS: 'Roldanas / Deslizamento',
 };
 
 const DEFAULT_WIDTH = 1600;
@@ -77,17 +90,22 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
     if (!productsData?.content) return [];
     return (productsData.content as unknown as Product[])
       .filter((p) => p.isActive)
-      .map((p): WindowTemplate => ({
-        id: p.id,
-        name: p.name,
-        categoryId: p.categoryId,
-        categoryName: p.categoryName,
-        isActive: p.isActive,
-        laborCost: 0,
-        templateType: 'SLIDING_DOOR_2F',
-        catalogTemplateType: 'SLIDING_DOOR_2F',
-        items: p.items,
-      }));
+      .map((p): WindowTemplate => {
+        const defaultSvg = getDefaultSvgTemplateForCatalogType(p.templateType, p.name, p.templateConfig);
+        return {
+          id: p.id,
+          name: p.name,
+          categoryId: p.categoryId,
+          categoryName: p.categoryName,
+          isActive: p.isActive,
+          laborCost: 0,
+          catalogTemplateType: p.templateType ?? null,
+          templateType: defaultSvg,
+          templateConfig: p.templateConfig ?? undefined,
+          categoryRequirements: p.categoryRequirements ?? [],
+          items: p.items,
+        };
+      });
   }, [productsData]);
 
   const { data: glassesData } = useGlasses();
@@ -142,6 +160,17 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
 
   const [customDistanceInput, setCustomDistanceInput] = useState<string>('100, 500, 560, 100');
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const hasInitializedRef = useRef(false);
+
+  const svgTemplate: DoorTemplateType = (state.templateType || state.template?.templateType || 'SLIDING_DOOR_2F') as DoorTemplateType;
+
+  const availableSvgTemplates = useMemo(() => {
+    return getAvailableSvgTemplatesForCatalogType(state.template?.catalogTemplateType, state.template?.name);
+  }, [state.template?.catalogTemplateType, state.template?.name]);
+
+  const supportedDirections = useMemo(() => {
+    return TEMPLATE_TYPE_INFO[svgTemplate]?.supportedDirections ?? ['LEFT_TO_RIGHT', 'RIGHT_TO_LEFT'];
+  }, [svgTemplate]);
 
   // ─── Utilitário: busca material pelo ID no catálogo ────────────────────────
   const findCatalogMaterial = useCallback(
@@ -160,9 +189,153 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
     [glasses, profiles, hardwares, films],
   );
 
+  // ─── Constrói Seleção de Materiais baseada nos Requisitos do Template ────────
+  const buildSelectionsForTemplate = useCallback(
+    (
+      targetTemplate: WindowTemplate,
+      w: number,
+      h: number,
+      alumColor?: string,
+      glassColor?: string
+    ): MaterialSelection[] => {
+      if (targetTemplate.items && targetTemplate.items.length > 0) {
+        return targetTemplate.items.map((item) => {
+          const mat = findCatalogMaterial(item.materialId);
+          const reqId = item.id || `item-${item.materialId}`;
+          const categoryType = (mat?.categoryType as CategoryType) || 'HARDWARE';
+          const price = mat?.price ?? 0;
+          const qty = item.quantity ?? 1;
+          return {
+            requirementId: reqId,
+            categoryType,
+            label: mat?.name ?? item.materialName ?? (CATEGORY_LABELS[categoryType] ?? categoryType),
+            isOptional: false,
+            materialId: item.materialId,
+            materialName: mat?.name ?? item.materialName,
+            unitMeasure: mat?.unit ?? 'un',
+            unitPrice: price,
+            quantity: qty,
+            totalPrice: qty !== undefined ? parseFloat((qty * price).toFixed(2)) : undefined,
+          };
+        });
+      }
+
+      if (targetTemplate.categoryRequirements && targetTemplate.categoryRequirements.length > 0) {
+        const areaM2 = parseFloat(((w / 1000) * (h / 1000)).toFixed(2));
+        const selections: MaterialSelection[] = [];
+
+        targetTemplate.categoryRequirements.forEach((req, idx) => {
+          const catType: CategoryType = typeof req === 'string' ? (req as CategoryType) : (req.categoryType as CategoryType);
+          let mat: { id: string; name: string; price: number; unit: string } | undefined;
+          let qty = 1;
+
+          if (catType === 'GLASS') {
+            const matched = glassColor ? glasses.find((g) => g.colorFinish?.toLowerCase() === glassColor.toLowerCase()) : null;
+            const chosen = matched ?? glasses[0];
+            if (chosen) {
+              mat = { id: chosen.id, name: chosen.name, price: chosen.salePrice ?? chosen.pricePerSqm ?? 0, unit: 'm²' };
+              qty = areaM2;
+            }
+          } else if (catType === 'PROFILE') {
+            const matched = alumColor ? profiles.find((p) => p.colorFinish?.toLowerCase() === alumColor.toLowerCase()) : null;
+            const chosen = matched ?? profiles[0];
+            if (chosen) {
+              mat = { id: chosen.id, name: chosen.name, price: chosen.salePrice ?? 0, unit: chosen.unitMeasure ?? 'm' };
+              qty = 2;
+            }
+          } else if (catType === 'ROLLERS') {
+            const chosen = hardwares.find((hw) => hw.name.toLowerCase().includes('rold')) ?? hardwares[0];
+            if (chosen) {
+              mat = { id: chosen.id, name: chosen.name, price: chosen.salePrice ?? 0, unit: chosen.unitMeasure ?? 'un' };
+              qty = 2;
+            }
+          } else if (catType === 'HARDWARE') {
+            const chosen = hardwares[0];
+            if (chosen) {
+              mat = { id: chosen.id, name: chosen.name, price: chosen.salePrice ?? 0, unit: chosen.unitMeasure ?? 'un' };
+              qty = 1;
+            }
+          } else if (catType === 'FILM') {
+            const chosen = films[0];
+            if (chosen) {
+              mat = { id: chosen.id, name: chosen.name, price: chosen.salePrice ?? 0, unit: 'm²' };
+              qty = areaM2;
+            }
+          }
+
+          selections.push({
+            requirementId: `req-${targetTemplate.id}-${catType}-${idx}`,
+            categoryType: catType,
+            label: CATEGORY_LABELS[catType] ?? catType,
+            isOptional: false,
+            materialId: mat?.id ?? '',
+            materialName: mat?.name ?? '',
+            unitMeasure: mat?.unit ?? (catType === 'GLASS' || catType === 'FILM' ? 'm²' : catType === 'PROFILE' ? 'm' : 'un'),
+            unitPrice: mat?.price ?? 0,
+            quantity: qty,
+            totalPrice: mat ? parseFloat((qty * mat.price).toFixed(2)) : 0,
+          });
+        });
+
+        return selections;
+      }
+
+      // Fallback padrão se o produto não tiver requisitos nem itens configurados
+      const fallbackSelections: MaterialSelection[] = [];
+      const areaM2 = parseFloat(((w / 1000) * (h / 1000)).toFixed(2));
+      if (glasses.length > 0) {
+        fallbackSelections.push({
+          requirementId: 'default-glass-1',
+          categoryType: 'GLASS',
+          label: 'Vidro Principal',
+          isOptional: false,
+          materialId: glasses[0].id,
+          materialName: glasses[0].name,
+          unitMeasure: 'm²',
+          unitPrice: glasses[0].salePrice ?? glasses[0].pricePerSqm ?? 0,
+          quantity: areaM2,
+          totalPrice: parseFloat((areaM2 * (glasses[0].salePrice ?? glasses[0].pricePerSqm ?? 0)).toFixed(2)),
+        });
+      }
+      if (profiles.length > 0) {
+        fallbackSelections.push({
+          requirementId: 'default-profile-1',
+          categoryType: 'PROFILE',
+          label: 'Perfil de Alumínio',
+          isOptional: false,
+          materialId: profiles[0].id,
+          materialName: profiles[0].name,
+          unitMeasure: profiles[0].unitMeasure ?? 'm',
+          unitPrice: profiles[0].salePrice ?? 0,
+          quantity: 2,
+          totalPrice: parseFloat((2 * (profiles[0].salePrice ?? 0)).toFixed(2)),
+        });
+      }
+      if (hardwares.length > 0) {
+        fallbackSelections.push({
+          requirementId: 'default-hardware-1',
+          categoryType: 'HARDWARE',
+          label: 'Puxador / Ferragem',
+          isOptional: false,
+          materialId: hardwares[0].id,
+          materialName: hardwares[0].name,
+          unitMeasure: hardwares[0].unitMeasure ?? 'un',
+          unitPrice: hardwares[0].salePrice ?? 0,
+          quantity: 1,
+          totalPrice: parseFloat((1 * (hardwares[0].salePrice ?? 0)).toFixed(2)),
+        });
+      }
+      return fallbackSelections;
+    },
+    [glasses, profiles, hardwares, films, findCatalogMaterial]
+  );
+
   // ─── Inicialização de Estado ───────────────────────────────────────────────
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      hasInitializedRef.current = false;
+      return;
+    }
 
     if (editingItem) {
       const template = templates.find((t) => t.id === editingItem.productId) ?? templates[0] ?? null;
@@ -191,10 +364,11 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
 
       setState({
         template,
+        templateType: (editingItem.templateType as DoorTemplateType) || undefined,
         widthMm: editingItem.widthMm,
         heightMm: editingItem.heightMm,
         quantity: editingItem.quantity,
-        openingDirection: editingItem.templateConfig.openingDirection ?? 'LEFT_TO_RIGHT',
+        openingDirection: editingItem.templateConfig?.openingDirection ?? 'LEFT_TO_RIGHT',
         handleConfig: editingItem.handleConfig ?? {
           handleType: 'BAR_TUBULAR',
           side: 'ONE_SIDE',
@@ -206,116 +380,83 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
           divisionType: 'EQUAL',
           customDistancesMm: dists,
         },
-        aluminumColor: editingItem.templateConfig.aluminumColor ?? 'Alumínio Fosco / Anodizado',
-        glassFinish: editingItem.templateConfig.glassFinish ?? 'Fumê / Cinza',
+        aluminumColor: editingItem.templateConfig?.aluminumColor ?? 'Alumínio Fosco / Anodizado',
+        glassFinish: editingItem.templateConfig?.glassFinish ?? 'Fumê / Cinza',
         laborCost: editingItem.laborCost ?? 0,
         notes: editingItem.notes ?? '',
         materialSelections: selections,
       });
     } else {
-      // Novo item: seleciona o primeiro template disponível e inicializa seleções
-      const defaultTemplate = templates[0] ?? null;
-      const w = DEFAULT_WIDTH;
-      const h = DEFAULT_HEIGHT;
-      const qty = 1;
+      if (!hasInitializedRef.current && templates.length > 0) {
+        hasInitializedRef.current = true;
+        const defaultTemplate = templates[0];
+        const targetSvg = (defaultTemplate.templateType as DoorTemplateType) || getDefaultSvgTemplateForCatalogType(defaultTemplate.catalogTemplateType, defaultTemplate.name, defaultTemplate.templateConfig);
+        const validDirections = TEMPLATE_TYPE_INFO[targetSvg]?.supportedDirections ?? ['LEFT_TO_RIGHT', 'RIGHT_TO_LEFT'];
+        const alumColor = defaultTemplate.templateConfig?.aluminumColor
+          ? mapCatalogAluminumColor(defaultTemplate.templateConfig.aluminumColor)
+          : 'Alumínio Fosco / Anodizado';
+        const glassColor = defaultTemplate.templateConfig?.glassColor
+          ? mapCatalogGlassColor(defaultTemplate.templateConfig.glassColor)
+          : 'Fumê / Cinza';
+        let rawDir = defaultTemplate.templateConfig?.openingDirection;
+        if (rawDir === 'OUTSIDE') rawDir = 'LEFT_TO_RIGHT';
+        if (rawDir === 'INSIDE') rawDir = 'RIGHT_TO_LEFT';
+        const dir = rawDir && validDirections.includes(rawDir)
+          ? rawDir
+          : (validDirections[0] ?? 'LEFT_TO_RIGHT');
 
-      let initialSelections: MaterialSelection[] = [];
-
-      if (defaultTemplate?.items && defaultTemplate.items.length > 0) {
-        initialSelections = defaultTemplate.items.map((item) => {
-          const matDetails = findCatalogMaterial(item.materialId);
-          const reqId = item.id || `item-${item.materialId}`;
-          const categoryType = (matDetails?.categoryType as CategoryType) || 'HARDWARE';
-          const unit = matDetails?.unit ?? 'un';
-          const price = matDetails?.price ?? 0;
-
-          return {
-            requirementId: reqId,
-            categoryType: categoryType,
-            label: CATEGORY_LABELS[categoryType] ?? categoryType,
-            isOptional: false,
-            materialId: item.materialId,
-            materialName: matDetails?.name ?? item.materialName,
-            unitMeasure: unit,
-            unitPrice: price,
-            quantity: item.quantity ?? 1,
-            totalPrice: item.quantity !== undefined ? parseFloat((item.quantity * price).toFixed(2)) : undefined,
-          };
-        });
-      } else {
-        // Gera slots padrão preenchidos com os primeiros itens do catálogo
-        if (glasses.length > 0) {
-          initialSelections.push({
-            requirementId: `default-glass-1`,
-            categoryType: 'GLASS',
-            label: 'Vidro Principal',
-            isOptional: false,
-            materialId: glasses[0].id,
-            materialName: glasses[0].name,
-            unitMeasure: 'm²',
-            unitPrice: glasses[0].salePrice ?? glasses[0].pricePerSqm ?? 0,
-            quantity: parseFloat(((w / 1000) * (h / 1000)).toFixed(2)),
-            totalPrice: parseFloat((((w / 1000) * (h / 1000)) * (glasses[0].salePrice ?? glasses[0].pricePerSqm ?? 0)).toFixed(2)),
-          });
-        }
-        if (profiles.length > 0) {
-          initialSelections.push({
-            requirementId: `default-profile-1`,
-            categoryType: 'PROFILE',
-            label: 'Perfil de Alumínio',
-            isOptional: false,
-            materialId: profiles[0].id,
-            materialName: profiles[0].name,
-            unitMeasure: profiles[0].unitMeasure ?? 'm',
-            unitPrice: profiles[0].salePrice ?? 0,
-            quantity: 2,
-            totalPrice: parseFloat((2 * (profiles[0].salePrice ?? 0)).toFixed(2)),
-          });
-        }
-        if (hardwares.length > 0) {
-          initialSelections.push({
-            requirementId: `default-hardware-1`,
-            categoryType: 'HARDWARE',
-            label: 'Puxador / Fecho',
-            isOptional: false,
-            materialId: hardwares[0].id,
-            materialName: hardwares[0].name,
-            unitMeasure: hardwares[0].unitMeasure ?? 'un',
-            unitPrice: hardwares[0].salePrice ?? 0,
-            quantity: 1,
-            totalPrice: parseFloat((1 * (hardwares[0].salePrice ?? 0)).toFixed(2)),
-          });
-        }
-      }
-
-      setState({
-        template: defaultTemplate,
-        widthMm: w,
-        heightMm: h,
-        quantity: qty,
-        openingDirection: 'LEFT_TO_RIGHT',
-        handleConfig: {
+        const cfgHandle = defaultTemplate.templateConfig?.handleConfig;
+        const initialHandleConfig: HandleConfig = cfgHandle ? {
+          handleType: cfgHandle.handleType ?? 'BAR_TUBULAR',
+          side: cfgHandle.side ?? 'ONE_SIDE',
+          coverage: cfgHandle.coverage ?? (cfgHandle.handleLengthMm && cfgHandle.handleLengthMm >= 1000 ? 'FULL' : 'PIECE'),
+          pieceLengthCm: cfgHandle.pieceLengthCm ?? (cfgHandle.handleLengthMm ? Math.round(cfgHandle.handleLengthMm / 10) : 40),
+        } : {
           handleType: 'BAR_TUBULAR',
           side: 'ONE_SIDE',
           coverage: 'FULL',
           pieceLengthCm: 40,
-        },
-        drillingConfig: {
+        };
+
+        const cfgDrill = defaultTemplate.templateConfig?.drillingConfig;
+        const drillPositions = cfgDrill?.customPositionsMm && cfgDrill.customPositionsMm.length > 0
+          ? cfgDrill.customPositionsMm
+          : [100, 500, 560, 100];
+        const initialDrillingConfig: DrillingConfig = cfgDrill ? {
+          holeCount: cfgDrill.holeCount ?? 2,
+          divisionType: cfgDrill.drillingMode === 'CUSTOM' ? 'CUSTOM_DISTANCE' : 'EQUAL',
+          customDistancesMm: drillPositions,
+        } : {
           holeCount: 2,
           divisionType: 'EQUAL',
-          customDistancesMm: [100, 500, 560, 100],
-        },
-        aluminumColor: 'Alumínio Fosco / Anodizado',
-        glassFinish: 'Fumê / Cinza',
-        laborCost: defaultTemplate?.laborCost ?? 200.0,
-        notes: '',
-        materialSelections: initialSelections,
-      });
-      setCustomDistanceInput('100, 500, 560, 100');
+          customDistancesMm: drillPositions,
+        };
+        setCustomDistanceInput(drillPositions.join(', '));
+
+        const w = DEFAULT_WIDTH;
+        const h = DEFAULT_HEIGHT;
+        const initialSelections = buildSelectionsForTemplate(defaultTemplate, w, h, alumColor, glassColor);
+
+        setState({
+          template: defaultTemplate,
+          templateType: targetSvg,
+          widthMm: w,
+          heightMm: h,
+          quantity: 1,
+          openingDirection: dir,
+          handleConfig: initialHandleConfig,
+          drillingConfig: initialDrillingConfig,
+          aluminumColor: alumColor,
+          glassFinish: glassColor,
+          laborCost: defaultTemplate.laborCost || 0,
+          notes: '',
+          materialSelections: initialSelections,
+        });
+      }
     }
 
     setErrors({});
-  }, [isOpen, editingItem, templates, glasses, profiles, hardwares, films, findCatalogMaterial]);
+  }, [isOpen, editingItem, templates, buildSelectionsForTemplate, findCatalogMaterial]);
 
   // ─── Bloqueio de scroll e fechar com ESC ────────────────────────────────────
   useEffect(() => {
@@ -337,81 +478,60 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
     const template = templates.find((t) => t.id === templateId);
     if (!template) return;
 
-    let newSelections: MaterialSelection[] = [];
+    const targetSvg = (template.templateType as DoorTemplateType) || getDefaultSvgTemplateForCatalogType(template.catalogTemplateType, template.name, template.templateConfig);
+    const validDirections = TEMPLATE_TYPE_INFO[targetSvg]?.supportedDirections ?? ['LEFT_TO_RIGHT', 'RIGHT_TO_LEFT'];
 
-    if (template.items && template.items.length > 0) {
-      newSelections = template.items.map((item) => {
-        const mat = findCatalogMaterial(item.materialId);
-        const reqId = item.id || `item-${item.materialId}`;
-        const categoryType = (mat?.categoryType as CategoryType) || 'HARDWARE';
-        const price = mat?.price ?? 0;
-        const qty = item.quantity ?? 1;
-        return {
-          requirementId: reqId,
-          categoryType: categoryType,
-          label: mat?.name ?? item.materialName ?? (CATEGORY_LABELS[categoryType] ?? categoryType),
-          isOptional: false,
-          materialId: item.materialId,
-          materialName: mat?.name ?? item.materialName,
-          unitMeasure: mat?.unit ?? 'un',
-          unitPrice: price,
-          quantity: qty,
-          totalPrice: qty !== undefined ? parseFloat((qty * price).toFixed(2)) : undefined,
-        };
-      });
-    } else {
-      // Se o produto não tiver itens vinculados, preserva as seleções atuais ou gera slots padrão
-      if (state.materialSelections.length > 0) {
-        newSelections = state.materialSelections;
-      } else {
-        if (glasses.length > 0) {
-          newSelections.push({
-            requirementId: `default-glass-1`,
-            categoryType: 'GLASS',
-            label: 'Vidro Principal',
-            isOptional: false,
-            materialId: glasses[0].id,
-            materialName: glasses[0].name,
-            unitMeasure: 'm²',
-            unitPrice: glasses[0].salePrice ?? glasses[0].pricePerSqm ?? 0,
-            quantity: 1,
-            totalPrice: glasses[0].salePrice ?? glasses[0].pricePerSqm ?? 0,
-          });
-        }
-        if (profiles.length > 0) {
-          newSelections.push({
-            requirementId: `default-profile-1`,
-            categoryType: 'PROFILE',
-            label: 'Perfil de Alumínio',
-            isOptional: false,
-            materialId: profiles[0].id,
-            materialName: profiles[0].name,
-            unitMeasure: profiles[0].unitMeasure ?? 'm',
-            unitPrice: profiles[0].salePrice ?? 0,
-            quantity: 2,
-            totalPrice: parseFloat((2 * (profiles[0].salePrice ?? 0)).toFixed(2)),
-          });
-        }
-        if (hardwares.length > 0) {
-          newSelections.push({
-            requirementId: `default-hardware-1`,
-            categoryType: 'HARDWARE',
-            label: 'Puxador / Fecho',
-            isOptional: false,
-            materialId: hardwares[0].id,
-            materialName: hardwares[0].name,
-            unitMeasure: hardwares[0].unitMeasure ?? 'un',
-            unitPrice: hardwares[0].salePrice ?? 0,
-            quantity: 1,
-            totalPrice: parseFloat((1 * (hardwares[0].salePrice ?? 0)).toFixed(2)),
-          });
-        }
-      }
+    // Mapeia acabamentos configurados no produto
+    const alumColor = template.templateConfig?.aluminumColor
+      ? mapCatalogAluminumColor(template.templateConfig.aluminumColor)
+      : state.aluminumColor;
+    const glassColor = template.templateConfig?.glassColor
+      ? mapCatalogGlassColor(template.templateConfig.glassColor)
+      : state.glassFinish;
+
+    // Sentido de abertura
+    let rawDir = template.templateConfig?.openingDirection;
+    if (rawDir === 'OUTSIDE') rawDir = 'LEFT_TO_RIGHT';
+    if (rawDir === 'INSIDE') rawDir = 'RIGHT_TO_LEFT';
+    const dir = rawDir && validDirections.includes(rawDir) ? rawDir : (validDirections[0] ?? 'LEFT_TO_RIGHT');
+
+    // Puxador
+    const cfgHandle = template.templateConfig?.handleConfig;
+    const nextHandleConfig: HandleConfig = cfgHandle ? {
+      handleType: cfgHandle.handleType ?? 'BAR_TUBULAR',
+      side: cfgHandle.side ?? 'ONE_SIDE',
+      coverage: cfgHandle.coverage ?? (cfgHandle.handleLengthMm && cfgHandle.handleLengthMm >= 1000 ? 'FULL' : 'PIECE'),
+      pieceLengthCm: cfgHandle.pieceLengthCm ?? (cfgHandle.handleLengthMm ? Math.round(cfgHandle.handleLengthMm / 10) : 40),
+    } : state.handleConfig;
+
+    // Furação
+    const cfgDrill = template.templateConfig?.drillingConfig;
+    const drillPositions = cfgDrill?.customPositionsMm && cfgDrill.customPositionsMm.length > 0
+      ? cfgDrill.customPositionsMm
+      : (state.drillingConfig.customDistancesMm ?? [100, 500, 560, 100]);
+    const nextDrillingConfig: DrillingConfig = cfgDrill ? {
+      holeCount: cfgDrill.holeCount ?? 2,
+      divisionType: cfgDrill.drillingMode === 'CUSTOM' ? 'CUSTOM_DISTANCE' : 'EQUAL',
+      customDistancesMm: drillPositions,
+    } : state.drillingConfig;
+
+    if (cfgDrill?.customPositionsMm && cfgDrill.customPositionsMm.length > 0) {
+      setCustomDistanceInput(drillPositions.join(', '));
     }
+
+    const currentW = typeof state.widthMm === 'number' && state.widthMm > 0 ? state.widthMm : DEFAULT_WIDTH;
+    const currentH = typeof state.heightMm === 'number' && state.heightMm > 0 ? state.heightMm : DEFAULT_HEIGHT;
+    const newSelections = buildSelectionsForTemplate(template, currentW, currentH, alumColor, glassColor);
 
     setState((prev) => ({
       ...prev,
       template,
+      templateType: targetSvg,
+      aluminumColor: alumColor,
+      glassFinish: glassColor,
+      openingDirection: dir!,
+      handleConfig: nextHandleConfig,
+      drillingConfig: nextDrillingConfig,
       laborCost: template.laborCost || prev.laborCost || 200.0,
       materialSelections: newSelections,
     }));
@@ -543,6 +663,10 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
     if (catType === 'GLASS' && glasses.length > 0) defaultMat = { id: glasses[0].id, name: glasses[0].name, price: glasses[0].salePrice ?? glasses[0].pricePerSqm ?? 0, unit: 'm²' };
     else if (catType === 'PROFILE' && profiles.length > 0) defaultMat = { id: profiles[0].id, name: profiles[0].name, price: profiles[0].salePrice ?? 0, unit: profiles[0].unitMeasure ?? 'm' };
     else if (catType === 'HARDWARE' && hardwares.length > 0) defaultMat = { id: hardwares[0].id, name: hardwares[0].name, price: hardwares[0].salePrice ?? 0, unit: hardwares[0].unitMeasure ?? 'un' };
+    else if (catType === 'ROLLERS' && hardwares.length > 0) {
+      const chosen = hardwares.find((h) => h.name.toLowerCase().includes('rold')) ?? hardwares[0];
+      defaultMat = { id: chosen.id, name: chosen.name, price: chosen.salePrice ?? 0, unit: chosen.unitMeasure ?? 'un' };
+    }
     else if (catType === 'FILM' && films.length > 0) defaultMat = { id: films[0].id, name: films[0].name, price: films[0].salePrice ?? 0, unit: 'm²' };
 
     const newSel: MaterialSelection = {
@@ -686,13 +810,15 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
       return;
     }
 
+    const svgTemplateToSave = (state.templateType || state.template?.templateType || 'SLIDING_DOOR_2F') as DoorTemplateType;
+
     const item: BudgetItem = {
       tempId: editingItem?.tempId ?? `item-${Date.now()}`,
       productId: state.template.id,
       productName: state.template.name,
-      templateType: state.template.templateType ?? 'SLIDING_DOOR_2F',
+      templateType: svgTemplateToSave,
       templateConfig: {
-        templateType: state.template.templateType ?? 'SLIDING_DOOR_2F',
+        templateType: svgTemplateToSave,
         aluminumColor: state.aluminumColor,
         glassFinish: state.glassFinish,
         openingDirection: state.openingDirection,
@@ -727,7 +853,6 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
 
   if (!isOpen) return null;
 
-  const svgTemplate = state.template?.templateType ?? 'SLIDING_DOOR_2F';
   const svgW = typeof state.widthMm === 'number' && state.widthMm > 0 ? state.widthMm : DEFAULT_WIDTH;
   const svgH = typeof state.heightMm === 'number' && state.heightMm > 0 ? state.heightMm : DEFAULT_HEIGHT;
   const unitAreaM2 = ((svgW / 1000) * (svgH / 1000)).toFixed(2);
@@ -814,6 +939,39 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
                     {svgW}×{svgH} mm
                   </span>
                 </div>
+
+                {/* Seletor de Modelo Visual SVG (se o template permitir múltiplas variantes visuais) */}
+                {availableSvgTemplates.length > 1 && (
+                  <div className="flex items-center justify-between gap-xs px-xs py-1 bg-surface-container-low rounded border border-outline-variant/60">
+                    <label htmlFor="svg-subtype-select" className="text-[11px] font-label text-on-surface-variant whitespace-nowrap">
+                      Variante Visual:
+                    </label>
+                    <select
+                      id="svg-subtype-select"
+                      value={svgTemplate}
+                      onChange={(e) => {
+                        const nextSvg = e.target.value as DoorTemplateType;
+                        const validDirs = TEMPLATE_TYPE_INFO[nextSvg]?.supportedDirections ?? ['LEFT_TO_RIGHT'];
+                        const nextDir = validDirs.includes(state.openingDirection)
+                          ? state.openingDirection
+                          : validDirs[0];
+                        setState((p) => ({
+                          ...p,
+                          templateType: nextSvg,
+                          openingDirection: nextDir,
+                        }));
+                      }}
+                      className="text-xs p-1 bg-surface border border-outline-variant rounded font-body text-on-surface focus:border-primary focus:outline-none flex-1 max-w-[210px] truncate"
+                    >
+                      {availableSvgTemplates.map((type) => (
+                        <option key={type} value={type}>
+                          {TEMPLATE_TYPE_INFO[type]?.label ?? type}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
                 <div className="flex flex-col items-center justify-center min-h-[240px] max-h-[260px] py-xs overflow-hidden">
                   <WindowSvgPreview
                     templateType={svgTemplate}
@@ -824,6 +982,7 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
                     drillingConfig={state.drillingConfig}
                     templateName={state.template?.name}
                     aluminumColor={state.aluminumColor}
+                    glassFinish={state.glassFinish}
                   />
                 </div>
               </div>
@@ -834,31 +993,33 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
                   <span className="material-symbols-outlined text-[16px] text-primary">swap_horiz</span>
                   Sentido de Abertura da Folha
                 </p>
-                <div className="grid grid-cols-2 gap-xs mt-xs">
-                  <button
-                    type="button"
-                    onClick={() => setState((p) => ({ ...p, openingDirection: 'LEFT_TO_RIGHT' }))}
-                    className={`py-xs px-sm rounded border text-xs font-label font-semibold flex items-center justify-center gap-xs transition-all ${
-                      state.openingDirection === 'LEFT_TO_RIGHT'
-                        ? 'bg-primary text-on-primary border-primary shadow-xs'
-                        : 'bg-surface border-outline-variant text-on-surface-variant hover:bg-surface-container'
-                    }`}
-                  >
-                    <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
-                    Abrir p/ Direita
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setState((p) => ({ ...p, openingDirection: 'RIGHT_TO_LEFT' }))}
-                    className={`py-xs px-sm rounded border text-xs font-label font-semibold flex items-center justify-center gap-xs transition-all ${
-                      state.openingDirection === 'RIGHT_TO_LEFT'
-                        ? 'bg-primary text-on-primary border-primary shadow-xs'
-                        : 'bg-surface border-outline-variant text-on-surface-variant hover:bg-surface-container'
-                    }`}
-                  >
-                    <span className="material-symbols-outlined text-[16px]">arrow_back</span>
-                    Abrir p/ Esquerda
-                  </button>
+                <div className={`grid ${supportedDirections.length > 1 ? 'grid-cols-2' : 'grid-cols-1'} gap-xs mt-xs`}>
+                  {supportedDirections.map((dir) => {
+                    const isSelected = state.openingDirection === dir;
+                    let label = 'Abrir';
+                    let icon = 'swap_horiz';
+                    if (dir === 'LEFT_TO_RIGHT') { label = 'Abrir p/ Direita'; icon = 'arrow_forward'; }
+                    else if (dir === 'RIGHT_TO_LEFT') { label = 'Abrir p/ Esquerda'; icon = 'arrow_back'; }
+                    else if (dir === 'OUTSIDE') { label = 'Para Fora'; icon = 'open_in_new'; }
+                    else if (dir === 'INSIDE') { label = 'Para Dentro'; icon = 'login'; }
+                    else if (dir === 'CENTER_TO_SIDES') { label = 'Centro p/ Lados'; icon = 'unfold_more'; }
+
+                    return (
+                      <button
+                        key={dir}
+                        type="button"
+                        onClick={() => setState((p) => ({ ...p, openingDirection: dir }))}
+                        className={`py-xs px-sm rounded border text-xs font-label font-semibold flex items-center justify-center gap-xs transition-all ${
+                          isSelected
+                            ? 'bg-primary text-on-primary border-primary shadow-xs'
+                            : 'bg-surface border-outline-variant text-on-surface-variant hover:bg-surface-container'
+                        }`}
+                      >
+                        <span className="material-symbols-outlined text-[16px]">{icon}</span>
+                        {label}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -1204,6 +1365,14 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
                     </button>
                     <button
                       type="button"
+                      onClick={() => handleAddMaterial('ROLLERS')}
+                      className="px-xs py-[2px] rounded text-[11px] font-label text-primary hover:bg-primary/10 transition-colors border border-primary/30"
+                      title="Adicionar Roldana"
+                    >
+                      + Roldana
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => handleAddMaterial('FILM')}
                       className="px-xs py-[2px] rounded text-[11px] font-label text-primary hover:bg-primary/10 transition-colors border border-primary/30"
                       title="Adicionar Película"
@@ -1241,7 +1410,7 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
                           price: p.salePrice ?? 0,
                           unit: p.unitMeasure ?? 'm',
                         }));
-                      } else if (categoryType === 'HARDWARE') {
+                      } else if (categoryType === 'HARDWARE' || categoryType === 'ROLLERS') {
                         optionsList = hardwares.map((h) => ({
                           id: h.id,
                           name: h.name,
