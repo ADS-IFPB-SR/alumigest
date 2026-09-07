@@ -2,10 +2,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { customersApi, type CreateCustomerRequest } from '../services/customersApi';
 import toast from 'react-hot-toast';
 
-export const useCustomers = (search?: string) => {
+export const useCustomers = (params?: { busca?: string; page?: number; size?: number; ativo?: boolean }) => {
   return useQuery({
-    queryKey: ['customers', search ?? ''],
-    queryFn: () => customersApi.getCustomers(search),
+    queryKey: ['customers', params],
+    queryFn: () => customersApi.getCustomers(params),
     staleTime: 60_000,
   });
 };

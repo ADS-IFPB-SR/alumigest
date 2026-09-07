@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../../../components/ui/Button';
 import { BudgetsFilters } from './BudgetsFilters';
@@ -31,25 +31,33 @@ export function BudgetsView() {
   const { data: budgetsData, isLoading, isError, refetch } = useBudgets(filters);
   const { data: statusCounts } = useBudgetStatusCounts();
 
-  const handleStatusChange = (newStatus: BudgetStatus | '') => {
+  const handleStatusChange = useCallback((newStatus: BudgetStatus | '') => {
     setStatus(newStatus);
     setPage(0);
-  };
+  }, []);
 
-  const handleSearchChange = (newSearch: string) => {
-    setSearch(newSearch);
-    setPage(0);
-  };
+  const handleSearchChange = useCallback((newSearch: string) => {
+    setSearch((prevSearch) => {
+      if (prevSearch !== newSearch) {
+        setPage(0);
+        return newSearch;
+      }
+      return prevSearch;
+    });
+  }, []);
 
-  const handleSort = (field: string) => {
-    if (sortField === field) {
-      setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
-    } else {
-      setSortField(field);
-      setSortDirection('asc');
-    }
+  const handleSort = useCallback((field: string) => {
+    setSortField((prevField) => {
+      if (prevField === field) {
+        setSortDirection((prevDir) => (prevDir === 'asc' ? 'desc' : 'asc'));
+      } else {
+        setSortDirection('asc');
+        return field;
+      }
+      return prevField;
+    });
     setPage(0);
-  };
+  }, []);
 
   const handleCreate = () => {
     navigate('/orcamentos/novo');
