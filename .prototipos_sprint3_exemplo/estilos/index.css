@@ -1,0 +1,213 @@
+@import url('https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply font-body bg-background text-on-background antialiased;
+  }
+}
+
+:root {
+  --color-surface: #f7f9fb;
+  --color-surface-dim: #d8dadc;
+  --color-surface-bright: #f7f9fb;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #f2f4f6;
+  --color-surface-container: #eceef0;
+  --color-surface-container-high: #e6e8ea;
+  --color-surface-container-highest: #e0e3e5;
+  --color-on-surface: #191c1e;
+  --color-on-surface-variant: #44474d;
+  --color-inverse-surface: #2d3133;
+  --color-inverse-on-surface: #eff1f3;
+  --color-outline: #75777e;
+  --color-outline-variant: #c5c6ce;
+  --color-surface-tint: #4f5e7e;
+  --color-primary: #041632;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #1b2b48;
+  --color-on-primary-container: #8393b5;
+  --color-inverse-primary: #b7c7eb;
+  --color-secondary: #505f76;
+  --color-on-secondary: #ffffff;
+  --color-secondary-container: #d0e1fb;
+  --color-on-secondary-container: #54647a;
+  --color-tertiary: #001b0f;
+  --color-on-tertiary: #ffffff;
+  --color-tertiary-container: #003220;
+  --color-on-tertiary-container: #00a673;
+  --color-success: #10B981;
+  --color-error: #ba1a1a;
+  --color-on-error: #ffffff;
+  --color-error-container: #ffdad6;
+  --color-on-error-container: #93000a;
+  --color-primary-fixed: #d7e2ff;
+  --color-primary-fixed-dim: #b7c7eb;
+  --color-on-primary-fixed: #091b37;
+  --color-on-primary-fixed-variant: #374765;
+  --color-secondary-fixed: #d3e4fe;
+  --color-secondary-fixed-dim: #b7c8e1;
+  --color-on-secondary-fixed: #0b1c30;
+  --color-on-secondary-fixed-variant: #38485d;
+  --color-tertiary-fixed: #6ffbbe;
+  --color-tertiary-fixed-dim: #4edea3;
+  --color-on-tertiary-fixed: #002113;
+  --color-on-tertiary-fixed-variant: #005236;
+  --color-background: #F1F5F9;
+  --color-on-background: #191c1e;
+  --color-surface-variant: #e0e3e5;
+}
+
+.dark {
+  --color-surface: #2d3133;
+  --color-surface-dim: #111318;
+  --color-surface-bright: #37393e;
+  --color-surface-container-lowest: #0c0e13;
+  --color-surface-container-low: #191c20;
+  --color-surface-container: #1d2024;
+  --color-surface-container-high: #282a2f;
+  --color-surface-container-highest: #33353a;
+  --color-on-surface: #eff1f3;
+  --color-on-surface-variant: #c4c6d0;
+  --color-inverse-surface: #f7f9fb;
+  --color-inverse-on-surface: #191c1e;
+  --color-outline: #8e9099;
+  --color-outline-variant: #44474e;
+  --color-surface-tint: #b1c5ff;
+  --color-primary: #b7c7eb;
+  --color-on-primary: #002b74;
+  --color-primary-container: #0040a4;
+  --color-on-primary-container: #d8e2ff;
+  --color-inverse-primary: #041632;
+  --color-secondary: #bec6dc;
+  --color-on-secondary: #283041;
+  --color-secondary-container: #3e4759;
+  --color-on-secondary-container: #dae2f9;
+  --color-tertiary: #00e19c;
+  --color-on-tertiary: #003824;
+  --color-tertiary-container: #005236;
+  --color-on-tertiary-container: #59ffb8;
+  --color-success: #10B981;
+  --color-error: #ffb4ab;
+  --color-on-error: #690005;
+  --color-error-container: #93000a;
+  --color-on-error-container: #ffdad6;
+  --color-primary-fixed: #d7e2ff;
+  --color-primary-fixed-dim: #b7c7eb;
+  --color-on-primary-fixed: #091b37;
+  --color-on-primary-fixed-variant: #374765;
+  --color-secondary-fixed: #d3e4fe;
+  --color-secondary-fixed-dim: #b7c8e1;
+  --color-on-secondary-fixed: #0b1c30;
+  --color-on-secondary-fixed-variant: #38485d;
+  --color-tertiary-fixed: #6ffbbe;
+  --color-tertiary-fixed-dim: #4edea3;
+  --color-on-tertiary-fixed: #002113;
+  --color-on-tertiary-fixed-variant: #005236;
+  --color-background: #0c0e13;
+  --color-on-background: #e2e2e6;
+  --color-surface-variant: #e0e3e5;
+}
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+.table-zebra tbody tr:nth-child(even) {
+  @apply bg-surface-container-lowest;
+}
+.table-zebra tbody tr:nth-child(odd) {
+  @apply bg-surface-container-low;
+}
+
+/* ─── ADVANCED PRINT & PDF STYLES ─────────────────────────────── */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 12mm 10mm 15mm 10mm;
+  }
+
+  html, body, #root {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    height: auto !important;
+    min-height: 100% !important;
+    overflow: visible !important;
+    position: static !important;
+    font-size: 10pt !important;
+  }
+
+  /* Reset all application layout wrappers so multi-page documents flow cleanly */
+  .h-screen, .h-full, .overflow-hidden, .overflow-y-auto, .overflow-x-hidden, main, .bg-background, .bg-surface {
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    position: static !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+  }
+
+  /* Hide app shell chrome (sidebar, topbar, buttons, tabs, interactive elements) */
+  aside,
+  header,
+  nav,
+  .print\:hidden,
+  button,
+  .toaster,
+  div[data-portal] {
+    display: none !important;
+  }
+
+  /* Force document visibility */
+  .printable-document {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  /* Tables pagination formatting */
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+  }
+
+  thead {
+    display: table-header-group !important;
+  }
+
+  tr {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* Prevent elements from being sliced across page breaks */
+  .print-avoid-break,
+  .print-item-row,
+  .print-item-card,
+  .print-summary-box,
+  .print-header-box,
+  .print-signature-box {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* Print color accuracy */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}

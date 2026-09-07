@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Protótipo Modular - AlumiGest</title>
+    <!-- Tailwind CSS para estilização rápida -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Estilos base para o desenho do vidro e do perfil de alumínio */
+        .aluminum-frame {
+            border: 8px solid #374151; /* Cor do perfil escuro */
+            background-color: rgba(167, 243, 208, 0.3); /* Vidro esverdeado translúcido */
+            box-shadow: inset 0 0 10px rgba(255,255,255,0.5);
+            transition: all 0.3s ease;
+        }
+        .handle {
+            width: 12px;
+            height: 80px;
+            background-color: #D1D5DB;
+            border-radius: 4px;
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-8 font-sans text-gray-800">
+
+    <div class="max-w-6xl mx-auto bg-white p-6 rounded-lg shadow-lg flex flex-col md:flex-row gap-8">
+        
+        <!-- PAINEL ESQUERDO: CONTROLES -->
+        <div class="w-full md:w-1/3 flex flex-col gap-6">
+            <div>
+                <h1 class="text-2xl font-bold text-blue-900 flex items-center gap-2">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                    AlumiGest Builder
+                </h1>
+                <p class="text-sm text-gray-500 mt-1">Conceito de Esquadrias Modulares (Lego)</p>
+            </div>
+
+            <!-- Medidas do Vão Total -->
+            <div class="bg-blue-50 p-4 rounded-md border border-blue-100">
+                <h2 class="font-semibold text-blue-800 mb-3 text-sm uppercase">📐 1. Medidas do Vão (Buraco)</h2>
+                <div class="flex gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1">LARGURA (mm)</label>
+                        <input type="number" id="holeWidth" value="2000" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" onchange="render()">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1">ALTURA (mm)</label>
+                        <input type="number" id="holeHeight" value="2100" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" onchange="render()">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Adição de Módulos -->
+            <div class="bg-gray-50 p-4 rounded-md border border-gray-200">
+                <h2 class="font-semibold text-gray-800 mb-3 text-sm uppercase">🧩 2. Adicionar Módulos</h2>
+                <div class="flex flex-col gap-2">
+                    <button onclick="addModule('SWING_LEAF')" class="bg-white border border-gray-300 hover:bg-gray-100 text-sm font-medium py-2 px-4 rounded shadow-sm text-left flex justify-between items-center">
+                        🚪 Folha de Giro (Porta)
+                        <span class="text-xs bg-gray-200 px-2 py-1 rounded text-gray-600">+ Add</span>
+                    </button>
+                    <button onclick="addModule('FIXED_PANEL')" class="bg-white border border-gray-300 hover:bg-gray-100 text-sm font-medium py-2 px-4 rounded shadow-sm text-left flex justify-between items-center">
+                        🪟 Painel Fixo (Vidro)
+                        <span class="text-xs bg-gray-200 px-2 py-1 rounded text-gray-600">+ Add</span>
+                    </button>
+                    <button onclick="clearModules()" class="mt-4 text-red-600 text-xs font-bold hover:underline self-start">Limpar Esquadria</button>
+                </div>
+            </div>
+
+            <!-- Payload View -->
+            <div>
+                <h2 class="font-semibold text-gray-800 mb-2 text-sm uppercase">📡 Payload para o Java (Backend)</h2>
+                <pre id="payloadOutput" class="bg-gray-900 text-green-400 p-3 rounded text-xs overflow-x-auto shadow-inner"></pre>
+            </div>
+        </div>
+
+        <!-- PAINEL DIREITO: VISUALIZAÇÃO -->
+        <div class="w-full md:w-2/3 flex flex-col items-center justify-center bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 p-8 min-h-[500px]">
+            
+            <div class="mb-4 text-center">
+                <p class="text-sm text-gray-500">Visualização Dinâmica (A parede)</p>
+                <div class="inline-block bg-blue-100 text-blue-800 text-xs px-3 py-1 rounded-full font-bold mt-2 shadow-sm" id="cotaVao">
+                    2000mm x 2100mm
+                </div>
+            </div>
+
+            <!-- O Vão na Parede (Container Flexbox) -->
+            <!-- Usamos aspect ratio fixo para a visualização, os módulos se acomodam dentro -->
+            <div class="relative bg-gray-800 p-2 shadow-2xl flex" style="width: 400px; height: 420px;" id="wallHole">
+                <!-- Os SVGs/Módulos serão injetados aqui pelo Javascript -->
+            </div>
+            
+            <p class="text-xs text-gray-400 mt-6 max-w-sm text-center">O Front-end não precisa de um SVG gigante. Ele usa CSS Flexbox para dividir o vão entre as <span id="moduleCount">0</span> folhas adicionadas.</p>
+        </div>
+
+    </div>
+
+    <script>
+        // ESTADO DA APLICAÇÃO
+        let modules = [
+            { id: 1, type: 'SWING_LEAF' }
+        ];
+
+        function addModule(type) {
+            modules.push({ id: Date.now(), type: type });
+            render();
+        }
+
+        function removeModule(id) {
+            modules = modules.filter(m => m.id !== id);
+            render();
+        }
+
+        function clearModules() {
+            modules = [];
+            render();
+        }
+
+        function render() {
+            // Pegar valores
+            const width = parseInt(document.getElementById('holeWidth').value) || 0;
+            const height = parseInt(document.getElementById('holeHeight').value) || 0;
+            const holeContainer = document.getElementById('wallHole');
+            const countLabel = document.getElementById('moduleCount');
+            const cotaLabel = document.getElementById('cotaVao');
+            const payloadOutput = document.getElementById('payloadOutput');
+
+            // Atualizar UI básica
+            countLabel.innerText = modules.length;
+            cotaLabel.innerText = `VÃO TOTAL: ${width}mm x ${height}mm`;
+
+            // Calcular tamanho dinâmico por módulo
+            const moduleWidth = modules.length > 0 ? Math.floor(width / modules.length) : 0;
+
+            // Limpar container
+            holeContainer.innerHTML = '';
+
+            if (modules.length === 0) {
+                holeContainer.innerHTML = '<div class="w-full h-full flex items-center justify-center text-gray-500 text-sm">Vão vazio. Adicione módulos.</div>';
+            }
+
+            // O Array que será enviado para a API
+            const apiPayload = {
+                totalHoleWidthMm: width,
+                totalHoleHeightMm: height,
+                items: []
+            };
+
+            // Renderizar cada módulo
+            modules.forEach((mod, index) => {
+                // Montar DTO do Backend
+                apiPayload.items.push({
+                    moduleType: mod.type,
+                    widthMm: moduleWidth,
+                    heightMm: height,
+                    glassId: "vidro-padrao",
+                    profileId: "perfil-padrao"
+                });
+
+                // Criar Div do SVG
+                const modDiv = document.createElement('div');
+                // flex-1 faz com que dividam o espaço igualmente!
+                modDiv.className = "flex-1 relative aluminum-frame flex flex-col items-center justify-center group overflow-hidden cursor-pointer hover:border-gray-400";
+                
+                // Cota Individual (O Segredo!)
+                const cota = document.createElement('div');
+                cota.className = "absolute bottom-4 bg-white/90 text-gray-800 text-[10px] font-bold px-2 py-1 rounded shadow";
+                cota.innerText = `${moduleWidth}mm (L)`;
+
+                // Puxador visual (apenas se for porta de giro)
+                if (mod.type === 'SWING_LEAF') {
+                    const handle = document.createElement('div');
+                    // Alternar o puxador de lado para dar o efeito de porta dupla se houver mais de 1
+                    handle.className = `handle ${index % 2 === 0 ? 'right-2' : 'left-2'}`;
+                    modDiv.appendChild(handle);
+                }
+
+                // Ícone ilustrativo no meio
+                const icon = document.createElement('div');
+                icon.className = "text-white/50 text-2xl font-bold opacity-30 pointer-events-none";
+                icon.innerText = mod.type === 'SWING_LEAF' ? '🚪' : '🪟';
+
+                // Botão de deletar overlay
+                const delBtn = document.createElement('button');
+                delBtn.className = "hidden group-hover:block absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white text-[10px] font-bold px-2 py-1 rounded z-10";
+                delBtn.innerText = "X";
+                delBtn.onclick = () => removeModule(mod.id);
+
+                modDiv.appendChild(delBtn);
+                modDiv.appendChild(icon);
+                modDiv.appendChild(cota);
+                holeContainer.appendChild(modDiv);
+            });
+
+            // Atualizar JSON Payload Box
+            payloadOutput.innerText = JSON.stringify(apiPayload, null, 2);
+        }
+
+        // Render inicial
+        render();
+    </script>
+</body>
+</html>

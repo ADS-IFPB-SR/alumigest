@@ -58,16 +58,30 @@ export interface PageResponse<T> {
 }
 
 export const customersApi = {
-  getCustomers: async (search?: string): Promise<CustomerSummaryDTO[]> => {
-    const params: Record<string, string | number | boolean> = { size: 100 };
-    if (search && search.trim().length >= 2) {
-      params.busca = search;
+  getCustomers: async (params?: { busca?: string; page?: number; size?: number; ativo?: boolean }): Promise<PageResponse<CustomerSummaryDTO>> => {
+    const queryParams: Record<string, string | number | boolean> = {
+      page: params?.page ?? 0,
+      size: params?.size ?? 20,
+    };
+    if (params?.busca && params.busca.trim().length >= 2) {
+      queryParams.busca = params.busca.trim();
     }
-    const response = await api.get<PageResponse<CustomerSummaryDTO>>('/api/clientes', {
+    if (params?.ativo !== undefined) {
+      queryParams.ativo = params.ativo;
+    }
+    const response = await api.get<any>('/api/clientes', {
       baseURL: '',
-      params,
+      params: queryParams,
     });
-    return response.data?.content || [];
+    return {
+      content: response.data.content || [],
+      page: {
+        size: response.data.size ?? queryParams.size,
+        number: response.data.page ?? queryParams.page,
+        totalElements: response.data.totalElements ?? 0,
+        totalPages: response.data.totalPages ?? 1,
+      }
+    };
   },
 
   createCustomer: async (data: CreateCustomerRequest): Promise<CustomerResponseDTO> => {
