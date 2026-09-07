@@ -91,7 +91,7 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
     return (productsData.content as unknown as Product[])
       .filter((p) => p.isActive)
       .map((p): WindowTemplate => {
-        const defaultSvg = getDefaultSvgTemplateForCatalogType(p.templateType, p.name, p.templateConfig);
+        const defaultSvg = getDefaultSvgTemplateForCatalogType(p.templateType, p.name, p.categoryName, p.templateConfig);
         return {
           id: p.id,
           name: p.name,
@@ -165,8 +165,12 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
   const svgTemplate: DoorTemplateType = (state.templateType || state.template?.templateType || 'SLIDING_DOOR_2F') as DoorTemplateType;
 
   const availableSvgTemplates = useMemo(() => {
-    return getAvailableSvgTemplatesForCatalogType(state.template?.catalogTemplateType, state.template?.name);
-  }, [state.template?.catalogTemplateType, state.template?.name]);
+    return getAvailableSvgTemplatesForCatalogType(
+      state.template?.catalogTemplateType,
+      state.template?.name,
+      state.template?.categoryName
+    );
+  }, [state.template?.catalogTemplateType, state.template?.name, state.template?.categoryName]);
 
   const supportedDirections = useMemo(() => {
     return TEMPLATE_TYPE_INFO[svgTemplate]?.supportedDirections ?? ['LEFT_TO_RIGHT', 'RIGHT_TO_LEFT'];
@@ -390,7 +394,7 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
       if (!hasInitializedRef.current && templates.length > 0) {
         hasInitializedRef.current = true;
         const defaultTemplate = templates[0];
-        const targetSvg = (defaultTemplate.templateType as DoorTemplateType) || getDefaultSvgTemplateForCatalogType(defaultTemplate.catalogTemplateType, defaultTemplate.name, defaultTemplate.templateConfig);
+        const targetSvg = (defaultTemplate.templateType as DoorTemplateType) || getDefaultSvgTemplateForCatalogType(defaultTemplate.catalogTemplateType, defaultTemplate.name, defaultTemplate.categoryName, defaultTemplate.templateConfig);
         const validDirections = TEMPLATE_TYPE_INFO[targetSvg]?.supportedDirections ?? ['LEFT_TO_RIGHT', 'RIGHT_TO_LEFT'];
         const alumColor = defaultTemplate.templateConfig?.aluminumColor
           ? mapCatalogAluminumColor(defaultTemplate.templateConfig.aluminumColor)
@@ -478,7 +482,7 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
     const template = templates.find((t) => t.id === templateId);
     if (!template) return;
 
-    const targetSvg = (template.templateType as DoorTemplateType) || getDefaultSvgTemplateForCatalogType(template.catalogTemplateType, template.name, template.templateConfig);
+    const targetSvg = (template.templateType as DoorTemplateType) || getDefaultSvgTemplateForCatalogType(template.catalogTemplateType, template.name, template.categoryName, template.templateConfig);
     const validDirections = TEMPLATE_TYPE_INFO[targetSvg]?.supportedDirections ?? ['LEFT_TO_RIGHT', 'RIGHT_TO_LEFT'];
 
     // Mapeia acabamentos configurados no produto

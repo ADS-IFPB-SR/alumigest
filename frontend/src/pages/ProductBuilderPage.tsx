@@ -1,11 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
-import { useCreateProduct, useUpdateProduct, useProductCategories, useProductById } from '../features/catalog/hooks/useCatalog';
+import {
+  useCreateProduct,
+  useUpdateProduct,
+  useProductCategories,
+  useProductById,
+  useMaterialsSummary,
+} from '../features/catalog/hooks/useCatalog';
 import { ProductGeneralInfo } from '../features/catalog/components/builder/ProductGeneralInfo';
 import { ProductCostSummary } from '../features/catalog/components/builder/ProductCostSummary';
 import { TemplateSelector } from '../features/catalog/components/builder/TemplateSelector';
 import { TemplateOptionSchemaEditor } from '../features/catalog/components/builder/TemplateOptionSchemaEditor';
 import { CategoryRequirementsSelector } from '../features/catalog/components/builder/CategoryRequirementsSelector';
+import { ProductTechSheet, type FormItem } from '../features/catalog/components/builder/ProductTechSheet';
 import type { DoorTemplateType, TemplateConfig, TemplateOptionSchema, MaterialCategoryType } from '../features/catalog/types/templates';
 import toast from 'react-hot-toast';
 
@@ -16,6 +23,7 @@ export function ProductBuilderPage() {
 
   // Queries
   const { data: categories = [] } = useProductCategories();
+  const { data: materials = [] } = useMaterialsSummary();
   
   // Fetch single product for editing
   const { data: existingProduct } = useProductById(id);
@@ -38,6 +46,13 @@ export function ProductBuilderPage() {
   });
   const [optionSchema, setOptionSchema] = useState<Partial<TemplateOptionSchema>>({});
   const [categoryRequirements, setCategoryRequirements] = useState<MaterialCategoryType[]>([]);
+
+  // Form State — Ficha Técnica (Insumos Estáticos)
+  const [items, setItems] = useState<FormItem[]>([]);
+
+  const selectedCategory = useMemo(() => {
+    return categories.find((c) => c.id === categoryId);
+  }, [categories, categoryId]);
 
   // Load existing data if editing
   useEffect(() => {
@@ -67,6 +82,19 @@ export function ProductBuilderPage() {
       if (existingProduct.categoryRequirements) {
         setCategoryRequirements(existingProduct.categoryRequirements);
       }
+
+      // Ficha Técnica / Items
+      if (existingProduct.items && existingProduct.items.length > 0) {
+        setItems(
+          existingProduct.items.map((item) => ({
+            tempId: Math.random().toString(36).slice(2),
+            materialId: item.materialId,
+            quantity: item.quantity.toString().replace('.', ','),
+          }))
+        );
+      } else {
+        setItems([]);
+      }
     } else if (!isEditing) {
       // Reset form if navigating from Edit -> New
       setName('');
@@ -75,6 +103,7 @@ export function ProductBuilderPage() {
       setTemplateConfig({ profileMm: 20, aluminumColor: '#212121', glassColor: '#e3f2fd' });
       setOptionSchema({});
       setCategoryRequirements([]);
+      setItems([]);
     }
   }, [id, isEditing, existingProduct]);
 
@@ -88,10 +117,28 @@ export function ProductBuilderPage() {
       return;
     }
 
-    // Validação de categorias requeridas quando houver template
-    if (templateType && categoryRequirements.length === 0) {
-      toast.error('Selecione pelo menos uma categoria de insumo para o template.');
-      return;
+    if (templateType) {
+      // Validação de categorias requeridas quando houver template
+      if (categoryRequirements.length === 0) {
+        toast.error('Selecione pelo menos uma categoria de insumo para o template.');
+        return;
+      }
+    } else {
+      // Validação da ficha técnica para produtos estáticos (sem template)
+      const invalidItems = items.filter((item) => {
+        const q = Number(item.quantity.replace(',', '.'));
+        return isNaN(q) || q <= 0 || q > 99999 || !item.materialId;
+      });
+
+      if (invalidItems.length > 0) {
+        toast.error('Existem insumos com quantidade inválida. Ajuste para um valor entre 0.01 e 99999.');
+        return;
+      }
+
+      if (items.length === 0) {
+        toast.error('A ficha técnica precisa de pelo menos um insumo.');
+        return;
+      }
     }
 
     // Build templateConfig with optionSchema embedded
@@ -112,7 +159,12 @@ export function ProductBuilderPage() {
       templateType: templateType || undefined,
       templateConfig: finalTemplateConfig,
       categoryRequirements: templateType ? categoryRequirements : undefined,
-      items: []
+      items: templateType
+        ? []
+        : items.map((item) => ({
+            materialId: item.materialId,
+            quantity: Number(item.quantity.replace(',', '.')),
+          })),
     };
 
     if (isEditing && id) {
@@ -121,6 +173,8 @@ export function ProductBuilderPage() {
       createProduct(payload, { onSuccess: () => navigate('/produtos') });
     }
   };
+
+  const isSaveDisabled = isPending || (!templateType && items.length === 0);
 
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden bg-surface relative">
@@ -143,7 +197,7 @@ export function ProductBuilderPage() {
           </button>
           <button 
             onClick={handleSave}
-            disabled={isPending}
+            disabled={isSaveDisabled}
             className="flex items-center gap-xs px-md py-xs bg-primary text-on-primary rounded-sm font-label-bold text-label-bold hover:bg-primary-container hover:text-on-primary-container transition-colors shadow-sm disabled:opacity-50 cursor-pointer"
           >
             <span className="material-symbols-outlined text-[18px]">save</span>
@@ -181,19 +235,30 @@ export function ProductBuilderPage() {
               setTemplateType={setTemplateType}
               templateConfig={templateConfig}
               setTemplateConfig={setTemplateConfig}
+              categoryName={selectedCategory?.name}
             />
 
-            <TemplateOptionSchemaEditor
-              templateType={templateType}
-              optionSchema={optionSchema}
-              setOptionSchema={setOptionSchema}
-            />
+            {templateType ? (
+              <>
+                <TemplateOptionSchemaEditor
+                  templateType={templateType}
+                  optionSchema={optionSchema}
+                  setOptionSchema={setOptionSchema}
+                />
 
-            <CategoryRequirementsSelector
-              templateType={templateType}
-              selectedCategories={categoryRequirements}
-              setSelectedCategories={setCategoryRequirements}
-            />
+                <CategoryRequirementsSelector
+                  templateType={templateType}
+                  selectedCategories={categoryRequirements}
+                  setSelectedCategories={setCategoryRequirements}
+                />
+              </>
+            ) : (
+              <ProductTechSheet
+                items={items}
+                setItems={setItems}
+                materials={materials}
+              />
+            )}
           </div>
 
           {/* Sidebar (Right) */}
@@ -204,6 +269,8 @@ export function ProductBuilderPage() {
             onSave={handleSave}
             isPending={isPending}
             isEditing={isEditing}
+            items={items}
+            materials={materials}
           />
         </div>
       </div>

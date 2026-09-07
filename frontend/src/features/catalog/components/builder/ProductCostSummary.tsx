@@ -1,4 +1,7 @@
+import { useMemo } from 'react';
 import type { DoorTemplateType, MaterialCategoryType } from '../../types/templates';
+import type { MaterialSummary } from '../../types';
+import type { FormItem } from './ProductTechSheet';
 import { DOOR_TEMPLATE_LABELS, MATERIAL_CATEGORY_LABELS, MATERIAL_CATEGORY_ICONS } from '../../types/templates';
 
 interface ProductCostSummaryProps {
@@ -8,6 +11,8 @@ interface ProductCostSummaryProps {
   onSave: () => void;
   isPending: boolean;
   isEditing: boolean;
+  items?: FormItem[];
+  materials?: MaterialSummary[];
 }
 
 export function ProductCostSummary({ 
@@ -16,8 +21,30 @@ export function ProductCostSummary({
   categoryRequirements, 
   onSave, 
   isPending, 
-  isEditing 
+  isEditing,
+  items = [],
+  materials = [],
 }: ProductCostSummaryProps) {
+  const materialsMap = useMemo(() => {
+    const map = new Map<string, MaterialSummary>();
+    materials.forEach((m) => map.set(m.id, m));
+    return map;
+  }, [materials]);
+
+  const materialsSubtotal = useMemo(() => {
+    if (!items || items.length === 0) return 0;
+    return items.reduce((acc, item) => {
+      const material = materialsMap.get(item.materialId);
+      const price = material ? (material.costPrice > 0 ? material.costPrice : material.salePrice) : 0;
+      const qty = Number(item.quantity.replace(',', '.')) || 0;
+      return acc + price * qty;
+    }, 0);
+  }, [items, materialsMap]);
+
+  const formatCurrency = (val: number) => `R$ ${val.toFixed(2).replace('.', ',')}`;
+
+  const isSaveDisabled = isPending || (!templateType && items.length === 0);
+
   return (
     <aside className="hidden xl:flex flex-col w-80 shrink-0 bg-surface-container-lowest border border-outline-variant rounded-lg shadow-sm h-fit sticky top-4">
       <div className="p-md border-b border-outline-variant bg-primary text-on-primary rounded-t-lg flex items-center justify-between">
@@ -35,50 +62,83 @@ export function ProductCostSummary({
           <div className="flex items-center gap-xs mt-xs">
             <span className="font-body-sm text-body-sm text-on-surface-variant">Modelo:</span>
             <span className="font-label text-body-sm font-semibold text-primary">
-              {templateType ? DOOR_TEMPLATE_LABELS[templateType] : 'Sem Template'}
+              {templateType ? DOOR_TEMPLATE_LABELS[templateType] : 'Sem Template (Ficha Fixa)'}
             </span>
           </div>
         </div>
         
-        {/* Insumos Habilitados no Orçamento */}
-        <div className="flex flex-col gap-xs py-xs border-b border-outline-variant/60">
-          <span className="font-body-sm text-body-sm text-on-surface-variant">
-            Categorias no Orçamento ({categoryRequirements.length})
-          </span>
-          {categoryRequirements.length > 0 ? (
-            <div className="flex flex-wrap gap-xs mt-xs">
-              {categoryRequirements.map((cat) => (
-                <span
-                  key={cat}
-                  className="inline-flex items-center gap-[2px] px-sm py-[2px] rounded-full bg-surface-container text-on-surface font-label text-[11px]"
-                >
-                  <span className="material-symbols-outlined text-[12px]">
-                    {MATERIAL_CATEGORY_ICONS[cat]}
-                  </span>
-                  {MATERIAL_CATEGORY_LABELS[cat]}
+        {/* Conteúdo condicional: Template Paramétrico vs Produto Estático */}
+        {templateType ? (
+          <>
+            {/* Insumos Habilitados no Orçamento */}
+            <div className="flex flex-col gap-xs py-xs border-b border-outline-variant/60">
+              <span className="font-body-sm text-body-sm text-on-surface-variant">
+                Categorias no Orçamento ({categoryRequirements.length})
+              </span>
+              {categoryRequirements.length > 0 ? (
+                <div className="flex flex-wrap gap-xs mt-xs">
+                  {categoryRequirements.map((cat) => (
+                    <span
+                      key={cat}
+                      className="inline-flex items-center gap-[2px] px-sm py-[2px] rounded-full bg-surface-container text-on-surface font-label text-[11px]"
+                    >
+                      <span className="material-symbols-outlined text-[12px]">
+                        {MATERIAL_CATEGORY_ICONS[cat]}
+                      </span>
+                      {MATERIAL_CATEGORY_LABELS[cat]}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <span className="font-body-sm text-body-sm text-on-surface-variant/60 italic">
+                  Nenhuma categoria selecionada
                 </span>
-              ))}
+              )}
             </div>
-          ) : (
-            <span className="font-body-sm text-body-sm text-on-surface-variant/60 italic">
-              Nenhuma categoria selecionada
-            </span>
-          )}
-        </div>
 
-        {/* Informação sobre o Orçamento */}
-        <div className="bg-surface-container-low p-sm rounded-lg border border-outline-variant/40 text-on-surface-variant text-xs flex gap-xs items-start">
-          <span className="material-symbols-outlined text-[16px] text-primary shrink-0 mt-[2px]">info</span>
-          <span>
-            Os materiais específicos, dimensões e custos serão definidos dinamicamente durante a criação do orçamento.
-          </span>
-        </div>
+            {/* Informação sobre o Orçamento */}
+            <div className="bg-surface-container-low p-sm rounded-lg border border-outline-variant/40 text-on-surface-variant text-xs flex gap-xs items-start">
+              <span className="material-symbols-outlined text-[16px] text-primary shrink-0 mt-[2px]">info</span>
+              <span>
+                Os materiais específicos, dimensões e custos serão definidos dinamicamente durante a criação do orçamento.
+              </span>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Ficha Técnica de Insumos Estáticos */}
+            <div className="flex flex-col gap-xs py-xs border-b border-outline-variant/60">
+              <span className="font-body-sm text-body-sm text-on-surface-variant">
+                Insumos na Ficha Técnica
+              </span>
+              <div className="flex items-center justify-between mt-xs">
+                <span className="font-label text-body-sm text-on-surface">Total de Itens:</span>
+                <span className="font-data-mono text-body-sm font-semibold text-primary">
+                  {items.length} {items.length === 1 ? 'insumo' : 'insumos'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between mt-xs">
+                <span className="font-label text-body-sm text-on-surface">Custo Base Materiais:</span>
+                <span className="font-data-mono text-body-sm font-semibold text-on-surface">
+                  {formatCurrency(materialsSubtotal)}
+                </span>
+              </div>
+            </div>
+
+            <div className="bg-surface-container-low p-sm rounded-lg border border-outline-variant/40 text-on-surface-variant text-xs flex gap-xs items-start">
+              <span className="material-symbols-outlined text-[16px] text-primary shrink-0 mt-[2px]">info</span>
+              <span>
+                Produto estático cadastrado com insumos e quantidades pré-fixadas na ficha técnica.
+              </span>
+            </div>
+          </>
+        )}
 
         {/* Botão Salvar */}
         <button 
           className="mt-xs w-full py-sm bg-primary text-on-primary rounded-sm font-label-bold text-label-bold hover:bg-primary-container hover:text-on-primary-container transition-colors flex items-center justify-center gap-xs disabled:opacity-50 cursor-pointer shadow-sm"
           onClick={onSave}
-          disabled={isPending}
+          disabled={isSaveDisabled}
         >
           <span className="material-symbols-outlined text-[18px]">save</span>
           {isPending ? 'Salvando...' : (isEditing ? 'Atualizar Produto' : 'Salvar Produto')}
