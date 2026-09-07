@@ -31,9 +31,12 @@ export const CustomerSelector: React.FC<CustomerSelectorProps> = ({
   }, [query]);
 
   // Busca real no backend via React Query
-  const { data: customers = [], isLoading: isLoadingCustomers } = useCustomers(
-    debouncedQuery.trim().length >= 2 ? debouncedQuery : undefined,
-  );
+  const { data, isLoading: isLoadingCustomers } = useCustomers({
+    busca: debouncedQuery.trim().length >= 2 ? debouncedQuery : undefined,
+    size: 50,
+  });
+
+  const customers = data?.content || [];
 
   const { mutate: createCustomer, isPending: isCreatingCustomer } = useCreateCustomer();
 
@@ -74,7 +77,7 @@ export const CustomerSelector: React.FC<CustomerSelectorProps> = ({
     inputRef.current?.focus();
   };
 
-  const handleQuickCreate = (data: {
+  const handleQuickCreate = (formData: {
     nomeCompleto: string;
     cpfCnpj?: string;
     telefone?: string;
@@ -90,19 +93,19 @@ export const CustomerSelector: React.FC<CustomerSelectorProps> = ({
   }) => {
     createCustomer(
       {
-        nomeCompleto: data.nomeCompleto.trim(),
+        nomeCompleto: formData.nomeCompleto.trim(),
         personType: 'FISICA',
-        documento: data.cpfCnpj?.trim() || undefined,
-        telefone: data.telefone?.trim() || undefined,
-        email: data.email?.trim() || undefined,
-        cep: data.cep?.trim() || undefined,
-        logradouro: data.logradouro?.trim() || undefined,
-        numero: data.numero?.trim() || undefined,
-        complemento: data.complemento?.trim() || undefined,
-        bairro: data.bairro?.trim() || undefined,
-        cidade: data.cidade?.trim() || undefined,
-        uf: data.uf?.trim() || undefined,
-        observacoes: data.observacoes?.trim() || undefined,
+        documento: formData.cpfCnpj?.trim() || undefined,
+        telefone: formData.telefone?.trim() || undefined,
+        email: formData.email?.trim() || undefined,
+        cep: formData.cep?.trim() || undefined,
+        logradouro: formData.logradouro?.trim() || undefined,
+        numero: formData.numero?.trim() || undefined,
+        complemento: formData.complemento?.trim() || undefined,
+        bairro: formData.bairro?.trim() || undefined,
+        cidade: formData.cidade?.trim() || undefined,
+        uf: formData.uf?.trim() || undefined,
+        observacoes: formData.observacoes?.trim() || undefined,
       },
       {
         onSuccess: (newCust) => {
