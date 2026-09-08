@@ -29,7 +29,7 @@ export function CategoryRequirementsSelector({
   // Auto-selecionar categorias sugeridas ao trocar o template
   useEffect(() => {
     if (templateType && templateType !== prevTemplateRef.current) {
-      setSelectedCategories(TEMPLATE_DEFAULT_CATEGORIES[templateType]);
+      setSelectedCategories(TEMPLATE_DEFAULT_CATEGORIES[templateType as DoorTemplateType] || []);
     }
     prevTemplateRef.current = templateType;
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -43,7 +43,7 @@ export function CategoryRequirementsSelector({
     }
   };
 
-  const suggestedCategories = templateType ? TEMPLATE_DEFAULT_CATEGORIES[templateType] : [];
+  const suggestedCategories = templateType ? (TEMPLATE_DEFAULT_CATEGORIES[templateType as DoorTemplateType] || []) : [];
 
   return (
     <section className="bg-surface-container-lowest border border-outline-variant rounded-lg shadow-sm overflow-hidden">
@@ -93,10 +93,10 @@ export function CategoryRequirementsSelector({
         </div>
 
         {/* Sugestão automática */}
-        {templateType && suggestedCategories.length > 0 && (
+        {templateType && (suggestedCategories || []).length > 0 && (
           <div className="mt-md flex items-center gap-xs font-body-sm text-body-sm text-on-surface-variant italic">
             <span className="material-symbols-outlined text-[16px]">info</span>
-            Sugestão automática para {templateType}: {suggestedCategories.map(c => MATERIAL_CATEGORY_LABELS[c]).join(' + ')}
+            Sugestão automática para {templateType}: {(suggestedCategories || []).map(c => MATERIAL_CATEGORY_LABELS[c]).join(' + ')}
           </div>
         )}
       </div>

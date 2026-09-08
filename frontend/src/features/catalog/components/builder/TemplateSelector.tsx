@@ -1,4 +1,4 @@
-import { DoorTemplateSvg } from '../templates/DoorTemplateSvg';
+import { WindowSvgPreview } from '../../../budgets/components/builder/WindowSvgPreview';
 import type { DoorTemplateType, TemplateConfig } from '../../types/templates';
 import {
   DOOR_TEMPLATE_LABELS,
@@ -61,16 +61,22 @@ export function TemplateSelector({
           >
             {templateType ? (
               <div className="w-full h-full p-md flex items-center justify-center">
-                <DoorTemplateSvg
+                <WindowSvgPreview
                   templateType={templateType}
-                  widthMm={Number(templateConfig.profileMm ? 400 : 400)}
-                  heightMm={600}
-                  profileMm={profileMm}
+                  widthMm={2000}
+                  heightMm={2100}
                   aluminumColor={aluminumColor}
-                  glassColor={glassColor}
-                  handleConfig={templateConfig.handleConfig}
-                  drillingConfig={templateConfig.drillingConfig}
-                  showDimensions={true}
+                  glassFinish={glassColor}
+                  openingDirection={templateConfig.openingDirection || 'LEFT_TO_RIGHT'}
+                  handleConfig={templateConfig.handleConfig || { handleType: 'NONE' }}
+                  drillingConfig={{ 
+                    holeCount: templateConfig.drillingConfig?.holeCount || 0,
+                    divisionType: templateConfig.drillingConfig?.drillingMode === 'CUSTOM' ? 'CUSTOM_DISTANCE' : 'EQUAL',
+                    customDistancesMm: templateConfig.drillingConfig?.customPositionsMm 
+                  }}
+                  templateName={DOOR_TEMPLATE_LABELS[templateType]}
+                  baseWidth={400}
+                  maxHeight={350}
                 />
               </div>
             ) : (

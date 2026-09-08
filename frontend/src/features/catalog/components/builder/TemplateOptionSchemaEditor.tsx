@@ -35,12 +35,15 @@ export function TemplateOptionSchemaEditor({
   setOptionSchema,
 }: TemplateOptionSchemaEditorProps) {
 
-  const applicable = templateType ? TEMPLATE_APPLICABLE_OPTIONS[templateType] : null;
+  const applicable = templateType ? TEMPLATE_APPLICABLE_OPTIONS[templateType as DoorTemplateType] : null;
 
   // Reset schema quando troca o template
   useEffect(() => {
     if (!templateType) return;
-    const app = TEMPLATE_APPLICABLE_OPTIONS[templateType];
+    const app = TEMPLATE_APPLICABLE_OPTIONS[templateType as DoorTemplateType];
+    
+    // Fallback in case of legacy templateType
+    if (!app) return;
 
     setOptionSchema({
       allowOpeningDirection: app.openingDirection,

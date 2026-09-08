@@ -1,4 +1,4 @@
-import { DoorTemplateSvg } from './DoorTemplateSvg';
+import { WindowSvgPreview } from '../../../budgets/components/builder/WindowSvgPreview';
 import type { DoorTemplateType } from '../../types/templates';
 
 interface TemplateSVGThumbnailProps {
@@ -35,14 +35,16 @@ export function TemplateSVGThumbnail({
       className={`flex items-center justify-center rounded-md bg-surface-container-low border border-outline-variant/40 overflow-hidden ${className}`}
       style={{ width: size, height: size, padding: 2 }}
     >
-      <DoorTemplateSvg
+      <WindowSvgPreview
         templateType={templateType}
         widthMm={400}
         heightMm={600}
-        profileMm={20}
         aluminumColor="#212121"
-        glassColor="#e3f2fd"
-        showDimensions={false}
+        glassFinish="#e3f2fd"
+        handleConfig={{ handleType: 'NONE' }}
+        drillingConfig={{ holeCount: 0, divisionType: 'EQUAL' }}
+        baseWidth={size * 1.5}
+        maxHeight={size}
       />
     </div>
   );

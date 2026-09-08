@@ -26,7 +26,6 @@ import {
 import { calcItemSubtotal, formatBRL } from '../../utils/calculations';
 import { WindowSvgPreview } from './WindowSvgPreview';
 import {
-  getAvailableSvgTemplatesForCatalogType,
   getDefaultSvgTemplateForCatalogType,
   mapCatalogAluminumColor,
   mapCatalogGlassColor,
@@ -73,6 +72,7 @@ const DEFAULT_HEIGHT = 2150;
 
 interface WindowBuilderModalProps {
   isOpen: boolean;
+  selectedProductId?: string | null;
   onClose: () => void;
   onAddItem: (item: BudgetItem) => void;
   editingItem?: BudgetItem | null;
@@ -80,12 +80,15 @@ interface WindowBuilderModalProps {
 
 export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
   isOpen,
+  selectedProductId,
   onClose,
   onAddItem,
   editingItem,
 }) => {
   // Queries do Catálogo (read-only)
-  const { data: productsData, isLoading: isLoadingTemplates } = useProducts();
+  const { data: productsData } = useProducts();
+  
+  // Transformamos todos os produtos ativos do catálogo no formato WindowTemplate
   const templates = useMemo(() => {
     if (!productsData?.content) return [];
     return (productsData.content as unknown as Product[])
@@ -149,7 +152,7 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
     drillingConfig: {
       holeCount: 2,
       divisionType: 'EQUAL',
-      customDistancesMm: [100, 500, 560, 100],
+      customDistancesMm: [700, 1400],
     },
     aluminumColor: 'Alumínio Fosco / Anodizado',
     glassFinish: 'Fumê / Cinza',
@@ -158,15 +161,13 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
     materialSelections: [],
   });
 
-  const [customDistanceInput, setCustomDistanceInput] = useState<string>('100, 500, 560, 100');
+  const [holeDistanceInputs, setHoleDistanceInputs] = useState<string[]>(['700', '1400']);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4>(1);
+  const [isMobileCadExpanded, setIsMobileCadExpanded] = useState(false);
   const hasInitializedRef = useRef(false);
 
   const svgTemplate: DoorTemplateType = (state.templateType || state.template?.templateType || 'SLIDING_DOOR_2F') as DoorTemplateType;
-
-  const availableSvgTemplates = useMemo(() => {
-    return getAvailableSvgTemplatesForCatalogType(state.template?.catalogTemplateType, state.template?.name);
-  }, [state.template?.catalogTemplateType, state.template?.name]);
 
   const supportedDirections = useMemo(() => {
     return TEMPLATE_TYPE_INFO[svgTemplate]?.supportedDirections ?? ['LEFT_TO_RIGHT', 'RIGHT_TO_LEFT'];
@@ -359,8 +360,14 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
         };
       });
 
-      const dists = editingItem.drillingConfig?.customDistancesMm ?? [100, 500, 560, 100];
-      setCustomDistanceInput(dists.join(', '));
+      const editCount = editingItem.drillingConfig?.holeCount ?? 2;
+      const editH = editingItem.heightMm ?? 2100;
+      const step = Math.round(editH / (editCount + 1));
+      const fallbackDists = Array.from({ length: editCount }, (_, i) => step * (i + 1));
+      const dists = editingItem.drillingConfig?.customDistancesMm && editingItem.drillingConfig.customDistancesMm.length === editCount
+        ? editingItem.drillingConfig.customDistancesMm
+        : fallbackDists;
+      setHoleDistanceInputs(dists.map(String));
 
       setState({
         template,
@@ -389,7 +396,7 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
     } else {
       if (!hasInitializedRef.current && templates.length > 0) {
         hasInitializedRef.current = true;
-        const defaultTemplate = templates[0];
+        const defaultTemplate = selectedProductId ? (templates.find(t => t.id === selectedProductId) ?? templates[0]) : templates[0];
         const targetSvg = (defaultTemplate.templateType as DoorTemplateType) || getDefaultSvgTemplateForCatalogType(defaultTemplate.catalogTemplateType, defaultTemplate.name, defaultTemplate.templateConfig);
         const validDirections = TEMPLATE_TYPE_INFO[targetSvg]?.supportedDirections ?? ['LEFT_TO_RIGHT', 'RIGHT_TO_LEFT'];
         const alumColor = defaultTemplate.templateConfig?.aluminumColor
@@ -431,7 +438,7 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
           divisionType: 'EQUAL',
           customDistancesMm: drillPositions,
         };
-        setCustomDistanceInput(drillPositions.join(', '));
+        setHoleDistanceInputs(drillPositions.map(String));
 
         const w = DEFAULT_WIDTH;
         const h = DEFAULT_HEIGHT;
@@ -473,69 +480,7 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
     };
   }, [isOpen, onClose]);
 
-  // ─── Handler: Troca de Template ───────────────────────────────────────────
-  const handleTemplateSelect = (templateId: string) => {
-    const template = templates.find((t) => t.id === templateId);
-    if (!template) return;
-
-    const targetSvg = (template.templateType as DoorTemplateType) || getDefaultSvgTemplateForCatalogType(template.catalogTemplateType, template.name, template.templateConfig);
-    const validDirections = TEMPLATE_TYPE_INFO[targetSvg]?.supportedDirections ?? ['LEFT_TO_RIGHT', 'RIGHT_TO_LEFT'];
-
-    // Mapeia acabamentos configurados no produto
-    const alumColor = template.templateConfig?.aluminumColor
-      ? mapCatalogAluminumColor(template.templateConfig.aluminumColor)
-      : state.aluminumColor;
-    const glassColor = template.templateConfig?.glassColor
-      ? mapCatalogGlassColor(template.templateConfig.glassColor)
-      : state.glassFinish;
-
-    // Sentido de abertura
-    let rawDir = template.templateConfig?.openingDirection;
-    if (rawDir === 'OUTSIDE') rawDir = 'LEFT_TO_RIGHT';
-    if (rawDir === 'INSIDE') rawDir = 'RIGHT_TO_LEFT';
-    const dir = rawDir && validDirections.includes(rawDir) ? rawDir : (validDirections[0] ?? 'LEFT_TO_RIGHT');
-
-    // Puxador
-    const cfgHandle = template.templateConfig?.handleConfig;
-    const nextHandleConfig: HandleConfig = cfgHandle ? {
-      handleType: cfgHandle.handleType ?? 'BAR_TUBULAR',
-      side: cfgHandle.side ?? 'ONE_SIDE',
-      coverage: cfgHandle.coverage ?? (cfgHandle.handleLengthMm && cfgHandle.handleLengthMm >= 1000 ? 'FULL' : 'PIECE'),
-      pieceLengthCm: cfgHandle.pieceLengthCm ?? (cfgHandle.handleLengthMm ? Math.round(cfgHandle.handleLengthMm / 10) : 40),
-    } : state.handleConfig;
-
-    // Furação
-    const cfgDrill = template.templateConfig?.drillingConfig;
-    const drillPositions = cfgDrill?.customPositionsMm && cfgDrill.customPositionsMm.length > 0
-      ? cfgDrill.customPositionsMm
-      : (state.drillingConfig.customDistancesMm ?? [100, 500, 560, 100]);
-    const nextDrillingConfig: DrillingConfig = cfgDrill ? {
-      holeCount: cfgDrill.holeCount ?? 2,
-      divisionType: cfgDrill.drillingMode === 'CUSTOM' ? 'CUSTOM_DISTANCE' : 'EQUAL',
-      customDistancesMm: drillPositions,
-    } : state.drillingConfig;
-
-    if (cfgDrill?.customPositionsMm && cfgDrill.customPositionsMm.length > 0) {
-      setCustomDistanceInput(drillPositions.join(', '));
-    }
-
-    const currentW = typeof state.widthMm === 'number' && state.widthMm > 0 ? state.widthMm : DEFAULT_WIDTH;
-    const currentH = typeof state.heightMm === 'number' && state.heightMm > 0 ? state.heightMm : DEFAULT_HEIGHT;
-    const newSelections = buildSelectionsForTemplate(template, currentW, currentH, alumColor, glassColor);
-
-    setState((prev) => ({
-      ...prev,
-      template,
-      templateType: targetSvg,
-      aluminumColor: alumColor,
-      glassFinish: glassColor,
-      openingDirection: dir!,
-      handleConfig: nextHandleConfig,
-      drillingConfig: nextDrillingConfig,
-      laborCost: template.laborCost || prev.laborCost || 200.0,
-      materialSelections: newSelections,
-    }));
-  };
+    // Handler removido: a troca de template ocorre externamente no ProductPickerModal.
 
   // ─── Handler: Alterar Seleção de Material por Categoria ───────────────────
   const handleMaterialChange = (requirementId: string, materialId: string) => {
@@ -734,34 +679,98 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
   };
 
   // ─── Handlers de Furação ──────────────────────────────────────────────────
+  const getDefaultHoleDistances = (count: number, height: number): number[] => {
+    if (count <= 0) return [];
+    const step = Math.round(height / (count + 1));
+    const dists: number[] = [];
+    for (let i = 1; i <= count; i++) {
+      dists.push(step * i);
+    }
+    return dists;
+  };
+
   const handleHoleCountChange = (count: number) => {
-    setState((prev) => ({
-      ...prev,
-      drillingConfig: { ...prev.drillingConfig, holeCount: count },
-    }));
+    const currentH = typeof state.heightMm === 'number' && state.heightMm > 0 ? state.heightMm : DEFAULT_HEIGHT;
+    const defaults = getDefaultHoleDistances(count, currentH);
+
+    setHoleDistanceInputs((prev) => {
+      const next: string[] = [];
+      for (let i = 0; i < count; i++) {
+        if (prev[i] !== undefined && prev[i] !== '' && prev[i] !== '0') {
+          next.push(prev[i]);
+        } else {
+          next.push(String(defaults[i]));
+        }
+      }
+      return next;
+    });
+
+    setState((prev) => {
+      const currentDists = prev.drillingConfig.customDistancesMm ?? [];
+      const nextDists: number[] = [];
+      for (let i = 0; i < count; i++) {
+        if (currentDists[i] !== undefined && currentDists[i] > 0) {
+          nextDists.push(currentDists[i]);
+        } else {
+          nextDists.push(defaults[i]);
+        }
+      }
+
+      return {
+        ...prev,
+        drillingConfig: {
+          ...prev.drillingConfig,
+          holeCount: count,
+          customDistancesMm: nextDists,
+        },
+      };
+    });
   };
 
   const handleDivisionTypeChange = (type: DivisionType) => {
-    setState((prev) => ({
-      ...prev,
-      drillingConfig: { ...prev.drillingConfig, divisionType: type },
-    }));
+    setState((prev) => {
+      const currentH = typeof prev.heightMm === 'number' && prev.heightMm > 0 ? prev.heightMm : DEFAULT_HEIGHT;
+      const count = prev.drillingConfig.holeCount;
+      const defaults = getDefaultHoleDistances(count, currentH);
+      const nextDists = prev.drillingConfig.customDistancesMm?.length === count ? prev.drillingConfig.customDistancesMm : defaults;
+
+      if (type === 'CUSTOM_DISTANCE') {
+        setHoleDistanceInputs(nextDists.map(String));
+      }
+
+      return {
+        ...prev,
+        drillingConfig: {
+          ...prev.drillingConfig,
+          divisionType: type,
+          customDistancesMm: nextDists,
+        },
+      };
+    });
   };
 
-  const handleCustomDistancesInput = (val: string) => {
-    setCustomDistanceInput(val);
-    const parsed = val
-      .split(/[,;\s]+/)
-      .map((s) => parseInt(s.trim(), 10))
-      .filter((n) => !isNaN(n) && n > 0);
+  const handleSingleHoleDistanceChange = (index: number, val: string) => {
+    setHoleDistanceInputs((prev) => {
+      const next = [...prev];
+      next[index] = val;
+      return next;
+    });
 
-    setState((prev) => ({
-      ...prev,
-      drillingConfig: {
-        ...prev.drillingConfig,
-        customDistancesMm: parsed.length > 0 ? parsed : undefined,
-      },
-    }));
+    const parsedNum = parseInt(val, 10);
+    setState((prev) => {
+      const dists = [...(prev.drillingConfig.customDistancesMm ?? [])];
+      while (dists.length < prev.drillingConfig.holeCount) {
+        dists.push(0);
+      }
+      dists[index] = !isNaN(parsedNum) && parsedNum > 0 ? parsedNum : 0;
+      return {
+        ...prev,
+        drillingConfig: {
+          ...prev.drillingConfig,
+          customDistancesMm: dists,
+        },
+      };
+    });
   };
 
   // ─── Cálculo do Subtotal Estimado do Item ──────────────────────────────────
@@ -777,15 +786,66 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
     );
   }, [state.materialSelections, state.quantity, state.widthMm, state.heightMm]);
 
-  // Subtotal apenas de materiais
-  const materialsTotal = useMemo(() => {
-    return state.materialSelections.reduce((sum, s) => {
-      const q = typeof s.quantity === 'number' && s.quantity > 0 ? s.quantity : 0;
-      return sum + q * s.unitPrice;
-    }, 0);
-  }, [state.materialSelections]);
-
   // ─── Validação e Submissão ────────────────────────────────────────────────
+  // ─── Validação por Etapa do Wizard ─────────────────────────────────────────
+  const validateStep = (step: 1 | 2 | 3 | 4): boolean => {
+    const newErrors: Record<string, string> = {};
+
+    if (step === 1) {
+      const w = typeof state.widthMm === 'number' ? state.widthMm : 0;
+      const h = typeof state.heightMm === 'number' ? state.heightMm : 0;
+      const qty = typeof state.quantity === 'number' ? state.quantity : 0;
+
+      if (!w || w <= 0) newErrors.widthMm = 'Largura obrigatória';
+      if (!h || h <= 0) newErrors.heightMm = 'Altura obrigatória';
+      if (!qty || qty < 1) newErrors.quantity = 'Quantidade inválida';
+
+      if (Object.keys(newErrors).length > 0) {
+        setErrors(newErrors);
+        toast.error('Informe as medidas e quantidade da esquadria.');
+        return false;
+      }
+    }
+
+    if (step === 2) {
+      const missingReqs = state.materialSelections.filter(
+        (sel) => !sel.isOptional && !sel.materialId,
+      );
+
+      if (missingReqs.length > 0) {
+        toast.error(`Selecione os materiais obrigatórios: ${missingReqs.map((r) => r.label).join(', ')}`);
+        return false;
+      }
+    }
+
+    setErrors({});
+    return true;
+  };
+
+  const handleNextStep = () => {
+    if (validateStep(currentStep)) {
+      if (currentStep < 4) {
+        setCurrentStep((prev) => (prev + 1) as 1 | 2 | 3 | 4);
+      }
+    }
+  };
+
+  const handlePrevStep = () => {
+    if (currentStep > 1) {
+      setCurrentStep((prev) => (prev - 1) as 1 | 2 | 3 | 4);
+    }
+  };
+
+  const handleGoToStep = (targetStep: 1 | 2 | 3 | 4) => {
+    // Só valida se estiver avançando
+    if (targetStep > currentStep) {
+      for (let s = currentStep; s < targetStep; s++) {
+        if (!validateStep(s as 1 | 2 | 3 | 4)) return;
+      }
+    }
+    setCurrentStep(targetStep);
+  };
+
   const handleSubmit = () => {
     const newErrors: Record<string, string> = {};
 
@@ -808,12 +868,14 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
 
     if (missingReqs.length > 0) {
       toast.error(`Selecione os materiais obrigatórios: ${missingReqs.map((r) => r.label).join(', ')}`);
+      setCurrentStep(2);
       return;
     }
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       toast.error('Verifique as medidas informadas.');
+      setCurrentStep(1);
       return;
     }
 
@@ -877,109 +939,155 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
       />
 
       <div
-        className="relative bg-surface border border-outline-variant rounded-xl w-full max-h-[92vh] shadow-2xl flex flex-col overflow-hidden z-10"
-        style={{ maxWidth: '1240px' }}
+        className="relative bg-surface border border-outline-variant rounded-xl w-full h-[96vh] sm:h-auto sm:max-h-[92vh] shadow-2xl flex flex-col overflow-hidden z-10"
+        style={{ maxWidth: '1380px' }}
         aria-modal="true"
       >
         {/* ── Header do Modal ────────────────────────────────────────────── */}
-        <header className="flex items-center justify-between px-md sm:px-lg py-sm border-b border-outline-variant bg-surface-container-low flex-shrink-0">
-          <div className="flex items-center gap-sm flex-1 min-w-0">
-            <span className="material-symbols-outlined text-[24px] text-primary shrink-0">tune</span>
+        <header className="flex items-center justify-between px-sm sm:px-lg py-sm border-b border-outline-variant bg-surface-container-low flex-shrink-0">
+          <div className="flex items-center gap-xs sm:gap-sm flex-1 min-w-0">
+            <span className="material-symbols-outlined text-[20px] sm:text-[24px] text-primary shrink-0">tune</span>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-xs flex-wrap">
-                <select
-                  value={state.template?.id ?? ''}
-                  onChange={(e) => handleTemplateSelect(e.target.value)}
-                  disabled={isLoadingTemplates}
-                  aria-label="Selecionar Template de Esquadria"
-                  className="font-headline text-title-md sm:text-headline-sm font-bold text-on-surface bg-transparent border-0 cursor-pointer hover:text-primary focus:outline-none pr-md truncate max-w-full"
-                >
-                  {templates.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.name}
-                    </option>
-                  ))}
-                </select>
+                <h2 className="font-headline text-base sm:text-title-md font-bold text-on-surface truncate">
+                  {state.template?.name ?? 'Configurar Esquadria'}
+                </h2>
               </div>
-              <p className="font-body text-xs text-on-surface-variant truncate">
-                Configure os insumos de cada categoria, medidas e parâmetros técnicos da esquadria.
+              <p className="font-body text-[11px] sm:text-xs text-on-surface-variant truncate">
+                Configure os insumos, medidas e parâmetros técnicos.
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-sm shrink-0 ml-sm">
-            <div className="hidden sm:flex items-center gap-xs bg-primary/10 border border-primary/30 px-sm py-[4px] rounded-lg">
-              <span className="text-xs font-label text-primary font-medium">Subtotal:</span>
-              <span className="text-sm font-data-mono font-bold text-primary">
-                {formatBRL(itemSubtotalEstimate)}
-              </span>
-            </div>
-
+          <div className="flex items-center gap-xs shrink-0 ml-xs sm:ml-sm">
             <button
               type="button"
               onClick={onClose}
-              className="p-xs text-on-surface-variant hover:bg-surface-container-highest rounded-full transition-colors"
+              className="p-1 sm:p-2 text-on-surface-variant hover:bg-surface-container-highest rounded-full transition-colors"
               aria-label="Fechar"
             >
-              <span className="material-symbols-outlined text-[22px]">close</span>
+              <span className="material-symbols-outlined text-[22px] sm:text-[24px]">close</span>
             </button>
           </div>
         </header>
 
-        {/* ── Corpo do Modal: Layout em 2 Colunas Perfeitamente Balanceadas ── */}
-        <main className="flex-1 overflow-y-auto p-md sm:p-lg min-h-0 bg-surface">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-lg items-start">
+        {/* ── Stepper do Wizard (Totalmente Responsivo) ────────────────────── */}
+        <div className="bg-surface-container-low border-b border-outline-variant px-sm sm:px-lg py-2 sm:py-sm flex-shrink-0">
+          <div className="flex items-center justify-between max-w-2xl mx-auto">
+            {[
+              { num: 1, title: 'Medidas', fullTitle: 'Medidas & Vão', icon: 'aspect_ratio' },
+              { num: 2, title: 'Insumos', fullTitle: 'Insumos & Cores', icon: 'palette' },
+              { num: 3, title: 'Mecânica', fullTitle: 'Mecânica & Furação', icon: 'tune' },
+              { num: 4, title: 'Resumo', fullTitle: 'Resumo & Confirmação', icon: 'task_alt' },
+            ].map((step, idx, arr) => {
+              const isActive = currentStep === step.num;
+              const isCompleted = currentStep > step.num;
+
+              return (
+                <React.Fragment key={step.num}>
+                  <button
+                    type="button"
+                    onClick={() => handleGoToStep(step.num as 1 | 2 | 3 | 4)}
+                    className="flex items-center gap-1 sm:gap-2 group focus:outline-none"
+                    aria-current={isActive ? 'step' : undefined}
+                    title={step.fullTitle}
+                  >
+                    <div
+                      className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-label font-bold transition-all ${
+                        isActive
+                          ? 'bg-primary text-on-primary shadow-xs ring-2 ring-primary/30'
+                          : isCompleted
+                          ? 'bg-primary/20 text-primary hover:bg-primary/30'
+                          : 'bg-surface-container-highest text-on-surface-variant'
+                      }`}
+                    >
+                      {isCompleted ? (
+                        <span className="material-symbols-outlined text-[14px] sm:text-[18px]">check</span>
+                      ) : (
+                        step.num
+                      )}
+                    </div>
+                    <div className="flex flex-col text-left">
+                      <span
+                        className={`text-[11px] sm:text-xs font-label font-bold leading-tight ${
+                          isActive ? 'text-primary' : isCompleted ? 'text-on-surface' : 'text-on-surface-variant'
+                        }`}
+                      >
+                        <span className="sm:hidden">{step.title}</span>
+                        <span className="hidden sm:inline">{step.fullTitle}</span>
+                      </span>
+                      <span className="hidden md:inline text-[10px] text-secondary font-body leading-none">
+                        Passo {step.num} de 4
+                      </span>
+                    </div>
+                  </button>
+
+                  {idx < arr.length - 1 && (
+                    <div
+                      className={`flex-1 h-0.5 mx-1 sm:mx-3 transition-colors ${
+                        currentStep > step.num ? 'bg-primary' : 'bg-outline-variant'
+                      }`}
+                    />
+                  )}
+                </React.Fragment>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ── Corpo do Modal: Desktop (50/50 lado a lado) / Mobile (Stack Vertical inteligente) ── */}
+        <main className="flex-1 overflow-y-auto p-sm sm:p-md lg:p-lg min-h-0 bg-surface">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-md sm:gap-lg items-stretch">
 
             {/* ════════════════════════════════════════════════════════════════
-                COLUNA DA ESQUERDA (5 cols): GABARITO VISUAL & CONTROLES FÍSICOS
+                METADE ESQUERDA: GABARITO CAD (FIXO 50% NO DESKTOP / ACORDEÃO COLLAPSIBLE NO MOBILE)
                ════════════════════════════════════════════════════════════════ */}
-            <div className="lg:col-span-5 flex flex-col gap-md">
+            <div className="lg:col-span-6 flex flex-col gap-sm">
 
-              {/* 1. Gabarito Visual CAD */}
-              <div className="bg-surface-container-lowest border border-outline-variant rounded-lg p-sm shadow-xs flex flex-col gap-xs">
-                <div className="flex items-center justify-between pb-xs border-b border-outline-variant/50">
-                  <h3 className="text-xs font-label font-bold text-on-surface flex items-center gap-xs uppercase tracking-wider">
-                    <span className="material-symbols-outlined text-[16px] text-primary">architecture</span>
-                    Gabarito Visual
+              {/* Botão de Toggle do CAD em Telas Pequenas */}
+              <div className="lg:hidden bg-surface-container-low border border-outline-variant rounded-lg p-2 flex items-center justify-between shadow-2xs">
+                <button
+                  type="button"
+                  onClick={() => setIsMobileCadExpanded((prev) => !prev)}
+                  className="flex items-center gap-2 text-xs font-label font-bold text-on-surface hover:text-primary transition-colors focus:outline-none w-full justify-between"
+                  aria-expanded={isMobileCadExpanded}
+                >
+                  <div className="flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-[18px] text-primary">architecture</span>
+                    <span>Gabarito CAD ({svgW} × {svgH} mm)</span>
+                  </div>
+                  <div className="flex items-center gap-1 text-secondary font-data-mono">
+                    <span>{unitAreaM2} m²</span>
+                    <span className={`material-symbols-outlined text-[18px] transition-transform duration-200 ${isMobileCadExpanded ? 'rotate-180' : ''}`}>
+                      expand_more
+                    </span>
+                  </div>
+                </button>
+              </div>
+
+              {/* Card do CAD (Sempre visível no Desktop; no Mobile só aparece se expandido) */}
+              <div
+                className={`${
+                  isMobileCadExpanded ? 'flex' : 'hidden lg:flex'
+                } bg-surface-container-lowest border border-outline-variant rounded-xl p-sm sm:p-md lg:p-lg shadow-sm flex-col gap-sm flex-1 min-h-[280px] sm:min-h-[380px] lg:min-h-[500px] transition-all`}
+              >
+                <div className="hidden lg:flex items-center justify-between pb-xs border-b border-outline-variant/50">
+                  <h3 className="text-sm font-label font-bold text-on-surface flex items-center gap-xs uppercase tracking-wider">
+                    <span className="material-symbols-outlined text-[20px] text-primary">architecture</span>
+                    Gabarito Técnico CAD
                   </h3>
-                  <span className="text-[11px] font-data-mono text-secondary">
-                    {svgW}×{svgH} mm
-                  </span>
+                  <div className="flex items-center gap-xs">
+                    <span className="text-xs font-data-mono font-bold text-primary bg-primary/10 px-2.5 py-0.5 rounded border border-primary/30">
+                      {svgW} × {svgH} mm
+                    </span>
+                    <span className="text-xs font-data-mono text-secondary bg-surface-container-low px-2 py-0.5 rounded border border-outline-variant/60">
+                      {unitAreaM2} m²
+                    </span>
+                  </div>
                 </div>
 
-                {/* Seletor de Modelo Visual SVG (se o template permitir múltiplas variantes visuais) */}
-                {availableSvgTemplates.length > 1 && (
-                  <div className="flex items-center justify-between gap-xs px-xs py-1 bg-surface-container-low rounded border border-outline-variant/60">
-                    <label htmlFor="svg-subtype-select" className="text-[11px] font-label text-on-surface-variant whitespace-nowrap">
-                      Variante Visual:
-                    </label>
-                    <select
-                      id="svg-subtype-select"
-                      value={svgTemplate}
-                      onChange={(e) => {
-                        const nextSvg = e.target.value as DoorTemplateType;
-                        const validDirs = TEMPLATE_TYPE_INFO[nextSvg]?.supportedDirections ?? ['LEFT_TO_RIGHT'];
-                        const nextDir = validDirs.includes(state.openingDirection)
-                          ? state.openingDirection
-                          : validDirs[0];
-                        setState((p) => ({
-                          ...p,
-                          templateType: nextSvg,
-                          openingDirection: nextDir,
-                        }));
-                      }}
-                      className="text-xs p-1 bg-surface border border-outline-variant rounded font-body text-on-surface focus:border-primary focus:outline-none flex-1 max-w-[210px] truncate"
-                    >
-                      {availableSvgTemplates.map((type) => (
-                        <option key={type} value={type}>
-                          {TEMPLATE_TYPE_INFO[type]?.label ?? type}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-
-                <div className="flex flex-col items-center justify-center min-h-[240px] max-h-[260px] py-xs overflow-hidden">
+                {/* Container Principal do SVG com altura elástica */}
+                <div className="flex-1 flex flex-col items-center justify-center w-full min-h-[220px] sm:min-h-[300px] lg:min-h-[340px] p-xs sm:p-sm overflow-hidden bg-surface-container-lowest/50 rounded-lg">
                   <WindowSvgPreview
                     templateType={svgTemplate}
                     widthMm={svgW}
@@ -990,599 +1098,773 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
                     templateName={state.template?.name}
                     aluminumColor={state.aluminumColor}
                     glassFinish={state.glassFinish}
+                    baseWidth="100%"
+                    maxHeight={420}
                   />
                 </div>
-              </div>
 
-              {/* 2. Sentido de Abertura */}
-              <div className="bg-surface-container-lowest border border-outline-variant rounded-lg p-sm shadow-xs flex flex-col gap-xs">
-                <p className="text-xs font-label font-semibold text-on-surface flex items-center gap-xs">
-                  <span className="material-symbols-outlined text-[16px] text-primary">swap_horiz</span>
-                  Sentido de Abertura da Folha
-                </p>
-                <div className={`grid ${supportedDirections.length > 1 ? 'grid-cols-2' : 'grid-cols-1'} gap-xs mt-xs`}>
-                  {supportedDirections.map((dir) => {
-                    const isSelected = state.openingDirection === dir;
-                    let label = 'Abrir';
-                    let icon = 'swap_horiz';
-                    if (dir === 'LEFT_TO_RIGHT') { label = 'Abrir p/ Direita'; icon = 'arrow_forward'; }
-                    else if (dir === 'RIGHT_TO_LEFT') { label = 'Abrir p/ Esquerda'; icon = 'arrow_back'; }
-                    else if (dir === 'OUTSIDE') { label = 'Para Fora'; icon = 'open_in_new'; }
-                    else if (dir === 'INSIDE') { label = 'Para Dentro'; icon = 'login'; }
-                    else if (dir === 'CENTER_TO_SIDES') { label = 'Centro p/ Lados'; icon = 'unfold_more'; }
-
-                    return (
-                      <button
-                        key={dir}
-                        type="button"
-                        onClick={() => setState((p) => ({ ...p, openingDirection: dir }))}
-                        className={`py-xs px-sm rounded border text-xs font-label font-semibold flex items-center justify-center gap-xs transition-all ${
-                          isSelected
-                            ? 'bg-primary text-on-primary border-primary shadow-xs'
-                            : 'bg-surface border-outline-variant text-on-surface-variant hover:bg-surface-container'
-                        }`}
-                      >
-                        <span className="material-symbols-outlined text-[16px]">{icon}</span>
-                        {label}
-                      </button>
-                    );
-                  })}
+                {/* Badge de Resumo Inferior */}
+                <div className="flex items-center justify-between text-xs font-data-mono text-on-surface-variant bg-surface-container-low px-sm sm:px-md py-1.5 sm:py-2 rounded-lg border border-outline-variant/60">
+                  <span className="truncate max-w-[180px] sm:max-w-none">Modelo: <strong className="text-on-surface">{state.template?.name ?? 'Base'}</strong></span>
+                  <span>Qtd: <strong className="text-primary font-bold">{totalQty} {totalQty > 1 ? 'unidades' : 'un'}</strong></span>
                 </div>
               </div>
 
-              {/* 3. Configuração de Puxador */}
-              <div className="bg-surface-container-lowest border border-outline-variant rounded-lg p-sm shadow-xs flex flex-col gap-sm">
-                <p className="text-xs font-label font-semibold text-on-surface flex items-center gap-xs">
-                  <span className="material-symbols-outlined text-[16px] text-primary">hardware</span>
-                  Configuração de Puxador
-                </p>
-                <div className="grid grid-cols-2 gap-sm">
-                  <div>
-                    <label htmlFor="handle-type-select" className="text-[11px] font-label text-on-surface-variant block mb-xs">
-                      Tipo de Puxador
-                    </label>
-                    <select
-                      id="handle-type-select"
-                      value={state.handleConfig.handleType}
-                      onChange={(e) => handleHandleTypeChange(e.target.value as HandleType)}
-                      aria-label="Tipo de Puxador"
-                      className="w-full text-xs p-xs bg-surface border border-outline-variant rounded font-body text-on-surface focus:border-primary focus:outline-none"
-                    >
-                      <option value="BAR_TUBULAR">Tubular Inox</option>
-                      <option value="SHELL_LOCK">Fecho Concha</option>
-                      <option value="LEVER_HANDLE">Maçaneta</option>
-                      <option value="NONE">Sem Puxador</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label htmlFor="handle-side-select" className="text-[11px] font-label text-on-surface-variant block mb-xs">
-                      Lados do Puxador
-                    </label>
-                    <select
-                      id="handle-side-select"
-                      value={state.handleConfig.side ?? 'ONE_SIDE'}
-                      onChange={(e) => handleHandleSideChange(e.target.value as HandleSide)}
-                      disabled={state.handleConfig.handleType === 'NONE'}
-                      aria-label="Lados do Puxador"
-                      className="w-full text-xs p-xs bg-surface border border-outline-variant rounded font-body text-on-surface focus:border-primary focus:outline-none disabled:opacity-50"
-                    >
-                      <option value="ONE_SIDE">1 Lado (Face Única)</option>
-                      <option value="BOTH_SIDES">2 Lados (Frente e Verso)</option>
-                    </select>
-                  </div>
-                </div>
-
-                {state.handleConfig.handleType === 'BAR_TUBULAR' && (
-                  <div className="grid grid-cols-2 gap-sm pt-xs border-t border-outline-variant/50">
-                    <div>
-                      <label htmlFor="handle-coverage-select" className="text-[11px] font-label text-on-surface-variant block mb-xs">
-                        Extensão do Puxador
-                      </label>
-                      <select
-                        id="handle-coverage-select"
-                        value={state.handleConfig.coverage ?? 'FULL'}
-                        onChange={(e) => handleHandleCoverageChange(e.target.value as HandleCoverage)}
-                        aria-label="Extensão do Puxador"
-                        className="w-full text-xs p-xs bg-surface border border-outline-variant rounded font-body text-on-surface focus:border-primary focus:outline-none"
-                      >
-                        <option value="FULL">Extensão Total da Folha</option>
-                        <option value="PIECE">Pedaço / Tamanho Fixo</option>
-                      </select>
-                    </div>
-
-                    {state.handleConfig.coverage === 'PIECE' && (
-                      <div>
-                        <label htmlFor="handle-length-input" className="text-[11px] font-label text-on-surface-variant block mb-xs">
-                          Comprimento (cm)
-                        </label>
-                        <input
-                          id="handle-length-input"
-                          type="number"
-                          min={10}
-                          max={300}
-                          value={state.handleConfig.pieceLengthCm ?? 40}
-                          onChange={(e) =>
-                            setState((p) => ({
-                              ...p,
-                              handleConfig: {
-                                ...p.handleConfig,
-                                pieceLengthCm: parseInt(e.target.value, 10) || 40,
-                              },
-                            }))
-                          }
-                          aria-label="Comprimento do Puxador em centímetros"
-                          className="w-full text-xs p-xs bg-surface border border-outline-variant rounded font-data-mono text-on-surface focus:border-primary focus:outline-none"
-                        />
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* 4. Furação */}
-              <div className="bg-surface-container-lowest border border-outline-variant rounded-lg p-sm shadow-xs flex flex-col gap-sm">
-                <p className="text-xs font-label font-semibold text-on-surface flex items-center gap-xs">
-                  <span className="material-symbols-outlined text-[16px] text-primary">adjust</span>
-                  Parâmetros de Furação
-                </p>
-                <div className="grid grid-cols-2 gap-sm">
-                  <div>
-                    <label htmlFor="hole-count-select" className="text-[11px] font-label text-on-surface-variant block mb-xs">
-                      Qtd de Furos
-                    </label>
-                    <select
-                      id="hole-count-select"
-                      value={state.drillingConfig.holeCount}
-                      onChange={(e) => handleHoleCountChange(parseInt(e.target.value, 10))}
-                      aria-label="Quantidade de Furos"
-                      className="w-full text-xs p-xs bg-surface border border-outline-variant rounded font-body text-on-surface focus:border-primary focus:outline-none"
-                    >
-                      <option value={0}>Sem Furação</option>
-                      <option value={1}>1 Furo</option>
-                      <option value={2}>2 Furos (Padrão)</option>
-                      <option value={3}>3 Furos</option>
-                      <option value={4}>4 Furos</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label htmlFor="hole-division-select" className="text-[11px] font-label text-on-surface-variant block mb-xs">
-                      Distribuição dos Furos
-                    </label>
-                    <select
-                      id="hole-division-select"
-                      value={state.drillingConfig.divisionType}
-                      onChange={(e) => handleDivisionTypeChange(e.target.value as DivisionType)}
-                      disabled={state.drillingConfig.holeCount === 0}
-                      aria-label="Divisão dos Furos"
-                      className="w-full text-xs p-xs bg-surface border border-outline-variant rounded font-body text-on-surface focus:border-primary focus:outline-none disabled:opacity-50"
-                    >
-                      <option value="EQUAL">Por igual (Automático)</option>
-                      <option value="CUSTOM_DISTANCE">Com medida (Distâncias)</option>
-                    </select>
-                  </div>
-                </div>
-
-                {state.drillingConfig.holeCount > 0 && (
-                  <div className="pt-xs border-t border-outline-variant/50">
-                    <label htmlFor="drilling-distances-input" className="text-[11px] font-label text-on-surface-variant block mb-xs">
-                      Distâncias entre furos e bordas (mm)
-                    </label>
-                    <input
-                      id="drilling-distances-input"
-                      type="text"
-                      value={customDistanceInput}
-                      onChange={(e) => handleCustomDistancesInput(e.target.value)}
-                      placeholder="Ex: 100, 500, 560, 100"
-                      aria-label="Distâncias entre furos e bordas em milímetros"
-                      className="w-full text-xs p-xs bg-surface border border-outline-variant rounded font-data-mono text-on-surface focus:border-primary focus:outline-none"
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* 5. Acabamentos */}
-              <div className="bg-surface-container-lowest border border-outline-variant rounded-lg p-sm shadow-xs flex flex-col gap-sm">
-                <p className="text-xs font-label font-semibold text-on-surface flex items-center gap-xs">
-                  <span className="material-symbols-outlined text-[16px] text-primary">palette</span>
-                  Acabamentos do Template
-                </p>
-                <div className="grid grid-cols-2 gap-sm">
-                  <div>
-                    <label htmlFor="aluminum-color-select" className="text-[11px] font-label text-on-surface-variant block mb-xs">
-                      Cor do Alumínio
-                    </label>
-                    <select
-                      id="aluminum-color-select"
-                      value={state.aluminumColor}
-                      onChange={(e) => setState((p) => ({ ...p, aluminumColor: e.target.value }))}
-                      aria-label="Cor do Alumínio"
-                      className="w-full text-xs p-xs bg-surface border border-outline-variant rounded font-body text-on-surface focus:border-primary focus:outline-none"
-                    >
-                      {dynamicAluminumColors.map((col) => (
-                        <option key={col} value={col}>
-                          {col}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label htmlFor="glass-finish-select" className="text-[11px] font-label text-on-surface-variant block mb-xs">
-                      Acabamento do Vidro
-                    </label>
-                    <select
-                      id="glass-finish-select"
-                      value={state.glassFinish}
-                      onChange={(e) => setState((p) => ({ ...p, glassFinish: e.target.value }))}
-                      aria-label="Acabamento do Vidro"
-                      className="w-full text-xs p-xs bg-surface border border-outline-variant rounded font-body text-on-surface focus:border-primary focus:outline-none"
-                    >
-                      {dynamicGlassFinishes.map((fin) => (
-                        <option key={fin} value={fin}>
-                          {fin}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+              {/* Dica da Etapa Atual (Desktop) */}
+              <div className="hidden lg:flex bg-surface-container-low border border-outline-variant/60 rounded-lg p-sm items-start gap-xs text-xs font-body text-on-surface-variant shrink-0">
+                <span className="material-symbols-outlined text-[18px] text-primary shrink-0 mt-0.5">info</span>
+                <div>
+                  {currentStep === 1 && <p>Defina as dimensões e quantidade para calcularmos os insumos exatos do vão.</p>}
+                  {currentStep === 2 && <p>Confirme os materiais (vidro, perfis, ferragens) e seus acabamentos estéticos.</p>}
+                  {currentStep === 3 && <p>Configure os sentidos de abertura, modelo do puxador e parâmetros de furação.</p>}
+                  {currentStep === 4 && <p>Revise a ficha técnica completa antes de adicionar ao orçamento.</p>}
                 </div>
               </div>
 
             </div>
 
             {/* ════════════════════════════════════════════════════════════════
-                COLUNA DA DIREITA (7 cols): MEDIDAS, INSUMOS & VALORES
+                METADE DIREITA (50% no Desktop / 100% no Mobile): CONTEÚDO WIZARD
                ════════════════════════════════════════════════════════════════ */}
-            <div className="lg:col-span-7 flex flex-col gap-md">
+            <div className="lg:col-span-6 flex flex-col gap-md">
 
-              {/* 1. Medidas e Quantidade de Esquadrias */}
-              <div className="bg-surface-container-lowest border border-outline-variant rounded-lg p-md shadow-xs flex flex-col gap-sm">
-                <div className="flex items-center justify-between pb-xs border-b border-outline-variant">
-                  <h3 className="text-xs font-label font-bold text-on-surface uppercase tracking-wider flex items-center gap-xs">
-                    <span className="material-symbols-outlined text-[16px] text-primary">aspect_ratio</span>
-                    1. Medidas e Quantidade
-                  </h3>
-                  <span className="text-xs font-data-mono font-medium text-secondary">
-                    Total: {totalQty} un
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-3 gap-sm mt-xs">
-                  <div>
-                    <label htmlFor="modal-width-input" className="text-xs font-label text-on-surface-variant block mb-xs">
-                      Largura (mm) *
-                    </label>
-                    <input
-                      id="modal-width-input"
-                      type="number"
-                      min={100}
-                      max={9999}
-                      value={state.widthMm}
-                      onChange={(e) =>
-                        setState((p) => ({
-                          ...p,
-                          widthMm: parseInt(e.target.value, 10) || '',
-                        }))
-                      }
-                      aria-label="Largura em milímetros"
-                      className={`w-full p-xs bg-surface border rounded text-sm font-data-mono text-on-surface focus:border-primary focus:outline-none ${
-                        errors.widthMm ? 'border-error' : 'border-outline-variant'
-                      }`}
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor="modal-height-input" className="text-xs font-label text-on-surface-variant block mb-xs">
-                      Altura (mm) *
-                    </label>
-                    <input
-                      id="modal-height-input"
-                      type="number"
-                      min={100}
-                      max={9999}
-                      value={state.heightMm}
-                      onChange={(e) =>
-                        setState((p) => ({
-                          ...p,
-                          heightMm: parseInt(e.target.value, 10) || '',
-                        }))
-                      }
-                      aria-label="Altura em milímetros"
-                      className={`w-full p-xs bg-surface border rounded text-sm font-data-mono text-on-surface focus:border-primary focus:outline-none ${
-                        errors.heightMm ? 'border-error' : 'border-outline-variant'
-                      }`}
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor="modal-quantity-input" className="text-xs font-label text-on-surface-variant block mb-xs">
-                      Qtd de Esquadrias *
-                    </label>
-                    <input
-                      id="modal-quantity-input"
-                      type="number"
-                      min={1}
-                      max={999}
-                      value={state.quantity}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setState((p) => ({
-                          ...p,
-                          quantity: val === '' ? ('' as unknown as number) : Math.max(1, parseInt(val, 10) || 1),
-                        }));
-                      }}
-                      aria-label="Quantidade de Esquadrias"
-                      className={`w-full p-xs bg-surface border rounded text-sm font-data-mono text-on-surface focus:border-primary focus:outline-none ${
-                        errors.quantity ? 'border-error' : 'border-outline-variant'
-                      }`}
-                    />
-                  </div>
-                </div>
-
-                {/* Badge da Área do Vão */}
-                <div className="flex items-center gap-xs text-xs font-data-mono text-on-surface-variant bg-surface-container-low px-sm py-xs rounded border border-outline-variant/60">
-                  <span className="material-symbols-outlined text-[16px] text-secondary">straighten</span>
-                  <span>
-                    Área do Vão: <strong className="text-on-surface font-bold">{unitAreaM2} m²</strong> por unidade
-                    {totalQty > 1 && (
-                      <span className="text-primary ml-xs">
-                        · Total ({totalQty}×): {((+unitAreaM2) * totalQty).toFixed(2)} m²
+              {/* ─────────────────────────────────────────────────────────────
+                  PASSO 1: MEDIDAS & QUANTIDADE DO VÃO
+                 ───────────────────────────────────────────────────────────── */}
+              {currentStep === 1 && (
+                <div className="flex flex-col gap-md animate-fadeIn">
+                  <div className="bg-surface-container-lowest border border-outline-variant rounded-lg p-md sm:p-lg shadow-xs flex flex-col gap-md">
+                    <div className="flex items-center justify-between pb-xs border-b border-outline-variant">
+                      <h3 className="text-base font-label font-bold text-on-surface uppercase tracking-wider flex items-center gap-xs">
+                        <span className="material-symbols-outlined text-[20px] text-primary">aspect_ratio</span>
+                        1. Medidas e Quantidade
+                      </h3>
+                      <span className="text-xs font-label text-secondary font-medium">
+                        Dimensões físicas
                       </span>
-                    )}
-                  </span>
-                </div>
-              </div>
+                    </div>
 
-              {/* 2. Seleção de Insumos do Template */}
-              <div className="bg-surface-container-lowest border border-outline-variant rounded-lg p-md shadow-xs flex flex-col gap-sm">
-                <div className="flex items-center justify-between pb-xs border-b border-outline-variant flex-wrap gap-xs">
-                  <div className="flex items-center gap-xs">
-                    <span className="material-symbols-outlined text-[16px] text-primary">inventory_2</span>
-                    <h3 className="text-xs font-label font-bold text-on-surface uppercase tracking-wider">
-                      2. Composição de Insumos
-                    </h3>
-                  </div>
-
-                  {/* Ações rápidas para adicionar insumos extras */}
-                  <div className="flex items-center gap-xs">
-                    <button
-                      type="button"
-                      onClick={() => handleAddMaterial('GLASS')}
-                      className="px-xs py-[2px] rounded text-[11px] font-label text-primary hover:bg-primary/10 transition-colors border border-primary/30"
-                      title="Adicionar Vidro"
-                    >
-                      + Vidro
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleAddMaterial('PROFILE')}
-                      className="px-xs py-[2px] rounded text-[11px] font-label text-primary hover:bg-primary/10 transition-colors border border-primary/30"
-                      title="Adicionar Perfil"
-                    >
-                      + Perfil
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleAddMaterial('HARDWARE')}
-                      className="px-xs py-[2px] rounded text-[11px] font-label text-primary hover:bg-primary/10 transition-colors border border-primary/30"
-                      title="Adicionar Ferragem"
-                    >
-                      + Ferragem
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleAddMaterial('ROLLERS')}
-                      className="px-xs py-[2px] rounded text-[11px] font-label text-primary hover:bg-primary/10 transition-colors border border-primary/30"
-                      title="Adicionar Roldana"
-                    >
-                      + Roldana
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleAddMaterial('FILM')}
-                      className="px-xs py-[2px] rounded text-[11px] font-label text-primary hover:bg-primary/10 transition-colors border border-primary/30"
-                      title="Adicionar Película"
-                    >
-                      + Película
-                    </button>
-                  </div>
-                </div>
-
-                {/* Lista de Insumos */}
-                {state.materialSelections.length === 0 ? (
-                  <div className="text-center py-md text-xs text-on-surface-variant font-body bg-surface-container-low rounded border border-outline-variant/60">
-                    <p>Nenhum insumo configurado para este produto.</p>
-                    <p className="mt-xs text-secondary">Utilize os botões acima para adicionar insumos ao item.</p>
-                  </div>
-                ) : (
-                  <div className="flex flex-col gap-xs">
-                    {state.materialSelections.map((sel) => {
-                      const reqId = sel.requirementId;
-                      const categoryType = sel.categoryType;
-                      const iconName = CATEGORY_ICONS[categoryType] ?? 'category';
-
-                      let optionsList: { id: string; name: string; price: number; unit: string }[] = [];
-                      if (categoryType === 'GLASS') {
-                        optionsList = glasses.map((g) => ({
-                          id: g.id,
-                          name: g.name,
-                          price: g.salePrice ?? g.pricePerSqm ?? 0,
-                          unit: 'm²',
-                        }));
-                      } else if (categoryType === 'PROFILE') {
-                        optionsList = profiles.map((p) => ({
-                          id: p.id,
-                          name: p.name,
-                          price: p.salePrice ?? 0,
-                          unit: p.unitMeasure ?? 'm',
-                        }));
-                      } else if (categoryType === 'HARDWARE' || categoryType === 'ROLLERS') {
-                        optionsList = hardwares.map((h) => ({
-                          id: h.id,
-                          name: h.name,
-                          price: h.salePrice ?? 0,
-                          unit: h.unitMeasure ?? 'un',
-                        }));
-                      } else if (categoryType === 'FILM') {
-                        optionsList = films.map((f) => ({
-                          id: f.id,
-                          name: f.name,
-                          price: f.salePrice ?? 0,
-                          unit: 'm²',
-                        }));
-                      }
-
-                      const categoryPrice = sel.totalPrice;
-                      const unitMeasure = sel.unitMeasure ?? (categoryType === 'GLASS' || categoryType === 'FILM' ? 'm²' : categoryType === 'PROFILE' ? 'm' : 'un');
-
-                      return (
-                        <div
-                          key={reqId}
-                          className="bg-surface-container-low border border-outline-variant/60 rounded-md p-xs sm:p-sm flex flex-col gap-xs hover:border-primary/40 transition-colors"
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-md">
+                      <div>
+                        <label
+                          htmlFor="modal-width-input"
+                          className="text-sm font-label font-semibold text-on-surface flex items-center gap-0.5 mb-1.5 whitespace-nowrap"
                         >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-xs min-w-0">
-                              <span className="material-symbols-outlined text-[16px] text-primary">{iconName}</span>
-                              <span className="text-xs font-label font-semibold text-on-surface truncate">
-                                {sel.label} {sel.isOptional && <span className="text-on-surface-variant font-normal text-[11px]">(Opcional)</span>}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-xs shrink-0">
-                              <span className="font-data-mono font-bold text-primary text-xs">
-                                {categoryPrice !== undefined
-                                  ? formatBRL(categoryPrice)
-                                  : sel.materialId
-                                  ? `${formatBRL(sel.unitPrice)} / ${unitMeasure}`
-                                  : '—'}
-                              </span>
-                              {sel.isOptional && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleRemoveMaterial(reqId)}
-                                  className="p-[2px] text-on-surface-variant hover:text-error hover:bg-error/10 rounded transition-colors"
-                                  title="Remover este insumo"
-                                >
-                                  <span className="material-symbols-outlined text-[14px]">close</span>
-                                </button>
-                              )}
-                            </div>
-                          </div>
+                          Largura (mm)<span className="text-error font-bold leading-none">*</span>
+                        </label>
+                        <input
+                          id="modal-width-input"
+                          type="number"
+                          min={100}
+                          max={9999}
+                          value={state.widthMm}
+                          onChange={(e) =>
+                            setState((p) => ({
+                              ...p,
+                              widthMm: parseInt(e.target.value, 10) || '',
+                            }))
+                          }
+                          aria-label="Largura em milímetros"
+                          className={`w-full py-2.5 px-3 bg-surface border rounded-lg text-base font-data-mono text-on-surface focus:border-primary focus:outline-none transition-colors ${
+                            errors.widthMm ? 'border-error' : 'border-outline-variant'
+                          }`}
+                        />
+                        {errors.widthMm && <span className="text-xs text-error mt-1 block">{errors.widthMm}</span>}
+                      </div>
 
-                          <div className="flex items-center gap-xs mt-xs">
-                            {/* Seletor de Material */}
-                            <select
-                              value={sel.materialId ?? ''}
-                              onChange={(e) => handleMaterialChange(reqId, e.target.value)}
-                              aria-label={`Selecionar material para ${sel.label}`}
-                              className="flex-1 text-xs p-xs bg-surface border border-outline-variant rounded font-body text-on-surface focus:border-primary focus:outline-none min-w-0"
-                            >
-                              {sel.isOptional && <option value="">-- Sem {sel.label} / Nenhuma --</option>}
-                              {!sel.isOptional && !sel.materialId && (
-                                <option value="">-- Selecione o material --</option>
-                              )}
-                              {optionsList.map((opt) => (
-                                <option key={opt.id} value={opt.id}>
-                                  {opt.name} · {formatBRL(opt.price)} / {opt.unit}
-                                </option>
-                              ))}
-                            </select>
+                      <div>
+                        <label
+                          htmlFor="modal-height-input"
+                          className="text-sm font-label font-semibold text-on-surface flex items-center gap-0.5 mb-1.5 whitespace-nowrap"
+                        >
+                          Altura (mm)<span className="text-error font-bold leading-none">*</span>
+                        </label>
+                        <input
+                          id="modal-height-input"
+                          type="number"
+                          min={100}
+                          max={9999}
+                          value={state.heightMm}
+                          onChange={(e) =>
+                            setState((p) => ({
+                              ...p,
+                              heightMm: parseInt(e.target.value, 10) || '',
+                            }))
+                          }
+                          aria-label="Altura em milímetros"
+                          className={`w-full py-2.5 px-3 bg-surface border rounded-lg text-base font-data-mono text-on-surface focus:border-primary focus:outline-none transition-colors ${
+                            errors.heightMm ? 'border-error' : 'border-outline-variant'
+                          }`}
+                        />
+                        {errors.heightMm && <span className="text-xs text-error mt-1 block">{errors.heightMm}</span>}
+                      </div>
 
-                            {/* Input de Quantidade */}
-                            <div className="flex items-center gap-[2px] shrink-0">
-                              <input
-                                type="number"
-                                step={unitMeasure === 'UN' || unitMeasure === 'PAR' || unitMeasure === 'PAIR' || unitMeasure === 'un' ? "1" : "0.01"}
-                                min={0}
-                                value={sel.quantity ?? ''}
-                                onChange={(e) => handleMaterialQtyChange(reqId, e.target.value)}
-                                disabled={!sel.materialId}
-                                placeholder="Qtd"
-                                aria-label={`Quantidade de ${sel.label}`}
-                                className="w-16 p-xs bg-surface border border-outline-variant rounded text-xs font-data-mono text-on-surface text-center focus:border-primary focus:outline-none disabled:opacity-40"
-                              />
-                              <span className="text-[11px] font-data-mono text-on-surface-variant bg-surface-container px-xs py-[4px] rounded border border-outline-variant min-w-[32px] text-center">
-                                {unitMeasure}
-                              </span>
-                            </div>
-                          </div>
+                      <div>
+                        <label
+                          htmlFor="modal-quantity-input"
+                          className="text-sm font-label font-semibold text-on-surface flex items-center gap-0.5 mb-1.5 whitespace-nowrap"
+                        >
+                          Quantidade<span className="text-error font-bold leading-none">*</span>
+                        </label>
+                        <input
+                          id="modal-quantity-input"
+                          type="number"
+                          min={1}
+                          max={999}
+                          value={state.quantity}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setState((p) => ({
+                              ...p,
+                              quantity: val === '' ? ('' as unknown as number) : Math.max(1, parseInt(val, 10) || 1),
+                            }));
+                          }}
+                          aria-label="Quantidade de Esquadrias"
+                          className={`w-full py-2.5 px-3 bg-surface border rounded-lg text-base font-data-mono text-on-surface focus:border-primary focus:outline-none transition-colors ${
+                            errors.quantity ? 'border-error' : 'border-outline-variant'
+                          }`}
+                        />
+                        {errors.quantity && <span className="text-xs text-error mt-1 block">{errors.quantity}</span>}
+                      </div>
+                    </div>
+
+                    {/* Resumo da Área Calculada */}
+                    <div className="bg-surface-container-low border border-outline-variant/60 rounded-lg p-md flex items-center gap-sm">
+                      <span className="material-symbols-outlined text-[24px] text-primary">straighten</span>
+                      <div>
+                        <div className="text-sm font-body text-on-surface">
+                          Área unitária do vão: <strong className="font-data-mono font-bold text-base">{unitAreaM2} m²</strong>
                         </div>
-                      );
-                    })}
+                        {totalQty > 1 && (
+                          <div className="text-xs font-data-mono text-secondary">
+                            Área total acumulada ({totalQty} unidades): <strong className="text-primary font-bold">{((+unitAreaM2) * totalQty).toFixed(2)} m²</strong>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                )}
-              </div>
-
-              {/* 3. Observações da Esquadria */}
-              <div className="bg-surface-container-lowest border border-outline-variant rounded-lg p-md shadow-xs flex flex-col gap-sm">
-                <div className="flex items-center gap-xs pb-xs border-b border-outline-variant">
-                  <span className="material-symbols-outlined text-[16px] text-primary">edit_note</span>
-                  <h3 className="text-xs font-label font-bold text-on-surface uppercase tracking-wider">
-                    3. Observações da Esquadria
-                  </h3>
                 </div>
+              )}
 
-                <div>
-                  <label htmlFor="modal-notes-input" className="text-xs font-label text-on-surface-variant block mb-xs">
-                    Observações do Item <span className="text-[11px] font-normal text-secondary lowercase">(opcional)</span>
-                  </label>
-                  <input
-                    id="modal-notes-input"
-                    type="text"
-                    value={state.notes ?? ''}
-                    onChange={(e) => setState((p) => ({ ...p, notes: e.target.value }))}
-                    placeholder="Ex: Vidro temperado jateado, puxador especial..."
-                    aria-label="Observações do Item"
-                    className="w-full p-xs bg-surface border border-outline-variant rounded text-sm font-body text-on-surface focus:border-primary focus:outline-none"
-                  />
-                </div>
-              </div>
+              {/* ─────────────────────────────────────────────────────────────
+                  PASSO 2: INSUMOS, MATERIAIS & CORES
+                 ───────────────────────────────────────────────────────────── */}
+              {currentStep === 2 && (
+                <div className="flex flex-col gap-md animate-fadeIn">
+                  {/* Cores e Acabamentos Globais */}
+                  <div className="bg-surface-container-lowest border border-outline-variant rounded-lg p-md shadow-xs flex flex-col gap-sm">
+                    <div className="flex items-center justify-between pb-xs border-b border-outline-variant/50">
+                      <h3 className="text-sm font-label font-bold text-on-surface flex items-center gap-xs uppercase tracking-wider">
+                        <span className="material-symbols-outlined text-[18px] text-primary">palette</span>
+                        Acabamentos do Modelo
+                      </h3>
+                      <span className="text-xs font-label text-on-surface-variant">Cores Gerais</span>
+                    </div>
 
-              {/* 4. Card de Resumo da Esquadria */}
-              <div className="bg-surface-container-low border border-outline-variant rounded-lg p-md shadow-xs flex flex-col gap-xs">
-                <div className="flex justify-between items-center text-xs text-on-surface-variant font-body">
-                  <span>Custo Unitário dos Insumos:</span>
-                  <span className="font-data-mono font-semibold text-on-surface">
-                    {formatBRL(materialsTotal)}
-                  </span>
-                </div>
-                {totalQty > 1 && (
-                  <div className="flex justify-between items-center text-xs text-on-surface-variant font-body">
-                    <span>Quantidade ({totalQty}× unidades):</span>
-                    <span className="font-data-mono font-semibold text-on-surface">
-                      × {totalQty}
-                    </span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-sm">
+                      <div>
+                        <label htmlFor="aluminum-color-select" className="text-xs sm:text-sm font-label font-medium text-on-surface block mb-1">
+                          Cor do Alumínio
+                        </label>
+                        <select
+                          id="aluminum-color-select"
+                          value={state.aluminumColor}
+                          onChange={(e) => setState((p) => ({ ...p, aluminumColor: e.target.value }))}
+                          aria-label="Cor do Alumínio"
+                          className="w-full text-sm py-2 px-2.5 bg-surface border border-outline-variant rounded font-body text-on-surface focus:border-primary focus:outline-none transition-colors"
+                        >
+                          {dynamicAluminumColors.map((col) => (
+                            <option key={col} value={col}>{col}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label htmlFor="glass-finish-select" className="text-xs sm:text-sm font-label font-medium text-on-surface block mb-1">
+                          Acabamento do Vidro
+                        </label>
+                        <select
+                          id="glass-finish-select"
+                          value={state.glassFinish}
+                          onChange={(e) => setState((p) => ({ ...p, glassFinish: e.target.value }))}
+                          aria-label="Acabamento do Vidro"
+                          className="w-full text-sm py-2 px-2.5 bg-surface border border-outline-variant rounded font-body text-on-surface focus:border-primary focus:outline-none transition-colors"
+                        >
+                          {dynamicGlassFinishes.map((fin) => (
+                            <option key={fin} value={fin}>{fin}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
                   </div>
-                )}
-                <div className="flex justify-between items-center pt-xs border-t border-outline-variant/60 text-sm mt-xs">
-                  <span className="font-label font-bold text-on-surface">Subtotal da Esquadria:</span>
-                  <span className="font-data-mono font-bold text-primary text-base">
-                    {formatBRL(itemSubtotalEstimate)}
-                  </span>
+
+                  {/* Lista de Insumos da Esquadria */}
+                  <div className="bg-surface-container-lowest border border-outline-variant rounded-lg p-md shadow-xs flex flex-col gap-sm">
+                    <div className="flex items-center justify-between pb-xs border-b border-outline-variant flex-wrap gap-xs">
+                      <div className="flex items-center gap-xs">
+                        <span className="material-symbols-outlined text-[18px] text-primary">inventory_2</span>
+                        <h3 className="text-sm font-label font-bold text-on-surface uppercase tracking-wider">
+                          Composição de Insumos
+                        </h3>
+                      </div>
+
+                      {/* Botões rápidos para adicionar insumos */}
+                      <div className="flex items-center gap-xs flex-wrap">
+                        <button
+                          type="button"
+                          onClick={() => handleAddMaterial('GLASS')}
+                          className="px-2.5 py-1 rounded text-xs font-label font-semibold text-primary hover:bg-primary/10 transition-colors border border-primary/40"
+                        >
+                          + Vidro
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleAddMaterial('PROFILE')}
+                          className="px-2.5 py-1 rounded text-xs font-label font-semibold text-primary hover:bg-primary/10 transition-colors border border-primary/40"
+                        >
+                          + Perfil
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleAddMaterial('HARDWARE')}
+                          className="px-2.5 py-1 rounded text-xs font-label font-semibold text-primary hover:bg-primary/10 transition-colors border border-primary/40"
+                        >
+                          + Ferragem
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleAddMaterial('ROLLERS')}
+                          className="px-2.5 py-1 rounded text-xs font-label font-semibold text-primary hover:bg-primary/10 transition-colors border border-primary/40"
+                        >
+                          + Roldana
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleAddMaterial('FILM')}
+                          className="px-2.5 py-1 rounded text-xs font-label font-semibold text-primary hover:bg-primary/10 transition-colors border border-primary/40"
+                        >
+                          + Película
+                        </button>
+                      </div>
+                    </div>
+
+                    {state.materialSelections.length === 0 ? (
+                      <div className="text-center py-md text-sm text-on-surface-variant font-body bg-surface-container-low rounded border border-outline-variant/60">
+                        <p>Nenhum insumo configurado para este produto.</p>
+                        <p className="mt-xs text-secondary text-xs">Utilize os botões acima para adicionar insumos ao item.</p>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-xs max-h-[380px] overflow-y-auto pr-1">
+                        {state.materialSelections.map((sel) => {
+                          const reqId = sel.requirementId;
+                          const categoryType = sel.categoryType;
+                          const iconName = CATEGORY_ICONS[categoryType] ?? 'category';
+
+                          let optionsList: { id: string; name: string; price: number; unit: string }[] = [];
+                          if (categoryType === 'GLASS') {
+                            optionsList = glasses.map((g) => ({
+                              id: g.id,
+                              name: g.name,
+                              price: g.salePrice ?? g.pricePerSqm ?? 0,
+                              unit: 'm²',
+                            }));
+                          } else if (categoryType === 'PROFILE') {
+                            optionsList = profiles.map((p) => ({
+                              id: p.id,
+                              name: p.name,
+                              price: p.salePrice ?? 0,
+                              unit: p.unitMeasure ?? 'm',
+                            }));
+                          } else if (categoryType === 'HARDWARE' || categoryType === 'ROLLERS') {
+                            optionsList = hardwares.map((h) => ({
+                              id: h.id,
+                              name: h.name,
+                              price: h.salePrice ?? 0,
+                              unit: h.unitMeasure ?? 'un',
+                            }));
+                          } else if (categoryType === 'FILM') {
+                            optionsList = films.map((f) => ({
+                              id: f.id,
+                              name: f.name,
+                              price: f.salePrice ?? 0,
+                              unit: 'm²',
+                            }));
+                          }
+
+                          const categoryPrice = sel.totalPrice;
+                          const unitMeasure = sel.unitMeasure ?? (categoryType === 'GLASS' || categoryType === 'FILM' ? 'm²' : categoryType === 'PROFILE' ? 'm' : 'un');
+
+                          return (
+                            <div
+                              key={reqId}
+                              className="bg-surface-container-low border border-outline-variant/60 rounded-md p-sm sm:p-md flex flex-col gap-xs hover:border-primary/40 transition-colors"
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-xs min-w-0">
+                                  <span className="material-symbols-outlined text-[18px] text-primary">{iconName}</span>
+                                  <span className="text-sm font-label font-semibold text-on-surface truncate">
+                                    {sel.label} {sel.isOptional && <span className="text-on-surface-variant font-normal text-xs">(Opcional)</span>}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-xs shrink-0">
+                                  <span className="font-data-mono font-bold text-primary text-sm sm:text-base">
+                                    {categoryPrice !== undefined
+                                      ? formatBRL(categoryPrice)
+                                      : sel.materialId
+                                      ? `${formatBRL(sel.unitPrice)} / ${unitMeasure}`
+                                      : '—'}
+                                  </span>
+                                  {sel.isOptional && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemoveMaterial(reqId)}
+                                      className="p-1 text-on-surface-variant hover:text-error hover:bg-error/10 rounded transition-colors"
+                                      title="Remover este insumo"
+                                    >
+                                      <span className="material-symbols-outlined text-[16px]">close</span>
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-xs mt-xs">
+                                <select
+                                  value={sel.materialId ?? ''}
+                                  onChange={(e) => handleMaterialChange(reqId, e.target.value)}
+                                  aria-label={`Selecionar material para ${sel.label}`}
+                                  className="flex-1 text-sm py-2 px-2.5 bg-surface border border-outline-variant rounded font-body text-on-surface focus:border-primary focus:outline-none min-w-0 transition-colors"
+                                >
+                                  {sel.isOptional && <option value="">-- Sem {sel.label} / Nenhuma --</option>}
+                                  {!sel.isOptional && !sel.materialId && (
+                                    <option value="">-- Selecione o material --</option>
+                                  )}
+                                  {optionsList.map((opt) => (
+                                    <option key={opt.id} value={opt.id}>
+                                      {opt.name} · {formatBRL(opt.price)} / {opt.unit}
+                                    </option>
+                                  ))}
+                                </select>
+
+                                <div className="flex items-center gap-[2px] shrink-0">
+                                  <input
+                                    type="number"
+                                    step={unitMeasure === 'UN' || unitMeasure === 'PAR' || unitMeasure === 'PAIR' || unitMeasure === 'un' ? "1" : "0.01"}
+                                    min={0}
+                                    value={sel.quantity ?? ''}
+                                    onChange={(e) => handleMaterialQtyChange(reqId, e.target.value)}
+                                    disabled={!sel.materialId}
+                                    placeholder="Qtd"
+                                    aria-label={`Quantidade de ${sel.label}`}
+                                    className="w-20 py-2 px-2 bg-surface border border-outline-variant rounded text-sm font-data-mono text-on-surface text-center focus:border-primary focus:outline-none disabled:opacity-40 transition-colors"
+                                  />
+                                  <span className="text-xs font-data-mono text-on-surface bg-surface-container px-2.5 py-2 rounded border border-outline-variant min-w-[36px] text-center font-medium">
+                                    {unitMeasure}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {/* ─────────────────────────────────────────────────────────────
+                  PASSO 3: MECÂNICA, PUXADOR, FURAÇÃO & OBSERVAÇÕES
+                 ───────────────────────────────────────────────────────────── */}
+              {currentStep === 3 && (
+                <div className="flex flex-col gap-md animate-fadeIn">
+                  {/* Sentido de Abertura & Puxador */}
+                  <div className="bg-surface-container-lowest border border-outline-variant rounded-lg p-md shadow-xs flex flex-col gap-sm">
+                    <div className="flex items-center justify-between pb-xs border-b border-outline-variant">
+                      <h3 className="text-sm font-label font-bold text-on-surface uppercase tracking-wider flex items-center gap-xs">
+                        <span className="material-symbols-outlined text-[18px] text-primary">tune</span>
+                        Mecânica da Folha & Puxador
+                      </h3>
+                    </div>
+
+                    {/* Sentido de Abertura */}
+                    <div className="flex flex-col gap-xs">
+                      <label className="text-xs sm:text-sm font-label font-semibold text-on-surface flex items-center gap-xs mb-1">
+                        <span className="material-symbols-outlined text-[16px] text-primary">swap_horiz</span>
+                        Sentido de Abertura da Folha
+                      </label>
+                      <div className={`grid ${supportedDirections.length > 1 ? 'grid-cols-2' : 'grid-cols-1'} gap-xs`}>
+                        {supportedDirections.map((dir) => {
+                          const isSelected = state.openingDirection === dir;
+                          let label = 'Abrir';
+                          let icon = 'swap_horiz';
+                          if (dir === 'LEFT_TO_RIGHT') { label = 'Abrir p/ Direita'; icon = 'arrow_forward'; }
+                          else if (dir === 'RIGHT_TO_LEFT') { label = 'Abrir p/ Esquerda'; icon = 'arrow_back'; }
+                          else if (dir === 'OUTSIDE') { label = 'Para Fora'; icon = 'open_in_new'; }
+                          else if (dir === 'INSIDE') { label = 'Para Dentro'; icon = 'login'; }
+                          else if (dir === 'CENTER_TO_SIDES') { label = 'Centro p/ Lados'; icon = 'unfold_more'; }
+
+                          return (
+                            <button
+                              key={dir}
+                              type="button"
+                              onClick={() => setState((p) => ({ ...p, openingDirection: dir }))}
+                              aria-pressed={isSelected}
+                              className={`py-2 px-3 rounded border text-xs sm:text-sm font-label font-semibold flex items-center justify-center gap-1.5 transition-all ${
+                                isSelected
+                                  ? 'bg-primary text-on-primary border-primary shadow-xs'
+                                  : 'bg-surface border-outline-variant text-on-surface hover:bg-surface-container'
+                              }`}
+                            >
+                              <span className="material-symbols-outlined text-[18px]">{icon}</span>
+                              {label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Puxador */}
+                    <div className="pt-xs border-t border-outline-variant/50 flex flex-col gap-xs">
+                      <label className="text-xs sm:text-sm font-label font-semibold text-on-surface flex items-center gap-xs mb-1">
+                        <span className="material-symbols-outlined text-[16px] text-primary">hardware</span>
+                        Puxador & Ferragens de Manuseio
+                      </label>
+                      <div className="grid grid-cols-2 gap-sm">
+                        <div>
+                          <label htmlFor="handle-type-select" className="text-xs sm:text-sm font-label font-medium text-on-surface block mb-1">
+                            Tipo de Puxador
+                          </label>
+                          <select
+                            id="handle-type-select"
+                            value={state.handleConfig.handleType}
+                            onChange={(e) => handleHandleTypeChange(e.target.value as HandleType)}
+                            aria-label="Tipo de Puxador"
+                            className="w-full text-sm py-2 px-2.5 bg-surface border border-outline-variant rounded font-body text-on-surface focus:border-primary focus:outline-none transition-colors"
+                          >
+                            <option value="BAR_TUBULAR">Tubular Inox</option>
+                            <option value="SHELL_LOCK">Fecho Concha</option>
+                            <option value="LEVER_HANDLE">Maçaneta</option>
+                            <option value="NONE">Sem Puxador</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label htmlFor="handle-side-select" className="text-xs sm:text-sm font-label font-medium text-on-surface block mb-1">
+                            Lados do Puxador
+                          </label>
+                          <select
+                            id="handle-side-select"
+                            value={state.handleConfig.side ?? 'ONE_SIDE'}
+                            onChange={(e) => handleHandleSideChange(e.target.value as HandleSide)}
+                            disabled={state.handleConfig.handleType === 'NONE'}
+                            aria-label="Lados do Puxador"
+                            className="w-full text-sm py-2 px-2.5 bg-surface border border-outline-variant rounded font-body text-on-surface focus:border-primary focus:outline-none disabled:opacity-50 transition-colors"
+                          >
+                            <option value="ONE_SIDE">1 Lado (Face Única)</option>
+                            <option value="BOTH_SIDES">2 Lados (Frente e Verso)</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {state.handleConfig.handleType === 'BAR_TUBULAR' && (
+                        <div className="grid grid-cols-2 gap-sm pt-xs border-t border-outline-variant/40">
+                          <div>
+                            <label htmlFor="handle-coverage-select" className="text-xs sm:text-sm font-label font-medium text-on-surface block mb-1">
+                              Extensão do Puxador
+                            </label>
+                            <select
+                              id="handle-coverage-select"
+                              value={state.handleConfig.coverage ?? 'FULL'}
+                              onChange={(e) => handleHandleCoverageChange(e.target.value as HandleCoverage)}
+                              aria-label="Extensão do Puxador"
+                              className="w-full text-sm py-2 px-2.5 bg-surface border border-outline-variant rounded font-body text-on-surface focus:border-primary focus:outline-none transition-colors"
+                            >
+                              <option value="FULL">Extensão Total da Folha</option>
+                              <option value="PIECE">Pedaço / Tamanho Fixo</option>
+                            </select>
+                          </div>
+
+                          {state.handleConfig.coverage === 'PIECE' && (
+                            <div>
+                              <label htmlFor="handle-length-input" className="text-xs sm:text-sm font-label font-medium text-on-surface block mb-1">
+                                Comprimento (cm)
+                              </label>
+                              <input
+                                id="handle-length-input"
+                                type="number"
+                                min={10}
+                                max={300}
+                                value={state.handleConfig.pieceLengthCm ?? 40}
+                                onChange={(e) =>
+                                  setState((p) => ({
+                                    ...p,
+                                    handleConfig: {
+                                      ...p.handleConfig,
+                                      pieceLengthCm: parseInt(e.target.value, 10) || 40,
+                                    },
+                                  }))
+                                }
+                                aria-label="Comprimento do Puxador em centímetros"
+                                className="w-full text-sm py-2 px-2.5 bg-surface border border-outline-variant rounded font-data-mono text-on-surface focus:border-primary focus:outline-none transition-colors"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Furação da Esquadria */}
+                  <div className="bg-surface-container-lowest border border-outline-variant rounded-lg p-md shadow-xs flex flex-col gap-sm">
+                    <div className="flex items-center justify-between pb-xs border-b border-outline-variant">
+                      <h3 className="text-sm font-label font-bold text-on-surface uppercase tracking-wider flex items-center gap-xs">
+                        <span className="material-symbols-outlined text-[18px] text-primary">adjust</span>
+                        Furação do Vidro
+                      </h3>
+                      <span className="text-xs font-data-mono text-on-surface-variant bg-surface-container px-2 py-0.5 rounded border border-outline-variant/50">
+                        {state.drillingConfig.holeCount === 0
+                          ? 'Sem furação'
+                          : `${state.drillingConfig.holeCount} ${state.drillingConfig.holeCount === 1 ? 'furo' : 'furos'}`}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-sm">
+                      <div>
+                        <label htmlFor="hole-count-select" className="text-xs sm:text-sm font-label font-medium text-on-surface block mb-1">
+                          Qtd de Furos
+                        </label>
+                        <select
+                          id="hole-count-select"
+                          value={state.drillingConfig.holeCount}
+                          onChange={(e) => handleHoleCountChange(parseInt(e.target.value, 10))}
+                          aria-label="Quantidade de Furos"
+                          className="w-full text-sm py-2 px-2.5 bg-surface border border-outline-variant rounded font-body text-on-surface focus:border-primary focus:outline-none"
+                        >
+                          <option value={0}>Sem Furação</option>
+                          <option value={1}>1 Furo</option>
+                          <option value={2}>2 Furos (Padrão)</option>
+                          <option value={3}>3 Furos</option>
+                          <option value={4}>4 Furos</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label htmlFor="hole-division-select" className="text-xs sm:text-sm font-label font-medium text-on-surface block mb-1">
+                          Distribuição dos Furos
+                        </label>
+                        <select
+                          id="hole-division-select"
+                          value={state.drillingConfig.divisionType}
+                          onChange={(e) => handleDivisionTypeChange(e.target.value as DivisionType)}
+                          disabled={state.drillingConfig.holeCount === 0}
+                          aria-label="Divisão dos Furos"
+                          className="w-full text-sm py-2 px-2.5 bg-surface border border-outline-variant rounded font-body text-on-surface focus:border-primary focus:outline-none disabled:opacity-50"
+                        >
+                          <option value="EQUAL">Por igual (Automático)</option>
+                          <option value="CUSTOM_DISTANCE">Com medida (Distâncias)</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {state.drillingConfig.holeCount > 0 && state.drillingConfig.divisionType === 'CUSTOM_DISTANCE' && (
+                      <div className="pt-xs border-t border-outline-variant/50 flex flex-col gap-xs">
+                        <div className="flex items-center justify-between">
+                          <label className="text-xs sm:text-sm font-label font-medium text-on-surface">
+                            Distâncias dos Furos (mm)
+                          </label>
+                          <span className="text-[11px] font-data-mono text-secondary">
+                            Topo até base (máx {typeof state.heightMm === 'number' ? state.heightMm : DEFAULT_HEIGHT} mm)
+                          </span>
+                        </div>
+                        <div
+                          className={`grid ${
+                            state.drillingConfig.holeCount === 1
+                              ? 'grid-cols-1'
+                              : state.drillingConfig.holeCount === 3
+                              ? 'grid-cols-3'
+                              : 'grid-cols-2'
+                          } gap-sm mt-xs`}
+                        >
+                          {Array.from({ length: state.drillingConfig.holeCount }, (_, i) => {
+                            const holeNum = i + 1;
+                            const val = holeDistanceInputs[i] ?? '';
+                            return (
+                              <div key={`hole-input-${holeNum}`}>
+                                <label
+                                  htmlFor={`hole-distance-input-${holeNum}`}
+                                  className="text-xs font-label font-medium text-on-surface-variant block mb-1"
+                                >
+                                  Furo {holeNum} (mm)
+                                </label>
+                                <input
+                                  id={`hole-distance-input-${holeNum}`}
+                                  type="number"
+                                  min={10}
+                                  max={typeof state.heightMm === 'number' ? state.heightMm : 9999}
+                                  step={10}
+                                  value={val}
+                                  onChange={(e) => handleSingleHoleDistanceChange(i, e.target.value)}
+                                  placeholder={`Ex: ${Math.round(
+                                    ((typeof state.heightMm === 'number' ? state.heightMm : DEFAULT_HEIGHT) /
+                                      (state.drillingConfig.holeCount + 1)) *
+                                      holeNum,
+                                  )}`}
+                                  aria-label={`Distância do Furo ${holeNum} em milímetros`}
+                                  className="w-full text-sm py-2 px-2.5 bg-surface border border-outline-variant rounded font-data-mono text-on-surface focus:border-primary focus:outline-none transition-colors"
+                                />
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {state.drillingConfig.holeCount > 0 && state.drillingConfig.divisionType === 'EQUAL' && (
+                      <div className="pt-xs border-t border-outline-variant/40 flex items-center gap-xs text-xs font-data-mono text-on-surface-variant bg-surface-container-low px-sm py-2 rounded border border-outline-variant/60">
+                        <span className="material-symbols-outlined text-[16px] text-primary">info</span>
+                        <span>
+                          {state.drillingConfig.holeCount} {state.drillingConfig.holeCount === 1 ? 'furo centralizado' : 'furos distribuídos por igual'} (~{Math.round((typeof state.heightMm === 'number' ? state.heightMm : DEFAULT_HEIGHT) / (state.drillingConfig.holeCount + 1))} mm entre furos).
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Observações da Esquadria */}
+                  <div className="bg-surface-container-lowest border border-outline-variant rounded-lg p-md shadow-xs flex flex-col gap-xs">
+                    <div className="flex items-center gap-xs pb-xs border-b border-outline-variant/50">
+                      <span className="material-symbols-outlined text-[18px] text-primary">edit_note</span>
+                      <h3 className="text-sm font-label font-bold text-on-surface uppercase tracking-wider">
+                        Observações da Esquadria
+                      </h3>
+                      <span className="text-xs font-label text-secondary lowercase ml-auto">(opcional)</span>
+                    </div>
+                    <div>
+                      <input
+                        id="modal-notes-input"
+                        type="text"
+                        value={state.notes ?? ''}
+                        onChange={(e) => setState((p) => ({ ...p, notes: e.target.value }))}
+                        placeholder="Ex: Vidro temperado jateado, puxador especial, instalação urgente..."
+                        aria-label="Observações do Item"
+                        className="w-full text-sm py-2 px-2.5 bg-surface border border-outline-variant rounded font-body text-on-surface focus:border-primary focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ─────────────────────────────────────────────────────────────
+                  PASSO 4: RESUMO TÉCNICO & CONFIRMAÇÃO
+                 ───────────────────────────────────────────────────────────── */}
+              {currentStep === 4 && (
+                <div className="flex flex-col gap-md animate-fadeIn">
+                  <div className="bg-surface-container-lowest border border-outline-variant rounded-lg p-md sm:p-lg shadow-xs flex flex-col gap-md">
+                    <div className="flex items-center justify-between pb-xs border-b border-outline-variant">
+                      <h3 className="text-base font-label font-bold text-on-surface uppercase tracking-wider flex items-center gap-xs">
+                        <span className="material-symbols-outlined text-[20px] text-primary">task_alt</span>
+                        Ficha Técnica & Resumo
+                      </h3>
+                      <span className="text-xs font-label text-primary font-bold uppercase tracking-wider">
+                        Pronto para salvar
+                      </span>
+                    </div>
+
+                    {/* Grid de Resumo das Características */}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-sm text-sm">
+                      <div className="bg-surface-container-low p-sm rounded border border-outline-variant/50">
+                        <span className="text-xs text-secondary block font-label">Dimensões do Vão</span>
+                        <strong className="text-on-surface font-data-mono">{svgW} × {svgH} mm</strong>
+                      </div>
+                      <div className="bg-surface-container-low p-sm rounded border border-outline-variant/50">
+                        <span className="text-xs text-secondary block font-label">Quantidade</span>
+                        <strong className="text-on-surface font-data-mono">{totalQty} {totalQty > 1 ? 'unidades' : 'unidade'}</strong>
+                      </div>
+                      <div className="bg-surface-container-low p-sm rounded border border-outline-variant/50">
+                        <span className="text-xs text-secondary block font-label">Área Total</span>
+                        <strong className="text-on-surface font-data-mono">{((+unitAreaM2) * totalQty).toFixed(2)} m²</strong>
+                      </div>
+                      <div className="bg-surface-container-low p-sm rounded border border-outline-variant/50">
+                        <span className="text-xs text-secondary block font-label">Cor do Alumínio</span>
+                        <strong className="text-on-surface font-body truncate block">{state.aluminumColor}</strong>
+                      </div>
+                      <div className="bg-surface-container-low p-sm rounded border border-outline-variant/50">
+                        <span className="text-xs text-secondary block font-label">Vidro</span>
+                        <strong className="text-on-surface font-body truncate block">{state.glassFinish}</strong>
+                      </div>
+                      <div className="bg-surface-container-low p-sm rounded border border-outline-variant/50">
+                        <span className="text-xs text-secondary block font-label">Puxador / Furação</span>
+                        <strong className="text-on-surface font-body truncate block">
+                          {state.handleConfig.handleType === 'NONE' ? 'Sem Puxador' : state.handleConfig.handleType} • {state.drillingConfig.holeCount} furos
+                        </strong>
+                      </div>
+                    </div>
+
+                    {/* Resumo dos Insumos Selecionados */}
+                    <div className="flex flex-col gap-xs pt-xs border-t border-outline-variant/50">
+                      <span className="text-xs font-label font-bold text-on-surface uppercase tracking-wider">
+                        Insumos Configurados ({state.materialSelections.filter((s) => s.materialId).length})
+                      </span>
+                      <div className="max-h-[160px] overflow-y-auto pr-1 flex flex-col gap-1 text-xs font-data-mono">
+                        {state.materialSelections.filter((s) => s.materialId).map((s) => (
+                          <div key={s.requirementId} className="flex items-center justify-between py-1 border-b border-outline-variant/30">
+                            <span className="text-on-surface truncate max-w-[240px] sm:max-w-xs">{s.label}: {s.materialName} ({s.quantity} {s.unitMeasure})</span>
+                            <span className="font-bold text-primary shrink-0">{s.totalPrice !== undefined ? formatBRL(s.totalPrice) : '—'}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Observações se houver */}
+                    {state.notes && (
+                      <div className="bg-surface-container-low p-sm rounded border border-outline-variant/50 text-xs">
+                        <span className="text-secondary font-label block font-semibold">Observações:</span>
+                        <p className="text-on-surface font-body mt-0.5">{state.notes}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
             </div>
 
           </div>
         </main>
 
-        {/* ── Footer Actions: Subtotal fixado na base ────────────────────── */}
-        <footer className="sticky bottom-0 z-20 flex items-center justify-between gap-sm px-md sm:px-lg py-sm border-t border-outline-variant bg-surface-container-low flex-shrink-0 shadow-md">
-          <div className="flex items-center gap-xs">
-            <span className="text-xs font-label text-on-surface-variant">Subtotal Estimado:</span>
-            <span className="font-data-mono font-bold text-primary text-lg sm:text-xl">
-              {formatBRL(itemSubtotalEstimate)}
-            </span>
+        {/* ── Footer Actions: Navegação do Wizard & Subtotal Único ──────────── */}
+        <footer className="sticky bottom-0 z-20 flex items-center justify-between gap-xs sm:gap-sm px-sm sm:px-lg py-2.5 sm:py-md border-t border-outline-variant bg-surface-container-low flex-shrink-0 shadow-md">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-0 sm:gap-xs min-w-0">
+            <span className="text-[11px] sm:text-sm font-label text-on-surface-variant font-medium leading-tight">Subtotal:</span>
+            <div className="flex items-baseline gap-1">
+              <span className="font-data-mono font-bold text-primary text-lg sm:text-2xl leading-none">
+                {formatBRL(itemSubtotalEstimate)}
+              </span>
+              {totalQty > 1 && (
+                <span className="text-[10px] sm:text-xs font-data-mono text-on-surface-variant">
+                  ({totalQty}×)
+                </span>
+              )}
+            </div>
           </div>
 
-          <div className="flex items-center gap-sm">
-            <Button variant="outline" onClick={onClose}>
-              Cancelar
-            </Button>
-            <Button variant="primary" icon="check" onClick={handleSubmit}>
-              {editingItem ? 'Salvar Alterações' : 'Adicionar ao Orçamento'}
-            </Button>
+          <div className="flex items-center gap-1.5 sm:gap-sm shrink-0">
+            {currentStep > 1 ? (
+              <Button variant="outline" icon="arrow_back" onClick={handlePrevStep} className="px-2.5 sm:px-4 py-1.5 text-xs sm:text-sm">
+                Voltar
+              </Button>
+            ) : (
+              <Button variant="outline" onClick={onClose} className="px-2.5 sm:px-4 py-1.5 text-xs sm:text-sm">
+                Cancelar
+              </Button>
+            )}
+
+            {currentStep < 4 ? (
+              <Button variant="primary" icon="arrow_forward" onClick={handleNextStep} className="px-3 sm:px-4 py-1.5 text-xs sm:text-sm">
+                Próximo
+              </Button>
+            ) : (
+              <Button variant="primary" icon="check" onClick={handleSubmit} className="px-3 sm:px-4 py-1.5 text-xs sm:text-sm">
+                {editingItem ? 'Salvar' : 'Adicionar'}
+              </Button>
+            )}
           </div>
         </footer>
       </div>

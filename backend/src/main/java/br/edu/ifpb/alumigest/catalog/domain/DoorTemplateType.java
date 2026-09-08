@@ -7,5 +7,17 @@ public enum DoorTemplateType {
     SWING,
     SLIDING,
     TILT,
-    DRAWER
+    DRAWER,
+
+    // Variantes de esquadrias homologadas
+    SLIDING_DOOR_1F,
+    SLIDING_DOOR_2F,
+    SLIDING_DOOR_3F,
+    SLIDING_DOOR_4F,
+    SWING_DOOR_1F,
+    SWING_DOOR_2F,
+    AWNING_WINDOW_1F,
+    AWNING_WINDOW_1F_INV,
+    FRONT_DRAWER,
+    FIXED_PANEL
 }

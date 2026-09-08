@@ -13,6 +13,7 @@ import { BudgetCommercialConditions } from './BudgetCommercialConditions';
 import { BudgetFinancialSummary } from './BudgetFinancialSummary';
 import { WindowBuilderModal } from './builder/WindowBuilderModal';
 import { Button } from '../../../components/ui/Button';
+import { ProductPickerModal } from './builder/ProductPickerModal';
 import { budgetFormSchema } from '../schemas/budgetSchema';
 import toast from 'react-hot-toast';
 
@@ -33,11 +34,6 @@ const createInitialFormState = (): BudgetFormState => ({
 // ─── Componente ─────────────────────────────────────────────────────────────
 /**
  * Editor de orçamento em tela única (suporta criação e edição).
- *
- * Todas as seções são exibidas simultaneamente:
- *   1. Cliente
- *   2. Esquadrias
- *   3. Condições Comerciais + Resumo Financeiro (grid 2 colunas no desktop)
  */
 export const BudgetEditor: React.FC = () => {
   const navigate = useNavigate();
@@ -46,7 +42,11 @@ export const BudgetEditor: React.FC = () => {
 
   const { data: existingBudget, isLoading: isLoadingBudget } = useBudget(id);
   const [form, setForm] = useState<BudgetFormState>(createInitialFormState);
+  
+  const [isProductPickerOpen, setIsProductPickerOpen] = useState(false);
   const [isBuilderOpen, setIsBuilderOpen] = useState(false);
+  
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [editingItem, setEditingItem] = useState<BudgetItem | null>(null);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
@@ -117,7 +117,6 @@ export const BudgetEditor: React.FC = () => {
   // ─── Handlers de Cliente ──────────────────────────────────────────────────
   const handleCustomerSelect = useCallback((customer: Customer) => {
     if (!customer.id) {
-      // Troca/remoção de cliente: itens são preservados
       setForm((prev) => ({
         ...prev,
         customerId:       '',
@@ -158,7 +157,8 @@ export const BudgetEditor: React.FC = () => {
       return;
     }
     setEditingItem(null);
-    setIsBuilderOpen(true);
+    setSelectedProductId(null);
+    setIsProductPickerOpen(true); // Abre o Product Picker em vez do Builder!
   };
 
   const handleEditItem = (item: BudgetItem) => {
@@ -198,7 +198,7 @@ export const BudgetEditor: React.FC = () => {
       const errs: Record<string, string> = {};
       let firstErrorMsg = '';
 
-      parsed.error.errors.forEach((err) => {
+      parsed.error.issues.forEach((err) => {
         const path = err.path[0] as string;
         if (!errs[path]) {
           errs[path] = err.message;
@@ -495,12 +495,25 @@ export const BudgetEditor: React.FC = () => {
         </div>
       </main>
 
+      {/* ── ProductPickerModal ──────────────────────────────────────────────── */}
+      <ProductPickerModal
+        isOpen={isProductPickerOpen}
+        onClose={() => setIsProductPickerOpen(false)}
+        onSelectProduct={(productId) => {
+          setSelectedProductId(productId);
+          setIsProductPickerOpen(false);
+          setIsBuilderOpen(true);
+        }}
+      />
+
       {/* ── WindowBuilderModal ──────────────────────────────────────────────── */}
       <WindowBuilderModal
         isOpen={isBuilderOpen}
+        selectedProductId={selectedProductId}
         onClose={() => {
           setIsBuilderOpen(false);
           setEditingItem(null);
+          setSelectedProductId(null);
         }}
         onAddItem={handleAddOrUpdateItem}
         editingItem={editingItem}
