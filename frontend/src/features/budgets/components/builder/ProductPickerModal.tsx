@@ -33,7 +33,7 @@ export const ProductPickerModal: React.FC<ProductPickerModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-md sm:p-lg" role="dialog" aria-modal="true" aria-labelledby="product-picker-title">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-md sm:p-lg" aria-modal="true" aria-labelledby="product-picker-title">
       <div className="absolute inset-0 bg-scrim/60 backdrop-blur-sm transition-opacity" onClick={onClose} aria-hidden="true" />
       
       <div className="relative bg-surface-container-lowest w-full max-w-[1000px] h-full max-h-[90vh] rounded-xl flex flex-col shadow-lg animate-in fade-in zoom-in-95 duration-200">
