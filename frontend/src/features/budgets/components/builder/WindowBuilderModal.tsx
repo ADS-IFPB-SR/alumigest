@@ -637,23 +637,30 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
 
   // ─── Handler: Alterar Quantidade Manual de Material ──────────────────────
   const handleMaterialQtyChange = (requirementId: string, valStr: string | undefined) => {
-    let qty: number | undefined = undefined;
-    if (valStr !== undefined) {
-      const num = parseFloat(String(valStr).replace(',', '.'));
-      qty = !isNaN(num) && num >= 0 ? num : undefined;
-    }
-
     setState((prev) => ({
       ...prev,
-      materialSelections: prev.materialSelections.map((s) =>
-        s.requirementId === requirementId
-          ? {
-              ...s,
-              quantity: qty,
-              totalPrice: qty !== undefined ? parseFloat((qty * s.unitPrice).toFixed(2)) : undefined,
-            }
-          : s,
-      ),
+      materialSelections: prev.materialSelections.map((s) => {
+        if (s.requirementId !== requirementId) return s;
+
+        const isIntegerUnit = s.unitMeasure === 'UN' || s.unitMeasure === 'PAR' || s.unitMeasure === 'PAIR' || s.unitMeasure === 'un';
+        let qty: number | undefined = undefined;
+
+        if (valStr !== undefined) {
+          // Mantém a vírgula/ponto inicial para não bugar o input de texto,
+          // mas proíbe que o resultado final seja não-inteiro se for UN/PAR
+          const num = parseFloat(String(valStr).replace(',', '.'));
+          
+          if (!isNaN(num) && num >= 0) {
+            qty = isIntegerUnit ? Math.floor(num) : num;
+          }
+        }
+
+        return {
+          ...s,
+          quantity: qty,
+          totalPrice: qty !== undefined ? parseFloat((qty * s.unitPrice).toFixed(2)) : undefined,
+        };
+      }),
     }));
   };
 
@@ -1485,7 +1492,7 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
                             <div className="flex items-center gap-[2px] shrink-0">
                               <input
                                 type="number"
-                                step="0.01"
+                                step={unitMeasure === 'UN' || unitMeasure === 'PAR' || unitMeasure === 'PAIR' || unitMeasure === 'un' ? "1" : "0.01"}
                                 min={0}
                                 value={sel.quantity ?? ''}
                                 onChange={(e) => handleMaterialQtyChange(reqId, e.target.value)}

@@ -40,12 +40,21 @@ export function ProductTechSheet({ items, setItems, materials }: ProductTechShee
 
   const handleChangeItem = (tempId: string, field: keyof FormItem, value: string) => {
     if (field === 'quantity') {
+      const itemToUpdate = items.find(i => i.tempId === tempId);
+      const material = itemToUpdate ? materialsMap.get(itemToUpdate.materialId) : null;
+      const isIntegerUnit = material?.unitMeasure === 'UN' || material?.unitMeasure === 'PAR' || material?.unitMeasure === 'PAIR';
+
       let sanitized = value.replace(/[^0-9.,]/g, '');
       
-      // Permitir apenas uma vírgula ou ponto
-      const parts = sanitized.replace(',', '.').split('.');
-      if (parts.length > 2) {
-        return; // ignora se tentar botar mais de uma vírgula
+      if (isIntegerUnit) {
+        // Only allow digits
+        sanitized = value.replace(/[^0-9]/g, '');
+      } else {
+        // Permitir apenas uma vírgula ou ponto para unidades fracionáveis
+        const parts = sanitized.replace(',', '.').split('.');
+        if (parts.length > 2) {
+          return; // ignora se tentar botar mais de uma vírgula
+        }
       }
 
       const numValue = Number(sanitized.replace(',', '.'));

@@ -17,6 +17,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
       <div className="flex flex-col gap-xs w-full">
         <label className="font-label-bold text-label-bold text-on-surface dark:text-inverse-on-surface text-xs">
           {label}
+          {props.required && <span className="text-error ml-[2px]">*</span>}
         </label>
         <div className="relative">
           <select
