@@ -13,6 +13,7 @@ import { BudgetCommercialConditions } from './BudgetCommercialConditions';
 import { BudgetFinancialSummary } from './BudgetFinancialSummary';
 import { WindowBuilderModal } from './builder/WindowBuilderModal';
 import { Button } from '../../../components/ui/Button';
+import { budgetFormSchema } from '../schemas/budgetSchema';
 import toast from 'react-hot-toast';
 
 // ─── Estado inicial ────────────────────────────────────────────────────────
@@ -191,23 +192,26 @@ export const BudgetEditor: React.FC = () => {
 
   // ─── Validação — chamada sempre antes do submit ───────────────────────────
   const validate = (): boolean => {
-    const errs: Record<string, string> = {};
+    const parsed = budgetFormSchema.safeParse(form);
+    
+    if (!parsed.success) {
+      const errs: Record<string, string> = {};
+      let firstErrorMsg = '';
 
-    if (!form.customerId) {
-      errs.customerId = 'Selecione um cliente para o orçamento.';
-    }
-    if (form.items.length === 0) {
-      errs.items = 'Adicione ao menos uma esquadria ao orçamento.';
-    }
-    if (form.discountPercent < 0 || form.discountPercent > 100) {
-      errs.discountPercent = 'Desconto deve ser entre 0% e 100%.';
-    }
-
-    setFormErrors(errs);
-    if (Object.keys(errs).length > 0) {
-      toast.error(Object.values(errs)[0]);
+      parsed.error.errors.forEach((err) => {
+        const path = err.path[0] as string;
+        if (!errs[path]) {
+          errs[path] = err.message;
+          if (!firstErrorMsg) firstErrorMsg = err.message;
+        }
+      });
+      
+      setFormErrors(errs);
+      toast.error(firstErrorMsg);
       return false;
     }
+    
+    setFormErrors({});
     return true;
   };
 
