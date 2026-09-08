@@ -6,7 +6,7 @@ export const ALL_SVG_TEMPLATES: DoorTemplateType[] = Object.keys(TEMPLATE_TYPE_I
 // ─── 1. Dicionário de Opções Base por Família do Catálogo ─────────────────────
 export const CATALOG_FAMILY_TO_SVG_OPTIONS: Record<string, DoorTemplateType[]> = {
   SWING: ['SWING_DOOR_1F', 'SWING_DOOR_2F', 'PIVOTING_DOOR'],
-  SLIDING: ['SLIDING_DOOR_2F', 'SLIDING_DOOR_4F'],
+  SLIDING: ['SLIDING_DOOR_2F', 'SLIDING_DOOR_4F', 'SLIDING_WINDOW_2F', 'SLIDING_WINDOW_4F'],
   TILT: ['MAXIM_AR_WINDOW'],
   DRAWER: ['DRAWER_FRONT'],
 };
@@ -23,10 +23,21 @@ const KEYWORD_SPECIALIZATIONS: Array<{ keyword: string; options: DoorTemplateTyp
  */
 export function getAvailableSvgTemplatesForCatalogType(
   catalogType?: string | null,
-  productName?: string
+  productName?: string,
+  categoryName?: string | null
 ): DoorTemplateType[] {
   const name = (productName ?? '').toLowerCase();
-  const keywordMatch = KEYWORD_SPECIALIZATIONS.find((s) => name.includes(s.keyword));
+  const cat = (categoryName ?? '').toLowerCase();
+  const isWindow = name.includes('janela') || cat.includes('janela');
+
+  if (isWindow) {
+    if (catalogType === 'TILT') {
+      return ['MAXIM_AR_WINDOW'];
+    }
+    return ['SLIDING_WINDOW_2F', 'SLIDING_WINDOW_4F'];
+  }
+
+  const keywordMatch = KEYWORD_SPECIALIZATIONS.find((s) => name.includes(s.keyword) || cat.includes(s.keyword));
 
   return (
     keywordMatch?.options ??
@@ -71,11 +82,23 @@ const DEFAULT_FALLBACK_TEMPLATE: DoorTemplateType = 'SLIDING_DOOR_2F';
 export function getDefaultSvgTemplateForCatalogType(
   catalogType?: string | null,
   productName?: string,
+  categoryName?: string | null,
   _templateConfig?: unknown
 ): DoorTemplateType {
-  const rules = catalogType ? DEFAULT_TEMPLATE_RULES[catalogType] : undefined;
   const name = (productName ?? '').toLowerCase();
-  const matchedRule = rules?.find((r) => r.match(name));
+  const cat = (categoryName ?? '').toLowerCase();
+  const isWindow = name.includes('janela') || cat.includes('janela');
+
+  if (isWindow) {
+    if (catalogType === 'TILT') return 'MAXIM_AR_WINDOW';
+    if (name.includes('4') || name.includes('quatro') || name.includes('4f')) {
+      return 'SLIDING_WINDOW_4F';
+    }
+    return 'SLIDING_WINDOW_2F';
+  }
+
+  const rules = catalogType ? DEFAULT_TEMPLATE_RULES[catalogType] : undefined;
+  const matchedRule = rules?.find((r) => r.match(name) || r.match(cat));
 
   return matchedRule?.template ?? DEFAULT_FALLBACK_TEMPLATE;
 }

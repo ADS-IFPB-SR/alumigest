@@ -11,6 +11,7 @@ interface TemplateSelectorProps {
   setTemplateType: (val: DoorTemplateType | null) => void;
   templateConfig: Partial<TemplateConfig>;
   setTemplateConfig: (val: Partial<TemplateConfig>) => void;
+  categoryName?: string;
 }
 
 /**
@@ -21,6 +22,7 @@ export function TemplateSelector({
   setTemplateType,
   templateConfig,
   setTemplateConfig,
+  categoryName,
 }: TemplateSelectorProps) {
 
   const handleTemplateChange = (value: string) => {
@@ -98,9 +100,17 @@ export function TemplateSelector({
               onChange={(e) => handleTemplateChange(e.target.value)}
             >
               <option value="">— Sem Template —</option>
-              {(Object.keys(DOOR_TEMPLATE_LABELS) as DoorTemplateType[]).map((key) => (
-                <option key={key} value={key}>{DOOR_TEMPLATE_LABELS[key]}</option>
-              ))}
+              {(Object.keys(DOOR_TEMPLATE_LABELS) as DoorTemplateType[]).map((key) => {
+                const isWindowCat = (categoryName ?? '').toLowerCase().includes('janela');
+                let label = DOOR_TEMPLATE_LABELS[key];
+                if (isWindowCat) {
+                  if (key === 'SLIDING') label = 'Janela de Correr (2 Folhas)';
+                  if (key === 'TILT') label = 'Janela Basculante / Maxim-Ar';
+                } else if (key === 'SLIDING') {
+                  label = 'Porta / Janela de Correr (2 Folhas)';
+                }
+                return <option key={key} value={key}>{label}</option>;
+              })}
             </select>
           </div>
 
