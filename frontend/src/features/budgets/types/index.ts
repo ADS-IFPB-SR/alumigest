@@ -1,16 +1,14 @@
-export type DoorTemplateType =
+﻿export type DoorTemplateType =
+  | 'SLIDING_DOOR_1F'
   | 'SLIDING_DOOR_2F'
+  | 'SLIDING_DOOR_3F'
   | 'SLIDING_DOOR_4F'
-  | 'PIVOTING_DOOR'
   | 'SWING_DOOR_1F'
   | 'SWING_DOOR_2F'
-  | 'SLIDING_WINDOW_2F'
-  | 'SLIDING_WINDOW_4F'
-  | 'MAXIM_AR_WINDOW'
-  | 'GLASS_BOX_FRONTAL'
-  | 'GLASS_BOX_CORNER'
-  | 'DRAWER_FRONT'
-  | 'FIXED_GLASS_FACADE';
+  | 'AWNING_WINDOW_1F'
+  | 'AWNING_WINDOW_1F_INV'
+  | 'FRONT_DRAWER'
+  | 'FIXED_PANEL';
 
 export type OpeningDirection =
   | 'LEFT_TO_RIGHT'
@@ -33,7 +31,7 @@ export type BudgetStatus =
   | 'CANCELLED';
 
 // ============================================================
-// CONFIGURAÇÕES DE PUXADOR E FURAÇÃO
+// CONFIGURAÃ‡Ã•ES DE PUXADOR E FURAÃ‡ÃƒO
 // ============================================================
 export interface HandleConfig {
   handleType: HandleType;
@@ -49,7 +47,7 @@ export interface DrillingConfig {
 }
 
 // ============================================================
-// REQUISITO DE CATEGORIA — Vínculo do Template
+// REQUISITO DE CATEGORIA â€” VÃ­nculo do Template
 // ============================================================
 export interface CategoryRequirement {
   id: string;
@@ -59,7 +57,7 @@ export interface CategoryRequirement {
 }
 
 // ============================================================
-// CONFIGURAÇÃO DE TEMPLATE (TemplateConfig)
+// CONFIGURAÃ‡ÃƒO DE TEMPLATE (TemplateConfig)
 // ============================================================
 export interface TemplateConfig {
   templateType: string;
@@ -103,8 +101,8 @@ export interface MaterialSelection {
   unitMeasure: string;
   unitPrice: number;
   /**
-   * Quantidade técnica de insumo calculada e retornada pelo backend.
-   * O frontend NÃO calcula este valor através de fórmulas geométricas locais.
+   * Quantidade tÃ©cnica de insumo calculada e retornada pelo backend.
+   * O frontend NÃƒO calcula este valor atravÃ©s de fÃ³rmulas geomÃ©tricas locais.
    */
   quantity?: number;
   /** Subtotal estimado se quantity for fornecida pelo backend */
@@ -128,7 +126,7 @@ export interface BuilderState {
 }
 
 // ============================================================
-// ITEM DO ORÇAMENTO — estrutura persistida e enviada à API
+// ITEM DO ORÃ‡AMENTO â€” estrutura persistida e enviada Ã  API
 // ============================================================
 export interface BudgetItemOption {
   id?: string;
@@ -255,7 +253,7 @@ export interface BudgetFilters {
 }
 
 // ============================================================
-// PAYLOADS DE CRIAÇÃO E DETALHE (MIX DEVELOP/MY)
+// PAYLOADS DE CRIAÃ‡ÃƒO E DETALHE (MIX DEVELOP/MY)
 // ============================================================
 export interface BudgetDetail extends BudgetSummary {
   notes?: string;
@@ -310,96 +308,22 @@ export interface TemplateTypeInfo {
 }
 
 export const TEMPLATE_TYPE_INFO: Record<DoorTemplateType, TemplateTypeInfo> = {
-  SLIDING_DOOR_2F: {
-    type: 'SLIDING_DOOR_2F',
-    label: 'Porta de Correr 2 Folhas',
-    description: '1 Folha Fixa + 1 Folha Móvel',
-    icon: 'door_sliding',
-    supportedDirections: ['LEFT_TO_RIGHT', 'RIGHT_TO_LEFT'],
-  },
-  SLIDING_DOOR_4F: {
-    type: 'SLIDING_DOOR_4F',
-    label: 'Porta de Correr 4 Folhas',
-    description: '2 Fixas Laterais + 2 Móveis Centrais',
-    icon: 'door_sliding',
-    supportedDirections: ['CENTER_TO_SIDES'],
-  },
-  PIVOTING_DOOR: {
-    type: 'PIVOTING_DOOR',
-    label: 'Porta Pivotante',
-    description: 'Eixo Deslocado',
-    icon: 'door_back',
-    supportedDirections: ['LEFT_TO_RIGHT', 'RIGHT_TO_LEFT'],
-  },
-  SWING_DOOR_1F: {
-    type: 'SWING_DOOR_1F',
-    label: 'Porta de Abrir 1 Folha',
-    description: 'Porta de Giro com 1 Folha',
-    icon: 'door_front',
-    supportedDirections: ['LEFT_TO_RIGHT', 'RIGHT_TO_LEFT'],
-  },
-  SWING_DOOR_2F: {
-    type: 'SWING_DOOR_2F',
-    label: 'Porta de Abrir 2 Folhas',
-    description: 'Porta de Giro com 2 Folhas',
-    icon: 'door_front',
-    supportedDirections: ['LEFT_TO_RIGHT', 'RIGHT_TO_LEFT'],
-  },
-  SLIDING_WINDOW_2F: {
-    type: 'SLIDING_WINDOW_2F',
-    label: 'Janela de Correr 2 Folhas',
-    description: '1 Fixa + 1 Móvel',
-    icon: 'window',
-    supportedDirections: ['LEFT_TO_RIGHT', 'RIGHT_TO_LEFT'],
-  },
-  SLIDING_WINDOW_4F: {
-    type: 'SLIDING_WINDOW_4F',
-    label: 'Janela de Correr 4 Folhas',
-    description: '2 Fixas + 2 Móveis',
-    icon: 'window',
-    supportedDirections: ['CENTER_TO_SIDES'],
-  },
-  MAXIM_AR_WINDOW: {
-    type: 'MAXIM_AR_WINDOW',
-    label: 'Janela Maxim-Ar',
-    description: 'Projeção Superior Basculante',
-    icon: 'window',
-    supportedDirections: ['OUTSIDE'],
-  },
-  GLASS_BOX_FRONTAL: {
-    type: 'GLASS_BOX_FRONTAL',
-    label: 'Box de Banheiro Frontal',
-    description: '1 Fixo + 1 Correr — F1',
-    icon: 'bathroom',
-    supportedDirections: ['LEFT_TO_RIGHT', 'RIGHT_TO_LEFT'],
-  },
-  GLASS_BOX_CORNER: {
-    type: 'GLASS_BOX_CORNER',
-    label: 'Box de Banheiro em Canto',
-    description: 'Formato em L — Canto',
-    icon: 'bathroom',
-    supportedDirections: ['CENTER_TO_SIDES'],
-  },
-  FIXED_GLASS_FACADE: {
-    type: 'FIXED_GLASS_FACADE',
-    label: 'Painel Fixo / Fachada',
-    description: 'Painel em Vidro Fixo',
-    icon: 'image',
-    supportedDirections: ['OUTSIDE'],
-  },
-  DRAWER_FRONT: {
-    type: 'DRAWER_FRONT',
-    label: 'Frente de Gaveta',
-    description: 'Perfil Alumínio c/ Puxador',
-    icon: 'table_rows',
-    supportedDirections: ['OUTSIDE'],
-  },
+  SLIDING_DOOR_1F: { type: 'SLIDING_DOOR_1F', label: 'Porta de Correr 1 Folha', description: '1 Folha Móvel', icon: 'door_sliding', supportedDirections: ['LEFT_TO_RIGHT', 'RIGHT_TO_LEFT'] },
+  SLIDING_DOOR_2F: { type: 'SLIDING_DOOR_2F', label: 'Porta de Correr 2 Folhas', description: '1 Fixa + 1 Móvel', icon: 'door_sliding', supportedDirections: ['LEFT_TO_RIGHT', 'RIGHT_TO_LEFT'] },
+  SLIDING_DOOR_3F: { type: 'SLIDING_DOOR_3F', label: 'Porta de Correr 3 Folhas', description: '1 Fixa + 2 Móveis', icon: 'door_sliding', supportedDirections: ['LEFT_TO_RIGHT', 'RIGHT_TO_LEFT'] },
+  SLIDING_DOOR_4F: { type: 'SLIDING_DOOR_4F', label: 'Porta de Correr 4 Folhas', description: '2 Fixas + 2 Móveis', icon: 'door_sliding', supportedDirections: ['CENTER_TO_SIDES'] },
+  SWING_DOOR_1F: { type: 'SWING_DOOR_1F', label: 'Porta de Giro 1 Folha', description: 'De abrir, 1 Folha', icon: 'door_front', supportedDirections: ['LEFT_TO_RIGHT', 'RIGHT_TO_LEFT', 'OUTSIDE', 'INSIDE'] },
+  SWING_DOOR_2F: { type: 'SWING_DOOR_2F', label: 'Porta de Giro 2 Folhas', description: 'De abrir, 2 Folhas', icon: 'door_front', supportedDirections: ['CENTER_TO_SIDES', 'OUTSIDE', 'INSIDE'] },
+  AWNING_WINDOW_1F: { type: 'AWNING_WINDOW_1F', label: 'Porta Basculante 1 Folha', description: 'Abertura superior', icon: 'window', supportedDirections: ['OUTSIDE'] },
+  AWNING_WINDOW_1F_INV: { type: 'AWNING_WINDOW_1F_INV', label: 'Porta Basculante Inversa', description: 'Abertura inferior', icon: 'window', supportedDirections: ['INSIDE'] },
+  FRONT_DRAWER: { type: 'FRONT_DRAWER', label: 'Gaveta Frontal', description: 'Frente de Gaveta', icon: 'kitchen', supportedDirections: ['OUTSIDE'] },
+  FIXED_PANEL: { type: 'FIXED_PANEL', label: 'Painel Fixo', description: 'Quadro Fixo sem abertura', icon: 'grid_view', supportedDirections: [] },
 };
 
 export const HANDLE_TYPE_LABELS: Record<HandleType, string> = {
   BAR_TUBULAR: 'Tubular Inox',
   SHELL_LOCK: 'Fecho Concha',
-  LEVER_HANDLE: 'Maçaneta',
+  LEVER_HANDLE: 'MaÃ§aneta',
   NONE: 'Nenhum',
 };
 
@@ -409,13 +333,13 @@ export const HANDLE_SIDE_LABELS: Record<HandleSide, string> = {
 };
 
 export const HANDLE_COVERAGE_LABELS: Record<HandleCoverage, string> = {
-  FULL: 'Extensão Inteira',
-  PIECE: 'Pedaço (tamanho em cm)',
+  FULL: 'ExtensÃ£o Inteira',
+  PIECE: 'PedaÃ§o (tamanho em cm)',
 };
 
 export const DIVISION_TYPE_LABELS: Record<DivisionType, string> = {
   EQUAL: 'Por Igual',
-  CUSTOM_DISTANCE: 'Distância Customizada',
+  CUSTOM_DISTANCE: 'DistÃ¢ncia Customizada',
 };
 
 export const OPENING_DIRECTION_LABELS: Record<OpeningDirection, string> = {
@@ -453,3 +377,4 @@ export const BUDGET_STATUS_CONFIG: Record<
   REJECTED: { label: 'Rejeitado', icon: 'cancel', key: 'REJECTED' },
   CANCELLED: { label: 'Cancelado', icon: 'block', key: 'CANCELLED' },
 };
+

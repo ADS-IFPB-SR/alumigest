@@ -77,7 +77,7 @@ export const CustomerQuickCreateModal: React.FC<CustomerQuickCreateModalProps> =
     
     if (!parsed.success) {
       const errs: Record<string, string> = {};
-      parsed.error.errors.forEach((err) => {
+      parsed.error.issues.forEach((err) => {
         const path = err.path[0] as string;
         if (!errs[path]) {
           errs[path] = err.message;
@@ -156,6 +156,7 @@ export const CustomerQuickCreateModal: React.FC<CustomerQuickCreateModalProps> =
                 id="cqc-doc"
                 value={form.cpfCnpj ?? ''}
                 onChange={(e) => set('cpfCnpj', e.target.value)}
+                error={errors.cpfCnpj}
                 placeholder="000.000.000-00"
               />
               <Input
@@ -173,6 +174,7 @@ export const CustomerQuickCreateModal: React.FC<CustomerQuickCreateModalProps> =
                   type="email"
                   value={form.email ?? ''}
                   onChange={(e) => set('email', e.target.value)}
+                  error={errors.email}
                   placeholder="joao@email.com"
                 />
               </div>

@@ -7,6 +7,7 @@ import { TemplateSelector } from '../features/catalog/components/builder/Templat
 import { TemplateOptionSchemaEditor } from '../features/catalog/components/builder/TemplateOptionSchemaEditor';
 import { CategoryRequirementsSelector } from '../features/catalog/components/builder/CategoryRequirementsSelector';
 import type { DoorTemplateType, TemplateConfig, TemplateOptionSchema, MaterialCategoryType } from '../features/catalog/types/templates';
+import { getDefaultSvgTemplateForCatalogType } from '../features/budgets/utils/mapCatalogTemplate';
 import toast from 'react-hot-toast';
 
 export function ProductBuilderPage() {
@@ -47,7 +48,12 @@ export function ProductBuilderPage() {
 
       // Template data
       if (existingProduct.templateType) {
-        setTemplateType(existingProduct.templateType);
+        const resolved = getDefaultSvgTemplateForCatalogType(
+          existingProduct.templateType,
+          existingProduct.name,
+          existingProduct.templateConfig
+        );
+        setTemplateType(resolved);
       }
       if (existingProduct.templateConfig) {
         const config = existingProduct.templateConfig;
@@ -96,6 +102,7 @@ export function ProductBuilderPage() {
 
     // Build templateConfig with optionSchema embedded
     const finalTemplateConfig: TemplateConfig | undefined = templateType ? {
+      templateType: templateType,
       profileMm: templateConfig.profileMm ?? 20,
       aluminumColor: templateConfig.aluminumColor ?? '#212121',
       glassColor: templateConfig.glassColor ?? '#e3f2fd',
