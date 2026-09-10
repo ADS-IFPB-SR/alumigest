@@ -167,8 +167,8 @@ public class BudgetService {
 
         boolean isValid = switch (current) {
             case DRAFT -> target == BudgetStatus.SENT || target == BudgetStatus.CANCELLED;
-            case SENT -> target == BudgetStatus.APPROVED || target == BudgetStatus.REJECTED || target == BudgetStatus.CANCELLED;
-            case APPROVED, REJECTED, CANCELLED -> false;
+            case SENT -> target == BudgetStatus.APPROVED || target == BudgetStatus.REJECTED || target == BudgetStatus.CANCELLED || target == BudgetStatus.EXPIRED;
+            case APPROVED, REJECTED, CANCELLED, EXPIRED -> false;
         };
 
         if (!isValid) {
