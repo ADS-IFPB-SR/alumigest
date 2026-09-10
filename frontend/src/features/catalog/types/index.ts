@@ -8,7 +8,7 @@ export type UnitMeasure = 'M2' | 'METRO' | 'BARRA_3M' | 'BARRA_6M' | 'UN' | 'PAR
 export type CalculationType = 'SQUARE_METER' | 'LINEAR_METER' | 'UNIT' | 'PAIR' | 'WEIGHT_KG';
 
 export interface GlassDTO {
-  id: string; // Updated to match UUID pattern from backend
+  id: string;
   name: string;
   thicknessMm: number;
   colorFinish: string;
@@ -24,7 +24,7 @@ export interface GlassDTO {
 }
 
 export interface ProfileDTO {
-  id: string; // UUID from AluminumProfileResponseDTO
+  id: string;
   name: string;
   commercialReference: string;
   ncmCode: string;
@@ -34,12 +34,12 @@ export interface ProfileDTO {
   costPrice: number;
   salePrice: number;
   active: boolean;
-  createdAt?: string; // OffsetDateTime
-  updatedAt?: string; // OffsetDateTime
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface HardwareDTO {
-  id: string; // UUID from HardwareResponseDTO
+  id: string;
   skuCode: string;
   commercialReference?: string;
   name: string;
@@ -48,18 +48,18 @@ export interface HardwareDTO {
   costPrice: number;
   salePrice: number;
   active: boolean;
-  createdAt?: string; // OffsetDateTime
-  updatedAt?: string; // OffsetDateTime
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface FilmDTO {
-  id: string; // UUID from FilmResponseDTO
+  id: string;
   name: string;
   commercialReference?: string;
   skuCode?: string;
   colorFinish: string;
   salePrice: number;
-  unitMeasure: string; // Backend currently returns String, not UnitMeasure enum here
+  unitMeasure: string;
   active?: boolean;
 }
 
@@ -71,13 +71,6 @@ export interface PageResponse<T> {
     totalElements: number;
     totalPages: number;
   };
-}
-
-export interface ProductCategory {
-  id: string;
-  name: string;
-  description?: string;
-  isActive: boolean;
 }
 
 export interface MaterialSummary {
@@ -92,35 +85,20 @@ export interface MaterialSummary {
   isActive: boolean;
 }
 
-export interface ProductItem {
-  id: string;
-  materialId: string;
-  materialName: string;
-  quantity: number;
-}
-
 export interface Product {
   id: string;
   name: string;
-  categoryId: string;
   categoryName: string;
-  templateType?: import('./templates').DoorTemplateType;
+  templateType: import('./templates').DoorTemplateType;
   templateConfig?: import('./templates').TemplateConfig;
   categoryRequirements?: import('./templates').MaterialCategoryType[];
   isActive: boolean;
-  items: ProductItem[];
-}
-
-export interface ProductItemRequest {
-  materialId: string;
-  quantity: number;
+  items?: never[];
 }
 
 export interface ProductRequest {
   name: string;
-  categoryId: string;
-  templateType?: import('./templates').DoorTemplateType;
+  templateType: import('./templates').DoorTemplateType;
   templateConfig?: import('./templates').TemplateConfig;
-  categoryRequirements?: import('./templates').MaterialCategoryType[];
-  items: ProductItemRequest[];
+  categoryRequirements: import('./templates').MaterialCategoryType[];
 }

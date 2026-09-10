@@ -163,29 +163,7 @@ export const useUpdateFilm = () => {
   });
 };
 
-// --- Product Categories ---
-export const useProductCategories = () => {
-  return useQuery({
-    queryKey: ['productCategories'],
-    queryFn: catalogApi.getProductCategories,
-  });
-};
 
-export const useCreateProductCategory = () => {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (data: { name: string; description?: string }) => catalogApi.createProductCategory(data),
-    onSuccess: () => {
-      toast.success('Categoria cadastrada com sucesso!');
-      queryClient.invalidateQueries({ queryKey: ['productCategories'] });
-    },
-    onError: (error: any) => {
-      console.error('Erro ao cadastrar categoria:', error);
-      const message = error?.response?.data?.message || 'Erro ao cadastrar categoria.';
-      toast.error(message);
-    },
-  });
-};
 
 // --- Material Summary ---
 export const useMaterialsSummary = () => {

@@ -7,17 +7,6 @@ import type {
   DoorTemplateType,
 } from '../../types';
 
-export interface WindowSvgPreviewProps {
-  templateType: string;
-  widthMm?: number;
-  heightMm?: number;
-  openingDirection?: OpeningDirection;
-  handleConfig: HandleConfig;
-  drillingConfig: DrillingConfig;
-  templateName?: string;
-  aluminumColor?: string;
-  glassFinish?: string;
-}
 
 import { getSvgTheme } from '../../utils/svgTheme';
 import type { SvgTheme } from '../../utils/svgTheme';
@@ -83,19 +72,19 @@ const HorizontalDimension = ({
       <polygon points={`${x1},${lineY} ${x1 + tickH},${lineY - 2} ${x1 + tickH},${lineY + 2}`} fill={COTA_STROKE} opacity={0.9} />
       <polygon points={`${x2},${lineY} ${x2 - tickH},${lineY - 2} ${x2 - tickH},${lineY + 2}`} fill={COTA_STROKE} opacity={0.9} />
       <rect
-        x={mid - (label.length * 2.5)}
-        y={lineY - 3.5}
-        width={label.length * 5}
-        height={7}
-        fill="#ffffff"
-        opacity={0.85}
-        rx={1}
+        x={mid - (label.length * 3.5)}
+        y={lineY - 5}
+        width={label.length * 7}
+        height={10}
+        fill="var(--color-surface-container-lowest, #ffffff)"
+        opacity={0.92}
+        rx={1.5}
       />
       <text
         x={mid}
-        y={lineY + 2}
+        y={lineY + 3.5}
         textAnchor="middle"
-        fontSize={9}
+        fontSize={12}
         fontFamily="JetBrains Mono, monospace"
         fontWeight="bold"
         fill={COTA_COLOR}
@@ -128,19 +117,19 @@ const VerticalDimension = ({
       <polygon points={`${lineX},${y2} ${lineX - 2},${y2 - tickH} ${lineX + 2},${y2 - tickH}`} fill={COTA_STROKE} opacity={0.9} />
       <g transform={`rotate(-90, ${lineX}, ${mid})`}>
         <rect
-          x={lineX - (label.length * 2.5)}
-          y={mid - 3.5}
-          width={label.length * 5}
-          height={7}
-          fill="#ffffff"
-          opacity={0.85}
-          rx={1}
+          x={lineX - (label.length * 3.5)}
+          y={mid - 5}
+          width={label.length * 7}
+          height={10}
+          fill="var(--color-surface-container-lowest, #ffffff)"
+          opacity={0.92}
+          rx={1.5}
         />
         <text
           x={lineX}
-          y={mid + 2}
+          y={mid + 3.5}
           textAnchor="middle"
-          fontSize={9}
+          fontSize={12}
           fontFamily="JetBrains Mono, monospace"
           fontWeight="bold"
           fill={COTA_COLOR}
@@ -204,9 +193,9 @@ const DrillingHoles = ({
           <line x1={posX} y1={pos.py} x2={posX + cotaOffset} y2={pos.py} stroke={COTA_STROKE} strokeWidth={0.5} strokeDasharray="2 1" opacity={0.8} />
           <text
             x={posX + cotaOffset + (mirrored ? 2 : -2)}
-            y={pos.py + 2.5}
+            y={pos.py + 3.5}
             textAnchor={textAnchor}
-            fontSize={8.2}
+            fontSize={11}
             fontFamily="JetBrains Mono, monospace"
             fontWeight="bold"
             fill={COTA_COLOR}
@@ -234,17 +223,22 @@ const HandleElement = ({
 
   if (handleConfig.coverage === 'FULL') {
     handleH = innerH * 0.88;
-    handleY = frameW + (innerH - handleH) / 2;
   } else if (handleConfig.coverage === 'PIECE' && handleConfig.pieceLengthCm) {
     const pieceLengthMm = handleConfig.pieceLengthCm * 10;
     const ratio = Math.min(Math.max(pieceLengthMm / Math.max(heightMm || 2100, 100), 0.05), 0.9);
     handleH = ratio * innerH;
-    handleY = frameW + (innerH - handleH) / 2;
   } else if (handleConfig.handleType === 'SHELL_LOCK' || handleConfig.handleType === 'LEVER_HANDLE') {
     handleH = Math.min(20, innerH * 0.15);
-    handleY = frameW + (innerH - handleH) / 2;
   } else {
     handleH = innerH * 0.25;
+  }
+
+  const vPos = handleConfig.handlePosition || handleConfig.position;
+  if (vPos === 'TOP') {
+    handleY = frameW + 10;
+  } else if (vPos === 'BOTTOM') {
+    handleY = svgH - frameW - handleH - 10;
+  } else {
     handleY = frameW + (innerH - handleH) / 2;
   }
 
@@ -317,9 +311,9 @@ const HandleElement = ({
           />
           <text
             x={mirrored ? hx + handleW * 2 + 7 : hx - handleW * 2 - 7}
-            y={handleY + handleH / 2 + 2}
+            y={handleY + handleH / 2 + 3}
             textAnchor={mirrored ? 'start' : 'end'}
-            fontSize={7.5}
+            fontSize={10}
             fontFamily="JetBrains Mono, monospace"
             fontWeight="bold"
             fill={COTA_COLOR}
@@ -363,9 +357,9 @@ const HandlePieceDimension = ({
       <polygon points={`${cotaX},${handleY + handleH} ${cotaX - 2},${handleY + handleH - 3} ${cotaX + 2},${handleY + handleH - 3}`} fill={COTA_STROKE} />
       <text
         x={cotaX + (mirrored ? -3 : 3)}
-        y={handleY + handleH / 2 + 2}
+        y={handleY + handleH / 2 + 3.5}
         textAnchor={textAnchor}
-        fontSize={8.2}
+        fontSize={11}
         fontFamily="JetBrains Mono, monospace"
         fontWeight="bold"
         fill={COTA_COLOR}
@@ -394,8 +388,23 @@ function renderSlidingDoor2F(
   const railY1  = fw;
   const railY2  = svgH - fw - RAIL_H;
 
-  const handlePosX    = inverted ? mobileX + halfW - fw * 1.5 : mobileX + fw * 0.5;
-  const handleMirr    = !inverted;
+  const pos = handleConfig.handlePosition || handleConfig.position;
+  let handlePosX: number;
+  let handleMirr: boolean;
+  if (pos === 'LEFT') {
+    handlePosX = mobileX + fw * 0.8;
+    handleMirr = false;
+  } else if (pos === 'RIGHT') {
+    handlePosX = mobileX + halfW - fw * 1.8;
+    handleMirr = true;
+  } else if (pos === 'CENTER') {
+    handlePosX = mobileX + halfW / 2 - 2.5;
+    handleMirr = false;
+  } else {
+    handlePosX = inverted ? mobileX + halfW - fw * 1.5 : mobileX + fw * 0.5;
+    handleMirr = !inverted;
+  }
+
   const drillingPosX  = inverted ? fixedX + halfW - fw : fixedX + fw / 2;
 
   const leafWidthMm = Math.round(widthMm / 2);
@@ -432,6 +441,123 @@ function renderSlidingDoor2F(
       {/* Cotas individuais das 2 folhas */}
       <HorizontalDimension x1={fixedX}  x2={fixedX + halfW}  y={svgH - fw - RAIL_H - 1} label={`F: ${leafWidthMm}mm`} offsetDir="above" offsetDist={8} />
       <HorizontalDimension x1={mobileX} x2={mobileX + halfW} y={fw + RAIL_H + 1}         label={`M: ${leafWidthMm}mm`} offsetDir="below" offsetDist={8} />
+    </>
+  );
+}
+
+function renderSlidingDoor1F(
+  svgW: number, svgH: number, inverted: boolean,
+  handleConfig: HandleConfig, drillingConfig: DrillingConfig,
+  _widthMm: number, heightMm: number,
+  theme: SvgTheme,
+) {
+  const fw     = FRAME_W;
+  const innerW = svgW - fw * 2;
+  const innerH = svgH - fw * 2;
+
+  const railY1 = fw;
+  const railY2 = svgH - fw - RAIL_H;
+
+  const pos = handleConfig.handlePosition || handleConfig.position;
+  let handlePosX: number;
+  let handleMirr: boolean;
+  if (pos === 'LEFT') {
+    handlePosX = fw + fw * 0.8;
+    handleMirr = false;
+  } else if (pos === 'RIGHT') {
+    handlePosX = fw + innerW - fw * 1.8;
+    handleMirr = true;
+  } else if (pos === 'CENTER') {
+    handlePosX = fw + innerW / 2 - 2.5;
+    handleMirr = false;
+  } else {
+    handlePosX = inverted ? fw + innerW - fw * 1.5 : fw + fw * 0.5;
+    handleMirr = !inverted;
+  }
+
+  return (
+    <>
+      <rect x={fw} y={fw} width={innerW} height={innerH} fill={theme.glassFill} stroke={theme.glassStroke} strokeWidth={0.5} />
+      <rect x={fw} y={railY1} width={innerW} height={RAIL_H} fill={theme.railFill} opacity={0.6} />
+      <rect x={fw} y={railY2} width={innerW} height={RAIL_H} fill={theme.railFill} opacity={0.6} />
+
+      {/* Folha móvel única */}
+      <rect x={fw} y={fw} width={innerW} height={innerH} fill={theme.glassFill} stroke={theme.glassStroke} strokeWidth={1} />
+      <text x={fw + innerW / 2} y={svgH / 2} textAnchor="middle" fontSize={12} fontFamily="JetBrains Mono, monospace" fill={theme.frameStroke} opacity={0.5}>MÓVEL</text>
+
+      <HandleElement handleConfig={handleConfig} svgH={svgH} frameW={fw} posX={handlePosX} mirrored={handleMirr} heightMm={heightMm} />
+      {drillingConfig.holeCount > 0 && <DrillingHoles svgH={svgH} frameW={fw} count={drillingConfig.holeCount} divisionType={drillingConfig.divisionType} customDistancesMm={drillingConfig.customDistancesMm} heightMm={heightMm} posX={fw + innerW / 2} />}
+      <text x={fw + innerW / 2} y={svgH - fw - 10} textAnchor="middle" fontSize={15} fill={ARROW_COLOR} fontWeight="bold">
+        {inverted ? 'Correr ⟶' : '⟵ Correr'}
+      </text>
+    </>
+  );
+}
+
+function renderSlidingDoor3F(
+  svgW: number, svgH: number, inverted: boolean,
+  handleConfig: HandleConfig, drillingConfig: DrillingConfig,
+  _widthMm: number, heightMm: number,
+  theme: SvgTheme,
+) {
+  const fw     = FRAME_W;
+  const innerW = svgW - fw * 2;
+  const innerH = svgH - fw * 2;
+  const thirdW = innerW / 3;
+
+  const fixedX   = inverted ? fw + thirdW * 2 : fw;
+  const mobile1X = inverted ? fw + thirdW : fw + thirdW;
+  const mobile2X = inverted ? fw : fw + thirdW * 2;
+
+  const railY1 = fw;
+  const railY2 = svgH - fw - RAIL_H;
+
+  const pos = handleConfig.handlePosition || handleConfig.position;
+  let handlePosX: number;
+  let handleMirr: boolean;
+  if (pos === 'LEFT') {
+    handlePosX = mobile2X + fw * 0.8;
+    handleMirr = false;
+  } else if (pos === 'RIGHT') {
+    handlePosX = mobile2X + thirdW - fw * 1.8;
+    handleMirr = true;
+  } else if (pos === 'CENTER') {
+    handlePosX = mobile2X + thirdW / 2 - 2.5;
+    handleMirr = false;
+  } else {
+    handlePosX = inverted ? mobile2X + thirdW - fw * 1.5 : mobile2X + fw * 0.5;
+    handleMirr = !inverted;
+  }
+
+  return (
+    <>
+      <rect x={fw} y={fw} width={innerW} height={innerH} fill={theme.glassFill} stroke={theme.glassStroke} strokeWidth={0.5} />
+      <rect x={fw} y={railY1} width={innerW} height={RAIL_H} fill={theme.railFill} opacity={0.6} />
+      <rect x={fw} y={railY2} width={innerW} height={RAIL_H} fill={theme.railFill} opacity={0.6} />
+
+      {/* Folha fixa */}
+      <rect x={fixedX} y={fw} width={thirdW} height={innerH} fill={theme.fixedGlassFill} stroke={theme.glassStroke} strokeWidth={0.8} />
+      <text x={fixedX + thirdW / 2} y={svgH / 2} textAnchor="middle" fontSize={12} fontFamily="JetBrains Mono, monospace" fill={theme.frameStroke} opacity={0.5}>FIXA</text>
+
+      {/* Folha móvel 1 */}
+      <rect x={mobile1X} y={fw} width={thirdW} height={innerH} fill={theme.glassFill} stroke={theme.glassStroke} strokeWidth={1} />
+      <text x={mobile1X + thirdW / 2} y={svgH / 2} textAnchor="middle" fontSize={12} fontFamily="JetBrains Mono, monospace" fill={theme.frameStroke} opacity={0.5}>MÓVEL 1</text>
+
+      {/* Folha móvel 2 */}
+      <rect x={mobile2X} y={fw} width={thirdW} height={innerH} fill={theme.glassFill} stroke={theme.glassStroke} strokeWidth={1} />
+      <text x={mobile2X + thirdW / 2} y={svgH / 2} textAnchor="middle" fontSize={12} fontFamily="JetBrains Mono, monospace" fill={theme.frameStroke} opacity={0.5}>MÓVEL 2</text>
+
+      <rect x={fw + thirdW - 1} y={fw} width={2} height={innerH} fill={theme.frameStroke} opacity={0.8} />
+      <rect x={fw + thirdW * 2 - 1} y={fw} width={2} height={innerH} fill={theme.frameStroke} opacity={0.8} />
+
+      <HandleElement handleConfig={handleConfig} svgH={svgH} frameW={fw} posX={handlePosX} mirrored={handleMirr} heightMm={heightMm} />
+      {drillingConfig.holeCount > 0 && <DrillingHoles svgH={svgH} frameW={fw} count={drillingConfig.holeCount} divisionType={drillingConfig.divisionType} customDistancesMm={drillingConfig.customDistancesMm} heightMm={heightMm} posX={fixedX + thirdW / 2} />}
+      <text x={mobile1X + thirdW / 2} y={svgH - fw - 10} textAnchor="middle" fontSize={15} fill={ARROW_COLOR} fontWeight="bold">
+        {inverted ? 'Correr ⟶' : '⟵ Correr'}
+      </text>
+      <text x={mobile2X + thirdW / 2} y={svgH - fw - 10} textAnchor="middle" fontSize={15} fill={ARROW_COLOR} fontWeight="bold">
+        {inverted ? 'Correr ⟶' : '⟵ Correr'}
+      </text>
     </>
   );
 }
@@ -493,13 +619,30 @@ function renderSwingDoor(
     const doorEnd   = inverted ? fw : fw + innerW;
     const arcRadius = innerW;
 
+    const pos = handleConfig.handlePosition || handleConfig.position;
+    let posX: number;
+    let mirr: boolean;
+    if (pos === 'LEFT') {
+      posX = fw + fw * 0.8;
+      mirr = false;
+    } else if (pos === 'RIGHT') {
+      posX = fw + innerW - fw * 1.8;
+      mirr = true;
+    } else if (pos === 'CENTER') {
+      posX = fw + innerW / 2 - 2.5;
+      mirr = false;
+    } else {
+      posX = inverted ? doorEnd + 2 : doorEnd - fw * 1.5;
+      mirr = !inverted;
+    }
+
     return (
       <>
         <rect x={fw} y={fw} width={innerW} height={innerH} fill={theme.glassFill} stroke={theme.glassStroke} strokeWidth={1} />
         <line x1={hingeSide} y1={fw} x2={hingeSide} y2={svgH - fw} stroke={theme.frameStroke} strokeWidth={3} />
         <SwingArc x={hingeSide} y={svgH - fw} radius={arcRadius} startAngle={-90} endAngle={inverted ? -180 : 0} />
-        <HandleElement handleConfig={handleConfig} svgH={svgH} frameW={fw} posX={inverted ? doorEnd + 2 : doorEnd - fw * 1.5} mirrored={!inverted} heightMm={heightMm} />
-        <HandlePieceDimension svgH={svgH} frameW={fw} posX={inverted ? doorEnd + 2 : doorEnd - fw * 1.5} handleConfig={handleConfig} heightMm={heightMm} mirrored={!inverted} />
+        <HandleElement handleConfig={handleConfig} svgH={svgH} frameW={fw} posX={posX} mirrored={mirr} heightMm={heightMm} />
+        <HandlePieceDimension svgH={svgH} frameW={fw} posX={posX} handleConfig={handleConfig} heightMm={heightMm} mirrored={mirr} />
         {/* Furação no lado oposto do puxador */}
         <DrillingHoles svgH={svgH} svgW={svgW} frameW={fw} count={drillingConfig.holeCount} divisionType={drillingConfig.divisionType} customDistancesMm={drillingConfig.customDistancesMm} heightMm={heightMm} posX={inverted ? svgW - fw - fw / 2 : fw + fw / 2} mirrored={inverted} />
         <text x={svgW / 2} y={fw + 14} textAnchor="middle" fontSize={12} fontFamily="JetBrains Mono, monospace" fill={ARROW_COLOR}>{inverted ? '← Giro p/ Esquerda' : 'Giro p/ Direita →'}</text>
@@ -527,159 +670,42 @@ function renderSwingDoor(
   );
 }
 
-function renderPivotingDoor(
+function renderAwningWindow1F(
   svgW: number, svgH: number, inverted: boolean,
   handleConfig: HandleConfig, drillingConfig: DrillingConfig,
-  widthMm: number, heightMm: number,
-  theme: SvgTheme,
+  heightMm: number,
+  theme: SvgTheme
 ) {
   const fw     = FRAME_W;
   const innerW = svgW - fw * 2;
   const innerH = svgH - fw * 2;
-  const pivotX = inverted ? fw + innerW * 2 / 3 : fw + innerW / 3;
+  const pos    = handleConfig.handlePosition || handleConfig.position;
+
+  let handlePosX = fw + innerW / 2 - 2.5;
+  if (pos === 'LEFT') handlePosX = fw + fw * 1.5;
+  else if (pos === 'RIGHT') handlePosX = fw + innerW - fw * 2.5;
 
   return (
     <>
       <rect x={fw} y={fw} width={innerW} height={innerH} fill={theme.glassFill} stroke={theme.glassStroke} strokeWidth={1} />
-      <circle cx={pivotX} cy={svgH - fw} r={4} fill={theme.frameStroke} />
-      <line x1={pivotX} y1={fw} x2={pivotX} y2={svgH - fw} stroke={theme.frameStroke} strokeWidth={2} strokeDasharray="4 2" />
-      <SwingArc x={pivotX} y={svgH - fw} radius={inverted ? innerW / 3 : innerW * 2 / 3} startAngle={-90} endAngle={inverted ? -180 : 0} />
-      <HandleElement handleConfig={handleConfig} svgH={svgH} frameW={fw} posX={inverted ? fw + fw : svgW - fw * 2.5} mirrored={!inverted} heightMm={heightMm} />
-      <HandlePieceDimension svgH={svgH} frameW={fw} posX={inverted ? fw + fw : svgW - fw * 2.5} handleConfig={handleConfig} heightMm={heightMm} mirrored={!inverted} />
-      <DrillingHoles svgH={svgH} svgW={svgW} frameW={fw} count={drillingConfig.holeCount} divisionType={drillingConfig.divisionType} customDistancesMm={drillingConfig.customDistancesMm} heightMm={heightMm} posX={inverted ? svgW - fw - fw / 2 : fw + fw / 2} mirrored={!inverted} />
-      <HorizontalDimension x1={fw} x2={svgW - fw} y={svgH - fw} label={`Eixo Pivotante: ${widthMm}mm`} offsetDir="below" offsetDist={8} />
-    </>
-  );
-}
-
-function renderSlidingWindow(
-  svgW: number, svgH: number, leafCount: 2 | 4, inverted: boolean,
-  handleConfig: HandleConfig, drillingConfig: DrillingConfig,
-  widthMm: number, heightMm: number,
-  theme: SvgTheme,
-) {
-  if (leafCount === 4) return renderSlidingDoor4F(svgW, svgH, handleConfig, drillingConfig, widthMm, heightMm, theme);
-
-  const fw      = FRAME_W;
-  const innerW  = svgW - fw * 2;
-  const innerH  = svgH - fw * 2;
-  const batente = 6;
-  const halfW   = innerW / 2;
-  const fixedX  = inverted ? fw + halfW : fw;
-  const mobileX = inverted ? fw : fw + halfW;
-  const leafMm  = Math.round(widthMm / 2);
-
-  return (
-    <>
-      <rect x={fw} y={fw} width={innerW} height={innerH} fill={theme.glassFill} stroke={theme.glassStroke} strokeWidth={0.5} />
-      <rect x={fw} y={fw} width={innerW} height={batente} fill={theme.railFill} opacity={0.7} />
-      <rect x={fw} y={svgH - fw - batente} width={innerW} height={batente} fill={theme.railFill} opacity={0.7} />
-      <rect x={fixedX}  y={fw} width={halfW} height={innerH} fill={theme.fixedGlassFill} stroke={theme.glassStroke} strokeWidth={0.8} />
-      <rect x={mobileX} y={fw} width={halfW} height={innerH} fill={theme.glassFill} stroke={theme.glassStroke} strokeWidth={1} />
-      <rect x={fw + halfW - 1} y={fw} width={2} height={innerH} fill={theme.frameStroke} opacity={0.7} />
-      <HandleElement handleConfig={handleConfig} svgH={svgH} frameW={fw} posX={inverted ? mobileX + halfW - fw * 1.5 : mobileX + fw * 0.5} mirrored={!inverted} heightMm={heightMm} />
-      <HandlePieceDimension svgH={svgH} frameW={fw} posX={inverted ? mobileX + halfW - fw * 1.5 : mobileX + fw * 0.5} handleConfig={handleConfig} heightMm={heightMm} mirrored={!inverted} />
-      <DrillingHoles svgH={svgH} svgW={svgW} frameW={fw} count={drillingConfig.holeCount} divisionType={drillingConfig.divisionType} customDistancesMm={drillingConfig.customDistancesMm} heightMm={heightMm} posX={inverted ? fixedX + halfW - fw : fixedX + fw / 2} mirrored={!inverted} />
-      <text x={mobileX + halfW / 2} y={svgH - fw - batente - 5} textAnchor="middle" fontSize={13.5} fill={ARROW_COLOR} fontWeight="bold">{inverted ? '←' : '→'}</text>
-      <HorizontalDimension x1={fixedX}  x2={fixedX + halfW}  y={fw} label={`F: ${leafMm}mm`} offsetDir="above" offsetDist={6} />
-      <HorizontalDimension x1={mobileX} x2={mobileX + halfW} y={fw} label={`M: ${leafMm}mm`} offsetDir="above" offsetDist={6} />
-    </>
-  );
-}
-
-function renderMaximAr(svgW: number, svgH: number, theme: SvgTheme) {
-  const fw     = FRAME_W;
-  const innerW = svgW - fw * 2;
-  const innerH = svgH - fw * 2;
-  const topH   = innerH * 0.4;
-  const botH   = innerH * 0.6;
-
-  return (
-    <>
-      <rect x={fw} y={fw} width={innerW} height={topH} fill={theme.glassFill} stroke={theme.glassStroke} strokeWidth={1} />
-      <line x1={fw} y1={fw + topH} x2={svgW - fw} y2={fw + topH} stroke={theme.frameStroke} strokeWidth={2} />
-      <text x={svgW / 2} y={fw + topH / 2 + 4} textAnchor="middle" fontSize={13} fill={ARROW_COLOR} fontWeight="bold">↑ Basculante</text>
-      <rect x={fw} y={fw + topH} width={innerW} height={botH} fill={theme.fixedGlassFill} stroke={theme.glassStroke} strokeWidth={0.8} />
-      <text x={svgW / 2} y={fw + topH + botH / 2 + 4} textAnchor="middle" fontSize={10.5} fontFamily="JetBrains Mono, monospace" fill={theme.frameStroke} opacity={0.4}>FIXO</text>
-    </>
-  );
-}
-
-function renderBoxFrontal(
-  svgW: number, svgH: number, inverted: boolean,
-  handleConfig: HandleConfig, drillingConfig: DrillingConfig,
-  widthMm: number, heightMm: number,
-  theme: SvgTheme,
-) {
-  const fw     = FRAME_W;
-  const innerW = svgW - fw * 2;
-  const innerH = svgH - fw * 2;
-  const halfW  = innerW / 2;
-
-  const fixedX  = inverted ? fw + halfW : fw;
-  const mobileX = inverted ? fw : fw + halfW;
-  const topRailH = 12;
-
-  const handlePosX    = inverted ? mobileX + halfW - fw * 1.5 : mobileX + fw * 0.5;
-  const handleMirr    = !inverted;
-  const drillingPosX  = inverted ? fixedX + halfW - fw : fixedX + fw / 2;
-  const leafWidthMm   = Math.round(widthMm / 2);
-
-  return (
-    <>
-      <rect x={fw} y={fw} width={innerW} height={innerH} fill={theme.glassFill} stroke={theme.glassStroke} strokeWidth={0.5} />
-      {/* Trilho Superior Box */}
-      <rect x={fw} y={fw} width={innerW} height={topRailH} fill={theme.railFill} stroke={theme.frameStroke} strokeWidth={1} />
-      <text x={svgW / 2} y={fw + 9} textAnchor="middle" fontSize={8} fontFamily="JetBrains Mono, monospace" fill="#ffffff" fontWeight="bold">
-        TRILHO BOX
+      <text x={svgW / 2} y={svgH / 2 + 4} textAnchor="middle" fontSize={13} fill={ARROW_COLOR} fontWeight="bold">
+        {inverted ? '↑ Basculante Inv.' : '↓ Basculante'}
       </text>
-      <rect x={fw} y={svgH - fw - 4} width={innerW} height={4} fill={theme.railFill} />
-
-      {/* Folha Fixa Box */}
-      <rect x={fixedX}  y={fw + topRailH} width={halfW} height={innerH - topRailH - 4} fill={theme.fixedGlassFill} stroke={theme.glassStroke} strokeWidth={1} opacity={0.9} />
-      <text x={fixedX + halfW / 2}  y={svgH / 2} textAnchor="middle" fontSize={11} fontFamily="JetBrains Mono, monospace" fill={theme.frameStroke} opacity={0.6}>VIDRO FIXO</text>
-
-      {/* Folha Móvel Box */}
-      <rect x={mobileX} y={fw + topRailH} width={halfW} height={innerH - topRailH - 4} fill={theme.glassFill} stroke={theme.glassStroke} strokeWidth={1.2} />
-      <text x={mobileX + halfW / 2} y={svgH / 2} textAnchor="middle" fontSize={11} fontFamily="JetBrains Mono, monospace" fill={theme.frameStroke} opacity={0.6}>CORRER BOX</text>
-
-      <rect x={fw + halfW - 2} y={fw + topRailH} width={4} height={innerH - topRailH - 4} fill={theme.frameStroke} opacity={0.5} />
-
-      <HandleElement handleConfig={handleConfig} svgH={svgH} frameW={fw} posX={handlePosX} mirrored={handleMirr} heightMm={heightMm} />
-      <HandlePieceDimension svgH={svgH} frameW={fw} posX={handlePosX} handleConfig={handleConfig} heightMm={heightMm} mirrored={handleMirr} />
-      <DrillingHoles svgH={svgH} svgW={svgW} frameW={fw} count={drillingConfig.holeCount} divisionType={drillingConfig.divisionType} customDistancesMm={drillingConfig.customDistancesMm} heightMm={heightMm} posX={drillingPosX} mirrored={!inverted} />
-
-      <text x={mobileX + halfW / 2} y={svgH - fw - 10} textAnchor="middle" fontSize={15} fill={ARROW_COLOR} fontWeight="bold">
-        {inverted ? '← Correr' : 'Correr →'}
-      </text>
-
-      <HorizontalDimension x1={fixedX}  x2={fixedX + halfW}  y={svgH - fw - 2} label={`Fixo: ${leafWidthMm}mm`} offsetDir="above" offsetDist={6} />
-      <HorizontalDimension x1={mobileX} x2={mobileX + halfW} y={fw + topRailH + 2} label={`Móvel: ${leafWidthMm}mm`} offsetDir="below" offsetDist={6} />
-    </>
-  );
-}
-
-function renderBoxCorner(svgW: number, svgH: number, theme: SvgTheme) {
-  const fw     = FRAME_W;
-  const innerW = svgW - fw * 2;
-  const innerH = svgH - fw * 2;
-  const frontW = innerW * 0.55;
-  const sideW  = innerW * 0.45;
-
-  return (
-    <>
-      <rect x={fw} y={fw} width={frontW} height={innerH} fill={theme.glassFill} stroke={theme.glassStroke} strokeWidth={1} />
-      <text x={fw + frontW / 2} y={svgH / 2} textAnchor="middle" fontSize={12} fill={theme.frameStroke} opacity={0.4}>Box Frontal</text>
-      <rect x={fw + frontW} y={fw} width={sideW} height={innerH} fill={theme.fixedGlassFill} stroke={theme.glassStroke} strokeWidth={1} />
-      <text x={fw + frontW + sideW / 2} y={svgH / 2} textAnchor="middle" fontSize={12} fill={theme.frameStroke} opacity={0.4}>Box Lateral</text>
-      <rect x={fw + frontW - 2} y={fw} width={4} height={innerH} fill={theme.frameStroke} />
+      {/* Linha tracejada indicando o eixo */}
+      <line x1={fw} y1={inverted ? svgH - fw : fw} x2={svgW - fw} y2={inverted ? svgH - fw : fw} stroke={ARROW_COLOR} strokeWidth={2} strokeDasharray="4 4" opacity={0.6} />
+      {handleConfig.handleType !== 'NONE' && (
+        <HandleElement handleConfig={handleConfig} svgH={svgH} frameW={fw} posX={handlePosX} heightMm={heightMm} />
+      )}
+      {drillingConfig.holeCount > 0 && (
+        <DrillingHoles svgH={svgH} svgW={svgW} frameW={fw} count={drillingConfig.holeCount} divisionType={drillingConfig.divisionType} customDistancesMm={drillingConfig.customDistancesMm} heightMm={heightMm} posX={fw + innerW / 2} />
+      )}
     </>
   );
 }
 
 function renderDrawerFront(
   svgW: number, svgH: number,
-  _handleConfig: HandleConfig, drillingConfig: DrillingConfig,
+  handleConfig: HandleConfig, drillingConfig: DrillingConfig,
   widthMm: number, _heightMm: number,
   theme: SvgTheme,
 ) {
@@ -688,8 +714,15 @@ function renderDrawerFront(
   const innerH = svgH - fw * 2;
   const handleW = Math.min(innerW * 0.6, 140);
   const handleH = 10;
-  const handleX = (svgW - handleW) / 2;
-  const handleY = (svgH - handleH) / 2;
+
+  const pos = handleConfig.handlePosition || handleConfig.position;
+  let handleY = (svgH - handleH) / 2;
+  if (pos === 'TOP') handleY = fw + 10;
+  else if (pos === 'BOTTOM') handleY = svgH - fw - handleH - 10;
+
+  let handleX = (svgW - handleW) / 2;
+  if (pos === 'LEFT') handleX = fw + 16;
+  else if (pos === 'RIGHT') handleX = svgW - fw - handleW - 16;
 
   return (
     <>
@@ -702,7 +735,7 @@ function renderDrawerFront(
           <circle cx={handleX + handleW - 12} cy={handleY + handleH / 2} r={2.5} fill="#fff" stroke={theme.frameStroke} strokeWidth={1} />
         </>
       )}
-      <text x={svgW / 2} y={svgH - fw - 12} textAnchor="middle" fontSize={11} fontFamily="JetBrains Mono, monospace" fill={theme.frameStroke} opacity={0.6} fontWeight="bold">
+      <text x={svgW / 2} y={svgH - fw - 12} textAnchor="middle" fontSize={16} fontFamily="JetBrains Mono, monospace" fill={theme.frameStroke} opacity={0.6} fontWeight="bold">
         FRENTE DE GAVETA
       </text>
       <HorizontalDimension x1={fw} x2={svgW - fw} y={svgH - fw} label={`Gaveta: ${widthMm}mm`} offsetDir="below" offsetDist={8} />
@@ -748,36 +781,52 @@ interface SvgRenderContext {
 type SvgTemplateRenderer = (ctx: SvgRenderContext) => React.ReactNode;
 
 const SVG_RENDERERS: Record<DoorTemplateType, SvgTemplateRenderer> = {
+  SLIDING_DOOR_1F: (ctx) => renderSlidingDoor1F(ctx.svgW, ctx.svgH, ctx.inverted, ctx.handleConfig, ctx.drillingConfig, ctx.widthMm, ctx.heightMm, ctx.theme),
   SLIDING_DOOR_2F: (ctx) => renderSlidingDoor2F(ctx.svgW, ctx.svgH, ctx.inverted, ctx.handleConfig, ctx.drillingConfig, ctx.widthMm, ctx.heightMm, ctx.theme),
+  SLIDING_DOOR_3F: (ctx) => renderSlidingDoor3F(ctx.svgW, ctx.svgH, ctx.inverted, ctx.handleConfig, ctx.drillingConfig, ctx.widthMm, ctx.heightMm, ctx.theme),
   SLIDING_DOOR_4F: (ctx) => renderSlidingDoor4F(ctx.svgW, ctx.svgH, ctx.handleConfig, ctx.drillingConfig, ctx.widthMm, ctx.heightMm, ctx.theme),
   SWING_DOOR_1F: (ctx) => renderSwingDoor(ctx.svgW, ctx.svgH, 1, ctx.inverted, ctx.handleConfig, ctx.drillingConfig, ctx.widthMm, ctx.heightMm, ctx.theme),
   SWING_DOOR_2F: (ctx) => renderSwingDoor(ctx.svgW, ctx.svgH, 2, ctx.inverted, ctx.handleConfig, ctx.drillingConfig, ctx.widthMm, ctx.heightMm, ctx.theme),
-  PIVOTING_DOOR: (ctx) => renderPivotingDoor(ctx.svgW, ctx.svgH, ctx.inverted, ctx.handleConfig, ctx.drillingConfig, ctx.widthMm, ctx.heightMm, ctx.theme),
-  SLIDING_WINDOW_2F: (ctx) => renderSlidingWindow(ctx.svgW, ctx.svgH, 2, ctx.inverted, ctx.handleConfig, ctx.drillingConfig, ctx.widthMm, ctx.heightMm, ctx.theme),
-  SLIDING_WINDOW_4F: (ctx) => renderSlidingWindow(ctx.svgW, ctx.svgH, 4, ctx.inverted, ctx.handleConfig, ctx.drillingConfig, ctx.widthMm, ctx.heightMm, ctx.theme),
-  MAXIM_AR_WINDOW: (ctx) => renderMaximAr(ctx.svgW, ctx.svgH, ctx.theme),
-  GLASS_BOX_FRONTAL: (ctx) => renderBoxFrontal(ctx.svgW, ctx.svgH, ctx.inverted, ctx.handleConfig, ctx.drillingConfig, ctx.widthMm, ctx.heightMm, ctx.theme),
-  GLASS_BOX_CORNER: (ctx) => renderBoxCorner(ctx.svgW, ctx.svgH, ctx.theme),
-  DRAWER_FRONT: (ctx) => renderDrawerFront(ctx.svgW, ctx.svgH, ctx.handleConfig, ctx.drillingConfig, ctx.widthMm, ctx.heightMm, ctx.theme),
-  FIXED_GLASS_FACADE: (ctx) => renderFixedFacade(ctx.svgW, ctx.svgH, ctx.theme),
+  AWNING_WINDOW_1F: (ctx) => renderAwningWindow1F(ctx.svgW, ctx.svgH, false, ctx.handleConfig, ctx.drillingConfig, ctx.heightMm, ctx.theme),
+  AWNING_WINDOW_1F_INV: (ctx) => renderAwningWindow1F(ctx.svgW, ctx.svgH, true, ctx.handleConfig, ctx.drillingConfig, ctx.heightMm, ctx.theme),
+  FRONT_DRAWER: (ctx) => renderDrawerFront(ctx.svgW, ctx.svgH, ctx.handleConfig, ctx.drillingConfig, ctx.widthMm, ctx.heightMm, ctx.theme),
+  FIXED_PANEL: (ctx) => renderFixedFacade(ctx.svgW, ctx.svgH, ctx.theme),
 };
+
+export interface WindowSvgPreviewProps {
+  templateType: string;
+  widthMm?: number;
+  heightMm?: number;
+  openingDirection?: OpeningDirection;
+  handleConfig?: HandleConfig;
+  drillingConfig?: DrillingConfig;
+  templateName?: string;
+  aluminumColor?: string;
+  glassFinish?: string;
+  baseWidth?: string | number;
+  maxHeight?: string | number;
+  minimal?: boolean;
+}
 
 export const WindowSvgPreview: React.FC<WindowSvgPreviewProps> = ({
   templateType,
   widthMm = 0,
   heightMm = 0,
   openingDirection = 'LEFT_TO_RIGHT',
-  handleConfig,
-  drillingConfig,
+  handleConfig = { handleType: 'BAR_TUBULAR', side: 'ONE_SIDE', pieceLengthCm: 40, coverage: 'PIECE' },
+  drillingConfig = { holeCount: 2, divisionType: 'EQUAL' },
   templateName,
   aluminumColor,
   glassFinish,
+  baseWidth = '100%',
+  maxHeight = '100%',
+  minimal = false,
 }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const theme = getSvgTheme(aluminumColor, glassFinish);
 
   // Margens internas para acomodar cotas externas sem cortar
-  const MARGIN  = 26;
+  const MARGIN  = 34;
   const SVG_W   = 240;
   const ratio   = Math.min(Math.max((widthMm || 1) / (heightMm || 1), 0.4), 2.0);
   const SVG_H   = Math.round(SVG_W / ratio);
@@ -797,8 +846,10 @@ export const WindowSvgPreview: React.FC<WindowSvgPreviewProps> = ({
 
   const svgContent = (
     <svg
-      width="100%"
       viewBox={`${-MARGIN} ${-MARGIN} ${VB_W} ${VB_H}`}
+      preserveAspectRatio="xMidYMid meet"
+      className="w-full h-full max-w-full max-h-full"
+      style={{ display: 'block' }}
       aria-label={`Preview da esquadria ${widthMm}×${heightMm}mm`}
     >
       <defs>
@@ -837,28 +888,36 @@ export const WindowSvgPreview: React.FC<WindowSvgPreviewProps> = ({
 
   const legend = (
     <>
-      <span className="flex items-center gap-[3px]">
-        <span className="inline-block w-2 h-2 rounded-sm" style={{ background: theme.glassFill, border: `1px solid ${theme.glassStroke}` }} />
+      <span className="flex items-center gap-1">
+        <span className="inline-block w-3 h-3 rounded-sm" style={{ background: theme.glassFill, border: `1px solid ${theme.glassStroke}` }} />
         Móvel
       </span>
-      <span className="flex items-center gap-[3px]">
-        <span className="inline-block w-2 h-2 rounded-sm" style={{ background: theme.fixedGlassFill, border: `1px solid ${theme.glassStroke}` }} />
+      <span className="flex items-center gap-1">
+        <span className="inline-block w-3 h-3 rounded-sm" style={{ background: theme.fixedGlassFill, border: `1px solid ${theme.glassStroke}` }} />
         Fixo
       </span>
       {handleConfig.handleType !== 'NONE' && (
-        <span className="flex items-center gap-[3px] text-primary">
-          <span className="material-symbols-outlined text-[12px]">hardware</span>
+        <span className="flex items-center gap-1 text-primary">
+          <span className="material-symbols-outlined text-[14px]">hardware</span>
           {handleConfig.side === 'BOTH_SIDES' ? 'Puxador 2 Lados' : 'Puxador 1 Lado'}
         </span>
       )}
       {drillingConfig.holeCount > 0 && (
-        <span className="flex items-center gap-[3px]">
-          <span className="inline-block w-1.5 h-1.5 rounded-full bg-on-surface" />
+        <span className="flex items-center gap-1">
+          <span className="inline-block w-2 h-2 rounded-full bg-on-surface" />
           {drillingConfig.holeCount} Furo{drillingConfig.holeCount > 1 ? 's' : ''}
         </span>
       )}
     </>
   );
+
+  if (minimal) {
+    return (
+      <div style={{ maxWidth: baseWidth, maxHeight }} className="w-full h-full flex items-center justify-center pointer-events-none">
+        {svgContent}
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col items-center gap-xs w-full max-h-full relative group">
@@ -871,15 +930,15 @@ export const WindowSvgPreview: React.FC<WindowSvgPreviewProps> = ({
         <span className="material-symbols-outlined text-[18px]">fullscreen</span>
       </button>
 
-      <div style={{ maxWidth: SVG_W + MARGIN * 2, maxHeight: '200px' }} className="w-full flex justify-center">
+      <div style={{ maxWidth: baseWidth, maxHeight }} className="w-full flex justify-center">
         {svgContent}
       </div>
 
-      <p className="text-[10px] font-body text-on-surface-variant text-center opacity-85 truncate max-w-full">
+      <p className="text-xs font-body text-on-surface-variant text-center opacity-85 truncate max-w-full">
         {captionText}
       </p>
 
-      <div className="flex items-center gap-sm text-[10px] font-data-mono text-on-surface-variant flex-wrap justify-center">
+      <div className="flex items-center gap-sm text-xs font-data-mono text-on-surface-variant flex-wrap justify-center">
         {legend}
       </div>
 
