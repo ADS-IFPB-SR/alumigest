@@ -24,7 +24,13 @@ Object.defineProperty(window, 'matchMedia', {
 
 // Polyfill para ResizeObserver
 globalThis.ResizeObserver = class ResizeObserver {
-  observe() {}
-  unobserve() {}
-  disconnect() {}
+  observe() {
+    // Mock no-op para ambiente JSDOM
+  }
+  unobserve() {
+    // Mock no-op para ambiente JSDOM
+  }
+  disconnect() {
+    // Mock no-op para ambiente JSDOM
+  }
 }

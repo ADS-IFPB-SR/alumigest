@@ -31,6 +31,362 @@ interface TemplateOptionSchemaEditorProps {
   setTemplateConfig?: React.Dispatch<React.SetStateAction<Partial<TemplateConfig>>>;
 }
 
+function getDefaultOptionSchema(app: (typeof TEMPLATE_APPLICABLE_OPTIONS)[DoorTemplateType], defaultDrillPos: DrillingPosition): Partial<TemplateOptionSchema> {
+  return {
+    allowOpeningDirection: app.openingDirection,
+    allowedOpeningDirections: app.openingDirection ? ['LEFT_TO_RIGHT', 'RIGHT_TO_LEFT'] : [],
+    allowSlidingMode: app.slidingMode,
+    allowedSlidingModes: app.slidingMode ? ['BOTH_SLIDING', 'LEFT_FIXED_RIGHT_SLIDING', 'RIGHT_FIXED_LEFT_SLIDING'] : [],
+    allowHandle: app.handle,
+    allowedHandleTypes: app.handle ? ['BAR_TUBULAR', 'SHELL_LOCK', 'LEVER_HANDLE'] : [],
+    allowedHandlePositions: app.handle ? ['RIGHT', 'LEFT', 'CENTER'] : [],
+    allowDrilling: app.drilling,
+    allowedDrillingModes: app.drilling ? ['EQUAL', 'CUSTOM'] : [],
+    allowedDrillingPositions: app.drilling ? [defaultDrillPos] : [],
+    allowAluminumColors: ALUMINUM_COLORS.map(c => c.hex),
+    allowGlassColors: GLASS_COLORS.map(c => c.hex),
+  };
+}
+
+function getInitialTemplateConfig(
+  app: (typeof TEMPLATE_APPLICABLE_OPTIONS)[DoorTemplateType],
+  defaultDrillPos: DrillingPosition,
+  prev: Partial<TemplateConfig>
+): Partial<TemplateConfig> {
+  return {
+    ...prev,
+    openingDirection: app.openingDirection ? (prev.openingDirection || 'LEFT_TO_RIGHT') : undefined,
+    slidingMode: app.slidingMode ? (prev.slidingMode || 'BOTH_SLIDING') : undefined,
+    handleConfig: app.handle ? {
+      handleType: prev.handleConfig?.handleType || 'BAR_TUBULAR',
+      handlePosition: prev.handleConfig?.handlePosition || 'RIGHT',
+      position: prev.handleConfig?.position || 'RIGHT',
+      handleLengthMm: prev.handleConfig?.handleLengthMm || 600,
+      side: prev.handleConfig?.side || 'ONE_SIDE',
+      coverage: prev.handleConfig?.coverage || 'PIECE',
+      pieceLengthCm: prev.handleConfig?.pieceLengthCm || 60,
+    } : { handleType: 'NONE' },
+    drillingConfig: app.drilling ? {
+      holeCount: prev.drillingConfig?.holeCount ?? 2,
+      drillingMode: prev.drillingConfig?.drillingMode || 'EQUAL',
+      drillingPosition: prev.drillingConfig?.drillingPosition || defaultDrillPos,
+      customPositionsMm: prev.drillingConfig?.customPositionsMm,
+    } : undefined,
+  };
+}
+
+// --- Seção: Sentido de Abertura ---
+interface OpeningDirectionSectionProps {
+  optionSchema: Partial<TemplateOptionSchema>;
+  templateConfig?: Partial<TemplateConfig>;
+  isOpen: boolean;
+  onToggleOpen: () => void;
+  onToggleEnabled: (enabled: boolean) => void;
+  onToggleItem: (val: OpeningDirection) => void;
+}
+
+function OpeningDirectionSection({
+  optionSchema,
+  templateConfig,
+  isOpen,
+  onToggleOpen,
+  onToggleEnabled,
+  onToggleItem,
+}: OpeningDirectionSectionProps) {
+  const summary = optionSchema.allowOpeningDirection
+    ? `${optionSchema.allowedOpeningDirections?.length || 0} sentidos permitidos`
+    : 'Fixo pelo padrão';
+
+  return (
+    <ModernAccordion
+      icon="swipe"
+      title="Sentido de Abertura"
+      enabled={!!optionSchema.allowOpeningDirection}
+      onToggle={onToggleEnabled}
+      summary={summary}
+      isOpen={isOpen && !!optionSchema.allowOpeningDirection}
+      onToggleOpen={onToggleOpen}
+    >
+      <ChipGroup<OpeningDirection>
+        items={['LEFT_TO_RIGHT', 'RIGHT_TO_LEFT', 'OUTSIDE', 'INSIDE', 'CENTER_TO_SIDES']}
+        labels={OPENING_DIRECTION_LABELS}
+        selected={optionSchema.allowedOpeningDirections || []}
+        activeItem={templateConfig?.openingDirection}
+        onToggleItem={onToggleItem}
+      />
+    </ModernAccordion>
+  );
+}
+
+// --- Seção: Modo de Correr ---
+interface SlidingModeSectionProps {
+  optionSchema: Partial<TemplateOptionSchema>;
+  templateConfig?: Partial<TemplateConfig>;
+  isOpen: boolean;
+  onToggleOpen: () => void;
+  onToggleEnabled: (enabled: boolean) => void;
+  onToggleItem: (val: SlidingMode) => void;
+}
+
+function SlidingModeSection({
+  optionSchema,
+  templateConfig,
+  isOpen,
+  onToggleOpen,
+  onToggleEnabled,
+  onToggleItem,
+}: SlidingModeSectionProps) {
+  const summary = optionSchema.allowSlidingMode
+    ? `${optionSchema.allowedSlidingModes?.length || 0} modos permitidos`
+    : 'Fixo pelo padrão';
+
+  return (
+    <ModernAccordion
+      icon="view_column"
+      title="Modo de Folhas Deslizantes"
+      enabled={!!optionSchema.allowSlidingMode}
+      onToggle={onToggleEnabled}
+      summary={summary}
+      isOpen={isOpen && !!optionSchema.allowSlidingMode}
+      onToggleOpen={onToggleOpen}
+    >
+      <ChipGroup<SlidingMode>
+        items={['BOTH_SLIDING', 'LEFT_FIXED_RIGHT_SLIDING', 'RIGHT_FIXED_LEFT_SLIDING']}
+        labels={SLIDING_MODE_LABELS}
+        selected={optionSchema.allowedSlidingModes || []}
+        activeItem={templateConfig?.slidingMode}
+        onToggleItem={onToggleItem}
+      />
+    </ModernAccordion>
+  );
+}
+
+// --- Seção: Puxador ---
+interface HandleSectionProps {
+  optionSchema: Partial<TemplateOptionSchema>;
+  templateConfig?: Partial<TemplateConfig>;
+  isOpen: boolean;
+  onToggleOpen: () => void;
+  onToggleEnabled: (enabled: boolean) => void;
+  onToggleType: (val: HandleType) => void;
+  onTogglePosition: (val: HandlePosition) => void;
+}
+
+function HandleSection({
+  optionSchema,
+  templateConfig,
+  isOpen,
+  onToggleOpen,
+  onToggleEnabled,
+  onToggleType,
+  onTogglePosition,
+}: HandleSectionProps) {
+  const summary = optionSchema.allowHandle
+    ? `${optionSchema.allowedHandleTypes?.length || 0} tipos / ${optionSchema.allowedHandlePositions?.length || 0} posições`
+    : 'Sem escolha de puxador';
+
+  return (
+    <ModernAccordion
+      icon="door_sensor"
+      title="Puxadores e Fechaduras"
+      enabled={!!optionSchema.allowHandle}
+      onToggle={onToggleEnabled}
+      summary={summary}
+      isOpen={isOpen && !!optionSchema.allowHandle}
+      onToggleOpen={onToggleOpen}
+    >
+      <div className="flex flex-col gap-3">
+        <div>
+          <span className="text-xs font-semibold text-on-surface-variant block mb-1.5">Modelos de Puxador:</span>
+          <ChipGroup<HandleType>
+            items={['BAR_TUBULAR', 'SHELL_LOCK', 'LEVER_HANDLE', 'NONE']}
+            labels={HANDLE_TYPE_LABELS}
+            selected={optionSchema.allowedHandleTypes || []}
+            activeItem={templateConfig?.handleConfig?.handleType}
+            onToggleItem={onToggleType}
+          />
+        </div>
+        <div>
+          <span className="text-xs font-semibold text-on-surface-variant block mb-1.5">Posições Permitidas:</span>
+          <ChipGroup<HandlePosition>
+            items={['LEFT', 'RIGHT', 'TOP', 'BOTTOM', 'CENTER']}
+            labels={HANDLE_POSITION_LABELS}
+            selected={optionSchema.allowedHandlePositions || []}
+            activeItem={templateConfig?.handleConfig?.handlePosition || templateConfig?.handleConfig?.position}
+            onToggleItem={onTogglePosition}
+          />
+        </div>
+      </div>
+    </ModernAccordion>
+  );
+}
+
+// --- Seção: Furações ---
+interface DrillingSectionProps {
+  templateType: DoorTemplateType;
+  optionSchema: Partial<TemplateOptionSchema>;
+  templateConfig?: Partial<TemplateConfig>;
+  isOpen: boolean;
+  onToggleOpen: () => void;
+  onToggleEnabled: (enabled: boolean) => void;
+  onTogglePosition: (val: DrillingPosition) => void;
+  onToggleMode: (val: HoleDrillingMode) => void;
+  onSetHoleCount: (count: number) => void;
+}
+
+function DrillingSection({
+  templateType,
+  optionSchema,
+  templateConfig,
+  isOpen,
+  onToggleOpen,
+  onToggleEnabled,
+  onTogglePosition,
+  onToggleMode,
+  onSetHoleCount,
+}: DrillingSectionProps) {
+  const defaultPos = TEMPLATE_DEFAULT_DRILLING_POSITION[templateType] || 'SUPERIOR';
+  const currentPos = templateConfig?.drillingConfig?.drillingPosition || defaultPos;
+  const posLabel = currentPos === 'SUPERIOR' ? 'Borda Superior' : currentPos === 'FRONTAL' ? 'Frontal' : 'Lateral';
+
+  const summary = optionSchema.allowDrilling
+    ? `${templateConfig?.drillingConfig?.holeCount ?? 2} furos · ${posLabel} · ${optionSchema.allowedDrillingPositions?.length || 0} posições`
+    : 'Fixo pelo padrão';
+
+  return (
+    <ModernAccordion
+      icon="circle"
+      title="Furações e Divisões Paramétricas"
+      enabled={!!optionSchema.allowDrilling}
+      onToggle={onToggleEnabled}
+      summary={summary}
+      isOpen={isOpen && !!optionSchema.allowDrilling}
+      onToggleOpen={onToggleOpen}
+    >
+      <div className="flex flex-col gap-3">
+        {/* Quantidade de Furos Padrão */}
+        <div>
+          <span className="text-xs font-semibold text-on-surface-variant block mb-1.5">
+            Quantidade de Furos Padrão (Prévia Studio):
+          </span>
+          <div className="flex flex-wrap gap-1.5">
+            {[0, 1, 2, 3, 4].map((num) => {
+              const isSelected = (templateConfig?.drillingConfig?.holeCount ?? 2) === num;
+              return (
+                <button
+                  key={num}
+                  type="button"
+                  onClick={() => onSetHoleCount(num)}
+                  className={`px-3 py-1.5 rounded-lg border text-xs font-medium transition-all cursor-pointer ${
+                    isSelected
+                      ? 'border-primary bg-primary/10 text-primary font-bold shadow-xs'
+                      : 'border-outline-variant/60 bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container-low'
+                  }`}
+                >
+                  {num === 0 ? 'Sem furos' : `${num} Furo${num > 1 ? 's' : ''}`}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Posições de Furação Permitidas */}
+        <div>
+          <span className="text-xs font-semibold text-on-surface-variant block mb-1.5">
+            Posições de Furação Permitidas no Orçamento:
+          </span>
+          <ChipGroup<DrillingPosition>
+            items={['SUPERIOR', 'LATERAL', 'FRONTAL']}
+            labels={DRILLING_POSITION_LABELS}
+            selected={optionSchema.allowedDrillingPositions || []}
+            activeItem={currentPos}
+            onToggleItem={onTogglePosition}
+          />
+        </div>
+
+        {/* Modos de Cálculo de Espaçamento */}
+        <div>
+          <span className="text-xs font-semibold text-on-surface-variant block mb-1.5">
+            Modos de Espaçamento Permitidos:
+          </span>
+          <ChipGroup<HoleDrillingMode>
+            items={['EQUAL', 'CUSTOM']}
+            labels={DRILLING_MODE_LABELS}
+            selected={optionSchema.allowedDrillingModes || []}
+            activeItem={templateConfig?.drillingConfig?.drillingMode}
+            onToggleItem={onToggleMode}
+          />
+        </div>
+      </div>
+    </ModernAccordion>
+  );
+}
+
+// --- Seção: Cores e Acabamentos ---
+interface ColorPaletteSectionProps {
+  icon: string;
+  title: string;
+  colors: readonly { hex: string; name: string }[];
+  selectedColors?: string[];
+  isOpen: boolean;
+  onToggleOpen: () => void;
+  onToggleEnabled: (enabled: boolean) => void;
+  onToggleColor: (hex: string) => void;
+}
+
+function ColorPaletteSection({
+  icon,
+  title,
+  colors,
+  selectedColors = [],
+  isOpen,
+  onToggleOpen,
+  onToggleEnabled,
+  onToggleColor,
+}: ColorPaletteSectionProps) {
+  const isEnabled = selectedColors.length > 0;
+  const summary = isEnabled ? `${selectedColors.length} opções ativas` : 'Nenhuma cor disponível';
+
+  return (
+    <ModernAccordion
+      icon={icon}
+      title={title}
+      enabled={isEnabled}
+      onToggle={onToggleEnabled}
+      summary={summary}
+      isOpen={isOpen && isEnabled}
+      onToggleOpen={onToggleOpen}
+    >
+      <div className="flex flex-wrap gap-2">
+        {colors.map((c) => {
+          const selected = selectedColors.includes(c.hex);
+          return (
+            <button
+              key={c.hex}
+              type="button"
+              onClick={() => onToggleColor(c.hex)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all cursor-pointer ${
+                selected
+                  ? 'border-primary bg-primary/8 text-primary shadow-xs'
+                  : 'border-outline-variant/60 bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container-low'
+              }`}
+            >
+              <span
+                className="w-3.5 h-3.5 rounded-full border border-black/20 shadow-xs"
+                style={{ backgroundColor: c.hex }}
+              />
+              <span>{c.name}</span>
+              {selected && (
+                <span className="material-symbols-outlined text-[14px]">check</span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </ModernAccordion>
+  );
+}
+
 export function TemplateOptionSchemaEditor({
   templateType,
   optionSchema,
@@ -40,7 +396,6 @@ export function TemplateOptionSchemaEditor({
 }: TemplateOptionSchemaEditorProps) {
   const applicable = templateType ? TEMPLATE_APPLICABLE_OPTIONS[templateType as DoorTemplateType] : null;
 
-  // Track expanded accordion sections
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     opening: false,
     sliding: false,
@@ -60,44 +415,12 @@ export function TemplateOptionSchemaEditor({
     const app = TEMPLATE_APPLICABLE_OPTIONS[templateType as DoorTemplateType];
     if (!app) return;
 
-    const defaultDrillPos = templateType ? TEMPLATE_DEFAULT_DRILLING_POSITION[templateType as DoorTemplateType] : 'SUPERIOR';
+    const defaultDrillPos = TEMPLATE_DEFAULT_DRILLING_POSITION[templateType as DoorTemplateType] || 'SUPERIOR';
 
-    setOptionSchema({
-      allowOpeningDirection: app.openingDirection,
-      allowedOpeningDirections: app.openingDirection ? ['LEFT_TO_RIGHT', 'RIGHT_TO_LEFT'] : [],
-      allowSlidingMode: app.slidingMode,
-      allowedSlidingModes: app.slidingMode ? ['BOTH_SLIDING', 'LEFT_FIXED_RIGHT_SLIDING', 'RIGHT_FIXED_LEFT_SLIDING'] : [],
-      allowHandle: app.handle,
-      allowedHandleTypes: app.handle ? ['BAR_TUBULAR', 'SHELL_LOCK', 'LEVER_HANDLE'] : [],
-      allowedHandlePositions: app.handle ? ['RIGHT', 'LEFT', 'CENTER'] : [],
-      allowDrilling: app.drilling,
-      allowedDrillingModes: app.drilling ? ['EQUAL', 'CUSTOM'] : [],
-      allowedDrillingPositions: app.drilling ? [defaultDrillPos] : [],
-      allowAluminumColors: ALUMINUM_COLORS.map(c => c.hex),
-      allowGlassColors: GLASS_COLORS.map(c => c.hex),
-    });
+    setOptionSchema(getDefaultOptionSchema(app, defaultDrillPos));
 
     if (setTemplateConfig) {
-      setTemplateConfig((prev) => ({
-        ...prev,
-        openingDirection: app.openingDirection ? (prev.openingDirection || 'LEFT_TO_RIGHT') : undefined,
-        slidingMode: app.slidingMode ? (prev.slidingMode || 'BOTH_SLIDING') : undefined,
-        handleConfig: app.handle ? {
-          handleType: prev.handleConfig?.handleType || 'BAR_TUBULAR',
-          handlePosition: prev.handleConfig?.handlePosition || 'RIGHT',
-          position: prev.handleConfig?.position || 'RIGHT',
-          handleLengthMm: prev.handleConfig?.handleLengthMm || 600,
-          side: prev.handleConfig?.side || 'ONE_SIDE',
-          coverage: prev.handleConfig?.coverage || 'PIECE',
-          pieceLengthCm: prev.handleConfig?.pieceLengthCm || 60,
-        } : { handleType: 'NONE' },
-        drillingConfig: app.drilling ? {
-          holeCount: prev.drillingConfig?.holeCount ?? 2,
-          drillingMode: prev.drillingConfig?.drillingMode || 'EQUAL',
-          drillingPosition: prev.drillingConfig?.drillingPosition || defaultDrillPos,
-          customPositionsMm: prev.drillingConfig?.customPositionsMm,
-        } : undefined,
-      }));
+      setTemplateConfig((prev) => getInitialTemplateConfig(app, defaultDrillPos, prev));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [templateType]);
@@ -115,8 +438,7 @@ export function TemplateOptionSchemaEditor({
       : [...current, item];
   };
 
-  // --- Handlers de Sincronização em Tempo Real com o templateConfig (SVG Studio) ---
-
+  // Handlers
   const handleToggleOpeningDirection = (val: OpeningDirection) => {
     const current = optionSchema.allowedOpeningDirections || [];
     const isAdding = !current.includes(val);
@@ -124,7 +446,6 @@ export function TemplateOptionSchemaEditor({
     update('allowedOpeningDirections', next);
 
     if (setTemplateConfig) {
-      // Se clicou no item, ele se torna a prévia ativa. Se removeu, assume o próximo disponível
       const nextActive = isAdding ? val : (next[0] || 'LEFT_TO_RIGHT');
       setTemplateConfig((prev) => ({ ...prev, openingDirection: nextActive }));
     }
@@ -186,7 +507,7 @@ export function TemplateOptionSchemaEditor({
     update('allowedDrillingModes', next);
 
     if (setTemplateConfig) {
-      const fallbackPos = templateType ? TEMPLATE_DEFAULT_DRILLING_POSITION[templateType] : 'SUPERIOR';
+      const fallbackPos = TEMPLATE_DEFAULT_DRILLING_POSITION[templateType] || 'SUPERIOR';
       const nextActive = isAdding ? val : (next[0] || 'EQUAL');
       setTemplateConfig((prev) => ({
         ...prev,
@@ -205,7 +526,6 @@ export function TemplateOptionSchemaEditor({
     const isCurrentlySelected = current.includes(val);
     const isCurrentlyActive = templateConfig?.drillingConfig?.drillingPosition === val;
 
-    // Se já está selecionado mas não é a prévia ativa, ativa a prévia deste item imediatamente
     if (isCurrentlySelected && !isCurrentlyActive) {
       if (setTemplateConfig) {
         setTemplateConfig((prev) => {
@@ -225,16 +545,11 @@ export function TemplateOptionSchemaEditor({
       return;
     }
 
-    // Se não está selecionado, adiciona e ativa como prévia
-    // Se já está selecionado e é o ativo, remove se houver outras opções
-    const next = !isCurrentlySelected
-      ? [...current, val]
-      : current.filter((x) => x !== val);
-
+    const next = !isCurrentlySelected ? [...current, val] : current.filter((x) => x !== val);
     update('allowedDrillingPositions', next);
 
     if (setTemplateConfig) {
-      const fallbackPos = templateType ? TEMPLATE_DEFAULT_DRILLING_POSITION[templateType] : 'SUPERIOR';
+      const fallbackPos = TEMPLATE_DEFAULT_DRILLING_POSITION[templateType] || 'SUPERIOR';
       const nextActive = !isCurrentlySelected ? val : (next[0] || fallbackPos);
       setTemplateConfig((prev) => {
         const currentCount = prev.drillingConfig?.holeCount ?? 2;
@@ -254,7 +569,7 @@ export function TemplateOptionSchemaEditor({
 
   const handleSetHoleCount = (count: number) => {
     if (setTemplateConfig) {
-      const fallbackPos = templateType ? TEMPLATE_DEFAULT_DRILLING_POSITION[templateType] : 'SUPERIOR';
+      const fallbackPos = TEMPLATE_DEFAULT_DRILLING_POSITION[templateType] || 'SUPERIOR';
       setTemplateConfig((prev) => ({
         ...prev,
         drillingConfig: {
@@ -286,13 +601,13 @@ export function TemplateOptionSchemaEditor({
       </div>
 
       <div className="flex flex-col gap-2.5">
-        {/* --- 1. Sentido de Abertura --- */}
         {applicable.openingDirection && (
-          <ModernAccordion
-            icon="swipe"
-            title="Sentido de Abertura"
-            enabled={!!optionSchema.allowOpeningDirection}
-            onToggle={(v) => {
+          <OpeningDirectionSection
+            optionSchema={optionSchema}
+            templateConfig={templateConfig}
+            isOpen={!!expandedSections.opening}
+            onToggleOpen={() => toggleSection('opening')}
+            onToggleEnabled={(v) => {
               update('allowOpeningDirection', v);
               if (v) {
                 setExpandedSections((prev) => ({ ...prev, opening: true }));
@@ -301,31 +616,17 @@ export function TemplateOptionSchemaEditor({
                 }
               }
             }}
-            summary={
-              optionSchema.allowOpeningDirection
-                ? `${optionSchema.allowedOpeningDirections?.length || 0} sentidos permitidos`
-                : 'Fixo pelo padrão'
-            }
-            isOpen={!!expandedSections.opening && !!optionSchema.allowOpeningDirection}
-            onToggleOpen={() => toggleSection('opening')}
-          >
-            <ChipGroup<OpeningDirection>
-              items={['LEFT_TO_RIGHT', 'RIGHT_TO_LEFT', 'OUTSIDE', 'INSIDE', 'CENTER_TO_SIDES']}
-              labels={OPENING_DIRECTION_LABELS}
-              selected={optionSchema.allowedOpeningDirections || []}
-              activeItem={templateConfig?.openingDirection}
-              onToggleItem={handleToggleOpeningDirection}
-            />
-          </ModernAccordion>
+            onToggleItem={handleToggleOpeningDirection}
+          />
         )}
 
-        {/* --- 2. Modo de Correr --- */}
         {applicable.slidingMode && (
-          <ModernAccordion
-            icon="view_column"
-            title="Modo de Folhas Deslizantes"
-            enabled={!!optionSchema.allowSlidingMode}
-            onToggle={(v) => {
+          <SlidingModeSection
+            optionSchema={optionSchema}
+            templateConfig={templateConfig}
+            isOpen={!!expandedSections.sliding}
+            onToggleOpen={() => toggleSection('sliding')}
+            onToggleEnabled={(v) => {
               update('allowSlidingMode', v);
               if (v) {
                 setExpandedSections((prev) => ({ ...prev, sliding: true }));
@@ -334,31 +635,17 @@ export function TemplateOptionSchemaEditor({
                 }
               }
             }}
-            summary={
-              optionSchema.allowSlidingMode
-                ? `${optionSchema.allowedSlidingModes?.length || 0} modos permitidos`
-                : 'Fixo pelo padrão'
-            }
-            isOpen={!!expandedSections.sliding && !!optionSchema.allowSlidingMode}
-            onToggleOpen={() => toggleSection('sliding')}
-          >
-            <ChipGroup<SlidingMode>
-              items={['BOTH_SLIDING', 'LEFT_FIXED_RIGHT_SLIDING', 'RIGHT_FIXED_LEFT_SLIDING']}
-              labels={SLIDING_MODE_LABELS}
-              selected={optionSchema.allowedSlidingModes || []}
-              activeItem={templateConfig?.slidingMode}
-              onToggleItem={handleToggleSlidingMode}
-            />
-          </ModernAccordion>
+            onToggleItem={handleToggleSlidingMode}
+          />
         )}
 
-        {/* --- 3. Puxador --- */}
         {applicable.handle && (
-          <ModernAccordion
-            icon="door_sensor"
-            title="Puxadores e Fechaduras"
-            enabled={!!optionSchema.allowHandle}
-            onToggle={(v) => {
+          <HandleSection
+            optionSchema={optionSchema}
+            templateConfig={templateConfig}
+            isOpen={!!expandedSections.handle}
+            onToggleOpen={() => toggleSection('handle')}
+            onToggleEnabled={(v) => {
               update('allowHandle', v);
               if (v) {
                 setExpandedSections((prev) => ({ ...prev, handle: true }));
@@ -377,54 +664,24 @@ export function TemplateOptionSchemaEditor({
                   }));
                 }
               } else if (setTemplateConfig) {
-                setTemplateConfig((prev) => ({
-                  ...prev,
-                  handleConfig: { handleType: 'NONE' },
-                }));
+                setTemplateConfig((prev) => ({ ...prev, handleConfig: { handleType: 'NONE' } }));
               }
             }}
-            summary={
-              optionSchema.allowHandle
-                ? `${optionSchema.allowedHandleTypes?.length || 0} tipos / ${optionSchema.allowedHandlePositions?.length || 0} posições`
-                : 'Sem escolha de puxador'
-            }
-            isOpen={!!expandedSections.handle && !!optionSchema.allowHandle}
-            onToggleOpen={() => toggleSection('handle')}
-          >
-            <div className="flex flex-col gap-3">
-              <div>
-                <span className="text-xs font-semibold text-on-surface-variant block mb-1.5">Modelos de Puxador:</span>
-                <ChipGroup<HandleType>
-                  items={['BAR_TUBULAR', 'SHELL_LOCK', 'LEVER_HANDLE', 'NONE']}
-                  labels={HANDLE_TYPE_LABELS}
-                  selected={optionSchema.allowedHandleTypes || []}
-                  activeItem={templateConfig?.handleConfig?.handleType}
-                  onToggleItem={handleToggleHandleType}
-                />
-              </div>
-              <div>
-                <span className="text-xs font-semibold text-on-surface-variant block mb-1.5">Posições Permitidas:</span>
-                <ChipGroup<HandlePosition>
-                  items={['LEFT', 'RIGHT', 'TOP', 'BOTTOM', 'CENTER']}
-                  labels={HANDLE_POSITION_LABELS}
-                  selected={optionSchema.allowedHandlePositions || []}
-                  activeItem={templateConfig?.handleConfig?.handlePosition || templateConfig?.handleConfig?.position}
-                  onToggleItem={handleToggleHandlePosition}
-                />
-              </div>
-            </div>
-          </ModernAccordion>
+            onToggleType={handleToggleHandleType}
+            onTogglePosition={handleToggleHandlePosition}
+          />
         )}
 
-        {/* --- 4. Furações --- */}
         {applicable.drilling && (
-          <ModernAccordion
-            icon="circle"
-            title="Furações e Divisões Paramétricas"
-            enabled={!!optionSchema.allowDrilling}
-            onToggle={(v) => {
+          <DrillingSection
+            templateType={templateType}
+            optionSchema={optionSchema}
+            templateConfig={templateConfig}
+            isOpen={!!expandedSections.drilling}
+            onToggleOpen={() => toggleSection('drilling')}
+            onToggleEnabled={(v) => {
               update('allowDrilling', v);
-              const defaultPos = templateType ? TEMPLATE_DEFAULT_DRILLING_POSITION[templateType] : 'SUPERIOR';
+              const defaultPos = TEMPLATE_DEFAULT_DRILLING_POSITION[templateType] || 'SUPERIOR';
               if (v) {
                 setExpandedSections((prev) => ({ ...prev, drilling: true }));
                 update('allowedDrillingPositions', [defaultPos]);
@@ -452,167 +709,39 @@ export function TemplateOptionSchemaEditor({
                 }
               }
             }}
-            summary={
-              optionSchema.allowDrilling
-                ? `${templateConfig?.drillingConfig?.holeCount ?? 2} furos · ${
-                    (templateConfig?.drillingConfig?.drillingPosition || (templateType ? TEMPLATE_DEFAULT_DRILLING_POSITION[templateType] : 'SUPERIOR')) === 'SUPERIOR'
-                      ? 'Borda Superior'
-                      : (templateConfig?.drillingConfig?.drillingPosition || (templateType ? TEMPLATE_DEFAULT_DRILLING_POSITION[templateType] : 'SUPERIOR')) === 'FRONTAL'
-                      ? 'Frontal'
-                      : 'Lateral'
-                  } · ${optionSchema.allowedDrillingPositions?.length || 0} posições`
-                : 'Fixo pelo padrão'
-            }
-            isOpen={!!expandedSections.drilling && !!optionSchema.allowDrilling}
-            onToggleOpen={() => toggleSection('drilling')}
-          >
-            <div className="flex flex-col gap-3">
-              {/* Quantidade de Furos Padrão */}
-              <div>
-                <span className="text-xs font-semibold text-on-surface-variant block mb-1.5">
-                  Quantidade de Furos Padrão (Prévia Studio):
-                </span>
-                <div className="flex flex-wrap gap-1.5">
-                  {[0, 1, 2, 3, 4].map((num) => {
-                    const isSelected = (templateConfig?.drillingConfig?.holeCount ?? 2) === num;
-                    return (
-                      <button
-                        key={num}
-                        type="button"
-                        onClick={() => handleSetHoleCount(num)}
-                        className={`px-3 py-1.5 rounded-lg border text-xs font-medium transition-all cursor-pointer ${
-                          isSelected
-                            ? 'border-primary bg-primary/10 text-primary font-bold shadow-xs'
-                            : 'border-outline-variant/60 bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container-low'
-                        }`}
-                      >
-                        {num === 0 ? 'Sem furos' : `${num} Furo${num > 1 ? 's' : ''}`}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Posições de Furação Permitidas */}
-              <div>
-                <span className="text-xs font-semibold text-on-surface-variant block mb-1.5">
-                  Posições de Furação Permitidas no Orçamento:
-                </span>
-                <ChipGroup<DrillingPosition>
-                  items={['SUPERIOR', 'LATERAL', 'FRONTAL']}
-                  labels={DRILLING_POSITION_LABELS}
-                  selected={optionSchema.allowedDrillingPositions || []}
-                  activeItem={templateConfig?.drillingConfig?.drillingPosition || (templateType ? TEMPLATE_DEFAULT_DRILLING_POSITION[templateType] : 'SUPERIOR')}
-                  onToggleItem={handleToggleDrillingPosition}
-                />
-              </div>
-
-              {/* Modos de Cálculo de Espaçamento */}
-              <div>
-                <span className="text-xs font-semibold text-on-surface-variant block mb-1.5">
-                  Modos de Espaçamento Permitidos:
-                </span>
-                <ChipGroup<HoleDrillingMode>
-                  items={['EQUAL', 'CUSTOM']}
-                  labels={DRILLING_MODE_LABELS}
-                  selected={optionSchema.allowedDrillingModes || []}
-                  activeItem={templateConfig?.drillingConfig?.drillingMode}
-                  onToggleItem={handleToggleDrillingMode}
-                />
-              </div>
-            </div>
-          </ModernAccordion>
+            onTogglePosition={handleToggleDrillingPosition}
+            onToggleMode={handleToggleDrillingMode}
+            onSetHoleCount={handleSetHoleCount}
+          />
         )}
 
-        {/* --- 5. Cores do Alumínio --- */}
-        <ModernAccordion
+        <ColorPaletteSection
           icon="palette"
           title="Cores de Alumínio Permitidas"
-          enabled={(optionSchema.allowAluminumColors?.length ?? 0) > 0}
-          onToggle={(v) => {
+          colors={ALUMINUM_COLORS}
+          selectedColors={optionSchema.allowAluminumColors}
+          isOpen={!!expandedSections.aluminum}
+          onToggleOpen={() => toggleSection('aluminum')}
+          onToggleEnabled={(v) => {
             update('allowAluminumColors', v ? ALUMINUM_COLORS.map(c => c.hex) : []);
             if (v) setExpandedSections(prev => ({ ...prev, aluminum: true }));
           }}
-          summary={
-            (optionSchema.allowAluminumColors?.length ?? 0) > 0
-              ? `${optionSchema.allowAluminumColors?.length} cores ativas`
-              : 'Nenhuma cor disponível'
-          }
-          isOpen={!!expandedSections.aluminum && (optionSchema.allowAluminumColors?.length ?? 0) > 0}
-          onToggleOpen={() => toggleSection('aluminum')}
-        >
-          <div className="flex flex-wrap gap-2">
-            {ALUMINUM_COLORS.map((c) => {
-              const selected = optionSchema.allowAluminumColors?.includes(c.hex);
-              return (
-                <button
-                  key={c.hex}
-                  type="button"
-                  onClick={() => update('allowAluminumColors', toggleInArray(optionSchema.allowAluminumColors, c.hex))}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all cursor-pointer ${
-                    selected
-                      ? 'border-primary bg-primary/8 text-primary shadow-xs'
-                      : 'border-outline-variant/60 bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container-low'
-                  }`}
-                >
-                  <span
-                    className="w-3.5 h-3.5 rounded-full border border-black/20 shadow-xs"
-                    style={{ backgroundColor: c.hex }}
-                  />
-                  <span>{c.name}</span>
-                  {selected && (
-                    <span className="material-symbols-outlined text-[14px]">check</span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </ModernAccordion>
+          onToggleColor={(hex) => update('allowAluminumColors', toggleInArray(optionSchema.allowAluminumColors, hex))}
+        />
 
-        {/* --- 6. Cores do Vidro --- */}
-        <ModernAccordion
+        <ColorPaletteSection
           icon="window"
           title="Acabamentos de Vidro Permitidos"
-          enabled={(optionSchema.allowGlassColors?.length ?? 0) > 0}
-          onToggle={(v) => {
+          colors={GLASS_COLORS}
+          selectedColors={optionSchema.allowGlassColors}
+          isOpen={!!expandedSections.glass}
+          onToggleOpen={() => toggleSection('glass')}
+          onToggleEnabled={(v) => {
             update('allowGlassColors', v ? GLASS_COLORS.map(c => c.hex) : []);
             if (v) setExpandedSections(prev => ({ ...prev, glass: true }));
           }}
-          summary={
-            (optionSchema.allowGlassColors?.length ?? 0) > 0
-              ? `${optionSchema.allowGlassColors?.length} acabamentos ativos`
-              : 'Nenhum vidro disponível'
-          }
-          isOpen={!!expandedSections.glass && (optionSchema.allowGlassColors?.length ?? 0) > 0}
-          onToggleOpen={() => toggleSection('glass')}
-        >
-          <div className="flex flex-wrap gap-2">
-            {GLASS_COLORS.map((c) => {
-              const selected = optionSchema.allowGlassColors?.includes(c.hex);
-              return (
-                <button
-                  key={c.hex}
-                  type="button"
-                  onClick={() => update('allowGlassColors', toggleInArray(optionSchema.allowGlassColors, c.hex))}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all cursor-pointer ${
-                    selected
-                      ? 'border-primary bg-primary/8 text-primary shadow-xs'
-                      : 'border-outline-variant/60 bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container-low'
-                  }`}
-                >
-                  <span
-                    className="w-3.5 h-3.5 rounded-full border border-black/20 shadow-xs"
-                    style={{ backgroundColor: c.hex }}
-                  />
-                  <span>{c.name}</span>
-                  {selected && (
-                    <span className="material-symbols-outlined text-[14px]">check</span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </ModernAccordion>
+          onToggleColor={(hex) => update('allowGlassColors', toggleInArray(optionSchema.allowGlassColors, hex))}
+        />
       </div>
     </section>
   );

@@ -28,7 +28,9 @@ public class TemplateOptionSchema implements Serializable {
     private List<String> allowAluminumColors = new ArrayList<>();
     private List<String> allowGlassColors = new ArrayList<>();
 
-    public TemplateOptionSchema() {}
+    public TemplateOptionSchema() {
+        // Construtor vazio necessário para serialização/desserialização JSON (Jackson)
+    }
 
     public boolean isAllowSlidingMode() {
         return allowSlidingMode;

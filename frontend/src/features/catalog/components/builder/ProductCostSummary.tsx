@@ -24,6 +24,244 @@ interface ProductCostSummaryProps {
   isEditing: boolean;
 }
 
+function getSaveButtonLabel(isPending: boolean, isEditing: boolean): string {
+  if (isPending) return 'Salvando alterações...';
+  return isEditing ? 'Atualizar Esquadria' : 'Salvar Nova Esquadria';
+}
+
+interface CadMockupCardProps {
+  templateType: DoorTemplateType | null;
+  templateConfig: Partial<TemplateConfig>;
+  profileMm: number;
+  aluminumColor: string;
+  glassColor: string;
+  onColorChange: (field: keyof TemplateConfig, value: string) => void;
+}
+
+function CadMockupCard({
+  templateType,
+  templateConfig,
+  profileMm,
+  aluminumColor,
+  glassColor,
+  onColorChange,
+}: CadMockupCardProps) {
+  if (!templateType) {
+    return (
+      <div className="w-full rounded-lg bg-surface-container-low/50 border border-outline-variant/40 flex items-center justify-center p-2 min-h-[220px]">
+        <div className="p-6 text-center flex flex-col items-center gap-2 text-on-surface-variant">
+          <span className="material-symbols-outlined text-[36px] text-primary/40">draw</span>
+          <p className="text-xs font-semibold text-on-surface">Nenhum modelo selecionado</p>
+          <p className="text-[11px] text-on-surface-variant/70 max-w-[200px]">
+            Selecione uma tipologia no catálogo para carregar a maquete 3D/CAD.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const drillingPos = templateConfig.drillingConfig?.drillingPosition || TEMPLATE_DEFAULT_DRILLING_POSITION[templateType] || 'SUPERIOR';
+  const divisionType = templateConfig.drillingConfig?.drillingMode === 'CUSTOM' ? 'CUSTOM_DISTANCE' : 'EQUAL';
+
+  return (
+    <div className="w-full rounded-lg bg-surface-container-low/50 border border-outline-variant/40 flex items-center justify-center p-2 min-h-[220px]">
+      <div className="w-full flex flex-col items-center p-2">
+        {/* Dimensões / Rótulo Superior */}
+        <div className="w-full flex items-center justify-between mb-2 px-1">
+          <span className="text-[11px] font-bold text-on-surface truncate">
+            {DOOR_TEMPLATE_LABELS[templateType]}
+          </span>
+          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-surface-container-highest/60 text-on-surface-variant font-medium">
+            {profileMm}mm • Paramétrico
+          </span>
+        </div>
+
+        {/* Contêiner da Maquete CAD com altura flexível e limpa */}
+        <div className="w-full h-48 flex items-center justify-center overflow-hidden py-1">
+          <WindowSvgPreview
+            templateType={templateType}
+            widthMm={2000}
+            heightMm={2100}
+            aluminumColor={aluminumColor}
+            glassFinish={glassColor}
+            openingDirection={templateConfig.openingDirection || 'LEFT_TO_RIGHT'}
+            handleConfig={templateConfig.handleConfig || { handleType: 'NONE' }}
+            drillingConfig={{
+              holeCount: templateConfig.drillingConfig?.holeCount || 0,
+              drillingPosition: drillingPos,
+              divisionType,
+              customDistancesMm: templateConfig.drillingConfig?.customPositionsMm,
+            }}
+            templateName={DOOR_TEMPLATE_LABELS[templateType]}
+            baseWidth={220}
+            maxHeight={170}
+            minimal={true}
+          />
+        </div>
+
+        {/* Controles Rápidos de Acabamento Integrados */}
+        <div className="w-full mt-2 pt-2.5 border-t border-slate-200/80 flex flex-wrap items-center justify-between gap-2 px-1">
+          {/* Cor do Alumínio */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-[11px] text-on-surface-variant font-medium">Alumínio:</span>
+            <div className="flex items-center gap-1">
+              {ALUMINUM_COLORS.slice(0, 5).map((c) => (
+                <button
+                  key={c.hex}
+                  type="button"
+                  title={c.name}
+                  onClick={() => onColorChange('aluminumColor', c.hex)}
+                  className={`w-4 h-4 rounded-full border transition-all cursor-pointer ${
+                    aluminumColor === c.hex
+                      ? 'border-primary scale-125 ring-2 ring-primary/30 shadow-xs'
+                      : 'border-slate-300 hover:scale-110'
+                  }`}
+                  style={{ backgroundColor: c.hex }}
+                  aria-label={c.name}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Cor do Vidro */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-[11px] text-on-surface-variant font-medium">Vidro:</span>
+            <div className="flex items-center gap-1">
+              {GLASS_COLORS.slice(0, 4).map((c) => (
+                <button
+                  key={c.hex}
+                  type="button"
+                  title={c.name}
+                  onClick={() => onColorChange('glassColor', c.hex)}
+                  className={`w-4 h-4 rounded-full border transition-all cursor-pointer ${
+                    glassColor === c.hex
+                      ? 'border-primary scale-125 ring-2 ring-primary/30 shadow-xs'
+                      : 'border-slate-300 hover:scale-110'
+                  }`}
+                  style={{ backgroundColor: c.hex }}
+                  aria-label={c.name}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+interface CadPreviewOptionsProps {
+  templateConfig: Partial<TemplateConfig>;
+}
+
+function CadPreviewOptions({ templateConfig }: CadPreviewOptionsProps) {
+  const handleCfg = templateConfig.handleConfig;
+  const hasHandle = handleCfg?.handleType && handleCfg.handleType !== 'NONE';
+  const handlePos = handleCfg?.handlePosition || handleCfg?.position;
+  const drillCfg = templateConfig.drillingConfig;
+  const hasDrilling = drillCfg?.holeCount && drillCfg.holeCount > 0;
+
+  return (
+    <div className="pt-2 border-t border-outline-variant/40 flex flex-col gap-1 text-[11px]">
+      <span className="font-semibold text-on-surface-variant uppercase tracking-wider block mb-0.5">
+        Prévia Ativa no CAD
+      </span>
+      <div className="flex flex-wrap items-center gap-1.5 text-on-surface">
+        {hasHandle ? (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-primary/10 text-primary font-medium">
+            <span className="material-symbols-outlined text-[13px]">door_sensor</span>
+            {HANDLE_TYPE_LABELS[handleCfg.handleType] || handleCfg.handleType}
+            {handlePos && (
+              <span className="text-secondary font-normal">
+                ({HANDLE_POSITION_LABELS[handlePos] || handlePos})
+              </span>
+            )}
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-surface-container-highest/60 text-secondary">
+            <span className="material-symbols-outlined text-[13px]">block</span>
+            Sem Puxador
+          </span>
+        )}
+
+        {templateConfig.openingDirection && (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-surface-container-highest/60 text-secondary">
+            <span className="material-symbols-outlined text-[13px]">swipe</span>
+            {OPENING_DIRECTION_LABELS[templateConfig.openingDirection] || templateConfig.openingDirection}
+          </span>
+        )}
+
+        {hasDrilling ? (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-primary/10 text-primary font-medium">
+            <span className="material-symbols-outlined text-[13px]">circle</span>
+            {drillCfg.holeCount} Furos
+            <span className="text-secondary font-normal">
+              ({drillCfg.drillingPosition === 'SUPERIOR'
+                ? 'Superior'
+                : drillCfg.drillingPosition === 'FRONTAL'
+                ? 'Frontal'
+                : 'Lateral'})
+            </span>
+          </span>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+interface CategoryBadgesListProps {
+  categoryRequirements: MaterialCategoryType[];
+}
+
+function CategoryBadgesList({ categoryRequirements }: CategoryBadgesListProps) {
+  return (
+    <div className="pt-2 border-t border-outline-variant/40">
+      <span className="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider block mb-1">
+        Insumos Requeridos ({categoryRequirements.length})
+      </span>
+      {categoryRequirements.length > 0 ? (
+        <div className="flex flex-wrap gap-1">
+          {categoryRequirements.map((cat) => (
+            <span
+              key={cat}
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-surface-container-highest/70 text-on-surface text-[11px] font-medium"
+            >
+              <span className="material-symbols-outlined text-[13px] text-primary">
+                {MATERIAL_CATEGORY_ICONS[cat]}
+              </span>
+              {MATERIAL_CATEGORY_LABELS[cat]}
+            </span>
+          ))}
+        </div>
+      ) : (
+        <span className="text-xs text-error font-medium italic">Nenhum insumo selecionado</span>
+      )}
+    </div>
+  );
+}
+
+interface ValidationAlertProps {
+  name: string;
+  templateType: DoorTemplateType | null;
+  categoryCount: number;
+}
+
+function ValidationAlert({ name, templateType, categoryCount }: ValidationAlertProps) {
+  return (
+    <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-800 text-xs flex flex-col gap-1">
+      <span className="font-semibold flex items-center gap-1">
+        <span className="material-symbols-outlined text-[16px]">info</span>
+        Pendências para salvar:
+      </span>
+      <ul className="list-disc list-inside text-[11px] pl-1 space-y-0.5">
+        {!name.trim() && <li>Preencha o nome comercial</li>}
+        {!templateType && <li>Selecione um modelo de esquadria</li>}
+        {categoryCount === 0 && <li>Marque ao menos um insumo</li>}
+      </ul>
+    </div>
+  );
+}
+
 export function ProductCostSummary({
   name,
   templateType,
@@ -63,107 +301,17 @@ export function ProductCostSummary({
         </div>
 
         {/* Viewport SVG Integrada */}
-        <div className="w-full rounded-lg bg-surface-container-low/50 border border-outline-variant/40 flex items-center justify-center p-2 min-h-[220px]">
-          {templateType ? (
-            <div className="w-full flex flex-col items-center p-2">
-              {/* Dimensões / Rótulo Superior */}
-              <div className="w-full flex items-center justify-between mb-2 px-1">
-                <span className="text-[11px] font-bold text-on-surface truncate">
-                  {DOOR_TEMPLATE_LABELS[templateType]}
-                </span>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-surface-container-highest/60 text-on-surface-variant font-medium">
-                  {profileMm}mm • Paramétrico
-                </span>
-              </div>
-
-              {/* Contêiner da Maquete CAD com altura flexível e limpa */}
-              <div className="w-full h-48 flex items-center justify-center overflow-hidden py-1">
-                <WindowSvgPreview
-                  templateType={templateType}
-                  widthMm={2000}
-                  heightMm={2100}
-                  aluminumColor={aluminumColor}
-                  glassFinish={glassColor}
-                  openingDirection={templateConfig.openingDirection || 'LEFT_TO_RIGHT'}
-                  handleConfig={templateConfig.handleConfig || { handleType: 'NONE' }}
-                  drillingConfig={{
-                    holeCount: templateConfig.drillingConfig?.holeCount || 0,
-                    drillingPosition:
-                      templateConfig.drillingConfig?.drillingPosition ||
-                      (templateType ? TEMPLATE_DEFAULT_DRILLING_POSITION[templateType] : 'SUPERIOR'),
-                    divisionType:
-                      templateConfig.drillingConfig?.drillingMode === 'CUSTOM'
-                        ? 'CUSTOM_DISTANCE'
-                        : 'EQUAL',
-                    customDistancesMm: templateConfig.drillingConfig?.customPositionsMm,
-                  }}
-                  templateName={DOOR_TEMPLATE_LABELS[templateType]}
-                  baseWidth={220}
-                  maxHeight={170}
-                  minimal={true}
-                />
-              </div>
-
-              {/* Controles Rápidos de Acabamento Integrados */}
-              <div className="w-full mt-2 pt-2.5 border-t border-slate-200/80 flex flex-wrap items-center justify-between gap-2 px-1">
-                {/* Cor do Alumínio */}
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[11px] text-on-surface-variant font-medium">Alumínio:</span>
-                  <div className="flex items-center gap-1">
-                    {ALUMINUM_COLORS.slice(0, 5).map((c) => (
-                      <button
-                        key={c.hex}
-                        type="button"
-                        title={c.name}
-                        onClick={() => updateConfig('aluminumColor', c.hex)}
-                        className={`w-4 h-4 rounded-full border transition-all cursor-pointer ${
-                          aluminumColor === c.hex
-                            ? 'border-primary scale-125 ring-2 ring-primary/30 shadow-xs'
-                            : 'border-slate-300 hover:scale-110'
-                        }`}
-                        style={{ backgroundColor: c.hex }}
-                        aria-label={c.name}
-                      />
-                    ))}
-                  </div>
-                </div>
-
-                {/* Cor do Vidro */}
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[11px] text-on-surface-variant font-medium">Vidro:</span>
-                  <div className="flex items-center gap-1">
-                    {GLASS_COLORS.slice(0, 4).map((c) => (
-                      <button
-                        key={c.hex}
-                        type="button"
-                        title={c.name}
-                        onClick={() => updateConfig('glassColor', c.hex)}
-                        className={`w-4 h-4 rounded-full border transition-all cursor-pointer ${
-                          glassColor === c.hex
-                            ? 'border-primary scale-125 ring-2 ring-primary/30 shadow-xs'
-                            : 'border-slate-300 hover:scale-110'
-                        }`}
-                        style={{ backgroundColor: c.hex }}
-                        aria-label={c.name}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="p-6 text-center flex flex-col items-center gap-2 text-on-surface-variant">
-              <span className="material-symbols-outlined text-[36px] text-primary/40">draw</span>
-              <p className="text-xs font-semibold text-on-surface">Nenhum modelo selecionado</p>
-              <p className="text-[11px] text-on-surface-variant/70 max-w-[200px]">
-                Selecione uma tipologia no catálogo para carregar a maquete 3D/CAD.
-              </p>
-            </div>
-          )}
-        </div>
+        <CadMockupCard
+          templateType={templateType}
+          templateConfig={templateConfig}
+          profileMm={profileMm}
+          aluminumColor={aluminumColor}
+          glassColor={glassColor}
+          onColorChange={(field, val) => updateConfig(field, val)}
+        />
 
         {/* Resumo de Especificações */}
-        <div className="flex flex-col gap-3 p-3.5 rounded-xl bg-surface-container-low/40 border border-outline-variant/60">
+        <div className="flex flex-col gap-3 p-3.5 rounded-xl bg-surface-container-low/40 border border-outline-variant/60 mt-4">
           <div>
             <span className="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider block mb-0.5">
               Produto
@@ -179,88 +327,19 @@ export function ProductCostSummary({
             )}
           </div>
 
-          {/* Prévia Ativa das Opções no CAD */}
-          <div className="pt-2 border-t border-outline-variant/40 flex flex-col gap-1 text-[11px]">
-            <span className="font-semibold text-on-surface-variant uppercase tracking-wider block mb-0.5">
-              Prévia Ativa no CAD
-            </span>
-            <div className="flex flex-wrap items-center gap-1.5 text-on-surface">
-              {templateConfig.handleConfig?.handleType && templateConfig.handleConfig.handleType !== 'NONE' ? (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-primary/10 text-primary font-medium">
-                  <span className="material-symbols-outlined text-[13px]">door_sensor</span>
-                  {HANDLE_TYPE_LABELS[templateConfig.handleConfig.handleType] || templateConfig.handleConfig.handleType}
-                  {(templateConfig.handleConfig.handlePosition || templateConfig.handleConfig.position) && (
-                    <span className="text-secondary font-normal">
-                      ({HANDLE_POSITION_LABELS[(templateConfig.handleConfig.handlePosition || templateConfig.handleConfig.position)!] || templateConfig.handleConfig.handlePosition})
-                    </span>
-                  )}
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-surface-container-highest/60 text-secondary">
-                  <span className="material-symbols-outlined text-[13px]">block</span>
-                  Sem Puxador
-                </span>
-              )}
+          <CadPreviewOptions templateConfig={templateConfig} />
 
-              {templateConfig.openingDirection && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-surface-container-highest/60 text-secondary">
-                  <span className="material-symbols-outlined text-[13px]">swipe</span>
-                  {OPENING_DIRECTION_LABELS[templateConfig.openingDirection] || templateConfig.openingDirection}
-                </span>
-              )}
-
-              {templateConfig.drillingConfig?.holeCount && templateConfig.drillingConfig.holeCount > 0 ? (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-primary/10 text-primary font-medium">
-                  <span className="material-symbols-outlined text-[13px]">circle</span>
-                  {templateConfig.drillingConfig.holeCount} Furos
-                  <span className="text-secondary font-normal">
-                    ({templateConfig.drillingConfig.drillingPosition === 'SUPERIOR'
-                      ? 'Superior'
-                      : templateConfig.drillingConfig.drillingPosition === 'FRONTAL'
-                      ? 'Frontal'
-                      : 'Lateral'})
-                  </span>
-                </span>
-              ) : null}
-            </div>
-          </div>
-
-          <div className="pt-2 border-t border-outline-variant/40">
-            <span className="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider block mb-1">
-              Insumos Requeridos ({categoryRequirements.length})
-            </span>
-            {categoryRequirements.length > 0 ? (
-              <div className="flex flex-wrap gap-1">
-                {categoryRequirements.map((cat) => (
-                  <span
-                    key={cat}
-                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-surface-container-highest/70 text-on-surface text-[11px] font-medium"
-                  >
-                    <span className="material-symbols-outlined text-[13px] text-primary">
-                      {MATERIAL_CATEGORY_ICONS[cat]}
-                    </span>
-                    {MATERIAL_CATEGORY_LABELS[cat]}
-                  </span>
-                ))}
-              </div>
-            ) : (
-              <span className="text-xs text-error font-medium italic">Nenhum insumo selecionado</span>
-            )}
-          </div>
+          <CategoryBadgesList categoryRequirements={categoryRequirements} />
         </div>
 
         {/* Mensagens de Validação */}
         {isSaveDisabled && (
-          <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-800 text-xs flex flex-col gap-1">
-            <span className="font-semibold flex items-center gap-1">
-              <span className="material-symbols-outlined text-[16px]">info</span>
-              Pendências para salvar:
-            </span>
-            <ul className="list-disc list-inside text-[11px] pl-1 space-y-0.5">
-              {!name.trim() && <li>Preencha o nome comercial</li>}
-              {!templateType && <li>Selecione um modelo de esquadria</li>}
-              {categoryRequirements.length === 0 && <li>Marque ao menos um insumo</li>}
-            </ul>
+          <div className="mt-4">
+            <ValidationAlert
+              name={name}
+              templateType={templateType}
+              categoryCount={categoryRequirements.length}
+            />
           </div>
         )}
 
@@ -268,16 +347,12 @@ export function ProductCostSummary({
         <button
           onClick={onSave}
           disabled={isSaveDisabled}
-          className="w-full py-3 px-4 bg-primary text-on-primary rounded-xl font-semibold text-sm shadow-sm hover:shadow-md hover:bg-primary-container hover:text-on-primary-container transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+          className="mt-4 w-full py-3 px-4 bg-primary text-on-primary rounded-xl font-semibold text-sm shadow-sm hover:shadow-md hover:bg-primary-container hover:text-on-primary-container transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
         >
           <span className="material-symbols-outlined text-[20px]">
             {isPending ? 'sync' : 'save'}
           </span>
-          {isPending
-            ? 'Salvando alterações...'
-            : isEditing
-            ? 'Atualizar Esquadria'
-            : 'Salvar Nova Esquadria'}
+          {getSaveButtonLabel(isPending, isEditing)}
         </button>
       </div>
     </aside>

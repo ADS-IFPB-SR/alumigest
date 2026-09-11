@@ -10,93 +10,87 @@ export interface HandleElementProps {
   heightMm?: number;
 }
 
-/** Puxador renderizado na folha móvel com suporte a 1 Lado ou 2 Lados (Ambos os Lados) */
-export const HandleElement: React.FC<HandleElementProps> = ({
-  handleConfig,
-  svgH,
-  frameW,
-  posX,
-  mirrored = false,
-  heightMm = 2100,
-}) => {
-  if (handleConfig.handleType === 'NONE') return null;
-
-  const innerH = svgH - frameW * 2;
-  const handleW = 5;
-  let handleH: number;
-  let handleY: number;
-
+function computeHandleHeight(handleConfig: HandleConfig, innerH: number, heightMm: number): number {
   if (handleConfig.coverage === 'FULL') {
-    handleH = innerH * 0.88;
-  } else if (handleConfig.coverage === 'PIECE' && handleConfig.pieceLengthCm) {
+    return innerH * 0.88;
+  }
+  if (handleConfig.coverage === 'PIECE' && handleConfig.pieceLengthCm) {
     const pieceLengthMm = handleConfig.pieceLengthCm * 10;
     const ratio = Math.min(Math.max(pieceLengthMm / Math.max(heightMm || 2100, 100), 0.05), 0.9);
-    handleH = ratio * innerH;
-  } else if (handleConfig.handleType === 'SHELL_LOCK' || handleConfig.handleType === 'LEVER_HANDLE') {
-    handleH = Math.min(20, innerH * 0.15);
-  } else {
-    handleH = innerH * 0.25;
+    return ratio * innerH;
   }
+  if (handleConfig.handleType === 'SHELL_LOCK' || handleConfig.handleType === 'LEVER_HANDLE') {
+    return Math.min(20, innerH * 0.15);
+  }
+  return innerH * 0.25;
+}
 
-  const vPos = handleConfig.handlePosition || handleConfig.position;
+function computeHandleY(vPos: string | undefined, frameW: number, svgH: number, innerH: number, handleH: number): number {
   if (vPos === 'TOP') {
-    handleY = frameW + 10;
-  } else if (vPos === 'BOTTOM') {
-    handleY = svgH - frameW - handleH - 10;
-  } else {
-    handleY = frameW + (innerH - handleH) / 2;
+    return frameW + 10;
   }
+  if (vPos === 'BOTTOM') {
+    return svgH - frameW - handleH - 10;
+  }
+  return frameW + (innerH - handleH) / 2;
+}
 
-  const hx = mirrored ? posX - handleW : posX;
-  const isBothSides = handleConfig.side === 'BOTH_SIDES';
+interface SpecificHandleProps {
+  hx: number;
+  handleW: number;
+  handleY: number;
+  handleH: number;
+  mirrored: boolean;
+  isBothSides: boolean;
+}
 
-  if (handleConfig.handleType === 'SHELL_LOCK') {
-    const cy = handleY + handleH / 2;
-    return (
-      <g>
+const ShellLockHandle: React.FC<SpecificHandleProps> = ({ hx, handleW, handleY, handleH, mirrored, isBothSides }) => {
+  const cy = handleY + handleH / 2;
+  return (
+    <g>
+      <ellipse
+        cx={hx + handleW / 2}
+        cy={cy}
+        rx={handleW / 2 + 1}
+        ry={handleH / 2}
+        fill={HANDLE_COLOR}
+        stroke={HANDLE_STROKE}
+        strokeWidth={0.8}
+      />
+      {isBothSides && (
         <ellipse
-          cx={hx + handleW / 2}
+          cx={mirrored ? hx + handleW + 3 : hx - 3}
           cy={cy}
           rx={handleW / 2 + 1}
           ry={handleH / 2}
           fill={HANDLE_COLOR}
           stroke={HANDLE_STROKE}
-          strokeWidth={0.8}
+          strokeWidth={0.6}
+          opacity={0.4}
+          strokeDasharray="2 1"
         />
-        {isBothSides && (
-          <ellipse
-            cx={mirrored ? hx + handleW + 3 : hx - 3}
-            cy={cy}
-            rx={handleW / 2 + 1}
-            ry={handleH / 2}
-            fill={HANDLE_COLOR}
-            stroke={HANDLE_STROKE}
-            strokeWidth={0.6}
-            opacity={0.4}
-            strokeDasharray="2 1"
-          />
-        )}
-      </g>
-    );
-  }
+      )}
+    </g>
+  );
+};
 
-  if (handleConfig.handleType === 'LEVER_HANDLE') {
-    const hy = handleY + handleH / 2;
-    const dir = mirrored ? 1 : -1;
-    return (
-      <g>
-        <rect x={hx} y={hy - handleW / 2} width={handleW} height={handleW} rx={1} fill={HANDLE_COLOR} stroke={HANDLE_STROKE} strokeWidth={0.8} />
-        <line x1={hx + handleW / 2} y1={hy} x2={hx + handleW / 2 + dir * 8} y2={hy + 6} stroke={HANDLE_COLOR} strokeWidth={2} strokeLinecap="round" />
-        {isBothSides && (
-          <g opacity={0.4}>
-            <line x1={hx + handleW / 2} y1={hy} x2={hx + handleW / 2 - dir * 8} y2={hy + 6} stroke={HANDLE_COLOR} strokeWidth={1.5} strokeDasharray="2 1" strokeLinecap="round" />
-          </g>
-        )}
-      </g>
-    );
-  }
+const LeverHandle: React.FC<SpecificHandleProps> = ({ hx, handleW, handleY, handleH, mirrored, isBothSides }) => {
+  const hy = handleY + handleH / 2;
+  const dir = mirrored ? 1 : -1;
+  return (
+    <g>
+      <rect x={hx} y={hy - handleW / 2} width={handleW} height={handleW} rx={1} fill={HANDLE_COLOR} stroke={HANDLE_STROKE} strokeWidth={0.8} />
+      <line x1={hx + handleW / 2} y1={hy} x2={hx + handleW / 2 + dir * 8} y2={hy + 6} stroke={HANDLE_COLOR} strokeWidth={2} strokeLinecap="round" />
+      {isBothSides && (
+        <g opacity={0.4}>
+          <line x1={hx + handleW / 2} y1={hy} x2={hx + handleW / 2 - dir * 8} y2={hy + 6} stroke={HANDLE_COLOR} strokeWidth={1.5} strokeDasharray="2 1" strokeLinecap="round" />
+        </g>
+      )}
+    </g>
+  );
+};
 
-  // BAR_TUBULAR — Puxador Frontal + Traseiro se Ambos os Lados
+const BarTubularHandle: React.FC<SpecificHandleProps> = ({ hx, handleW, handleY, handleH, mirrored, isBothSides }) => {
   return (
     <g>
       <rect x={hx} y={handleY} width={handleW} height={handleH} rx={handleW / 2} fill={HANDLE_COLOR} stroke={HANDLE_STROKE} strokeWidth={0.8} />
@@ -130,6 +124,39 @@ export const HandleElement: React.FC<HandleElementProps> = ({
       )}
     </g>
   );
+};
+
+/** Puxador renderizado na folha móvel com suporte a 1 Lado ou 2 Lados (Ambos os Lados) */
+export const HandleElement: React.FC<HandleElementProps> = ({
+  handleConfig,
+  svgH,
+  frameW,
+  posX,
+  mirrored = false,
+  heightMm = 2100,
+}) => {
+  if (handleConfig.handleType === 'NONE') return null;
+
+  const innerH = svgH - frameW * 2;
+  const handleW = 5;
+  const handleH = computeHandleHeight(handleConfig, innerH, heightMm);
+  const vPos = handleConfig.handlePosition || handleConfig.position;
+  const handleY = computeHandleY(vPos, frameW, svgH, innerH, handleH);
+
+  const hx = mirrored ? posX - handleW : posX;
+  const isBothSides = handleConfig.side === 'BOTH_SIDES';
+
+  const props: SpecificHandleProps = { hx, handleW, handleY, handleH, mirrored, isBothSides };
+
+  if (handleConfig.handleType === 'SHELL_LOCK') {
+    return <ShellLockHandle {...props} />;
+  }
+
+  if (handleConfig.handleType === 'LEVER_HANDLE') {
+    return <LeverHandle {...props} />;
+  }
+
+  return <BarTubularHandle {...props} />;
 };
 
 export interface HandlePieceDimensionProps {
