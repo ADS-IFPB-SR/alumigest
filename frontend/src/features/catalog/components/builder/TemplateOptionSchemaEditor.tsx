@@ -247,7 +247,12 @@ function DrillingSection({
 }: DrillingSectionProps) {
   const defaultPos = TEMPLATE_DEFAULT_DRILLING_POSITION[templateType] || 'SUPERIOR';
   const currentPos = templateConfig?.drillingConfig?.drillingPosition || defaultPos;
-  const posLabel = currentPos === 'SUPERIOR' ? 'Borda Superior' : currentPos === 'FRONTAL' ? 'Frontal' : 'Lateral';
+  const posMap: Record<string, string> = {
+    SUPERIOR: 'Borda Superior',
+    FRONTAL: 'Frontal',
+    LATERAL: 'Lateral',
+  };
+  const posLabel = posMap[currentPos] || 'Lateral';
 
   const summary = optionSchema.allowDrilling
     ? `${templateConfig?.drillingConfig?.holeCount ?? 2} furos · ${posLabel} · ${optionSchema.allowedDrillingPositions?.length || 0} posições`

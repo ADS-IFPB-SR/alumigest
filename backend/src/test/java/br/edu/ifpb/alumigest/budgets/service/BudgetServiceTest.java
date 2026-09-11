@@ -177,9 +177,10 @@ class BudgetServiceTest {
     @DisplayName("Atualização: Tentativa de alterar orçamento imutável")
     void update_ShouldThrowException_WhenNotDraft() {
         budget.setStatus(BudgetStatus.SENT);
-        when(budgetRepository.findById(budget.getId())).thenReturn(Optional.of(budget));
+        UUID budgetId = budget.getId();
+        when(budgetRepository.findById(budgetId)).thenReturn(Optional.of(budget));
 
-        assertThatThrownBy(() -> budgetService.update(budget.getId(), requestDTO))
+        assertThatThrownBy(() -> budgetService.update(budgetId, requestDTO))
                 .isInstanceOf(BudgetImmutableException.class);
     }
 
@@ -200,11 +201,12 @@ class BudgetServiceTest {
     @DisplayName("Alteração de status: Transição inválida")
     void updateStatus_ShouldThrowException_WhenTransitionIsInvalid() {
         budget.setStatus(BudgetStatus.APPROVED);
-        when(budgetRepository.findById(budget.getId())).thenReturn(Optional.of(budget));
+        UUID budgetId = budget.getId();
+        when(budgetRepository.findById(budgetId)).thenReturn(Optional.of(budget));
         
         BudgetStatusUpdateDTO statusDto = new BudgetStatusUpdateDTO(BudgetStatus.DRAFT);
         
-        assertThatThrownBy(() -> budgetService.updateStatus(budget.getId(), statusDto))
+        assertThatThrownBy(() -> budgetService.updateStatus(budgetId, statusDto))
                 .isInstanceOf(InvalidBudgetStatusTransitionException.class);
     }
 

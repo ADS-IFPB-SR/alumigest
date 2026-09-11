@@ -344,15 +344,21 @@ function deriveHandleTypeFromMaterial(mat: { name: string }, currentType: Handle
   return currentType;
 }
 
+function parseDimensionValue(val: number | string | undefined): number {
+  if (typeof val === 'number') return val;
+  if (typeof val === 'string') return Number.parseFloat(val) || 0;
+  return 0;
+}
+
 function validateStep1Dimensions(
   widthMm: number | string | undefined,
   heightMm: number | string | undefined,
   quantity: number | string | undefined,
 ): Record<string, string> {
   const errors: Record<string, string> = {};
-  const w = typeof widthMm === 'number' ? widthMm : typeof widthMm === 'string' ? parseFloat(widthMm) || 0 : 0;
-  const h = typeof heightMm === 'number' ? heightMm : typeof heightMm === 'string' ? parseFloat(heightMm) || 0 : 0;
-  const qty = typeof quantity === 'number' ? quantity : typeof quantity === 'string' ? parseFloat(quantity) || 0 : 0;
+  const w = parseDimensionValue(widthMm);
+  const h = parseDimensionValue(heightMm);
+  const qty = parseDimensionValue(quantity);
 
   if (w <= 0) errors.widthMm = 'Largura obrigatória';
   if (h <= 0) errors.heightMm = 'Altura obrigatória';

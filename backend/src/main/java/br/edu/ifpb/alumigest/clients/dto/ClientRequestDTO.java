@@ -17,7 +17,7 @@ public record ClientRequestDTO(
         @Schema(description = "Tipo de pessoa (FISICA ou JURIDICA). Padrão: FISICA", example = "FISICA")
         PersonType personType,
 
-        @Pattern(regexp = "^$|^(\\d{11}|\\d{14}|\\d{3}\\.\\d{3}\\.\\d{3}-\\d{2}|\\d{2}\\.\\d{3}\\.\\d{3}/\\d{4}-\\d{2})$",
+        @Pattern(regexp = "^$|^\\d{11}$|^\\d{14}$|^\\d{3}\\.\\d{3}\\.\\d{3}-\\d{2}$|^\\d{2}\\.\\d{3}\\.\\d{3}/\\d{4}-\\d{2}$",
                  message = "Documento com formato inválido (deve ser CPF ou CNPJ)")
         @Schema(description = "Número do documento (CPF para Física, CNPJ para Jurídica)", example = "123.456.789-00")
         String documento,

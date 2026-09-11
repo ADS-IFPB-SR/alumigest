@@ -42,15 +42,15 @@ class BudgetTest {
 
     @Test
     @DisplayName("Deve atualizar updatedAt no onUpdate")
-    void onUpdate_ShouldRefreshUpdatedAt() throws InterruptedException {
+    void onUpdate_ShouldRefreshUpdatedAt() {
         Budget budget = new Budget();
         budget.onCreate();
         OffsetDateTime initialUpdatedAt = budget.getUpdatedAt();
 
-        Thread.sleep(10);
         budget.onUpdate();
 
-        assertTrue(budget.getUpdatedAt().isAfter(initialUpdatedAt) || budget.getUpdatedAt().isEqual(initialUpdatedAt));
+        assertNotNull(budget.getUpdatedAt());
+        assertFalse(budget.getUpdatedAt().isBefore(initialUpdatedAt));
     }
 
     @Test

@@ -73,7 +73,11 @@ public class BudgetQuantityService {
         option.setUnitMeasure(material.getUnitMeasure() != null ? material.getUnitMeasure().name() : "");
 
         BigDecimal calculatedQty = computeQuantity(item, option, template);
-        option.setQuantity(calculatedQty != null ? calculatedQty : (option.getQuantity() != null ? option.getQuantity() : BigDecimal.ZERO));
+        if (calculatedQty != null) {
+            option.setQuantity(calculatedQty);
+        } else if (option.getQuantity() == null) {
+            option.setQuantity(BigDecimal.ZERO);
+        }
     }
 
     private BigDecimal computeQuantity(BudgetItem item, BudgetItemOption option, TemplateType template) {

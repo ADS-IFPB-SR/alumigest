@@ -157,8 +157,20 @@ class ClientServiceTest {
     void findAll_ShouldReturnPaginatedClients() {
         // Arrange
         Pageable pageable = PageRequest.of(0, 10);
-        Client client = new Client("João da Silva", PersonType.FISICA, "123.456.789-00", "(83) 99999-0000", "joao@email.com",
-                "58300-000", "Rua das Flores", "123", "Casa", "Centro", "Santa Rita", "PB", null);
+        Client client = Client.builder()
+                .fullName("João da Silva")
+                .personType(PersonType.FISICA)
+                .documentNumber("123.456.789-00")
+                .phone("(83) 99999-0000")
+                .email("joao@email.com")
+                .zipCode("58300-000")
+                .street("Rua das Flores")
+                .number("123")
+                .complement("Casa")
+                .neighborhood("Centro")
+                .city("Santa Rita")
+                .state("PB")
+                .build();
         client.setId(UUID.randomUUID());
 
         Page<Client> page = new PageImpl<>(List.of(client), pageable, 1);
@@ -180,8 +192,21 @@ class ClientServiceTest {
     void findById_ShouldReturnClient_WhenIdExists() {
         // Arrange
         UUID id = UUID.randomUUID();
-        Client client = new Client("Maria Souza", PersonType.FISICA, "987.654.321-99", "(83) 98888-7777", "maria@email.com",
-                "58000-000", "Av Principal", "456", "Apto 2", "Manaíra", "João Pessoa", "PB", "Obs");
+        Client client = Client.builder()
+                .fullName("Maria Souza")
+                .personType(PersonType.FISICA)
+                .documentNumber("987.654.321-99")
+                .phone("(83) 98888-7777")
+                .email("maria@email.com")
+                .zipCode("58000-000")
+                .street("Av Principal")
+                .number("456")
+                .complement("Apto 2")
+                .neighborhood("Manaíra")
+                .city("João Pessoa")
+                .state("PB")
+                .notes("Obs")
+                .build();
         client.setId(id);
 
         when(clientRepository.findById(id)).thenReturn(Optional.of(client));
@@ -213,7 +238,11 @@ class ClientServiceTest {
     void update_ShouldUpdateAndReturnClient_WhenValid() {
         // Arrange
         UUID id = UUID.randomUUID();
-        Client client = new Client("Nome Antigo", PersonType.FISICA, "111.222.333-44", null, null, null, null, null, null, null, null, null, null);
+        Client client = Client.builder()
+                .fullName("Nome Antigo")
+                .personType(PersonType.FISICA)
+                .documentNumber("111.222.333-44")
+                .build();
         client.setId(id);
 
         ClientRequestDTO updateRequest = new ClientRequestDTO(
@@ -251,7 +280,11 @@ class ClientServiceTest {
     void update_ShouldThrowConflict_WhenDocumentBelongsToAnotherClient() {
         // Arrange
         UUID id = UUID.randomUUID();
-        Client client = new Client("Nome", PersonType.FISICA, "111.222.333-44", null, null, null, null, null, null, null, null, null, null);
+        Client client = Client.builder()
+                .fullName("Nome")
+                .personType(PersonType.FISICA)
+                .documentNumber("111.222.333-44")
+                .build();
         client.setId(id);
 
         ClientRequestDTO updateRequest = new ClientRequestDTO(
@@ -275,7 +308,10 @@ class ClientServiceTest {
     void toggleStatus_ShouldInvertIsActiveStatus() {
         // Arrange
         UUID id = UUID.randomUUID();
-        Client client = new Client("Cliente Teste", PersonType.FISICA, null, null, null, null, null, null, null, null, null, null, null);
+        Client client = Client.builder()
+                .fullName("Cliente Teste")
+                .personType(PersonType.FISICA)
+                .build();
         client.setId(id);
         client.setActive(true);
 

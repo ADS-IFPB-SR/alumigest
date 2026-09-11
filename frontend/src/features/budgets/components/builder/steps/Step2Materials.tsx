@@ -3,6 +3,27 @@ import type { MaterialSelection, CategoryType } from '../../../types';
 import type { GlassDTO, ProfileDTO, HardwareDTO, FilmDTO } from '../../../../catalog/types';
 import { formatBRL } from '../../../utils/calculations';
 
+function getDefaultUnitMeasure(categoryType: string): string {
+  if (categoryType === 'GLASS' || categoryType === 'FILM') return 'm²';
+  if (categoryType === 'PROFILE') return 'm';
+  return 'un';
+}
+
+function formatMaterialDisplayPrice(
+  categoryPrice: number | undefined,
+  materialId: string | undefined,
+  unitPrice: number,
+  unitMeasure: string,
+): string {
+  if (categoryPrice !== undefined) {
+    return formatBRL(categoryPrice);
+  }
+  if (materialId) {
+    return `${formatBRL(unitPrice)} / ${unitMeasure}`;
+  }
+  return '—';
+}
+
 export interface Step2MaterialsProps {
   aluminumColor?: string;
   glassFinish?: string;
@@ -176,7 +197,7 @@ export const Step2Materials: React.FC<Step2MaterialsProps> = ({
               }
 
               const categoryPrice = sel.totalPrice;
-              const unitMeasure = sel.unitMeasure ?? (categoryType === 'GLASS' || categoryType === 'FILM' ? 'm²' : categoryType === 'PROFILE' ? 'm' : 'un');
+              const unitMeasure = sel.unitMeasure ?? getDefaultUnitMeasure(categoryType);
 
               return (
                 <div
@@ -187,16 +208,12 @@ export const Step2Materials: React.FC<Step2MaterialsProps> = ({
                     <div className="flex items-center gap-xs min-w-0">
                       <span className="material-symbols-outlined text-[18px] text-primary">{iconName}</span>
                       <span className="text-sm font-label font-semibold text-on-surface truncate">
-                        {sel.label} {sel.isOptional && <span className="text-on-surface-variant font-normal text-xs">(Opcional)</span>}
+                        {sel.label}{' '}{sel.isOptional && <span className="text-on-surface-variant font-normal text-xs">(Opcional)</span>}
                       </span>
                     </div>
                     <div className="flex items-center gap-xs shrink-0">
                       <span className="font-data-mono font-bold text-primary text-sm sm:text-base">
-                        {categoryPrice !== undefined
-                          ? formatBRL(categoryPrice)
-                          : sel.materialId
-                          ? `${formatBRL(sel.unitPrice)} / ${unitMeasure}`
-                          : '—'}
+                        {formatMaterialDisplayPrice(categoryPrice, sel.materialId, sel.unitPrice, unitMeasure)}
                       </span>
                       {sel.isOptional && (
                         <button

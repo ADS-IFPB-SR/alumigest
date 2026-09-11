@@ -23,6 +23,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     <>
       {isOpen && (
         <button 
+          type="button"
           onClick={onClose}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onClose(); }}
           aria-label="Fechar menu"
@@ -44,6 +45,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             </p>
           </div>
           <button 
+            type="button"
             onClick={onClose}
             className="lg:hidden p-xs text-on-surface-variant hover:bg-surface-container-high rounded-full"
           >
@@ -73,11 +75,11 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         </nav>
 
         <div className="mt-auto flex flex-col gap-xs border-t border-outline-variant pt-sm">
-          <button className="flex items-center gap-sm px-sm py-xs text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high rounded-md transition-colors text-xs cursor-pointer">
+          <button type="button" className="flex items-center gap-sm px-sm py-xs text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high rounded-md transition-colors text-xs cursor-pointer">
             <span className="material-symbols-outlined text-[18px]">support</span>
             <span className="font-body">Suporte</span>
           </button>
-          <button className="flex items-center gap-sm px-sm py-xs text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high rounded-md transition-colors text-xs cursor-pointer">
+          <button type="button" className="flex items-center gap-sm px-sm py-xs text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high rounded-md transition-colors text-xs cursor-pointer">
             <span className="material-symbols-outlined text-[18px]">logout</span>
             <span className="font-body">Sair</span>
           </button>

@@ -27,16 +27,27 @@ function computeSingleLeafHandle(
   };
 }
 
-function renderSingleLeafSwingDoor(
-  svgW: number,
-  svgH: number,
-  inverted: boolean,
-  handleConfig: HandleConfig,
-  drillingConfig: DrillingConfig,
-  widthMm: number,
-  heightMm: number,
-  theme: SvgTheme,
-) {
+interface SwingDoorRenderProps {
+  svgW: number;
+  svgH: number;
+  inverted?: boolean;
+  handleConfig: HandleConfig;
+  drillingConfig: DrillingConfig;
+  widthMm: number;
+  heightMm: number;
+  theme: SvgTheme;
+}
+
+function renderSingleLeafSwingDoor({
+  svgW,
+  svgH,
+  inverted = false,
+  handleConfig,
+  drillingConfig,
+  widthMm,
+  heightMm,
+  theme,
+}: SwingDoorRenderProps) {
   const fw = FRAME_W;
   const innerW = svgW - fw * 2;
   const innerH = svgH - fw * 2;
@@ -74,15 +85,15 @@ function renderSingleLeafSwingDoor(
   );
 }
 
-function renderDoubleLeafSwingDoor(
-  svgW: number,
-  svgH: number,
-  handleConfig: HandleConfig,
-  drillingConfig: DrillingConfig,
-  widthMm: number,
-  heightMm: number,
-  theme: SvgTheme,
-) {
+function renderDoubleLeafSwingDoor({
+  svgW,
+  svgH,
+  handleConfig,
+  drillingConfig,
+  widthMm,
+  heightMm,
+  theme,
+}: SwingDoorRenderProps) {
   const fw = FRAME_W;
   const innerW = svgW - fw * 2;
   const innerH = svgH - fw * 2;
@@ -126,26 +137,20 @@ export function renderSwingDoor(
   widthMm: number, heightMm: number,
   theme: SvgTheme,
 ) {
-  if (leafCount === 1) {
-    return renderSingleLeafSwingDoor(
-      svgW,
-      svgH,
-      inverted,
-      handleConfig,
-      drillingConfig,
-      widthMm,
-      heightMm,
-      theme,
-    );
-  }
-
-  return renderDoubleLeafSwingDoor(
+  const props: SwingDoorRenderProps = {
     svgW,
     svgH,
+    inverted,
     handleConfig,
     drillingConfig,
     widthMm,
     heightMm,
     theme,
-  );
+  };
+
+  if (leafCount === 1) {
+    return renderSingleLeafSwingDoor(props);
+  }
+
+  return renderDoubleLeafSwingDoor(props);
 }
