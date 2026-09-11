@@ -88,8 +88,9 @@ export const ProductPickerModal: React.FC<ProductPickerModalProps> = ({
       aria-labelledby="product-picker-title"
     >
       {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-scrim/60 backdrop-blur-xs transition-opacity cursor-pointer"
+      <button
+        type="button"
+        className="fixed inset-0 w-full h-full bg-scrim/60 backdrop-blur-xs transition-opacity cursor-pointer border-0"
         onClick={onClose}
         tabIndex={-1}
         aria-label="Fechar fundo do modal"
