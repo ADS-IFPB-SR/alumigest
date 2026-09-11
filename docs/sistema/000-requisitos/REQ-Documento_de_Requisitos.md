@@ -105,17 +105,17 @@ O sistema AlumiGest cobre os módulos de Cadastros, Orçamentos, Pedidos/PCP, Es
 | RF-022 | O sistema deve permitir criar um orçamento vinculado a um cliente, com data de criação automática e data de validade configurável (padrão: 15 dias). | 🔴 Must | R1 |
 | RF-023 | O sistema deve gerar um número sequencial único para cada orçamento no formato `ORC-YYYYMMDD-NNNN`. | 🔴 Must | R1 |
 | RF-024 | O sistema deve permitir adicionar itens ao orçamento, selecionando o tipo de produto (porta de correr, janela de correr, janela Max-ar, box de banheiro, espelho, porta de abrir, etc.). | 🔴 Must | R1 |
-| RF-025 | O sistema deve solicitar as medidas (largura × altura em cm) para cada item adicionado. | 🔴 Must | R1 |
-| RF-026 | O sistema deve **calcular automaticamente a área de vidro** (m²) = (largura_cm / 100) × (altura_cm / 100), multiplicando pelo preço/m² do vidro selecionado. | 🔴 Must | R1 |
+| RF-025 | O sistema deve solicitar as medidas nominais (largura × altura em mm) para cada item adicionado. | 🔴 Must | R1 |
+| RF-026 | O sistema deve **calcular automaticamente a área de vidro** (m²) = (largura_mm / 1000) × (altura_mm / 1000), multiplicando pelo preço/m² do vidro selecionado e aplicando a área mínima de faturamento de 0,25 m² (`RN-V03`). | 🔴 Must | R1 |
 | RF-027 | O sistema deve **calcular automaticamente o consumo de perfis de alumínio** (metro linear) com base na composição do tipo de produto e nas medidas informadas. | 🔴 Must | R1 |
 | RF-028 | O sistema deve **incluir automaticamente as ferragens** necessárias com base no tipo de produto e suas quantidades padrão definidas no catálogo. | 🔴 Must | R1 |
 | RF-029 | O sistema deve calcular automaticamente a área de película (quando aplicável) usando a mesma fórmula de área do vidro × preço/m² da película. | 🟡 Should | R1 |
-| RF-030 | O sistema deve permitir aplicar **desconto percentual** (0% a 100%) por item ou no total do orçamento. | 🔴 Must | R1 |
+| RF-030 | O sistema deve permitir aplicar **desconto comercial em percentual (%) ou valor fixo (R$)** com autonomia total do vendedor, além de taxas adicionais (instalação/frete). | 🔴 Must | R1 |
 | RF-031 | O sistema deve exibir em tempo real: subtotal por item, total de descontos, e valor final do orçamento. | 🔴 Must | R1 |
 | RF-032 | O sistema deve permitir duplicar um orçamento existente para criar um novo com os mesmos itens. | 🟢 Could | R1 |
 | RF-033 | O sistema deve gerar **PDF do orçamento COM valores** (proposta comercial), incluindo: dados da empresa, dados do cliente, lista de itens com medidas e preços, descontos, total e condições. | 🔴 Must | R1 |
 | RF-034 | O sistema deve gerar **PDF do orçamento SEM valores** (uso interno/produção), contendo apenas descrição dos itens e medidas. | 🔴 Must | R1 |
-| RF-035 | O sistema deve manter os status do orçamento: **Rascunho** → **Enviado** → **Aprovado** / **Recusado** / **Expirado**. | 🔴 Must | R1 |
+| RF-035 | O sistema deve manter os status do orçamento: **Rascunho (`DRAFT`)** → **Enviado (`SENT`)** → **Aprovado (`APPROVED`)** / **Recusado (`REJECTED`)** / **Expirado (`EXPIRED`)** / **Cancelado (`CANCELLED`)**, congelando os valores na aprovação (`RN-CONG01`). | 🔴 Must | R1 |
 
 ### 2.6 Módulo de Pedidos e PCP
 
