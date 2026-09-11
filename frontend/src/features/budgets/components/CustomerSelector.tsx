@@ -64,6 +64,11 @@ interface CustomerDropdownProps {
   onOpenCreateModal: () => void;
 }
 
+function formatCustomerLocation(cidade?: string, uf?: string): string {
+  if (!cidade) return '';
+  return uf ? ` · ${cidade}/${uf}` : ` · ${cidade}`;
+}
+
 const CustomerSearchResultsDropdown: React.FC<CustomerDropdownProps> = ({
   isLoading,
   customers,
@@ -121,10 +126,11 @@ const CustomerSearchResultsDropdown: React.FC<CustomerDropdownProps> = ({
             <p className="font-label font-semibold text-on-surface group-hover:text-primary text-sm">
               {customer.nomeCompleto}
             </p>
+
             <p className="text-xs text-on-surface-variant font-data-mono truncate mt-[2px]">
               {customer.documento ? `Doc: ${customer.documento}` : 'Sem doc'}
               {customer.telefone ? ` · ${customer.telefone}` : ''}
-              {customer.cidade ? ` · ${customer.cidade}${customer.uf ? `/${customer.uf}` : ''}` : ''}
+              {formatCustomerLocation(customer.cidade, customer.uf)}
             </p>
           </div>
         </button>

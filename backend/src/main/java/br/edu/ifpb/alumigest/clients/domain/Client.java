@@ -95,23 +95,108 @@ public class Client {
     public Client() {
     }
 
-    public Client(String fullName, PersonType personType, String documentNumber, String phone, String email,
-                  String zipCode, String street, String number, String complement,
-                  String neighborhood, String city, String state, String notes) {
-        this.fullName = fullName;
-        this.personType = personType != null ? personType : PersonType.FISICA;
-        this.documentNumber = documentNumber;
-        this.phone = phone;
-        this.email = email;
-        this.zipCode = zipCode;
-        this.street = street;
-        this.number = number;
-        this.complement = complement;
-        this.neighborhood = neighborhood;
-        this.city = city;
-        this.state = state;
-        this.notes = notes;
-        this.isActive = true;
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+        private String fullName;
+        private PersonType personType = PersonType.FISICA;
+        private String documentNumber;
+        private String phone;
+        private String email;
+        private String zipCode;
+        private String street;
+        private String number;
+        private String complement;
+        private String neighborhood;
+        private String city;
+        private String state;
+        private String notes;
+
+        public Builder fullName(String fullName) {
+            this.fullName = fullName;
+            return this;
+        }
+
+        public Builder personType(PersonType personType) {
+            this.personType = personType;
+            return this;
+        }
+
+        public Builder documentNumber(String documentNumber) {
+            this.documentNumber = documentNumber;
+            return this;
+        }
+
+        public Builder phone(String phone) {
+            this.phone = phone;
+            return this;
+        }
+
+        public Builder email(String email) {
+            this.email = email;
+            return this;
+        }
+
+        public Builder zipCode(String zipCode) {
+            this.zipCode = zipCode;
+            return this;
+        }
+
+        public Builder street(String street) {
+            this.street = street;
+            return this;
+        }
+
+        public Builder number(String number) {
+            this.number = number;
+            return this;
+        }
+
+        public Builder complement(String complement) {
+            this.complement = complement;
+            return this;
+        }
+
+        public Builder neighborhood(String neighborhood) {
+            this.neighborhood = neighborhood;
+            return this;
+        }
+
+        public Builder city(String city) {
+            this.city = city;
+            return this;
+        }
+
+        public Builder state(String state) {
+            this.state = state;
+            return this;
+        }
+
+        public Builder notes(String notes) {
+            this.notes = notes;
+            return this;
+        }
+
+        public Client build() {
+            Client client = new Client();
+            client.setFullName(this.fullName);
+            client.setPersonType(this.personType != null ? this.personType : PersonType.FISICA);
+            client.setDocumentNumber(this.documentNumber);
+            client.setPhone(this.phone);
+            client.setEmail(this.email);
+            client.setZipCode(this.zipCode);
+            client.setStreet(this.street);
+            client.setNumber(this.number);
+            client.setComplement(this.complement);
+            client.setNeighborhood(this.neighborhood);
+            client.setCity(this.city);
+            client.setState(this.state);
+            client.setNotes(this.notes);
+            client.setActive(true);
+            return client;
+        }
     }
 
     @PrePersist

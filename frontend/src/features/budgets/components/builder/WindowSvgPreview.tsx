@@ -10,6 +10,12 @@ import { getSvgTheme } from '../../utils/svgTheme';
 import type { SvgTheme } from '../../utils/svgTheme';
 
 import { FRAME_W } from './svg/svgConstants';
+
+const DRILLING_POS_LABELS: Record<string, string> = {
+  SUPERIOR: 'Borda Superior',
+  FRONTAL: 'Frontal',
+  LATERAL: 'Lateral',
+};
 import { SvgDefs } from './svg/SvgDefs';
 import { HorizontalDimension, VerticalDimension } from './svg/SvgDimensions';
 import {
@@ -169,24 +175,24 @@ const WindowSvgPreviewComponent: React.FC<WindowSvgPreviewProps> = ({
     <>
       <span className="flex items-center gap-1">
         <span className="inline-block w-3 h-3 rounded-sm" style={{ background: theme.glassFill, border: `1px solid ${theme.glassStroke}` }} />
-        Móvel
+        <span>Móvel</span>
       </span>
       <span className="flex items-center gap-1">
         <span className="inline-block w-3 h-3 rounded-sm" style={{ background: theme.fixedGlassFill, border: `1px solid ${theme.glassStroke}` }} />
-        Fixo
+        <span>Fixo</span>
       </span>
       {handleConfig.handleType !== 'NONE' && (
         <span className="flex items-center gap-1 text-primary">
           <span className="material-symbols-outlined text-[14px]">hardware</span>
-          {handleConfig.side === 'BOTH_SIDES' ? 'Puxador 2 Lados' : 'Puxador 1 Lado'}
+          <span>{handleConfig.side === 'BOTH_SIDES' ? 'Puxador 2 Lados' : 'Puxador 1 Lado'}</span>
         </span>
       )}
       {drillingConfig.holeCount > 0 && (
         <span className="flex items-center gap-1">
           <span className="inline-block w-2 h-2 rounded-full bg-on-surface" />
-          {drillingConfig.holeCount} Furo{drillingConfig.holeCount > 1 ? 's' : ''}
+          <span>{drillingConfig.holeCount} Furo{drillingConfig.holeCount > 1 ? 's' : ''}</span>
           {drillingConfig.drillingPosition &&
-            ` (${drillingConfig.drillingPosition === 'SUPERIOR' ? 'Borda Superior' : drillingConfig.drillingPosition === 'FRONTAL' ? 'Frontal' : 'Lateral'})`}
+            <span>{` (${DRILLING_POS_LABELS[drillingConfig.drillingPosition] || 'Lateral'})`}</span>}
         </span>
       )}
     </>

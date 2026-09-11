@@ -57,6 +57,7 @@ export function MaterialPickerModal({ isOpen, onClose, onSelect, materials, adde
                 return (
                   <li key={material.id}>
                     <button
+                      type="button"
                       onClick={() => !isAdded && onSelect(material)}
                       disabled={isAdded}
                       className={`w-full text-left px-md py-sm focus:outline-none transition-colors ${

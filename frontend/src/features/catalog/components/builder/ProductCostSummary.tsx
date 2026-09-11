@@ -13,6 +13,12 @@ import {
   GLASS_COLORS,
 } from '../../types/templates';
 
+const DRILLING_POSITION_LABELS: Record<string, string> = {
+  SUPERIOR: 'Superior',
+  FRONTAL: 'Frontal',
+  LATERAL: 'Lateral',
+};
+
 interface ProductCostSummaryProps {
   name: string;
   templateType: DoorTemplateType | null;
@@ -196,11 +202,7 @@ function CadPreviewOptions({ templateConfig }: CadPreviewOptionsProps) {
             <span className="material-symbols-outlined text-[13px]">circle</span>
             {drillCfg.holeCount} Furos
             <span className="text-secondary font-normal">
-              ({drillCfg.drillingPosition === 'SUPERIOR'
-                ? 'Superior'
-                : drillCfg.drillingPosition === 'FRONTAL'
-                ? 'Frontal'
-                : 'Lateral'})
+              ({DRILLING_POSITION_LABELS[drillCfg.drillingPosition] || 'Lateral'})
             </span>
           </span>
         ) : null}
@@ -345,6 +347,7 @@ export function ProductCostSummary({
 
         {/* Ação Primária */}
         <button
+          type="button"
           onClick={onSave}
           disabled={isSaveDisabled}
           className="mt-4 w-full py-3 px-4 bg-primary text-on-primary rounded-xl font-semibold text-sm shadow-sm hover:shadow-md hover:bg-primary-container hover:text-on-primary-container transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"

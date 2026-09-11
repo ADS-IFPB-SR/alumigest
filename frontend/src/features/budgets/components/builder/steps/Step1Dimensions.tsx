@@ -110,7 +110,7 @@ export const Step1Dimensions: React.FC<Step1DimensionsProps> = ({
           <span className="material-symbols-outlined text-[24px] text-primary">straighten</span>
           <div>
             <div className="text-sm font-body text-on-surface">
-              Área unitária do vão: <strong className="font-data-mono font-bold text-base">{unitAreaM2} m²</strong>
+              Área unitária do vão:{' '}<strong className="font-data-mono font-bold text-base">{unitAreaM2} m²</strong>
             </div>
             {totalQty > 1 && (
               <div className="text-xs font-data-mono text-secondary">

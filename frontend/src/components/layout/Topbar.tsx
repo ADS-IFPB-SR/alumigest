@@ -30,6 +30,7 @@ export function Topbar({ onMenuClick }: TopbarProps) {
         {/* Mobile Menu Toggle Button */}
         <div className="flex items-center gap-sm">
           <button 
+            type="button"
             onClick={onMenuClick}
             className="lg:hidden text-primary p-xs hover:bg-surface-container-high rounded-md transition-colors"
             aria-label="Abrir menu"
@@ -45,6 +46,7 @@ export function Topbar({ onMenuClick }: TopbarProps) {
         <div className="flex items-center gap-xs sm:gap-sm ml-auto">
           {/* Desktop Theme Toggle and Notifications */}
           <button 
+            type="button"
             onClick={toggleTheme}
             className="p-xs sm:p-xs text-secondary hover:bg-surface-container-high rounded-full transition-colors flex items-center justify-center cursor-pointer"
             title={isDarkMode ? "Modo Claro" : "Modo Escuro"}
@@ -55,7 +57,7 @@ export function Topbar({ onMenuClick }: TopbarProps) {
           </button>
 
           {/* Notification Icon */}
-          <button className="relative p-xs sm:p-xs text-secondary hover:bg-surface-container-high rounded-full transition-colors flex items-center justify-center cursor-pointer">
+          <button type="button" className="relative p-xs sm:p-xs text-secondary hover:bg-surface-container-high rounded-full transition-colors flex items-center justify-center cursor-pointer">
             <span className="material-symbols-outlined text-[20px]">notifications</span>
             <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-error rounded-full border-2 border-surface-container-lowest"></span>
           </button>
@@ -63,7 +65,7 @@ export function Topbar({ onMenuClick }: TopbarProps) {
           <div className="w-px h-6 bg-outline-variant mx-xs"></div>
 
           {/* User Profile */}
-          <button className="flex items-center gap-sm hover:bg-surface-container-high p-xs sm:p-xs rounded-md transition-colors cursor-pointer group">
+          <button type="button" className="flex items-center gap-sm hover:bg-surface-container-high p-xs sm:p-xs rounded-md transition-colors cursor-pointer group">
             <div className="w-8 h-8 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold text-xs shadow-sm overflow-hidden group-hover:border-primary transition-colors">
               <span className="material-symbols-outlined text-[20px]">person</span>
             </div>

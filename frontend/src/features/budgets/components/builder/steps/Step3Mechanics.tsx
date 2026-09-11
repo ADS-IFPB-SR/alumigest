@@ -29,6 +29,18 @@ export interface Step3MechanicsProps {
   onNotesChange: (notes: string) => void;
 }
 
+function formatHoleCountLabel(holeCount: number): string {
+  if (holeCount === 0) return 'Sem furação';
+  const unit = holeCount === 1 ? 'furo' : 'furos';
+  return `${holeCount} ${unit}`;
+}
+
+function getHoleGridColsClass(holeCount: number): string {
+  if (holeCount === 1) return 'grid-cols-1';
+  if (holeCount === 3) return 'grid-cols-3';
+  return 'grid-cols-2';
+}
+
 export const Step3Mechanics: React.FC<Step3MechanicsProps> = ({
   openingDirection,
   supportedDirections,
@@ -187,9 +199,7 @@ export const Step3Mechanics: React.FC<Step3MechanicsProps> = ({
             Furação do Vidro
           </h3>
           <span className="text-xs font-data-mono text-on-surface-variant bg-surface-container px-2 py-0.5 rounded border border-outline-variant/50">
-            {drillingConfig.holeCount === 0
-              ? 'Sem furação'
-              : `${drillingConfig.holeCount} ${drillingConfig.holeCount === 1 ? 'furo' : 'furos'}`}
+            {formatHoleCountLabel(drillingConfig.holeCount)}
           </span>
         </div>
 
@@ -241,15 +251,7 @@ export const Step3Mechanics: React.FC<Step3MechanicsProps> = ({
                 Topo até base (máx {typeof heightMm === 'number' ? heightMm : defaultHeight} mm)
               </span>
             </div>
-            <div
-              className={`grid ${
-                drillingConfig.holeCount === 1
-                  ? 'grid-cols-1'
-                  : drillingConfig.holeCount === 3
-                  ? 'grid-cols-3'
-                  : 'grid-cols-2'
-              } gap-sm mt-xs`}
-            >
+            <div className={`grid ${getHoleGridColsClass(drillingConfig.holeCount)} gap-sm mt-xs`}>
               {Array.from({ length: drillingConfig.holeCount }, (_, i) => {
                 const holeNum = i + 1;
                 const val = holeDistanceInputs[i] ?? '';

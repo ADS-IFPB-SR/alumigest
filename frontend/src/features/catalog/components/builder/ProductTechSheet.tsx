@@ -30,7 +30,7 @@ export function ProductTechSheet({ items, setItems, materials }: ProductTechShee
       toast.error('Este insumo já está na ficha técnica.');
       return;
     }
-    setItems([...items, { tempId: Math.random().toString(36).slice(2), materialId: material.id, quantity: '' }]);
+    setItems([...items, { tempId: crypto.randomUUID(), materialId: material.id, quantity: '' }]);
     setIsPickerOpen(false);
   };
 
@@ -100,7 +100,10 @@ export function ProductTechSheet({ items, setItems, materials }: ProductTechShee
         ) : (
           items.map((item, index) => {
             const materialInfo = item.materialId ? materialsMap.get(item.materialId) : null;
-            const refCost = materialInfo ? (materialInfo.costPrice > 0 ? materialInfo.costPrice : materialInfo.salePrice) : 0;
+            let refCost = 0;
+            if (materialInfo) {
+              refCost = materialInfo.costPrice > 0 ? materialInfo.costPrice : materialInfo.salePrice;
+            }
             const unit = materialInfo ? materialInfo.unitMeasure : '-';
 
             return (

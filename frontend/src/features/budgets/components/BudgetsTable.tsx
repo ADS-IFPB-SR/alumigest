@@ -19,6 +19,12 @@ interface SortableHeaderProps {
   className?: string;
 }
 
+function getAlignmentClasses(align: 'left' | 'center' | 'right'): string {
+  if (align === 'right') return 'justify-end text-right';
+  if (align === 'center') return 'justify-center text-center';
+  return 'justify-start text-left';
+}
+
 function SortableHeader({
   label,
   field,
@@ -40,13 +46,7 @@ function SortableHeader({
         type="button"
         aria-label={`Ordenar por ${label}`}
         onClick={() => onSort(field)}
-        className={`w-full p-xs sm:p-sm lg:p-md flex items-center gap-xs cursor-pointer select-none hover:bg-surface-container transition-colors ${
-          align === 'right'
-            ? 'justify-end text-right'
-            : align === 'center'
-              ? 'justify-center text-center'
-              : 'justify-start text-left'
-        }`}
+        className={`w-full p-xs sm:p-sm lg:p-md flex items-center gap-xs cursor-pointer select-none hover:bg-surface-container transition-colors ${getAlignmentClasses(align)}`}
       >
         <span>{label}</span>
         <span

@@ -40,7 +40,7 @@ export const Step4Summary: React.FC<Step4SummaryProps> = ({
           </div>
           <div className="bg-surface-container-low p-sm rounded border border-outline-variant/50">
             <span className="text-xs text-secondary block font-label">Quantidade</span>
-            <strong className="text-on-surface font-data-mono">{totalQty} {totalQty > 1 ? 'unidades' : 'unidade'}</strong>
+            <strong className="text-on-surface font-data-mono">{totalQty}{' '}{totalQty > 1 ? 'unidades' : 'unidade'}</strong>
           </div>
           <div className="bg-surface-container-low p-sm rounded border border-outline-variant/50">
             <span className="text-xs text-secondary block font-label">Área Total</span>
