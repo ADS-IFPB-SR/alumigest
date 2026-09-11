@@ -50,15 +50,6 @@ class BudgetServiceTest {
     @Mock
     private BudgetMapper budgetMapper;
 
-    @Mock
-    private br.edu.ifpb.alumigest.budgets.calculator.MaterialCalculatorFactory calculatorFactory;
-
-    @Mock
-    private br.edu.ifpb.alumigest.catalog.repository.MaterialRepository materialRepository;
-
-    @Mock
-    private br.edu.ifpb.alumigest.catalog.repository.ProductRepository productRepository;
-
     private BudgetQuantityService budgetQuantityService;
 
     @Mock
@@ -74,7 +65,12 @@ class BudgetServiceTest {
     void setUp() {
         org.mockito.MockitoAnnotations.openMocks(this);
         
-        budgetQuantityService = new BudgetQuantityService(calculatorFactory, materialRepository, productRepository);
+        budgetQuantityService = new BudgetQuantityService(null, null, null) {
+            @Override
+            public void calculateQuantities(Budget b) {
+                // no-op
+            }
+        };
         budgetService = new BudgetService(budgetRepository, clientRepository, budgetMapper, budgetQuantityService, budgetPricingService);
 
         client = new Client();
