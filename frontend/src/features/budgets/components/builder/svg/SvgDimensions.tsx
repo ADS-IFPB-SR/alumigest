@@ -1,16 +1,12 @@
 import React from 'react';
-import { ARROW_COLOR, COTA_COLOR, COTA_STROKE } from './CadConstants';
+import { ARROW_COLOR, COTA_COLOR, COTA_STROKE } from './svgConstants';
 
 /** Arco de abertura (swing door) */
-export const SwingArc: React.FC<{
-  x: number;
-  y: number;
-  radius: number;
-  startAngle: number;
-  endAngle: number;
-  color?: string;
-}> = ({
+export const SwingArc = ({
   x, y, radius, startAngle, endAngle, color = ARROW_COLOR,
+}: {
+  x: number; y: number; radius: number;
+  startAngle: number; endAngle: number; color?: string;
 }) => {
   const toRad = (deg: number) => (deg * Math.PI) / 180;
   const x1 = x + radius * Math.cos(toRad(startAngle));
@@ -30,24 +26,25 @@ export const SwingArc: React.FC<{
   );
 };
 
-/**
- * Cota horizontal com linhas de extensão, setas de CAD e label mm.
- * offsetDir 'above' = acima; 'below' = abaixo.
- */
-export const HorizontalDimension: React.FC<{
+export interface HorizontalDimensionProps {
   x1: number;
   x2: number;
   y: number;
   label: string;
   offsetDir?: 'above' | 'below';
   offsetDist?: number;
-}> = ({
+}
+
+/**
+ * Cota horizontal com linhas de extensão, setas de CAD e label mm.
+ */
+export const HorizontalDimension: React.FC<HorizontalDimensionProps> = ({
   x1, x2, y, label, offsetDir = 'above', offsetDist = 12,
 }) => {
-  const sign   = offsetDir === 'above' ? -1 : 1;
-  const lineY  = y + sign * offsetDist;
-  const tickH  = 4;
-  const mid    = (x1 + x2) / 2;
+  const sign = offsetDir === 'above' ? -1 : 1;
+  const lineY = y + sign * offsetDist;
+  const tickH = 4;
+  const mid = (x1 + x2) / 2;
   return (
     <g className="dimension-horizontal">
       <line x1={x1} y1={y} x2={x1} y2={lineY + sign * 2} stroke={COTA_STROKE} strokeWidth={0.5} opacity={0.75} />
@@ -60,8 +57,8 @@ export const HorizontalDimension: React.FC<{
         y={lineY - 5}
         width={label.length * 7}
         height={10}
-        fill="#ffffff"
-        opacity={0.85}
+        fill="var(--color-surface-container-lowest, #ffffff)"
+        opacity={0.92}
         rx={1.5}
       />
       <text
@@ -80,23 +77,25 @@ export const HorizontalDimension: React.FC<{
   );
 };
 
-/**
- * Cota vertical com linhas de extensão, setas de CAD e label mm rotacionado.
- */
-export const VerticalDimension: React.FC<{
+export interface VerticalDimensionProps {
   x: number;
   y1: number;
   y2: number;
   label: string;
   offsetDir?: 'left' | 'right';
   offsetDist?: number;
-}> = ({
+}
+
+/**
+ * Cota vertical com linhas de extensão, setas de CAD e label mm rotacionado.
+ */
+export const VerticalDimension: React.FC<VerticalDimensionProps> = ({
   x, y1, y2, label, offsetDir = 'left', offsetDist = 12,
 }) => {
-  const sign  = offsetDir === 'left' ? -1 : 1;
+  const sign = offsetDir === 'left' ? -1 : 1;
   const lineX = x + sign * offsetDist;
   const tickH = 4;
-  const mid   = (y1 + y2) / 2;
+  const mid = (y1 + y2) / 2;
   return (
     <g className="dimension-vertical">
       <line x1={x} y1={y1} x2={lineX + sign * 2} y2={y1} stroke={COTA_STROKE} strokeWidth={0.5} opacity={0.75} />
@@ -110,8 +109,8 @@ export const VerticalDimension: React.FC<{
           y={mid - 5}
           width={label.length * 7}
           height={10}
-          fill="#ffffff"
-          opacity={0.85}
+          fill="var(--color-surface-container-lowest, #ffffff)"
+          opacity={0.92}
           rx={1.5}
         />
         <text

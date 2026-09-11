@@ -47,9 +47,6 @@ class BudgetIntegrationTest {
     @Autowired
     private br.edu.ifpb.alumigest.catalog.repository.ProductRepository productRepository;
 
-    @Autowired
-    private br.edu.ifpb.alumigest.catalog.repository.ProductCategoryRepository productCategoryRepository;
-
     private Client savedClient;
     private br.edu.ifpb.alumigest.catalog.domain.Product savedProduct;
     private Material savedGlass;
@@ -64,13 +61,9 @@ class BudgetIntegrationTest {
         client.setPhone("83999999999");
         savedClient = clientRepository.save(client);
 
-        br.edu.ifpb.alumigest.catalog.domain.ProductCategory productCategory = new br.edu.ifpb.alumigest.catalog.domain.ProductCategory();
-        productCategory.setName("Janelas");
-        productCategory = productCategoryRepository.save(productCategory);
-
         br.edu.ifpb.alumigest.catalog.domain.Product product = new br.edu.ifpb.alumigest.catalog.domain.Product();
         product.setName("Janela Correr 2 Folhas");
-        product.setCategory(productCategory);
+        product.setTemplateType(br.edu.ifpb.alumigest.catalog.domain.DoorTemplateType.SLIDING_DOOR_2F);
         savedProduct = productRepository.save(product);
 
         MaterialGroup glassGroup = new MaterialGroup();

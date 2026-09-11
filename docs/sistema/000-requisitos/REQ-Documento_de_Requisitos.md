@@ -117,7 +117,7 @@ O sistema AlumiGest cobre os módulos de Catálogo Universal de Insumos, Templat
 | RF-032 | O sistema deve permitir aplicar **Descontos Comerciais em percentual (%) ou valor fixo em reais (R$)**, com autonomia total do vendedor, além de taxas adicionais (instalação/frete). | 🔴 Must | R1 |
 | RF-033 | O sistema deve permitir selecionar **Condições de Pagamento** pré-cadastradas (À Vista PIX/Dinheiro, 50% Entrada + 50% Entrega, Cartão até 12x) e definir a validade da proposta (padrão 15 dias). | 🔴 Must | R1 |
 | RF-034 | O sistema deve exibir um **indicador de subtotal reativo em tempo real** durante a configuração do item no Wizard de orçamentos. | 🔴 Must | R1 |
-| RF-035 | O sistema deve gerenciar a máquina de estados do orçamento: **RASCUNHO (`DRAFT`) → ENVIADO (`SENT`) → APROVADO (`APPROVED`) / CANCELADO (`CANCELLED`)**, congelando os valores após a aprovação. | 🔴 Must | R1 |
+| RF-035 | O sistema deve gerenciar a máquina de estados do orçamento: **RASCUNHO (`DRAFT`) → ENVIADO (`SENT`) → APROVADO (`APPROVED`) / RECUSADO (`REJECTED`) / EXPIRADO (`EXPIRED`) / CANCELADO (`CANCELLED`)**, congelando os valores após a aprovação (`RN-CONG01`). | 🔴 Must | R1 |
 | RF-036 | O sistema deve permitir a emissão de **PDF da Proposta Comercial** (com logotipo institucional, dados do cliente, itens discriminados, valores unitários, totais, descontos e condições) e botão de cópia de resumo para o WhatsApp. | 🔴 Must | R1 |
 | RF-037 | O sistema deve permitir a emissão de **PDF da Via Técnica / Oficina (Romaneio)** contendo todas as especificações de engenharia (medidas nominais L x A mm, modelo, cores, vidro, abertura e ferragens) **sem exibir nenhum valor financeiro (R$)**. | 🔴 Must | R1 |
 

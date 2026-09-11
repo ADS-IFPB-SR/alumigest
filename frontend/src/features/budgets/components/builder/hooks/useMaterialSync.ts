@@ -219,12 +219,7 @@ export function useMaterialSync({
               mat = { id: chosen.id, name: chosen.name, price: chosen.salePrice ?? 0, unit: chosen.unitMeasure ?? 'm', familyCode: chosen.familyCode };
               qty = 2;
             }
-          } else if (catType === 'ROLLERS') {
-            const chosen = hardwares.find((hw) => hw.name.toLowerCase().includes('rold')) ?? hardwares[0];
-            if (chosen) {
-              mat = { id: chosen.id, name: chosen.name, price: chosen.salePrice ?? 0, unit: chosen.unitMeasure ?? 'un', familyCode: chosen.familyCode };
-              qty = 2;
-            }
+
           } else if (catType === 'HARDWARE') {
             const chosen = hardwares[0];
             if (chosen) {

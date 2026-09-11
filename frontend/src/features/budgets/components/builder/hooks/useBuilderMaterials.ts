@@ -288,10 +288,7 @@ export function useBuilderMaterials({
         defaultMat = { id: profiles[0].id, name: profiles[0].name, price: profiles[0].salePrice ?? 0, unit: profiles[0].unitMeasure ?? 'm' };
       else if (catType === 'HARDWARE' && hardwares.length > 0)
         defaultMat = { id: hardwares[0].id, name: hardwares[0].name, price: hardwares[0].salePrice ?? 0, unit: hardwares[0].unitMeasure ?? 'un' };
-      else if (catType === 'ROLLERS' && hardwares.length > 0) {
-        const chosen = hardwares.find((h) => h.name.toLowerCase().includes('rold')) ?? hardwares[0];
-        defaultMat = { id: chosen.id, name: chosen.name, price: chosen.salePrice ?? 0, unit: chosen.unitMeasure ?? 'un' };
-      } else if (catType === 'FILM' && films.length > 0)
+      else if (catType === 'FILM' && films.length > 0)
         defaultMat = { id: films[0].id, name: films[0].name, price: films[0].salePrice ?? 0, unit: 'm²' };
 
       const newSel: MaterialSelection = {

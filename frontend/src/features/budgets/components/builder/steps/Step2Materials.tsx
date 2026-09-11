@@ -46,7 +46,6 @@ export const Step2Materials: React.FC<Step2MaterialsProps> = ({
     GLASS: glasses as CatalogItem[],
     PROFILE: profiles as CatalogItem[],
     HARDWARE: hardwares as CatalogItem[],
-    ROLLERS: hardwares as CatalogItem[],
     FILM: films as CatalogItem[],
   };
   return (
@@ -105,6 +104,7 @@ export const Step2Materials: React.FC<Step2MaterialsProps> = ({
               const reqId = sel.requirementId;
               const categoryType = sel.categoryType;
               const iconName = categoryIcons[categoryType] ?? 'category';
+
 
               const categoryPrice = sel.totalPrice;
               const unitMeasure = sel.unitMeasure ?? (categoryType === 'GLASS' || categoryType === 'FILM' ? 'm²' : categoryType === 'PROFILE' ? 'm' : 'un');

@@ -5,8 +5,8 @@
 | **Projeto** | AlumiGest — Sistema de Gestão para Vidraçaria e Esquadrias |
 | **Sprint** | 03 — Clientes (Backend), Motor de Orçamentos e Testes E2E Cypress |
 | **Período** | 18/08/2026 a 01/09/2026 |
-| **QA Responsável** | Herbert Carvalho dos Santos |
-| **Status Geral** | 🟢 **BACKEND: 141/141 APROVADOS (100%)** \| 🟢 **E2E CYPRESS: 23/23 SPECS APROVADAS** |
+| **QA Responsável** | Herbert Carvalho dos Santos / Equipe AlumiGest |
+| **Status Geral** | 🟢 **BACKEND: 141/141 APROVADOS (100%)** \| 🟢 **VITEST FRONTEND: 40/40 APROVADOS (100%)** \| 🟢 **E2E CYPRESS: 23/23 SPECS APROVADAS** |
 
 ---
 
@@ -17,6 +17,7 @@ A Sprint 3 consolidou a maior expansão de qualidade do projeto AlumiGest:
 2. **Motor de Cálculo de Orçamentos (Backend):** Testes exaustivos das fórmulas de corte de perfis, cálculo de área de vidro, ferragens por peso/área, subtotalização e máquina de estados.
 3. **Automação E2E com Cypress (Frontend):** Construção da primeira suíte completa de testes End-to-End no frontend cobrindo as 4 abas do Catálogo de Materiais.
 4. **Integração com SonarQube:** Pipeline de CI com análise estática segregada para backend e frontend.
+5. **Interface Frontend de Produtos e Templates (QA-01.2 / Issue #100):** Validação visual e funcional dos 10 templates de esquadrias em SVG, cotas milimétricas, furações, puxadores e formulários de produtos com suíte de 40 testes de componentes no Vitest.
 
 ---
 
@@ -68,7 +69,25 @@ graph LR
 
 ---
 
-## 4. 🔍 Análise de Qualidade de Código (SonarQube)
+## 4. 🧩 Resultados dos Testes de Componentes Frontend (Vitest — 40 Testes)
+
+Em atendimento à **[Issue #100](https://github.com/ADS-IFPB-SR/alumigest/issues/100)** (`test(qa): QA-01.2 - Testes da Interface Frontend de Produtos (UI)`), foi implementada e homologada a suíte de testes de componentes para o módulo de produtos e templates paramétricos SVG:
+
+| Suíte de Teste (Vitest) | Módulo / Escopo | Cenários | Aprovados | Falhas | Status |
+|---|---|:---:|:---:|:---:|:---:|
+| `WindowSvgPreview.test.tsx` | Renderização vetorial CAD (1F, 2F, 3F, 4F, Pivotante, Maxim-Ar, Furação, Puxadores) | 10 | 10 | 0 | 🟢 Passou |
+| `ProductPickerModal.test.tsx` | Modal de Seleção de Esquadria no Orçamento (Filtros por Categoria, Busca e Injeção) | 10 | 10 | 0 | 🟢 Passou |
+| `ProductListPage.test.tsx` | Listagem de Produtos (`/produtos`), Skeletons, Miniaturas SVG e Badges de Insumos | 10 | 10 | 0 | 🟢 Passou |
+| `ProductBuilderPage.test.tsx` | Criação/Edição (`ProductBuilderPage`), Validação de 120 caracteres e Nome Obrigatório | 6 | 6 | 0 | 🟢 Passou |
+| `CategoryRequirementsSelector.test.tsx` | Seletor de Requisitos de Insumos (`GLASS`, `PROFILE`, `HARDWARE`, `FILM`) | 4 | 4 | 0 | 🟢 Passou |
+| **Total de Testes de Componentes Frontend** | — | **40** | **40** | **0** | 🟢 **100%** |
+
+> 📄 **Relatório Detalhado de UI:** Para ver a matriz de execução dos cenários visuais, testes de responsividade (Desktop, Tablet e Mobile) e homologação dos critérios de aceitação, consulte o documento dedicado:
+> 👉 [`RTE-QA-01.2-Relatorio_Testes_UI_Produtos.md`](RTE-QA-01.2-Relatorio_Testes_UI_Produtos.md)
+
+---
+
+## 5. 🔍 Análise de Qualidade de Código (SonarQube)
 
 * **Pipeline Integrada:** Configurada via GitHub Actions ([PR #78](https://github.com/ADS-IFPB-SR/alumigest/pull/78)) executando relatórios segregados.
 * **Segurança:** Zero vulnerabilidades de segurança ou credenciais expostas.
@@ -76,13 +95,14 @@ graph LR
 
 ---
 
-## 5. 📊 Resumo Executivo de QA da Sprint 3
+## 6. 📊 Resumo Executivo de QA da Sprint 3
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
 │                  RESULTADO DOS TESTES SPRINT 3               │
 ├──────────────────────────────────────────────────────────────┤
 │ Testes Unitários/Integração Backend: 141 (100% Aprovados)    │
+│ Testes de Componentes Frontend (Vitest): 40 (100% Aprovados) │
 │ Specs E2E Cypress Frontend: 23 (100% Aprovadas)              │
 │ Cobertura de Código no Serviço de Orçamentos: 93,4%          │
 │ Falhas ou Quebras na develop: 0                              │
@@ -92,4 +112,5 @@ graph LR
 
 ---
 
-*Relatório de Testes homologado pelo QA Herbert Carvalho dos Santos — Sprint 03 — 31/08/2026*
+*Relatório de Testes homologado pelo QA Herbert Carvalho dos Santos / Equipe AlumiGest — Sprint 03 — 11/09/2026*
+

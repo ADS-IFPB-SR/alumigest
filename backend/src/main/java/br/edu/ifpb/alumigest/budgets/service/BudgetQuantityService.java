@@ -31,52 +31,25 @@ public class BudgetQuantityService {
      * Calcula as quantidades matemáticas de todos os materiais do orçamento baseando-se nas dimensões da esquadria.
      */
     public void calculateQuantities(Budget budget) {
+        if (budget.getItems() == null) {
+            return;
+        }
         for (BudgetItem item : budget.getItems()) {
-            
-            // Resolve o produto no banco de dados para salvar os metadados
-            br.edu.ifpb.alumigest.catalog.domain.Product productEntity = productRepository.findById(item.getProduct().getId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Produto não encontrado: " + item.getProduct().getId()));
-            item.setProduct(productEntity);
-            item.setProductName(productEntity.getName());
-            
-            TemplateType template = null;
-            if (item.getTemplateType() != null) {
-                template = TemplateType.parse(item.getTemplateType());
-            }
+            processBudgetItem(item);
+        }
+    }
 
+    private void processBudgetItem(BudgetItem item) {
+        br.edu.ifpb.alumigest.catalog.domain.Product productEntity = productRepository.findById(item.getProduct().getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Produto não encontrado: " + item.getProduct().getId()));
+        item.setProduct(productEntity);
+        item.setProductName(productEntity.getName());
+
+        TemplateType template = resolveTemplateType(item.getTemplateType());
+
+        if (item.getOptions() != null) {
             for (BudgetItemOption option : item.getOptions()) {
-                Material material = materialRepository.findById(option.getMaterial().getId())
-                        .orElseThrow(() -> new ResourceNotFoundException("Material não encontrado: " + option.getMaterial().getId()));
-
-                // Preenche os dados reais vindos do banco de dados para caching do orçamento
-                option.setMaterialName(material.getName());
-                option.setUnitMeasure(material.getUnitMeasure() != null ? material.getUnitMeasure().name() : "");
-
-
-                if (template != null && option.getCategoryType() != null) {
-                    try {
-                        CategoryType calcCategory = CategoryType.valueOf(option.getCategoryType().name());
-                        MaterialQuantityCalculator calculator = calculatorFactory.getCalculator(calcCategory);
-                        
-                        BigDecimal qty = calculator.calculate(
-                            template,
-                            item.getWidthMm().intValue(),
-                            item.getHeightMm().intValue(),
-                            item.getQuantity(),
-                            option.getQuantity() // Se for nulo, a calculadora lida com isso (ex: hardware)
-                        );
-                        
-                        option.setQuantity(qty);
-                    } catch (IllegalArgumentException e) {
-                        // Se não tiver calculadora pra categoria, mantém a quantity enviada ou zera
-                        if (option.getQuantity() == null) {
-                            option.setQuantity(BigDecimal.ZERO);
-                        }
-                    }
-                } else if (option.getQuantity() == null) {
-                    // Fallback
-                    option.setQuantity(BigDecimal.ZERO);
-                }
+                processItemOption(item, option, template);
             }
         }
     }
@@ -160,5 +133,47 @@ public class BudgetQuantityService {
                 totalPerimeter,
                 results
         );
+    }
+
+    private TemplateType resolveTemplateType(String rawTemplateType) {
+        if (rawTemplateType == null) {
+            return null;
+        }
+        return TemplateType.parse(rawTemplateType);
+    }
+
+    private void processItemOption(BudgetItem item, BudgetItemOption option, TemplateType template) {
+        Material material = materialRepository.findById(option.getMaterial().getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Material não encontrado: " + option.getMaterial().getId()));
+
+        option.setMaterialName(material.getName());
+        option.setUnitMeasure(material.getUnitMeasure() != null ? material.getUnitMeasure().name() : "");
+
+        BigDecimal calculatedQty = computeQuantity(item, option, template);
+        option.setQuantity(calculatedQty != null ? calculatedQty : (option.getQuantity() != null ? option.getQuantity() : BigDecimal.ZERO));
+    }
+
+    private BigDecimal computeQuantity(BudgetItem item, BudgetItemOption option, TemplateType template) {
+        if (template == null || option.getCategoryType() == null) {
+            return option.getQuantity() != null ? option.getQuantity() : BigDecimal.ZERO;
+        }
+
+        try {
+            CategoryType calcCategory = CategoryType.parse(option.getCategoryType().name());
+            if (calcCategory == null) {
+                return option.getQuantity() != null ? option.getQuantity() : BigDecimal.ZERO;
+            }
+            MaterialQuantityCalculator calculator = calculatorFactory.getCalculator(calcCategory);
+
+            return calculator.calculate(
+                    template,
+                    item.getWidthMm().intValue(),
+                    item.getHeightMm().intValue(),
+                    item.getQuantity(),
+                    option.getQuantity()
+            );
+        } catch (IllegalArgumentException e) {
+            return option.getQuantity() != null ? option.getQuantity() : BigDecimal.ZERO;
+        }
     }
 }

@@ -25,13 +25,9 @@ public class Product {
     @Column(name = "name", nullable = false, length = 150)
     private String name;
 
-    @NotNull(message = "A categoria do produto é obrigatória")
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "category_id", nullable = false)
-    private ProductCategory category;
-
+    @NotNull(message = "O modelo de template da esquadria é obrigatório")
     @Enumerated(EnumType.STRING)
-    @Column(name = "template_type", length = 50)
+    @Column(name = "template_type", nullable = false, length = 50)
     private DoorTemplateType templateType;
 
     @JdbcTypeCode(SqlTypes.JSON)
@@ -44,9 +40,6 @@ public class Product {
 
     @Column(name = "is_active", nullable = false)
     private boolean isActive = true;
-
-    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<ProductItem> items = new ArrayList<>();
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
@@ -65,6 +58,21 @@ public class Product {
         this.updatedAt = OffsetDateTime.now();
     }
 
+    /**
+     * Retorna a categoria canônica da esquadria derivada do template e do nome:
+     * Portas, Janelas, Box ou Móveis / Painéis.
+     */
+    public String getCategoryName() {
+        if (templateType == null) return "Geral";
+        if (name != null && name.toLowerCase().contains("box")) {
+            return "Box";
+        }
+        if (name != null && name.toLowerCase().contains("janela")) {
+            return "Janelas";
+        }
+        return templateType.getGroupName();
+    }
+
     // Getters and Setters
 
     public UUID getId() {
@@ -81,14 +89,6 @@ public class Product {
 
     public void setName(String name) {
         this.name = name;
-    }
-
-    public ProductCategory getCategory() {
-        return category;
-    }
-
-    public void setCategory(ProductCategory category) {
-        this.category = category;
     }
 
     public DoorTemplateType getTemplateType() {
@@ -123,17 +123,11 @@ public class Product {
         isActive = active;
     }
 
-    public List<ProductItem> getItems() {
-        return items;
+    public OffsetDateTime getCreatedAt() {
+        return createdAt;
     }
 
-    public void setItems(List<ProductItem> items) {
-        this.items = items != null ? items : new ArrayList<>();
-    }
-
-    // Método auxiliar para adicionar itens na Ficha Técnica e manter os dois lados sincronizados
-    public void addItem(ProductItem item) {
-        this.items.add(item);
-        item.setProduct(this);
+    public OffsetDateTime getUpdatedAt() {
+        return updatedAt;
     }
 }

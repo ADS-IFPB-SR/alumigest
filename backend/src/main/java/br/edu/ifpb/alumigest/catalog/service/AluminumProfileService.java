@@ -24,6 +24,7 @@ import java.util.UUID;
 public class AluminumProfileService {
 
     private static final String ALUMINUM_GROUP_CODE = "ALUMINIO";
+    private static final String PROFILE_NOT_FOUND_MSG = "Perfil de alumínio não encontrado com ID: ";
 
     private static final List<BigDecimal> ALLOWED_STANDARD_LENGTHS = List.of(
             new BigDecimal("3.00"),
@@ -79,7 +80,7 @@ public class AluminumProfileService {
     public AluminumProfileResponseDTO findById(UUID id) {
         Material material = materialRepository.findByIdAndGroupCode(id, ALUMINUM_GROUP_CODE)
                 .orElseThrow(() ->
-                        new ResourceNotFoundException("Perfil de alumínio não encontrado com ID: " + id));
+                        new ResourceNotFoundException(PROFILE_NOT_FOUND_MSG + id));
         return aluminumProfileMapper.toResponse(material);
     }
 
@@ -87,7 +88,7 @@ public class AluminumProfileService {
     public AluminumProfileResponseDTO updatePrices(UUID id, AluminumProfileUpdateDTO request) {
         Material material = materialRepository.findByIdAndGroupCode(id, ALUMINUM_GROUP_CODE)
                 .orElseThrow(() ->
-                        new ResourceNotFoundException("Perfil de alumínio não encontrado com ID: " + id));
+                        new ResourceNotFoundException(PROFILE_NOT_FOUND_MSG + id));
 
         material.setCommercialReference(request.commercialReference());
         material.setName(request.name());
@@ -114,7 +115,7 @@ public class AluminumProfileService {
     public void softDelete(UUID id) {
         Material material = materialRepository.findByIdAndGroupCode(id, ALUMINUM_GROUP_CODE)
                 .orElseThrow(() ->
-                        new ResourceNotFoundException("Perfil de alumínio não encontrado com ID: " + id));
+                        new ResourceNotFoundException(PROFILE_NOT_FOUND_MSG + id));
 
         material.setActive(false);
         materialRepository.save(material);

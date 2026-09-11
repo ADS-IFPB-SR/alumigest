@@ -103,6 +103,7 @@ public class Material {
     private OffsetDateTime updatedAt;
 
     public Material() {
+        // Default constructor required by JPA
     }
 
     @PrePersist

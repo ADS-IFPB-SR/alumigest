@@ -20,7 +20,9 @@ public class TemplateConfig implements Serializable {
     private DrillingConfig drillingConfig;
     private TemplateOptionSchema optionSchema;
 
-    public TemplateConfig() {}
+    public TemplateConfig() {
+        // Construtor vazio necessário para serialização/desserialização JSON (Jackson)
+    }
 
     public BigDecimal getProfileMm() {
         return profileMm;

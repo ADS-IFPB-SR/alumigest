@@ -1,4 +1,6 @@
-// Constantes visuais de desenho técnico CAD / Blueprint
+// ─── Constantes visuais Blueprint / CAD ─────────────────────────────────────
+export const HANDLE_COLOR = '#d1d5db';
+export const HANDLE_STROKE = '#4b5563';
 export const HOLE_COLOR = '#ffffff';
 export const HOLE_STROKE = '#374151';
 export const ARROW_COLOR = '#0284c7';

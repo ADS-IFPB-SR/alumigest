@@ -37,18 +37,24 @@ export function BudgetsView() {
   }, []);
 
   const handleSearchChange = useCallback((newSearch: string) => {
-    setSearch(newSearch);
-    setPage(0);
+    setSearch((prevSearch) => {
+      if (prevSearch !== newSearch) {
+        setPage(0);
+        return newSearch;
+      }
+      return prevSearch;
+    });
   }, []);
 
   const handleSort = useCallback((field: string) => {
-    setSortField((currentField) => {
-      if (currentField === field) {
-        setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
-        return currentField;
+    setSortField((prevField) => {
+      if (prevField === field) {
+        setSortDirection((prevDir) => (prevDir === 'asc' ? 'desc' : 'asc'));
+      } else {
+        setSortDirection('asc');
+        return field;
       }
-      setSortDirection('asc');
-      return field;
+      return prevField;
     });
     setPage(0);
   }, []);

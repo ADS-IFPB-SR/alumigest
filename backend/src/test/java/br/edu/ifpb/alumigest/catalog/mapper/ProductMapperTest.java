@@ -19,10 +19,6 @@ class ProductMapperTest {
     @Test
     @DisplayName("Deve mapear Product para ProductResponseDTO incluindo templateConfig e categoryRequirements")
     void toResponse_ShouldMapAllFields() {
-        ProductCategory category = new ProductCategory();
-        category.setId(UUID.randomUUID());
-        category.setName("Portas de Correr");
-
         TemplateConfig config = new TemplateConfig();
         config.setProfileMm(new BigDecimal("20.0"));
         config.setAluminumColor("#212121");
@@ -40,10 +36,9 @@ class ProductMapperTest {
         Product product = new Product();
         product.setId(UUID.randomUUID());
         product.setName("Porta Suprema 2F");
-        product.setCategory(category);
-        product.setTemplateType(DoorTemplateType.SLIDING);
+        product.setTemplateType(DoorTemplateType.SLIDING_DOOR_2F);
         product.setTemplateConfig(config);
-        product.setCategoryRequirements(List.of(MaterialCategoryType.GLASS, MaterialCategoryType.PROFILE, MaterialCategoryType.ROLLERS));
+        product.setCategoryRequirements(List.of(MaterialCategoryType.GLASS, MaterialCategoryType.PROFILE, MaterialCategoryType.HARDWARE));
         product.setActive(true);
 
         ProductResponseDTO response = mapper.toResponse(product);
@@ -51,9 +46,8 @@ class ProductMapperTest {
         assertNotNull(response);
         assertEquals(product.getId(), response.id());
         assertEquals("Porta Suprema 2F", response.name());
-        assertEquals(category.getId(), response.categoryId());
-        assertEquals("Portas de Correr", response.categoryName());
-        assertEquals(DoorTemplateType.SLIDING, response.templateType());
+        assertEquals("Portas", response.categoryName());
+        assertEquals(DoorTemplateType.SLIDING_DOOR_2F, response.templateType());
         assertNotNull(response.templateConfig());
         assertEquals(new BigDecimal("20.0"), response.templateConfig().profileMm());
         assertEquals("#212121", response.templateConfig().aluminumColor());

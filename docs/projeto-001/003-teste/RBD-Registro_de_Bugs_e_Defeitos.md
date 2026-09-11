@@ -48,6 +48,7 @@ Seguindo a governança do **Plano de Gerência de Configuração (PGC)** e do **
 | **[BUG-018](#bug-018)** | Erro de Inferência de Tipos no Schema Zod do SKU de Películas | Frontend / Zod | 🟡 Média | Sprint 03 | ✅ Resolvido | Commit `7751850` |
 | **[BUG-019](#bug-019)** | Falha de Compilação e DI por Inconsistência na `MaterialCalculatorFactory` | Backend / Motor | 🔴 Alta | Sprint 03 | ✅ Resolvido | Commit `9cbf957` |
 | **[BUG-020](#bug-020)** | Funções Não Utilizadas no Cypress Violando Linting Estrito no Pipeline | Frontend / QA | 🟢 Baixa | Sprint 03 | ✅ Resolvido | Commit `6a48859` |
+| **[BUG-021](#bug-021)** | Perda de Insumos da Ficha Técnica em Produtos Estáticos e Ocultação de Templates na Categoria Janela | Frontend / Catálogo & Orçamentos | 🔴 Alta | Sprint 03 | ✅ Resolvido | Issue #235 / Branch `fix/products-static-items-and-window-category` |
 
 ---
 
@@ -581,13 +582,46 @@ O repositório deve manter zero variáveis ou funções órfãs para garantir cl
 
 ---
 
+### BUG-021
+#### [BUG] Perda de Insumos da Ficha Técnica em Produtos Estáticos e Ocultação de Templates na Categoria Janela
+
+**Descrição:**
+Após a refatoração da tela de produtos para suporte a templates paramétricos vetoriais (PR #141 / Issue #63), foram identificados dois desvios funcionais de regra de negócio:
+1. Ao salvar ou editar um produto estático (sem template), o frontend enviava fixamente `items: []` no payload JSON e a interface não renderizava mais a `<ProductTechSheet />`. No backend (`ProductService.java`), isso acionava `product.getItems().clear()`, apagando permanentemente toda a ficha técnica de insumos cadastrada.
+2. Na função utilitária `mapCatalogTemplate.ts`, os templates `SLIDING_WINDOW_2F` e `SLIDING_WINDOW_4F` foram desacoplados da família `SLIDING`, tornando-se acessíveis unicamente se o texto do produto contivesse literalmente a palavra "janela", ignorando a categoria ("Janelas de Correr") associada à esquadria.
+
+**Passos para Reproduzir:**
+1. Acessar `/produtos/novo` e selecionar uma Categoria (ex: "Janelas de Correr").
+2. Optar por "— Sem Template —".
+3. Observar a ausência da ficha técnica para inclusão de materiais e o envio de `items: []` ao submeter o formulário.
+4. No construtor de orçamentos, selecionar uma esquadria da categoria "Janelas de Correr" cujo nome seja "Esquadria Suprema 2F" (sem o termo "janela"). O seletor exibia apenas modelos de portas de correr.
+
+**Comportamento Esperado:**
+- Produtos sem template devem renderizar a ficha técnica de insumos, validar materiais com quantidade (> 0) e enviar `items: [...]` no payload.
+- Esquadrias associadas à categoria Janela devem exibir os templates correspondentes de janela (2F, 4F e Maxim-Ar) tanto no catálogo quanto no construtor de orçamentos.
+
+**Contexto / Ambiente:**
+- **Navegador / Sistema:** Google Chrome / React 19 / Vite.
+- **Módulo Afetado:** `frontend/src/pages/ProductBuilderPage.tsx`, `frontend/src/features/catalog/components/builder/ProductCostSummary.tsx`, `frontend/src/features/budgets/utils/mapCatalogTemplate.ts`, `frontend/src/features/budgets/components/builder/WindowBuilderModal.tsx`.
+- **Severidade:** 🔴 Alta | **Sprint:** 03 | **Status:** ✅ Resolvido.
+- **Detecção / Correção:** Pós-merge da PR #141 / Issue #235 / Branch `fix/products-static-items-and-window-category`.
+
+**Causa Raiz Técnica & Solução:**
+* **Causa Raiz:** Foco excessivo no novo fluxo de templates gráficos paramétricos durante a entrega da issue #63, resultando na supressão indevida da ficha técnica estática e no acoplamento da resolução de modelos visuais exclusivamente ao nome do produto em vez de inspecionar também a categoria.
+* **Solução:** 
+  1. Reintrodução condicional do estado `items`, renderização da `<ProductTechSheet />` e mapeamento de `items` no payload de salvamento na ausência de template.
+  2. Ajuste em `ProductCostSummary.tsx` para apresentar insumos e custo base de produtos estáticos, bloqueando salvamento com lista vazia.
+  3. Atualização de `getAvailableSvgTemplatesForCatalogType` e `getDefaultSvgTemplateForCatalogType` para inspecionar `categoryName`, além da restauração dos templates de janela na família base `SLIDING`.
+
+---
+
 ## 4. 📈 Análise Categórica e Lições Aprendidas de Qualidade
 
 ### 4.1 Distribuição dos Defeitos por Camada
 
 ```mermaid
 pie title "Origem dos Defeitos Identificados"
-    "Frontend & UI/UX" : 8
+    "Frontend & UI/UX" : 9
     "Backend & Regras de Negócio" : 6
     "Pipeline CI/CD & SonarQube" : 3
     "Infraestrutura & Docker" : 2

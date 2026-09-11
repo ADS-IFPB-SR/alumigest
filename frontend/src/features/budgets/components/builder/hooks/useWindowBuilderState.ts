@@ -1,16 +1,29 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import type {
   DoorTemplateType,
+  OpeningDirection,
+  BuilderState,
   BudgetItem,
   HandleConfig,
   HandlePosition,
+  HandleOrientation,
+  DrillingConfig,
   HandleType,
   HandleSide,
   HandleCoverage,
+  DivisionType,
+  MaterialSelection,
   CategoryType,
   WindowTemplate,
 } from '../../../types';
-import { getTypologyMetadata } from '../../../domain/typologyRegistry';
+import type { Product, GlassDTO, ProfileDTO, HardwareDTO, FilmDTO } from '../../../../catalog/types';
+import {
+  useProducts,
+  useGlasses,
+  useProfiles,
+  useHardwares,
+  useFilms,
+} from '../../../../catalog/hooks/useCatalog';
 import { calcItemSubtotal } from '../../../utils/calculations';
 import {
   getDefaultSvgTemplateForCatalogType,
@@ -18,60 +31,352 @@ import {
   mapCatalogGlassColor,
 } from '../../../utils/mapCatalogTemplate';
 import { TEMPLATE_TYPE_INFO } from '../../../types';
+import toast from 'react-hot-toast';
 
-import {
-  BASE_ALUMINUM_COLORS,
-  BASE_GLASS_FINISHES,
-  CATEGORY_ICONS,
-  CATEGORY_LABELS,
-  DEFAULT_WIDTH,
-  DEFAULT_HEIGHT,
-} from '../constants';
+export const BASE_ALUMINUM_COLORS = [
+  'Alumínio Fosco / Anodizado',
+  'Preto Fosco',
+  'Branco Brilhante',
+  'Bronze / Champanhe',
+  'Cromado / Polido',
+  'Dourado / Gold',
+];
 
-import { useBuilderCatalog } from './useBuilderCatalog';
-import { useBuilderNavigation } from './useBuilderNavigation';
-import { useBuilderMaterials } from './useBuilderMaterials';
-import { useDrillingBuilder } from './useDrillingBuilder';
-import { useHandleBuilder } from './useHandleBuilder';
-import { useMaterialSync, syncHandleMaterialSelections } from './useMaterialSync';
+export const BASE_GLASS_FINISHES = [
+  'Incolor',
+  'Fumê / Cinza',
+  'Verde',
+  'Canelado / Texturizado',
+  'Reflecta Bronze',
+];
 
-export {
-  BASE_ALUMINUM_COLORS,
-  BASE_GLASS_FINISHES,
-  CATEGORY_ICONS,
-  CATEGORY_LABELS,
-  DEFAULT_WIDTH,
-  DEFAULT_HEIGHT,
+export const CATEGORY_ICONS: Record<CategoryType, string> = {
+  GLASS: 'grid_view',
+  PROFILE: 'view_stream',
+  HARDWARE: 'hardware',
+  FILM: 'layers',
 };
 
-/**
- * Hook orquestrador principal do Modal de Construção de Esquadrias (WindowBuilderModal).
- * 
- * Arquitetura de Decomposição:
- * - `useBuilderCatalog`: Carregamento do catálogo de materiais e cálculo de cores dinâmicas.
- * - `useBuilderMaterials`: Gestão da lista de materiais (`materialSelections`), cálculo de consumo e trocas de unidades.
- * - `useBuilderNavigation`: Controle dos passos do Wizard (1 a 4) e validações antes de avançar.
- * - `useHandleBuilder`: Estado do puxador, compatibilidade de posições e auto-orientação vertical/horizontal.
- * - `useDrillingBuilder`: Configuração de furação mecânica (furos equidistantes ou cotas personalizadas).
- * - `useMaterialSync`: Funções puras de sincronização entre catálogo, dimensões e geometria CAD.
- */
-export interface UseWindowBuilderStateProps {
-  /** Indica se o modal está aberto */
+export const CATEGORY_LABELS: Record<string, string> = {
+  GLASS: 'Vidros',
+  PROFILE: 'Perfis de Alumínio',
+  HARDWARE: 'Ferragens / Componentes',
+  FILM: 'Películas',
+};
+
+export const DEFAULT_WIDTH = 1600;
+export const DEFAULT_HEIGHT = 2150;
+
+interface CatalogMaterialLookup {
+  name: string;
+  unit: string;
+  price: number;
+  colorFinish?: string;
+  categoryType: CategoryType;
+}
+
+function computeRequirementMeasure(catType: CategoryType, areaM2: number, perimeterM: number): { qty: number; unit: string } {
+  if (catType === 'GLASS' || catType === 'FILM') {
+    return { qty: areaM2, unit: 'm²' };
+  }
+  if (catType === 'PROFILE') {
+    return { qty: perimeterM, unit: 'm' };
+  }
+  return { qty: 1, unit: 'un' };
+}
+
+function buildDefaultSelectionsForTemplate(
+  targetTemplate: WindowTemplate,
+  w: number,
+  h: number,
+): MaterialSelection[] {
+  const areaM2 = parseFloat(((w / 1000) * (h / 1000)).toFixed(2));
+  const perimeterM = parseFloat(((2 * (w + h)) / 1000).toFixed(2));
+
+  if (targetTemplate.categoryRequirements && targetTemplate.categoryRequirements.length > 0) {
+    return targetTemplate.categoryRequirements.map((req, idx) => {
+      const catType: CategoryType = typeof req === 'string' ? (req as CategoryType) : (req.categoryType as CategoryType);
+      const { qty, unit } = computeRequirementMeasure(catType, areaM2, perimeterM);
+
+      return {
+        requirementId: `req-${targetTemplate.id}-${catType}-${idx}`,
+        categoryType: catType,
+        label: CATEGORY_LABELS[catType] ?? catType,
+        isOptional: false,
+        materialId: '',
+        materialName: '',
+        unitMeasure: unit,
+        unitPrice: 0,
+        quantity: qty,
+        totalPrice: 0,
+      };
+    });
+  }
+
+  return [
+    {
+      requirementId: 'fallback-glass',
+      categoryType: 'GLASS',
+      label: CATEGORY_LABELS.GLASS,
+      isOptional: false,
+      materialId: '',
+      materialName: '',
+      unitMeasure: 'm²',
+      unitPrice: 0,
+      quantity: areaM2,
+      totalPrice: 0,
+    },
+    {
+      requirementId: 'fallback-profile',
+      categoryType: 'PROFILE',
+      label: CATEGORY_LABELS.PROFILE,
+      isOptional: false,
+      materialId: '',
+      materialName: '',
+      unitMeasure: 'm',
+      unitPrice: 0,
+      quantity: perimeterM,
+      totalPrice: 0,
+    },
+    {
+      requirementId: 'fallback-hardware',
+      categoryType: 'HARDWARE',
+      label: CATEGORY_LABELS.HARDWARE,
+      isOptional: false,
+      materialId: '',
+      materialName: '',
+      unitMeasure: 'un',
+      unitPrice: 0,
+      quantity: 1,
+      totalPrice: 0,
+    },
+  ];
+}
+
+function buildEditingItemSelections(
+  editingItem: BudgetItem,
+  findCatalogMaterial: (id: string) => CatalogMaterialLookup | null,
+): MaterialSelection[] {
+  return (editingItem.options ?? []).map((opt, idx) => {
+    const mat = findCatalogMaterial(opt.materialId);
+    const reqId = `edit-item-${opt.materialId}-${idx}`;
+    const categoryType = opt.categoryType || (mat?.categoryType as CategoryType) || 'HARDWARE';
+    const price = opt.unitPrice || mat?.price || 0;
+    const qty = opt.quantity ?? 1;
+    return {
+      requirementId: reqId,
+      categoryType,
+      label: CATEGORY_LABELS[categoryType] ?? categoryType,
+      isOptional: false,
+      materialId: opt.materialId,
+      materialName: opt.materialName || mat?.name || 'Material',
+      unitMeasure: opt.unitMeasure || mat?.unit || 'un',
+      unitPrice: price,
+      quantity: qty,
+      totalPrice: qty !== undefined ? parseFloat((qty * price).toFixed(2)) : undefined,
+    };
+  });
+}
+
+function computeEditingDrillDistances(editingItem: BudgetItem): number[] {
+  const editCount = editingItem.drillingConfig?.holeCount ?? 2;
+  const editH = editingItem.heightMm ?? 2100;
+  const step = Math.round(editH / (editCount + 1));
+  const fallbackDists = Array.from({ length: editCount }, (_, i) => step * (i + 1));
+  if (
+    editingItem.drillingConfig?.customDistancesMm &&
+    editingItem.drillingConfig.customDistancesMm.length === editCount
+  ) {
+    return editingItem.drillingConfig.customDistancesMm;
+  }
+  return fallbackDists;
+}
+
+function buildEditingItemState(
+  editingItem: BudgetItem,
+  templates: WindowTemplate[],
+  findCatalogMaterial: (id: string) => CatalogMaterialLookup | null,
+): { state: BuilderState; holeInputs: string[] } {
+  const template = templates.find((t) => t.id === editingItem.productId) ?? templates[0] ?? null;
+  const selections = buildEditingItemSelections(editingItem, findCatalogMaterial);
+  const dists = computeEditingDrillDistances(editingItem);
+
+  return {
+    state: {
+      template,
+      templateType: (editingItem.templateType as DoorTemplateType) || undefined,
+      widthMm: editingItem.widthMm,
+      heightMm: editingItem.heightMm,
+      quantity: editingItem.quantity,
+      openingDirection: editingItem.templateConfig?.openingDirection ?? 'LEFT_TO_RIGHT',
+      handleConfig: editingItem.handleConfig ?? {
+        handleType: 'BAR_TUBULAR',
+        side: 'ONE_SIDE',
+        coverage: 'FULL',
+        pieceLengthCm: 40,
+      },
+      drillingConfig: editingItem.drillingConfig ?? {
+        holeCount: 2,
+        divisionType: 'EQUAL',
+        customDistancesMm: dists,
+      },
+      aluminumColor: editingItem.templateConfig?.aluminumColor ?? 'Alumínio Fosco / Anodizado',
+      glassFinish: editingItem.templateConfig?.glassFinish ?? 'Fumê / Cinza',
+      laborCost: editingItem.laborCost ?? 0,
+      notes: editingItem.notes ?? '',
+      materialSelections: selections,
+    },
+    holeInputs: dists.map(String),
+  };
+}
+
+function computeDefaultOpeningDirection(
+  rawDir: string | undefined,
+  supportedDirections: string[],
+): OpeningDirection {
+  let normalized = rawDir;
+  if (normalized === 'OUTSIDE') normalized = 'LEFT_TO_RIGHT';
+  if (normalized === 'INSIDE') normalized = 'RIGHT_TO_LEFT';
+  if (normalized && supportedDirections.includes(normalized)) {
+    return normalized as OpeningDirection;
+  }
+  return (supportedDirections[0] ?? 'LEFT_TO_RIGHT') as OpeningDirection;
+}
+
+function computeDefaultHandleConfig(cfgHandle: any): HandleConfig {
+  if (!cfgHandle) {
+    return {
+      handleType: 'BAR_TUBULAR',
+      side: 'ONE_SIDE',
+      coverage: 'FULL',
+      pieceLengthCm: 40,
+    };
+  }
+  return {
+    handleType: cfgHandle.handleType ?? 'BAR_TUBULAR',
+    side: cfgHandle.side ?? 'ONE_SIDE',
+    coverage: cfgHandle.coverage ?? (cfgHandle.handleLengthMm && cfgHandle.handleLengthMm >= 1000 ? 'FULL' : 'PIECE'),
+    pieceLengthCm: cfgHandle.pieceLengthCm ?? (cfgHandle.handleLengthMm ? Math.round(cfgHandle.handleLengthMm / 10) : 40),
+  };
+}
+
+function computeDefaultDrillingConfig(cfgDrill: any): DrillingConfig {
+  const drillPositions = (cfgDrill?.customPositionsMm && cfgDrill.customPositionsMm.length > 0)
+    ? cfgDrill.customPositionsMm
+    : (cfgDrill && 'customDistancesMm' in cfgDrill && cfgDrill.customDistancesMm && cfgDrill.customDistancesMm.length > 0)
+    ? cfgDrill.customDistancesMm
+    : [100, 500, 560, 100];
+  const isCustom = cfgDrill && ('drillingMode' in cfgDrill ? cfgDrill.drillingMode === 'CUSTOM' : cfgDrill.divisionType === 'CUSTOM_DISTANCE');
+
+  return {
+    holeCount: cfgDrill?.holeCount ?? 2,
+    divisionType: isCustom ? 'CUSTOM_DISTANCE' : 'EQUAL',
+    customDistancesMm: drillPositions,
+  };
+}
+
+function buildDefaultInitState(
+  templates: WindowTemplate[],
+  selectedProductId: string | null | undefined,
+): { state: BuilderState; holeInputs: string[] } {
+  const defaultTemplate = selectedProductId ? (templates.find(t => t.id === selectedProductId) ?? templates[0]) : templates[0];
+  const targetSvg = (defaultTemplate.templateType as DoorTemplateType) || getDefaultSvgTemplateForCatalogType(defaultTemplate.catalogTemplateType, defaultTemplate.name, defaultTemplate.templateConfig);
+  const validDirections = TEMPLATE_TYPE_INFO[targetSvg]?.supportedDirections ?? ['LEFT_TO_RIGHT', 'RIGHT_TO_LEFT'];
+  const alumColor = defaultTemplate.templateConfig?.aluminumColor
+    ? mapCatalogAluminumColor(defaultTemplate.templateConfig.aluminumColor)
+    : 'Alumínio Fosco / Anodizado';
+  const glassColor = defaultTemplate.templateConfig?.glassColor
+    ? mapCatalogGlassColor(defaultTemplate.templateConfig.glassColor)
+    : 'Fumê / Cinza';
+  const dir = computeDefaultOpeningDirection(defaultTemplate.templateConfig?.openingDirection, validDirections);
+  const initialHandleConfig = computeDefaultHandleConfig(defaultTemplate.templateConfig?.handleConfig);
+  const initialDrillingConfig = computeDefaultDrillingConfig(defaultTemplate.templateConfig?.drillingConfig);
+  const drillPositions = initialDrillingConfig.customDistancesMm ?? [100, 500, 560, 100];
+
+  const w = DEFAULT_WIDTH;
+  const h = DEFAULT_HEIGHT;
+  const initialSelections = buildDefaultSelectionsForTemplate(defaultTemplate, w, h);
+
+  return {
+    state: {
+      template: defaultTemplate,
+      templateType: targetSvg,
+      widthMm: w,
+      heightMm: h,
+      quantity: 1,
+      openingDirection: dir,
+      handleConfig: initialHandleConfig,
+      drillingConfig: initialDrillingConfig,
+      aluminumColor: alumColor,
+      glassFinish: glassColor,
+      laborCost: defaultTemplate.laborCost || 0,
+      notes: '',
+      materialSelections: initialSelections,
+    },
+    holeInputs: drillPositions.map(String),
+  };
+}
+
+function deriveAluminumColorFromMaterial(mat: { name: string; colorFinish?: string }, currentColor?: string): string {
+  if (mat.colorFinish) return mat.colorFinish;
+  const name = mat.name.toLowerCase();
+  if (name.includes('branco')) return 'Branco Brilhante';
+  if (name.includes('preto')) return 'Preto Fosco';
+  if (name.includes('bronze')) return 'Bronze / Champanhe';
+  if (name.includes('anodizado') || name.includes('fosco')) return 'Alumínio Fosco / Anodizado';
+  return currentColor ?? 'Alumínio Fosco / Anodizado';
+}
+
+function deriveGlassFinishFromMaterial(mat: { name: string; colorFinish?: string }, currentFinish?: string): string {
+  if (mat.colorFinish) return mat.colorFinish;
+  const name = mat.name.toLowerCase();
+  if (name.includes('fumê') || name.includes('fume')) return 'Fumê / Cinza';
+  if (name.includes('incolor')) return 'Incolor';
+  if (name.includes('verde')) return 'Verde';
+  if (name.includes('canelado')) return 'Canelado / Texturizado';
+  if (name.includes('reflecta')) return 'Reflecta Bronze';
+  return currentFinish ?? 'Fumê / Cinza';
+}
+
+function deriveHandleTypeFromMaterial(mat: { name: string }, currentType: HandleType): HandleType {
+  const n = mat.name.toLowerCase();
+  if (n.includes('tubular') || n.includes('inox') || n.includes('barra')) return 'BAR_TUBULAR';
+  if (n.includes('concha') || n.includes('fecho')) return 'SHELL_LOCK';
+  if (n.includes('maçaneta') || n.includes('macaneta') || n.includes('alavanca')) return 'LEVER_HANDLE';
+  return currentType;
+}
+
+function validateStep1Dimensions(
+  widthMm: number | string | undefined,
+  heightMm: number | string | undefined,
+  quantity: number | string | undefined,
+): Record<string, string> {
+  const errors: Record<string, string> = {};
+  const w = typeof widthMm === 'number' ? widthMm : typeof widthMm === 'string' ? parseFloat(widthMm) || 0 : 0;
+  const h = typeof heightMm === 'number' ? heightMm : typeof heightMm === 'string' ? parseFloat(heightMm) || 0 : 0;
+  const qty = typeof quantity === 'number' ? quantity : typeof quantity === 'string' ? parseFloat(quantity) || 0 : 0;
+
+  if (w <= 0) errors.widthMm = 'Largura obrigatória';
+  if (h <= 0) errors.heightMm = 'Altura obrigatória';
+  if (qty < 1) errors.quantity = 'Quantidade inválida';
+
+  return errors;
+}
+
+function getMissingRequiredMaterialLabels(selections: MaterialSelection[]): string[] {
+  return selections
+    .filter((sel) => !sel.isOptional && !sel.materialId)
+    .map((r) => r.label);
+}
+
+interface UseWindowBuilderStateProps {
   isOpen: boolean;
-  /** ID do produto/template pré-selecionado (opcional) */
   selectedProductId?: string | null;
-  /** Item em edição (caso seja edição de esquadria já adicionada ao orçamento) */
   editingItem?: BudgetItem | null;
-  /** Callback disparado ao salvar/adicionar o item configurado ao orçamento */
   onAddItem: (item: BudgetItem) => void;
-  /** Callback para fechar o modal */
   onClose: () => void;
 }
 
-/**
- * Hook central que integra todos os submódulos do construtor de esquadrias,
- * expondo uma API consolidada para a interface do usuário.
- */
 export function useWindowBuilderState({
   isOpen,
   selectedProductId,
@@ -79,415 +384,627 @@ export function useWindowBuilderState({
   onAddItem,
   onClose,
 }: UseWindowBuilderStateProps) {
-  // 1. Catálogo & Cores
-  const {
-    templates,
-    glasses,
-    profiles,
-    hardwares,
-    films,
-    dynamicAluminumColors,
-    dynamicGlassFinishes,
-    availableHandleProfiles,
-    availableHandleHardwares,
-  } = useBuilderCatalog();
+  const { data: productsData } = useProducts();
 
-  // 2. Estado Base da Esquadria
-  const [template, setTemplate] = useState<WindowTemplate | null>(null);
-  const [templateType, setTemplateType] = useState<DoorTemplateType | undefined>(undefined);
-  const [widthMm, setWidthMm] = useState<number | ''>(DEFAULT_WIDTH);
-  const [heightMm, setHeightMm] = useState<number | ''>(DEFAULT_HEIGHT);
-  const [quantity, setQuantity] = useState<number | ''>(1);
-  const [openingDirection, setOpeningDirection] = useState<'LEFT_TO_RIGHT' | 'RIGHT_TO_LEFT' | 'OUTSIDE' | 'INSIDE' | 'CENTER_TO_SIDES'>('LEFT_TO_RIGHT');
-  const [aluminumColor, setAluminumColor] = useState('Alumínio Fosco / Anodizado');
-  const [glassFinish, setGlassFinish] = useState('Fumê / Cinza');
-  const [laborCost, setLaborCost] = useState(0);
-  const [notes, setNotes] = useState('');
+  const templates = useMemo(() => {
+    if (!productsData?.content) return [];
+    return (productsData.content as unknown as Product[])
+      .filter((p) => p.isActive)
+      .map((p): WindowTemplate => {
+        const defaultSvg = getDefaultSvgTemplateForCatalogType(p.templateType, p.name, p.templateConfig);
+        return {
+          id: p.id,
+          name: p.name,
+          categoryId: '',
+          categoryName: p.categoryName ?? '',
+          isActive: p.isActive,
+          laborCost: 0,
+          catalogTemplateType: p.templateType ?? null,
+          templateType: defaultSvg,
+          templateConfig: p.templateConfig ?? undefined,
+          categoryRequirements: p.categoryRequirements ?? [],
+          items: [],
+        };
+      });
+  }, [productsData]);
 
+  const { data: glassesData } = useGlasses();
+  const { data: profilesData } = useProfiles();
+  const { data: hardwaresData } = useHardwares();
+  const { data: filmsData } = useFilms();
+
+  const glasses: GlassDTO[] = useMemo(() => (glassesData?.content ?? []) as GlassDTO[], [glassesData]);
+  const profiles: ProfileDTO[] = useMemo(() => (profilesData?.content ?? []) as ProfileDTO[], [profilesData]);
+  const hardwares: HardwareDTO[] = useMemo(() => (hardwaresData?.content ?? []) as HardwareDTO[], [hardwaresData]);
+  const films: FilmDTO[] = useMemo(() => (filmsData?.content ?? []) as FilmDTO[], [filmsData]);
+
+  const dynamicAluminumColors = useMemo(() => {
+    const fromCatalog = profiles
+      .map((p) => p.colorFinish)
+      .filter((c): c is string => Boolean(c && c.trim()));
+    return Array.from(new Set([...BASE_ALUMINUM_COLORS, ...fromCatalog]));
+  }, [profiles]);
+
+  const dynamicGlassFinishes = useMemo(() => {
+    const fromCatalog = glasses
+      .map((g) => g.colorFinish)
+      .filter((c): c is string => Boolean(c && c.trim()));
+    return Array.from(new Set([...BASE_GLASS_FINISHES, ...fromCatalog]));
+  }, [glasses]);
+
+  const [state, setState] = useState<BuilderState>({
+    template: null,
+    widthMm: DEFAULT_WIDTH,
+    heightMm: DEFAULT_HEIGHT,
+    quantity: 1,
+    openingDirection: 'LEFT_TO_RIGHT',
+    handleConfig: {
+      handleType: 'BAR_TUBULAR',
+      side: 'ONE_SIDE',
+      coverage: 'FULL',
+      pieceLengthCm: 40,
+    },
+    drillingConfig: {
+      holeCount: 2,
+      divisionType: 'EQUAL',
+      customDistancesMm: [700, 1400],
+    },
+    aluminumColor: 'Alumínio Fosco / Anodizado',
+    glassFinish: 'Fumê / Cinza',
+    laborCost: 0,
+    notes: '',
+    materialSelections: [],
+  });
+
+  const [holeDistanceInputs, setHoleDistanceInputs] = useState<string[]>(['700', '1400']);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4>(1);
+  const [isMobileCadExpanded, setIsMobileCadExpanded] = useState(false);
   const hasInitializedRef = useRef(false);
 
-  const svgTemplate: DoorTemplateType = (templateType || template?.templateType || 'SLIDING_DOOR_2F') as DoorTemplateType;
-
-  const typologyMeta = useMemo(() => {
-    const schemaPositions = template?.templateConfig?.optionSchema?.allowedHandlePositions;
-    return getTypologyMetadata(svgTemplate, schemaPositions);
-  }, [svgTemplate, template]);
+  const svgTemplate: DoorTemplateType = (state.templateType || state.template?.templateType || 'SLIDING_DOOR_2F') as DoorTemplateType;
 
   const supportedDirections = useMemo(() => {
-    const schemaDirs = template?.templateConfig?.optionSchema?.allowedOpeningDirections;
-    if (schemaDirs && schemaDirs.length > 0) return schemaDirs;
-    return TEMPLATE_TYPE_INFO[svgTemplate]?.supportedDirections ?? typologyMeta.supportedOpeningDirections;
-  }, [svgTemplate, typologyMeta, template]);
+    return TEMPLATE_TYPE_INFO[svgTemplate]?.supportedDirections ?? ['LEFT_TO_RIGHT', 'RIGHT_TO_LEFT'];
+  }, [svgTemplate]);
 
-  const allowedHandlePositions = typologyMeta.allowedHandlePositions;
-
-  // 3. Subhook de Puxador
-  const {
-    handleConfig,
-    setHandleConfig,
-    handleHandleTypeChange: baseHandleTypeChange,
-    handleHandlePositionChange,
-    handleHandleOrientationChange,
-    handleHandleSideChange: baseHandleSideChange,
-    handleHandleCoverageChange: baseHandleCoverageChange,
-    handleHandlePieceLengthChange: baseHandlePieceLengthChange,
-  } = useHandleBuilder({
-    allowedHandlePositions,
-    defaultHandlePosition: typologyMeta.defaultHandlePosition,
-  });
-
-  // 4. Subhook de Furação
-  const {
-    drillingConfig,
-    setDrillingConfig,
-    holeDistanceInputs,
-    setHoleDistanceInputs,
-    handleHoleCountChange,
-    handleDivisionTypeChange,
-    handleSingleHoleDistanceChange,
-    initDrilling,
-  } = useDrillingBuilder({ heightMm });
-
-  // 5. Utilitários de Sincronização de Materiais
-  const { findCatalogMaterial, buildSelectionsForTemplate } = useMaterialSync({
-    glasses,
-    profiles,
-    hardwares,
-    films,
-  });
-
-  const handleColorChange = useCallback((alum?: string, glass?: string) => {
-    if (alum) setAluminumColor(mapCatalogAluminumColor(alum));
-    if (glass) setGlassFinish(mapCatalogGlassColor(glass));
-  }, []);
-
-  // 6. Subhook de Materiais
-  const {
-    materialSelections,
-    setMaterialSelections,
-    handleMaterial,
-    handleMaterialChange,
-    handleMaterialQtyChange,
-    handleAddMaterial,
-    handleRemoveMaterial,
-    handleSelectHandleMaterial,
-  } = useBuilderMaterials({
-    isOpen,
-    widthMm,
-    heightMm,
-    quantity,
-    templateType: svgTemplate,
-    handleConfig,
-    glasses,
-    profiles,
-    hardwares,
-    films,
-    findCatalogMaterial,
-    onColorChange: handleColorChange,
-    onHandleConfigChange: setHandleConfig,
-  });
-
-  // 7. Subhook de Navegação do Wizard
-  const {
-    currentStep,
-    setCurrentStep,
-    errors,
-    setErrors,
-    isMobileCadExpanded,
-    setIsMobileCadExpanded,
-    handleNextStep,
-    handlePrevStep,
-    handleGoToStep,
-    validateAllBeforeSubmit,
-    resetNavigation,
-  } = useBuilderNavigation({
-    template,
-    widthMm,
-    heightMm,
-    quantity,
-    materialSelections,
-  });
-
-  // Sincronizar alterações de puxador com os materiais
-  const handleHandleTypeChange = useCallback(
-    (type: HandleType) => {
-      baseHandleTypeChange(type);
-      setMaterialSelections((prev) => {
-        let updated = prev;
-        if (type === 'PROFILE_HANDLE' && handleMaterial?.categoryType === 'HARDWARE') {
-          const profileMatch = profiles.find((p) => p.name.toLowerCase().includes('puxador')) ?? profiles[0];
-          if (profileMatch) {
-            updated = prev.map((sel) =>
-              sel.requirementId === handleMaterial.requirementId
-                ? {
-                    ...sel,
-                    categoryType: 'PROFILE' as CategoryType,
-                    label: 'Perfil Puxador',
-                    materialId: profileMatch.id,
-                    materialName: profileMatch.name,
-                    unitMeasure: profileMatch.unitMeasure ?? 'm',
-                    unitPrice: profileMatch.salePrice ?? 0,
-                    familyCode: profileMatch.familyCode,
-                  }
-                : sel
-            );
-          }
-        } else if (type !== 'PROFILE_HANDLE' && type !== 'NONE' && handleMaterial?.categoryType === 'PROFILE') {
-          const hwMatch = hardwares[0];
-          if (hwMatch) {
-            updated = prev.map((sel) =>
-              sel.requirementId === handleMaterial.requirementId
-                ? {
-                    ...sel,
-                    categoryType: 'HARDWARE' as CategoryType,
-                    label: 'Puxador / Ferragem',
-                    materialId: hwMatch.id,
-                    materialName: hwMatch.name,
-                    unitMeasure: hwMatch.unitMeasure ?? 'un',
-                    unitPrice: hwMatch.salePrice ?? 0,
-                    familyCode: hwMatch.familyCode,
-                  }
-                : sel
-            );
-          }
-        }
-
-        const isProfile = type === 'PROFILE_HANDLE';
-        const newCfg: HandleConfig = {
-          ...handleConfig,
-          handleType: type,
-          coverage: isProfile ? handleConfig.coverage ?? 'FULL' : undefined,
-          pieceLengthCm: isProfile && handleConfig.coverage === 'PIECE' ? handleConfig.pieceLengthCm ?? 40 : undefined,
-        };
-        return syncHandleMaterialSelections(updated, newCfg, heightMm);
-      });
+  const findCatalogMaterial = useCallback(
+    (materialId: string) => {
+      if (!materialId) return null;
+      const g = glasses.find((item) => item.id === materialId);
+      if (g) return { name: g.name, unit: 'm²', price: g.salePrice ?? g.pricePerSqm ?? 0, colorFinish: g.colorFinish, categoryType: 'GLASS' as CategoryType };
+      const p = profiles.find((item) => item.id === materialId);
+      if (p) return { name: p.name, unit: p.unitMeasure ?? 'm', price: p.salePrice ?? 0, colorFinish: p.colorFinish, categoryType: 'PROFILE' as CategoryType };
+      const h = hardwares.find((item) => item.id === materialId);
+      if (h) return { name: h.name, unit: h.unitMeasure ?? 'un', price: h.salePrice ?? 0, colorFinish: undefined, categoryType: 'HARDWARE' as CategoryType };
+      const f = films.find((item) => item.id === materialId);
+      if (f) return { name: f.name, unit: 'm²', price: f.salePrice ?? 0, colorFinish: f.colorFinish, categoryType: 'FILM' as CategoryType };
+      return null;
     },
-    [baseHandleTypeChange, handleMaterial, profiles, hardwares, handleConfig, heightMm, setMaterialSelections]
+    [glasses, profiles, hardwares, films],
   );
 
-  const handleHandleSideChange = useCallback(
-    (side: HandleSide) => {
-      baseHandleSideChange(side);
-      const newConfig: HandleConfig = { ...handleConfig, side };
-      setMaterialSelections((prev) => syncHandleMaterialSelections(prev, newConfig, heightMm));
-    },
-    [baseHandleSideChange, handleConfig, heightMm, setMaterialSelections]
-  );
-
-  const handleHandleCoverageChange = useCallback(
-    (coverage: HandleCoverage) => {
-      baseHandleCoverageChange(coverage);
-      const newConfig: HandleConfig = {
-        ...handleConfig,
-        coverage,
-        pieceLengthCm: coverage === 'PIECE' ? handleConfig.pieceLengthCm ?? 40 : undefined,
-      };
-      setMaterialSelections((prev) => syncHandleMaterialSelections(prev, newConfig, heightMm));
-    },
-    [baseHandleCoverageChange, handleConfig, heightMm, setMaterialSelections]
-  );
-
-  const handleHandlePieceLengthChange = useCallback(
-    (pieceLengthCm: number) => {
-      baseHandlePieceLengthChange(pieceLengthCm);
-      const newConfig: HandleConfig = { ...handleConfig, pieceLengthCm };
-      setMaterialSelections((prev) => syncHandleMaterialSelections(prev, newConfig, heightMm));
-    },
-    [baseHandlePieceLengthChange, handleConfig, heightMm, setMaterialSelections]
-  );
-
-  const handleHeightChange = useCallback(
-    (h: number | '') => {
-      setHeightMm(h);
-      if (handleConfig.coverage === 'FULL' && handleConfig.handleType !== 'NONE') {
-        setMaterialSelections((prev) => syncHandleMaterialSelections(prev, handleConfig, h));
-      }
-    },
-    [handleConfig, setMaterialSelections]
-  );
-
-  // Inicialização (Edição ou Criação)
   useEffect(() => {
     if (!isOpen) {
       hasInitializedRef.current = false;
-      resetNavigation();
       return;
     }
 
     if (editingItem) {
-      if (!hasInitializedRef.current) {
-        hasInitializedRef.current = true;
-        const matchedTemplate = templates.find((t) => t.id === editingItem.productId) ?? templates[0] ?? null;
-        const selections = (editingItem.options ?? []).map((opt, idx) => {
-          const mat = findCatalogMaterial(opt.materialId);
-          const reqId = `edit-item-${opt.materialId}-${idx}`;
-          const categoryType = opt.categoryType || (mat?.categoryType as CategoryType) || 'HARDWARE';
-          const price = opt.unitPrice || mat?.price || 0;
-          const qty = opt.quantity ?? 1;
-          return {
-            requirementId: reqId,
-            categoryType,
-            label: CATEGORY_LABELS[categoryType] ?? categoryType,
-            isOptional: false,
-            materialId: opt.materialId,
-            materialName: opt.materialName || mat?.name || 'Material',
-            unitMeasure: opt.unitMeasure || mat?.unit || 'un',
-            unitPrice: price,
-            quantity: qty,
-            totalPrice: qty !== undefined ? parseFloat((qty * price).toFixed(2)) : undefined,
-          };
-        });
-
-        setTemplate(matchedTemplate);
-        setTemplateType((editingItem.templateType as DoorTemplateType) || undefined);
-        setWidthMm(editingItem.widthMm);
-        setHeightMm(editingItem.heightMm);
-        setQuantity(editingItem.quantity);
-        setOpeningDirection(editingItem.templateConfig?.openingDirection ?? 'LEFT_TO_RIGHT');
-        setAluminumColor(editingItem.templateConfig?.aluminumColor ?? 'Alumínio Fosco / Anodizado');
-        setGlassFinish(editingItem.templateConfig?.glassFinish ?? 'Fumê / Cinza');
-        setLaborCost(editingItem.laborCost ?? 0);
-        setNotes(editingItem.notes ?? '');
-        setMaterialSelections(selections);
-
-        setHandleConfig(
-          editingItem.handleConfig ?? {
-            handleType: 'BAR_TUBULAR',
-            side: 'ONE_SIDE',
-            coverage: 'FULL',
-            pieceLengthCm: 40,
-          }
-        );
-
-        if (editingItem.drillingConfig) {
-          initDrilling(editingItem.drillingConfig);
-        }
-
-        resetNavigation();
-      }
-    } else {
-      if (!hasInitializedRef.current && templates.length > 0) {
-        hasInitializedRef.current = true;
-        const defaultTemplate = selectedProductId
-          ? templates.find((t) => t.id === selectedProductId) ?? templates[0]
-          : templates[0];
-
-        const targetSvg =
-          (defaultTemplate.templateType as DoorTemplateType) ||
-          getDefaultSvgTemplateForCatalogType(
-            defaultTemplate.catalogTemplateType,
-            defaultTemplate.name,
-            defaultTemplate.templateConfig
-          );
-
-        const validDirections = TEMPLATE_TYPE_INFO[targetSvg]?.supportedDirections ?? ['LEFT_TO_RIGHT', 'RIGHT_TO_LEFT'];
-        const alumColor = defaultTemplate.templateConfig?.aluminumColor
-          ? mapCatalogAluminumColor(defaultTemplate.templateConfig.aluminumColor)
-          : 'Alumínio Fosco / Anodizado';
-        const glassColor = defaultTemplate.templateConfig?.glassColor
-          ? mapCatalogGlassColor(defaultTemplate.templateConfig.glassColor)
-          : 'Fumê / Cinza';
-
-        const rawDir = defaultTemplate.templateConfig?.openingDirection;
-        const dir = rawDir && validDirections.includes(rawDir) ? rawDir : validDirections[0] ?? 'LEFT_TO_RIGHT';
-
-        const cfgHandle = defaultTemplate.templateConfig?.handleConfig;
-        const metaForTarget = getTypologyMetadata(targetSvg, defaultTemplate.templateConfig?.optionSchema?.allowedHandlePositions);
-        const initialPos: HandlePosition = cfgHandle?.handlePosition ?? cfgHandle?.position ?? metaForTarget.defaultHandlePosition;
-
-        const initialHandleConfig: HandleConfig = cfgHandle
-          ? {
-              handleType: cfgHandle.handleType ?? 'BAR_TUBULAR',
-              position: initialPos,
-              side: cfgHandle.side ?? 'ONE_SIDE',
-              coverage: cfgHandle.coverage ?? (cfgHandle.handleLengthMm && cfgHandle.handleLengthMm >= 1000 ? 'FULL' : 'PIECE'),
-              pieceLengthCm: cfgHandle.pieceLengthCm ?? (cfgHandle.handleLengthMm ? Math.round(cfgHandle.handleLengthMm / 10) : 40),
-            }
-          : {
-              handleType: 'BAR_TUBULAR',
-              position: initialPos,
-              side: 'ONE_SIDE',
-              coverage: 'FULL',
-              pieceLengthCm: 40,
-            };
-
-        const w = DEFAULT_WIDTH;
-        const h = DEFAULT_HEIGHT;
-        const initialSelections = buildSelectionsForTemplate(defaultTemplate, w, h, alumColor, glassColor);
-        const syncedSelections = syncHandleMaterialSelections(initialSelections, initialHandleConfig, h);
-
-        setTemplate(defaultTemplate);
-        setTemplateType(targetSvg);
-        setWidthMm(w);
-        setHeightMm(h);
-        setQuantity(1);
-        setOpeningDirection(dir);
-        setAluminumColor(alumColor);
-        setGlassFinish(glassColor);
-        setLaborCost(defaultTemplate.laborCost || 0);
-        setNotes('');
-        setHandleConfig(initialHandleConfig);
-        setMaterialSelections(syncedSelections);
-
-        const cfgDrill = defaultTemplate.templateConfig?.drillingConfig;
-        if (cfgDrill) {
-          initDrilling({
-            holeCount: cfgDrill.holeCount ?? 2,
-            divisionType: cfgDrill.drillingMode === 'CUSTOM' ? 'CUSTOM_DISTANCE' : 'EQUAL',
-            customDistancesMm: cfgDrill.customPositionsMm ?? [100, 500, 560, 100],
-          });
-        }
-
-        resetNavigation();
-      }
+      const { state: editState, holeInputs } = buildEditingItemState(editingItem, templates, findCatalogMaterial);
+      setHoleDistanceInputs(holeInputs);
+      setState(editState);
+    } else if (!hasInitializedRef.current && templates.length > 0) {
+      hasInitializedRef.current = true;
+      const { state: initState, holeInputs } = buildDefaultInitState(templates, selectedProductId);
+      setHoleDistanceInputs(holeInputs);
+      setState(initState);
     }
-  }, [
-    isOpen,
-    editingItem,
-    templates,
-    selectedProductId,
-    buildSelectionsForTemplate,
-    findCatalogMaterial,
-    initDrilling,
-    resetNavigation,
-    setHandleConfig,
-    setMaterialSelections,
-  ]);
+
+    setErrors({});
+  }, [isOpen, editingItem, templates, findCatalogMaterial, selectedProductId]);
+
+  const handleMaterialChange = (requirementId: string, materialId: string) => {
+    const selIndex = state.materialSelections.findIndex((s) => s.requirementId === requirementId);
+    if (selIndex === -1) return;
+    const sel = state.materialSelections[selIndex];
+
+    if (!materialId) {
+      setState((prev) => ({
+        ...prev,
+        materialSelections: prev.materialSelections.map((s) =>
+          s.requirementId === requirementId
+            ? {
+                ...s,
+                materialId: '',
+                materialName: '',
+                unitPrice: 0,
+                quantity: undefined,
+                totalPrice: undefined,
+              }
+            : s,
+        ),
+      }));
+      return;
+    }
+
+    const mat = findCatalogMaterial(materialId);
+    const unitPrice = mat?.price ?? 0;
+
+    setState((prev) => {
+      const nextAlum = sel.categoryType === 'PROFILE' && mat
+        ? deriveAluminumColorFromMaterial(mat, prev.aluminumColor)
+        : prev.aluminumColor;
+      const nextGlass = sel.categoryType === 'GLASS' && mat
+        ? deriveGlassFinishFromMaterial(mat, prev.glassFinish)
+        : prev.glassFinish;
+      const nextHandleType = sel.categoryType === 'HARDWARE' && mat
+        ? deriveHandleTypeFromMaterial(mat, prev.handleConfig.handleType)
+        : prev.handleConfig.handleType;
+
+      const nextUnit = mat?.unit ?? sel.unitMeasure;
+      const isNewUnitPiece = nextUnit === 'un' || nextUnit === 'UN' || nextUnit === 'par' || nextUnit === 'PAR';
+      const isOldUnitPiece = sel.unitMeasure === 'un' || sel.unitMeasure === 'UN' || sel.unitMeasure === 'par' || sel.unitMeasure === 'PAR';
+
+      let nextQuantity = sel.quantity;
+      if (isNewUnitPiece && !isOldUnitPiece) {
+        nextQuantity = 1;
+      } else if (!isNewUnitPiece && isOldUnitPiece) {
+        const w = typeof prev.widthMm === 'number' ? prev.widthMm : DEFAULT_WIDTH;
+        const h = typeof prev.heightMm === 'number' ? prev.heightMm : DEFAULT_HEIGHT;
+        const areaM2 = parseFloat(((w / 1000) * (h / 1000)).toFixed(2));
+        const perimeterM = parseFloat(((2 * (w + h)) / 1000).toFixed(2));
+        const computed = computeRequirementMeasure(sel.categoryType, areaM2, perimeterM);
+        nextQuantity = computed.qty;
+      }
+
+      return {
+        ...prev,
+        aluminumColor: nextAlum,
+        glassFinish: nextGlass,
+        handleConfig: {
+          ...prev.handleConfig,
+          handleType: nextHandleType,
+        },
+        materialSelections: prev.materialSelections.map((s) =>
+          s.requirementId === requirementId
+            ? {
+                ...s,
+                materialId,
+                materialName: mat?.name ?? '',
+                unitMeasure: nextUnit,
+                unitPrice,
+                quantity: nextQuantity,
+                totalPrice: (nextQuantity ?? 1) * unitPrice,
+              }
+            : s,
+        ),
+      };
+    });
+  };
+
+  const handleMaterialQtyChange = (requirementId: string, valStr: string | undefined) => {
+    setState((prev) => ({
+      ...prev,
+      materialSelections: prev.materialSelections.map((s) => {
+        if (s.requirementId !== requirementId) return s;
+
+        const isIntegerUnit = s.unitMeasure === 'UN' || s.unitMeasure === 'PAR' || s.unitMeasure === 'PAIR' || s.unitMeasure === 'un';
+        let qty: number | undefined = undefined;
+
+        if (valStr !== undefined) {
+          const num = parseFloat(String(valStr).replace(',', '.'));
+          if (!isNaN(num) && num >= 0) {
+            qty = isIntegerUnit ? Math.floor(num) : num;
+          }
+        }
+
+        return {
+          ...s,
+          quantity: qty,
+          totalPrice: qty !== undefined ? parseFloat((qty * s.unitPrice).toFixed(2)) : undefined,
+        };
+      }),
+    }));
+  };
+
+  const handleAddMaterial = (catType: CategoryType) => {
+    let defaultMat: { id: string; name: string; price: number; unit: string } | undefined;
+    if (catType === 'GLASS' && glasses.length > 0) defaultMat = { id: glasses[0].id, name: glasses[0].name, price: glasses[0].salePrice ?? glasses[0].pricePerSqm ?? 0, unit: 'm²' };
+    else if (catType === 'PROFILE' && profiles.length > 0) defaultMat = { id: profiles[0].id, name: profiles[0].name, price: profiles[0].salePrice ?? 0, unit: profiles[0].unitMeasure ?? 'm' };
+    else if (catType === 'HARDWARE' && hardwares.length > 0) defaultMat = { id: hardwares[0].id, name: hardwares[0].name, price: hardwares[0].salePrice ?? 0, unit: hardwares[0].unitMeasure ?? 'un' };
+    else if (catType === 'FILM' && films.length > 0) defaultMat = { id: films[0].id, name: films[0].name, price: films[0].salePrice ?? 0, unit: 'm²' };
+
+    const newSel: MaterialSelection = {
+      requirementId: `custom-mat-${Date.now()}`,
+      categoryType: catType,
+      label: `${CATEGORY_LABELS[catType]} (Adicional)`,
+      isOptional: true,
+      materialId: defaultMat?.id ?? '',
+      materialName: defaultMat?.name ?? '',
+      unitMeasure: defaultMat?.unit ?? (catType === 'GLASS' || catType === 'FILM' ? 'm²' : catType === 'PROFILE' ? 'm' : 'un'),
+      unitPrice: defaultMat?.price ?? 0,
+      quantity: 1,
+      totalPrice: defaultMat?.price ?? 0,
+    };
+
+    setState((prev) => ({
+      ...prev,
+      materialSelections: [...prev.materialSelections, newSel],
+    }));
+  };
+
+  const handleRemoveMaterial = (requirementId: string) => {
+    setState((prev) => ({
+      ...prev,
+      materialSelections: prev.materialSelections.filter((s) => s.requirementId !== requirementId),
+    }));
+  };
+
+  const handleHandleTypeChange = (type: HandleType) => {
+    setState((prev) => ({
+      ...prev,
+      handleConfig: {
+        ...prev.handleConfig,
+        handleType: type,
+        side: prev.handleConfig.side ?? 'ONE_SIDE',
+        coverage: type === 'BAR_TUBULAR' ? prev.handleConfig.coverage ?? 'FULL' : undefined,
+      },
+    }));
+  };
+
+  const handleHandleSideChange = (side: HandleSide) => {
+    setState((prev) => ({
+      ...prev,
+      handleConfig: { ...prev.handleConfig, side },
+    }));
+  };
+
+  const handleHandleCoverageChange = (coverage: HandleCoverage) => {
+    setState((prev) => ({
+      ...prev,
+      handleConfig: {
+        ...prev.handleConfig,
+        coverage,
+        pieceLengthCm: coverage === 'PIECE' ? prev.handleConfig.pieceLengthCm ?? 40 : undefined,
+      },
+    }));
+  };
+
+  const handleHandlePieceLengthChange = (pieceLengthCm: number) => {
+    setState((prev) => ({
+      ...prev,
+      handleConfig: {
+        ...prev.handleConfig,
+        pieceLengthCm,
+      },
+    }));
+  };
+
+  const allowedHandlePositions = useMemo(() => {
+    return ['LEFT', 'RIGHT', 'CENTER', 'TOP', 'BOTTOM'] as HandlePosition[];
+  }, []);
+
+  const handleHandlePositionChange = (position: HandlePosition) => {
+    setState((prev) => {
+      let nextOrientation: HandleOrientation = prev.handleConfig.orientation ?? 'VERTICAL';
+      if (position === 'TOP' || position === 'BOTTOM') {
+        nextOrientation = 'HORIZONTAL';
+      } else if (position === 'LEFT' || position === 'RIGHT') {
+        nextOrientation = 'VERTICAL';
+      }
+      return {
+        ...prev,
+        handleConfig: {
+          ...prev.handleConfig,
+          handlePosition: position,
+          position,
+          orientation: nextOrientation,
+        },
+      };
+    });
+  };
+
+  const handleHandleOrientationChange = (orientation: HandleOrientation) => {
+    setState((prev) => ({
+      ...prev,
+      handleConfig: {
+        ...prev.handleConfig,
+        orientation,
+      },
+    }));
+  };
+
+  const handleHeightChange = (heightMm: number | '') => {
+    setState((prev) => ({
+      ...prev,
+      heightMm,
+    }));
+  };
+
+  const availableHandleProfiles = useMemo(() => {
+    return profiles
+      .filter((p) => p.name.toLowerCase().includes('puxador'))
+      .map((p) => ({
+        id: p.id,
+        name: p.name,
+        price: p.salePrice ?? 0,
+        unit: p.unitMeasure ?? 'm',
+        colorFinish: p.colorFinish,
+      }));
+  }, [profiles]);
+
+  const availableHandleHardwares = useMemo(() => {
+    return hardwares
+      .filter(
+        (h) =>
+          h.name.toLowerCase().includes('puxador') ||
+          h.name.toLowerCase().includes('concha') ||
+          h.name.toLowerCase().includes('fecho') ||
+          h.name.toLowerCase().includes('maçaneta') ||
+          h.name.toLowerCase().includes('macaneta'),
+      )
+      .map((h) => ({
+        id: h.id,
+        name: h.name,
+        price: h.salePrice ?? 0,
+        unit: h.unitMeasure ?? 'un',
+      }));
+  }, [hardwares]);
+
+  const handleMaterial = useMemo(() => {
+    return (
+      state.materialSelections.find(
+        (s) => s.requirementId.includes('handle') || s.label.toLowerCase().includes('puxador'),
+      ) ?? null
+    );
+  }, [state.materialSelections]);
+
+  const handleSelectHandleMaterial = (materialId: string, category?: 'PROFILE' | 'HARDWARE') => {
+    const isProfile = category ? category === 'PROFILE' : profiles.some((p) => p.id === materialId);
+    const resolvedCategory: CategoryType = isProfile ? 'PROFILE' : 'HARDWARE';
+    const list = isProfile ? profiles : hardwares;
+    const mat = list.find((m) => m.id === materialId);
+    if (!mat) return;
+
+    setState((prev) => {
+      const existingIdx = prev.materialSelections.findIndex(
+        (s) => s.requirementId === 'req-handle' || s.label.toLowerCase().includes('puxador'),
+      );
+      const selItem: MaterialSelection = {
+        requirementId: existingIdx >= 0 ? prev.materialSelections[existingIdx].requirementId : 'req-handle',
+        categoryType: resolvedCategory,
+        label: 'Puxador',
+        materialId: mat.id,
+        materialName: mat.name,
+        unitMeasure: mat.unitMeasure ?? (isProfile ? 'm' : 'un'),
+        unitPrice: mat.salePrice ?? 0,
+        quantity: 1,
+        totalPrice: mat.salePrice ?? 0,
+        isOptional: true,
+      };
+
+      const nextSelections = [...prev.materialSelections];
+      if (existingIdx >= 0) {
+        nextSelections[existingIdx] = selItem;
+      } else {
+        nextSelections.push(selItem);
+      }
+
+      return {
+        ...prev,
+        materialSelections: nextSelections,
+      };
+    });
+  };
+
+  const getDefaultHoleDistances = (count: number, height: number): number[] => {
+    if (count <= 0) return [];
+    const step = Math.round(height / (count + 1));
+    const dists: number[] = [];
+    for (let i = 1; i <= count; i++) {
+      dists.push(step * i);
+    }
+    return dists;
+  };
+
+  const handleHoleCountChange = (count: number) => {
+    const currentH = typeof state.heightMm === 'number' && state.heightMm > 0 ? state.heightMm : DEFAULT_HEIGHT;
+    const defaults = getDefaultHoleDistances(count, currentH);
+
+    setHoleDistanceInputs((prev) => {
+      const next: string[] = [];
+      for (let i = 0; i < count; i++) {
+        if (prev[i] !== undefined && prev[i] !== '' && prev[i] !== '0') {
+          next.push(prev[i]);
+        } else {
+          next.push(String(defaults[i]));
+        }
+      }
+      return next;
+    });
+
+    setState((prev) => {
+      const currentDists = prev.drillingConfig.customDistancesMm ?? [];
+      const nextDists: number[] = [];
+      for (let i = 0; i < count; i++) {
+        if (currentDists[i] !== undefined && currentDists[i] > 0) {
+          nextDists.push(currentDists[i]);
+        } else {
+          nextDists.push(defaults[i]);
+        }
+      }
+
+      return {
+        ...prev,
+        drillingConfig: {
+          ...prev.drillingConfig,
+          holeCount: count,
+          customDistancesMm: nextDists,
+        },
+      };
+    });
+  };
+
+  const handleDivisionTypeChange = (type: DivisionType) => {
+    setState((prev) => {
+      const currentH = typeof prev.heightMm === 'number' && prev.heightMm > 0 ? prev.heightMm : DEFAULT_HEIGHT;
+      const count = prev.drillingConfig.holeCount;
+      const defaults = getDefaultHoleDistances(count, currentH);
+      const nextDists = prev.drillingConfig.customDistancesMm?.length === count ? prev.drillingConfig.customDistancesMm : defaults;
+
+      if (type === 'CUSTOM_DISTANCE') {
+        setHoleDistanceInputs(nextDists.map(String));
+      }
+
+      return {
+        ...prev,
+        drillingConfig: {
+          ...prev.drillingConfig,
+          divisionType: type,
+          customDistancesMm: nextDists,
+        },
+      };
+    });
+  };
+
+  const handleSingleHoleDistanceChange = (index: number, val: string) => {
+    setHoleDistanceInputs((prev) => {
+      const next = [...prev];
+      next[index] = val;
+      return next;
+    });
+
+    const parsedNum = parseInt(val, 10);
+    setState((prev) => {
+      const dists = [...(prev.drillingConfig.customDistancesMm ?? [])];
+      while (dists.length < prev.drillingConfig.holeCount) {
+        dists.push(0);
+      }
+      dists[index] = !isNaN(parsedNum) && parsedNum > 0 ? parsedNum : 0;
+      return {
+        ...prev,
+        drillingConfig: {
+          ...prev.drillingConfig,
+          customDistancesMm: dists,
+        },
+      };
+    });
+  };
 
   const itemSubtotalEstimate = useMemo(() => {
-    const qty = typeof quantity === 'number' && quantity > 0 ? quantity : 1;
-    return calcItemSubtotal(materialSelections, laborCost ?? 0, qty);
-  }, [materialSelections, quantity, laborCost]);
+    const w = typeof state.widthMm === 'number' ? state.widthMm : 0;
+    const h = typeof state.heightMm === 'number' ? state.heightMm : 0;
+    const qty = typeof state.quantity === 'number' && state.quantity >= 1 ? state.quantity : 1;
+    if (!w || !h) return 0;
+    return calcItemSubtotal(
+      state.materialSelections.map((s) => ({ quantity: s.quantity, unitPrice: s.unitPrice })),
+      state.laborCost ?? 0,
+      qty,
+    );
+  }, [state.materialSelections, state.quantity, state.widthMm, state.heightMm, state.laborCost]);
 
-  const handleSubmit = useCallback(() => {
-    if (!validateAllBeforeSubmit() || !template) return;
+  const validateStep = (step: 1 | 2 | 3 | 4): boolean => {
+    if (step === 1) {
+      const newErrors = validateStep1Dimensions(state.widthMm, state.heightMm, state.quantity);
+      if (Object.keys(newErrors).length > 0) {
+        setErrors(newErrors);
+        toast.error('Informe as medidas e quantidade da esquadria.');
+        return false;
+      }
+    }
 
-    const w = typeof widthMm === 'number' ? widthMm : 0;
-    const h = typeof heightMm === 'number' ? heightMm : 0;
-    const qty = typeof quantity === 'number' ? quantity : 0;
-    const svgTemplateToSave = (templateType || template.templateType || 'SLIDING_DOOR_2F') as DoorTemplateType;
+    if (step === 2) {
+      const missingReqs = getMissingRequiredMaterialLabels(state.materialSelections);
+      if (missingReqs.length > 0) {
+        toast.error(`Selecione os materiais obrigatórios: ${missingReqs.map((r) => r).join(', ')}`);
+        return false;
+      }
+    }
+
+    setErrors({});
+    return true;
+  };
+
+  const handleNextStep = () => {
+    if (validateStep(currentStep)) {
+      if (currentStep < 4) {
+        setCurrentStep((prev) => (prev + 1) as 1 | 2 | 3 | 4);
+      }
+    }
+  };
+
+  const handlePrevStep = () => {
+    if (currentStep > 1) {
+      setCurrentStep((prev) => (prev - 1) as 1 | 2 | 3 | 4);
+    }
+  };
+
+  const handleGoToStep = (targetStep: 1 | 2 | 3 | 4) => {
+    if (targetStep > currentStep) {
+      for (let s = currentStep; s < targetStep; s++) {
+        if (!validateStep(s as 1 | 2 | 3 | 4)) return;
+      }
+    }
+    setCurrentStep(targetStep);
+  };
+
+  const handleSubmit = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!state.template) {
+      toast.error('Selecione um template de esquadria.');
+      return;
+    }
+
+    const w = typeof state.widthMm === 'number' ? state.widthMm : 0;
+    const h = typeof state.heightMm === 'number' ? state.heightMm : 0;
+    const qty = typeof state.quantity === 'number' ? state.quantity : 0;
+
+    if (!w || w <= 0) newErrors.widthMm = 'Largura obrigatória';
+    if (!h || h <= 0) newErrors.heightMm = 'Altura obrigatória';
+    if (!qty || qty < 1) newErrors.quantity = 'Quantidade inválida';
+
+    const missingReqs = state.materialSelections.filter(
+      (sel) => !sel.isOptional && !sel.materialId,
+    );
+
+    if (missingReqs.length > 0) {
+      toast.error(`Selecione os materiais obrigatórios: ${missingReqs.map((r) => r.label).join(', ')}`);
+      setCurrentStep(2);
+      return;
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      toast.error('Verifique as medidas informadas.');
+      setCurrentStep(1);
+      return;
+    }
+
+    const svgTemplateToSave = (state.templateType || state.template?.templateType || 'SLIDING_DOOR_2F') as DoorTemplateType;
 
     const item: BudgetItem = {
       tempId: editingItem?.tempId ?? `item-${Date.now()}`,
-      productId: template.id,
-      productName: template.name,
+      productId: state.template.id,
+      productName: state.template.name,
       templateType: svgTemplateToSave,
       templateConfig: {
         templateType: svgTemplateToSave,
-        aluminumColor,
-        glassFinish,
-        openingDirection,
-        handleType: handleConfig.handleType,
-        handleConfig,
-        drillingConfig,
+        aluminumColor: state.aluminumColor,
+        glassFinish: state.glassFinish,
+        openingDirection: state.openingDirection,
+        handleType: state.handleConfig.handleType,
+        handleConfig: state.handleConfig,
+        drillingConfig: state.drillingConfig,
       },
-      handleConfig,
-      drillingConfig,
+      handleConfig: state.handleConfig,
+      drillingConfig: state.drillingConfig,
       widthMm: w,
       heightMm: h,
       quantity: qty,
-      laborCost,
-      options: materialSelections
+      laborCost: state.laborCost ?? 0,
+      options: state.materialSelections
         .filter((s) => s.materialId)
         .map((s) => ({
           materialId: s.materialId,
@@ -499,98 +1016,23 @@ export function useWindowBuilderState({
           totalPrice: s.totalPrice,
         })),
       subtotal: itemSubtotalEstimate,
-      notes,
+      notes: state.notes,
     };
 
     onAddItem(item);
     onClose();
-  }, [
-    validateAllBeforeSubmit,
-    template,
-    widthMm,
-    heightMm,
-    quantity,
-    templateType,
-    editingItem,
-    aluminumColor,
-    glassFinish,
-    openingDirection,
-    handleConfig,
-    drillingConfig,
-    laborCost,
-    materialSelections,
-    itemSubtotalEstimate,
-    notes,
-    onAddItem,
-    onClose,
-  ]);
+  };
 
-  const svgW = typeof widthMm === 'number' && widthMm > 0 ? widthMm : DEFAULT_WIDTH;
-  const svgH = typeof heightMm === 'number' && heightMm > 0 ? heightMm : DEFAULT_HEIGHT;
+  const svgW = typeof state.widthMm === 'number' && state.widthMm > 0 ? state.widthMm : DEFAULT_WIDTH;
+  const svgH = typeof state.heightMm === 'number' && state.heightMm > 0 ? state.heightMm : DEFAULT_HEIGHT;
   const unitAreaM2 = ((svgW / 1000) * (svgH / 1000)).toFixed(2);
-  const totalQty = typeof quantity === 'number' && quantity >= 1 ? quantity : 1;
-
-  // Estado consolidado para compatibilidade com os steps existentes
-  const state = useMemo(
-    () => ({
-      template,
-      templateType,
-      widthMm,
-      heightMm,
-      quantity,
-      openingDirection,
-      handleConfig,
-      drillingConfig,
-      aluminumColor,
-      glassFinish,
-      laborCost,
-      notes,
-      materialSelections,
-    }),
-    [
-      template,
-      templateType,
-      widthMm,
-      heightMm,
-      quantity,
-      openingDirection,
-      handleConfig,
-      drillingConfig,
-      aluminumColor,
-      glassFinish,
-      laborCost,
-      notes,
-      materialSelections,
-    ]
-  );
-
-  const setState = useCallback(
-    (updater: React.SetStateAction<typeof state>) => {
-      const next = typeof updater === 'function' ? updater(state) : updater;
-      if (next.template !== undefined) setTemplate(next.template);
-      if (next.templateType !== undefined) setTemplateType(next.templateType);
-      if (next.widthMm !== undefined) setWidthMm(next.widthMm);
-      if (next.heightMm !== undefined) setHeightMm(next.heightMm);
-      if (next.quantity !== undefined) setQuantity(next.quantity);
-      if (next.openingDirection !== undefined) setOpeningDirection(next.openingDirection);
-      if (next.aluminumColor !== undefined) setAluminumColor(next.aluminumColor);
-      if (next.glassFinish !== undefined) setGlassFinish(next.glassFinish);
-      if (next.laborCost !== undefined) setLaborCost(next.laborCost);
-      if (next.notes !== undefined) setNotes(next.notes);
-      if (next.handleConfig !== undefined) setHandleConfig(next.handleConfig);
-      if (next.drillingConfig !== undefined) setDrillingConfig(next.drillingConfig);
-      if (next.materialSelections !== undefined) setMaterialSelections(next.materialSelections);
-    },
-    [state, setHandleConfig, setDrillingConfig, setMaterialSelections]
-  );
+  const totalQty = typeof state.quantity === 'number' && state.quantity >= 1 ? state.quantity : 1;
 
   return {
     state,
     setState,
     errors,
-    setErrors,
     currentStep,
-    setCurrentStep,
     isMobileCadExpanded,
     setIsMobileCadExpanded,
     svgTemplate,
@@ -603,7 +1045,6 @@ export function useWindowBuilderState({
     hardwares,
     films,
     holeDistanceInputs,
-    setHoleDistanceInputs,
     itemSubtotalEstimate,
     svgW,
     svgH,

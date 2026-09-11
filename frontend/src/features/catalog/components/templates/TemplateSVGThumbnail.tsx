@@ -45,6 +45,7 @@ export function TemplateSVGThumbnail({
         drillingConfig={{ holeCount: 0, divisionType: 'EQUAL' }}
         baseWidth={size * 1.5}
         maxHeight={size}
+        minimal={true}
       />
     </div>
   );

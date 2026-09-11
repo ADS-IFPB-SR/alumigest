@@ -30,15 +30,15 @@ export function useBuilderCatalog() {
         return {
           id: p.id,
           name: p.name,
-          categoryId: p.categoryId,
-          categoryName: p.categoryName,
+          categoryId: (p as any).categoryId ?? '',
+          categoryName: p.categoryName ?? '',
           isActive: p.isActive,
           laborCost: 0,
           catalogTemplateType: p.templateType ?? null,
           templateType: defaultSvg,
           templateConfig: p.templateConfig ?? undefined,
           categoryRequirements: p.categoryRequirements ?? [],
-          items: p.items,
+          items: [],
         };
       });
   }, [productsData]);

@@ -1,14 +1,32 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useProducts } from '../../../catalog/hooks/useCatalog';
 import { WindowSvgPreview } from './WindowSvgPreview';
-import { DOOR_TEMPLATE_LABELS } from '../../../catalog/types/templates';
-import { getDefaultSvgTemplateForCatalogType } from '../../utils/mapCatalogTemplate';
+import {
+  getDefaultSvgTemplateForCatalogType,
+  matchProductCategoryFilter,
+} from '../../utils/mapCatalogTemplate';
+import type { ModalCategoryFilter } from '../../utils/mapCatalogTemplate';
+import type { Product } from '../../../catalog/types';
+import type { DoorTemplateType } from '../../types';
 
 interface ProductPickerModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSelectProduct: (productId: string) => void;
 }
+
+interface ProductWithTemplate extends Product {
+  resolvedTemplateType: DoorTemplateType;
+}
+
+const CATEGORY_FILTERS: { id: ModalCategoryFilter; label: string; icon: string }[] = [
+  { id: 'TODOS', label: 'Todos', icon: 'apps' },
+  { id: 'PORTAS', label: 'Portas', icon: 'door_front' },
+  { id: 'JANELAS', label: 'Janelas', icon: 'window' },
+  { id: 'BOX', label: 'Box', icon: 'shower' },
+  { id: 'MOVEIS', label: 'Móveis / Painéis', icon: 'kitchen' },
+];
 
 export const ProductPickerModal: React.FC<ProductPickerModalProps> = ({
   isOpen,
@@ -17,119 +35,208 @@ export const ProductPickerModal: React.FC<ProductPickerModalProps> = ({
 }) => {
   const { data: productsData, isLoading } = useProducts();
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<ModalCategoryFilter>('TODOS');
 
-  const products = useMemo(() => {
+  // Bloqueio de scroll da página de fundo e tecla Escape
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    if (isOpen) {
+      document.addEventListener('keydown', handleKey);
+      document.body.style.overflow = 'hidden';
+    }
+    return () => {
+      document.removeEventListener('keydown', handleKey);
+      document.body.style.overflow = '';
+    };
+  }, [isOpen, onClose]);
+
+  const configuredProducts = useMemo<Product[]>(() => {
     if (!productsData?.content) return [];
-    return productsData.content.filter((p: any) => p.isActive);
+    return productsData.content.filter((p: Product) => p.isActive && Boolean(p.templateConfig));
   }, [productsData]);
 
-  const filteredProducts = useMemo(() => {
-    if (!searchTerm) return products;
-    return products.filter((p: any) => 
-      p.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [products, searchTerm]);
+  const filteredProducts = useMemo<ProductWithTemplate[]>(() => {
+    const term = searchTerm.trim().toLowerCase();
+
+    return configuredProducts
+      .filter((p: Product) => {
+        // Filtro de busca textual
+        if (term && !p.name.toLowerCase().includes(term)) {
+          return false;
+        }
+        // Filtro de categoria unificado (DRY)
+        return matchProductCategoryFilter(p, selectedCategory);
+      })
+      .map((p: Product) => ({
+        ...p,
+        resolvedTemplateType: getDefaultSvgTemplateForCatalogType(
+          p.templateType,
+          p.name,
+          p.templateConfig
+        ),
+      }));
+  }, [configuredProducts, searchTerm, selectedCategory]);
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-md sm:p-lg" aria-modal="true" aria-labelledby="product-picker-title">
-      <div className="absolute inset-0 bg-scrim/60 backdrop-blur-sm transition-opacity" onClick={onClose} aria-hidden="true" />
-      
-      <div className="relative bg-surface-container-lowest w-full max-w-[1000px] h-full max-h-[90vh] rounded-xl flex flex-col shadow-lg animate-in fade-in zoom-in-95 duration-200">
-        {/* Header */}
-        <header className="px-lg py-md border-b border-outline-variant flex items-center justify-between shrink-0">
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-xs sm:p-md lg:p-lg animate-fadeIn"
+      aria-modal="true"
+      aria-labelledby="product-picker-title"
+    >
+      {/* Backdrop */}
+      <button
+        type="button"
+        className="fixed inset-0 w-full h-full bg-scrim/60 backdrop-blur-xs transition-opacity cursor-pointer border-0"
+        onClick={onClose}
+        tabIndex={-1}
+        aria-label="Fechar fundo do modal"
+      />
+
+      {/* Janela do Modal */}
+      <div className="relative bg-surface-container-lowest border border-outline-variant rounded-2xl w-full max-w-[1100px] h-[90vh] max-h-[850px] shadow-2xl flex flex-col overflow-hidden z-10 animate-scaleIn">
+        {/* Cabeçalho */}
+        <header className="px-md sm:px-lg py-sm sm:py-md border-b border-outline-variant flex items-center justify-between shrink-0 bg-surface-container-low">
           <div>
-            <h2 id="product-picker-title" className="font-headline text-headline-sm font-bold text-on-surface">
-              Selecione o Produto
-            </h2>
-            <p className="font-body-sm text-body-sm text-on-surface-variant">
-              Escolha um dos produtos cadastrados no catálogo para adicionar ao orçamento.
+            <div className="flex items-center gap-sm">
+              <h2
+                id="product-picker-title"
+                className="font-headline text-headline-sm sm:text-headline-md font-bold text-on-surface"
+              >
+                Selecione a Esquadria do Catálogo
+              </h2>
+              <span className="font-label-bold text-xs bg-surface-container-high text-secondary px-2 py-0.5 rounded-full">
+                {filteredProducts.length} disponíveis
+              </span>
+            </div>
+            <p className="font-body-sm text-xs sm:text-sm text-secondary mt-0.5">
+              Escolha uma esquadria cadastrada para carregar as configurações e insumos no orçamento.
             </p>
           </div>
-          <button onClick={onClose} className="p-sm hover:bg-surface-container rounded-full text-on-surface-variant hover:text-on-surface transition-colors" aria-label="Fechar modal">
-            <span className="material-symbols-outlined">close</span>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Fechar modal"
+            className="p-1.5 hover:bg-surface-container-high rounded-full text-secondary hover:text-on-surface transition-colors cursor-pointer"
+          >
+            <span className="material-symbols-outlined text-[24px]">close</span>
           </button>
         </header>
 
-        {/* Search */}
-        <div className="px-lg py-sm border-b border-outline-variant shrink-0 bg-surface">
-          <div className="relative">
-            <span className="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+        {/* Barra de Filtros e Busca */}
+        <div className="px-md sm:px-lg py-sm border-b border-outline-variant shrink-0 bg-surface flex flex-col sm:flex-row gap-xs sm:gap-sm items-stretch sm:items-center justify-between">
+          <div className="relative flex-1">
+            <span className="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-secondary text-[20px] pointer-events-none">
+              search
+            </span>
             <input
               type="text"
-              placeholder="Buscar por nome do produto..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-xl pr-md py-sm bg-surface-container-lowest border border-outline-variant rounded-md font-body text-body-md focus:border-primary focus:outline-none transition-colors"
+              placeholder="Buscar por nome da esquadria..."
+              maxLength={120}
+              className="w-full pl-9 pr-md py-2 bg-surface-container-lowest border border-outline-variant rounded-lg font-body text-xs sm:text-sm text-on-surface placeholder:text-outline focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-colors"
             />
+          </div>
+
+          <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0 scrollbar-none flex-none">
+            {CATEGORY_FILTERS.map((cat) => {
+              const isSelected = selectedCategory === cat.id;
+              return (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => setSelectedCategory(cat.id)}
+                  className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all cursor-pointer ${
+                    isSelected
+                      ? 'bg-primary text-on-primary shadow-xs font-semibold'
+                      : 'bg-surface-container-low text-secondary hover:bg-surface-container hover:text-on-surface'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[16px]">{cat.icon}</span>
+                  <span>{cat.label}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        {/* Content */}
-        <main className="flex-1 overflow-y-auto p-lg bg-surface">
+        {/* Grid de Produtos */}
+        <main className="flex-1 overflow-y-auto p-md sm:p-lg bg-surface">
           {isLoading ? (
-            <div className="h-full flex flex-col items-center justify-center text-on-surface-variant gap-sm">
-              <span className="material-symbols-outlined animate-spin text-[32px]">progress_activity</span>
-              <span>Carregando produtos...</span>
+            <div className="h-full min-h-[300px] flex flex-col items-center justify-center text-secondary gap-sm">
+              <span className="material-symbols-outlined animate-spin text-[36px] text-primary">
+                progress_activity
+              </span>
+              <span className="text-sm font-medium">Carregando catálogo de esquadrias...</span>
             </div>
           ) : filteredProducts.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-on-surface-variant gap-sm">
-              <span className="material-symbols-outlined text-[48px]">inventory_2</span>
-              <p>Nenhum produto encontrado.</p>
+            <div className="h-full min-h-[300px] flex flex-col items-center justify-center text-secondary gap-sm border-2 border-dashed border-outline-variant/60 rounded-xl my-4 p-lg text-center">
+              <span className="material-symbols-outlined text-[56px] text-outline">
+                {configuredProducts.length === 0 ? 'category' : 'search_off'}
+              </span>
+              <p className="text-base font-semibold text-on-surface">
+                {configuredProducts.length === 0
+                  ? 'Nenhuma esquadria configurada no catálogo'
+                  : 'Nenhuma esquadria encontrada'}
+              </p>
+              <p className="text-xs text-secondary max-w-sm">
+                {configuredProducts.length === 0
+                  ? 'Cadastre e configure novos modelos de esquadrias no menu Produtos para utilizá-los na montagem de orçamentos.'
+                  : 'Tente ajustar os termos de busca ou selecione outra categoria acima.'}
+              </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-md">
-              {filteredProducts.map((product: any) => {
-                const templateType = getDefaultSvgTemplateForCatalogType(
-                  product.templateType,
-                  product.name,
-                  product.templateConfig
-                );
-                
-                return (
-                  <button
-                    key={product.id}
-                    onClick={() => onSelectProduct(product.id)}
-                    className="flex flex-col text-left bg-surface-container-lowest border border-outline-variant rounded-lg overflow-hidden hover:border-primary hover:shadow-md transition-all group focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-                  >
-                    {/* Preview (4:3 aspect ratio area) */}
-                    <div className="w-full aspect-[4/3] bg-surface-container relative p-sm">
-                      <WindowSvgPreview
-                        templateType={templateType}
-                        widthMm={1000}
-                        heightMm={1000}
-                        aluminumColor={product.templateConfig?.aluminumColor}
-                        glassFinish={product.templateConfig?.glassColor}
-                        handleConfig={product.templateConfig?.handleConfig || { handleType: 'NONE' }}
-                        drillingConfig={{ 
-                          holeCount: product.templateConfig?.drillingConfig?.holeCount || 0,
-                          divisionType: product.templateConfig?.drillingConfig?.drillingMode === 'CUSTOM' ? 'CUSTOM_DISTANCE' : 'EQUAL',
-                          customDistancesMm: product.templateConfig?.drillingConfig?.customPositionsMm 
-                        }}
-                        openingDirection={product.templateConfig?.openingDirection || 'LEFT_TO_RIGHT'}
-                        templateName={DOOR_TEMPLATE_LABELS[templateType] || templateType}
-                      />
-                    </div>
-                    {/* Details */}
-                    <div className="p-sm flex flex-col gap-xs flex-1 border-t border-outline-variant bg-surface-container-lowest group-hover:bg-primary/5 transition-colors">
-                      <h3 className="font-label font-bold text-on-surface line-clamp-1" title={product.name}>
-                        {product.name}
-                      </h3>
-                      <div className="flex items-center gap-1 mt-auto">
-                        <span className="material-symbols-outlined text-[14px] text-on-surface-variant">category</span>
-                        <span className="font-body-sm text-[11px] text-on-surface-variant truncate">
-                          {DOOR_TEMPLATE_LABELS[templateType] || templateType}
-                        </span>
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-sm sm:gap-md">
+              {filteredProducts.map((product) => (
+                <button
+                  key={product.id}
+                  type="button"
+                  onClick={() => onSelectProduct(product.id)}
+                  aria-label={`Selecionar esquadria ${product.name}`}
+                  className="flex flex-col text-left bg-surface-container-low dark:bg-surface-container border border-outline-variant/70 hover:border-primary dark:hover:border-primary/60 rounded-xl overflow-hidden hover:shadow-lg active:scale-[0.99] transition-all group focus:outline-none focus:ring-2 focus:ring-primary shadow-xs cursor-pointer"
+                >
+                  {/* Miniatura CAD com Desenho 100% Completo */}
+                  <div className="w-full h-48 sm:h-52 bg-surface-container-lowest/80 dark:bg-surface-container-lowest relative p-3 flex items-center justify-center border-b border-outline-variant/40 group-hover:border-primary/20 transition-colors">
+                    <WindowSvgPreview
+                      templateType={product.resolvedTemplateType}
+                      widthMm={1000}
+                      heightMm={1000}
+                      aluminumColor={product.templateConfig?.aluminumColor}
+                      glassFinish={product.templateConfig?.glassColor}
+                      handleConfig={product.templateConfig?.handleConfig || { handleType: 'NONE' }}
+                      drillingConfig={{
+                        holeCount: product.templateConfig?.drillingConfig?.holeCount || 0,
+                        divisionType:
+                          product.templateConfig?.drillingConfig?.drillingMode === 'CUSTOM'
+                            ? 'CUSTOM_DISTANCE'
+                            : 'EQUAL',
+                        customDistancesMm:
+                          product.templateConfig?.drillingConfig?.customPositionsMm,
+                      }}
+                      openingDirection={product.templateConfig?.openingDirection || 'LEFT_TO_RIGHT'}
+                      minimal={true}
+                      baseWidth="100%"
+                      maxHeight="100%"
+                    />
+                  </div>
+
+                  {/* Detalhes do Modelo - Somente o Nome Completo */}
+                  <div className="p-3.5 flex items-center justify-center flex-1 min-h-[58px] bg-surface-container-low dark:bg-surface-container group-hover:bg-surface-container-high transition-colors text-center">
+                    <h3 className="font-title-sm text-sm font-bold text-on-surface leading-snug break-words group-hover:text-primary transition-colors">
+                      {product.name}
+                    </h3>
+                  </div>
+                </button>
+              ))}
             </div>
           )}
         </main>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
