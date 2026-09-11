@@ -1,11 +1,19 @@
 import React, { useState } from 'react';
 import { FullscreenPreviewModal } from './FullscreenPreviewModal';
+import { HANDLE_POSITION_LABELS } from '../../types';
 import type {
   OpeningDirection,
   HandleConfig,
+  HandlePosition,
+  HandleSide,
+  HandleCoverage,
+  HandleType,
   DrillingConfig,
   DoorTemplateType,
+  MaterialSelection,
+  HandleOrientation,
 } from '../../types';
+import { CadHandleRenderer, type LeafBounds } from './CadHandleRenderer';
 
 
 import { getSvgTheme } from '../../utils/svgTheme';
@@ -14,8 +22,6 @@ import type { SvgTheme } from '../../utils/svgTheme';
 export type { SvgTheme };
 
 // ─── Constantes visuais Blueprint / CAD ─────────────────────────────────────
-const HANDLE_COLOR      = '#d1d5db';
-const HANDLE_STROKE     = '#4b5563';
 const HOLE_COLOR        = '#ffffff';
 const HOLE_STROKE       = '#374151';
 const ARROW_COLOR       = '#0284c7';
@@ -144,7 +150,7 @@ const VerticalDimension = ({
 
 /** Furos renderizados na borda com cotas técnicas de distâncias em mm */
 const DrillingHoles = ({
-  svgH, frameW, count, divisionType, customDistancesMm, heightMm, posX, mirrored = false,
+  svgH, svgW = 400, frameW, count, divisionType, customDistancesMm, heightMm, posX,
 }: {
   svgH: number; svgW?: number; frameW: number;
   count: number; divisionType: string;
@@ -179,191 +185,121 @@ const DrillingHoles = ({
     }
   }
 
-  const cotaOffset  = mirrored ? 14 : -14;
-  const textAnchor  = mirrored ? 'start' : 'end';
+  const isLeftSide = posX < (svgW ? svgW / 2 : 200);
+  const cotaOffset = isLeftSide ? 14 : -14;
+  const textAnchor = isLeftSide ? 'start' : 'end';
 
   return (
     <g className="drilling-holes-layer">
-      {positions.map((pos) => (
-        <g key={`hole-${pos.py}-${pos.distMm}`}>
-          <circle cx={posX} cy={pos.py} r={holeR + 1} fill="#1e293b" />
-          <circle cx={posX} cy={pos.py} r={holeR}     fill={HOLE_COLOR}   stroke={HOLE_STROKE} strokeWidth={0.6} />
-          <line x1={posX - holeR * 0.7} y1={pos.py} x2={posX + holeR * 0.7} y2={pos.py} stroke={HOLE_STROKE} strokeWidth={0.4} />
-          <line x1={posX} y1={pos.py - holeR * 0.7}  x2={posX} y2={pos.py + holeR * 0.7}  stroke={HOLE_STROKE} strokeWidth={0.4} />
-          <line x1={posX} y1={pos.py} x2={posX + cotaOffset} y2={pos.py} stroke={COTA_STROKE} strokeWidth={0.5} strokeDasharray="2 1" opacity={0.8} />
-          <text
-            x={posX + cotaOffset + (mirrored ? 2 : -2)}
-            y={pos.py + 3.5}
-            textAnchor={textAnchor}
-            fontSize={11}
-            fontFamily="JetBrains Mono, monospace"
-            fontWeight="bold"
-            fill={COTA_COLOR}
-          >
-            {pos.distMm}mm
-          </text>
-        </g>
-      ))}
-    </g>
-  );
-};
+      {positions.map((pos) => {
+        const textX = posX + cotaOffset + (isLeftSide ? 2 : -2);
+        const textStr = `${pos.distMm}mm`;
+        const badgeWidth = textStr.length * 6.5 + 4;
+        const badgeX = isLeftSide ? textX - 2 : textX - badgeWidth + 2;
 
-/** Puxador renderizado na folha móvel com suporte a 1 Lado ou 2 Lados (Ambos os Lados) */
-const HandleElement = ({
-  handleConfig, svgH, frameW, posX, mirrored = false, heightMm = 2100,
-}: {
-  handleConfig: HandleConfig; svgH: number; frameW: number; posX: number; mirrored?: boolean; heightMm?: number;
-}) => {
-  if (handleConfig.handleType === 'NONE') return null;
-
-  const innerH  = svgH - frameW * 2;
-  const handleW = 5;
-  let handleH: number;
-  let handleY: number;
-
-  if (handleConfig.coverage === 'FULL') {
-    handleH = innerH * 0.88;
-    handleY = frameW + (innerH - handleH) / 2;
-  } else if (handleConfig.coverage === 'PIECE' && handleConfig.pieceLengthCm) {
-    const pieceLengthMm = handleConfig.pieceLengthCm * 10;
-    const ratio = Math.min(Math.max(pieceLengthMm / Math.max(heightMm || 2100, 100), 0.05), 0.9);
-    handleH = ratio * innerH;
-    handleY = frameW + (innerH - handleH) / 2;
-  } else if (handleConfig.handleType === 'SHELL_LOCK' || handleConfig.handleType === 'LEVER_HANDLE') {
-    handleH = Math.min(20, innerH * 0.15);
-    handleY = frameW + (innerH - handleH) / 2;
-  } else {
-    handleH = innerH * 0.25;
-    handleY = frameW + (innerH - handleH) / 2;
-  }
-
-  const hx = mirrored ? posX - handleW : posX;
-  const isBothSides = handleConfig.side === 'BOTH_SIDES';
-
-  if (handleConfig.handleType === 'SHELL_LOCK') {
-    const cy = handleY + handleH / 2;
-    return (
-      <g>
-        <ellipse
-          cx={hx + handleW / 2}
-          cy={cy}
-          rx={handleW / 2 + 1}
-          ry={handleH / 2}
-          fill={HANDLE_COLOR}
-          stroke={HANDLE_STROKE}
-          strokeWidth={0.8}
-        />
-        {isBothSides && (
-          <ellipse
-            cx={mirrored ? hx + handleW + 3 : hx - 3}
-            cy={cy}
-            rx={handleW / 2 + 1}
-            ry={handleH / 2}
-            fill={HANDLE_COLOR}
-            stroke={HANDLE_STROKE}
-            strokeWidth={0.6}
-            opacity={0.4}
-            strokeDasharray="2 1"
-          />
-        )}
-      </g>
-    );
-  }
-
-  if (handleConfig.handleType === 'LEVER_HANDLE') {
-    const hy  = handleY + handleH / 2;
-    const dir = mirrored ? 1 : -1;
-    return (
-      <g>
-        <rect x={hx} y={hy - handleW / 2} width={handleW} height={handleW} rx={1} fill={HANDLE_COLOR} stroke={HANDLE_STROKE} strokeWidth={0.8} />
-        <line x1={hx + handleW / 2} y1={hy} x2={hx + handleW / 2 + dir * 8} y2={hy + 6} stroke={HANDLE_COLOR} strokeWidth={2} strokeLinecap="round" />
-        {isBothSides && (
-          <g opacity={0.4}>
-            <line x1={hx + handleW / 2} y1={hy} x2={hx + handleW / 2 - dir * 8} y2={hy + 6} stroke={HANDLE_COLOR} strokeWidth={1.5} strokeDasharray="2 1" strokeLinecap="round" />
+        return (
+          <g key={`hole-${pos.py}-${pos.distMm}`}>
+            <circle cx={posX} cy={pos.py} r={holeR + 1} fill="#1e293b" />
+            <circle cx={posX} cy={pos.py} r={holeR}     fill={HOLE_COLOR}   stroke={HOLE_STROKE} strokeWidth={0.6} />
+            <line x1={posX - holeR * 0.7} y1={pos.py} x2={posX + holeR * 0.7} y2={pos.py} stroke={HOLE_STROKE} strokeWidth={0.4} />
+            <line x1={posX} y1={pos.py - holeR * 0.7}  x2={posX} y2={pos.py + holeR * 0.7}  stroke={HOLE_STROKE} strokeWidth={0.4} />
+            <line x1={posX} y1={pos.py} x2={posX + cotaOffset} y2={pos.py} stroke={COTA_STROKE} strokeWidth={0.5} strokeDasharray="2 1" opacity={0.8} />
+            <rect
+              x={badgeX}
+              y={pos.py - 6.5}
+              width={badgeWidth}
+              height={12}
+              fill="#ffffff"
+              fillOpacity={0.9}
+              rx={2}
+            />
+            <text
+              x={textX}
+              y={pos.py + 3}
+              textAnchor={textAnchor}
+              fontSize={10.5}
+              fontFamily="JetBrains Mono, monospace"
+              fontWeight="bold"
+              fill={COTA_COLOR}
+            >
+              {textStr}
+            </text>
           </g>
-        )}
-      </g>
-    );
+        );
+      })}
+    </g>
+  );
+};
+
+export interface ResolvedHandleInfo {
+  handleType: HandleType;
+  position: HandlePosition;
+  orientation?: HandleOrientation;
+  side: HandleSide;
+  coverage: HandleCoverage;
+  pieceLengthMm: number;
+  label: string;
+}
+
+/** Resolve tipo de puxador, dimensões e lado a partir da config técnica do Step 3 e do material */
+function resolveHandleInfo(
+  handleConfig?: HandleConfig,
+  handleMaterial?: MaterialSelection | null,
+  heightMm: number = 2100,
+  defaultPosition: HandlePosition = 'RIGHT',
+): ResolvedHandleInfo {
+  const safeHeight = typeof heightMm === 'number' && heightMm > 0 ? heightMm : 2100;
+  const side: HandleSide = handleConfig?.side ?? 'ONE_SIDE';
+  const position: HandlePosition = handleConfig?.position ?? defaultPosition;
+  const orientation = handleConfig?.orientation;
+  const handleType: HandleType = handleConfig?.handleType ?? 'BAR_TUBULAR';
+
+  // Se o tipo for explicitamente 'NONE' ou se a quantidade do insumo foi zerada
+  if (handleType === 'NONE' || (handleMaterial !== undefined && handleMaterial !== null && handleMaterial.quantity !== undefined && handleMaterial.quantity <= 0)) {
+    return {
+      handleType: 'NONE',
+      position,
+      orientation,
+      side,
+      coverage: 'FULL',
+      pieceLengthMm: safeHeight,
+      label: 'Sem Puxador',
+    };
   }
 
-  // BAR_TUBULAR — Puxador Frontal + Traseiro se Ambos os Lados
-  return (
-    <g>
-      <rect x={hx} y={handleY} width={handleW} height={handleH} rx={handleW / 2} fill={HANDLE_COLOR} stroke={HANDLE_STROKE} strokeWidth={0.8} />
-      {isBothSides && (
-        <>
-          <rect
-            x={mirrored ? hx + handleW + 2 : hx - handleW - 2}
-            y={handleY}
-            width={handleW}
-            height={handleH}
-            rx={handleW / 2}
-            fill={HANDLE_COLOR}
-            stroke={HANDLE_STROKE}
-            strokeWidth={0.8}
-            opacity={0.4}
-            strokeDasharray="2 2"
-          />
-          <text
-            x={mirrored ? hx + handleW * 2 + 7 : hx - handleW * 2 - 7}
-            y={handleY + handleH / 2 + 3}
-            textAnchor={mirrored ? 'start' : 'end'}
-            fontSize={10}
-            fontFamily="JetBrains Mono, monospace"
-            fontWeight="bold"
-            fill={COTA_COLOR}
-            opacity={0.85}
-          >
-            2L
-          </text>
-        </>
-      )}
-    </g>
-  );
-};
+  // Cobertura e comprimento em mm
+  const isLinear = handleType === 'PROFILE_HANDLE' || handleType === 'BAR_TUBULAR';
+  const coverage: HandleCoverage = isLinear ? (handleConfig?.coverage ?? 'FULL') : 'FULL';
 
-/** Cota de puxador PIECE com medida em mm */
-const HandlePieceDimension = ({
-  svgH, frameW, posX, handleConfig, heightMm, mirrored = false,
-}: {
-  svgH: number; frameW: number; posX: number; handleConfig: HandleConfig; heightMm: number; mirrored?: boolean;
-}) => {
-  if (
-    handleConfig.handleType !== 'BAR_TUBULAR' ||
-    handleConfig.coverage !== 'PIECE' ||
-    !handleConfig.pieceLengthCm ||
-    handleConfig.pieceLengthCm <= 0
-  ) return null;
+  let pieceLengthMm = safeHeight;
+  if (isLinear && coverage === 'PIECE') {
+    if (handleConfig?.pieceLengthCm) {
+      pieceLengthMm = handleConfig.pieceLengthCm * 10;
+    } else {
+      pieceLengthMm = 400; // fallback padrão de 40cm
+    }
+  }
 
-  const innerH        = svgH - frameW * 2;
-  const pieceLengthMm = handleConfig.pieceLengthCm * 10;
-  const ratio         = Math.min(Math.max(pieceLengthMm / Math.max(heightMm || 2100, 100), 0.05), 0.9);
-  const handleH       = ratio * innerH;
-  const handleY       = frameW + (innerH - handleH) / 2;
-  const cotaX         = mirrored ? posX - 18 : posX + 18;
-  const textAnchor    = mirrored ? 'end' : 'start';
+  let typeName = 'Puxador';
+  if (handleType === 'PROFILE_HANDLE') typeName = 'Puxador Perfil';
+  else if (handleType === 'SHELL_LOCK') typeName = 'Fecho Concha';
+  else if (handleType === 'LEVER_HANDLE') typeName = 'Maçaneta';
+  else if (handleType === 'BAR_TUBULAR') typeName = 'Puxador Tubular';
 
-  return (
-    <g opacity={0.85}>
-      <line x1={cotaX} y1={handleY} x2={cotaX} y2={handleY + handleH} stroke={COTA_STROKE} strokeWidth={0.7} />
-      <line x1={posX} y1={handleY}         x2={cotaX} y2={handleY}         stroke={COTA_STROKE} strokeWidth={0.5} strokeDasharray="2 1" />
-      <line x1={posX} y1={handleY + handleH} x2={cotaX} y2={handleY + handleH} stroke={COTA_STROKE} strokeWidth={0.5} strokeDasharray="2 1" />
-      <polygon points={`${cotaX},${handleY} ${cotaX - 2},${handleY + 3} ${cotaX + 2},${handleY + 3}`}                         fill={COTA_STROKE} />
-      <polygon points={`${cotaX},${handleY + handleH} ${cotaX - 2},${handleY + handleH - 3} ${cotaX + 2},${handleY + handleH - 3}`} fill={COTA_STROKE} />
-      <text
-        x={cotaX + (mirrored ? -3 : 3)}
-        y={handleY + handleH / 2 + 3.5}
-        textAnchor={textAnchor}
-        fontSize={11}
-        fontFamily="JetBrains Mono, monospace"
-        fontWeight="bold"
-        fill={COTA_COLOR}
-      >
-        {pieceLengthMm}mm
-      </text>
-    </g>
-  );
-};
+  const dimLabel = isLinear
+    ? (coverage === 'FULL' ? '(Total)' : `(${pieceLengthMm}mm)`)
+    : '';
+
+  return {
+    handleType,
+    position,
+    orientation,
+    side,
+    coverage,
+    pieceLengthMm,
+    label: `${typeName} ${dimLabel}`.trim(),
+  };
+}
 
 // ─── Renderers por Tipo de Template com Tema Dinâmico ─────────────────────────
 
@@ -372,6 +308,7 @@ function renderSlidingDoor2F(
   handleConfig: HandleConfig, drillingConfig: DrillingConfig,
   widthMm: number, heightMm: number,
   theme: SvgTheme,
+  resolvedHandle?: ResolvedHandleInfo,
 ) {
   const fw     = FRAME_W;
   const innerW = svgW - fw * 2;
@@ -383,11 +320,17 @@ function renderSlidingDoor2F(
   const railY1  = fw;
   const railY2  = svgH - fw - RAIL_H;
 
-  const handlePosX    = inverted ? mobileX + halfW - fw * 1.5 : mobileX + fw * 0.5;
-  const handleMirr    = !inverted;
+  const defaultSide: HandlePosition = inverted ? 'LEFT' : 'RIGHT';
+  const pos: HandlePosition = resolvedHandle?.position ?? handleConfig.position ?? defaultSide;
   const drillingPosX  = inverted ? fixedX + halfW - fw : fixedX + fw / 2;
-
   const leafWidthMm = Math.round(widthMm / 2);
+
+  const mobileBounds: LeafBounds = {
+    x: mobileX,
+    y: fw,
+    width: halfW,
+    height: innerH,
+  };
 
   return (
     <>
@@ -406,9 +349,19 @@ function renderSlidingDoor2F(
       {/* Divisória central */}
       <rect x={fw + halfW - 1} y={fw} width={2} height={innerH} fill={theme.frameStroke} opacity={0.8} />
 
-      {/* Puxador */}
-      <HandleElement handleConfig={handleConfig} svgH={svgH} frameW={fw} posX={handlePosX} mirrored={handleMirr} heightMm={heightMm} />
-      <HandlePieceDimension svgH={svgH} frameW={fw} posX={handlePosX} handleConfig={handleConfig} heightMm={heightMm} mirrored={handleMirr} />
+      {/* Puxador Declarativo */}
+      <CadHandleRenderer
+        leafBounds={mobileBounds}
+        position={pos}
+        orientation={resolvedHandle?.orientation ?? handleConfig.orientation}
+        handleType={resolvedHandle?.handleType ?? handleConfig.handleType}
+        coverage={resolvedHandle?.coverage ?? handleConfig.coverage}
+        pieceLengthMm={resolvedHandle?.pieceLengthMm ?? (handleConfig.pieceLengthCm ? handleConfig.pieceLengthCm * 10 : 400)}
+        heightMm={heightMm}
+        widthMm={widthMm}
+        side={resolvedHandle?.side ?? handleConfig.side}
+        theme={theme}
+      />
 
       {/* Furação */}
       <DrillingHoles svgH={svgH} svgW={svgW} frameW={fw} count={drillingConfig.holeCount} divisionType={drillingConfig.divisionType} customDistancesMm={drillingConfig.customDistancesMm} heightMm={heightMm} posX={drillingPosX} mirrored={!inverted} />
@@ -428,8 +381,9 @@ function renderSlidingDoor2F(
 function renderSlidingDoor1F(
   svgW: number, svgH: number, inverted: boolean,
   handleConfig: HandleConfig, drillingConfig: DrillingConfig,
-  _widthMm: number, heightMm: number,
+  widthMm: number, heightMm: number,
   theme: SvgTheme,
+  resolvedHandle?: ResolvedHandleInfo,
 ) {
   const fw     = FRAME_W;
   const innerW = svgW - fw * 2;
@@ -438,8 +392,15 @@ function renderSlidingDoor1F(
   const railY1 = fw;
   const railY2 = svgH - fw - RAIL_H;
 
-  const handlePosX = inverted ? fw + innerW - fw * 1.5 : fw + fw * 0.5;
-  const handleMirr = !inverted;
+  const defaultSide: HandlePosition = inverted ? 'LEFT' : 'RIGHT';
+  const pos: HandlePosition = resolvedHandle?.position ?? handleConfig.position ?? defaultSide;
+
+  const leafBounds: LeafBounds = {
+    x: fw,
+    y: fw,
+    width: innerW,
+    height: innerH,
+  };
 
   return (
     <>
@@ -451,7 +412,19 @@ function renderSlidingDoor1F(
       <rect x={fw} y={fw} width={innerW} height={innerH} fill={theme.glassFill} stroke={theme.glassStroke} strokeWidth={1} />
       <text x={fw + innerW / 2} y={svgH / 2} textAnchor="middle" fontSize={12} fontFamily="JetBrains Mono, monospace" fill={theme.frameStroke} opacity={0.5}>MÓVEL</text>
 
-      <HandleElement handleConfig={handleConfig} svgH={svgH} frameW={fw} posX={handlePosX} mirrored={handleMirr} heightMm={heightMm} />
+      <CadHandleRenderer
+        leafBounds={leafBounds}
+        position={pos}
+        orientation={resolvedHandle?.orientation ?? handleConfig.orientation}
+        handleType={resolvedHandle?.handleType ?? handleConfig.handleType}
+        coverage={resolvedHandle?.coverage ?? handleConfig.coverage}
+        pieceLengthMm={resolvedHandle?.pieceLengthMm ?? (handleConfig.pieceLengthCm ? handleConfig.pieceLengthCm * 10 : 400)}
+        heightMm={heightMm}
+        widthMm={widthMm}
+        side={resolvedHandle?.side ?? handleConfig.side}
+        theme={theme}
+      />
+
       {drillingConfig.holeCount > 0 && <DrillingHoles svgH={svgH} frameW={fw} count={drillingConfig.holeCount} divisionType={drillingConfig.divisionType} customDistancesMm={drillingConfig.customDistancesMm} heightMm={heightMm} posX={fw + innerW / 2} />}
       <text x={fw + innerW / 2} y={svgH - fw - 10} textAnchor="middle" fontSize={15} fill={ARROW_COLOR} fontWeight="bold">
         {inverted ? 'Correr ⟶' : '⟵ Correr'}
@@ -463,8 +436,9 @@ function renderSlidingDoor1F(
 function renderSlidingDoor3F(
   svgW: number, svgH: number, inverted: boolean,
   handleConfig: HandleConfig, drillingConfig: DrillingConfig,
-  _widthMm: number, heightMm: number,
+  widthMm: number, heightMm: number,
   theme: SvgTheme,
+  resolvedHandle?: ResolvedHandleInfo,
 ) {
   const fw     = FRAME_W;
   const innerW = svgW - fw * 2;
@@ -472,14 +446,21 @@ function renderSlidingDoor3F(
   const thirdW = innerW / 3;
 
   const fixedX   = inverted ? fw + thirdW * 2 : fw;
-  const mobile1X = inverted ? fw + thirdW : fw + thirdW;
+  const mobile1X = fw + thirdW;
   const mobile2X = inverted ? fw : fw + thirdW * 2;
 
   const railY1 = fw;
   const railY2 = svgH - fw - RAIL_H;
 
-  const handlePosX = inverted ? mobile2X + thirdW - fw * 1.5 : mobile2X + fw * 0.5;
-  const handleMirr = !inverted;
+  const defaultSide: HandlePosition = inverted ? 'LEFT' : 'RIGHT';
+  const pos: HandlePosition = resolvedHandle?.position ?? handleConfig.position ?? defaultSide;
+
+  const mobile2Bounds: LeafBounds = {
+    x: mobile2X,
+    y: fw,
+    width: thirdW,
+    height: innerH,
+  };
 
   return (
     <>
@@ -502,7 +483,19 @@ function renderSlidingDoor3F(
       <rect x={fw + thirdW - 1} y={fw} width={2} height={innerH} fill={theme.frameStroke} opacity={0.8} />
       <rect x={fw + thirdW * 2 - 1} y={fw} width={2} height={innerH} fill={theme.frameStroke} opacity={0.8} />
 
-      <HandleElement handleConfig={handleConfig} svgH={svgH} frameW={fw} posX={handlePosX} mirrored={handleMirr} heightMm={heightMm} />
+      <CadHandleRenderer
+        leafBounds={mobile2Bounds}
+        position={pos}
+        orientation={resolvedHandle?.orientation ?? handleConfig.orientation}
+        handleType={resolvedHandle?.handleType ?? handleConfig.handleType}
+        coverage={resolvedHandle?.coverage ?? handleConfig.coverage}
+        pieceLengthMm={resolvedHandle?.pieceLengthMm ?? (handleConfig.pieceLengthCm ? handleConfig.pieceLengthCm * 10 : 400)}
+        heightMm={heightMm}
+        widthMm={widthMm}
+        side={resolvedHandle?.side ?? handleConfig.side}
+        theme={theme}
+      />
+
       {drillingConfig.holeCount > 0 && <DrillingHoles svgH={svgH} frameW={fw} count={drillingConfig.holeCount} divisionType={drillingConfig.divisionType} customDistancesMm={drillingConfig.customDistancesMm} heightMm={heightMm} posX={fixedX + thirdW / 2} />}
       <text x={mobile1X + thirdW / 2} y={svgH - fw - 10} textAnchor="middle" fontSize={15} fill={ARROW_COLOR} fontWeight="bold">
         {inverted ? 'Correr ⟶' : '⟵ Correr'}
@@ -519,6 +512,7 @@ function renderSlidingDoor4F(
   handleConfig: HandleConfig, drillingConfig: DrillingConfig,
   widthMm: number, heightMm: number,
   theme: SvgTheme,
+  resolvedHandle?: ResolvedHandleInfo,
 ) {
   const fw     = FRAME_W;
   const innerW = svgW - fw * 2;
@@ -527,6 +521,9 @@ function renderSlidingDoor4F(
   const xs     = [fw, fw + qW, fw + qW * 2, fw + qW * 3];
   const isFixed = [true, false, false, true];
   const leafMm  = Math.round(widthMm / 4);
+
+  const leftMobileBounds: LeafBounds = { x: fw + qW, y: fw, width: qW, height: innerH };
+  const rightMobileBounds: LeafBounds = { x: fw + qW * 2, y: fw, width: qW, height: innerH };
 
   return (
     <>
@@ -544,8 +541,32 @@ function renderSlidingDoor4F(
         </g>
       ))}
 
-      <HandleElement handleConfig={handleConfig} svgH={svgH} frameW={fw} posX={fw + qW + qW * 0.1} heightMm={heightMm} />
-      <HandleElement handleConfig={handleConfig} svgH={svgH} frameW={fw} posX={fw + qW * 3 - fw * 1.5} mirrored heightMm={heightMm} />
+      {/* Puxadores no encontro central das duas folhas móveis */}
+      <CadHandleRenderer
+        leafBounds={leftMobileBounds}
+        position="RIGHT"
+        orientation={resolvedHandle?.orientation ?? handleConfig.orientation}
+        handleType={resolvedHandle?.handleType ?? handleConfig.handleType}
+        coverage={resolvedHandle?.coverage ?? handleConfig.coverage}
+        pieceLengthMm={resolvedHandle?.pieceLengthMm ?? (handleConfig.pieceLengthCm ? handleConfig.pieceLengthCm * 10 : 400)}
+        heightMm={heightMm}
+        widthMm={widthMm}
+        side={resolvedHandle?.side ?? handleConfig.side}
+        theme={theme}
+      />
+      <CadHandleRenderer
+        leafBounds={rightMobileBounds}
+        position="LEFT"
+        orientation={resolvedHandle?.orientation ?? handleConfig.orientation}
+        handleType={resolvedHandle?.handleType ?? handleConfig.handleType}
+        coverage={resolvedHandle?.coverage ?? handleConfig.coverage}
+        pieceLengthMm={resolvedHandle?.pieceLengthMm ?? (handleConfig.pieceLengthCm ? handleConfig.pieceLengthCm * 10 : 400)}
+        heightMm={heightMm}
+        widthMm={widthMm}
+        side={resolvedHandle?.side ?? handleConfig.side}
+        theme={theme}
+      />
+
       <DrillingHoles svgH={svgH} svgW={svgW} frameW={fw} count={drillingConfig.holeCount} divisionType={drillingConfig.divisionType} customDistancesMm={drillingConfig.customDistancesMm} heightMm={heightMm} posX={fw + fw / 2} mirrored />
       <text x={svgW / 2} y={svgH - fw - RAIL_H - 6} textAnchor="middle" fontSize={13.5} fill={ARROW_COLOR} fontWeight="bold">← Abertura Central →</text>
 
@@ -561,6 +582,7 @@ function renderSwingDoor(
   handleConfig: HandleConfig, drillingConfig: DrillingConfig,
   widthMm: number, heightMm: number,
   theme: SvgTheme,
+  resolvedHandle?: ResolvedHandleInfo,
 ) {
   const fw     = FRAME_W;
   const innerW = svgW - fw * 2;
@@ -568,18 +590,38 @@ function renderSwingDoor(
 
   if (leafCount === 1) {
     const hingeSide = inverted ? fw + innerW : fw;
-    const doorEnd   = inverted ? fw : fw + innerW;
     const arcRadius = innerW;
+    const defaultSide: HandlePosition = inverted ? 'LEFT' : 'RIGHT';
+    const pos: HandlePosition = resolvedHandle?.position ?? handleConfig.position ?? defaultSide;
+
+    const doorBounds: LeafBounds = {
+      x: fw,
+      y: fw,
+      width: innerW,
+      height: innerH,
+    };
 
     return (
       <>
         <rect x={fw} y={fw} width={innerW} height={innerH} fill={theme.glassFill} stroke={theme.glassStroke} strokeWidth={1} />
         <line x1={hingeSide} y1={fw} x2={hingeSide} y2={svgH - fw} stroke={theme.frameStroke} strokeWidth={3} />
         <SwingArc x={hingeSide} y={svgH - fw} radius={arcRadius} startAngle={-90} endAngle={inverted ? -180 : 0} />
-        <HandleElement handleConfig={handleConfig} svgH={svgH} frameW={fw} posX={inverted ? doorEnd + 2 : doorEnd - fw * 1.5} mirrored={!inverted} heightMm={heightMm} />
-        <HandlePieceDimension svgH={svgH} frameW={fw} posX={inverted ? doorEnd + 2 : doorEnd - fw * 1.5} handleConfig={handleConfig} heightMm={heightMm} mirrored={!inverted} />
+        
+        <CadHandleRenderer
+          leafBounds={doorBounds}
+          position={pos}
+          orientation={resolvedHandle?.orientation ?? handleConfig.orientation}
+          handleType={resolvedHandle?.handleType ?? handleConfig.handleType}
+          coverage={resolvedHandle?.coverage ?? handleConfig.coverage}
+          pieceLengthMm={resolvedHandle?.pieceLengthMm ?? (handleConfig.pieceLengthCm ? handleConfig.pieceLengthCm * 10 : 400)}
+          heightMm={heightMm}
+          widthMm={widthMm}
+          side={resolvedHandle?.side ?? handleConfig.side}
+          theme={theme}
+        />
+
         {/* Furação no lado oposto do puxador */}
-        <DrillingHoles svgH={svgH} svgW={svgW} frameW={fw} count={drillingConfig.holeCount} divisionType={drillingConfig.divisionType} customDistancesMm={drillingConfig.customDistancesMm} heightMm={heightMm} posX={inverted ? svgW - fw - fw / 2 : fw + fw / 2} mirrored={inverted} />
+        <DrillingHoles svgH={svgH} svgW={svgW} frameW={fw} count={drillingConfig.holeCount} divisionType={drillingConfig.divisionType} customDistancesMm={drillingConfig.customDistancesMm} heightMm={heightMm} posX={pos === 'RIGHT' ? fw + fw / 2 : svgW - fw - fw / 2} mirrored={pos === 'LEFT'} />
         <text x={svgW / 2} y={fw + 14} textAnchor="middle" fontSize={12} fontFamily="JetBrains Mono, monospace" fill={ARROW_COLOR}>{inverted ? '← Giro p/ Esquerda' : 'Giro p/ Direita →'}</text>
         <HorizontalDimension x1={fw} x2={svgW - fw} y={svgH - fw} label={`Vão Único: ${widthMm}mm`} offsetDir="below" offsetDist={8} />
       </>
@@ -588,6 +630,9 @@ function renderSwingDoor(
 
   const halfW = innerW / 2;
   const leafMm = Math.round(widthMm / 2);
+  const leftLeafBounds: LeafBounds = { x: fw, y: fw, width: halfW, height: innerH };
+  const rightLeafBounds: LeafBounds = { x: fw + halfW, y: fw, width: halfW, height: innerH };
+
   return (
     <>
       <rect x={fw}         y={fw} width={halfW} height={innerH} fill={theme.glassFill} stroke={theme.glassStroke} strokeWidth={1} />
@@ -596,58 +641,158 @@ function renderSwingDoor(
       <line x1={svgW - fw} y1={fw} x2={svgW - fw} y2={svgH - fw} stroke={theme.frameStroke} strokeWidth={3} />
       <SwingArc x={fw}        y={svgH - fw} radius={halfW} startAngle={-90} endAngle={0} />
       <SwingArc x={svgW - fw} y={svgH - fw} radius={halfW} startAngle={-90} endAngle={-180} />
-      <HandleElement handleConfig={handleConfig} svgH={svgH} frameW={fw} posX={fw + halfW - fw}     heightMm={heightMm} />
-      <HandleElement handleConfig={handleConfig} svgH={svgH} frameW={fw} posX={fw + halfW + 2} mirrored heightMm={heightMm} />
+      
+      {/* Puxadores no encontro central das duas folhas */}
+      <CadHandleRenderer
+        leafBounds={leftLeafBounds}
+        position="RIGHT"
+        orientation={resolvedHandle?.orientation ?? handleConfig.orientation}
+        handleType={resolvedHandle?.handleType ?? handleConfig.handleType}
+        coverage={resolvedHandle?.coverage ?? handleConfig.coverage}
+        pieceLengthMm={resolvedHandle?.pieceLengthMm ?? (handleConfig.pieceLengthCm ? handleConfig.pieceLengthCm * 10 : 400)}
+        heightMm={heightMm}
+        widthMm={widthMm}
+        side={resolvedHandle?.side ?? handleConfig.side}
+        theme={theme}
+      />
+      <CadHandleRenderer
+        leafBounds={rightLeafBounds}
+        position="LEFT"
+        orientation={resolvedHandle?.orientation ?? handleConfig.orientation}
+        handleType={resolvedHandle?.handleType ?? handleConfig.handleType}
+        coverage={resolvedHandle?.coverage ?? handleConfig.coverage}
+        pieceLengthMm={resolvedHandle?.pieceLengthMm ?? (handleConfig.pieceLengthCm ? handleConfig.pieceLengthCm * 10 : 400)}
+        heightMm={heightMm}
+        widthMm={widthMm}
+        side={resolvedHandle?.side ?? handleConfig.side}
+        theme={theme}
+      />
+
       <DrillingHoles svgH={svgH} svgW={svgW} frameW={fw} count={drillingConfig.holeCount} divisionType={drillingConfig.divisionType} customDistancesMm={drillingConfig.customDistancesMm} heightMm={heightMm} posX={fw + fw / 2} mirrored />
       <HorizontalDimension x1={fw} x2={fw + halfW} y={fw} label={`F1: ${leafMm}mm`} offsetDir="above" offsetDist={8} />
-      <HorizontalDimension x1={fw + halfW} x2={svgW - fw} y={fw} label={`F2: ${leafMm}mm`} offsetDir="above" offsetDist={8} />
+      <HorizontalDimension x1={fw + halfW} x2={svgW - fw} y={svgH - fw} label={`F2: ${leafMm}mm`} offsetDir="below" offsetDist={8} />
     </>
   );
 }
 
-function renderAwningWindow1F(svgW: number, svgH: number, inverted: boolean, theme: SvgTheme) {
+function renderAwningWindow1F(
+  svgW: number, svgH: number, inverted: boolean,
+  handleConfig: HandleConfig, drillingConfig: DrillingConfig,
+  widthMm: number, heightMm: number,
+  theme: SvgTheme,
+  resolvedHandle?: ResolvedHandleInfo,
+) {
   const fw     = FRAME_W;
   const innerW = svgW - fw * 2;
   const innerH = svgH - fw * 2;
+
+  // Posição de instalação (Inferior, Superior, Direita, Esquerda ou Centro)
+  const defaultPos: HandlePosition = inverted ? 'TOP' : 'BOTTOM';
+  const pos: HandlePosition = resolvedHandle?.position ?? handleConfig.position ?? defaultPos;
+
+  let labelText = inverted ? '⤓ Tombar p/ Dentro' : '↓ Projeção p/ Fora';
+  if (pos === 'TOP') labelText = inverted ? '⤓ Tombar p/ Dentro (Superior)' : '↑ Projeção p/ Fora (Superior)';
+  else if (pos === 'BOTTOM') labelText = inverted ? '↥ Tombar p/ Dentro (Inferior)' : '↓ Projeção p/ Fora (Inferior)';
+  else if (pos === 'RIGHT') labelText = inverted ? '↶ Abrir p/ Dentro (Direita)' : '→ Projeção Direita';
+  else if (pos === 'LEFT') labelText = inverted ? '↷ Abrir p/ Dentro (Esquerda)' : '← Projeção Esquerda';
+  else if (pos === 'CENTER') labelText = inverted ? 'Tombar p/ Dentro' : 'Projeção p/ Fora';
+
+  const leafBounds: LeafBounds = {
+    x: fw,
+    y: fw,
+    width: innerW,
+    height: innerH,
+  };
 
   return (
     <>
       <rect x={fw} y={fw} width={innerW} height={innerH} fill={theme.glassFill} stroke={theme.glassStroke} strokeWidth={1} />
       <text x={svgW / 2} y={svgH / 2 + 4} textAnchor="middle" fontSize={13} fill={ARROW_COLOR} fontWeight="bold">
-        {inverted ? '↑ Basculante Inv.' : '↓ Basculante'}
+        {labelText}
       </text>
-      {/* Linha tracejada indicando o eixo */}
-      <line x1={fw} y1={inverted ? svgH - fw : fw} x2={svgW - fw} y2={inverted ? svgH - fw : fw} stroke={ARROW_COLOR} strokeWidth={2} strokeDasharray="4 4" opacity={0.6} />
+
+      {/* Linha tracejada indicando o eixo de articulação no lado oposto ao puxador */}
+      {pos === 'LEFT' && (
+        <line x1={svgW - fw} y1={fw} x2={svgW - fw} y2={svgH - fw} stroke={ARROW_COLOR} strokeWidth={2} strokeDasharray="4 4" opacity={0.6} />
+      )}
+      {pos === 'RIGHT' && (
+        <line x1={fw} y1={fw} x2={fw} y2={svgH - fw} stroke={ARROW_COLOR} strokeWidth={2} strokeDasharray="4 4" opacity={0.6} />
+      )}
+      {pos === 'TOP' && (
+        <line x1={fw} y1={svgH - fw} x2={svgW - fw} y2={svgH - fw} stroke={ARROW_COLOR} strokeWidth={2} strokeDasharray="4 4" opacity={0.6} />
+      )}
+      {(pos === 'BOTTOM' || pos === 'CENTER') && (
+        <line x1={fw} y1={fw} x2={svgW - fw} y2={fw} stroke={ARROW_COLOR} strokeWidth={2} strokeDasharray="4 4" opacity={0.6} />
+      )}
+
+      {/* Puxador / Fecho renderizado via CadHandleRenderer (suporta deitado/horizontal ou em pé/vertical) */}
+      <CadHandleRenderer
+        leafBounds={leafBounds}
+        position={pos}
+        orientation={resolvedHandle?.orientation ?? handleConfig.orientation}
+        handleType={resolvedHandle?.handleType ?? handleConfig.handleType}
+        coverage={resolvedHandle?.coverage ?? handleConfig.coverage}
+        pieceLengthMm={resolvedHandle?.pieceLengthMm ?? (handleConfig.pieceLengthCm ? handleConfig.pieceLengthCm * 10 : 400)}
+        heightMm={heightMm}
+        widthMm={widthMm}
+        side={resolvedHandle?.side ?? handleConfig.side}
+        theme={theme}
+      />
+
+      {/* Furação da Esquadria posicionada no lado oposto do puxador quando vertical */}
+      <DrillingHoles
+        svgH={svgH}
+        svgW={svgW}
+        frameW={fw}
+        count={drillingConfig.holeCount}
+        divisionType={drillingConfig.divisionType}
+        customDistancesMm={drillingConfig.customDistancesMm}
+        heightMm={heightMm}
+        posX={pos === 'RIGHT' ? fw + fw * 0.5 : svgW - fw - fw * 0.5}
+        mirrored={pos === 'LEFT'}
+      />
     </>
   );
 }
 
 function renderDrawerFront(
   svgW: number, svgH: number,
-  _handleConfig: HandleConfig, drillingConfig: DrillingConfig,
-  widthMm: number, _heightMm: number,
+  handleConfig: HandleConfig, _drillingConfig: DrillingConfig,
+  widthMm: number, heightMm: number,
   theme: SvgTheme,
+  resolvedHandle?: ResolvedHandleInfo,
 ) {
   const fw = FRAME_W;
   const innerW = svgW - fw * 2;
   const innerH = svgH - fw * 2;
-  const handleW = Math.min(innerW * 0.6, 140);
-  const handleH = 10;
-  const handleX = (svgW - handleW) / 2;
-  const handleY = (svgH - handleH) / 2;
+  const pos: HandlePosition = resolvedHandle?.position ?? handleConfig.position ?? 'CENTER';
+
+  const leafBounds: LeafBounds = {
+    x: fw,
+    y: fw,
+    width: innerW,
+    height: innerH,
+  };
 
   return (
     <>
       <rect x={fw} y={fw} width={innerW} height={innerH} fill={theme.glassFill} stroke={theme.glassStroke} strokeWidth={1} />
       <rect x={fw + 6} y={fw + 6} width={innerW - 12} height={innerH - 12} fill="none" stroke={theme.frameStroke} strokeWidth={1} opacity={0.6} strokeDasharray="3 2" />
-      <rect x={handleX} y={handleY} width={handleW} height={handleH} rx={3} fill={theme.frameFill} stroke={theme.frameStroke} strokeWidth={1} filter="url(#shadow)" />
-      {drillingConfig.holeCount > 0 && (
-        <>
-          <circle cx={handleX + 12} cy={handleY + handleH / 2} r={2.5} fill="#fff" stroke={theme.frameStroke} strokeWidth={1} />
-          <circle cx={handleX + handleW - 12} cy={handleY + handleH / 2} r={2.5} fill="#fff" stroke={theme.frameStroke} strokeWidth={1} />
-        </>
-      )}
-      <text x={svgW / 2} y={svgH - fw - 12} textAnchor="middle" fontSize={16} fontFamily="JetBrains Mono, monospace" fill={theme.frameStroke} opacity={0.6} fontWeight="bold">
+
+      <CadHandleRenderer
+        leafBounds={leafBounds}
+        position={pos}
+        orientation={resolvedHandle?.orientation ?? handleConfig.orientation}
+        handleType={resolvedHandle?.handleType ?? handleConfig.handleType}
+        coverage={resolvedHandle?.coverage ?? handleConfig.coverage}
+        pieceLengthMm={resolvedHandle?.pieceLengthMm ?? (handleConfig.pieceLengthCm ? handleConfig.pieceLengthCm * 10 : 400)}
+        heightMm={heightMm}
+        widthMm={widthMm}
+        side={resolvedHandle?.side ?? handleConfig.side}
+        theme={theme}
+      />
+
+      <text x={svgW / 2} y={svgH - fw - 12} textAnchor="middle" fontSize={14} fontFamily="JetBrains Mono, monospace" fill={theme.frameStroke} opacity={0.6} fontWeight="bold">
         FRENTE DE GAVETA
       </text>
       <HorizontalDimension x1={fw} x2={svgW - fw} y={svgH - fw} label={`Gaveta: ${widthMm}mm`} offsetDir="below" offsetDist={8} />
@@ -684,6 +829,7 @@ interface SvgRenderContext {
   svgH: number;
   inverted: boolean;
   handleConfig: HandleConfig;
+  resolvedHandle: ResolvedHandleInfo;
   drillingConfig: DrillingConfig;
   widthMm: number;
   heightMm: number;
@@ -693,15 +839,15 @@ interface SvgRenderContext {
 type SvgTemplateRenderer = (ctx: SvgRenderContext) => React.ReactNode;
 
 const SVG_RENDERERS: Record<DoorTemplateType, SvgTemplateRenderer> = {
-  SLIDING_DOOR_1F: (ctx) => renderSlidingDoor1F(ctx.svgW, ctx.svgH, ctx.inverted, ctx.handleConfig, ctx.drillingConfig, ctx.widthMm, ctx.heightMm, ctx.theme),
-  SLIDING_DOOR_2F: (ctx) => renderSlidingDoor2F(ctx.svgW, ctx.svgH, ctx.inverted, ctx.handleConfig, ctx.drillingConfig, ctx.widthMm, ctx.heightMm, ctx.theme),
-  SLIDING_DOOR_3F: (ctx) => renderSlidingDoor3F(ctx.svgW, ctx.svgH, ctx.inverted, ctx.handleConfig, ctx.drillingConfig, ctx.widthMm, ctx.heightMm, ctx.theme),
-  SLIDING_DOOR_4F: (ctx) => renderSlidingDoor4F(ctx.svgW, ctx.svgH, ctx.handleConfig, ctx.drillingConfig, ctx.widthMm, ctx.heightMm, ctx.theme),
-  SWING_DOOR_1F: (ctx) => renderSwingDoor(ctx.svgW, ctx.svgH, 1, ctx.inverted, ctx.handleConfig, ctx.drillingConfig, ctx.widthMm, ctx.heightMm, ctx.theme),
-  SWING_DOOR_2F: (ctx) => renderSwingDoor(ctx.svgW, ctx.svgH, 2, ctx.inverted, ctx.handleConfig, ctx.drillingConfig, ctx.widthMm, ctx.heightMm, ctx.theme),
-  AWNING_WINDOW_1F: (ctx) => renderAwningWindow1F(ctx.svgW, ctx.svgH, false, ctx.theme),
-  AWNING_WINDOW_1F_INV: (ctx) => renderAwningWindow1F(ctx.svgW, ctx.svgH, true, ctx.theme),
-  FRONT_DRAWER: (ctx) => renderDrawerFront(ctx.svgW, ctx.svgH, ctx.handleConfig, ctx.drillingConfig, ctx.widthMm, ctx.heightMm, ctx.theme),
+  SLIDING_DOOR_1F: (ctx) => renderSlidingDoor1F(ctx.svgW, ctx.svgH, ctx.inverted, ctx.handleConfig, ctx.drillingConfig, ctx.widthMm, ctx.heightMm, ctx.theme, ctx.resolvedHandle),
+  SLIDING_DOOR_2F: (ctx) => renderSlidingDoor2F(ctx.svgW, ctx.svgH, ctx.inverted, ctx.handleConfig, ctx.drillingConfig, ctx.widthMm, ctx.heightMm, ctx.theme, ctx.resolvedHandle),
+  SLIDING_DOOR_3F: (ctx) => renderSlidingDoor3F(ctx.svgW, ctx.svgH, ctx.inverted, ctx.handleConfig, ctx.drillingConfig, ctx.widthMm, ctx.heightMm, ctx.theme, ctx.resolvedHandle),
+  SLIDING_DOOR_4F: (ctx) => renderSlidingDoor4F(ctx.svgW, ctx.svgH, ctx.handleConfig, ctx.drillingConfig, ctx.widthMm, ctx.heightMm, ctx.theme, ctx.resolvedHandle),
+  SWING_DOOR_1F: (ctx) => renderSwingDoor(ctx.svgW, ctx.svgH, 1, ctx.inverted, ctx.handleConfig, ctx.drillingConfig, ctx.widthMm, ctx.heightMm, ctx.theme, ctx.resolvedHandle),
+  SWING_DOOR_2F: (ctx) => renderSwingDoor(ctx.svgW, ctx.svgH, 2, ctx.inverted, ctx.handleConfig, ctx.drillingConfig, ctx.widthMm, ctx.heightMm, ctx.theme, ctx.resolvedHandle),
+  AWNING_WINDOW_1F: (ctx) => renderAwningWindow1F(ctx.svgW, ctx.svgH, ctx.inverted, ctx.handleConfig, ctx.drillingConfig, ctx.widthMm, ctx.heightMm, ctx.theme, ctx.resolvedHandle),
+  AWNING_WINDOW_1F_INV: (ctx) => renderAwningWindow1F(ctx.svgW, ctx.svgH, true, ctx.handleConfig, ctx.drillingConfig, ctx.widthMm, ctx.heightMm, ctx.theme, ctx.resolvedHandle),
+  FRONT_DRAWER: (ctx) => renderDrawerFront(ctx.svgW, ctx.svgH, ctx.handleConfig, ctx.drillingConfig, ctx.widthMm, ctx.heightMm, ctx.theme, ctx.resolvedHandle),
   FIXED_PANEL: (ctx) => renderFixedFacade(ctx.svgW, ctx.svgH, ctx.theme),
 };
 
@@ -711,6 +857,7 @@ export interface WindowSvgPreviewProps {
   heightMm?: number;
   openingDirection?: OpeningDirection;
   handleConfig?: HandleConfig;
+  handleMaterial?: MaterialSelection | null;
   drillingConfig?: DrillingConfig;
   templateName?: string;
   aluminumColor?: string;
@@ -725,6 +872,7 @@ export const WindowSvgPreview: React.FC<WindowSvgPreviewProps> = ({
   heightMm = 0,
   openingDirection = 'LEFT_TO_RIGHT',
   handleConfig = { handleType: 'BAR_TUBULAR', side: 'ONE_SIDE', pieceLengthCm: 40, coverage: 'PIECE' },
+  handleMaterial,
   drillingConfig = { holeCount: 2, divisionType: 'EQUAL' },
   templateName,
   aluminumColor,
@@ -734,6 +882,7 @@ export const WindowSvgPreview: React.FC<WindowSvgPreviewProps> = ({
 }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const theme = getSvgTheme(aluminumColor, glassFinish);
+  const resolvedHandle = resolveHandleInfo(handleConfig, handleMaterial, heightMm);
 
   // Margens internas para acomodar cotas externas sem cortar
   const MARGIN  = 26;
@@ -748,7 +897,19 @@ export const WindowSvgPreview: React.FC<WindowSvgPreviewProps> = ({
 
   const renderContent = () => {
     const renderer = (SVG_RENDERERS as Record<string, SvgTemplateRenderer>)[templateType];
-    return renderer ? renderer({ svgW: SVG_W, svgH: SVG_H, inverted, handleConfig, drillingConfig, widthMm, heightMm, theme }) : null;
+    return renderer
+      ? renderer({
+          svgW: SVG_W,
+          svgH: SVG_H,
+          inverted,
+          handleConfig,
+          resolvedHandle,
+          drillingConfig,
+          widthMm,
+          heightMm,
+          theme,
+        })
+      : null;
   };
 
   const hasDimensions = widthMm > 0 && heightMm > 0;
@@ -784,9 +945,10 @@ export const WindowSvgPreview: React.FC<WindowSvgPreviewProps> = ({
             offsetDist={14}
           />
           <VerticalDimension
-            x={0} y1={0} y2={SVG_H}
+            x={drillingConfig.holeCount > 0 ? SVG_W : 0}
+            y1={0} y2={SVG_H}
             label={`A: ${heightMm} mm`}
-            offsetDir="left"
+            offsetDir={drillingConfig.holeCount > 0 ? 'right' : 'left'}
             offsetDist={14}
           />
         </>
@@ -804,10 +966,10 @@ export const WindowSvgPreview: React.FC<WindowSvgPreviewProps> = ({
         <span className="inline-block w-3 h-3 rounded-sm" style={{ background: theme.fixedGlassFill, border: `1px solid ${theme.glassStroke}` }} />
         Fixo
       </span>
-      {handleConfig.handleType !== 'NONE' && (
-        <span className="flex items-center gap-1 text-primary">
+      {resolvedHandle.handleType !== 'NONE' && (
+        <span className="flex items-center gap-1 text-primary font-medium">
           <span className="material-symbols-outlined text-[14px]">hardware</span>
-          {handleConfig.side === 'BOTH_SIDES' ? 'Puxador 2 Lados' : 'Puxador 1 Lado'}
+          {resolvedHandle.label} • {HANDLE_POSITION_LABELS[resolvedHandle.position] ?? resolvedHandle.position}
         </span>
       )}
       {drillingConfig.holeCount > 0 && (

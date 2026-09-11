@@ -6,12 +6,14 @@ import { formatBRL } from '../utils/calculations';
 interface BudgetItemsTableProps {
   items: BudgetItem[];
   onEdit: (item: BudgetItem) => void;
+  onDuplicate: (item: BudgetItem) => void;
   onDelete: (tempId: string) => void;
 }
 
 export const BudgetItemsTable: React.FC<BudgetItemsTableProps> = ({
   items,
   onEdit,
+  onDuplicate,
   onDelete,
 }) => {
   const [itemToDelete, setItemToDelete] = React.useState<BudgetItem | null>(null);
@@ -126,6 +128,15 @@ export const BudgetItemsTable: React.FC<BudgetItemsTableProps> = ({
                     {/* Ações */}
                     <td className="px-sm py-sm text-center sticky right-0 bg-surface-container-lowest border-l border-outline-variant/40 shadow-[-4px_0px_8px_rgba(0,0,0,0.05)] group-hover:bg-surface-container-high transition-colors">
                       <div className="flex items-center justify-center gap-xs">
+                        <button
+                          type="button"
+                          onClick={() => onDuplicate(item)}
+                          className="p-xs text-secondary hover:text-primary hover:bg-secondary-container/40 rounded-md transition-colors"
+                          aria-label={`Duplicar esquadria ${item.productName}`}
+                          title="Duplicar esquadria"
+                        >
+                          <span className="material-symbols-outlined text-[18px]">content_copy</span>
+                        </button>
                         <button
                           type="button"
                           onClick={() => onEdit(item)}

@@ -1,16 +1,18 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useParams, useLocation, useNavigate } from 'react-router-dom';
-import { useBudget, useDeleteBudget, useUpdateBudgetStatus } from '../features/budgets/hooks/useBudgets';
+import { useBudget, useDeleteBudget, useUpdateBudgetStatus, useCreateBudget } from '../features/budgets/hooks/useBudgets';
 import { Button } from '../components/ui/Button';
 import {
   BUDGET_STATUS_CONFIG,
   TEMPLATE_TYPE_INFO,
   type BudgetStatus,
   type DoorTemplateType,
+  type CreateBudgetPayload,
 } from '../features/budgets/types';
 import { formatBRL } from '../features/budgets/utils/calculations';
 import { WindowSvgPreview } from '../features/budgets/components/builder/WindowSvgPreview';
 import { StatusBadge } from '../features/budgets/components/StatusBadge';
+import { BudgetMaterialsSummary } from '../features/budgets/components/BudgetMaterialsSummary';
 
 const ALL_STATUSES: BudgetStatus[] = ['DRAFT', 'SENT', 'APPROVED', 'REJECTED', 'CANCELLED'];
 
@@ -22,6 +24,7 @@ export function BudgetDetailPage() {
   const { data: budget, isLoading, isError } = useBudget(id);
   const { mutate: deleteBudget, isPending: isDeleting } = useDeleteBudget();
   const { mutate: updateStatus, isPending: isUpdatingStatus } = useUpdateBudgetStatus();
+  const { mutate: createBudget, isPending: isDuplicating } = useCreateBudget();
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
@@ -67,6 +70,45 @@ export function BudgetDetailPage() {
   const handleStatusChange = (newStatus: BudgetStatus) => {
     if (!budget || budget.status === newStatus || isUpdatingStatus) return;
     updateStatus({ id: budget.id, status: newStatus });
+  };
+
+  const handleDuplicateBudget = () => {
+    if (!budget || isDuplicating) return;
+
+    const payload: CreateBudgetPayload = {
+      customerId: budget.customer?.id ?? budget.customerId ?? '',
+      discountPercent: budget.discountPercent ?? 0,
+      notes: budget.notes ? `${budget.notes} (Cópia do orçamento ${budget.code})` : `Cópia do orçamento ${budget.code}`,
+      commercialConditions: budget.commercialConditions,
+      validUntil: budget.validUntil,
+      items: (budget.items ?? []).map((item) => ({
+        productId: item.productId,
+        templateType: item.templateType,
+        templateConfig: item.templateConfig,
+        handleConfig: item.handleConfig,
+        drillingConfig: item.drillingConfig,
+        width: item.width,
+        height: item.height,
+        quantity: item.quantity,
+        laborCost: item.laborCost,
+        options: (item.options ?? []).map((opt) => ({
+          materialId: opt.materialId,
+          quantity: opt.quantity,
+          categoryType: opt.categoryType,
+        })),
+        notes: item.notes,
+      })),
+    };
+
+    createBudget(payload, {
+      onSuccess: (newBudget) => {
+        if (newBudget?.id) {
+          navigate(`/orcamentos/${newBudget.id}`, { state: { justCreated: true } });
+        } else {
+          navigate('/orcamentos');
+        }
+      },
+    });
   };
 
 
@@ -186,6 +228,21 @@ export function BudgetDetailPage() {
           >
             <span className="material-symbols-outlined text-[18px]">print</span>
             <span className="hidden md:inline">Imprimir</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleDuplicateBudget}
+            disabled={isDuplicating}
+            className="p-2 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-lg border border-outline-variant/60 transition-colors flex items-center gap-1.5 text-xs font-label font-medium disabled:opacity-50 cursor-pointer"
+            title="Duplicar este orçamento como uma nova proposta"
+          >
+            <span className="material-symbols-outlined text-[18px]">
+              {isDuplicating ? 'progress_activity' : 'content_copy'}
+            </span>
+            <span className="hidden md:inline">
+              {isDuplicating ? 'Duplicando...' : 'Duplicar'}
+            </span>
           </button>
 
           <Button
@@ -441,6 +498,11 @@ export function BudgetDetailPage() {
                   </div>
                 )}
               </div>
+
+              {/* Resumo Agregado de Consumo de Materiais da Obra */}
+              {budget.items && budget.items.length > 0 && (
+                <BudgetMaterialsSummary items={budget.items} />
+              )}
 
               {/* Observações e Condições Comerciais */}
               {(budget.notes || budget.commercialConditions) && (

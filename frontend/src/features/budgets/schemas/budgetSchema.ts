@@ -16,6 +16,15 @@ export const budgetFormSchema = z.object({
     .max(100, 'Desconto não pode ser maior que 100%.'),
   notes: z.string().optional().or(z.literal('')),
   commercialConditions: z.string().optional().or(z.literal('')),
+  validUntil: z.string().optional().refine((val) => {
+    if (!val) return true;
+    const selected = new Date(`${val}T00:00:00`);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return selected >= today;
+  }, {
+    message: 'A data de validade não pode ser anterior a hoje.',
+  }),
 });
 
 export type BudgetFormValues = z.infer<typeof budgetFormSchema>;

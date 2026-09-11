@@ -44,6 +44,8 @@ public class BudgetService {
 
     @Transactional
     public BudgetResponseDTO create(BudgetRequestDTO requestDTO) {
+        validateValidUntil(requestDTO.validUntil());
+
         Client client = clientRepository.findById(requestDTO.clientId())
                 .orElseThrow(() -> new ResourceNotFoundException("Cliente", requestDTO.clientId().toString()));
 
@@ -90,6 +92,7 @@ public class BudgetService {
         Budget existingBudget = getBudgetOrThrow(id);
 
         validateBudgetIsDraft(existingBudget);
+        validateValidUntil(requestDTO.validUntil());
 
         Client client = clientRepository.findById(requestDTO.clientId())
                 .orElseThrow(() -> new ResourceNotFoundException("Cliente", requestDTO.clientId().toString()));
@@ -111,6 +114,9 @@ public class BudgetService {
         existingBudget.setClient(client);
         existingBudget.setDiscountPercent(updatedData.getDiscountPercent());
         existingBudget.setNotes(updatedData.getNotes());
+        if (updatedData.getValidUntil() != null) {
+            existingBudget.setValidUntil(updatedData.getValidUntil());
+        }
 
         // Recalcular totais após a atualização
         budgetQuantityService.calculateQuantities(existingBudget);
@@ -159,6 +165,16 @@ public class BudgetService {
     private void validateBudgetIsDraft(Budget budget) {
         if (budget.getStatus() != BudgetStatus.DRAFT) {
             throw new BudgetImmutableException("Orçamento não pode ser alterado pois já se encontra no status: " + budget.getStatus());
+        }
+    }
+
+    private void validateValidUntil(java.time.OffsetDateTime validUntil) {
+        if (validUntil != null) {
+            java.time.LocalDate validDate = validUntil.toLocalDate();
+            java.time.LocalDate today = java.time.LocalDate.now();
+            if (validDate.isBefore(today)) {
+                throw new br.edu.ifpb.alumigest.common.exception.BusinessException("A data de validade da proposta não pode ser anterior à data de hoje.");
+            }
         }
     }
 

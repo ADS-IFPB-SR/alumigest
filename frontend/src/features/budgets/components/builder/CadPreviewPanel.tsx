@@ -1,6 +1,6 @@
 import React from 'react';
 import { WindowSvgPreview } from './WindowSvgPreview';
-import type { DoorTemplateType, HandleConfig, DrillingConfig, OpeningDirection } from '../../types';
+import type { DoorTemplateType, HandleConfig, DrillingConfig, OpeningDirection, MaterialSelection } from '../../types';
 
 export interface CadPreviewPanelProps {
   svgTemplate: DoorTemplateType;
@@ -8,6 +8,7 @@ export interface CadPreviewPanelProps {
   svgH: number;
   openingDirection: OpeningDirection;
   handleConfig: HandleConfig;
+  handleMaterial?: MaterialSelection | null;
   drillingConfig: DrillingConfig;
   templateName?: string;
   aluminumColor?: string;
@@ -25,6 +26,7 @@ export const CadPreviewPanel: React.FC<CadPreviewPanelProps> = ({
   svgH,
   openingDirection,
   handleConfig,
+  handleMaterial,
   drillingConfig,
   templateName,
   aluminumColor,
@@ -92,6 +94,7 @@ export const CadPreviewPanel: React.FC<CadPreviewPanelProps> = ({
             heightMm={svgH}
             openingDirection={openingDirection}
             handleConfig={handleConfig}
+            handleMaterial={handleMaterial}
             drillingConfig={drillingConfig}
             templateName={templateName}
             aluminumColor={aluminumColor}

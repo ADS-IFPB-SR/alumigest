@@ -11,6 +11,7 @@ import { CustomerSelector } from './CustomerSelector';
 import { BudgetItemsTable } from './BudgetItemsTable';
 import { BudgetCommercialConditions } from './BudgetCommercialConditions';
 import { BudgetFinancialSummary } from './BudgetFinancialSummary';
+import { BudgetMaterialsSummary } from './BudgetMaterialsSummary';
 import { WindowBuilderModal } from './builder/WindowBuilderModal';
 import { Button } from '../../../components/ui/Button';
 import { ProductPickerModal } from './builder/ProductPickerModal';
@@ -18,18 +19,23 @@ import { budgetFormSchema } from '../schemas/budgetSchema';
 import toast from 'react-hot-toast';
 
 // ─── Estado inicial ────────────────────────────────────────────────────────
-const createInitialFormState = (): BudgetFormState => ({
-  customerId:           '',
-  customerName:         '',
-  customerDocument:     '',
-  customerPhone:        '',
-  customerAddress:      '',
-  items:                [],
-  laborCost:            0,
-  discountPercent:      0,
-  notes:                '',
-  commercialConditions: '',
-});
+const createInitialFormState = (): BudgetFormState => {
+  const defaultValid = new Date();
+  defaultValid.setDate(defaultValid.getDate() + 15);
+  return {
+    customerId:           '',
+    customerName:         '',
+    customerDocument:     '',
+    customerPhone:        '',
+    customerAddress:      '',
+    items:                [],
+    laborCost:            0,
+    discountPercent:      0,
+    notes:                '',
+    commercialConditions: '',
+    validUntil:           defaultValid.toISOString().split('T')[0],
+  };
+};
 
 // ─── Componente ─────────────────────────────────────────────────────────────
 /**
@@ -87,6 +93,7 @@ export const BudgetEditor: React.FC = () => {
         discountPercent: existingBudget.discountPercent,
         notes: existingBudget.notes ?? '',
         commercialConditions: existingBudget.commercialConditions ?? '',
+        validUntil: existingBudget.validUntil ? existingBudget.validUntil.split('T')[0] : '',
       });
     }
   }, [existingBudget, isEditing]);
@@ -166,6 +173,20 @@ export const BudgetEditor: React.FC = () => {
     setIsBuilderOpen(true);
   };
 
+  const handleDuplicateItem = (item: BudgetItem) => {
+    const duplicatedItem: BudgetItem = {
+      ...item,
+      tempId: `item-dup-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      productName: `${item.productName} (Cópia)`,
+      options: item.options.map((opt) => ({ ...opt })),
+    };
+    setForm((prev) => ({
+      ...prev,
+      items: [...prev.items, duplicatedItem],
+    }));
+    toast.success(`Esquadria "${item.productName}" duplicada com sucesso!`);
+  };
+
   const handleDeleteItem = (tempId: string) => {
     setForm((prev) => ({
       ...prev,
@@ -227,6 +248,7 @@ export const BudgetEditor: React.FC = () => {
       discountPercent:      form.discountPercent,
       notes:                form.notes               || undefined,
       commercialConditions: form.commercialConditions || undefined,
+      validUntil:           form.validUntil          || undefined,
       items: form.items.map((item) => ({
         productId:      item.productId,
         templateType:   item.templateType,
@@ -408,11 +430,15 @@ export const BudgetEditor: React.FC = () => {
 
             {/* Lista de itens ou empty state */}
             {form.items.length > 0 ? (
-              <BudgetItemsTable
-                items={form.items}
-                onEdit={handleEditItem}
-                onDelete={handleDeleteItem}
-              />
+              <div className="flex flex-col gap-md">
+                <BudgetItemsTable
+                  items={form.items}
+                  onEdit={handleEditItem}
+                  onDuplicate={handleDuplicateItem}
+                  onDelete={handleDeleteItem}
+                />
+                <BudgetMaterialsSummary items={form.items} />
+              </div>
             ) : (
               <div className="bg-surface-container-lowest border border-outline-variant border-dashed rounded-lg p-xl text-center flex flex-col items-center gap-sm">
                 <span className="material-symbols-outlined text-on-surface-variant text-[40px]">
@@ -470,8 +496,12 @@ export const BudgetEditor: React.FC = () => {
                 onCommercialConditionsChange={(val) =>
                   setForm((p) => ({ ...p, commercialConditions: val }))
                 }
+                validUntil={form.validUntil}
+                onValidUntilChange={(val) =>
+                  setForm((p) => ({ ...p, validUntil: val }))
+                }
                 subtotal={subtotal}
-                errors={{ discountPercent: formErrors.discountPercent }}
+                errors={{ discountPercent: formErrors.discountPercent, validUntil: formErrors.validUntil }}
               />
 
               {/* Coluna direita: valores derivados + salvar (sticky) */}

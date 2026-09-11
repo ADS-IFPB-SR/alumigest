@@ -298,6 +298,7 @@ function toBackendBudgetPayload(data: CreateBudgetPayload) {
     clientId: data.customerId,
     discountPercent: data.discountPercent,
     notes: data.notes,
+    validUntil: data.validUntil ? (data.validUntil.includes('T') ? data.validUntil : `${data.validUntil}T23:59:59Z`) : undefined,
     items: data.items.map((item) => ({
       productId: item.productId,
       widthMm: item.width,

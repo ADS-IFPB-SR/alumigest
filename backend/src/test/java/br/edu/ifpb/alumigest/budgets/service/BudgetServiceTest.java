@@ -12,8 +12,10 @@ import br.edu.ifpb.alumigest.clients.domain.Client;
 import br.edu.ifpb.alumigest.clients.repository.ClientRepository;
 import br.edu.ifpb.alumigest.common.dto.PageResponse;
 import br.edu.ifpb.alumigest.common.exception.BudgetImmutableException;
+import br.edu.ifpb.alumigest.common.exception.BusinessException;
 import br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException;
 import br.edu.ifpb.alumigest.common.exception.InvalidBudgetStatusTransitionException;
+import java.time.OffsetDateTime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -221,5 +223,61 @@ class BudgetServiceTest {
         
         assertThat(budget.getStatus()).isEqualTo(BudgetStatus.CANCELLED);
         verify(budgetRepository, times(1)).save(budget);
+    }
+
+    @Test
+    @DisplayName("Criação: Lança BusinessException quando a validade for anterior a hoje")
+    void create_ShouldThrowBusinessException_WhenValidUntilIsInThePast() {
+        OffsetDateTime pastDate = OffsetDateTime.now().minusDays(1);
+        BudgetRequestDTO invalidRequest = new BudgetRequestDTO(
+                client.getId(), BigDecimal.ZERO, "Notes", pastDate, Collections.emptyList()
+        );
+
+        assertThatThrownBy(() -> budgetService.create(invalidRequest))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("A data de validade da proposta não pode ser anterior à data de hoje.");
+
+        verify(budgetRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Criação: Aceita data de validade hoje ou futura")
+    void create_ShouldAccept_WhenValidUntilIsFuture() {
+        OffsetDateTime futureDate = OffsetDateTime.now().plusDays(15);
+        BudgetRequestDTO validRequest = new BudgetRequestDTO(
+                client.getId(), BigDecimal.ZERO, "Notes", futureDate, Collections.emptyList()
+        );
+
+        when(clientRepository.findById(client.getId())).thenReturn(Optional.of(client));
+        when(budgetMapper.toEntity(validRequest)).thenReturn(new Budget());
+        when(budgetRepository.save(any(Budget.class))).thenReturn(budget);
+
+        BudgetResponseDTO responseDTO = new BudgetResponseDTO(
+                budget.getId(), "ORC-2026-001", client.getId(), "João da Silva",
+                BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO,
+                BudgetStatus.DRAFT, "Notes", null, null, futureDate, Collections.emptyList()
+        );
+        when(budgetMapper.toResponseDTO(any(Budget.class))).thenReturn(responseDTO);
+
+        BudgetResponseDTO result = budgetService.create(validRequest);
+
+        assertThat(result).isNotNull();
+        verify(budgetRepository, times(1)).save(any(Budget.class));
+    }
+
+    @Test
+    @DisplayName("Atualização: Lança BusinessException quando a validade for anterior a hoje")
+    void update_ShouldThrowBusinessException_WhenValidUntilIsInThePast() {
+        when(budgetRepository.findById(budget.getId())).thenReturn(Optional.of(budget));
+        OffsetDateTime pastDate = OffsetDateTime.now().minusDays(2);
+        BudgetRequestDTO invalidRequest = new BudgetRequestDTO(
+                client.getId(), BigDecimal.ZERO, "Notes", pastDate, Collections.emptyList()
+        );
+
+        assertThatThrownBy(() -> budgetService.update(budget.getId(), invalidRequest))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("A data de validade da proposta não pode ser anterior à data de hoje.");
+
+        verify(budgetRepository, never()).save(any());
     }
 }

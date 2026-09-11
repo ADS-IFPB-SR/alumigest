@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../../../components/ui/Button';
 import { BudgetsFilters } from './BudgetsFilters';
@@ -31,29 +31,31 @@ export function BudgetsView() {
   const { data: budgetsData, isLoading, isError, refetch } = useBudgets(filters);
   const { data: statusCounts } = useBudgetStatusCounts();
 
-  const handleStatusChange = (newStatus: BudgetStatus | '') => {
+  const handleStatusChange = useCallback((newStatus: BudgetStatus | '') => {
     setStatus(newStatus);
     setPage(0);
-  };
+  }, []);
 
-  const handleSearchChange = (newSearch: string) => {
+  const handleSearchChange = useCallback((newSearch: string) => {
     setSearch(newSearch);
     setPage(0);
-  };
+  }, []);
 
-  const handleSort = (field: string) => {
-    if (sortField === field) {
-      setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
-    } else {
-      setSortField(field);
+  const handleSort = useCallback((field: string) => {
+    setSortField((currentField) => {
+      if (currentField === field) {
+        setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+        return currentField;
+      }
       setSortDirection('asc');
-    }
+      return field;
+    });
     setPage(0);
-  };
+  }, []);
 
-  const handleCreate = () => {
+  const handleCreate = useCallback(() => {
     navigate('/orcamentos/novo');
-  };
+  }, [navigate]);
 
   const budgets = budgetsData?.content ?? [];
   const totalElements = budgetsData?.totalElements ?? 0;

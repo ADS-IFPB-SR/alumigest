@@ -39,6 +39,7 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
     setIsMobileCadExpanded,
     svgTemplate,
     supportedDirections,
+    allowedHandlePositions,
     glasses,
     profiles,
     hardwares,
@@ -49,14 +50,21 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
     svgH,
     unitAreaM2,
     totalQty,
+    handleMaterial,
+    availableHandleProfiles,
+    availableHandleHardwares,
+    handleSelectHandleMaterial,
     handleMaterialChange,
     handleMaterialQtyChange,
     handleAddMaterial,
     handleRemoveMaterial,
     handleHandleTypeChange,
+    handleHandlePositionChange,
+    handleHandleOrientationChange,
     handleHandleSideChange,
     handleHandleCoverageChange,
     handleHandlePieceLengthChange,
+    handleHeightChange,
     handleHoleCountChange,
     handleDivisionTypeChange,
     handleSingleHoleDistanceChange,
@@ -104,28 +112,28 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
         style={{ maxWidth: '1380px' }}
         aria-modal="true"
       >
-        {/* ── Header do Modal ────────────────────────────────────────────── */}
-        <header className="flex items-center justify-between px-sm sm:px-lg py-sm border-b border-outline-variant bg-surface-container-low flex-shrink-0">
-          <div className="flex items-center gap-xs sm:gap-sm flex-1 min-w-0">
-            <span className="material-symbols-outlined text-[20px] sm:text-[24px] text-primary shrink-0">tune</span>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-xs flex-wrap">
-                <h2 className="font-headline text-base sm:text-title-md font-bold text-on-surface truncate">
-                  {state.template?.name ?? 'Configurar Esquadria'}
-                </h2>
-              </div>
-              <p className="font-body text-[11px] sm:text-xs text-on-surface-variant truncate">
-                Configure os insumos, medidas e parâmetros técnicos.
+        {/* ── Header: Título, Dimensões e Fechar ──────────────────────────── */}
+        <header className="flex items-center justify-between px-sm sm:px-lg py-sm sm:py-md border-b border-outline-variant bg-surface-container-lowest flex-shrink-0">
+          <div className="flex items-center gap-xs sm:gap-sm min-w-0">
+            <span className="material-symbols-outlined text-primary text-xl sm:text-2xl shrink-0">
+              window
+            </span>
+            <div className="min-w-0">
+              <h2 className="text-sm sm:text-lg font-label font-bold text-on-surface truncate">
+                {state.template?.name ?? 'Configurador de Esquadria'}
+              </h2>
+              <p className="text-[11px] sm:text-xs font-data-mono text-secondary truncate">
+                {svgW} × {svgH} mm · {unitAreaM2} m² · {totalQty} {totalQty > 1 ? 'unidades' : 'un'}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-xs shrink-0 ml-xs sm:ml-sm">
+          <div className="flex items-center gap-xs sm:gap-sm shrink-0">
             <button
               type="button"
               onClick={onClose}
-              className="p-1 sm:p-2 text-on-surface-variant hover:bg-surface-container-highest rounded-full transition-colors"
-              aria-label="Fechar"
+              className="p-1 sm:p-1.5 text-secondary hover:text-on-surface hover:bg-surface-container rounded-lg transition-colors cursor-pointer"
+              aria-label="Fechar configurador"
             >
               <span className="material-symbols-outlined text-[22px] sm:text-[24px]">close</span>
             </button>
@@ -145,6 +153,7 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
               svgH={svgH}
               openingDirection={state.openingDirection}
               handleConfig={state.handleConfig}
+              handleMaterial={handleMaterial}
               drillingConfig={state.drillingConfig}
               templateName={state.template?.name}
               aluminumColor={state.aluminumColor}
@@ -167,7 +176,7 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
                   unitAreaM2={unitAreaM2}
                   totalQty={totalQty}
                   onWidthChange={(w) => setState((p) => ({ ...p, widthMm: w }))}
-                  onHeightChange={(h) => setState((p) => ({ ...p, heightMm: h }))}
+                  onHeightChange={handleHeightChange}
                   onQuantityChange={(q) => setState((p) => ({ ...p, quantity: q as number }))}
                 />
               )}
@@ -192,6 +201,10 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
                   openingDirection={state.openingDirection}
                   supportedDirections={supportedDirections}
                   handleConfig={state.handleConfig}
+                  handleMaterial={handleMaterial}
+                  availableHandleProfiles={availableHandleProfiles}
+                  availableHandleHardwares={availableHandleHardwares}
+                  allowedHandlePositions={allowedHandlePositions}
                   drillingConfig={state.drillingConfig}
                   holeDistanceInputs={holeDistanceInputs}
                   heightMm={state.heightMm}
@@ -199,13 +212,17 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
                   defaultHeight={DEFAULT_HEIGHT}
                   onOpeningDirectionChange={(d) => setState((p) => ({ ...p, openingDirection: d }))}
                   onHandleTypeChange={handleHandleTypeChange}
+                  onHandlePositionChange={handleHandlePositionChange}
+                  onHandleOrientationChange={handleHandleOrientationChange}
                   onHandleSideChange={handleHandleSideChange}
                   onHandleCoverageChange={handleHandleCoverageChange}
                   onHandlePieceLengthChange={handleHandlePieceLengthChange}
+                  onSelectHandleMaterial={handleSelectHandleMaterial}
                   onHoleCountChange={handleHoleCountChange}
                   onDivisionTypeChange={handleDivisionTypeChange}
                   onSingleHoleDistanceChange={handleSingleHoleDistanceChange}
                   onNotesChange={(n) => setState((p) => ({ ...p, notes: n }))}
+                  onGoToMaterials={() => handleGoToStep(2)}
                 />
               )}
 

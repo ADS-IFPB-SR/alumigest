@@ -5,6 +5,7 @@ import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -17,7 +18,13 @@ public record BudgetRequestDTO(
 
         String notes,
 
+        OffsetDateTime validUntil,
+
         @NotEmpty(message = "O orçamento deve conter pelo menos um item")
         @Valid
         List<BudgetItemRequestDTO> items
-) {}
+) {
+    public BudgetRequestDTO(UUID clientId, BigDecimal discountPercent, String notes, List<BudgetItemRequestDTO> items) {
+        this(clientId, discountPercent, notes, null, items);
+    }
+}

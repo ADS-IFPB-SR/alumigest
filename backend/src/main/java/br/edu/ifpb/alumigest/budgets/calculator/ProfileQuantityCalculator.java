@@ -22,56 +22,49 @@ public class ProfileQuantityCalculator implements MaterialQuantityCalculator {
 
         BigDecimal totalPerUnit;
 
+        if (templateType == null) {
+            totalPerUnit = w.add(h).multiply(BigDecimal.valueOf(2));
+            return totalPerUnit.multiply(BigDecimal.valueOf(quantity)).setScale(2, RoundingMode.CEILING);
+        }
+
         switch (templateType) {
 
-            case SLIDING_1_LEAF:
-                // Trilhos (2W) + Batentes (2H) + Quadro da única folha (2W + 2H)
-                totalPerUnit = w.multiply(BigDecimal.valueOf(4)).add(h.multiply(BigDecimal.valueOf(4)));
-                break;
-
-            case SLIDING_2_LEAF:
-                // Trilhos (2W) + Batentes (2H) + Quadros das 2 folhas (4H + 2W)
-                totalPerUnit = w.multiply(BigDecimal.valueOf(4)).add(h.multiply(BigDecimal.valueOf(6)));
-                break;
-
-            case SLIDING_3_LEAF:
-                // Trilhos (2W) + Batentes (2H) + Quadros das 3 folhas (6H + 2W)
-                totalPerUnit = w.multiply(BigDecimal.valueOf(4)).add(h.multiply(BigDecimal.valueOf(8)));
-                break;
-
-            case SLIDING_4_LEAF:
-                // Trilhos (2W) + Batentes (2H) + Quadros das 4 folhas (8H + 4W)
-                totalPerUnit = w.multiply(BigDecimal.valueOf(4)).add(h.multiply(BigDecimal.valueOf(10)));
-                break;
-
             case SWING_1_LEAF:
-                // Marco (W + 2H) + Quadro da folha (2W + 2H)
-                totalPerUnit = w.multiply(BigDecimal.valueOf(3)).add(h.multiply(BigDecimal.valueOf(4)));
+                // 1 Folha de giro (2W + 2H)
+                totalPerUnit = w.multiply(BigDecimal.valueOf(2)).add(h.multiply(BigDecimal.valueOf(2)));
                 break;
 
             case SWING_2_LEAF:
-                // Marco (W + 2H) + Quadros das 2 folhas (2W + 4H)
-                totalPerUnit = w.multiply(BigDecimal.valueOf(3)).add(h.multiply(BigDecimal.valueOf(6)));
+                // 2 Folhas de giro (2W + 4H) -> Ex: 1600x2150 => 2*(1.6) + 4*(2.15) = 3.20 + 8.60 = 11.80m (~12m)
+                totalPerUnit = w.multiply(BigDecimal.valueOf(2)).add(h.multiply(BigDecimal.valueOf(4)));
+                break;
+
+            case SLIDING_1_LEAF:
+                // 1 Folha de correr (2W + 2H)
+                totalPerUnit = w.multiply(BigDecimal.valueOf(2)).add(h.multiply(BigDecimal.valueOf(2)));
+                break;
+
+            case SLIDING_2_LEAF:
+                // 2 Folhas de correr (2W + 4H) -> Ex: 1600x2150 => 2*(1.6) + 4*(2.15) = 11.80m
+                totalPerUnit = w.multiply(BigDecimal.valueOf(2)).add(h.multiply(BigDecimal.valueOf(4)));
+                break;
+
+            case SLIDING_3_LEAF:
+                // 3 Folhas de correr (2W + 6H)
+                totalPerUnit = w.multiply(BigDecimal.valueOf(2)).add(h.multiply(BigDecimal.valueOf(6)));
+                break;
+
+            case SLIDING_4_LEAF:
+                // 4 Folhas de correr (2W + 8H)
+                totalPerUnit = w.multiply(BigDecimal.valueOf(2)).add(h.multiply(BigDecimal.valueOf(8)));
                 break;
 
             case MAX_AR_WINDOW_1_LEAF:
             case MAX_AR_WINDOW_INVERSE_1_LEAF:
-                // Marco perimetral (2W + 2H) + Caixilho da folha (2W + 2H)
-                totalPerUnit = w.multiply(BigDecimal.valueOf(4)).add(h.multiply(BigDecimal.valueOf(4)));
-                break;
-
             case DRAWER_FRONT:
-                // Frente de Gaveta: Quadro perimetral (2W + 2H)
-                totalPerUnit = w.add(h).multiply(BigDecimal.valueOf(2));
-                break;
-
             case FIXED_PANEL:
-                // Arremate perimetral da fachada (2W + 2H)
-                totalPerUnit = w.add(h).multiply(BigDecimal.valueOf(2));
-                break;
-
             default:
-                // Fallback de segurança para 2W + 2H
+                // Fallback de segurança para 1 quadro (2W + 2H)
                 totalPerUnit = w.add(h).multiply(BigDecimal.valueOf(2));
                 break;
         }

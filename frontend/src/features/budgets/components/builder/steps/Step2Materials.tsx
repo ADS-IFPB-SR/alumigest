@@ -86,13 +86,6 @@ export const Step2Materials: React.FC<Step2MaterialsProps> = ({
             </button>
             <button
               type="button"
-              onClick={() => onAddMaterial('ROLLERS')}
-              className="px-2.5 py-1 rounded text-xs font-label font-semibold text-primary hover:bg-primary/10 transition-colors border border-primary/40"
-            >
-              + Roldana
-            </button>
-            <button
-              type="button"
               onClick={() => onAddMaterial('FILM')}
               className="px-2.5 py-1 rounded text-xs font-label font-semibold text-primary hover:bg-primary/10 transition-colors border border-primary/40"
             >
@@ -164,10 +157,11 @@ export const Step2Materials: React.FC<Step2MaterialsProps> = ({
                         <button
                           type="button"
                           onClick={() => onRemoveMaterial(reqId)}
-                          className="p-1 text-on-surface-variant hover:text-error hover:bg-error/10 rounded transition-colors"
-                          title="Remover este insumo"
+                          className="p-1 text-on-surface-variant hover:text-error hover:bg-error/10 rounded transition-colors cursor-pointer"
+                          title="Remover este insumo adicional"
+                          aria-label={`Remover ${sel.label}`}
                         >
-                          <span className="material-symbols-outlined text-[16px]">close</span>
+                          <span className="material-symbols-outlined text-[18px]">close</span>
                         </button>
                       )}
                     </div>

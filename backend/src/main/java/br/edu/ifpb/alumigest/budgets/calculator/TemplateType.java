@@ -44,4 +44,8 @@ public enum TemplateType {
         }
         return LOOKUP.get(raw.trim().toUpperCase());
     }
+
+    public static TemplateType from(String raw) {
+        return parse(raw);
+    }
 }

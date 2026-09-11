@@ -4,6 +4,8 @@ import type {
   BuilderState,
   BudgetItem,
   HandleConfig,
+  HandlePosition,
+  HandleOrientation,
   DrillingConfig,
   HandleType,
   HandleSide,
@@ -14,6 +16,7 @@ import type {
   WindowTemplate,
   BudgetItemCalculationRequest,
 } from '../../../types';
+import { getTypologyMetadata } from '../../../domain/typologyRegistry';
 import type { Product, GlassDTO, ProfileDTO, HardwareDTO, FilmDTO } from '../../../../catalog/types';
 import {
   useProducts,
@@ -163,9 +166,60 @@ export function useWindowBuilderState({
 
   const svgTemplate: DoorTemplateType = (state.templateType || state.template?.templateType || 'SLIDING_DOOR_2F') as DoorTemplateType;
 
+  const typologyMeta = useMemo(() => {
+    const schemaPositions = state.template?.templateConfig?.optionSchema?.allowedHandlePositions;
+    return getTypologyMetadata(svgTemplate, schemaPositions);
+  }, [svgTemplate, state.template]);
+
   const supportedDirections = useMemo(() => {
-    return TEMPLATE_TYPE_INFO[svgTemplate]?.supportedDirections ?? ['LEFT_TO_RIGHT', 'RIGHT_TO_LEFT'];
-  }, [svgTemplate]);
+    const schemaDirs = state.template?.templateConfig?.optionSchema?.allowedOpeningDirections;
+    if (schemaDirs && schemaDirs.length > 0) return schemaDirs;
+    return TEMPLATE_TYPE_INFO[svgTemplate]?.supportedDirections ?? typologyMeta.supportedOpeningDirections;
+  }, [svgTemplate, typologyMeta, state.template]);
+
+  const allowedHandlePositions = typologyMeta.allowedHandlePositions;
+
+  const handleMaterial = useMemo(() => {
+    return (
+      state.materialSelections.find(
+        (s) =>
+          s.label?.toLowerCase().includes('puxador') ||
+          s.materialName?.toLowerCase().includes('puxador') ||
+          s.label?.toLowerCase().includes('fecho') ||
+          s.materialName?.toLowerCase().includes('fecho') ||
+          s.label?.toLowerCase().includes('concha') ||
+          s.materialName?.toLowerCase().includes('concha') ||
+          s.label?.toLowerCase().includes('maçaneta') ||
+          s.materialName?.toLowerCase().includes('macaneta') ||
+          (s.categoryType === 'HARDWARE' &&
+            !s.label?.toLowerCase().includes('rold') &&
+            !s.label?.toLowerCase().includes('escova') &&
+            !s.label?.toLowerCase().includes('guia') &&
+            !s.label?.toLowerCase().includes('parafuso'))
+      ) ?? null
+    );
+  }, [state.materialSelections]);
+
+  const availableHandleProfiles = useMemo(() => {
+    return profiles.map((p) => ({
+      id: p.id,
+      name: p.name,
+      price: p.salePrice ?? 0,
+      unit: p.unitMeasure ?? 'm',
+      categoryType: 'PROFILE' as CategoryType,
+      colorFinish: p.colorFinish,
+    }));
+  }, [profiles]);
+
+  const availableHandleHardwares = useMemo(() => {
+    return hardwares.map((h) => ({
+      id: h.id,
+      name: h.name,
+      price: h.salePrice ?? 0,
+      unit: h.unitMeasure ?? 'un',
+      categoryType: 'HARDWARE' as CategoryType,
+    }));
+  }, [hardwares]);
 
   const findCatalogMaterial = useCallback(
     (materialId: string) => {
@@ -326,6 +380,91 @@ export function useWindowBuilderState({
     [glasses, profiles, hardwares, films, findCatalogMaterial]
   );
 
+  const syncHandleMaterialSelections = useCallback(
+    (
+      selections: MaterialSelection[],
+      newHandleConfig: HandleConfig,
+      heightMm: number | '',
+      targetRequirementId?: string,
+    ): MaterialSelection[] => {
+      const isBothSides = newHandleConfig.side === 'BOTH_SIDES';
+      const sideMult = isBothSides ? 2 : 1;
+      const isNone = newHandleConfig.handleType === 'NONE';
+
+      // Identifica o insumo do puxador diretamente no conjunto atual de seleções
+      const activeHandleMat = selections.find((s) =>
+        (targetRequirementId && s.requirementId === targetRequirementId) ||
+        s.requirementId.startsWith('handle-mat-') ||
+        s.label?.toLowerCase().includes('puxador') ||
+        s.materialName?.toLowerCase().includes('puxador') ||
+        s.label?.toLowerCase().includes('fecho') ||
+        s.materialName?.toLowerCase().includes('fecho') ||
+        s.label?.toLowerCase().includes('concha') ||
+        s.materialName?.toLowerCase().includes('concha') ||
+        s.label?.toLowerCase().includes('maçaneta') ||
+        s.materialName?.toLowerCase().includes('macaneta')
+      );
+
+      return selections.map((sel) => {
+        const isTarget = targetRequirementId ? sel.requirementId === targetRequirementId : false;
+        const isPuxador =
+          isTarget ||
+          (activeHandleMat && sel.requirementId === activeHandleMat.requirementId) ||
+          sel.label?.toLowerCase().includes('puxador') ||
+          sel.materialName?.toLowerCase().includes('puxador') ||
+          sel.label?.toLowerCase().includes('fecho') ||
+          sel.materialName?.toLowerCase().includes('fecho') ||
+          sel.label?.toLowerCase().includes('concha') ||
+          sel.materialName?.toLowerCase().includes('concha') ||
+          sel.label?.toLowerCase().includes('maçaneta') ||
+          sel.materialName?.toLowerCase().includes('macaneta') ||
+          (sel.categoryType === 'HARDWARE' &&
+            !sel.label?.toLowerCase().includes('rold') &&
+            !sel.label?.toLowerCase().includes('escova') &&
+            !sel.label?.toLowerCase().includes('guia') &&
+            !sel.label?.toLowerCase().includes('parafuso'));
+
+        if (!isPuxador) return sel;
+
+        if (isNone) {
+          return {
+            ...sel,
+            quantity: 0,
+            totalPrice: 0,
+            isManualOverride: true,
+          };
+        }
+
+        const unitStr = String(sel.unitMeasure || '').toUpperCase().trim();
+        const isMeter = unitStr === 'M' || unitStr === 'METRO' || unitStr === 'METROS';
+        const isPar = unitStr === 'PAR' || unitStr === 'PAIR' || unitStr === 'PARES';
+
+        let newQty: number;
+        if (isMeter) {
+          if (newHandleConfig.coverage === 'PIECE' && newHandleConfig.pieceLengthCm) {
+            newQty = parseFloat(((newHandleConfig.pieceLengthCm / 100) * sideMult).toFixed(2));
+          } else {
+            const h = typeof heightMm === 'number' && heightMm > 0 ? heightMm : DEFAULT_HEIGHT;
+            newQty = parseFloat(((h / 1000) * sideMult).toFixed(2));
+          }
+        } else if (isPar) {
+          newQty = isBothSides ? 1 : 0.5;
+        } else {
+          // Padrão para ferragens e acessórios unitários (UN, PC, PEÇA, CJ, etc.)
+          newQty = isBothSides ? 2 : 1;
+        }
+
+        return {
+          ...sel,
+          quantity: newQty,
+          totalPrice: parseFloat((newQty * (sel.unitPrice || 0)).toFixed(2)),
+          isManualOverride: true,
+        };
+      });
+    },
+    []
+  );
+
   useEffect(() => {
     if (!isOpen) {
       hasInitializedRef.current = false;
@@ -335,60 +474,65 @@ export function useWindowBuilderState({
     }
 
     if (editingItem) {
-      const template = templates.find((t) => t.id === editingItem.productId) ?? templates[0] ?? null;
-      const selections: MaterialSelection[] = (editingItem.options ?? []).map((opt, idx) => {
-        const mat = findCatalogMaterial(opt.materialId);
-        const reqId = `edit-item-${opt.materialId}-${idx}`;
-        const categoryType = opt.categoryType || (mat?.categoryType as CategoryType) || 'HARDWARE';
-        const price = opt.unitPrice || mat?.price || 0;
-        const qty = opt.quantity ?? 1;
-        return {
-          requirementId: reqId,
-          categoryType: categoryType,
-          label: CATEGORY_LABELS[categoryType] ?? categoryType,
-          isOptional: false,
-          materialId: opt.materialId,
-          materialName: opt.materialName || mat?.name || 'Material',
-          unitMeasure: opt.unitMeasure || mat?.unit || 'un',
-          unitPrice: price,
-          quantity: qty,
-          totalPrice: qty !== undefined ? parseFloat((qty * price).toFixed(2)) : undefined,
-        };
-      });
+      if (!hasInitializedRef.current) {
+        hasInitializedRef.current = true;
+        const template = templates.find((t) => t.id === editingItem.productId) ?? templates[0] ?? null;
+        const selections: MaterialSelection[] = (editingItem.options ?? []).map((opt, idx) => {
+          const mat = findCatalogMaterial(opt.materialId);
+          const reqId = `edit-item-${opt.materialId}-${idx}`;
+          const categoryType = opt.categoryType || (mat?.categoryType as CategoryType) || 'HARDWARE';
+          const price = opt.unitPrice || mat?.price || 0;
+          const qty = opt.quantity ?? 1;
+          return {
+            requirementId: reqId,
+            categoryType: categoryType,
+            label: CATEGORY_LABELS[categoryType] ?? categoryType,
+            isOptional: false,
+            materialId: opt.materialId,
+            materialName: opt.materialName || mat?.name || 'Material',
+            unitMeasure: opt.unitMeasure || mat?.unit || 'un',
+            unitPrice: price,
+            quantity: qty,
+            totalPrice: qty !== undefined ? parseFloat((qty * price).toFixed(2)) : undefined,
+          };
+        });
 
-      const editCount = editingItem.drillingConfig?.holeCount ?? 2;
-      const editH = editingItem.heightMm ?? 2100;
-      const step = Math.round(editH / (editCount + 1));
-      const fallbackDists = Array.from({ length: editCount }, (_, i) => step * (i + 1));
-      const dists = editingItem.drillingConfig?.customDistancesMm && editingItem.drillingConfig.customDistancesMm.length === editCount
-        ? editingItem.drillingConfig.customDistancesMm
-        : fallbackDists;
-      setHoleDistanceInputs(dists.map(String));
+        const editCount = editingItem.drillingConfig?.holeCount ?? 2;
+        const editH = editingItem.heightMm ?? 2100;
+        const step = Math.round(editH / (editCount + 1));
+        const fallbackDists = Array.from({ length: editCount }, (_, i) => step * (i + 1));
+        const dists = editingItem.drillingConfig?.customDistancesMm && editingItem.drillingConfig.customDistancesMm.length === editCount
+          ? editingItem.drillingConfig.customDistancesMm
+          : fallbackDists;
+        setHoleDistanceInputs(dists.map(String));
 
-      setState({
-        template,
-        templateType: (editingItem.templateType as DoorTemplateType) || undefined,
-        widthMm: editingItem.widthMm,
-        heightMm: editingItem.heightMm,
-        quantity: editingItem.quantity,
-        openingDirection: editingItem.templateConfig?.openingDirection ?? 'LEFT_TO_RIGHT',
-        handleConfig: editingItem.handleConfig ?? {
-          handleType: 'BAR_TUBULAR',
-          side: 'ONE_SIDE',
-          coverage: 'FULL',
-          pieceLengthCm: 40,
-        },
-        drillingConfig: editingItem.drillingConfig ?? {
-          holeCount: 2,
-          divisionType: 'EQUAL',
-          customDistancesMm: dists,
-        },
-        aluminumColor: editingItem.templateConfig?.aluminumColor ?? 'Alumínio Fosco / Anodizado',
-        glassFinish: editingItem.templateConfig?.glassFinish ?? 'Fumê / Cinza',
-        laborCost: editingItem.laborCost ?? 0,
-        notes: editingItem.notes ?? '',
-        materialSelections: selections,
-      });
+        setState({
+          template,
+          templateType: (editingItem.templateType as DoorTemplateType) || undefined,
+          widthMm: editingItem.widthMm,
+          heightMm: editingItem.heightMm,
+          quantity: editingItem.quantity,
+          openingDirection: editingItem.templateConfig?.openingDirection ?? 'LEFT_TO_RIGHT',
+          handleConfig: editingItem.handleConfig ?? {
+            handleType: 'BAR_TUBULAR',
+            side: 'ONE_SIDE',
+            coverage: 'FULL',
+            pieceLengthCm: 40,
+          },
+          drillingConfig: editingItem.drillingConfig ?? {
+            holeCount: 2,
+            divisionType: 'EQUAL',
+            customDistancesMm: dists,
+          },
+          aluminumColor: editingItem.templateConfig?.aluminumColor ?? 'Alumínio Fosco / Anodizado',
+          glassFinish: editingItem.templateConfig?.glassFinish ?? 'Fumê / Cinza',
+          laborCost: editingItem.laborCost ?? 0,
+          notes: editingItem.notes ?? '',
+          materialSelections: selections,
+        });
+        setCurrentStep(1);
+        setErrors({});
+      }
     } else {
       if (!hasInitializedRef.current && templates.length > 0) {
         hasInitializedRef.current = true;
@@ -401,21 +545,23 @@ export function useWindowBuilderState({
         const glassColor = defaultTemplate.templateConfig?.glassColor
           ? mapCatalogGlassColor(defaultTemplate.templateConfig.glassColor)
           : 'Fumê / Cinza';
-        let rawDir = defaultTemplate.templateConfig?.openingDirection;
-        if (rawDir === 'OUTSIDE') rawDir = 'LEFT_TO_RIGHT';
-        if (rawDir === 'INSIDE') rawDir = 'RIGHT_TO_LEFT';
+        const rawDir = defaultTemplate.templateConfig?.openingDirection;
         const dir = rawDir && validDirections.includes(rawDir)
           ? rawDir
           : (validDirections[0] ?? 'LEFT_TO_RIGHT');
 
         const cfgHandle = defaultTemplate.templateConfig?.handleConfig;
+        const metaForTarget = getTypologyMetadata(targetSvg, defaultTemplate.templateConfig?.optionSchema?.allowedHandlePositions);
+        const initialPos: HandlePosition = cfgHandle?.handlePosition ?? cfgHandle?.position ?? metaForTarget.defaultHandlePosition;
         const initialHandleConfig: HandleConfig = cfgHandle ? {
           handleType: cfgHandle.handleType ?? 'BAR_TUBULAR',
+          position: initialPos,
           side: cfgHandle.side ?? 'ONE_SIDE',
           coverage: cfgHandle.coverage ?? (cfgHandle.handleLengthMm && cfgHandle.handleLengthMm >= 1000 ? 'FULL' : 'PIECE'),
           pieceLengthCm: cfgHandle.pieceLengthCm ?? (cfgHandle.handleLengthMm ? Math.round(cfgHandle.handleLengthMm / 10) : 40),
         } : {
           handleType: 'BAR_TUBULAR',
+          position: initialPos,
           side: 'ONE_SIDE',
           coverage: 'FULL',
           pieceLengthCm: 40,
@@ -439,6 +585,7 @@ export function useWindowBuilderState({
         const w = DEFAULT_WIDTH;
         const h = DEFAULT_HEIGHT;
         const initialSelections = buildSelectionsForTemplate(defaultTemplate, w, h, alumColor, glassColor);
+        const syncedInitialSelections = syncHandleMaterialSelections(initialSelections, initialHandleConfig, h);
 
         setState({
           template: defaultTemplate,
@@ -453,14 +600,13 @@ export function useWindowBuilderState({
           glassFinish: glassColor,
           laborCost: defaultTemplate.laborCost || 0,
           notes: '',
-          materialSelections: initialSelections,
+          materialSelections: syncedInitialSelections,
         });
+        setCurrentStep(1);
+        setErrors({});
       }
     }
-
-    setCurrentStep(1);
-    setErrors({});
-  }, [isOpen, editingItem, templates, buildSelectionsForTemplate, findCatalogMaterial, selectedProductId]);
+  }, [isOpen, editingItem, templates, buildSelectionsForTemplate, syncHandleMaterialSelections, findCatalogMaterial, selectedProductId]);
 
   const materialSelectionsRef = useRef(state.materialSelections);
   materialSelectionsRef.current = state.materialSelections;
@@ -503,8 +649,21 @@ export function useWindowBuilderState({
             const isBelow = optRes.isBelowPhysicalMinimum;
             const warning = optRes.warningMessage;
 
-            // Se o usuário não sobrescreveu manualmente, aplica a sugestão da calculadora
-            const currentQty = sel.isManualOverride && sel.quantity !== undefined ? sel.quantity : suggested;
+            const isPuxadorOrHardware =
+              sel.categoryType === 'HARDWARE' ||
+              sel.label?.toLowerCase().includes('puxador') ||
+              sel.materialName?.toLowerCase().includes('puxador') ||
+              sel.label?.toLowerCase().includes('fecho') ||
+              sel.materialName?.toLowerCase().includes('fecho') ||
+              sel.label?.toLowerCase().includes('concha') ||
+              sel.materialName?.toLowerCase().includes('concha') ||
+              sel.label?.toLowerCase().includes('maçaneta') ||
+              sel.materialName?.toLowerCase().includes('maçaneta');
+
+            // Se for hardware, puxador ou sobrescrita manual, preserva a quantidade configurada
+            const currentQty = (sel.isManualOverride || isPuxadorOrHardware) && sel.quantity !== undefined
+              ? sel.quantity
+              : suggested;
             const totalPrice = currentQty !== undefined ? parseFloat((currentQty * sel.unitPrice).toFixed(2)) : undefined;
 
             return {
@@ -569,7 +728,6 @@ export function useWindowBuilderState({
     setState((prev) => {
       let nextAlum = prev.aluminumColor;
       let nextGlass = prev.glassFinish;
-      let nextHandleType = prev.handleConfig.handleType;
 
       if (sel.categoryType === 'PROFILE' && mat) {
         nextAlum = mapCatalogAluminumColor(mat.colorFinish || mat.name);
@@ -579,38 +737,64 @@ export function useWindowBuilderState({
         nextGlass = mapCatalogGlassColor(mat.colorFinish || mat.name);
       }
 
-      if (sel.categoryType === 'HARDWARE' && mat) {
-        const n = mat.name.toLowerCase();
-        if (n.includes('concha') || n.includes('fecho')) {
-          nextHandleType = 'SHELL_LOCK';
-        } else if (n.includes('maçaneta') || n.includes('macaneta') || n.includes('alavanca')) {
-          nextHandleType = 'LEVER_HANDLE';
-        } else {
-          nextHandleType = 'BAR_TUBULAR';
+      const isHandleMat = handleMaterial && handleMaterial.requirementId === requirementId;
+
+      const updatedSelections = prev.materialSelections.map((s) => {
+        if (s.requirementId !== requirementId) return s;
+
+        const oldUnit = String(s.unitMeasure || '').toUpperCase().trim();
+        const newUnit = String(mat?.unit ?? s.unitMeasure ?? '').toUpperCase().trim();
+        const oldIsMeter = oldUnit === 'M' || oldUnit === 'METRO' || oldUnit === 'METROS';
+        const newIsMeter = newUnit === 'M' || newUnit === 'METRO' || newUnit === 'METROS';
+        const newIsPar = newUnit === 'PAR' || newUnit === 'PAIR' || newUnit === 'PARES';
+
+        let newQty = s.quantity ?? 1;
+
+        if (isHandleMat) {
+          const isBothSides = prev.handleConfig.side === 'BOTH_SIDES';
+          const sideMult = isBothSides ? 2 : 1;
+          if (newIsMeter) {
+            if (prev.handleConfig.coverage === 'PIECE' && prev.handleConfig.pieceLengthCm) {
+              newQty = parseFloat(((prev.handleConfig.pieceLengthCm / 100) * sideMult).toFixed(2));
+            } else {
+              const h = typeof prev.heightMm === 'number' && prev.heightMm > 0 ? prev.heightMm : DEFAULT_HEIGHT;
+              newQty = parseFloat(((h / 1000) * sideMult).toFixed(2));
+            }
+          } else if (newIsPar) {
+            newQty = isBothSides ? 1 : 0.5;
+          } else {
+            newQty = isBothSides ? 2 : 1;
+          }
+        } else if (oldIsMeter !== newIsMeter) {
+          if (newIsMeter) {
+            const h = typeof prev.heightMm === 'number' && prev.heightMm > 0 ? prev.heightMm : DEFAULT_HEIGHT;
+            newQty = parseFloat((h / 1000).toFixed(2));
+          } else if (newIsPar) {
+            newQty = 1;
+          } else {
+            newQty = 1;
+          }
         }
-      }
+
+        return {
+          ...s,
+          categoryType: (mat?.categoryType as CategoryType) || s.categoryType,
+          materialId,
+          materialName: mat?.name ?? '',
+          unitMeasure: mat?.unit ?? s.unitMeasure,
+          unitPrice,
+          quantity: newQty,
+          familyCode: mat?.familyCode,
+          totalPrice: parseFloat((newQty * unitPrice).toFixed(2)),
+          isManualOverride: true,
+        };
+      });
 
       return {
         ...prev,
         aluminumColor: nextAlum,
         glassFinish: nextGlass,
-        handleConfig: {
-          ...prev.handleConfig,
-          handleType: nextHandleType,
-        },
-        materialSelections: prev.materialSelections.map((s) =>
-          s.requirementId === requirementId
-            ? {
-                ...s,
-                materialId,
-                materialName: mat?.name ?? '',
-                unitMeasure: mat?.unit ?? s.unitMeasure,
-                unitPrice,
-                familyCode: mat?.familyCode,
-                totalPrice: (s.quantity ?? 1) * unitPrice,
-              }
-            : s,
-        ),
+        materialSelections: updatedSelections,
       };
     });
   };
@@ -621,7 +805,8 @@ export function useWindowBuilderState({
       materialSelections: prev.materialSelections.map((s) => {
         if (s.requirementId !== requirementId) return s;
 
-        const isIntegerUnit = s.unitMeasure === 'UN' || s.unitMeasure === 'PAR' || s.unitMeasure === 'PAIR' || s.unitMeasure === 'un';
+        const u = String(s.unitMeasure || '').toUpperCase().trim();
+        const isIntegerUnit = u === 'UN' || u === 'UNIDADE' || u === 'PC' || u === 'PEÇA' || u === 'PECA' || u === 'CJ';
         let qty: number | undefined = undefined;
 
         if (valStr !== undefined && valStr !== '') {
@@ -699,44 +884,263 @@ export function useWindowBuilderState({
     }));
   };
 
+  const handleSelectHandleMaterial = useCallback(
+    (materialId: string) => {
+      if (!materialId) {
+        setState((prev) => {
+          const updated = prev.materialSelections.map((sel) => {
+            const isH = handleMaterial && sel.requirementId === handleMaterial.requirementId;
+            if (!isH) return sel;
+            return {
+              ...sel,
+              materialId: '',
+              materialName: '',
+              unitPrice: 0,
+              quantity: 0,
+              totalPrice: 0,
+              isManualOverride: true,
+            };
+          });
+          return {
+            ...prev,
+            materialSelections: updated,
+          };
+        });
+        return;
+      }
+
+      const hw = hardwares.find((h) => h.id === materialId);
+      const prof = !hw ? profiles.find((p) => p.id === materialId) : null;
+      const catType: CategoryType = hw ? 'HARDWARE' : 'PROFILE';
+      const matName = hw?.name ?? prof?.name ?? 'Material Puxador';
+      const unitPrice = hw?.salePrice ?? prof?.salePrice ?? 0;
+      const unitMeasure = hw ? (hw.unitMeasure ?? 'un') : (prof?.unitMeasure ?? 'm');
+      const familyCode = hw?.familyCode ?? prof?.familyCode;
+
+      setState((prev) => {
+        let nextType = prev.handleConfig.handleType;
+
+        if (catType === 'PROFILE') {
+          // Se for perfil de alumínio, força PROFILE_HANDLE a menos que seja NONE
+          if (nextType !== 'PROFILE_HANDLE' && nextType !== 'NONE') {
+            nextType = 'PROFILE_HANDLE';
+          }
+        } else {
+          // Se for ferragem, bloqueia PROFILE_HANDLE
+          if (nextType === 'PROFILE_HANDLE') {
+            const lower = matName.toLowerCase();
+            if (lower.includes('fecho') || lower.includes('concha')) {
+              nextType = 'SHELL_LOCK';
+            } else if (lower.includes('maçaneta') || lower.includes('macaneta')) {
+              nextType = 'LEVER_HANDLE';
+            } else {
+              nextType = 'BAR_TUBULAR';
+            }
+          }
+        }
+
+        const isProfile = nextType === 'PROFILE_HANDLE';
+        const newHandleConfig: HandleConfig = {
+          ...prev.handleConfig,
+          handleType: nextType,
+          coverage: isProfile ? (prev.handleConfig.coverage ?? 'FULL') : undefined,
+          pieceLengthCm: isProfile && prev.handleConfig.coverage === 'PIECE' ? (prev.handleConfig.pieceLengthCm ?? 40) : undefined,
+        };
+
+        let targetReqId = handleMaterial?.requirementId;
+        let found = false;
+        const updatedSelections = prev.materialSelections.map((sel) => {
+          const isH = handleMaterial && sel.requirementId === handleMaterial.requirementId;
+          if (isH) {
+            found = true;
+            return {
+              ...sel,
+              categoryType: catType,
+              label: catType === 'PROFILE' ? 'Perfil Puxador' : 'Puxador / Ferragem',
+              materialId,
+              materialName: matName,
+              unitMeasure,
+              unitPrice,
+              familyCode,
+            };
+          }
+          return sel;
+        });
+
+        if (!found) {
+          targetReqId = `handle-mat-${Date.now()}`;
+          updatedSelections.push({
+            requirementId: targetReqId,
+            categoryType: catType,
+            label: catType === 'PROFILE' ? 'Perfil Puxador' : 'Puxador / Ferragem',
+            isOptional: false,
+            materialId,
+            materialName: matName,
+            unitMeasure,
+            unitPrice,
+            familyCode,
+          });
+        }
+
+        const syncedSelections = syncHandleMaterialSelections(
+          updatedSelections,
+          newHandleConfig,
+          prev.heightMm,
+          targetReqId
+        );
+
+        return {
+          ...prev,
+          handleConfig: newHandleConfig,
+          materialSelections: syncedSelections,
+        };
+      });
+    },
+    [hardwares, profiles, handleMaterial, syncHandleMaterialSelections]
+  );
+
   const handleHandleTypeChange = (type: HandleType) => {
+    setState((prev) => {
+      const isProfile = type === 'PROFILE_HANDLE';
+      const currentPos = prev.handleConfig.position;
+      const validPosition = (currentPos && allowedHandlePositions.includes(currentPos))
+        ? currentPos
+        : typologyMeta.defaultHandlePosition;
+
+      const newConfig: HandleConfig = {
+        ...prev.handleConfig,
+        handleType: type,
+        position: validPosition,
+        side: prev.handleConfig.side ?? 'ONE_SIDE',
+        coverage: isProfile ? (prev.handleConfig.coverage ?? 'FULL') : undefined,
+        pieceLengthCm: isProfile && prev.handleConfig.coverage === 'PIECE' ? (prev.handleConfig.pieceLengthCm ?? 40) : undefined,
+      };
+
+      // Se mudou para PROFILE_HANDLE mas o material atual é HARDWARE, comuta se possível
+      let updatedSelections = prev.materialSelections;
+      if (type === 'PROFILE_HANDLE' && handleMaterial?.categoryType === 'HARDWARE') {
+        const profileMatch = profiles.find((p) => p.name.toLowerCase().includes('puxador')) ?? profiles[0];
+        if (profileMatch) {
+          updatedSelections = updatedSelections.map((sel) =>
+            sel.requirementId === handleMaterial.requirementId
+              ? {
+                  ...sel,
+                  categoryType: 'PROFILE' as CategoryType,
+                  label: 'Perfil Puxador',
+                  materialId: profileMatch.id,
+                  materialName: profileMatch.name,
+                  unitMeasure: profileMatch.unitMeasure ?? 'm',
+                  unitPrice: profileMatch.salePrice ?? 0,
+                  familyCode: profileMatch.familyCode,
+                }
+              : sel
+          );
+        }
+      } else if (type !== 'PROFILE_HANDLE' && type !== 'NONE' && handleMaterial?.categoryType === 'PROFILE') {
+        const hwMatch = hardwares[0];
+        if (hwMatch) {
+          updatedSelections = updatedSelections.map((sel) =>
+            sel.requirementId === handleMaterial.requirementId
+              ? {
+                  ...sel,
+                  categoryType: 'HARDWARE' as CategoryType,
+                  label: 'Puxador / Ferragem',
+                  materialId: hwMatch.id,
+                  materialName: hwMatch.name,
+                  unitMeasure: hwMatch.unitMeasure ?? 'un',
+                  unitPrice: hwMatch.salePrice ?? 0,
+                  familyCode: hwMatch.familyCode,
+                }
+              : sel
+          );
+        }
+      }
+
+      return {
+        ...prev,
+        handleConfig: newConfig,
+        materialSelections: syncHandleMaterialSelections(updatedSelections, newConfig, prev.heightMm),
+      };
+    });
+  };
+
+  const handleHandlePositionChange = (position: HandlePosition) => {
     setState((prev) => ({
       ...prev,
       handleConfig: {
         ...prev.handleConfig,
-        handleType: type,
-        side: prev.handleConfig.side ?? 'ONE_SIDE',
-        coverage: type === 'BAR_TUBULAR' ? prev.handleConfig.coverage ?? 'FULL' : undefined,
+        position,
+        // Se mover especificamente para topo ou base de janelas articuladas, orienta como HORIZONTAL
+        // mas em posições laterais ou centrais, preserva a orientação escolhida pelo usuário (ex: tubular deitado)
+        orientation: (position === 'TOP' || position === 'BOTTOM')
+          ? 'HORIZONTAL'
+          : (prev.handleConfig.orientation ?? 'VERTICAL'),
+      },
+    }));
+  };
+
+  const handleHandleOrientationChange = (orientation: HandleOrientation) => {
+    setState((prev) => ({
+      ...prev,
+      handleConfig: {
+        ...prev.handleConfig,
+        orientation,
       },
     }));
   };
 
   const handleHandleSideChange = (side: HandleSide) => {
-    setState((prev) => ({
-      ...prev,
-      handleConfig: { ...prev.handleConfig, side },
-    }));
+    setState((prev) => {
+      const newConfig: HandleConfig = { ...prev.handleConfig, side };
+      return {
+        ...prev,
+        handleConfig: newConfig,
+        materialSelections: syncHandleMaterialSelections(prev.materialSelections, newConfig, prev.heightMm),
+      };
+    });
   };
 
   const handleHandleCoverageChange = (coverage: HandleCoverage) => {
-    setState((prev) => ({
-      ...prev,
-      handleConfig: {
+    setState((prev) => {
+      const newConfig: HandleConfig = {
         ...prev.handleConfig,
         coverage,
         pieceLengthCm: coverage === 'PIECE' ? prev.handleConfig.pieceLengthCm ?? 40 : undefined,
-      },
-    }));
+      };
+      return {
+        ...prev,
+        handleConfig: newConfig,
+        materialSelections: syncHandleMaterialSelections(prev.materialSelections, newConfig, prev.heightMm),
+      };
+    });
   };
 
   const handleHandlePieceLengthChange = (pieceLengthCm: number) => {
-    setState((prev) => ({
-      ...prev,
-      handleConfig: {
+    setState((prev) => {
+      const newConfig: HandleConfig = {
         ...prev.handleConfig,
         pieceLengthCm,
-      },
-    }));
+      };
+      return {
+        ...prev,
+        handleConfig: newConfig,
+        materialSelections: syncHandleMaterialSelections(prev.materialSelections, newConfig, prev.heightMm),
+      };
+    });
+  };
+
+  const handleHeightChange = (h: number | '') => {
+    setState((prev) => {
+      const updatedSelections =
+        prev.handleConfig.coverage === 'FULL' && prev.handleConfig.handleType !== 'NONE'
+          ? syncHandleMaterialSelections(prev.materialSelections, prev.handleConfig, h)
+          : prev.materialSelections;
+      return {
+        ...prev,
+        heightMm: h,
+        materialSelections: updatedSelections,
+      };
+    });
   };
 
   const getDefaultHoleDistances = (count: number, height: number): number[] => {
@@ -990,6 +1394,7 @@ export function useWindowBuilderState({
     setIsMobileCadExpanded,
     svgTemplate,
     supportedDirections,
+    allowedHandlePositions,
     dynamicAluminumColors,
     dynamicGlassFinishes,
     glasses,
@@ -1002,14 +1407,21 @@ export function useWindowBuilderState({
     svgH,
     unitAreaM2,
     totalQty,
+    handleMaterial,
+    availableHandleProfiles,
+    availableHandleHardwares,
+    handleSelectHandleMaterial,
     handleMaterialChange,
     handleMaterialQtyChange,
     handleAddMaterial,
     handleRemoveMaterial,
     handleHandleTypeChange,
+    handleHandlePositionChange,
+    handleHandleOrientationChange,
     handleHandleSideChange,
     handleHandleCoverageChange,
     handleHandlePieceLengthChange,
+    handleHeightChange,
     handleHoleCountChange,
     handleDivisionTypeChange,
     handleSingleHoleDistanceChange,
