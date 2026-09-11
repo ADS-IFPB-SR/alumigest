@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import type { CustomerRequest } from '../types';
 import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
+import { customerSchema } from '../../customers/schemas/customerSchema';
 
 interface CustomerQuickCreateModalProps {
   isOpen: boolean;
@@ -71,19 +72,23 @@ export const CustomerQuickCreateModal: React.FC<CustomerQuickCreateModalProps> =
     });
   };
 
-  const validate = (): boolean => {
-    const errs: Partial<Record<keyof CustomerRequest, string>> = {};
-    if (!form.nomeCompleto?.trim()) {
-      errs.nomeCompleto = 'Nome completo é obrigatório.';
+  const validate = () => {
+    const parsed = customerSchema.safeParse(form);
+    
+    if (!parsed.success) {
+      const errs: Record<string, string> = {};
+      parsed.error.issues.forEach((err) => {
+        const path = err.path[0] as string;
+        if (!errs[path]) {
+          errs[path] = err.message;
+        }
+      });
+      setErrors(errs);
+      return false;
     }
-    if (form.cpfCnpj?.trim()) {
-      const clean = form.cpfCnpj.replace(/\D/g, '');
-      if (clean.length > 0 && clean.length !== 11 && clean.length !== 14) {
-        errs.cpfCnpj = 'CPF deve ter 11 dígitos ou CNPJ 14 dígitos.';
-      }
-    }
-    setErrors(errs);
-    return Object.keys(errs).length === 0;
+    
+    setErrors({});
+    return true;
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -137,8 +142,9 @@ export const CustomerQuickCreateModal: React.FC<CustomerQuickCreateModalProps> =
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-sm">
               <div className="col-span-1 sm:col-span-2">
                 <Input
-                  label="Nome Completo *"
+                  label="Nome Completo"
                   id="cqc-nome"
+                  required
                   value={form.nomeCompleto}
                   onChange={(e) => set('nomeCompleto', e.target.value)}
                   error={errors.nomeCompleto}
@@ -150,6 +156,7 @@ export const CustomerQuickCreateModal: React.FC<CustomerQuickCreateModalProps> =
                 id="cqc-doc"
                 value={form.cpfCnpj ?? ''}
                 onChange={(e) => set('cpfCnpj', e.target.value)}
+                error={errors.cpfCnpj}
                 placeholder="000.000.000-00"
               />
               <Input
@@ -167,6 +174,7 @@ export const CustomerQuickCreateModal: React.FC<CustomerQuickCreateModalProps> =
                   type="email"
                   value={form.email ?? ''}
                   onChange={(e) => set('email', e.target.value)}
+                  error={errors.email}
                   placeholder="joao@email.com"
                 />
               </div>

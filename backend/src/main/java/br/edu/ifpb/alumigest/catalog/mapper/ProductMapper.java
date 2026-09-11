@@ -8,14 +8,8 @@ import org.mapstruct.Mapping;
 @Mapper(componentModel = "spring")
 public interface ProductMapper {
 
-    @Mapping(target = "categoryId", source = "category.id")
-    @Mapping(target = "categoryName", source = "category.name")
     @Mapping(target = "isActive", source = "active")
     ProductResponseDTO toResponse(Product product);
-
-    @Mapping(target = "materialId", source = "material.id")
-    @Mapping(target = "materialName", source = "material.name")
-    ProductItemResponseDTO toItemResponse(ProductItem item);
 
     TemplateConfigDTO toTemplateConfigDTO(TemplateConfig config);
 

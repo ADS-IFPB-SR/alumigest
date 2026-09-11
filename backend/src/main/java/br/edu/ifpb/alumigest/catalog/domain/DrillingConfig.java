@@ -1,5 +1,6 @@
 package br.edu.ifpb.alumigest.catalog.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -8,6 +9,7 @@ import java.util.List;
 /**
  * Configuração paramétrica de furações para dobradiças ou fixações.
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class DrillingConfig implements Serializable {
 
     private HoleDrillingMode mode;

@@ -5,7 +5,6 @@ import type {
   HardwareDTO,
   FilmDTO,
   PageResponse,
-  ProductCategory,
   MaterialSummary,
   Product,
   ProductRequest,
@@ -74,15 +73,7 @@ export const catalogApi = {
     return response.data;
   },
 
-  // ── Product Categories ────────────────────────────────────────────────────
-  getProductCategories: async (): Promise<ProductCategory[]> => {
-    const response = await api.get<ProductCategory[]>('/catalog/product-categories');
-    return response.data;
-  },
-  createProductCategory: async (data: { name: string; description?: string }) => {
-    const response = await api.post<ProductCategory>('/catalog/product-categories', data);
-    return response.data;
-  },
+
 
   // ── Material Summary (lista unificada para o builder) ─────────────────────
   // Consome o endpoint /catalog/materials que o MaterialController já fornece.

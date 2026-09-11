@@ -2,7 +2,6 @@ package br.edu.ifpb.alumigest.catalog.controller;
 
 import br.edu.ifpb.alumigest.catalog.domain.DoorTemplateType;
 import br.edu.ifpb.alumigest.catalog.domain.MaterialCategoryType;
-import br.edu.ifpb.alumigest.catalog.dto.ProductItemRequestDTO;
 import br.edu.ifpb.alumigest.catalog.dto.ProductRequestDTO;
 import br.edu.ifpb.alumigest.catalog.dto.ProductResponseDTO;
 import br.edu.ifpb.alumigest.catalog.service.IProductService;
@@ -23,7 +22,6 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -45,16 +43,12 @@ class ProductControllerTest {
     private ProductController productController;
 
     private ObjectMapper objectMapper;
-    private UUID categoryId;
     private UUID productId;
-    private ProductItemRequestDTO validItem;
 
     @BeforeEach
     void setUp() {
         objectMapper = new ObjectMapper();
-        categoryId = UUID.randomUUID();
         productId = UUID.randomUUID();
-        validItem = new ProductItemRequestDTO(UUID.randomUUID(), new BigDecimal("1.5"));
 
         mockMvc = MockMvcBuilders.standaloneSetup(productController)
                 .setCustomArgumentResolvers(new PageableHandlerMethodArgumentResolver())
@@ -70,23 +64,19 @@ class ProductControllerTest {
     void createProduct_WithValidTemplate_ShouldReturn201() throws Exception {
         ProductRequestDTO request = new ProductRequestDTO(
                 "Porta de Giro Simples",
-                categoryId,
-                DoorTemplateType.SWING,
+                DoorTemplateType.SWING_DOOR_1F,
                 null,
-                List.of(MaterialCategoryType.GLASS, MaterialCategoryType.PROFILE),
-                List.of(validItem)
+                List.of(MaterialCategoryType.GLASS, MaterialCategoryType.PROFILE)
         );
 
         ProductResponseDTO response = new ProductResponseDTO(
                 productId,
                 "Porta de Giro Simples",
-                categoryId,
                 "Portas",
-                DoorTemplateType.SWING,
+                DoorTemplateType.SWING_DOOR_1F,
                 null,
                 List.of(MaterialCategoryType.GLASS, MaterialCategoryType.PROFILE),
-                true,
-                List.of()
+                true
         );
 
         when(productService.createProduct(any(ProductRequestDTO.class))).thenReturn(response);
@@ -96,42 +86,8 @@ class ProductControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.name").value("Porta de Giro Simples"))
-                .andExpect(jsonPath("$.data.templateType").value("SWING"))
+                .andExpect(jsonPath("$.data.templateType").value("SWING_DOOR_1F"))
                 .andExpect(jsonPath("$.data.categoryName").value("Portas"));
-    }
-
-    @Test
-    @DisplayName("POST - Deve retornar 201 ao cadastrar produto legado SEM template (Retrocompatibilidade)")
-    void createProduct_WithoutTemplate_ShouldReturn201() throws Exception {
-        ProductRequestDTO request = new ProductRequestDTO(
-                "Parafuso",
-                categoryId,
-                null,
-                null,
-                null,
-                List.of(validItem)
-        );
-
-        ProductResponseDTO response = new ProductResponseDTO(
-                productId,
-                "Parafuso",
-                categoryId,
-                "Acessórios",
-                null,
-                null,
-                null,
-                true,
-                List.of()
-        );
-
-        when(productService.createProduct(any(ProductRequestDTO.class))).thenReturn(response);
-
-        mockMvc.perform(post("/api/v1/catalog/products")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.data.name").value("Parafuso"))
-                .andExpect(jsonPath("$.data.templateType").isEmpty());
     }
 
     @Test
@@ -139,11 +95,9 @@ class ProductControllerTest {
     void createProduct_WithoutName_ShouldReturn400() throws Exception {
         ProductRequestDTO request = new ProductRequestDTO(
                 "",
-                categoryId,
+                DoorTemplateType.SWING_DOOR_1F,
                 null,
-                null,
-                null,
-                List.of(validItem)
+                List.of(MaterialCategoryType.GLASS)
         );
 
         mockMvc.perform(post("/api/v1/catalog/products")
@@ -162,13 +116,11 @@ class ProductControllerTest {
         ProductResponseDTO response = new ProductResponseDTO(
                 productId,
                 "Porta de Correr Suprema",
-                categoryId,
                 "Portas",
-                DoorTemplateType.SLIDING,
+                DoorTemplateType.SLIDING_DOOR_2F,
                 null,
                 List.of(MaterialCategoryType.GLASS),
-                true,
-                List.of()
+                true
         );
 
         when(productService.findById(productId)).thenReturn(response);
@@ -177,30 +129,7 @@ class ProductControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.id").value(productId.toString()))
                 .andExpect(jsonPath("$.data.name").value("Porta de Correr Suprema"))
-                .andExpect(jsonPath("$.data.templateType").value("SLIDING"));
-    }
-
-    @Test
-    @DisplayName("GET /{id} - Deve retornar campos de template nulos ao buscar produto legado")
-    void getProductById_WithoutTemplate_ShouldReturn200() throws Exception {
-        ProductResponseDTO response = new ProductResponseDTO(
-                productId,
-                "Parafuso",
-                categoryId,
-                "Acessórios",
-                null,
-                null,
-                null,
-                true,
-                List.of()
-        );
-
-        when(productService.findById(productId)).thenReturn(response);
-
-        mockMvc.perform(get("/api/v1/catalog/products/{id}", productId))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.name").value("Parafuso"))
-                .andExpect(jsonPath("$.data.templateType").isEmpty());
+                .andExpect(jsonPath("$.data.templateType").value("SLIDING_DOOR_2F"));
     }
 
     @Test
@@ -222,23 +151,19 @@ class ProductControllerTest {
     void updateProduct_WithTemplate_ShouldReturn200() throws Exception {
         ProductRequestDTO request = new ProductRequestDTO(
                 "Porta Atualizada",
-                categoryId,
-                DoorTemplateType.SLIDING,
+                DoorTemplateType.SLIDING_DOOR_2F,
                 null,
-                List.of(MaterialCategoryType.GLASS, MaterialCategoryType.ROLLERS),
-                List.of(validItem)
+                List.of(MaterialCategoryType.GLASS, MaterialCategoryType.HARDWARE)
         );
 
         ProductResponseDTO response = new ProductResponseDTO(
                 productId,
                 "Porta Atualizada",
-                categoryId,
                 "Portas",
-                DoorTemplateType.SLIDING,
+                DoorTemplateType.SLIDING_DOOR_2F,
                 null,
-                List.of(MaterialCategoryType.GLASS, MaterialCategoryType.ROLLERS),
-                true,
-                List.of()
+                List.of(MaterialCategoryType.GLASS, MaterialCategoryType.HARDWARE),
+                true
         );
 
         when(productService.updateProduct(eq(productId), any(ProductRequestDTO.class))).thenReturn(response);
@@ -248,40 +173,7 @@ class ProductControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.name").value("Porta Atualizada"))
-                .andExpect(jsonPath("$.data.templateType").value("SLIDING"));
-    }
-
-    @Test
-    @DisplayName("PUT - Deve permitir remover o template de um produto (Atualizar para nulo)")
-    void updateProduct_RemoveTemplate_ShouldReturn200() throws Exception {
-        ProductRequestDTO updateRequest = new ProductRequestDTO(
-                "Porta Básica",
-                categoryId,
-                null,
-                null,
-                null,
-                List.of(validItem)
-        );
-
-        ProductResponseDTO response = new ProductResponseDTO(
-                productId,
-                "Porta Básica",
-                categoryId,
-                "Portas",
-                null,
-                null,
-                null,
-                true,
-                List.of()
-        );
-
-        when(productService.updateProduct(eq(productId), any(ProductRequestDTO.class))).thenReturn(response);
-
-        mockMvc.perform(put("/api/v1/catalog/products/{id}", productId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(updateRequest)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.templateType").isEmpty());
+                .andExpect(jsonPath("$.data.templateType").value("SLIDING_DOOR_2F"));
     }
 
     // ==========================================
@@ -294,13 +186,11 @@ class ProductControllerTest {
         ProductResponseDTO p1 = new ProductResponseDTO(
                 productId,
                 "Porta de Giro",
-                categoryId,
                 "Portas",
-                DoorTemplateType.SWING,
+                DoorTemplateType.SWING_DOOR_1F,
                 null,
                 List.of(MaterialCategoryType.GLASS),
-                true,
-                List.of()
+                true
         );
         Page<ProductResponseDTO> page = new PageImpl<>(List.of(p1));
 
@@ -311,7 +201,7 @@ class ProductControllerTest {
                         .param("size", "10")
                         .param("activeOnly", "true"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.content[0].templateType").value("SWING"));
+                .andExpect(jsonPath("$.data.content[0].templateType").value("SWING_DOOR_1F"));
     }
 
     @Test
