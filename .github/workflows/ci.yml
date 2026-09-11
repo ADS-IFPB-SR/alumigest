@@ -98,8 +98,10 @@ jobs:
           cd frontend
           npm run lint
 
-      # Nota: A execução de testes (npm test) foi removida, 
-      # pois não há script de testes configurado no package.json atualmente.
+      - name: Run Tests with Coverage (Vitest)
+        run: |
+          cd frontend
+          npm run test:coverage
 
       - name: Build Frontend
         run: |
