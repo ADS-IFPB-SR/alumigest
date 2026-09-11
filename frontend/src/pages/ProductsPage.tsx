@@ -114,7 +114,7 @@ export function ProductTab() {
   const [activeMobileCategory, setActiveMobileCategory] = useState<CategoryColumnId>('Portas');
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
 
-  const products = productsData?.content || [];
+  const products = useMemo(() => productsData?.content || [], [productsData?.content]);
 
   // Agrupamento dos produtos nas 4 colunas canônicas
   const groupedProducts = useMemo(() => {
@@ -319,8 +319,7 @@ export function ProductTab() {
                 groupedProducts[activeMobileCategory].map((prod) => (
                   <div
                     key={prod.id}
-                    onClick={() => handleEdit(prod)}
-                    className="group relative bg-surface-container-low dark:bg-surface-container hover:bg-surface-container dark:hover:bg-surface-container-high active:bg-surface-container-high border border-outline-variant/60 hover:border-primary/50 dark:hover:border-primary/50 rounded-xl p-sm sm:p-md transition-all shadow-xs cursor-pointer flex flex-col gap-xs"
+                    className="group relative bg-surface-container-low dark:bg-surface-container hover:bg-surface-container dark:hover:bg-surface-container-high active:bg-surface-container-high border border-outline-variant/60 hover:border-primary/50 dark:hover:border-primary/50 rounded-xl p-sm sm:p-md transition-all shadow-xs flex flex-col gap-xs"
                   >
                     <div className="flex items-center gap-sm">
                       <div className="flex-none">
@@ -328,9 +327,13 @@ export function ProductTab() {
                       </div>
 
                       <div className="flex-1 min-w-0 pr-16">
-                        <h4 className="font-title-sm text-sm font-semibold text-on-surface leading-snug break-words group-hover:text-primary transition-colors">
+                        <button
+                          type="button"
+                          onClick={() => handleEdit(prod)}
+                          className="text-left font-title-sm text-sm font-semibold text-on-surface leading-snug break-words group-hover:text-primary transition-colors cursor-pointer"
+                        >
                           {prod.name}
-                        </h4>
+                        </button>
                       </div>
 
                       {/* Botões de Ação no Mobile: Editar e Excluir */}
@@ -424,8 +427,7 @@ export function ProductTab() {
                       items.map((prod) => (
                         <div
                           key={prod.id}
-                          onClick={() => handleEdit(prod)}
-                          className="group relative bg-surface-container-low dark:bg-surface-container hover:bg-surface-container dark:hover:bg-surface-container-high border border-outline-variant/60 hover:border-primary/50 dark:hover:border-primary/50 rounded-lg p-sm transition-all shadow-xs hover:shadow-sm cursor-pointer flex flex-col gap-xs"
+                          className="group relative bg-surface-container-low dark:bg-surface-container hover:bg-surface-container dark:hover:bg-surface-container-high border border-outline-variant/60 hover:border-primary/50 dark:hover:border-primary/50 rounded-lg p-sm transition-all shadow-xs hover:shadow-sm flex flex-col gap-xs"
                         >
                           <div className="flex items-start gap-sm">
                             <div className="flex-none">
@@ -433,9 +435,13 @@ export function ProductTab() {
                             </div>
 
                             <div className="flex-1 min-w-0 pr-16">
-                              <h4 className="font-title-sm text-xs sm:text-sm font-semibold text-on-surface leading-snug break-words group-hover:text-primary transition-colors">
+                              <button
+                                type="button"
+                                onClick={() => handleEdit(prod)}
+                                className="text-left font-title-sm text-xs sm:text-sm font-semibold text-on-surface leading-snug break-words group-hover:text-primary transition-colors cursor-pointer"
+                              >
                                 {prod.name}
-                              </h4>
+                              </button>
                             </div>
 
                             {/* Botões de Ação no Desktop: Editar e Excluir */}

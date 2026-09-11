@@ -4,6 +4,7 @@ import type {
   OpeningDirection,
   HandleConfig,
   DrillingConfig,
+  DrillingPosition,
   DoorTemplateType,
 } from '../../types';
 
@@ -142,17 +143,237 @@ const VerticalDimension = ({
   );
 };
 
-/** Furos renderizados na borda com cotas técnicas de distâncias em mm */
-const DrillingHoles = ({
-  svgH, frameW, count, divisionType, customDistancesMm, heightMm, posX, mirrored = false,
-}: {
-  svgH: number; svgW?: number; frameW: number;
-  count: number; divisionType: string;
+interface DrillingHolesProps {
+  svgH: number;
+  svgW?: number;
+  frameW: number;
+  count: number;
+  divisionType: string;
+  drillingPosition?: DrillingPosition;
   customDistancesMm?: number[];
-  heightMm: number; posX: number; mirrored?: boolean;
-}) => {
+  widthMm?: number;
+  heightMm: number;
+  posX: number;
+  mirrored?: boolean;
+}
+
+/** Furos técnicos paramétricos renderizados de acordo com a posição (SUPERIOR, FRONTAL ou LATERAL) */
+const DrillingHoles = ({
+  svgH,
+  svgW = 240,
+  frameW,
+  count,
+  divisionType,
+  drillingPosition = 'LATERAL',
+  customDistancesMm,
+  widthMm = 1000,
+  heightMm,
+  posX,
+  mirrored = false,
+}: DrillingHolesProps) => {
   if (count <= 0) return null;
 
+  // CASO 1: SUPERIOR (Roldanas / Trilho)
+  if (drillingPosition === 'SUPERIOR') {
+    const innerW = svgW - frameW * 2;
+    const holeR  = Math.min(3.2, innerW / (count * 6));
+    const py     = frameW + 4;
+
+    interface TopHolePosition { px: number; distMm: number; }
+    const topPositions: TopHolePosition[] = [];
+
+    if (divisionType === 'CUSTOM_DISTANCE' && customDistancesMm?.length) {
+      const scale = innerW / Math.max(widthMm, 1);
+      customDistancesMm.forEach((d) => {
+        const x = frameW + d * scale;
+        if (x >= frameW && x <= svgW - frameW) topPositions.push({ px: x, distMm: d });
+      });
+    } else {
+      const stepPx = innerW / (count + 1);
+      const stepMm = Math.round(widthMm / (count + 1));
+      for (let i = 1; i <= count; i++) {
+        topPositions.push({ px: frameW + stepPx * i, distMm: Math.round(stepMm * i) });
+      }
+    }
+
+    return (
+      <g className="drilling-holes-layer-superior">
+        {topPositions.map((pos) => (
+          <g key={`hole-top-${pos.px}-${pos.distMm}`}>
+            <circle cx={pos.px} cy={py} r={holeR + 1} fill="#1e293b" />
+            <circle cx={pos.px} cy={py} r={holeR}     fill={HOLE_COLOR}   stroke={HOLE_STROKE} strokeWidth={0.6} />
+            <line x1={pos.px - holeR * 0.7} y1={py} x2={pos.px + holeR * 0.7} y2={py} stroke={HOLE_STROKE} strokeWidth={0.4} />
+            <line x1={pos.px} y1={py - holeR * 0.7} x2={pos.px} y2={py + holeR * 0.7} stroke={HOLE_STROKE} strokeWidth={0.4} />
+            <line x1={pos.px} y1={py} x2={pos.px} y2={py + 8} stroke={COTA_STROKE} strokeWidth={0.5} strokeDasharray="2 1" opacity={0.8} />
+            <text
+              x={pos.px}
+              y={py + 17}
+              textAnchor="middle"
+              fontSize={8.5}
+              fontFamily="JetBrains Mono, monospace"
+              fontWeight="bold"
+              fill={COTA_COLOR}
+            >
+              {pos.distMm}mm
+            </text>
+          </g>
+        ))}
+      </g>
+    );
+  }
+
+  // CASO 2: FRONTAL (Spider Glass / 1 Furo em Cada Extremidade da Folha)
+  if (drillingPosition === 'FRONTAL') {
+    const innerW = svgW - frameW * 2;
+    const innerH = svgH - frameW * 2;
+    const holeR  = 3.2;
+
+    // Distância técnica dos furos às 4 extremidades/cantos da folha (proporcional, ~100mm reais)
+    const insetX = Math.min(20, Math.max(12, innerW * 0.10));
+    const insetY = Math.min(20, Math.max(12, innerH * 0.10));
+    const edgeDistMm = Math.round((Math.min(widthMm, heightMm) || 1000) * 0.08);
+
+    interface FrontHolePosition {
+      px: number;
+      py: number;
+      cornerX: number;
+      cornerY: number;
+      label: string;
+    }
+
+    // Padrão Spider Glass: 1 furo em CADA UMA das 4 extremidades da folha de vidro
+    const frontPositions: FrontHolePosition[] = [
+      {
+        px: frameW + insetX,
+        py: frameW + insetY,
+        cornerX: frameW,
+        cornerY: frameW,
+        label: 'Sup. Esq.',
+      },
+      {
+        px: frameW + innerW - insetX,
+        py: frameW + insetY,
+        cornerX: frameW + innerW,
+        cornerY: frameW,
+        label: 'Sup. Dir.',
+      },
+      {
+        px: frameW + insetX,
+        py: frameW + innerH - insetY,
+        cornerX: frameW,
+        cornerY: frameW + innerH,
+        label: 'Inf. Esq.',
+      },
+      {
+        px: frameW + innerW - insetX,
+        py: frameW + innerH - insetY,
+        cornerX: frameW + innerW,
+        cornerY: frameW + innerH,
+        label: 'Inf. Dir.',
+      },
+    ];
+
+    // Se houver furos adicionais (> 4), posiciona nos pontos médios das laterais
+    if (count > 4) {
+      frontPositions.push({
+        px: frameW + insetX,
+        py: frameW + innerH / 2,
+        cornerX: frameW,
+        cornerY: frameW + innerH / 2,
+        label: 'Médio Esq.',
+      });
+      frontPositions.push({
+        px: frameW + innerW - insetX,
+        py: frameW + innerH / 2,
+        cornerX: frameW + innerW,
+        cornerY: frameW + innerH / 2,
+        label: 'Médio Dir.',
+      });
+    }
+
+    return (
+      <g className="drilling-holes-layer-frontal">
+        {frontPositions.map((pos, idx) => (
+          <g key={`hole-front-${idx}-${pos.px}-${pos.py}`}>
+            {/* Haste / Braço metálico Spider Glass saindo da quina até o centro do furo */}
+            <line
+              x1={pos.cornerX}
+              y1={pos.cornerY}
+              x2={pos.px}
+              y2={pos.py}
+              stroke="#0284c7"
+              strokeWidth={1.5}
+              strokeLinecap="round"
+              opacity={0.8}
+            />
+
+            {/* Anel Externo Spider Glass com abraçadeira/cantoneira */}
+            <circle
+              cx={pos.px}
+              cy={pos.py}
+              r={holeR + 4.5}
+              fill="#0284c7"
+              fillOpacity={0.18}
+              stroke="#0284c7"
+              strokeWidth={1}
+              strokeDasharray="2 1.5"
+            />
+            {/* Arruela de fixação em aço inoxidável */}
+            <circle
+              cx={pos.px}
+              cy={pos.py}
+              r={holeR + 1.8}
+              fill="#1e293b"
+              stroke="#38bdf8"
+              strokeWidth={0.8}
+            />
+            {/* Furo passante no vidro */}
+            <circle
+              cx={pos.px}
+              cy={pos.py}
+              r={holeR}
+              fill="#ffffff"
+              stroke="#374151"
+              strokeWidth={0.6}
+            />
+            {/* Retículo de Mira / Centro Técnico */}
+            <line
+              x1={pos.px - holeR - 2.5}
+              y1={pos.py}
+              x2={pos.px + holeR + 2.5}
+              y2={pos.py}
+              stroke="#0284c7"
+              strokeWidth={0.6}
+            />
+            <line
+              x1={pos.px}
+              y1={pos.py - holeR - 2.5}
+              x2={pos.px}
+              y2={pos.py + holeR + 2.5}
+              stroke="#0284c7"
+              strokeWidth={0.6}
+            />
+
+            {/* Cota técnica de distância da extremidade (100mm) */}
+            <text
+              x={pos.px + (pos.px > svgW / 2 ? -holeR - 6 : holeR + 6)}
+              y={pos.py + (pos.py > svgH / 2 ? -holeR - 3 : holeR + 9)}
+              textAnchor={pos.px > svgW / 2 ? 'end' : 'start'}
+              fontSize={8.5}
+              fontFamily="JetBrains Mono, monospace"
+              fontWeight="bold"
+              fill={COTA_COLOR}
+              opacity={0.9}
+            >
+              {edgeDistMm}mm
+            </text>
+          </g>
+        ))}
+      </g>
+    );
+  }
+
+  // CASO 3: LATERAL (Dobradiças / Pivô / Batente Lateral)
   const innerH = svgH - frameW * 2;
   const holeR  = Math.min(3.5, innerH / (count * 4));
 
@@ -179,23 +400,33 @@ const DrillingHoles = ({
     }
   }
 
-  const cotaOffset  = mirrored ? 14 : -14;
-  const textAnchor  = mirrored ? 'start' : 'end';
+  const cotaOffset = mirrored ? 14 : -14;
+  const textAnchor = mirrored ? 'start' : 'end';
 
   return (
     <g className="drilling-holes-layer">
       {positions.map((pos) => (
         <g key={`hole-${pos.py}-${pos.distMm}`}>
-          <circle cx={posX} cy={pos.py} r={holeR + 1} fill="#1e293b" />
-          <circle cx={posX} cy={pos.py} r={holeR}     fill={HOLE_COLOR}   stroke={HOLE_STROKE} strokeWidth={0.6} />
-          <line x1={posX - holeR * 0.7} y1={pos.py} x2={posX + holeR * 0.7} y2={pos.py} stroke={HOLE_STROKE} strokeWidth={0.4} />
-          <line x1={posX} y1={pos.py - holeR * 0.7}  x2={posX} y2={pos.py + holeR * 0.7}  stroke={HOLE_STROKE} strokeWidth={0.4} />
+          <circle cx={posX} cy={pos.py} r={holeR + 1.2} fill="#1e293b" />
+          <circle cx={posX} cy={pos.py} r={holeR} fill={HOLE_COLOR} stroke={HOLE_STROKE} strokeWidth={0.6} />
+          <line x1={posX - holeR * 0.8} y1={pos.py} x2={posX + holeR * 0.8} y2={pos.py} stroke={HOLE_STROKE} strokeWidth={0.4} />
+          <line x1={posX} y1={pos.py - holeR * 0.8} x2={posX} y2={pos.py + holeR * 0.8} stroke={HOLE_STROKE} strokeWidth={0.4} />
           <line x1={posX} y1={pos.py} x2={posX + cotaOffset} y2={pos.py} stroke={COTA_STROKE} strokeWidth={0.5} strokeDasharray="2 1" opacity={0.8} />
+          {/* Fundo suave para contraste da cota */}
+          <rect
+            x={mirrored ? posX + cotaOffset : posX + cotaOffset - 36}
+            y={pos.py - 5}
+            width={38}
+            height={10}
+            fill="var(--color-surface-container-lowest, #ffffff)"
+            opacity={0.85}
+            rx={1.5}
+          />
           <text
             x={posX + cotaOffset + (mirrored ? 2 : -2)}
             y={pos.py + 3.5}
             textAnchor={textAnchor}
-            fontSize={11}
+            fontSize={10.5}
             fontFamily="JetBrains Mono, monospace"
             fontWeight="bold"
             fill={COTA_COLOR}
@@ -431,7 +662,21 @@ function renderSlidingDoor2F(
       <HandlePieceDimension svgH={svgH} frameW={fw} posX={handlePosX} handleConfig={handleConfig} heightMm={heightMm} mirrored={handleMirr} />
 
       {/* Furação */}
-      <DrillingHoles svgH={svgH} svgW={svgW} frameW={fw} count={drillingConfig.holeCount} divisionType={drillingConfig.divisionType} customDistancesMm={drillingConfig.customDistancesMm} heightMm={heightMm} posX={drillingPosX} mirrored={!inverted} />
+      {drillingConfig.holeCount > 0 && (
+        <DrillingHoles
+          svgH={svgH}
+          svgW={svgW}
+          frameW={fw}
+          count={drillingConfig.holeCount}
+          divisionType={drillingConfig.divisionType}
+          drillingPosition={drillingConfig.drillingPosition || 'SUPERIOR'}
+          customDistancesMm={drillingConfig.customDistancesMm}
+          widthMm={widthMm}
+          heightMm={heightMm}
+          posX={drillingPosX}
+          mirrored={!inverted}
+        />
+      )}
 
       {/* Seta de abertura */}
       <text x={mobileX + halfW / 2} y={svgH - fw - RAIL_H - 6} textAnchor="middle" fontSize={16.5} fill={ARROW_COLOR} fontWeight="bold">
@@ -448,7 +693,7 @@ function renderSlidingDoor2F(
 function renderSlidingDoor1F(
   svgW: number, svgH: number, inverted: boolean,
   handleConfig: HandleConfig, drillingConfig: DrillingConfig,
-  _widthMm: number, heightMm: number,
+  widthMm: number, heightMm: number,
   theme: SvgTheme,
 ) {
   const fw     = FRAME_W;
@@ -475,6 +720,22 @@ function renderSlidingDoor1F(
     handleMirr = !inverted;
   }
 
+  // Posição de furação lateral na borda da esquadria (oposta ao puxador ou no batente lateral)
+  let drillingPosX: number;
+  let drillingMirr: boolean;
+  if (pos === 'LEFT') {
+    // Puxador na esquerda -> furação lateral na borda direita
+    drillingPosX = fw + innerW - 14;
+    drillingMirr = false; // cota milimétrica virada para a esquerda (dentro da folha)
+  } else if (pos === 'RIGHT') {
+    // Puxador na direita -> furação lateral na borda esquerda
+    drillingPosX = fw + 14;
+    drillingMirr = true;  // cota milimétrica virada para a direita (dentro da folha)
+  } else {
+    drillingPosX = inverted ? fw + innerW - 14 : fw + 14;
+    drillingMirr = !inverted;
+  }
+
   return (
     <>
       <rect x={fw} y={fw} width={innerW} height={innerH} fill={theme.glassFill} stroke={theme.glassStroke} strokeWidth={0.5} />
@@ -483,10 +744,37 @@ function renderSlidingDoor1F(
 
       {/* Folha móvel única */}
       <rect x={fw} y={fw} width={innerW} height={innerH} fill={theme.glassFill} stroke={theme.glassStroke} strokeWidth={1} />
+      
+      {/* Montante lateral técnico onde os furos se apoiam quando em modo lateral */}
+      {drillingConfig.holeCount > 0 && drillingConfig.drillingPosition === 'LATERAL' && (
+        <rect
+          x={drillingMirr ? fw : fw + innerW - 20}
+          y={fw}
+          width={20}
+          height={innerH}
+          fill={theme.frameStroke}
+          opacity={0.06}
+        />
+      )}
+
       <text x={fw + innerW / 2} y={svgH / 2} textAnchor="middle" fontSize={12} fontFamily="JetBrains Mono, monospace" fill={theme.frameStroke} opacity={0.5}>MÓVEL</text>
 
       <HandleElement handleConfig={handleConfig} svgH={svgH} frameW={fw} posX={handlePosX} mirrored={handleMirr} heightMm={heightMm} />
-      {drillingConfig.holeCount > 0 && <DrillingHoles svgH={svgH} frameW={fw} count={drillingConfig.holeCount} divisionType={drillingConfig.divisionType} customDistancesMm={drillingConfig.customDistancesMm} heightMm={heightMm} posX={fw + innerW / 2} />}
+      {drillingConfig.holeCount > 0 && (
+        <DrillingHoles
+          svgH={svgH}
+          svgW={svgW}
+          frameW={fw}
+          count={drillingConfig.holeCount}
+          divisionType={drillingConfig.divisionType}
+          drillingPosition={drillingConfig.drillingPosition || 'SUPERIOR'}
+          customDistancesMm={drillingConfig.customDistancesMm}
+          widthMm={widthMm || 1000}
+          heightMm={heightMm}
+          posX={drillingPosX}
+          mirrored={drillingMirr}
+        />
+      )}
       <text x={fw + innerW / 2} y={svgH - fw - 10} textAnchor="middle" fontSize={15} fill={ARROW_COLOR} fontWeight="bold">
         {inverted ? 'Correr ⟶' : '⟵ Correr'}
       </text>
@@ -551,7 +839,21 @@ function renderSlidingDoor3F(
       <rect x={fw + thirdW * 2 - 1} y={fw} width={2} height={innerH} fill={theme.frameStroke} opacity={0.8} />
 
       <HandleElement handleConfig={handleConfig} svgH={svgH} frameW={fw} posX={handlePosX} mirrored={handleMirr} heightMm={heightMm} />
-      {drillingConfig.holeCount > 0 && <DrillingHoles svgH={svgH} frameW={fw} count={drillingConfig.holeCount} divisionType={drillingConfig.divisionType} customDistancesMm={drillingConfig.customDistancesMm} heightMm={heightMm} posX={fixedX + thirdW / 2} />}
+      {drillingConfig.holeCount > 0 && (
+        <DrillingHoles
+          svgH={svgH}
+          svgW={svgW}
+          frameW={fw}
+          count={drillingConfig.holeCount}
+          divisionType={drillingConfig.divisionType}
+          drillingPosition={drillingConfig.drillingPosition || 'SUPERIOR'}
+          customDistancesMm={drillingConfig.customDistancesMm}
+          widthMm={_widthMm || 1500}
+          heightMm={heightMm}
+          posX={inverted ? fixedX + thirdW - fw * 1.5 : fixedX + fw * 1.5}
+          mirrored={inverted}
+        />
+      )}
       <text x={mobile1X + thirdW / 2} y={svgH - fw - 10} textAnchor="middle" fontSize={15} fill={ARROW_COLOR} fontWeight="bold">
         {inverted ? 'Correr ⟶' : '⟵ Correr'}
       </text>
@@ -594,7 +896,21 @@ function renderSlidingDoor4F(
 
       <HandleElement handleConfig={handleConfig} svgH={svgH} frameW={fw} posX={fw + qW + qW * 0.1} heightMm={heightMm} />
       <HandleElement handleConfig={handleConfig} svgH={svgH} frameW={fw} posX={fw + qW * 3 - fw * 1.5} mirrored heightMm={heightMm} />
-      <DrillingHoles svgH={svgH} svgW={svgW} frameW={fw} count={drillingConfig.holeCount} divisionType={drillingConfig.divisionType} customDistancesMm={drillingConfig.customDistancesMm} heightMm={heightMm} posX={fw + fw / 2} mirrored />
+      {drillingConfig.holeCount > 0 && (
+        <DrillingHoles
+          svgH={svgH}
+          svgW={svgW}
+          frameW={fw}
+          count={drillingConfig.holeCount}
+          divisionType={drillingConfig.divisionType}
+          drillingPosition={drillingConfig.drillingPosition || 'SUPERIOR'}
+          customDistancesMm={drillingConfig.customDistancesMm}
+          widthMm={widthMm}
+          heightMm={heightMm}
+          posX={fw + fw / 2}
+          mirrored
+        />
+      )}
       <text x={svgW / 2} y={svgH - fw - RAIL_H - 6} textAnchor="middle" fontSize={13.5} fill={ARROW_COLOR} fontWeight="bold">← Abertura Central →</text>
 
       {xs.map((x) => (
@@ -642,9 +958,22 @@ function renderSwingDoor(
         <line x1={hingeSide} y1={fw} x2={hingeSide} y2={svgH - fw} stroke={theme.frameStroke} strokeWidth={3} />
         <SwingArc x={hingeSide} y={svgH - fw} radius={arcRadius} startAngle={-90} endAngle={inverted ? -180 : 0} />
         <HandleElement handleConfig={handleConfig} svgH={svgH} frameW={fw} posX={posX} mirrored={mirr} heightMm={heightMm} />
-        <HandlePieceDimension svgH={svgH} frameW={fw} posX={posX} handleConfig={handleConfig} heightMm={heightMm} mirrored={mirr} />
         {/* Furação no lado oposto do puxador */}
-        <DrillingHoles svgH={svgH} svgW={svgW} frameW={fw} count={drillingConfig.holeCount} divisionType={drillingConfig.divisionType} customDistancesMm={drillingConfig.customDistancesMm} heightMm={heightMm} posX={inverted ? svgW - fw - fw / 2 : fw + fw / 2} mirrored={inverted} />
+        {drillingConfig.holeCount > 0 && (
+          <DrillingHoles
+            svgH={svgH}
+            svgW={svgW}
+            frameW={fw}
+            count={drillingConfig.holeCount}
+            divisionType={drillingConfig.divisionType}
+            drillingPosition={drillingConfig.drillingPosition || 'LATERAL'}
+            customDistancesMm={drillingConfig.customDistancesMm}
+            widthMm={widthMm}
+            heightMm={heightMm}
+            posX={inverted ? svgW - fw - fw / 2 : fw + fw / 2}
+            mirrored={inverted}
+          />
+        )}
         <text x={svgW / 2} y={fw + 14} textAnchor="middle" fontSize={12} fontFamily="JetBrains Mono, monospace" fill={ARROW_COLOR}>{inverted ? '← Giro p/ Esquerda' : 'Giro p/ Direita →'}</text>
         <HorizontalDimension x1={fw} x2={svgW - fw} y={svgH - fw} label={`Vão Único: ${widthMm}mm`} offsetDir="below" offsetDist={8} />
       </>
@@ -663,7 +992,21 @@ function renderSwingDoor(
       <SwingArc x={svgW - fw} y={svgH - fw} radius={halfW} startAngle={-90} endAngle={-180} />
       <HandleElement handleConfig={handleConfig} svgH={svgH} frameW={fw} posX={fw + halfW - fw}     heightMm={heightMm} />
       <HandleElement handleConfig={handleConfig} svgH={svgH} frameW={fw} posX={fw + halfW + 2} mirrored heightMm={heightMm} />
-      <DrillingHoles svgH={svgH} svgW={svgW} frameW={fw} count={drillingConfig.holeCount} divisionType={drillingConfig.divisionType} customDistancesMm={drillingConfig.customDistancesMm} heightMm={heightMm} posX={fw + fw / 2} mirrored />
+      {drillingConfig.holeCount > 0 && (
+        <DrillingHoles
+          svgH={svgH}
+          svgW={svgW}
+          frameW={fw}
+          count={drillingConfig.holeCount}
+          divisionType={drillingConfig.divisionType}
+          drillingPosition={drillingConfig.drillingPosition || 'LATERAL'}
+          customDistancesMm={drillingConfig.customDistancesMm}
+          widthMm={widthMm}
+          heightMm={heightMm}
+          posX={fw + fw / 2}
+          mirrored
+        />
+      )}
       <HorizontalDimension x1={fw} x2={fw + halfW} y={fw} label={`F1: ${leafMm}mm`} offsetDir="above" offsetDist={8} />
       <HorizontalDimension x1={fw + halfW} x2={svgW - fw} y={fw} label={`F2: ${leafMm}mm`} offsetDir="above" offsetDist={8} />
     </>
@@ -697,7 +1040,18 @@ function renderAwningWindow1F(
         <HandleElement handleConfig={handleConfig} svgH={svgH} frameW={fw} posX={handlePosX} heightMm={heightMm} />
       )}
       {drillingConfig.holeCount > 0 && (
-        <DrillingHoles svgH={svgH} svgW={svgW} frameW={fw} count={drillingConfig.holeCount} divisionType={drillingConfig.divisionType} customDistancesMm={drillingConfig.customDistancesMm} heightMm={heightMm} posX={fw + innerW / 2} />
+        <DrillingHoles
+          svgH={svgH}
+          svgW={svgW}
+          frameW={fw}
+          count={drillingConfig.holeCount}
+          divisionType={drillingConfig.divisionType}
+          drillingPosition={drillingConfig.drillingPosition || 'LATERAL'}
+          customDistancesMm={drillingConfig.customDistancesMm}
+          widthMm={svgW}
+          heightMm={heightMm}
+          posX={fw + innerW / 2}
+        />
       )}
     </>
   );
@@ -730,10 +1084,18 @@ function renderDrawerFront(
       <rect x={fw + 6} y={fw + 6} width={innerW - 12} height={innerH - 12} fill="none" stroke={theme.frameStroke} strokeWidth={1} opacity={0.6} strokeDasharray="3 2" />
       <rect x={handleX} y={handleY} width={handleW} height={handleH} rx={3} fill={theme.frameFill} stroke={theme.frameStroke} strokeWidth={1} filter="url(#shadow)" />
       {drillingConfig.holeCount > 0 && (
-        <>
-          <circle cx={handleX + 12} cy={handleY + handleH / 2} r={2.5} fill="#fff" stroke={theme.frameStroke} strokeWidth={1} />
-          <circle cx={handleX + handleW - 12} cy={handleY + handleH / 2} r={2.5} fill="#fff" stroke={theme.frameStroke} strokeWidth={1} />
-        </>
+        <DrillingHoles
+          svgH={svgH}
+          svgW={svgW}
+          frameW={fw}
+          count={drillingConfig.holeCount}
+          divisionType={drillingConfig.divisionType}
+          drillingPosition={drillingConfig.drillingPosition || 'FRONTAL'}
+          customDistancesMm={drillingConfig.customDistancesMm}
+          widthMm={widthMm}
+          heightMm={svgH}
+          posX={svgW / 2}
+        />
       )}
       <text x={svgW / 2} y={svgH - fw - 12} textAnchor="middle" fontSize={16} fontFamily="JetBrains Mono, monospace" fill={theme.frameStroke} opacity={0.6} fontWeight="bold">
         FRENTE DE GAVETA
@@ -743,24 +1105,86 @@ function renderDrawerFront(
   );
 }
 
-function renderFixedFacade(svgW: number, svgH: number, theme: SvgTheme) {
-  const fw        = FRAME_W;
-  const innerW    = svgW - fw * 2;
-  const innerH    = svgH - fw * 2;
-  const panelOffsets = [0, 1, 2] as const;
-  const panelW    = innerW / panelOffsets.length;
+function renderFixedFacade(svgW: number, svgH: number, drillingConfig: DrillingConfig, widthMm: number, heightMm: number, theme: SvgTheme) {
+  const fw     = FRAME_W;
+  const innerW = svgW - fw * 2;
+  const innerH = svgH - fw * 2;
 
   return (
     <>
-      {panelOffsets.map((panelIndex) => {
-        const px = fw + panelIndex * panelW;
-        return (
-          <g key={`facade-panel-${px}`}>
-            <rect x={px} y={fw} width={panelW} height={innerH} fill={theme.glassFill} stroke={theme.glassStroke} strokeWidth={0.8} />
-            {panelIndex > 0 && <rect x={px - 1} y={fw} width={2} height={innerH} fill={theme.frameStroke} />}
-          </g>
-        );
-      })}
+      {/* Folha de Vidro Temperado Estrutural (Painel Spider Glass) */}
+      <rect
+        x={fw}
+        y={fw}
+        width={innerW}
+        height={innerH}
+        fill={theme.glassFill}
+        stroke={theme.glassStroke}
+        strokeWidth={1}
+      />
+
+      {/* Borda Lapidada / Chanfro de Vidro Temperado */}
+      <rect
+        x={fw + 3}
+        y={fw + 3}
+        width={innerW - 6}
+        height={innerH - 6}
+        fill="none"
+        stroke={theme.glassStroke}
+        strokeWidth={0.5}
+        opacity={0.4}
+        strokeDasharray="4 2"
+      />
+
+      {/* Reflexo luminoso sutil de vidro arquitetônico */}
+      <polygon
+        points={`${fw + 8},${fw} ${fw + 40},${fw} ${fw},${fw + 40} ${fw},${fw + 8}`}
+        fill="#ffffff"
+        opacity={0.12}
+      />
+
+      {/* Rótulo Técnico Central */}
+      <text
+        x={svgW / 2}
+        y={svgH / 2}
+        textAnchor="middle"
+        fontSize={11}
+        fontFamily="JetBrains Mono, monospace"
+        fill={theme.frameStroke}
+        opacity={0.45}
+        fontWeight="bold"
+      >
+        PAINEL FIXO DE VIDRO
+      </text>
+      <text
+        x={svgW / 2}
+        y={svgH / 2 + 13}
+        textAnchor="middle"
+        fontSize={9}
+        fontFamily="JetBrains Mono, monospace"
+        fill={COTA_COLOR}
+        opacity={0.65}
+      >
+        SISTEMA SPIDER GLASS
+      </text>
+
+      {/* Furação Spider Glass: 1 furo em cada extremidade da folha */}
+      {drillingConfig.holeCount > 0 && (
+        <DrillingHoles
+          svgH={svgH}
+          svgW={svgW}
+          frameW={fw}
+          count={drillingConfig.holeCount || 4}
+          divisionType={drillingConfig.divisionType}
+          drillingPosition={drillingConfig.drillingPosition || 'FRONTAL'}
+          customDistancesMm={drillingConfig.customDistancesMm}
+          widthMm={widthMm}
+          heightMm={heightMm}
+          posX={fw + 14}
+        />
+      )}
+
+      <HorizontalDimension x1={fw} x2={svgW - fw} y={svgH - fw} label={`Painel: ${widthMm}mm`} offsetDir="below" offsetDist={8} />
     </>
   );
 }
@@ -790,7 +1214,7 @@ const SVG_RENDERERS: Record<DoorTemplateType, SvgTemplateRenderer> = {
   AWNING_WINDOW_1F: (ctx) => renderAwningWindow1F(ctx.svgW, ctx.svgH, false, ctx.handleConfig, ctx.drillingConfig, ctx.heightMm, ctx.theme),
   AWNING_WINDOW_1F_INV: (ctx) => renderAwningWindow1F(ctx.svgW, ctx.svgH, true, ctx.handleConfig, ctx.drillingConfig, ctx.heightMm, ctx.theme),
   FRONT_DRAWER: (ctx) => renderDrawerFront(ctx.svgW, ctx.svgH, ctx.handleConfig, ctx.drillingConfig, ctx.widthMm, ctx.heightMm, ctx.theme),
-  FIXED_PANEL: (ctx) => renderFixedFacade(ctx.svgW, ctx.svgH, ctx.theme),
+  FIXED_PANEL: (ctx) => renderFixedFacade(ctx.svgW, ctx.svgH, ctx.drillingConfig, ctx.widthMm, ctx.heightMm, ctx.theme),
 };
 
 export interface WindowSvgPreviewProps {
@@ -906,6 +1330,7 @@ export const WindowSvgPreview: React.FC<WindowSvgPreviewProps> = ({
         <span className="flex items-center gap-1">
           <span className="inline-block w-2 h-2 rounded-full bg-on-surface" />
           {drillingConfig.holeCount} Furo{drillingConfig.holeCount > 1 ? 's' : ''}
+          {drillingConfig.drillingPosition && ` (${drillingConfig.drillingPosition === 'SUPERIOR' ? 'Borda Superior' : drillingConfig.drillingPosition === 'FRONTAL' ? 'Frontal' : 'Lateral'})`}
         </span>
       )}
     </>

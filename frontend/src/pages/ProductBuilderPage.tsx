@@ -171,7 +171,7 @@ export function ProductBuilderPage() {
       </div>
 
       {/* Main Scrollable Content */}
-      <div className="flex-1 overflow-y-auto p-4 lg:p-8 max-w-7xl mx-auto w-full">
+      <div className="flex-1 overflow-y-auto p-4 lg:p-8 max-w-[1600px] mx-auto w-full">
         {/* Título da Página */}
         <div className="mb-6">
           <h2 className="text-xl lg:text-2xl font-bold text-on-surface tracking-tight">
@@ -221,7 +221,7 @@ export function ProductBuilderPage() {
           </div>
 
           {/* Coluna Direita: Studio CAD e Resumo de Especificações (4 colunas no 2xl, 5 no xl) */}
-          <div className="xl:col-span-5 2xl:col-span-4 min-w-0">
+          <div className="xl:col-span-5 2xl:col-span-4 min-w-0 xl:sticky xl:top-4">
             <ProductCostSummary
               name={name}
               templateType={templateType}

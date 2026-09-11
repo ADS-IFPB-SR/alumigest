@@ -1,5 +1,6 @@
 package br.edu.ifpb.alumigest.catalog.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.io.Serializable;
 import java.math.BigDecimal;
 
@@ -7,6 +8,7 @@ import java.math.BigDecimal;
  * Objeto completo de configuração do template paramétrico, incluindo valores padrão
  * e o esquema de opções disponíveis para o orçamento.
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class TemplateConfig implements Serializable {
 
     private BigDecimal profileMm;

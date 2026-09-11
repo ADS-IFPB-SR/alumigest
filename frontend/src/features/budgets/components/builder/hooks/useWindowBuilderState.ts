@@ -274,7 +274,7 @@ export function useWindowBuilderState({
 
       return fallbackSelections;
     },
-    [glasses, profiles, hardwares, films, findCatalogMaterial]
+    []
   );
 
   useEffect(() => {

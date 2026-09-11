@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { Check } from 'lucide-react';
 import { WindowSvgPreview } from '../../../budgets/components/builder/WindowSvgPreview';
 import type { DoorTemplateType, TemplateConfig } from '../../types/templates';
 import {
@@ -121,21 +122,14 @@ export function TemplateSelector({
         </div>
 
         {/* Grade de Cards Visuais dos Modelos */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-2.5">
           {displayedTemplates.map((type) => {
             const isSelected = templateType === type;
             return (
-              <div
+              <button
                 key={type}
-                role="button"
-                tabIndex={0}
+                type="button"
                 onClick={() => setTemplateType(type)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    setTemplateType(type);
-                  }
-                }}
                 className={`relative flex flex-col text-left p-2 rounded-xl border-2 transition-all duration-200 cursor-pointer select-none group ${
                   isSelected
                     ? 'border-primary ring-2 ring-primary/20 bg-primary/5 shadow-sm scale-[1.01]'
@@ -144,14 +138,14 @@ export function TemplateSelector({
                 aria-pressed={isSelected}
                 aria-label={`Selecionar modelo ${DOOR_TEMPLATE_LABELS[type]}`}
               >
-                {/* Badge de Selecionado */}
+                {/* Badge Selecionado */}
                 {isSelected && (
-                  <div className="absolute top-2 right-2 z-10 w-5 h-5 bg-primary text-on-primary rounded-full shadow-xs flex items-center justify-center">
-                    <span className="material-symbols-outlined text-[14px]">check</span>
+                  <div className="absolute top-2 right-2 w-5 h-5 bg-primary text-on-primary rounded-full flex items-center justify-center shadow-xs z-10 animate-in fade-in zoom-in-75 duration-150">
+                    <Check className="w-3 h-3 stroke-[3]" />
                   </div>
                 )}
 
-                {/* Thumbnail SVG da Esquadria com fundo neutro limpo */}
+                {/* Preview Miniatura SVG */}
                 <div className="w-full h-24 rounded-lg bg-slate-50 border border-slate-200/70 flex items-center justify-center overflow-hidden transition-transform group-hover:scale-[1.03] p-1.5">
                   <WindowSvgPreview
                     templateType={type}
@@ -180,7 +174,7 @@ export function TemplateSelector({
                     {TEMPLATE_SUBTITLES[type]}
                   </span>
                 </div>
-              </div>
+              </button>
             );
           })}
         </div>

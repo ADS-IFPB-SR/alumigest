@@ -1,8 +1,8 @@
 # 📐 Documento de Arquitetura e Modelagem de Dados (DER)
 ## Módulo: Catálogo de Materiais, Templates, Clientes e Orçamentos
 **Projeto:** AlumiGest (Gestão Operacional e Orçamentária para Esquadrias e Vidraçaria)  
-**Versão:** 3.0.0 (Consolidado com Migrações Flyway V1 a V10 da Sprint 3)  
-**Data:** 31 de Agosto de 2026  
+**Versão:** 4.0.0 (Consolidado com Migrações Flyway V1 a V15, Templates Paramétricos e Condições Comerciais)  
+**Data:** 10 de Setembro de 2026  
 **Autor:** Equipe de Engenharia de Software (Scrum Master: Italo Jefferson Lima dos Santos)  
 
 ---
@@ -16,13 +16,14 @@ O modelo de dados do AlumiGest foi projetado com base em princípios de alta coe
    * **Vidros:** Medidos por área ($m^2$), com espessuras de **2mm a 10mm** e regra de faturamento mínimo de $0,25 m^2$.
    * **Perfis de Alumínio e Puxadores:** Medidos por metro linear ($m$) com barras padrão de **3.00m** e **6.00m**, referências comerciais (`SU-001`, `S83`, `SPR-060`) e NCM.
    * **Películas:** Medidas por área de aplicação ($m^2$) sobre vidros.
-   * **Ferragens e Acessórios:** Medidos por **Unidade (`UN`)**, **Par (`PAR`)** ou **Metro (`METRO`)**.
-2. **Templates Paramétricos de Esquadrias (Sprint 3 / Migration V8):**
-   * A entidade `tb_products` atua como modelo/receita (`TemplateType`), armazenando esquemas vetoriais e regras de abertura em `template_config` (JSONB) e categorias obrigatórias em `category_requirements` (JSONB).
+   * **Ferragens e Acessórios:** Medidos por **Unidade (`UN`)**, **Par (`PAR`)** (dobradiças, roldanas) ou **Metro (`METRO`)** (trilhos, escovas de vedação).
+2. **Templates Paramétricos de Esquadrias (Sprint 3 / Migrations V8, V12, V13, V14, V15):**
+   * A entidade `tb_products` atua como modelo/receita (`DoorTemplateType`), armazenando esquemas vetoriais e regras de abertura em `template_config` (JSONB), categorias obrigatórias em `category_requirements` (JSONB) e restrições técnicas em `option_schema` (JSONB).
+   * As antigas tabelas `tb_product_categories` (removida na V12) e `tb_product_items` (removida na V13) foram descontinuadas em favor do modelo desacoplado paramétrico.
 3. **Desacoplamento de Mão de Obra (Migration V10):**
-   * A coluna `labor_cost` foi removida de `tb_products` e transferida para `tb_budget_items`, permitindo precificação de instalação dinâmica por orçamento.
-4. **Clientes e Orçamentos (Migrations V7 e V9):**
-   * Modelagem de clientes PF/PJ (`tb_customers`) e ciclo de vida de propostas comerciais (`tb_budgets`, `tb_budget_items`, `tb_budget_item_options`).
+   * A coluna `labor_cost` reside exclusivamente em `tb_budget_items`, permitindo precificação de instalação dinâmica por item de orçamento.
+4. **Clientes e Orçamentos (Migrations V7 e V9 e expansões comerciais):**
+   * Modelagem de clientes PF/PJ (`tb_customers`) e ciclo de vida de propostas comerciais (`tb_budgets`, `tb_budget_items`, `tb_budget_item_options`), com suporte a condições de pagamento e congelamento de valores na aprovação.
 
 ---
 
@@ -31,9 +32,6 @@ O modelo de dados do AlumiGest foi projetado com base em princípios de alta coe
 ```mermaid
 erDiagram
     tb_material_groups ||--o{ tb_materials : "categoriza (1:N)"
-    tb_product_categories ||--o{ tb_products : "agrupa (1:N)"
-    tb_products ||--o{ tb_product_items : "composto por (1:N)"
-    tb_materials ||--o{ tb_product_items : "utilizado em (1:N)"
     
     tb_customers ||--o{ tb_budgets : "solicita (1:N)"
     tb_budgets ||--o{ tb_budget_items : "possui (1:N)"
@@ -70,31 +68,16 @@ erDiagram
         timestamp updated_at
     }
 
-    tb_product_categories {
-        uuid id PK
-        string name "Portas, Janelas, Box"
-        boolean is_active
-        timestamp created_at
-        timestamp updated_at
-    }
-
     tb_products {
         uuid id PK
-        uuid category_id FK
         string name "Porta de Correr 2F"
-        string template_type "SLIDING_DOOR_2F, PIVOTING_DOOR"
-        jsonb template_config "Puxador, abertura, furação"
+        string template_type "SLIDING_DOOR_2F, SWING_DOOR_1F..."
+        jsonb template_config "Puxador, abertura, furação técnica"
         jsonb category_requirements "GLASS, PROFILE, HARDWARE..."
+        jsonb option_schema "Regras de restrições técnicas"
         boolean is_active
         timestamp created_at
         timestamp updated_at
-    }
-
-    tb_product_items {
-        uuid id PK
-        uuid product_id FK
-        uuid material_id FK
-        decimal quantity
     }
 
     tb_customers {
@@ -115,11 +98,13 @@ erDiagram
         uuid id PK
         string code UK "ORC-YYYYMMDD-NNNN"
         uuid customer_id FK
-        string status "DRAFT, SENT, APPROVED, CANCELLED"
+        string status "DRAFT, SENT, APPROVED, REJECTED, CANCELLED, EXPIRED"
         decimal subtotal
         decimal discount_percent
         decimal discount_value
         decimal total
+        string payment_condition
+        string payment_notes
         string notes
         timestamp valid_until
         timestamp created_at
@@ -133,7 +118,7 @@ erDiagram
         integer width "Largura em mm"
         integer height "Altura em mm"
         integer quantity
-        decimal labor_cost "Mão de obra do item"
+        decimal labor_cost
         decimal subtotal
         string notes
     }
@@ -144,7 +129,7 @@ erDiagram
         uuid material_id FK
         string category_type "GLASS, PROFILE, HARDWARE, FILM"
         string unit_measure
-        decimal quantity "Calculado pelo motor"
+        decimal quantity
         decimal unit_price
         decimal total_price
     }
@@ -152,31 +137,31 @@ erDiagram
 
 ---
 
-## 3. 📖 Dicionário de Dados
+## 3. 📑 Dicionário Detalhado das Entidades
 
-### 3.1 `tb_material_groups` (Grupos de Materiais)
+### 3.1 `tb_material_groups` (Grupos Fundamentais)
 | Campo | Tipo | Restrições | Descrição |
 | :--- | :--- | :--- | :--- |
-| `id` | `UUID` | `PK, DEFAULT uuid_generate_v4()` | Identificador universal. |
-| `code` | `VARCHAR(50)` | `NOT NULL, UNIQUE` | Código do grupo (`VIDRO`, `ALUMINIO`, `PELICULA`, `FERRAGEM`). |
-| `name` | `VARCHAR(100)` | `NOT NULL` | Nome exibido (*"Perfis de Alumínio"*). |
-| `calculation_type` | `VARCHAR(30)` | `NOT NULL` | Regra física (`SQUARE_METER`, `LINEAR_METER`, `UNIT`, `PAIR`). |
-| `is_system_default`| `BOOLEAN` | `DEFAULT FALSE` | `TRUE` para os 4 grupos nativos da Alumiportas. |
-| `is_active` | `BOOLEAN` | `DEFAULT TRUE` | Soft delete. |
-| `created_at` | `TIMESTAMP WITH TIME ZONE` | `DEFAULT NOW()` | Auditoria. |
+| `id` | `UUID` | `PK, DEFAULT uuid_generate_v4()` | Identificador único universal. |
+| `code` | `VARCHAR(50)` | `NOT NULL, UNIQUE` | `VIDRO`, `ALUMINIO`, `PELICULA`, `FERRAGEM`. |
+| `name` | `VARCHAR(100)` | `NOT NULL` | Rótulo legível para operadores. |
+| `calculation_type` | `VARCHAR(30)` | `NOT NULL` | `SQUARE_METER`, `LINEAR_METER`, `UNIT`, `PAIR`. |
+| `description` | `TEXT` | `NULL` | Orientações de engenharia. |
+| `is_system_default` | `BOOLEAN` | `NOT NULL, DEFAULT FALSE` | Proteção contra exclusão acidental. |
+| `is_active` | `BOOLEAN` | `NOT NULL, DEFAULT TRUE` | Soft delete. |
 
 ---
 
-### 3.2 `tb_materials` (Insumos do Catálogo)
+### 3.2 `tb_materials` (Insumos e Matérias-Primas)
 | Campo | Tipo | Restrições | Descrição |
 | :--- | :--- | :--- | :--- |
 | `id` | `UUID` | `PK, DEFAULT uuid_generate_v4()` | Identificador universal. |
-| `group_id` | `UUID` | `FK -> tb_material_groups(id)` | Grupo associado. |
+| `group_id` | `UUID` | `NOT NULL, FK -> tb_material_groups(id)`| Chave estrangeira do grupo. |
 | `sku_code` | `VARCHAR(50)` | `NULL` | Código interno SKU. |
-| `commercial_reference`| `VARCHAR(100)`| `NULL` | Código de Fábrica: `SU-001`, `S83`, `SPR-060`. |
+| `commercial_reference`| `VARCHAR(100)` | `NULL` | Referência de catálogo (*S83, SU-001*). |
 | `ncm_code` | `VARCHAR(10)` | `NULL` | Classificação fiscal NCM. |
-| `name` | `VARCHAR(150)`| `NOT NULL` | Descrição completa do insumo. |
-| `cost_price` | `DECIMAL(12,2)`| `NOT NULL, DEFAULT 0.00` | Preço de custo base. |
+| `name` | `VARCHAR(150)` | `NOT NULL` | Nome legível do material. |
+| `cost_price` | `DECIMAL(12,2)`| `NOT NULL, DEFAULT 0.00` | Preço de custo de aquisição. |
 | `sale_price` | `DECIMAL(12,2)`| `NOT NULL, DEFAULT 0.00` | Preço de venda praticado. |
 | `unit_measure` | `VARCHAR(20)` | `NOT NULL, DEFAULT 'UN'` | `M2`, `METRO`, `BARRA_3M`, `BARRA_6M`, `UN`, `PAR`. |
 | `thickness_mm` | `DECIMAL(6,2)` | `NULL` | Espessura física em mm (**2.00, 4.00, 8.00**). |
@@ -187,15 +172,15 @@ erDiagram
 
 ---
 
-### 3.3 `tb_products` (Templates de Esquadrias)
+### 3.3 `tb_products` (Templates de Esquadrias Paramétricas)
 | Campo | Tipo | Restrições | Descrição |
 | :--- | :--- | :--- | :--- |
 | `id` | `UUID` | `PK` | Identificador universal. |
-| `category_id` | `UUID` | `FK -> tb_product_categories(id)` | Categoria associada. |
 | `name` | `VARCHAR(150)` | `NOT NULL` | Nome do template (*"Porta de Correr 2 Folhas"*). |
-| `template_type` | `VARCHAR(50)` | `NULL` | Enum de tipologia (`SLIDING_DOOR_2F`, `PIVOTING_DOOR`, etc.). |
-| `template_config` | `JSONB` | `NULL` | Puxador, furação e esquema de abertura. |
+| `template_type` | `VARCHAR(50)` | `NOT NULL` | Enum canônico ([`DoorTemplateType`](file:///c:/Users/italo/Desktop/Projects/alumigest/backend/src/main/java/br/edu/ifpb/alumigest/catalog/domain/DoorTemplateType.java)). |
+| `template_config` | `JSONB` | `NULL` | Puxador, furação técnica e esquema vetorial. |
 | `category_requirements` | `JSONB` | `NULL` | Insumos requeridos (`["GLASS", "PROFILE", "HARDWARE"]`). |
+| `option_schema` | `JSONB` | `NULL` | Esquema de limites e opções técnicas permitidas. |
 | `is_active` | `BOOLEAN` | `DEFAULT TRUE` | Soft delete. |
 
 ---
@@ -220,26 +205,28 @@ erDiagram
 | `id` | `UUID` | `PK` | Identificador universal. |
 | `code` | `VARCHAR(30)` | `NOT NULL, UNIQUE` | Código sequencial único (`ORC-YYYYMMDD-NNNN`). |
 | `customer_id` | `UUID` | `NOT NULL, FK -> tb_customers(id)` | Cliente associado. |
-| `status` | `VARCHAR(20)` | `NOT NULL` | `DRAFT`, `SENT`, `APPROVED`, `CANCELLED`. |
+| `status` | `VARCHAR(20)` | `NOT NULL` | `DRAFT`, `SENT`, `APPROVED`, `REJECTED`, `CANCELLED`, `EXPIRED`. |
 | `subtotal` | `DECIMAL(12,2)`| `NOT NULL, DEFAULT 0.00` | Soma dos subtotais dos itens. |
 | `discount_percent`| `DECIMAL(5,2)` | `DEFAULT 0.00` | Desconto em percentual (0 a 100%). |
 | `discount_value`| `DECIMAL(12,2)`| `DEFAULT 0.00` | Desconto em valor fixo (R$). |
 | `total` | `DECIMAL(12,2)`| `NOT NULL, DEFAULT 0.00` | Valor líquido final faturado. |
+| `payment_condition`| `VARCHAR(50)`| `NULL` | Condição de pagamento acordada. |
+| `payment_notes`| `TEXT` | `NULL` | Observações das condições comerciais. |
 | `valid_until` | `TIMESTAMP` | `NULL` | Data de validade da proposta. |
 
 ---
 
 ### 3.6 `tb_budget_items` e `tb_budget_item_options`
 * **`tb_budget_items`:** Contém as dimensões nominais em milímetros (`width`, `height`), quantidade de peças, mão de obra específica (`labor_cost`) e subtotal calculado.
-* **`tb_budget_item_options`:** Registra cada insumo selecionado (vidro, perfil, roldana, película), quantidade computada pela Strategy e preço unitário/total congelados.
+* **`tb_budget_item_options`:** Registra cada insumo selecionado (vidro, perfil, roldana, película), quantidade computada pela Strategy e preço unitário/total congelados na aprovação.
 
 ---
 
-## 4. 🗄️ Script DDL Oficial Consolidado (Migrations V1 a V10)
+## 4. 🗄️ Script DDL Oficial Consolidado (Migrations V1 a V15)
 
 ```sql
 -- ============================================================================
--- AlumiGest DDL Schema (PostgreSQL 16 & Flyway V1 a V10)
+-- AlumiGest DDL Schema (PostgreSQL 16 & Flyway V1 a V15)
 -- ============================================================================
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -277,26 +264,17 @@ CREATE TABLE tb_materials (
     CONSTRAINT fk_materials_group FOREIGN KEY (group_id) REFERENCES tb_material_groups (id)
 );
 
--- 3. Categorias e Produtos (Templates)
-CREATE TABLE tb_product_categories (
-    id UUID PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    is_active BOOLEAN NOT NULL DEFAULT TRUE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-
+-- 3. Produtos (Templates Paramétricos de Esquadrias)
 CREATE TABLE tb_products (
     id UUID PRIMARY KEY,
     name VARCHAR(150) NOT NULL,
-    category_id UUID NOT NULL,
-    template_type VARCHAR(50),
+    template_type VARCHAR(50) NOT NULL,
     template_config JSONB,
     category_requirements JSONB,
+    option_schema JSONB,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_product_category FOREIGN KEY (category_id) REFERENCES tb_product_categories (id)
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 -- 4. Clientes
@@ -324,6 +302,8 @@ CREATE TABLE tb_budgets (
     discount_percent DECIMAL(5, 2) DEFAULT 0.00,
     discount_value DECIMAL(12, 2) DEFAULT 0.00,
     total DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
+    payment_condition VARCHAR(50),
+    payment_notes TEXT,
     notes TEXT,
     valid_until TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -361,4 +341,4 @@ CREATE TABLE tb_budget_item_options (
 
 ---
 
-*Documento de Arquitetura de Dados (DER) homologado com as migrações V1 a V10 — Versão 3.0.0 — 31/08/2026*
+*Documento de Arquitetura de Dados (DER) homologado com as migrações V1 a V15 — Versão 4.0.0 — 10/09/2026*

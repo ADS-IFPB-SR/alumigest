@@ -46,7 +46,7 @@ export const ProductPickerModal: React.FC<ProductPickerModalProps> = ({
 
   const products = useMemo(() => {
     if (!productsData?.content) return [];
-    return productsData.content.filter((p: any) => p.isActive);
+    return productsData.content.filter((p: any) => p.isActive && p.templateConfig);
   }, [productsData]);
 
   const filteredProducts = useMemo(() => {
@@ -105,7 +105,7 @@ export const ProductPickerModal: React.FC<ProductPickerModalProps> = ({
           <div>
             <div className="flex items-center gap-sm">
               <h2 id="product-picker-title" className="font-headline text-headline-sm sm:text-headline-md font-bold text-on-surface">
-                Selecione o Modelo de Esquadria
+                Selecione a Esquadria do Catálogo
               </h2>
               <span className="font-label-bold text-xs bg-surface-container-high text-secondary px-2 py-0.5 rounded-full">
                 {filteredProducts.length} {filteredProducts.length === 1 ? 'disponível' : 'disponíveis'}
@@ -178,9 +178,13 @@ export const ProductPickerModal: React.FC<ProductPickerModalProps> = ({
               <span className="material-symbols-outlined text-[56px] text-outline">
                 inventory_2
               </span>
-              <p className="text-base font-semibold text-on-surface">Nenhum produto encontrado</p>
+              <p className="text-base font-semibold text-on-surface">
+                {products.length === 0 ? 'Nenhuma esquadria configurada no catálogo' : 'Nenhuma esquadria encontrada'}
+              </p>
               <p className="text-xs text-secondary max-w-sm">
-                Tente ajustar os termos de busca ou selecione outra categoria acima.
+                {products.length === 0
+                  ? 'Cadastre e configure novos modelos de esquadrias no menu Produtos para utilizá-los na montagem de orçamentos.'
+                  : 'Tente ajustar os termos de busca ou selecione outra categoria acima.'}
               </p>
             </div>
           ) : (

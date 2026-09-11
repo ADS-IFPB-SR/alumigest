@@ -3,6 +3,7 @@ import type { DoorTemplateType, MaterialCategoryType, TemplateConfig } from '../
 import {
   DOOR_TEMPLATE_LABELS,
   DOOR_TEMPLATE_GROUPS,
+  TEMPLATE_DEFAULT_DRILLING_POSITION,
   MATERIAL_CATEGORY_LABELS,
   MATERIAL_CATEGORY_ICONS,
   HANDLE_TYPE_LABELS,
@@ -33,39 +34,36 @@ export function ProductCostSummary({
   isPending,
   isEditing,
 }: ProductCostSummaryProps) {
-  const currentGroup = templateType
-    ? DOOR_TEMPLATE_GROUPS.find((g) => g.types.includes(templateType))
-    : null;
-
   const profileMm = templateConfig.profileMm ?? 20;
   const aluminumColor = templateConfig.aluminumColor ?? '#212121';
   const glassColor = templateConfig.glassColor ?? '#e3f2fd';
 
-  const updateConfig = (key: keyof TemplateConfig, val: unknown) => {
-    setTemplateConfig({ ...templateConfig, [key]: val });
+  const currentGroup = templateType
+    ? DOOR_TEMPLATE_GROUPS.find((g) => g.types.includes(templateType))
+    : null;
+
+  const updateConfig = (field: keyof TemplateConfig, value: unknown) => {
+    setTemplateConfig({ ...templateConfig, [field]: value });
   };
 
   const isSaveDisabled = !name.trim() || !templateType || categoryRequirements.length === 0 || isPending;
 
   return (
-    <aside className="sticky top-6 flex flex-col gap-4">
-      {/* Card Principal do Studio CAD */}
-      <div className="bg-surface-container-lowest border border-outline-variant/80 rounded-2xl p-4 shadow-sm flex flex-col gap-3">
-        {/* Header do Studio com Tipologia Ativa */}
-        <div className="flex items-center justify-between pb-2.5 border-b border-outline-variant/60">
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse" />
-            <h3 className="font-title-sm text-xs font-bold uppercase tracking-wider text-primary">
-              Studio CAD • Preview Dinâmico
-            </h3>
-          </div>
-          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant">
-            Ao Vivo
+    <aside className="w-full lg:w-72 xl:w-80 shrink-0 flex flex-col gap-4">
+      {/* Card da Maquete Studio CAD */}
+      <div className="bg-surface-container-lowest border border-outline-variant/80 rounded-xl p-3.5 shadow-xs transition-shadow hover:shadow-sm">
+        <div className="flex items-center justify-between pb-2 mb-2 border-b border-outline-variant/60">
+          <span className="text-xs font-semibold text-on-surface flex items-center gap-1.5">
+            <span className="material-symbols-outlined text-[15px] text-primary">view_in_ar</span>
+            Maquete Studio CAD
+          </span>
+          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-primary/10 text-primary font-bold">
+            VETORIAL
           </span>
         </div>
 
-        {/* Viewport de Renderização da Esquadria */}
-        <div className="relative w-full rounded-xl bg-surface-container-low/60 border border-outline-variant/50 overflow-hidden flex flex-col items-center justify-center min-h-[220px]">
+        {/* Viewport SVG Integrada */}
+        <div className="w-full rounded-lg bg-surface-container-low/50 border border-outline-variant/40 flex items-center justify-center p-2 min-h-[220px]">
           {templateType ? (
             <div className="w-full flex flex-col items-center p-2">
               {/* Dimensões / Rótulo Superior */}
@@ -90,6 +88,9 @@ export function ProductCostSummary({
                   handleConfig={templateConfig.handleConfig || { handleType: 'NONE' }}
                   drillingConfig={{
                     holeCount: templateConfig.drillingConfig?.holeCount || 0,
+                    drillingPosition:
+                      templateConfig.drillingConfig?.drillingPosition ||
+                      (templateType ? TEMPLATE_DEFAULT_DRILLING_POSITION[templateType] : 'SUPERIOR'),
                     divisionType:
                       templateConfig.drillingConfig?.drillingMode === 'CUSTOM'
                         ? 'CUSTOM_DISTANCE'
@@ -207,6 +208,20 @@ export function ProductCostSummary({
                   {OPENING_DIRECTION_LABELS[templateConfig.openingDirection] || templateConfig.openingDirection}
                 </span>
               )}
+
+              {templateConfig.drillingConfig?.holeCount && templateConfig.drillingConfig.holeCount > 0 ? (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-primary/10 text-primary font-medium">
+                  <span className="material-symbols-outlined text-[13px]">circle</span>
+                  {templateConfig.drillingConfig.holeCount} Furos
+                  <span className="text-secondary font-normal">
+                    ({templateConfig.drillingConfig.drillingPosition === 'SUPERIOR'
+                      ? 'Superior'
+                      : templateConfig.drillingConfig.drillingPosition === 'FRONTAL'
+                      ? 'Frontal'
+                      : 'Lateral'})
+                  </span>
+                </span>
+              ) : null}
             </div>
           </div>
 

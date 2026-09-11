@@ -226,7 +226,7 @@ export const TEMPLATE_APPLICABLE_OPTIONS: Record<DoorTemplateType, {
   AWNING_WINDOW_1F:     { openingDirection: false, slidingMode: false, handle: true,  drilling: true  },
   AWNING_WINDOW_1F_INV: { openingDirection: false, slidingMode: false, handle: true,  drilling: true  },
   FRONT_DRAWER:         { openingDirection: false, slidingMode: false, handle: true,  drilling: true  },
-  FIXED_PANEL:          { openingDirection: false, slidingMode: false, handle: false, drilling: false },
+  FIXED_PANEL:          { openingDirection: false, slidingMode: false, handle: false, drilling: true  },
 };
 
 /** Posição padrão de furação por tipo de template */

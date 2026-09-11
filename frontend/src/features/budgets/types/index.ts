@@ -44,9 +44,12 @@ export interface HandleConfig {
   position?: HandlePosition;
 }
 
+export type DrillingPosition = 'SUPERIOR' | 'LATERAL' | 'FRONTAL';
+
 export interface DrillingConfig {
   holeCount: number;
   divisionType: DivisionType;
+  drillingPosition?: DrillingPosition;
   customDistancesMm?: number[];
 }
 

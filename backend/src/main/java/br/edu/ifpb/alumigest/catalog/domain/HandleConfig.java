@@ -1,11 +1,13 @@
 package br.edu.ifpb.alumigest.catalog.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.io.Serializable;
 import java.math.BigDecimal;
 
 /**
  * Configuração paramétrica do puxador da esquadria.
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class HandleConfig implements Serializable {
 
     private HandleType handleType;

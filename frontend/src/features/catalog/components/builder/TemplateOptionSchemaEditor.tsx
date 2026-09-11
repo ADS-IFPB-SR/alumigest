@@ -8,14 +8,17 @@ import type {
   OpeningDirection,
   SlidingMode,
   HoleDrillingMode,
+  DrillingPosition,
 } from '../../types/templates';
 import {
   TEMPLATE_APPLICABLE_OPTIONS,
+  TEMPLATE_DEFAULT_DRILLING_POSITION,
   HANDLE_TYPE_LABELS,
   HANDLE_POSITION_LABELS,
   OPENING_DIRECTION_LABELS,
   SLIDING_MODE_LABELS,
   DRILLING_MODE_LABELS,
+  DRILLING_POSITION_LABELS,
   ALUMINUM_COLORS,
   GLASS_COLORS,
 } from '../../types/templates';
@@ -57,6 +60,8 @@ export function TemplateOptionSchemaEditor({
     const app = TEMPLATE_APPLICABLE_OPTIONS[templateType as DoorTemplateType];
     if (!app) return;
 
+    const defaultDrillPos = templateType ? TEMPLATE_DEFAULT_DRILLING_POSITION[templateType as DoorTemplateType] : 'SUPERIOR';
+
     setOptionSchema({
       allowOpeningDirection: app.openingDirection,
       allowedOpeningDirections: app.openingDirection ? ['LEFT_TO_RIGHT', 'RIGHT_TO_LEFT'] : [],
@@ -67,6 +72,7 @@ export function TemplateOptionSchemaEditor({
       allowedHandlePositions: app.handle ? ['RIGHT', 'LEFT', 'CENTER'] : [],
       allowDrilling: app.drilling,
       allowedDrillingModes: app.drilling ? ['EQUAL', 'CUSTOM'] : [],
+      allowedDrillingPositions: app.drilling ? [defaultDrillPos] : [],
       allowAluminumColors: ALUMINUM_COLORS.map(c => c.hex),
       allowGlassColors: GLASS_COLORS.map(c => c.hex),
     });
@@ -85,6 +91,12 @@ export function TemplateOptionSchemaEditor({
           coverage: prev.handleConfig?.coverage || 'PIECE',
           pieceLengthCm: prev.handleConfig?.pieceLengthCm || 60,
         } : { handleType: 'NONE' },
+        drillingConfig: app.drilling ? {
+          holeCount: prev.drillingConfig?.holeCount ?? 2,
+          drillingMode: prev.drillingConfig?.drillingMode || 'EQUAL',
+          drillingPosition: prev.drillingConfig?.drillingPosition || defaultDrillPos,
+          customPositionsMm: prev.drillingConfig?.customPositionsMm,
+        } : undefined,
       }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -174,12 +186,81 @@ export function TemplateOptionSchemaEditor({
     update('allowedDrillingModes', next);
 
     if (setTemplateConfig) {
+      const fallbackPos = templateType ? TEMPLATE_DEFAULT_DRILLING_POSITION[templateType] : 'SUPERIOR';
       const nextActive = isAdding ? val : (next[0] || 'EQUAL');
       setTemplateConfig((prev) => ({
         ...prev,
         drillingConfig: {
           holeCount: prev.drillingConfig?.holeCount ?? 2,
           drillingMode: nextActive,
+          drillingPosition: prev.drillingConfig?.drillingPosition || fallbackPos,
+          customPositionsMm: prev.drillingConfig?.customPositionsMm,
+        },
+      }));
+    }
+  };
+
+  const handleToggleDrillingPosition = (val: DrillingPosition) => {
+    const current = optionSchema.allowedDrillingPositions || [];
+    const isCurrentlySelected = current.includes(val);
+    const isCurrentlyActive = templateConfig?.drillingConfig?.drillingPosition === val;
+
+    // Se já está selecionado mas não é a prévia ativa, ativa a prévia deste item imediatamente
+    if (isCurrentlySelected && !isCurrentlyActive) {
+      if (setTemplateConfig) {
+        setTemplateConfig((prev) => {
+          const currentCount = prev.drillingConfig?.holeCount ?? 2;
+          const adjustedCount = (val === 'FRONTAL' && currentCount < 4) ? 4 : (currentCount === 0 ? 2 : currentCount);
+          return {
+            ...prev,
+            drillingConfig: {
+              holeCount: adjustedCount,
+              drillingMode: prev.drillingConfig?.drillingMode || 'EQUAL',
+              drillingPosition: val,
+              customPositionsMm: prev.drillingConfig?.customPositionsMm,
+            },
+          };
+        });
+      }
+      return;
+    }
+
+    // Se não está selecionado, adiciona e ativa como prévia
+    // Se já está selecionado e é o ativo, remove se houver outras opções
+    const next = !isCurrentlySelected
+      ? [...current, val]
+      : current.filter((x) => x !== val);
+
+    update('allowedDrillingPositions', next);
+
+    if (setTemplateConfig) {
+      const fallbackPos = templateType ? TEMPLATE_DEFAULT_DRILLING_POSITION[templateType] : 'SUPERIOR';
+      const nextActive = !isCurrentlySelected ? val : (next[0] || fallbackPos);
+      setTemplateConfig((prev) => {
+        const currentCount = prev.drillingConfig?.holeCount ?? 2;
+        const adjustedCount = (nextActive === 'FRONTAL' && currentCount < 4) ? 4 : (currentCount === 0 ? 2 : currentCount);
+        return {
+          ...prev,
+          drillingConfig: {
+            holeCount: adjustedCount,
+            drillingMode: prev.drillingConfig?.drillingMode || 'EQUAL',
+            drillingPosition: nextActive,
+            customPositionsMm: prev.drillingConfig?.customPositionsMm,
+          },
+        };
+      });
+    }
+  };
+
+  const handleSetHoleCount = (count: number) => {
+    if (setTemplateConfig) {
+      const fallbackPos = templateType ? TEMPLATE_DEFAULT_DRILLING_POSITION[templateType] : 'SUPERIOR';
+      setTemplateConfig((prev) => ({
+        ...prev,
+        drillingConfig: {
+          holeCount: count,
+          drillingMode: prev.drillingConfig?.drillingMode || 'EQUAL',
+          drillingPosition: prev.drillingConfig?.drillingPosition || fallbackPos,
           customPositionsMm: prev.drillingConfig?.customPositionsMm,
         },
       }));
@@ -343,36 +424,103 @@ export function TemplateOptionSchemaEditor({
             enabled={!!optionSchema.allowDrilling}
             onToggle={(v) => {
               update('allowDrilling', v);
+              const defaultPos = templateType ? TEMPLATE_DEFAULT_DRILLING_POSITION[templateType] : 'SUPERIOR';
               if (v) {
                 setExpandedSections((prev) => ({ ...prev, drilling: true }));
+                update('allowedDrillingPositions', [defaultPos]);
                 if (setTemplateConfig) {
                   setTemplateConfig((prev) => ({
                     ...prev,
-                    drillingConfig: { holeCount: 2, drillingMode: 'EQUAL' },
+                    drillingConfig: {
+                      holeCount: prev.drillingConfig?.holeCount || 2,
+                      drillingMode: prev.drillingConfig?.drillingMode || 'EQUAL',
+                      drillingPosition: prev.drillingConfig?.drillingPosition || defaultPos,
+                    },
                   }));
                 }
-              } else if (setTemplateConfig) {
-                setTemplateConfig((prev) => ({
-                  ...prev,
-                  drillingConfig: { holeCount: 0, drillingMode: 'EQUAL' },
-                }));
+              } else {
+                update('allowedDrillingPositions', []);
+                if (setTemplateConfig) {
+                  setTemplateConfig((prev) => ({
+                    ...prev,
+                    drillingConfig: {
+                      holeCount: 0,
+                      drillingMode: 'EQUAL',
+                      drillingPosition: defaultPos,
+                    },
+                  }));
+                }
               }
             }}
             summary={
               optionSchema.allowDrilling
-                ? `${optionSchema.allowedDrillingModes?.length || 0} divisões permitidas`
+                ? `${templateConfig?.drillingConfig?.holeCount ?? 2} furos · ${
+                    (templateConfig?.drillingConfig?.drillingPosition || (templateType ? TEMPLATE_DEFAULT_DRILLING_POSITION[templateType] : 'SUPERIOR')) === 'SUPERIOR'
+                      ? 'Borda Superior'
+                      : (templateConfig?.drillingConfig?.drillingPosition || (templateType ? TEMPLATE_DEFAULT_DRILLING_POSITION[templateType] : 'SUPERIOR')) === 'FRONTAL'
+                      ? 'Frontal'
+                      : 'Lateral'
+                  } · ${optionSchema.allowedDrillingPositions?.length || 0} posições`
                 : 'Fixo pelo padrão'
             }
             isOpen={!!expandedSections.drilling && !!optionSchema.allowDrilling}
             onToggleOpen={() => toggleSection('drilling')}
           >
-            <ChipGroup<HoleDrillingMode>
-              items={['EQUAL', 'CUSTOM']}
-              labels={DRILLING_MODE_LABELS}
-              selected={optionSchema.allowedDrillingModes || []}
-              activeItem={templateConfig?.drillingConfig?.drillingMode}
-              onToggleItem={handleToggleDrillingMode}
-            />
+            <div className="flex flex-col gap-3">
+              {/* Quantidade de Furos Padrão */}
+              <div>
+                <span className="text-xs font-semibold text-on-surface-variant block mb-1.5">
+                  Quantidade de Furos Padrão (Prévia Studio):
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {[0, 1, 2, 3, 4].map((num) => {
+                    const isSelected = (templateConfig?.drillingConfig?.holeCount ?? 2) === num;
+                    return (
+                      <button
+                        key={num}
+                        type="button"
+                        onClick={() => handleSetHoleCount(num)}
+                        className={`px-3 py-1.5 rounded-lg border text-xs font-medium transition-all cursor-pointer ${
+                          isSelected
+                            ? 'border-primary bg-primary/10 text-primary font-bold shadow-xs'
+                            : 'border-outline-variant/60 bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container-low'
+                        }`}
+                      >
+                        {num === 0 ? 'Sem furos' : `${num} Furo${num > 1 ? 's' : ''}`}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Posições de Furação Permitidas */}
+              <div>
+                <span className="text-xs font-semibold text-on-surface-variant block mb-1.5">
+                  Posições de Furação Permitidas no Orçamento:
+                </span>
+                <ChipGroup<DrillingPosition>
+                  items={['SUPERIOR', 'LATERAL', 'FRONTAL']}
+                  labels={DRILLING_POSITION_LABELS}
+                  selected={optionSchema.allowedDrillingPositions || []}
+                  activeItem={templateConfig?.drillingConfig?.drillingPosition || (templateType ? TEMPLATE_DEFAULT_DRILLING_POSITION[templateType] : 'SUPERIOR')}
+                  onToggleItem={handleToggleDrillingPosition}
+                />
+              </div>
+
+              {/* Modos de Cálculo de Espaçamento */}
+              <div>
+                <span className="text-xs font-semibold text-on-surface-variant block mb-1.5">
+                  Modos de Espaçamento Permitidos:
+                </span>
+                <ChipGroup<HoleDrillingMode>
+                  items={['EQUAL', 'CUSTOM']}
+                  labels={DRILLING_MODE_LABELS}
+                  selected={optionSchema.allowedDrillingModes || []}
+                  activeItem={templateConfig?.drillingConfig?.drillingMode}
+                  onToggleItem={handleToggleDrillingMode}
+                />
+              </div>
+            </div>
           </ModernAccordion>
         )}
 
@@ -507,6 +655,7 @@ function ModernAccordion({
             type="button"
             role="switch"
             aria-checked={enabled}
+            aria-label={enabled ? `Desativar restrição de ${title}` : `Ativar restrição de ${title}`}
             onClick={() => onToggle(!enabled)}
             className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer shrink-0 focus:outline-none focus:ring-2 focus:ring-primary/20 ${
               enabled ? 'bg-primary' : 'bg-outline-variant/80'
