@@ -168,6 +168,12 @@ public class BudgetService {
         }
     }
 
+    /**
+     * Valida se a data de validade da proposta comercial não é retroativa.
+     * 
+     * @param validUntil Data e hora de validade informada (OffsetDateTime)
+     * @throws BusinessException caso a data seja anterior à data atual (hoje)
+     */
     private void validateValidUntil(java.time.OffsetDateTime validUntil) {
         if (validUntil != null) {
             java.time.LocalDate validDate = validUntil.toLocalDate();

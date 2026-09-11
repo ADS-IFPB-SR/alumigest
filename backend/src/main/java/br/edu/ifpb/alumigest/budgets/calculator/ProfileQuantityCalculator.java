@@ -5,6 +5,18 @@ import java.math.RoundingMode;
 
 import org.springframework.stereotype.Component;
 
+/**
+ * Motor de Cálculo Físico de Perfis de Alumínio.
+ * 
+ * Determina o consumo linear total em metros (m) para perfis de esquadrias
+ * com base na largura (W), altura (H), quantidade de folhas e tipologia.
+ * 
+ * Regras Físicas Paramétricas:
+ * - 1 Folha (Giro / Correr / Maxim-ar): 2 Larguras + 2 Alturas (2W + 2H)
+ * - 2 Folhas (Correr / Giro): 2 Larguras (trilhos superior e inferior) + 4 Alturas (2 laterais por folha) (2W + 4H)
+ * - 3 Folhas (Correr): 2 Larguras + 6 Alturas (2W + 6H)
+ * - 4 Folhas (Correr): 2 Larguras + 8 Alturas (2W + 8H)
+ */
 @Component
 public class ProfileQuantityCalculator implements MaterialQuantityCalculator {
 
