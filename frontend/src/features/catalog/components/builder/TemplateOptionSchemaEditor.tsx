@@ -25,6 +25,112 @@ interface TemplateOptionSchemaEditorProps {
   setOptionSchema: (val: Partial<TemplateOptionSchema>) => void;
 }
 
+function getDefaultOptionSchema(templateType: DoorTemplateType): Partial<TemplateOptionSchema> {
+  const app = TEMPLATE_APPLICABLE_OPTIONS[templateType];
+  return {
+    allowOpeningDirection: app.openingDirection,
+    allowedOpeningDirections: app.openingDirection ? ['LEFT_TO_RIGHT', 'RIGHT_TO_LEFT'] : [],
+    allowSlidingMode: app.slidingMode,
+    allowedSlidingModes: app.slidingMode ? ['BOTH_SLIDING', 'LEFT_FIXED_RIGHT_SLIDING', 'RIGHT_FIXED_LEFT_SLIDING'] : [],
+    allowHandle: app.handle,
+    allowedHandleTypes: app.handle ? ['BAR_TUBULAR', 'SHELL_LOCK', 'LEVER_HANDLE'] : [],
+    allowedHandlePositions: app.handle ? ['LEFT', 'RIGHT'] : [],
+    allowDrilling: app.drilling,
+    allowedDrillingModes: app.drilling ? ['EQUAL', 'CUSTOM'] : [],
+    allowAluminumColors: ALUMINUM_COLORS.map(c => c.hex),
+    allowGlassColors: GLASS_COLORS.map(c => c.hex),
+  };
+}
+
+function toggleInArray<T extends string>(arr: T[] | undefined, item: T): T[] {
+  const current = arr || [];
+  return current.includes(item)
+    ? current.filter(x => x !== item)
+    : [...current, item];
+}
+
+interface ColorOptionGroupProps {
+  label: string;
+  colors: readonly { hex: string; name: string }[];
+  selectedColors?: string[];
+  onChange: (colors: string[]) => void;
+}
+
+function ColorOptionGroup({ label, colors, selectedColors = [], onChange }: ColorOptionGroupProps) {
+  const isEnabled = selectedColors.length > 0;
+
+  const handleToggle = (enabled: boolean) => {
+    onChange(enabled ? colors.map(c => c.hex) : []);
+  };
+
+  const handleColorToggle = (hex: string) => {
+    onChange(toggleInArray(selectedColors, hex));
+  };
+
+  return (
+    <OptionGroup
+      label={label}
+      enabled={isEnabled}
+      onToggle={handleToggle}
+    >
+      <div className="flex flex-wrap gap-sm">
+        {colors.map((c) => (
+          <label key={c.hex} className="flex items-center gap-xs cursor-pointer">
+            <input
+              type="checkbox"
+              className="accent-primary w-4 h-4"
+              checked={selectedColors.includes(c.hex)}
+              onChange={() => handleColorToggle(c.hex)}
+            />
+            <span
+              className="w-4 h-4 rounded-full border border-outline-variant/60 inline-block"
+              style={{ backgroundColor: c.hex }}
+            />
+            <span className="font-body-sm text-body-sm text-on-surface">{c.name}</span>
+          </label>
+        ))}
+      </div>
+    </OptionGroup>
+  );
+}
+
+interface HandleOptionsProps {
+  allowedTypes?: HandleType[];
+  allowedPositions?: HandlePosition[];
+  onTypesChange: (types: HandleType[]) => void;
+  onPositionsChange: (positions: HandlePosition[]) => void;
+}
+
+function HandleOptions({
+  allowedTypes = [],
+  allowedPositions = [],
+  onTypesChange,
+  onPositionsChange,
+}: HandleOptionsProps) {
+  return (
+    <div className="flex flex-col gap-sm">
+      <div>
+        <span className="font-label-md text-label-md text-on-surface-variant mb-xs block">Tipos permitidos:</span>
+        <CheckboxList<HandleType>
+          items={['BAR_TUBULAR', 'SHELL_LOCK', 'LEVER_HANDLE', 'NONE']}
+          labels={HANDLE_TYPE_LABELS}
+          selected={allowedTypes}
+          onChange={onTypesChange}
+        />
+      </div>
+      <div>
+        <span className="font-label-md text-label-md text-on-surface-variant mb-xs block">Posições permitidas:</span>
+        <CheckboxList<HandlePosition>
+          items={['LEFT', 'RIGHT', 'TOP', 'BOTTOM', 'CENTER']}
+          labels={HANDLE_POSITION_LABELS}
+          selected={allowedPositions}
+          onChange={onPositionsChange}
+        />
+      </div>
+    </div>
+  );
+}
+
 /**
  * Editor de opções permitidas no orçamento para cada template.
  * Usa progressive disclosure — sub-opções ficam ocultas até o toggle pai ser ativado.
@@ -40,21 +146,7 @@ export function TemplateOptionSchemaEditor({
   // Reset schema quando troca o template
   useEffect(() => {
     if (!templateType) return;
-    const app = TEMPLATE_APPLICABLE_OPTIONS[templateType];
-
-    setOptionSchema({
-      allowOpeningDirection: app.openingDirection,
-      allowedOpeningDirections: app.openingDirection ? ['LEFT_TO_RIGHT', 'RIGHT_TO_LEFT'] : [],
-      allowSlidingMode: app.slidingMode,
-      allowedSlidingModes: app.slidingMode ? ['BOTH_SLIDING', 'LEFT_FIXED_RIGHT_SLIDING', 'RIGHT_FIXED_LEFT_SLIDING'] : [],
-      allowHandle: app.handle,
-      allowedHandleTypes: app.handle ? ['BAR_TUBULAR', 'SHELL_LOCK', 'LEVER_HANDLE'] : [],
-      allowedHandlePositions: app.handle ? ['LEFT', 'RIGHT'] : [],
-      allowDrilling: app.drilling,
-      allowedDrillingModes: app.drilling ? ['EQUAL', 'CUSTOM'] : [],
-      allowAluminumColors: ALUMINUM_COLORS.map(c => c.hex),
-      allowGlassColors: GLASS_COLORS.map(c => c.hex),
-    });
+    setOptionSchema(getDefaultOptionSchema(templateType));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [templateType]);
 
@@ -62,13 +154,6 @@ export function TemplateOptionSchemaEditor({
 
   const update = (field: keyof TemplateOptionSchema, value: unknown) => {
     setOptionSchema({ ...optionSchema, [field]: value });
-  };
-
-  const toggleInArray = <T extends string>(arr: T[] | undefined, item: T): T[] => {
-    const current = arr || [];
-    return current.includes(item)
-      ? current.filter(x => x !== item)
-      : [...current, item];
   };
 
   return (
@@ -84,7 +169,6 @@ export function TemplateOptionSchemaEditor({
       </div>
 
       <div className="p-lg flex flex-col gap-md">
-
         {/* --- Sentido de Abertura --- */}
         <OptionGroup
           label="Permitir alterar sentido de abertura"
@@ -125,26 +209,12 @@ export function TemplateOptionSchemaEditor({
           disabled={!applicable.handle}
           disabledReason="Não aplicável para este modelo"
         >
-          <div className="flex flex-col gap-sm">
-            <div>
-              <span className="font-label-md text-label-md text-on-surface-variant mb-xs block">Tipos permitidos:</span>
-              <CheckboxList<HandleType>
-                items={['BAR_TUBULAR', 'SHELL_LOCK', 'LEVER_HANDLE', 'NONE']}
-                labels={HANDLE_TYPE_LABELS}
-                selected={optionSchema.allowedHandleTypes || []}
-                onChange={(v) => update('allowedHandleTypes', v)}
-              />
-            </div>
-            <div>
-              <span className="font-label-md text-label-md text-on-surface-variant mb-xs block">Posições permitidas:</span>
-              <CheckboxList<HandlePosition>
-                items={['LEFT', 'RIGHT', 'TOP', 'BOTTOM', 'CENTER']}
-                labels={HANDLE_POSITION_LABELS}
-                selected={optionSchema.allowedHandlePositions || []}
-                onChange={(v) => update('allowedHandlePositions', v)}
-              />
-            </div>
-          </div>
+          <HandleOptions
+            allowedTypes={optionSchema.allowedHandleTypes}
+            allowedPositions={optionSchema.allowedHandlePositions}
+            onTypesChange={(v) => update('allowedHandleTypes', v)}
+            onPositionsChange={(v) => update('allowedHandlePositions', v)}
+          />
         </OptionGroup>
 
         {/* --- Furações --- */}
@@ -164,60 +234,20 @@ export function TemplateOptionSchemaEditor({
         </OptionGroup>
 
         {/* --- Cores de Alumínio --- */}
-        <OptionGroup
+        <ColorOptionGroup
           label="Permitir alterar cor do alumínio"
-          enabled={(optionSchema.allowAluminumColors?.length ?? 0) > 0}
-          onToggle={(v) => update('allowAluminumColors', v ? ALUMINUM_COLORS.map(c => c.hex) : [])}
-        >
-          <div className="flex flex-wrap gap-sm">
-            {ALUMINUM_COLORS.map((c) => {
-              const selected = optionSchema.allowAluminumColors?.includes(c.hex);
-              return (
-                <label key={c.hex} className="flex items-center gap-xs cursor-pointer">
-                  <input
-                    type="checkbox"
-                    className="accent-primary w-4 h-4"
-                    checked={!!selected}
-                    onChange={() => update('allowAluminumColors', toggleInArray(optionSchema.allowAluminumColors, c.hex))}
-                  />
-                  <span
-                    className="w-4 h-4 rounded-full border border-outline-variant/60 inline-block"
-                    style={{ backgroundColor: c.hex }}
-                  />
-                  <span className="font-body-sm text-body-sm text-on-surface">{c.name}</span>
-                </label>
-              );
-            })}
-          </div>
-        </OptionGroup>
+          colors={ALUMINUM_COLORS}
+          selectedColors={optionSchema.allowAluminumColors}
+          onChange={(v) => update('allowAluminumColors', v)}
+        />
 
         {/* --- Cores de Vidro --- */}
-        <OptionGroup
+        <ColorOptionGroup
           label="Permitir alterar tipo de vidro"
-          enabled={(optionSchema.allowGlassColors?.length ?? 0) > 0}
-          onToggle={(v) => update('allowGlassColors', v ? GLASS_COLORS.map(c => c.hex) : [])}
-        >
-          <div className="flex flex-wrap gap-sm">
-            {GLASS_COLORS.map((c) => {
-              const selected = optionSchema.allowGlassColors?.includes(c.hex);
-              return (
-                <label key={c.hex} className="flex items-center gap-xs cursor-pointer">
-                  <input
-                    type="checkbox"
-                    className="accent-primary w-4 h-4"
-                    checked={!!selected}
-                    onChange={() => update('allowGlassColors', toggleInArray(optionSchema.allowGlassColors, c.hex))}
-                  />
-                  <span
-                    className="w-4 h-4 rounded-full border border-outline-variant/60 inline-block"
-                    style={{ backgroundColor: c.hex }}
-                  />
-                  <span className="font-body-sm text-body-sm text-on-surface">{c.name}</span>
-                </label>
-              );
-            })}
-          </div>
-        </OptionGroup>
+          colors={GLASS_COLORS}
+          selectedColors={optionSchema.allowGlassColors}
+          onChange={(v) => update('allowGlassColors', v)}
+        />
       </div>
     </section>
   );

@@ -18,7 +18,9 @@ public class TemplateConfig implements Serializable {
     private DrillingConfig drillingConfig;
     private TemplateOptionSchema optionSchema;
 
-    public TemplateConfig() {}
+    public TemplateConfig() {
+        // Default constructor required by JPA and Jackson
+    }
 
     public BigDecimal getProfileMm() {
         return profileMm;

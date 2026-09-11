@@ -26,7 +26,9 @@ public class TemplateOptionSchema implements Serializable {
     private List<String> allowAluminumColors = new ArrayList<>();
     private List<String> allowGlassColors = new ArrayList<>();
 
-    public TemplateOptionSchema() {}
+    public TemplateOptionSchema() {
+        // Default constructor required by JPA and Jackson
+    }
 
     public boolean isAllowSlidingMode() {
         return allowSlidingMode;

@@ -26,6 +26,8 @@ import java.util.stream.Collectors;
 @Service
 public class ProductService implements IProductService {
 
+    private static final String PRODUCT_NOT_FOUND_MSG = "Produto não encontrado com o ID informado.";
+
     private final ProductRepository productRepository;
     private final MaterialRepository materialRepository;
     private final ProductCategoryRepository productCategoryRepository;
@@ -82,7 +84,7 @@ public class ProductService implements IProductService {
     @Transactional(readOnly = true)
     public ProductResponseDTO findById(UUID id) {
         Product product = productRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Produto não encontrado com o ID informado."));
+                .orElseThrow(() -> new ResourceNotFoundException(PRODUCT_NOT_FOUND_MSG));
         return productMapper.toResponse(product);
     }
 
@@ -96,7 +98,7 @@ public class ProductService implements IProductService {
         validateTemplateRequirements(request);
 
         Product product = productRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Produto não encontrado com o ID informado."));
+                .orElseThrow(() -> new ResourceNotFoundException(PRODUCT_NOT_FOUND_MSG));
 
         ProductCategory category = productCategoryRepository.findById(request.categoryId())
                 .orElseThrow(() -> new ResourceNotFoundException("Categoria não encontrada: " + request.categoryId()));
@@ -119,7 +121,7 @@ public class ProductService implements IProductService {
     @Transactional
     public void inactivateProduct(UUID id) {
         Product product = productRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Produto não encontrado com o ID informado."));
+                .orElseThrow(() -> new ResourceNotFoundException(PRODUCT_NOT_FOUND_MSG));
 
         product.setActive(false);
         productRepository.save(product);

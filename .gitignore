@@ -1,4 +1,4 @@
-﻿# ==========================================
+# ==========================================
 # AlumiGest Monorepo - .gitignore
 # ==========================================
 
@@ -39,6 +39,8 @@ frontend/build/
 frontend/.npm
 frontend/.eslintcache
 frontend/*.tsbuildinfo
+frontend/coverage/
+coverage/
 frontend/.env.local
 frontend/.env.development.local
 frontend/.env.test.local
