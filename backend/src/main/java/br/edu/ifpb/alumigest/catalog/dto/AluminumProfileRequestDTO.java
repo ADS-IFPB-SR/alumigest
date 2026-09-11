@@ -43,6 +43,21 @@ public record AluminumProfileRequestDTO(
 
         @NotNull(message = "O peso é obrigatório")
         @Positive(message = "O peso deve ser maior que zero")
-        BigDecimal weight
+        BigDecimal weight,
+
+        String familyCode
 ) {
+    public AluminumProfileRequestDTO(
+            String name,
+            String commercialReference,
+            String commercialLine,
+            String ncmCode,
+            String colorFinish,
+            BigDecimal standardLengthM,
+            BigDecimal costPrice,
+            BigDecimal salePrice,
+            BigDecimal weight
+    ) {
+        this(name, commercialReference, commercialLine, ncmCode, colorFinish, standardLengthM, costPrice, salePrice, weight, null);
+    }
 }

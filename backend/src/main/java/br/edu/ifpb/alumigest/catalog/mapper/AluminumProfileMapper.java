@@ -31,6 +31,7 @@ public class AluminumProfileMapper {
         material.setCommercialReference(request.commercialReference());
         material.setNcmCode(request.ncmCode());
         material.setColorFinish(request.colorFinish());
+        material.setFamilyCode(request.familyCode());
         material.setStandardLengthM(request.standardLengthM());
         material.setUnitMeasure(UnitMeasure.METRO);
         material.setCostPrice(request.costPrice());
@@ -92,7 +93,8 @@ public class AluminumProfileMapper {
                 weight,
                 material.isActive(),
                 material.getCreatedAt(),
-                material.getUpdatedAt()
+                material.getUpdatedAt(),
+                material.getFamilyCode()
         );
     }
 }

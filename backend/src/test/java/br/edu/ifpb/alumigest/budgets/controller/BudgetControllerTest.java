@@ -37,20 +37,23 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+@ExtendWith(MockitoExtension.class)
 class BudgetControllerTest {
 
     private MockMvc mockMvc;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    @Mock
     private BudgetService budgetService;
 
+    @Mock
+    private br.edu.ifpb.alumigest.budgets.service.BudgetQuantityService budgetQuantityService;
+
+    @InjectMocks
     private BudgetController budgetController;
 
     @BeforeEach
     void setUp() {
-        budgetService = mock(BudgetService.class);
-        budgetController = new BudgetController(budgetService);
-
         mockMvc = MockMvcBuilders.standaloneSetup(budgetController)
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .setCustomArgumentResolvers(new PageableHandlerMethodArgumentResolver())
@@ -179,11 +182,32 @@ class BudgetControllerTest {
     }
 
     @Test
-    @DisplayName("Deve retornar 204 ao deletar")
-    void delete_ShouldReturn204() throws Exception {
-        UUID id = UUID.randomUUID();
+    @DisplayName("Deve retornar 200 no preview de cálculo de insumos")
+    void previewCalculation_ShouldReturn200() throws Exception {
+        var request = new br.edu.ifpb.alumigest.budgets.dto.BudgetItemCalculationRequestDTO(
+                "SLIDING_DOOR_2F",
+                new BigDecimal("2000"),
+                new BigDecimal("2100"),
+                1,
+                List.of(new br.edu.ifpb.alumigest.budgets.dto.BudgetItemCalculationRequestDTO.BudgetItemOptionCalculationDTO(
+                        UUID.randomUUID(), "GLASS", new BigDecimal("4.20")
+                ))
+        );
 
-        mockMvc.perform(delete("/api/orcamentos/{id}", id))
-                .andExpect(status().isNoContent());
+        var response = new br.edu.ifpb.alumigest.budgets.dto.BudgetItemCalculationResponseDTO(
+                new BigDecimal("4.20"),
+                new BigDecimal("8.20"),
+                List.of(new br.edu.ifpb.alumigest.budgets.dto.BudgetItemCalculationResponseDTO.BudgetItemOptionCalculationResultDTO(
+                        UUID.randomUUID(), "GLASS", new BigDecimal("4.20"), new BigDecimal("4.20"), false, null
+                ))
+        );
+
+        when(budgetQuantityService.previewCalculation(any())).thenReturn(response);
+
+        mockMvc.perform(post("/api/v1/budgets/items/preview-calculation")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.physicalAreaM2").value(4.20));
     }
 }

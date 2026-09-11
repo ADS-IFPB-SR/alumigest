@@ -21,6 +21,7 @@ export interface GlassDTO {
   supplierId?: string;
   supplierName?: string;
   active?: boolean;
+  familyCode?: string;
 }
 
 export interface ProfileDTO {
@@ -36,6 +37,7 @@ export interface ProfileDTO {
   active: boolean;
   createdAt?: string; // OffsetDateTime
   updatedAt?: string; // OffsetDateTime
+  familyCode?: string;
 }
 
 export interface HardwareDTO {
@@ -50,6 +52,7 @@ export interface HardwareDTO {
   active: boolean;
   createdAt?: string; // OffsetDateTime
   updatedAt?: string; // OffsetDateTime
+  familyCode?: string;
 }
 
 export interface FilmDTO {
@@ -61,6 +64,7 @@ export interface FilmDTO {
   salePrice: number;
   unitMeasure: string; // Backend currently returns String, not UnitMeasure enum here
   active?: boolean;
+  familyCode?: string;
 }
 
 export interface PageResponse<T> {

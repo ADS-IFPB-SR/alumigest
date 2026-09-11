@@ -29,9 +29,11 @@ import java.util.UUID;
 public class BudgetController {
 
     private final BudgetService budgetService;
+    private final br.edu.ifpb.alumigest.budgets.service.BudgetQuantityService budgetQuantityService;
 
-    public BudgetController(BudgetService budgetService) {
+    public BudgetController(BudgetService budgetService, br.edu.ifpb.alumigest.budgets.service.BudgetQuantityService budgetQuantityService) {
         this.budgetService = budgetService;
+        this.budgetQuantityService = budgetQuantityService;
     }
 
     @PostMapping
@@ -119,6 +121,13 @@ public class BudgetController {
     public ResponseEntity<BudgetResponseDTO> recalculate(@PathVariable UUID id) {
         BudgetResponseDTO response = budgetService.recalculate(id);
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/items/preview-calculation")
+    @Operation(summary = "Preview de cálculo de insumos", description = "Calcula sugestão de consumo de vidro/perfil e alerta de consistência física para itens de esquadria.")
+    public ResponseEntity<br.edu.ifpb.alumigest.budgets.dto.BudgetItemCalculationResponseDTO> previewCalculation(
+            @RequestBody @Valid br.edu.ifpb.alumigest.budgets.dto.BudgetItemCalculationRequestDTO request) {
+        return ResponseEntity.ok(budgetQuantityService.previewCalculation(request));
     }
 
     @DeleteMapping("/{id}")

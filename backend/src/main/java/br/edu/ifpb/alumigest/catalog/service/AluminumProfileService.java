@@ -92,6 +92,9 @@ public class AluminumProfileService {
         material.setCommercialReference(request.commercialReference());
         material.setName(request.name());
         material.setColorFinish(request.colorFinish());
+        if (request.familyCode() != null) {
+            material.setFamilyCode(request.familyCode());
+        }
         material.setStandardLengthM(request.standardLengthM());
         material.setCostPrice(request.costPrice());
         material.setSalePrice(request.salePrice());

@@ -29,6 +29,8 @@ import {
   type ProfileFormValues,
 } from '../schemas/catalogSchemas';
 
+import { FamilyAutocompleteInput } from './FamilyAutocompleteInput';
+
 interface Props {
   isOpen: boolean;
   onClose: () => void;
@@ -71,6 +73,7 @@ export function ProfileFormModal({
       description: '',
       ncmCode: '',
       colorFinish: 'INCOLOR',
+      familyCode: '',
       weight: '',
       length: '3',
       costPrice: '',
@@ -80,6 +83,7 @@ export function ProfileFormModal({
   });
 
   const activeValue = watch('active');
+  const familyCodeValue = watch('familyCode');
 
   useEffect(() => {
     if (!isOpen) {
@@ -102,6 +106,9 @@ export function ProfileFormModal({
 
         colorFinish:
           initialData.colorFinish || 'INCOLOR',
+
+        familyCode:
+          initialData.familyCode || '',
 
         weight:
           formatWeightInput(
@@ -134,6 +141,7 @@ export function ProfileFormModal({
       description: '',
       ncmCode: '',
       colorFinish: 'INCOLOR',
+      familyCode: '',
       weight: '',
       length: '3',
       costPrice: '',
@@ -147,6 +155,7 @@ export function ProfileFormModal({
       commercialReference: data.skuCode,
       commercialLine: data.commercialLine,
       name: data.description,
+      familyCode: data.familyCode?.trim() ? data.familyCode.trim() : undefined,
       standardLengthM: Number(data.length),
       weight: parseWeightString(data.weight),
       unitMeasure: 'BARRA_6M' as const,
@@ -299,6 +308,22 @@ export function ProfileFormModal({
               },
             })}
             error={errors.colorFinish?.message}
+          />
+        </div>
+
+        {/* Família do Material (Agrupamento de Cores) */}
+        <div
+          data-cy="profile-form-family-code-field"
+          className="col-span-1 md:col-span-2"
+        >
+          <FamilyAutocompleteInput
+            data-cy="profile-form-family-code"
+            label="Família do Perfil (Opcional - Linha/Troca de Cor)"
+            placeholder="Ex: FAM-PERFIL-SUPREMA"
+            groupCode="ALUMINIO"
+            value={familyCodeValue ?? ''}
+            onChange={(val) => setValue('familyCode', val, { shouldValidate: true })}
+            error={errors.familyCode?.message}
           />
         </div>
 

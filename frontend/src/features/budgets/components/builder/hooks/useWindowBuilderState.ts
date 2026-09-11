@@ -12,6 +12,7 @@ import type {
   MaterialSelection,
   CategoryType,
   WindowTemplate,
+  BudgetItemCalculationRequest,
 } from '../../../types';
 import type { Product, GlassDTO, ProfileDTO, HardwareDTO, FilmDTO } from '../../../../catalog/types';
 import {
@@ -22,6 +23,7 @@ import {
   useFilms,
 } from '../../../../catalog/hooks/useCatalog';
 import { calcItemSubtotal } from '../../../utils/calculations';
+import { budgetsApi } from '../../../services/budgetsApi';
 import {
   getDefaultSvgTemplateForCatalogType,
   mapCatalogAluminumColor,
@@ -169,13 +171,13 @@ export function useWindowBuilderState({
     (materialId: string) => {
       if (!materialId) return null;
       const g = glasses.find((item) => item.id === materialId);
-      if (g) return { name: g.name, unit: 'm²', price: g.salePrice ?? g.pricePerSqm ?? 0, colorFinish: g.colorFinish, categoryType: 'GLASS' as CategoryType };
+      if (g) return { name: g.name, unit: 'm²', price: g.salePrice ?? g.pricePerSqm ?? 0, colorFinish: g.colorFinish, categoryType: 'GLASS' as CategoryType, familyCode: g.familyCode };
       const p = profiles.find((item) => item.id === materialId);
-      if (p) return { name: p.name, unit: p.unitMeasure ?? 'm', price: p.salePrice ?? 0, colorFinish: p.colorFinish, categoryType: 'PROFILE' as CategoryType };
+      if (p) return { name: p.name, unit: p.unitMeasure ?? 'm', price: p.salePrice ?? 0, colorFinish: p.colorFinish, categoryType: 'PROFILE' as CategoryType, familyCode: p.familyCode };
       const h = hardwares.find((item) => item.id === materialId);
-      if (h) return { name: h.name, unit: h.unitMeasure ?? 'un', price: h.salePrice ?? 0, colorFinish: undefined, categoryType: 'HARDWARE' as CategoryType };
+      if (h) return { name: h.name, unit: h.unitMeasure ?? 'un', price: h.salePrice ?? 0, colorFinish: undefined, categoryType: 'HARDWARE' as CategoryType, familyCode: h.familyCode };
       const f = films.find((item) => item.id === materialId);
-      if (f) return { name: f.name, unit: 'm²', price: f.salePrice ?? 0, colorFinish: f.colorFinish, categoryType: 'FILM' as CategoryType };
+      if (f) return { name: f.name, unit: 'm²', price: f.salePrice ?? 0, colorFinish: f.colorFinish, categoryType: 'FILM' as CategoryType, familyCode: f.familyCode };
       return null;
     },
     [glasses, profiles, hardwares, films],
@@ -217,39 +219,39 @@ export function useWindowBuilderState({
 
         targetTemplate.categoryRequirements.forEach((req, idx) => {
           const catType: CategoryType = typeof req === 'string' ? (req as CategoryType) : (req.categoryType as CategoryType);
-          let mat: { id: string; name: string; price: number; unit: string } | undefined;
+          let mat: { id: string; name: string; price: number; unit: string; familyCode?: string } | undefined;
           let qty = 1;
 
           if (catType === 'GLASS') {
             const matched = glassColor ? glasses.find((g) => g.colorFinish?.toLowerCase() === glassColor.toLowerCase()) : null;
             const chosen = matched ?? glasses[0];
             if (chosen) {
-              mat = { id: chosen.id, name: chosen.name, price: chosen.salePrice ?? chosen.pricePerSqm ?? 0, unit: 'm²' };
+              mat = { id: chosen.id, name: chosen.name, price: chosen.salePrice ?? chosen.pricePerSqm ?? 0, unit: 'm²', familyCode: chosen.familyCode };
               qty = areaM2;
             }
           } else if (catType === 'PROFILE') {
             const matched = alumColor ? profiles.find((p) => p.colorFinish?.toLowerCase() === alumColor.toLowerCase()) : null;
             const chosen = matched ?? profiles[0];
             if (chosen) {
-              mat = { id: chosen.id, name: chosen.name, price: chosen.salePrice ?? 0, unit: chosen.unitMeasure ?? 'm' };
+              mat = { id: chosen.id, name: chosen.name, price: chosen.salePrice ?? 0, unit: chosen.unitMeasure ?? 'm', familyCode: chosen.familyCode };
               qty = 2;
             }
           } else if (catType === 'ROLLERS') {
             const chosen = hardwares.find((hw) => hw.name.toLowerCase().includes('rold')) ?? hardwares[0];
             if (chosen) {
-              mat = { id: chosen.id, name: chosen.name, price: chosen.salePrice ?? 0, unit: chosen.unitMeasure ?? 'un' };
+              mat = { id: chosen.id, name: chosen.name, price: chosen.salePrice ?? 0, unit: chosen.unitMeasure ?? 'un', familyCode: chosen.familyCode };
               qty = 2;
             }
           } else if (catType === 'HARDWARE') {
             const chosen = hardwares[0];
             if (chosen) {
-              mat = { id: chosen.id, name: chosen.name, price: chosen.salePrice ?? 0, unit: chosen.unitMeasure ?? 'un' };
+              mat = { id: chosen.id, name: chosen.name, price: chosen.salePrice ?? 0, unit: chosen.unitMeasure ?? 'un', familyCode: chosen.familyCode };
               qty = 1;
             }
           } else if (catType === 'FILM') {
             const chosen = films[0];
             if (chosen) {
-              mat = { id: chosen.id, name: chosen.name, price: chosen.salePrice ?? 0, unit: 'm²' };
+              mat = { id: chosen.id, name: chosen.name, price: chosen.salePrice ?? 0, unit: 'm²', familyCode: chosen.familyCode };
               qty = areaM2;
             }
           }
@@ -265,6 +267,7 @@ export function useWindowBuilderState({
             unitPrice: mat?.price ?? 0,
             quantity: qty,
             totalPrice: mat ? parseFloat((qty * mat.price).toFixed(2)) : 0,
+            familyCode: mat?.familyCode,
           });
         });
 
@@ -285,6 +288,7 @@ export function useWindowBuilderState({
           unitPrice: glasses[0].salePrice ?? glasses[0].pricePerSqm ?? 0,
           quantity: areaM2,
           totalPrice: parseFloat((areaM2 * (glasses[0].salePrice ?? glasses[0].pricePerSqm ?? 0)).toFixed(2)),
+          familyCode: glasses[0].familyCode,
         });
       }
       if (profiles.length > 0) {
@@ -299,6 +303,7 @@ export function useWindowBuilderState({
           unitPrice: profiles[0].salePrice ?? 0,
           quantity: 2,
           totalPrice: parseFloat((2 * (profiles[0].salePrice ?? 0)).toFixed(2)),
+          familyCode: profiles[0].familyCode,
         });
       }
       if (hardwares.length > 0) {
@@ -313,6 +318,7 @@ export function useWindowBuilderState({
           unitPrice: hardwares[0].salePrice ?? 0,
           quantity: 1,
           totalPrice: parseFloat((1 * (hardwares[0].salePrice ?? 0)).toFixed(2)),
+          familyCode: hardwares[0].familyCode,
         });
       }
       return fallbackSelections;
@@ -323,6 +329,8 @@ export function useWindowBuilderState({
   useEffect(() => {
     if (!isOpen) {
       hasInitializedRef.current = false;
+      setCurrentStep(1);
+      setIsMobileCadExpanded(false);
       return;
     }
 
@@ -450,8 +458,86 @@ export function useWindowBuilderState({
       }
     }
 
+    setCurrentStep(1);
     setErrors({});
   }, [isOpen, editingItem, templates, buildSelectionsForTemplate, findCatalogMaterial, selectedProductId]);
+
+  const materialSelectionsRef = useRef(state.materialSelections);
+  materialSelectionsRef.current = state.materialSelections;
+
+  // Recalcular consumo sugerido e limites físicos com o motor inteligente no backend
+  useEffect(() => {
+    if (!isOpen) return;
+    const w = typeof state.widthMm === 'number' ? state.widthMm : 0;
+    const h = typeof state.heightMm === 'number' ? state.heightMm : 0;
+    const qty = typeof state.quantity === 'number' && state.quantity > 0 ? state.quantity : 1;
+    if (w <= 0 || h <= 0) return;
+
+    const selections = materialSelectionsRef.current;
+    if (!selections || selections.length === 0) return;
+
+    const timer = setTimeout(async () => {
+      try {
+        const payload: BudgetItemCalculationRequest = {
+          templateType: state.templateType || state.template?.templateType || 'SLIDING_DOOR_2F',
+          widthMm: w,
+          heightMm: h,
+          quantity: qty,
+          options: selections.map((s) => ({
+            materialId: s.materialId,
+            categoryType: s.categoryType,
+            manualQuantity: s.isManualOverride ? s.quantity : undefined,
+          })),
+        };
+
+        const res = await budgetsApi.previewItemCalculation(payload);
+        if (!res || !res.options) return;
+
+        setState((prev) => {
+          const updatedSelections = prev.materialSelections.map((sel, idx) => {
+            const optRes = res.options[idx];
+            if (!optRes) return sel;
+
+            const suggested = optRes.suggestedQuantity;
+            const physMin = optRes.physicalMinimumQuantity;
+            const isBelow = optRes.isBelowPhysicalMinimum;
+            const warning = optRes.warningMessage;
+
+            // Se o usuário não sobrescreveu manualmente, aplica a sugestão da calculadora
+            const currentQty = sel.isManualOverride && sel.quantity !== undefined ? sel.quantity : suggested;
+            const totalPrice = currentQty !== undefined ? parseFloat((currentQty * sel.unitPrice).toFixed(2)) : undefined;
+
+            return {
+              ...sel,
+              suggestedQuantity: suggested,
+              physicalMinimumQuantity: physMin,
+              quantity: currentQty,
+              totalPrice,
+              isBelowPhysicalMinimum: isBelow,
+              warningMessage: warning,
+            };
+          });
+
+          return {
+            ...prev,
+            materialSelections: updatedSelections,
+          };
+        });
+      } catch (err) {
+        console.error('Erro ao calcular consumo de materiais no backend:', err);
+      }
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [
+    isOpen,
+    state.widthMm,
+    state.heightMm,
+    state.quantity,
+    state.templateType,
+    state.template?.templateType,
+    state.materialSelections.length,
+  ]);
 
   const handleMaterialChange = (requirementId: string, materialId: string) => {
     const selIndex = state.materialSelections.findIndex((s) => s.requirementId === requirementId);
@@ -486,43 +572,21 @@ export function useWindowBuilderState({
       let nextHandleType = prev.handleConfig.handleType;
 
       if (sel.categoryType === 'PROFILE' && mat) {
-        if (mat.colorFinish) {
-          nextAlum = mat.colorFinish;
-        } else if (mat.name.toLowerCase().includes('branco')) {
-          nextAlum = 'Branco Brilhante';
-        } else if (mat.name.toLowerCase().includes('preto')) {
-          nextAlum = 'Preto Fosco';
-        } else if (mat.name.toLowerCase().includes('bronze')) {
-          nextAlum = 'Bronze / Champanhe';
-        } else if (mat.name.toLowerCase().includes('anodizado') || mat.name.toLowerCase().includes('fosco')) {
-          nextAlum = 'Alumínio Fosco / Anodizado';
-        }
+        nextAlum = mapCatalogAluminumColor(mat.colorFinish || mat.name);
       }
 
       if (sel.categoryType === 'GLASS' && mat) {
-        if (mat.colorFinish) {
-          nextGlass = mat.colorFinish;
-        } else if (mat.name.toLowerCase().includes('fumê') || mat.name.toLowerCase().includes('fume')) {
-          nextGlass = 'Fumê / Cinza';
-        } else if (mat.name.toLowerCase().includes('incolor')) {
-          nextGlass = 'Incolor';
-        } else if (mat.name.toLowerCase().includes('verde')) {
-          nextGlass = 'Verde';
-        } else if (mat.name.toLowerCase().includes('canelado')) {
-          nextGlass = 'Canelado / Texturizado';
-        } else if (mat.name.toLowerCase().includes('reflecta')) {
-          nextGlass = 'Reflecta Bronze';
-        }
+        nextGlass = mapCatalogGlassColor(mat.colorFinish || mat.name);
       }
 
       if (sel.categoryType === 'HARDWARE' && mat) {
         const n = mat.name.toLowerCase();
-        if (n.includes('tubular') || n.includes('inox') || n.includes('barra')) {
-          nextHandleType = 'BAR_TUBULAR';
-        } else if (n.includes('concha') || n.includes('fecho')) {
+        if (n.includes('concha') || n.includes('fecho')) {
           nextHandleType = 'SHELL_LOCK';
         } else if (n.includes('maçaneta') || n.includes('macaneta') || n.includes('alavanca')) {
           nextHandleType = 'LEVER_HANDLE';
+        } else {
+          nextHandleType = 'BAR_TUBULAR';
         }
       }
 
@@ -542,6 +606,7 @@ export function useWindowBuilderState({
                 materialName: mat?.name ?? '',
                 unitMeasure: mat?.unit ?? s.unitMeasure,
                 unitPrice,
+                familyCode: mat?.familyCode,
                 totalPrice: (s.quantity ?? 1) * unitPrice,
               }
             : s,
@@ -559,17 +624,39 @@ export function useWindowBuilderState({
         const isIntegerUnit = s.unitMeasure === 'UN' || s.unitMeasure === 'PAR' || s.unitMeasure === 'PAIR' || s.unitMeasure === 'un';
         let qty: number | undefined = undefined;
 
-        if (valStr !== undefined) {
+        if (valStr !== undefined && valStr !== '') {
           const num = parseFloat(String(valStr).replace(',', '.'));
           if (!isNaN(num) && num >= 0) {
             qty = isIntegerUnit ? Math.floor(num) : num;
           }
         }
 
+        const isBelow =
+          qty !== undefined &&
+          s.physicalMinimumQuantity !== undefined &&
+          s.physicalMinimumQuantity > 0 &&
+          qty < s.physicalMinimumQuantity;
+
+        let warning = s.warningMessage;
+        if (isBelow) {
+          if (s.categoryType === 'GLASS') {
+            warning = `A quantidade (${qty} m²) é inferior à área física da esquadria (${s.physicalMinimumQuantity} m²). Risco de corte insuficiente!`;
+          } else if (s.categoryType === 'PROFILE') {
+            warning = `A metragem (${qty} m) é inferior ao perímetro mínimo (${s.physicalMinimumQuantity} m). Risco de barra insuficiente!`;
+          } else {
+            warning = `Quantidade informada (${qty}) é inferior ao mínimo físico (${s.physicalMinimumQuantity}).`;
+          }
+        } else {
+          warning = undefined;
+        }
+
         return {
           ...s,
           quantity: qty,
           totalPrice: qty !== undefined ? parseFloat((qty * s.unitPrice).toFixed(2)) : undefined,
+          isManualOverride: true,
+          isBelowPhysicalMinimum: isBelow,
+          warningMessage: warning,
         };
       }),
     }));

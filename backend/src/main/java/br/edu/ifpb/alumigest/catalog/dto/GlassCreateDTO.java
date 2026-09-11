@@ -31,5 +31,20 @@ public record GlassCreateDTO(
 
         BigDecimal maxWidthMm,
 
-        BigDecimal maxHeightMm
-) {}
+        BigDecimal maxHeightMm,
+
+        String familyCode
+) {
+    public GlassCreateDTO(
+            String name,
+            String colorFinish,
+            String ncmCode,
+            BigDecimal thicknessMm,
+            BigDecimal costPrice,
+            BigDecimal salePrice,
+            BigDecimal maxWidthMm,
+            BigDecimal maxHeightMm
+    ) {
+        this(name, colorFinish, ncmCode, thicknessMm, costPrice, salePrice, maxWidthMm, maxHeightMm, null);
+    }
+}

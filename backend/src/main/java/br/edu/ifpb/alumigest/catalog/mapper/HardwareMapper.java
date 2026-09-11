@@ -34,6 +34,7 @@ public class HardwareMapper {
         material.setCostPrice(request.costPrice());
         material.setSalePrice(request.salePrice());
         material.setNcmCode(request.ncmCode());
+        material.setFamilyCode(request.familyCode());
         material.setAttributesJson(buildAttributesJson(request.calculationType()));
         return material;
     }
@@ -56,7 +57,8 @@ public class HardwareMapper {
                 material.getSalePrice(),
                 material.isActive(),
                 material.getCreatedAt(),
-                material.getUpdatedAt()
+                material.getUpdatedAt(),
+                material.getFamilyCode()
         );
     }
 

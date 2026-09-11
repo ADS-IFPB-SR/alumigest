@@ -39,4 +39,12 @@ public class MaterialController {
                 .toList();
         return ResponseEntity.ok(ApiResponse.ok("Materiais listados com sucesso", materials));
     }
+
+    @GetMapping("/families")
+    @Operation(summary = "Listar famílias de materiais existentes", description = "Retorna lista única de códigos de família já cadastrados, opcionalmente filtrados pelo grupo de material (ex: VIDRO, ALUMINIO).")
+    public ResponseEntity<ApiResponse<List<String>>> getDistinctFamilies(
+            @org.springframework.web.bind.annotation.RequestParam(required = false) String groupCode) {
+        List<String> families = repository.findDistinctFamilyCodesByGroupCode(groupCode);
+        return ResponseEntity.ok(ApiResponse.ok("Famílias listadas com sucesso", families));
+    }
 }

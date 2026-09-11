@@ -34,6 +34,11 @@ public class ProfileQuantityCalculator implements MaterialQuantityCalculator {
                 totalPerUnit = w.multiply(BigDecimal.valueOf(4)).add(h.multiply(BigDecimal.valueOf(6)));
                 break;
 
+            case SLIDING_3_LEAF:
+                // Trilhos (2W) + Batentes (2H) + Quadros das 3 folhas (6H + 2W)
+                totalPerUnit = w.multiply(BigDecimal.valueOf(4)).add(h.multiply(BigDecimal.valueOf(8)));
+                break;
+
             case SLIDING_4_LEAF:
                 // Trilhos (2W) + Batentes (2H) + Quadros das 4 folhas (8H + 4W)
                 totalPerUnit = w.multiply(BigDecimal.valueOf(4)).add(h.multiply(BigDecimal.valueOf(10)));

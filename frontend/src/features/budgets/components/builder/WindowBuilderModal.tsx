@@ -39,8 +39,6 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
     setIsMobileCadExpanded,
     svgTemplate,
     supportedDirections,
-    dynamicAluminumColors,
-    dynamicGlassFinishes,
     glasses,
     profiles,
     hardwares,
@@ -159,7 +157,7 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
             />
 
             {/* Metade Direita: Conteúdo por Etapa do Wizard */}
-            <div className="lg:col-span-6 flex flex-col gap-md">
+            <div className="lg:col-span-6 flex flex-col gap-md h-full">
               {currentStep === 1 && (
                 <Step1Dimensions
                   widthMm={state.widthMm}
@@ -176,18 +174,12 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
 
               {currentStep === 2 && (
                 <Step2Materials
-                  aluminumColor={state.aluminumColor}
-                  glassFinish={state.glassFinish}
-                  dynamicAluminumColors={dynamicAluminumColors}
-                  dynamicGlassFinishes={dynamicGlassFinishes}
                   materialSelections={state.materialSelections}
                   glasses={glasses}
                   profiles={profiles}
                   hardwares={hardwares}
                   films={films}
                   categoryIcons={CATEGORY_ICONS}
-                  onAluminumColorChange={(c) => setState((p) => ({ ...p, aluminumColor: c }))}
-                  onGlassFinishChange={(g) => setState((p) => ({ ...p, glassFinish: g }))}
                   onAddMaterial={handleAddMaterial}
                   onRemoveMaterial={handleRemoveMaterial}
                   onMaterialChange={handleMaterialChange}

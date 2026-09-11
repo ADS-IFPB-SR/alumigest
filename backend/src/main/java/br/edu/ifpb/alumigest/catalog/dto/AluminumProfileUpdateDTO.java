@@ -37,6 +37,20 @@ public record AluminumProfileUpdateDTO(
         @PositiveOrZero(message = "O preço de venda deve ser maior ou igual a zero")
         BigDecimal salePrice,
         
-        Boolean active
+        Boolean active,
+        String familyCode
 ) {
+    public AluminumProfileUpdateDTO(
+            String commercialReference,
+            String name,
+            String colorFinish,
+            String commercialLine,
+            BigDecimal weight,
+            BigDecimal standardLengthM,
+            BigDecimal costPrice,
+            BigDecimal salePrice,
+            Boolean active
+    ) {
+        this(commercialReference, name, colorFinish, commercialLine, weight, standardLengthM, costPrice, salePrice, active, null);
+    }
 }

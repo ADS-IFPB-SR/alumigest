@@ -140,3 +140,27 @@ export function mapCatalogAluminumColor(rawColor?: string | null): string {
 export function mapCatalogGlassColor(rawGlass?: string | null): string {
   return lookupColor(rawGlass, GLASS_COLORS, DEFAULT_GLASS_NAME);
 }
+
+// ─── 5. Dicionário de Cores para Amostras Visuais (Color Swatches) ───────────
+const SWATCH_PALETTE: Array<{ keywords: string[]; hex: string }> = [
+  { keywords: ['preto', 'black', '#212121'], hex: '#18181b' },
+  { keywords: ['branco', 'white', '#ffffff'], hex: '#f8fafc' },
+  { keywords: ['bronze', 'champ', '#8c6239'], hex: '#78350f' },
+  { keywords: ['ouro', 'gold', 'dourad', '#d4af37'], hex: '#d97706' },
+  { keywords: ['cromad', 'inox', 'polid', '#9e9e9e'], hex: '#94a3b8' },
+  { keywords: ['fumê', 'fume', 'cinza', '#595959'], hex: '#475569' },
+  { keywords: ['verde', 'green', '#059669'], hex: '#059669' },
+  { keywords: ['reflecta'], hex: '#d97706' },
+  { keywords: ['canelado', 'incolor', '#bae6fd'], hex: '#bae6fd' },
+];
+
+/**
+ * Retorna o código hexadecimal correspondente ao acabamento ou nome do insumo via consulta direta ao dicionário.
+ */
+export function getSwatchColor(colorName?: string | null): string {
+  if (!colorName) return '#94a3b8';
+  const lower = colorName.toLowerCase();
+  const entry = SWATCH_PALETTE.find((item) => item.keywords.some((kw) => lower.includes(kw)));
+  return entry?.hex ?? '#64748b';
+}
+

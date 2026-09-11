@@ -7,6 +7,8 @@ import type {
   BudgetDetail,
   CreateBudgetPayload,
   WindowTemplate,
+  BudgetItemCalculationRequest,
+  BudgetItemCalculationResponse,
 } from '../types';
 import type { PageResponse } from '../../catalog/types';
 
@@ -269,12 +271,12 @@ function filterAndPaginateMockBudgets(filters: BudgetFilters): BudgetPageRespons
 
   return {
     content,
-    page: {
-      size: filters.size,
-      number: filters.page,
-      totalElements,
-      totalPages,
-    },
+    page: filters.page,
+    size: filters.size,
+    totalElements,
+    totalPages,
+    isFirst: filters.page === 0,
+    isLast: filters.page >= totalPages - 1,
   };
 }
 
@@ -435,14 +437,19 @@ export const budgetsApi = {
           itemCount: Number(b.itemCount ?? 1),
         }));
 
+        const totalElements = Number(response.data.totalElements ?? mappedContent.length);
+        const totalPages = Number(response.data.totalPages ?? Math.max(1, Math.ceil(totalElements / filters.size)));
+        const pageNumber = Number(response.data.page ?? filters.page);
+        const pageSize = Number(response.data.size ?? filters.size);
+
         return {
           content: mappedContent,
-          page: response.data.page ?? {
-            size: filters.size,
-            number: filters.page,
-            totalElements: mappedContent.length,
-            totalPages: 1,
-          },
+          page: pageNumber,
+          size: pageSize,
+          totalElements,
+          totalPages,
+          isFirst: pageNumber === 0,
+          isLast: pageNumber >= totalPages - 1,
         };
       }
       return filterAndPaginateMockBudgets(filters);
@@ -495,6 +502,13 @@ export const budgetsApi = {
       { baseURL: '' },
     );
     return mapBackendToBudgetDetail(response.data);
+  },
+
+  previewItemCalculation: async (payload: BudgetItemCalculationRequest): Promise<BudgetItemCalculationResponse> => {
+    const response = await api.post<BudgetItemCalculationResponse>('/api/orcamentos/items/preview-calculation', payload, {
+      baseURL: '',
+    });
+    return response.data;
   },
 };
 

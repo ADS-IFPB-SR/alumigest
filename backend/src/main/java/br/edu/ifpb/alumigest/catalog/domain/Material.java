@@ -73,6 +73,10 @@ public class Material {
     @Column(name = "color_finish", length = 50)
     private String colorFinish;
 
+    @Size(max = 50, message = "Código de família deve ter no máximo 50 caracteres")
+    @Column(name = "family_code", length = 50)
+    private String familyCode;
+
     @PositiveOrZero(message = "Comprimento padrão deve ser maior ou igual a zero")
     @Column(name = "standard_length_m", precision = 6, scale = 2)
     private BigDecimal standardLengthM;
@@ -251,6 +255,14 @@ public class Material {
 
     public void setCreatedAt(OffsetDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public String getFamilyCode() {
+        return familyCode;
+    }
+
+    public void setFamilyCode(String familyCode) {
+        this.familyCode = familyCode;
     }
 
     public OffsetDateTime getUpdatedAt() {

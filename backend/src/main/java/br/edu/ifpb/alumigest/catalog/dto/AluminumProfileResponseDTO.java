@@ -20,6 +20,25 @@ public record AluminumProfileResponseDTO(
         BigDecimal weight,
         boolean active,
         OffsetDateTime createdAt,
-        OffsetDateTime updatedAt
+        OffsetDateTime updatedAt,
+        String familyCode
 ) {
+    public AluminumProfileResponseDTO(
+            UUID id,
+            String name,
+            String commercialReference,
+            String commercialLine,
+            String ncmCode,
+            String colorFinish,
+            BigDecimal standardLengthM,
+            UnitMeasure unitMeasure,
+            BigDecimal costPrice,
+            BigDecimal salePrice,
+            BigDecimal weight,
+            boolean active,
+            OffsetDateTime createdAt,
+            OffsetDateTime updatedAt
+    ) {
+        this(id, name, commercialReference, commercialLine, ncmCode, colorFinish, standardLengthM, unitMeasure, costPrice, salePrice, weight, active, createdAt, updatedAt, null);
+    }
 }

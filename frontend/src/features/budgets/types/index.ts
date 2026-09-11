@@ -1,4 +1,4 @@
-﻿export type DoorTemplateType =
+export type DoorTemplateType =
   | 'SLIDING_DOOR_1F'
   | 'SLIDING_DOOR_2F'
   | 'SLIDING_DOOR_3F'
@@ -91,6 +91,35 @@ export interface WindowTemplate {
 // ============================================================
 // ESTADO INTERNO DO BUILDER
 // ============================================================
+export interface BudgetItemCalculationOptionRequest {
+  materialId?: string;
+  categoryType: string;
+  manualQuantity?: number;
+}
+
+export interface BudgetItemCalculationRequest {
+  templateType?: string;
+  widthMm: number;
+  heightMm: number;
+  quantity: number;
+  options: BudgetItemCalculationOptionRequest[];
+}
+
+export interface BudgetItemCalculationOptionResult {
+  materialId: string;
+  categoryType: string;
+  suggestedQuantity: number;
+  physicalMinimumQuantity: number;
+  isBelowPhysicalMinimum: boolean;
+  warningMessage?: string;
+}
+
+export interface BudgetItemCalculationResponse {
+  physicalAreaM2: number;
+  physicalPerimeterM: number;
+  options: BudgetItemCalculationOptionResult[];
+}
+
 export interface MaterialSelection {
   requirementId: string;
   categoryType: CategoryType;
@@ -101,12 +130,17 @@ export interface MaterialSelection {
   unitMeasure: string;
   unitPrice: number;
   /**
-   * Quantidade tÃ©cnica de insumo calculada e retornada pelo backend.
-   * O frontend NÃƒO calcula este valor atravÃ©s de fÃ³rmulas geomÃ©tricas locais.
+   * Quantidade de insumo calculada ou informada pelo usuário.
    */
   quantity?: number;
-  /** Subtotal estimado se quantity for fornecida pelo backend */
+  /** Subtotal estimado */
   totalPrice?: number;
+  suggestedQuantity?: number;
+  physicalMinimumQuantity?: number;
+  isBelowPhysicalMinimum?: boolean;
+  warningMessage?: string;
+  isManualOverride?: boolean;
+  familyCode?: string;
 }
 
 export interface BuilderState {
@@ -234,14 +268,12 @@ export interface BudgetSummary {
 
 export interface BudgetPageResponse {
   content: BudgetSummary[];
-  totalElements?: number;
-  totalPages?: number;
-  page?: {
-    size?: number;
-    number?: number;
-    totalElements?: number;
-    totalPages?: number;
-  };
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  isFirst?: boolean;
+  isLast?: boolean;
 }
 
 export interface BudgetFilters {
