@@ -273,4 +273,107 @@ class ProductServiceTest {
         assertEquals("Frente de Gaveta", result.name());
         assertEquals(DoorTemplateType.FRONT_DRAWER, result.templateType());
     }
+
+    @Test
+    @DisplayName("Deve lançar ResourceNotFoundException ao buscar produto inexistente por ID")
+    void findById_NotFound_ShouldThrowResourceNotFoundException() {
+        UUID id = UUID.randomUUID();
+
+        when(productRepository.findById(id)).thenReturn(Optional.empty());
+
+        ResourceNotFoundException exception = assertThrows(
+                ResourceNotFoundException.class,
+                () -> productService.findById(id)
+        );
+
+        assertEquals("Produto não encontrado com o ID informado.", exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("Deve lançar BusinessException ao tentar cadastrar produto com categoryRequirements nulo")
+    void createProduct_WithNullCategories_ShouldThrowBusinessException() {
+        ProductRequestDTO request = new ProductRequestDTO(
+                "Porta Sem Categorias",
+                DoorTemplateType.SWING_DOOR_1F,
+                null,
+                null
+        );
+
+        BusinessException exception = assertThrows(
+                BusinessException.class,
+                () -> productService.createProduct(request)
+        );
+
+        assertEquals("O produto exige ao menos uma categoria de insumo (categoryRequirements).", exception.getMessage());
+        verify(productRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Deve lançar BusinessException ao atualizar produto com nome que já existe em outro produto")
+    void updateProduct_WithDuplicateName_ShouldThrowBusinessException() {
+        UUID id = UUID.randomUUID();
+        ProductRequestDTO request = new ProductRequestDTO(
+                "Nome Conflitante",
+                DoorTemplateType.SLIDING_DOOR_2F,
+                null,
+                List.of(MaterialCategoryType.GLASS)
+        );
+
+        when(productRepository.existsByNameIgnoreCaseAndIdNot("Nome Conflitante", id)).thenReturn(true);
+
+        BusinessException exception = assertThrows(
+                BusinessException.class,
+                () -> productService.updateProduct(id, request)
+        );
+
+        assertEquals("Já existe outro produto com o nome informado.", exception.getMessage());
+        verify(productRepository, never()).findById(any());
+        verify(productRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Deve lançar ResourceNotFoundException ao inativar produto inexistente")
+    void inactivateProduct_NotFound_ShouldThrowResourceNotFoundException() {
+        UUID id = UUID.randomUUID();
+
+        when(productRepository.findById(id)).thenReturn(Optional.empty());
+
+        ResourceNotFoundException exception = assertThrows(
+                ResourceNotFoundException.class,
+                () -> productService.inactivateProduct(id)
+        );
+
+        assertEquals("Produto não encontrado com o ID informado.", exception.getMessage());
+        verify(productRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Deve buscar todos os produtos quando activeOnly for false")
+    void findProducts_WhenActiveOnlyFalse_ShouldReturnAllProducts() {
+        Pageable pageable = PageRequest.of(0, 10);
+        Product p1 = new Product();
+        p1.setId(UUID.randomUUID());
+        p1.setName("Porta Ativa");
+        p1.setActive(true);
+
+        Product p2 = new Product();
+        p2.setId(UUID.randomUUID());
+        p2.setName("Porta Inativa");
+        p2.setActive(false);
+
+        Page<Product> allPage = new PageImpl<>(List.of(p1, p2));
+        ProductResponseDTO r1 = new ProductResponseDTO(p1.getId(), "Porta Ativa", "Portas", null, null, List.of(), true);
+        ProductResponseDTO r2 = new ProductResponseDTO(p2.getId(), "Porta Inativa", "Portas", null, null, List.of(), false);
+
+        when(productRepository.findAll(pageable)).thenReturn(allPage);
+        when(productMapper.toResponse(p1)).thenReturn(r1);
+        when(productMapper.toResponse(p2)).thenReturn(r2);
+
+        Page<ProductResponseDTO> result = productService.findProducts(pageable, false);
+
+        assertNotNull(result);
+        assertEquals(2, result.getContent().size());
+        verify(productRepository).findAll(pageable);
+        verify(productRepository, never()).findByIsActiveTrue(any());
+    }
 }
