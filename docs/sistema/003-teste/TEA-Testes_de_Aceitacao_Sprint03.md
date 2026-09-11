@@ -81,6 +81,18 @@ Validar os critérios de aceitação do **Cadastro de Clientes** (PF/PJ), do **M
 | 2 | Listagem paginada de orçamentos | Tela de Orçamentos | Filtra por status `DRAFT` ou busca textual | Lista atualiza dinamicamente com paginação | PR #111 ✅ Aprovado e Mergeado |
 | 3 | Testes E2E do Catálogo PWA | 23 specs Cypress automatizadas | Executa `cypress run` | Todos os fluxos de abas, modais e filtros aprovados | PRs #115 e #118 ✅ Aprovado |
 
+### TEA-S03-07: Frontend — Interface de Produtos, Templates Paramétricos e SVG (US-04 / QA-01.2 / Issue #100)
+
+| # | Cenário | Dado | Quando | Então | Evidência / Status |
+|---|---|---|---|---|---|
+| 1 | Miniaturas SVG na Listagem | Tela `/produtos` com esquadrias cadastradas | Renderiza listagem de produtos | Cards exibem miniaturas SVG precisas e badges com categorias de insumos | `ProductListPage.test.tsx` ✅ Aprovado |
+| 2 | Builder com 10 Templates Canônicos | Usuário na tela `/produtos/novo` | Alterna entre os 10 modelos canônicos da `ESQ-v3.0` | Preview vetorial SVG atualiza em tempo real com cotas, furações e puxadores | `WindowSvgPreview.test.tsx` ✅ Aprovado |
+| 3 | Requisitos de Insumos Desacoplados | Seleção de categorias obrigatórias/opcionais | Aciona toggles no `CategoryRequirementsSelector` | Array de categorias atualiza dinamicamente de forma 100% controlada | `CategoryRequirementsSelector.test.tsx` ✅ Aprovado |
+| 4 | Validações Defensivas de Formulário | Submeter sem nome ou com mais de 120 chars | Clica em "Salvar Produto" | Sistema bloqueia envio, exibe erro semântico e trava digitação em 120 chars | `ProductBuilderPage.test.tsx` ✅ Aprovado |
+| 5 | Edição e Persistência de Template | Produto paramétrico existente | Modifica dimensões e template em `/produtos/:id/editar` | Requisição `PUT` atualiza o catálogo e reflete na listagem | Testes de Integração REST ✅ Aprovado |
+| 6 | Responsividade Cross-Device | Telas de produtos e Studio CAD | Visualiza em 1920×1080, 768×1024 e 375×812 | Layout adaptativo fluido em 4, 2 e 1 coluna com `viewBox` responsivo | RTE-QA-01.2 ✅ Aprovado |
+| 7 | Modal de Esquadrias no Orçamento | Wizard `/orcamentos/novo` | Clica em "Adicionar Esquadria" | `ProductPickerModal` lista produtos com filtro por macro-categoria e insere item | `ProductPickerModal.test.tsx` ✅ Aprovado |
+
 ---
 
 ## 3. 📊 Métricas Consolidadas de QA e SonarQube
@@ -88,12 +100,13 @@ Validar os critérios de aceitação do **Cadastro de Clientes** (PF/PJ), do **M
 | Métrica de Qualidade | Alvo do Projeto | Resultado Obtido na Sprint 3 | Status |
 | :--- | :--- | :--- | :--- |
 | **Testes Automatizados Backend** | > 100 testes | **141 testes (22 classes)** | 🟢 100% Passando |
+| **Testes de Componentes Frontend (Vitest)** | > 30 testes | **40 testes (8 suítes)** | 🟢 100% Passando |
 | **Cobertura SonarQube (`BudgetService`)** | ≥ 80% | **93,4% de cobertura** | 🟢 Aprovado |
 | **Vulnerabilidades SAST (SonarQube)** | 0 | **0 vulnerabilidades** | 🟢 Aprovado |
 | **Bugs Bloqueantes (SonarQube)** | 0 | **0 bugs** | 🟢 Aprovado |
 | **Specs Cypress E2E (Frontend)** | > 20 specs | **23 specs (100% sucesso)** | 🟢 Aprovado |
-| **Cenários TEA Homologados** | 20 cenários | **20 Aprovados (100%)** | 🟢 100% Concluído |
+| **Cenários TEA Homologados** | 20 cenários | **27 Aprovados (100%)** | 🟢 100% Concluído |
 
 ---
 
-*Relatório TEA homologado com as evidências do SonarQube e CI/CD — Versão 2.0 — 31/08/2026*
+*Relatório TEA homologado com as evidências do SonarQube, Vitest e CI/CD — Versão 2.1 — 11/09/2026*
