@@ -42,19 +42,22 @@ export interface HandleConfig {
   pieceLengthCm?: number;
   handlePosition?: HandlePosition;
   position?: HandlePosition;
+  handleLengthMm?: number;
 }
 
 export type DrillingPosition = 'SUPERIOR' | 'LATERAL' | 'FRONTAL';
 
 export interface DrillingConfig {
   holeCount: number;
-  divisionType: DivisionType;
+  divisionType?: DivisionType;
   drillingPosition?: DrillingPosition;
   customDistancesMm?: number[];
+  customPositionsMm?: number[];
+  drillingMode?: string;
 }
 
 // ============================================================
-// REQUISITO DE CATEGORIA â€” VÃ­nculo do Template
+// REQUISITO DE CATEGORIA — Vínculo do Template
 // ============================================================
 export interface CategoryRequirement {
   id: string;
@@ -64,7 +67,7 @@ export interface CategoryRequirement {
 }
 
 // ============================================================
-// CONFIGURAÃ‡ÃƒO DE TEMPLATE (TemplateConfig)
+// CONFIGURAÇÃO DE TEMPLATE (TemplateConfig)
 // ============================================================
 export interface TemplateConfig {
   templateType: string;
@@ -74,6 +77,28 @@ export interface TemplateConfig {
   handleType?: HandleType;
   handleConfig?: HandleConfig;
   drillingConfig?: DrillingConfig;
+  isSlatted?: boolean;
+  hasFixedPanel?: boolean;
+}
+
+import type {
+  TemplateOptionSchema,
+  DrillingConfig as CatalogDrillingConfig,
+  SlidingMode,
+} from '../../catalog/types/templates';
+
+export interface WindowTemplateConfig {
+  templateType?: string;
+  profileMm?: number;
+  aluminumColor?: string;
+  glassColor?: string;
+  glassFinish?: string;
+  openingDirection?: OpeningDirection;
+  slidingMode?: SlidingMode;
+  handleType?: HandleType;
+  handleConfig?: HandleConfig;
+  drillingConfig?: DrillingConfig | CatalogDrillingConfig;
+  optionSchema?: TemplateOptionSchema;
   isSlatted?: boolean;
   hasFixedPanel?: boolean;
 }
@@ -90,8 +115,8 @@ export interface WindowTemplate {
   isActive: boolean;
   templateType?: string;
   catalogTemplateType?: string | null;
-  templateConfig?: any;
-  categoryRequirements?: any[];
+  templateConfig?: WindowTemplateConfig;
+  categoryRequirements?: (CategoryType | { categoryType: CategoryType; label?: string; isOptional?: boolean })[];
   items?: { id: string; materialId: string; materialName: string; quantity: number }[];
 }
 

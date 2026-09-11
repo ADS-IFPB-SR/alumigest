@@ -1,4 +1,3 @@
-import { useEffect, useRef } from 'react';
 import type { DoorTemplateType, MaterialCategoryType } from '../../types/templates';
 import {
   MATERIAL_CATEGORY_LABELS,
@@ -19,17 +18,6 @@ export function CategoryRequirementsSelector({
   selectedCategories,
   setSelectedCategories,
 }: CategoryRequirementsSelectorProps) {
-  const prevTemplateRef = useRef(templateType);
-
-  // Auto-selecionar categorias sugeridas ao trocar o template
-  useEffect(() => {
-    if (templateType && templateType !== prevTemplateRef.current) {
-      setSelectedCategories(TEMPLATE_DEFAULT_CATEGORIES[templateType as DoorTemplateType] || []);
-    }
-    prevTemplateRef.current = templateType;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [templateType]);
-
   const toggleCategory = (cat: MaterialCategoryType) => {
     if (selectedCategories.includes(cat)) {
       setSelectedCategories(selectedCategories.filter(c => c !== cat));

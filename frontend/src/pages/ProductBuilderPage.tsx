@@ -97,6 +97,10 @@ export function ProductBuilderPage() {
       toast.error('O nome do produto é obrigatório.');
       return;
     }
+    if (name.trim().length > 120) {
+      toast.error('O nome do produto não pode exceder 120 caracteres.');
+      return;
+    }
     if (!templateType) {
       toast.error('Selecione um modelo de esquadria para o produto.');
       return;

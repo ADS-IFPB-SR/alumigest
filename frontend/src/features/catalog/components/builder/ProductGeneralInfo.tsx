@@ -61,14 +61,18 @@ export function ProductGeneralInfo({
           <input
             id="product-name"
             type="text"
-            className="w-full pl-9 pr-4 py-2.5 bg-surface-container-lowest border border-outline/70 rounded-lg text-sm text-on-surface font-medium focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all placeholder:text-on-surface-variant/40 hover:border-outline"
+            maxLength={120}
+            className="w-full pl-9 pr-14 py-2.5 bg-surface-container-lowest border border-outline/70 rounded-lg text-sm text-on-surface font-medium focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all placeholder:text-on-surface-variant/40 hover:border-outline"
             placeholder="Ex: Porta de Correr 2 Folhas Prime, Janela Basculante Premium..."
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
+          <span className="absolute right-3 text-[11px] font-data-mono text-on-surface-variant/60 pointer-events-none">
+            {name.length}/120
+          </span>
         </div>
         <p className="text-[11px] text-on-surface-variant/70 mt-1.5">
-          Este nome será exibido nos orçamentos, pedidos de venda e relatórios de produção.
+          Este nome será exibido nos orçamentos, pedidos de venda e relatórios de produção. Máximo de 120 caracteres.
         </p>
       </div>
     </section>

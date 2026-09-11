@@ -93,7 +93,7 @@ describe('CategoryRequirementsSelector (Seletor de Insumos Requeridos)', () => {
     expect(screen.getByText(/Configuração padrão sugerida para este modelo:/i)).toBeInTheDocument()
   })
 
-  it('deve disparar auto-seleção das categorias sugeridas ao trocar de templateType', () => {
+  it('deve atualizar as sugestões dinamicamente de forma controlada quando templateType for alterado', () => {
     const setSelected = vi.fn()
     const { rerender } = render(
       <CategoryRequirementsSelector
@@ -103,15 +103,18 @@ describe('CategoryRequirementsSelector (Seletor de Insumos Requeridos)', () => {
       />
     )
 
-    // Troca para FIXED_PANEL (sugere GLASS e PROFILE)
+    expect(screen.queryByText(/Configuração padrão sugerida para este modelo:/i)).not.toBeInTheDocument()
+
+    // Troca para FIXED_PANEL (sugere Vidro e Perfil)
     rerender(
       <CategoryRequirementsSelector
         templateType="FIXED_PANEL"
-        selectedCategories={[]}
+        selectedCategories={['GLASS', 'PROFILE']}
         setSelectedCategories={setSelected}
       />
     )
 
-    expect(setSelected).toHaveBeenCalledWith(['GLASS', 'PROFILE'])
+    expect(screen.getByText(/Configuração padrão sugerida para este modelo:/i)).toBeInTheDocument()
+    expect(screen.getByText(/Vidro \+ Perfil/i)).toBeInTheDocument()
   })
 })

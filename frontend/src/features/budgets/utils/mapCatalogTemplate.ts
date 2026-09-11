@@ -71,11 +71,11 @@ const DEFAULT_FALLBACK_TEMPLATE: DoorTemplateType = 'SLIDING_DOOR_2F';
 export function getDefaultSvgTemplateForCatalogType(
   catalogType?: string | null,
   productName?: string,
-  templateConfig?: any
+  templateConfig?: { templateType?: string } | null
 ): DoorTemplateType {
   // Se o próprio templateType ou a config já for uma das 10 variantes homologadas, retorna diretamente
-  if (templateConfig?.templateType && ALL_SVG_TEMPLATES.includes(templateConfig.templateType)) {
-    return templateConfig.templateType;
+  if (templateConfig?.templateType && ALL_SVG_TEMPLATES.includes(templateConfig.templateType as DoorTemplateType)) {
+    return templateConfig.templateType as DoorTemplateType;
   }
   if (catalogType && ALL_SVG_TEMPLATES.includes(catalogType as DoorTemplateType)) {
     return catalogType as DoorTemplateType;
@@ -139,4 +139,60 @@ export function mapCatalogAluminumColor(rawColor?: string | null): string {
  */
 export function mapCatalogGlassColor(rawGlass?: string | null): string {
   return lookupColor(rawGlass, GLASS_COLORS, DEFAULT_GLASS_NAME);
+}
+
+// ─── 5. Categorização Macro e Filtros Unificados (DRY) ───────────────────────
+export type ModalCategoryFilter = 'TODOS' | 'PORTAS' | 'JANELAS' | 'BOX' | 'MOVEIS';
+
+export function resolveProductMacroCategory(product: {
+  name: string;
+  categoryName?: string | null;
+  templateType?: string | null;
+}): ModalCategoryFilter {
+  const catNorm = (product.categoryName || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+  const nameNorm = (product.name || '').toLowerCase();
+  const tType = product.templateType || '';
+
+  if (catNorm.includes('box') || nameNorm.includes('box')) {
+    return 'BOX';
+  }
+  if (
+    catNorm.includes('mov') ||
+    catNorm.includes('pain') ||
+    catNorm.includes('gaveta') ||
+    nameNorm.includes('painel') ||
+    nameNorm.includes('gaveta') ||
+    tType === 'FRONT_DRAWER' ||
+    tType === 'FIXED_PANEL'
+  ) {
+    return 'MOVEIS';
+  }
+  if (
+    catNorm.includes('janela') ||
+    nameNorm.includes('janela') ||
+    tType.startsWith('AWNING')
+  ) {
+    return 'JANELAS';
+  }
+  if (
+    catNorm.includes('porta') ||
+    nameNorm.includes('porta') ||
+    tType.startsWith('SWING') ||
+    tType.startsWith('SLIDING')
+  ) {
+    return 'PORTAS';
+  }
+
+  return 'TODOS';
+}
+
+export function matchProductCategoryFilter(
+  product: { name: string; categoryName?: string | null; templateType?: string | null },
+  filter: ModalCategoryFilter
+): boolean {
+  if (filter === 'TODOS') return true;
+  return resolveProductMacroCategory(product) === filter;
 }

@@ -371,12 +371,15 @@ export function useWindowBuilderState({
         };
 
         const cfgDrill = defaultTemplate.templateConfig?.drillingConfig;
-        const drillPositions = cfgDrill?.customPositionsMm && cfgDrill.customPositionsMm.length > 0
+        const drillPositions = (cfgDrill?.customPositionsMm && cfgDrill.customPositionsMm.length > 0)
           ? cfgDrill.customPositionsMm
+          : (cfgDrill && 'customDistancesMm' in cfgDrill && cfgDrill.customDistancesMm && cfgDrill.customDistancesMm.length > 0)
+          ? cfgDrill.customDistancesMm
           : [100, 500, 560, 100];
+        const isCustom = cfgDrill && ('drillingMode' in cfgDrill ? cfgDrill.drillingMode === 'CUSTOM' : cfgDrill.divisionType === 'CUSTOM_DISTANCE');
         const initialDrillingConfig: DrillingConfig = cfgDrill ? {
           holeCount: cfgDrill.holeCount ?? 2,
-          divisionType: cfgDrill.drillingMode === 'CUSTOM' ? 'CUSTOM_DISTANCE' : 'EQUAL',
+          divisionType: isCustom ? 'CUSTOM_DISTANCE' : 'EQUAL',
           customDistancesMm: drillPositions,
         } : {
           holeCount: 2,

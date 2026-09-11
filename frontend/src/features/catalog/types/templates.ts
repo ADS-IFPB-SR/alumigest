@@ -59,11 +59,13 @@ export interface TemplateOptionSchema {
   allowGlassColors: string[];
 }
 
+export type HexColor = `#${string}`;
+
 export interface TemplateConfig {
   templateType: DoorTemplateType;
   profileMm: number;
-  aluminumColor: string;
-  glassColor: string;
+  aluminumColor: HexColor | string;
+  glassColor: HexColor | string;
   openingDirection?: OpeningDirection;
   slidingMode?: SlidingMode;
   handleConfig?: HandleConfig;
