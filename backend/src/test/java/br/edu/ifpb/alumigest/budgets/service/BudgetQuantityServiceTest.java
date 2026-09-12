@@ -100,4 +100,31 @@ class BudgetQuantityServiceTest {
 
         assertEquals(manualQty, result);
     }
+
+    @Test
+    @DisplayName("Deve calcular 11.80m de perfil para porta de giro 2 folhas (1600x2150)")
+    void previewCalculation_ShouldCalculateProfilesForSwingDoor2F_With11Point80M() {
+        UUID profileId = UUID.randomUUID();
+        BudgetItemCalculationRequestDTO request = new BudgetItemCalculationRequestDTO(
+                "SWING_DOOR_2F",
+                new BigDecimal("1600"), // 1.60m
+                new BigDecimal("2150"), // 2.15m
+                1,
+                List.of(
+                        new BudgetItemCalculationRequestDTO.BudgetItemOptionCalculationDTO(
+                                profileId, "PROFILE", null
+                        )
+                )
+        );
+
+        BudgetItemCalculationResponseDTO response = budgetQuantityService.previewCalculation(request);
+
+        assertNotNull(response);
+        assertFalse(response.options().isEmpty());
+        var profileResult = response.options().getFirst();
+        // 2W + 4H = 2 * 1.60 + 4 * 2.15 = 3.20 + 8.60 = 11.80m
+        assertEquals(new BigDecimal("11.80"), profileResult.suggestedQuantity());
+        assertEquals(new BigDecimal("11.80"), profileResult.physicalMinimumQuantity());
+        assertFalse(profileResult.isBelowPhysicalMinimum());
+    }
 }

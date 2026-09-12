@@ -19,8 +19,9 @@ export interface DrillingConfigSectionProps {
 }
 
 /**
- * Subcomponente de furação do vidro:
- * - Quantidade de furos (0 a 4).
+ * Subcomponente de furação técnica no alumínio:
+ * - Quantidade de furos livre (qualquer número informado pelo usuário ou vazio/0 para sem furação).
+ * - Sugestões rápidas de atalho (Sem furos, 2, 3, 4, 6).
  * - Modo de divisão equidistante (automático) vs personalizado (inputs individuais de cota).
  * - Validação visual de limites e cálculo de espaçamento médio em milímetros.
  */
@@ -35,12 +36,34 @@ export const DrillingConfigSection: React.FC<DrillingConfigSectionProps> = ({
 }) => {
   const currentHeight = typeof heightMm === 'number' && heightMm > 0 ? heightMm : defaultHeight;
 
+  // Estado local para digitação suave da quantidade de furos
+  const [countInput, setCountInput] = React.useState<string>(
+    drillingConfig.holeCount > 0 ? String(drillingConfig.holeCount) : ''
+  );
+
+  React.useEffect(() => {
+    setCountInput(drillingConfig.holeCount > 0 ? String(drillingConfig.holeCount) : '');
+  }, [drillingConfig.holeCount]);
+
+  const handleCountChange = (valueStr: string) => {
+    setCountInput(valueStr);
+    const trimmed = valueStr.trim();
+    if (trimmed === '') {
+      onHoleCountChange(0);
+      return;
+    }
+    const parsed = parseInt(trimmed, 10);
+    if (!isNaN(parsed) && parsed >= 0) {
+      onHoleCountChange(parsed);
+    }
+  };
+
   return (
     <div className="bg-surface-container-lowest border border-outline-variant rounded-lg p-md shadow-xs flex flex-col gap-sm">
       <div className="flex items-center justify-between pb-xs border-b border-outline-variant">
         <h3 className="text-sm font-label font-bold text-on-surface uppercase tracking-wider flex items-center gap-xs">
           <span className="material-symbols-outlined text-[18px] text-primary">adjust</span>
-          Furação do Vidro
+          Furação no Alumínio
         </h3>
         <span className="text-xs font-data-mono text-on-surface-variant bg-surface-container px-2 py-0.5 rounded border border-outline-variant/50">
           {drillingConfig.holeCount === 0
@@ -49,24 +72,72 @@ export const DrillingConfigSection: React.FC<DrillingConfigSectionProps> = ({
         </span>
       </div>
 
-      <div className="grid grid-cols-2 gap-sm">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-sm">
         <div>
-          <label htmlFor="hole-count-select" className="text-xs sm:text-sm font-label font-medium text-on-surface block mb-1">
+          <label htmlFor="hole-count-input" className="text-xs sm:text-sm font-label font-medium text-on-surface block mb-1">
             Qtd de Furos
           </label>
-          <select
-            id="hole-count-select"
-            value={drillingConfig.holeCount}
-            onChange={(e) => onHoleCountChange(parseInt(e.target.value, 10))}
-            aria-label="Quantidade de Furos"
-            className="w-full text-sm py-2 px-2.5 bg-surface border border-outline-variant rounded font-body text-on-surface focus:border-primary focus:outline-none"
-          >
-            <option value={0}>Sem Furação</option>
-            <option value={1}>1 Furo</option>
-            <option value={2}>2 Furos (Padrão)</option>
-            <option value={3}>3 Furos</option>
-            <option value={4}>4 Furos</option>
-          </select>
+          <div className="relative">
+            <input
+              id="hole-count-input"
+              type="number"
+              min={0}
+              max={100}
+              value={countInput}
+              onChange={(e) => handleCountChange(e.target.value)}
+              placeholder="0 (Sem furação)"
+              aria-label="Quantidade de Furos no Alumínio"
+              className="w-full text-sm py-2 px-2.5 bg-surface border border-outline-variant rounded font-data-mono text-on-surface focus:border-primary focus:outline-none transition-colors"
+            />
+            {drillingConfig.holeCount > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  setCountInput('');
+                  onHoleCountChange(0);
+                }}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-on-surface-variant hover:text-error transition-colors p-1"
+                title="Limpar (Sem furação)"
+              >
+                <span className="material-symbols-outlined text-[16px]">close</span>
+              </button>
+            )}
+          </div>
+          {/* Sugestões rápidas de quantidade */}
+          <div className="flex items-center gap-1 mt-1.5 flex-wrap">
+            <span className="text-[11px] text-on-surface-variant font-label mr-0.5">Atalhos:</span>
+            <button
+              type="button"
+              onClick={() => {
+                setCountInput('');
+                onHoleCountChange(0);
+              }}
+              className={`text-[11px] px-1.5 py-0.5 rounded border transition-colors ${
+                drillingConfig.holeCount === 0
+                  ? 'bg-primary text-on-primary border-primary font-medium'
+                  : 'bg-surface-container-low text-on-surface-variant border-outline-variant hover:bg-surface-container'
+              }`}
+            >
+              Sem furos
+            </button>
+            {[2, 3, 4, 6].map((num) => (
+              <button
+                key={`preset-${num}`}
+                type="button"
+                onClick={() => {
+                  setCountInput(String(num));
+                  onHoleCountChange(num);
+                }}
+                className={`text-[11px] px-1.5 py-0.5 rounded border transition-colors ${
+                  drillingConfig.holeCount === num
+                    ? 'bg-primary text-on-primary border-primary font-medium'
+                    : 'bg-surface-container-low text-on-surface-variant border-outline-variant hover:bg-surface-container'
+                }`}
+              >
+                {num}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div>
@@ -84,6 +155,13 @@ export const DrillingConfigSection: React.FC<DrillingConfigSectionProps> = ({
             <option value="EQUAL">Por igual (Automático)</option>
             <option value="CUSTOM_DISTANCE">Com medida (Distâncias)</option>
           </select>
+          <span className="text-[11px] text-on-surface-variant font-data-mono block mt-1.5">
+            {drillingConfig.holeCount === 0
+              ? 'Defina a quantidade para habilitar a distribuição.'
+              : drillingConfig.divisionType === 'EQUAL'
+              ? 'Espaçamento automático pela altura.'
+              : 'Informe a cota individual de cada furo.'}
+          </span>
         </div>
       </div>
 
@@ -98,13 +176,7 @@ export const DrillingConfigSection: React.FC<DrillingConfigSectionProps> = ({
             </span>
           </div>
           <div
-            className={`grid ${
-              drillingConfig.holeCount === 1
-                ? 'grid-cols-1'
-                : drillingConfig.holeCount === 3
-                ? 'grid-cols-3'
-                : 'grid-cols-2'
-            } gap-sm mt-xs`}
+            className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-sm mt-xs max-h-60 overflow-y-auto pr-1"
           >
             {Array.from({ length: drillingConfig.holeCount }, (_, i) => {
               const holeNum = i + 1;

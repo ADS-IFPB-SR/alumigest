@@ -45,7 +45,14 @@ public class BudgetQuantityService {
         item.setProduct(productEntity);
         item.setProductName(productEntity.getName());
 
-        TemplateType template = resolveTemplateType(item.getTemplateType());
+        String rawTemplate = item.getTemplateType();
+        if (rawTemplate == null || rawTemplate.isBlank()) {
+            if (productEntity.getTemplateType() != null) {
+                rawTemplate = productEntity.getTemplateType().name();
+                item.setTemplateType(rawTemplate);
+            }
+        }
+        TemplateType template = resolveTemplateType(rawTemplate);
 
         if (item.getOptions() != null) {
             for (BudgetItemOption option : item.getOptions()) {
@@ -92,7 +99,7 @@ public class BudgetQuantityService {
                     if (calcCategory == CategoryType.GLASS || calcCategory == CategoryType.FILM) {
                         physicalMin = totalPhysicalArea;
                     } else if (calcCategory == CategoryType.PROFILE) {
-                        physicalMin = totalPerimeter;
+                        physicalMin = (suggested != null && suggested.compareTo(BigDecimal.ZERO) > 0) ? suggested : totalPerimeter;
                     } else {
                         physicalMin = BigDecimal.valueOf(qty);
                     }
@@ -108,7 +115,7 @@ public class BudgetQuantityService {
                             warningMessage = String.format("A quantidade inserida (%.2f m²) é inferior à área física do vão (%.2f m²). Risco de corte insuficiente!",
                                     opt.manualQuantity(), physicalMin);
                         } else if (calcCategory == CategoryType.PROFILE) {
-                            warningMessage = String.format("A metragem de perfil inserida (%.2f m) é inferior ao perímetro mínimo do vão (%.2f m). Risco de barra insuficiente!",
+                            warningMessage = String.format("A metragem de perfil inserida (%.2f m) é inferior ao consumo físico necessário da esquadria (%.2f m). Risco de barra insuficiente!",
                                     opt.manualQuantity(), physicalMin);
                         } else {
                             warningMessage = String.format("A quantidade informada (%.2f) é inferior ao mínimo físico necessário (%.2f).",
