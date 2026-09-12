@@ -3,11 +3,11 @@ import { Modal } from '../../../../components/ui/Modal';
 import type { MaterialSummary } from '../../types';
 
 interface Props {
-  isOpen: boolean;
-  onClose: () => void;
-  onSelect: (material: MaterialSummary) => void;
-  materials: MaterialSummary[];
-  addedMaterialIds?: string[];
+  readonly isOpen: boolean;
+  readonly onClose: () => void;
+  readonly onSelect: (material: MaterialSummary) => void;
+  readonly materials: readonly MaterialSummary[];
+  readonly addedMaterialIds?: readonly string[];
 }
 
 const EMPTY_IDS: string[] = [];
@@ -20,8 +20,8 @@ export function MaterialPickerModal({ isOpen, onClose, onSelect, materials, adde
     const term = search.toLowerCase();
     return materials.filter(m => 
       m.name.toLowerCase().includes(term) ||
-      (m.skuCode && m.skuCode.toLowerCase().includes(term)) ||
-      (m.commercialReference && m.commercialReference.toLowerCase().includes(term))
+      m.skuCode?.toLowerCase().includes(term) ||
+      m.commercialReference?.toLowerCase().includes(term)
     );
   }, [materials, search]);
 

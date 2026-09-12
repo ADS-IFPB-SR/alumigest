@@ -25,22 +25,22 @@ function formatMaterialDisplayPrice(
 }
 
 export interface Step2MaterialsProps {
-  aluminumColor?: string;
-  glassFinish?: string;
-  dynamicAluminumColors: string[];
-  dynamicGlassFinishes: string[];
-  materialSelections: MaterialSelection[];
-  glasses: GlassDTO[];
-  profiles: ProfileDTO[];
-  hardwares: HardwareDTO[];
-  films: FilmDTO[];
-  categoryIcons: Record<CategoryType, string>;
-  onAluminumColorChange: (color: string) => void;
-  onGlassFinishChange: (finish: string) => void;
-  onAddMaterial: (catType: CategoryType) => void;
-  onRemoveMaterial: (reqId: string) => void;
-  onMaterialChange: (reqId: string, materialId: string) => void;
-  onMaterialQtyChange: (reqId: string, val: string) => void;
+  readonly aluminumColor?: string;
+  readonly glassFinish?: string;
+  readonly dynamicAluminumColors: string[];
+  readonly dynamicGlassFinishes: string[];
+  readonly materialSelections: MaterialSelection[];
+  readonly glasses: GlassDTO[];
+  readonly profiles: ProfileDTO[];
+  readonly hardwares: HardwareDTO[];
+  readonly films: FilmDTO[];
+  readonly categoryIcons: Record<CategoryType, string>;
+  readonly onAluminumColorChange: (color: string) => void;
+  readonly onGlassFinishChange: (finish: string) => void;
+  readonly onAddMaterial: (catType: CategoryType) => void;
+  readonly onRemoveMaterial: (reqId: string) => void;
+  readonly onMaterialChange: (reqId: string, materialId: string) => void;
+  readonly onMaterialQtyChange: (reqId: string, val: string) => void;
 }
 
 export const Step2Materials: React.FC<Step2MaterialsProps> = ({

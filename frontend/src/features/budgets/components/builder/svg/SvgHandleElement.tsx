@@ -2,12 +2,12 @@ import type { HandleConfig } from '../../../types';
 import { HANDLE_COLOR, HANDLE_STROKE, COTA_COLOR, COTA_STROKE } from './svgConstants';
 
 export interface HandleElementProps {
-  handleConfig: HandleConfig;
-  svgH: number;
-  frameW: number;
-  posX: number;
-  mirrored?: boolean;
-  heightMm?: number;
+  readonly handleConfig: HandleConfig;
+  readonly svgH: number;
+  readonly frameW: number;
+  readonly posX: number;
+  readonly mirrored?: boolean;
+  readonly heightMm?: number;
 }
 
 function computeHandleHeight(handleConfig: HandleConfig, innerH: number, heightMm: number): number {
@@ -36,12 +36,12 @@ function computeHandleY(vPos: string | undefined, frameW: number, svgH: number, 
 }
 
 interface SpecificHandleProps {
-  hx: number;
-  handleW: number;
-  handleY: number;
-  handleH: number;
-  mirrored: boolean;
-  isBothSides: boolean;
+  readonly hx: number;
+  readonly handleW: number;
+  readonly handleY: number;
+  readonly handleH: number;
+  readonly mirrored: boolean;
+  readonly isBothSides: boolean;
 }
 
 const ShellLockHandle: React.FC<SpecificHandleProps> = ({ hx, handleW, handleY, handleH, mirrored, isBothSides }) => {
@@ -160,12 +160,12 @@ export const HandleElement: React.FC<HandleElementProps> = ({
 };
 
 export interface HandlePieceDimensionProps {
-  svgH: number;
-  frameW: number;
-  posX: number;
-  handleConfig: HandleConfig;
-  heightMm: number;
-  mirrored?: boolean;
+  readonly svgH: number;
+  readonly frameW: number;
+  readonly posX: number;
+  readonly handleConfig: HandleConfig;
+  readonly heightMm: number;
+  readonly mirrored?: boolean;
 }
 
 /** Cota de puxador PIECE com medida em mm */

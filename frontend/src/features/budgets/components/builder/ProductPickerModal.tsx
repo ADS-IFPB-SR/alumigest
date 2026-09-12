@@ -11,9 +11,9 @@ import type { Product } from '../../../catalog/types';
 import type { DoorTemplateType } from '../../types';
 
 interface ProductPickerModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSelectProduct: (productId: string) => void;
+  readonly isOpen: boolean;
+  readonly onClose: () => void;
+  readonly onSelectProduct: (productId: string) => void;
 }
 
 interface ProductWithTemplate extends Product {

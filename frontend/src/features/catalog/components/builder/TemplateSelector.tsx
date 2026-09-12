@@ -8,10 +8,10 @@ import {
 } from '../../types/templates';
 
 interface TemplateSelectorProps {
-  templateType: DoorTemplateType | null;
-  setTemplateType: (val: DoorTemplateType) => void;
-  templateConfig?: Partial<TemplateConfig>;
-  setTemplateConfig?: (val: Partial<TemplateConfig>) => void;
+  readonly templateType: DoorTemplateType | null;
+  readonly setTemplateType: (val: DoorTemplateType) => void;
+  readonly templateConfig?: Partial<TemplateConfig>;
+  readonly setTemplateConfig?: (val: Partial<TemplateConfig>) => void;
 }
 
 // Lista única ordenada dos 10 templates oficiais

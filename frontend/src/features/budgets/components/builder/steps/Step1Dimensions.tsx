@@ -1,15 +1,15 @@
 import React from 'react';
 
 export interface Step1DimensionsProps {
-  widthMm: number | '';
-  heightMm: number | '';
-  quantity: number | '';
-  errors: Record<string, string>;
-  unitAreaM2: string;
-  totalQty: number;
-  onWidthChange: (val: number | '') => void;
-  onHeightChange: (val: number | '') => void;
-  onQuantityChange: (val: number | '') => void;
+  readonly widthMm: number | '';
+  readonly heightMm: number | '';
+  readonly quantity: number | '';
+  readonly errors: Record<string, string>;
+  readonly unitAreaM2: string;
+  readonly totalQty: number;
+  readonly onWidthChange: (val: number | '') => void;
+  readonly onHeightChange: (val: number | '') => void;
+  readonly onQuantityChange: (val: number | '') => void;
 }
 
 export const Step1Dimensions: React.FC<Step1DimensionsProps> = ({
@@ -48,7 +48,7 @@ export const Step1Dimensions: React.FC<Step1DimensionsProps> = ({
               min={100}
               max={9999}
               value={widthMm}
-              onChange={(e) => onWidthChange(parseInt(e.target.value, 10) || '')}
+              onChange={(e) => onWidthChange(Number.parseInt(e.target.value, 10) || '')}
               aria-label="Largura em milímetros"
               className={`w-full py-2.5 px-3 bg-surface border rounded-lg text-base font-data-mono text-on-surface focus:border-primary focus:outline-none transition-colors ${
                 errors.widthMm ? 'border-error' : 'border-outline-variant'
@@ -70,7 +70,7 @@ export const Step1Dimensions: React.FC<Step1DimensionsProps> = ({
               min={100}
               max={9999}
               value={heightMm}
-              onChange={(e) => onHeightChange(parseInt(e.target.value, 10) || '')}
+              onChange={(e) => onHeightChange(Number.parseInt(e.target.value, 10) || '')}
               aria-label="Altura em milímetros"
               className={`w-full py-2.5 px-3 bg-surface border rounded-lg text-base font-data-mono text-on-surface focus:border-primary focus:outline-none transition-colors ${
                 errors.heightMm ? 'border-error' : 'border-outline-variant'
@@ -94,7 +94,7 @@ export const Step1Dimensions: React.FC<Step1DimensionsProps> = ({
               value={quantity}
               onChange={(e) => {
                 const val = e.target.value;
-                onQuantityChange(val === '' ? '' : Math.max(1, parseInt(val, 10) || 1));
+                onQuantityChange(val === '' ? '' : Math.max(1, Number.parseInt(val, 10) || 1));
               }}
               aria-label="Quantidade de Esquadrias"
               className={`w-full py-2.5 px-3 bg-surface border rounded-lg text-base font-data-mono text-on-surface focus:border-primary focus:outline-none transition-colors ${

@@ -72,10 +72,10 @@ const columns = [
 ];
 
 interface Props {
-  searchQuery: string;
-  filterStatus: 'ALL' | 'ACTIVE' | 'INACTIVE';
-  onEdit: (item: FilmDTO) => void;
-  onViewDetails: (item: FilmDTO) => void;
+  readonly searchQuery: string;
+  readonly filterStatus: 'ALL' | 'ACTIVE' | 'INACTIVE';
+  readonly onEdit: (item: FilmDTO) => void;
+  readonly onViewDetails: (item: FilmDTO) => void;
 }
 
 export function FilmTab({

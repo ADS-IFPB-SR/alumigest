@@ -30,9 +30,9 @@ import {
 } from '../schemas/catalogSchemas';
 
 interface Props {
-  isOpen: boolean;
-  onClose: () => void;
-  initialData?: any;
+  readonly isOpen: boolean;
+  readonly onClose: () => void;
+  readonly initialData?: any;
 }
 
 export function GlassFormModal({

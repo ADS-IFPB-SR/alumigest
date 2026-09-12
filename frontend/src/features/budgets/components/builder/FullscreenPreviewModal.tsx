@@ -2,11 +2,11 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 
 interface FullscreenPreviewModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  title: string;
-  children: React.ReactNode;
-  legend?: React.ReactNode;
+  readonly isOpen: boolean;
+  readonly onClose: () => void;
+  readonly title: string;
+  readonly children: React.ReactNode;
+  readonly legend?: React.ReactNode;
 }
 
 export const FullscreenPreviewModal: React.FC<FullscreenPreviewModalProps> = ({ isOpen, onClose, title, children, legend }) => {

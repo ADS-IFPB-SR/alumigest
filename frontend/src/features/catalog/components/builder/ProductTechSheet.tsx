@@ -11,9 +11,9 @@ export interface FormItem {
 }
 
 interface ProductTechSheetProps {
-  items: FormItem[];
-  setItems: React.Dispatch<React.SetStateAction<FormItem[]>>;
-  materials: MaterialSummary[];
+  readonly items: readonly FormItem[];
+  readonly setItems: React.Dispatch<React.SetStateAction<FormItem[]>>;
+  readonly materials: readonly MaterialSummary[];
 }
 
 export function ProductTechSheet({ items, setItems, materials }: ProductTechSheetProps) {
@@ -58,7 +58,7 @@ export function ProductTechSheet({ items, setItems, materials }: ProductTechShee
       }
 
       const numValue = Number(sanitized.replace(',', '.'));
-      if (sanitized !== '' && (isNaN(numValue) || numValue < 0 || numValue > 99999)) {
+      if (sanitized !== '' && (Number.isNaN(numValue) || numValue < 0 || numValue > 99999)) {
         return;
       }
       if (sanitized.length > 8) return;

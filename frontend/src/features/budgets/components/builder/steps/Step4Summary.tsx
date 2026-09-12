@@ -3,11 +3,11 @@ import type { BuilderState } from '../../../types';
 import { formatBRL } from '../../../utils/calculations';
 
 export interface Step4SummaryProps {
-  state: BuilderState;
-  svgW: number;
-  svgH: number;
-  unitAreaM2: string;
-  totalQty: number;
+  readonly state: BuilderState;
+  readonly svgW: number;
+  readonly svgH: number;
+  readonly unitAreaM2: string;
+  readonly totalQty: number;
 }
 
 export const Step4Summary: React.FC<Step4SummaryProps> = ({

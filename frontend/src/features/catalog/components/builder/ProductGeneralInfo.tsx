@@ -2,9 +2,9 @@ import type { DoorTemplateType } from '../../types/templates';
 import { DOOR_TEMPLATE_GROUPS, DOOR_TEMPLATE_LABELS } from '../../types/templates';
 
 interface ProductGeneralInfoProps {
-  name: string;
-  setName: (val: string) => void;
-  templateType: DoorTemplateType | null;
+  readonly name: string;
+  readonly setName: (val: string) => void;
+  readonly templateType: DoorTemplateType | null;
 }
 
 export function ProductGeneralInfo({

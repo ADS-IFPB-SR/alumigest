@@ -2,9 +2,9 @@ import type { BudgetStatus } from '../types';
 import { BUDGET_STATUS_CONFIG } from '../types';
 
 interface StatusBadgeProps {
-  status: BudgetStatus;
-  showIcon?: boolean;
-  className?: string;
+  readonly status: BudgetStatus;
+  readonly showIcon?: boolean;
+  readonly className?: string;
 }
 
 const STATUS_STYLES: Record<BudgetStatus, string> = {

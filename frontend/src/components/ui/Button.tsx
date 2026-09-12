@@ -1,8 +1,8 @@
 import React from 'react';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
- variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'success';
- icon?: string;
+ readonly variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'success';
+ readonly icon?: string;
 }
 
 export function Button({ variant = 'primary', icon, children, className = '', type = 'button', ...props }: ButtonProps) {

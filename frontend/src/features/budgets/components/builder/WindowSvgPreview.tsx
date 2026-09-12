@@ -34,14 +34,14 @@ import {
 export type { SvgTheme };
 
 interface SvgRenderContext {
-  svgW: number;
-  svgH: number;
-  inverted: boolean;
-  handleConfig: HandleConfig;
-  drillingConfig: DrillingConfig;
-  widthMm: number;
-  heightMm: number;
-  theme: SvgTheme;
+  readonly svgW: number;
+  readonly svgH: number;
+  readonly inverted: boolean;
+  readonly handleConfig: HandleConfig;
+  readonly drillingConfig: DrillingConfig;
+  readonly widthMm: number;
+  readonly heightMm: number;
+  readonly theme: SvgTheme;
 }
 
 type SvgTemplateRenderer = (ctx: SvgRenderContext) => React.ReactNode;
@@ -70,18 +70,18 @@ const SVG_RENDERERS: Record<DoorTemplateType, SvgTemplateRenderer> = {
 };
 
 export interface WindowSvgPreviewProps {
-  templateType: string;
-  widthMm?: number;
-  heightMm?: number;
-  openingDirection?: OpeningDirection;
-  handleConfig?: HandleConfig;
-  drillingConfig?: DrillingConfig;
-  templateName?: string;
-  aluminumColor?: string;
-  glassFinish?: string;
-  baseWidth?: string | number;
-  maxHeight?: string | number;
-  minimal?: boolean;
+  readonly templateType: string;
+  readonly widthMm?: number;
+  readonly heightMm?: number;
+  readonly openingDirection?: OpeningDirection;
+  readonly handleConfig?: HandleConfig;
+  readonly drillingConfig?: DrillingConfig;
+  readonly templateName?: string;
+  readonly aluminumColor?: string;
+  readonly glassFinish?: string;
+  readonly baseWidth?: string | number;
+  readonly maxHeight?: string | number;
+  readonly minimal?: boolean;
 }
 
 const WindowSvgPreviewComponent: React.FC<WindowSvgPreviewProps> = ({

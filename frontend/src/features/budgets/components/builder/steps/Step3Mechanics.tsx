@@ -10,23 +10,23 @@ import type {
 } from '../../../types';
 
 export interface Step3MechanicsProps {
-  openingDirection: OpeningDirection;
-  supportedDirections: OpeningDirection[];
-  handleConfig: HandleConfig;
-  drillingConfig: DrillingConfig;
-  holeDistanceInputs: string[];
-  heightMm: number | '';
-  notes: string;
-  defaultHeight: number;
-  onOpeningDirectionChange: (dir: OpeningDirection) => void;
-  onHandleTypeChange: (type: HandleType) => void;
-  onHandleSideChange: (side: HandleSide) => void;
-  onHandleCoverageChange: (coverage: HandleCoverage) => void;
-  onHandlePieceLengthChange: (length: number) => void;
-  onHoleCountChange: (count: number) => void;
-  onDivisionTypeChange: (type: DivisionType) => void;
-  onSingleHoleDistanceChange: (index: number, val: string) => void;
-  onNotesChange: (notes: string) => void;
+  readonly openingDirection: OpeningDirection;
+  readonly supportedDirections: readonly OpeningDirection[];
+  readonly handleConfig: HandleConfig;
+  readonly drillingConfig: DrillingConfig;
+  readonly holeDistanceInputs: readonly string[];
+  readonly heightMm: number | '';
+  readonly notes: string;
+  readonly defaultHeight: number;
+  readonly onOpeningDirectionChange: (dir: OpeningDirection) => void;
+  readonly onHandleTypeChange: (type: HandleType) => void;
+  readonly onHandleSideChange: (side: HandleSide) => void;
+  readonly onHandleCoverageChange: (coverage: HandleCoverage) => void;
+  readonly onHandlePieceLengthChange: (length: number) => void;
+  readonly onHoleCountChange: (count: number) => void;
+  readonly onDivisionTypeChange: (type: DivisionType) => void;
+  readonly onSingleHoleDistanceChange: (index: number, val: string) => void;
+  readonly onNotesChange: (notes: string) => void;
 }
 
 function formatHoleCountLabel(holeCount: number): string {
@@ -180,7 +180,7 @@ export const Step3Mechanics: React.FC<Step3MechanicsProps> = ({
                     min={10}
                     max={300}
                     value={handleConfig.pieceLengthCm ?? 40}
-                    onChange={(e) => onHandlePieceLengthChange(parseInt(e.target.value, 10) || 40)}
+                    onChange={(e) => onHandlePieceLengthChange(Number.parseInt(e.target.value, 10) || 40)}
                     aria-label="Comprimento do Puxador em centímetros"
                     className="w-full text-sm py-2 px-2.5 bg-surface border border-outline-variant rounded font-data-mono text-on-surface focus:border-primary focus:outline-none transition-colors"
                   />
@@ -211,7 +211,7 @@ export const Step3Mechanics: React.FC<Step3MechanicsProps> = ({
             <select
               id="hole-count-select"
               value={drillingConfig.holeCount}
-              onChange={(e) => onHoleCountChange(parseInt(e.target.value, 10))}
+              onChange={(e) => onHoleCountChange(Number.parseInt(e.target.value, 10))}
               aria-label="Quantidade de Furos"
               className="w-full text-sm py-2 px-2.5 bg-surface border border-outline-variant rounded font-body text-on-surface focus:border-primary focus:outline-none"
             >

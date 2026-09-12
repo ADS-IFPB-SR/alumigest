@@ -1,8 +1,8 @@
 import { useNavigate } from 'react-router-dom';
 
 interface BudgetsEmptyStateProps {
-  type: 'no-data' | 'no-results' | 'error';
-  onRetry?: () => void;
+  readonly type: 'no-data' | 'no-results' | 'error';
+  readonly onRetry?: () => void;
 }
 
 export function BudgetsEmptyState({ type, onRetry }: BudgetsEmptyStateProps) {
