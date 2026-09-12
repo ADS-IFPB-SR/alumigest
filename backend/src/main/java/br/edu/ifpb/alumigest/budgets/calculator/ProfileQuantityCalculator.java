@@ -32,54 +32,27 @@ public class ProfileQuantityCalculator implements MaterialQuantityCalculator {
         BigDecimal w = BigDecimal.valueOf(widthMm).divide(BigDecimal.valueOf(1000), 4, RoundingMode.HALF_UP);
         BigDecimal h = BigDecimal.valueOf(heightMm).divide(BigDecimal.valueOf(1000), 4, RoundingMode.HALF_UP);
 
-        BigDecimal totalPerUnit;
+        BigDecimal totalPerUnit = switch (templateType) {
+            case SWING_1_LEAF, SLIDING_1_LEAF ->
+                // 1 Folha (2W + 2H)
+                w.multiply(BigDecimal.valueOf(2)).add(h.multiply(BigDecimal.valueOf(2)));
 
-        if (templateType == null) {
-            totalPerUnit = w.add(h).multiply(BigDecimal.valueOf(2));
-            return totalPerUnit.multiply(BigDecimal.valueOf(quantity)).setScale(2, RoundingMode.CEILING);
-        }
+            case SWING_2_LEAF, SLIDING_2_LEAF ->
+                // 2 Folhas (2W + 4H) -> Ex: 1600x2150 => 2*(1.6) + 4*(2.15) = 11.80m
+                w.multiply(BigDecimal.valueOf(2)).add(h.multiply(BigDecimal.valueOf(4)));
 
-        switch (templateType) {
-
-            case SWING_1_LEAF:
-                // 1 Folha de giro (2W + 2H)
-                totalPerUnit = w.multiply(BigDecimal.valueOf(2)).add(h.multiply(BigDecimal.valueOf(2)));
-                break;
-
-            case SWING_2_LEAF:
-                // 2 Folhas de giro (2W + 4H) -> Ex: 1600x2150 => 2*(1.6) + 4*(2.15) = 3.20 + 8.60 = 11.80m (~12m)
-                totalPerUnit = w.multiply(BigDecimal.valueOf(2)).add(h.multiply(BigDecimal.valueOf(4)));
-                break;
-
-            case SLIDING_1_LEAF:
-                // 1 Folha de correr (2W + 2H)
-                totalPerUnit = w.multiply(BigDecimal.valueOf(2)).add(h.multiply(BigDecimal.valueOf(2)));
-                break;
-
-            case SLIDING_2_LEAF:
-                // 2 Folhas de correr (2W + 4H) -> Ex: 1600x2150 => 2*(1.6) + 4*(2.15) = 11.80m
-                totalPerUnit = w.multiply(BigDecimal.valueOf(2)).add(h.multiply(BigDecimal.valueOf(4)));
-                break;
-
-            case SLIDING_3_LEAF:
+            case SLIDING_3_LEAF ->
                 // 3 Folhas de correr (2W + 6H)
-                totalPerUnit = w.multiply(BigDecimal.valueOf(2)).add(h.multiply(BigDecimal.valueOf(6)));
-                break;
+                w.multiply(BigDecimal.valueOf(2)).add(h.multiply(BigDecimal.valueOf(6)));
 
-            case SLIDING_4_LEAF:
+            case SLIDING_4_LEAF ->
                 // 4 Folhas de correr (2W + 8H)
-                totalPerUnit = w.multiply(BigDecimal.valueOf(2)).add(h.multiply(BigDecimal.valueOf(8)));
-                break;
+                w.multiply(BigDecimal.valueOf(2)).add(h.multiply(BigDecimal.valueOf(8)));
 
-            case MAX_AR_WINDOW_1_LEAF:
-            case MAX_AR_WINDOW_INVERSE_1_LEAF:
-            case DRAWER_FRONT:
-            case FIXED_PANEL:
-            default:
+            default ->
                 // Fallback de segurança para 1 quadro (2W + 2H)
-                totalPerUnit = w.add(h).multiply(BigDecimal.valueOf(2));
-                break;
-        }
+                w.add(h).multiply(BigDecimal.valueOf(2));
+        };
 
         // Multiplica o total de metros lineares de 1 unidade pela quantidade de janelas
         BigDecimal totalMeters = totalPerUnit.multiply(BigDecimal.valueOf(quantity));

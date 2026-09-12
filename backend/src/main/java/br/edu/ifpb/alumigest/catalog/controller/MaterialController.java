@@ -1,5 +1,6 @@
 package br.edu.ifpb.alumigest.catalog.controller;
 
+import br.edu.ifpb.alumigest.catalog.domain.Material;
 import br.edu.ifpb.alumigest.catalog.dto.MaterialSummaryDTO;
 import br.edu.ifpb.alumigest.catalog.repository.MaterialRepository;
 import br.edu.ifpb.alumigest.common.dto.ApiResponse;
@@ -8,6 +9,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -27,7 +29,7 @@ public class MaterialController {
     @Operation(summary = "Listar todos os materiais ativos para a Ficha Técnica", description = "Retorna uma lista unificada de todos os materiais ativos de todas as categorias para popular Combobox.")
     public ResponseEntity<ApiResponse<List<MaterialSummaryDTO>>> findAllActive() {
         List<MaterialSummaryDTO> materials = repository.findAll().stream()
-                .filter(m -> m.isActive())
+                .filter(Material::isActive)
                 .map(m -> new MaterialSummaryDTO(
                         m.getId(), 
                         m.getName(), 
@@ -44,7 +46,7 @@ public class MaterialController {
     @GetMapping("/families")
     @Operation(summary = "Listar famílias de materiais existentes", description = "Retorna lista única de códigos de família já cadastrados, opcionalmente filtrados pelo grupo de material (ex: VIDRO, ALUMINIO).")
     public ResponseEntity<ApiResponse<List<String>>> getDistinctFamilies(
-            @org.springframework.web.bind.annotation.RequestParam(required = false) String groupCode) {
+            @RequestParam(required = false) String groupCode) {
         List<String> families = repository.findDistinctFamilyCodesByGroupCode(groupCode);
         return ResponseEntity.ok(ApiResponse.ok("Famílias listadas com sucesso", families));
     }

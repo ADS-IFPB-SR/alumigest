@@ -12,16 +12,20 @@ import br.edu.ifpb.alumigest.budgets.mapper.BudgetMapper;
 import br.edu.ifpb.alumigest.budgets.repository.BudgetRepository;
 import br.edu.ifpb.alumigest.clients.domain.Client;
 import br.edu.ifpb.alumigest.clients.repository.ClientRepository;
+import br.edu.ifpb.alumigest.common.dto.PageResponse;
 import br.edu.ifpb.alumigest.common.exception.BudgetImmutableException;
+import br.edu.ifpb.alumigest.common.exception.BusinessException;
 import br.edu.ifpb.alumigest.common.exception.InvalidBudgetStatusTransitionException;
 import br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException;
-import br.edu.ifpb.alumigest.common.dto.PageResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.time.Year;
+import java.time.ZoneOffset;
 import java.util.UUID;
 
 @Service
@@ -174,12 +178,12 @@ public class BudgetService {
      * @param validUntil Data e hora de validade informada (OffsetDateTime)
      * @throws BusinessException caso a data seja anterior à data atual (hoje)
      */
-    private void validateValidUntil(java.time.OffsetDateTime validUntil) {
+    private void validateValidUntil(OffsetDateTime validUntil) {
         if (validUntil != null) {
-            java.time.LocalDate validDate = validUntil.toLocalDate();
-            java.time.LocalDate today = java.time.LocalDate.now();
+            LocalDate validDate = validUntil.atZoneSameInstant(ZoneOffset.UTC).toLocalDate();
+            LocalDate today = LocalDate.now(ZoneOffset.UTC);
             if (validDate.isBefore(today)) {
-                throw new br.edu.ifpb.alumigest.common.exception.BusinessException("A data de validade da proposta não pode ser anterior à data de hoje.");
+                throw new BusinessException("A data de validade da proposta não pode ser anterior à data de hoje.");
             }
         }
     }

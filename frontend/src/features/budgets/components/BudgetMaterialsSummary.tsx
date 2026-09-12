@@ -1,4 +1,4 @@
-﻿import React, { useMemo } from 'react';
+import React, { useMemo } from 'react';
 import type { BudgetItemOption, CategoryType } from '../types';
 import { formatBRL } from '../utils/calculations';
 
@@ -57,9 +57,9 @@ export const BudgetMaterialsSummary: React.FC<BudgetMaterialsSummaryProps> = ({
       for (const opt of opts) {
         if (!opt.materialId && !opt.materialName) continue;
         const key = opt.materialId || opt.materialName;
-        const optQty = (opt.quantity ?? 1) * itemMultiplier;
+        const optQty = opt.totalPrice !== undefined ? (opt.quantity ?? 1) : (opt.quantity ?? 1) * itemMultiplier;
         const optUnitPrice = opt.unitPrice ?? 0;
-        const optTotalCost = (opt.totalPrice !== undefined ? opt.totalPrice * itemMultiplier : optQty * optUnitPrice);
+        const optTotalCost = opt.totalPrice !== undefined ? opt.totalPrice : optQty * optUnitPrice;
 
         const existing = map.get(key);
         if (existing) {

@@ -906,14 +906,14 @@ export function useWindowBuilderState({
         { name: mat.name, categoryType: resolvedCategory },
         prev.handleConfig.handleType,
       );
-      const isProfile = nextHandleType === 'PROFILE_HANDLE';
-      const isProfileOrBar = isProfile || nextHandleType === 'BAR_TUBULAR';
+      const isProfileHandle = nextHandleType === 'PROFILE_HANDLE';
+      const isProfileOrBar = isProfileHandle || nextHandleType === 'BAR_TUBULAR';
       const nextHandleConfig: HandleConfig = {
         ...prev.handleConfig,
         handleType: nextHandleType,
         side: prev.handleConfig.side ?? 'ONE_SIDE',
-        coverage: isProfile ? prev.handleConfig.coverage ?? 'FULL' : undefined,
-        pieceLengthCm: isProfile ? prev.handleConfig.pieceLengthCm ?? 40 : undefined,
+        coverage: isProfileHandle ? prev.handleConfig.coverage ?? 'FULL' : undefined,
+        pieceLengthCm: isProfileHandle ? prev.handleConfig.pieceLengthCm ?? 40 : undefined,
         orientation: prev.handleConfig.orientation ?? (isProfileOrBar ? 'VERTICAL' : undefined),
       };
 
