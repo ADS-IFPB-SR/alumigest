@@ -138,6 +138,12 @@ public class HardwareService {
         material.setNcmCode(request.ncmCode());
         material.setCostPrice(request.costPrice());
         material.setSalePrice(request.salePrice());
+        if (request.familyCode() != null) {
+            material.setFamilyCode(request.familyCode());
+        }
+        if (request.isHandle() != null) {
+            material.setHandle(request.isHandle());
+        }
         
         if (request.active() != null) {
             material.setActive(request.active());

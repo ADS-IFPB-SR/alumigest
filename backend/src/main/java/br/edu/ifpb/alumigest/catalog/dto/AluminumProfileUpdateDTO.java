@@ -38,7 +38,8 @@ public record AluminumProfileUpdateDTO(
         BigDecimal salePrice,
         
         Boolean active,
-        String familyCode
+        String familyCode,
+        Boolean isHandle
 ) {
     public AluminumProfileUpdateDTO(
             String commercialReference,
@@ -51,6 +52,21 @@ public record AluminumProfileUpdateDTO(
             BigDecimal salePrice,
             Boolean active
     ) {
-        this(commercialReference, name, colorFinish, commercialLine, weight, standardLengthM, costPrice, salePrice, active, null);
+        this(commercialReference, name, colorFinish, commercialLine, weight, standardLengthM, costPrice, salePrice, active, null, null);
+    }
+
+    public AluminumProfileUpdateDTO(
+            String commercialReference,
+            String name,
+            String colorFinish,
+            String commercialLine,
+            BigDecimal weight,
+            BigDecimal standardLengthM,
+            BigDecimal costPrice,
+            BigDecimal salePrice,
+            Boolean active,
+            String familyCode
+    ) {
+        this(commercialReference, name, colorFinish, commercialLine, weight, standardLengthM, costPrice, salePrice, active, familyCode, null);
     }
 }

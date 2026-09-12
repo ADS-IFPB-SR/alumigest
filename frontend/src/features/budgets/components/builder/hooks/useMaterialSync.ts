@@ -12,13 +12,17 @@ import { CATEGORY_LABELS, DEFAULT_HEIGHT } from '../constants';
  * Verifica se um determinado insumo selecionado representa um puxador, fecho, concha ou maçaneta.
  */
 export function isHandleOrLockMaterial(sel: {
+  requirementId?: string;
   label?: string;
   materialName?: string;
   categoryType?: CategoryType;
 }): boolean {
+  const req = (sel.requirementId || '').toLowerCase();
   const l = (sel.label || '').toLowerCase();
   const m = (sel.materialName || '').toLowerCase();
   return (
+    req === 'req-handle' ||
+    req.startsWith('handle-mat-') ||
     l.includes('puxador') ||
     m.includes('puxador') ||
     l.includes('fecho') ||
@@ -26,36 +30,51 @@ export function isHandleOrLockMaterial(sel: {
     l.includes('concha') ||
     m.includes('concha') ||
     l.includes('maçaneta') ||
-    m.includes('macaneta') ||
-    (sel.categoryType === 'HARDWARE' &&
-      !l.includes('rold') &&
-      !l.includes('escova') &&
-      !l.includes('guia') &&
-      !l.includes('parafuso'))
+    m.includes('macaneta')
   );
+}
+
+/**
+ * Obtém a quantidade de folhas móveis que levam puxador de acordo com a tipologia.
+ * - Portas de 4 folhas (2 móveis de encontro no centro) ou giro duplo: 2 folhas móveis com puxador.
+ * - Demais tipologias (1 móvel): 1 folha móvel com puxador.
+ */
+export function getMovingLeavesCount(templateType?: string | null): number {
+  if (!templateType) return 1;
+  const t = templateType.toUpperCase();
+  if (t === 'SLIDING_DOOR_4F' || t === 'SWING_DOOR_2F') {
+    return 2;
+  }
+  return 1;
 }
 
 /**
  * Sincroniza a quantidade física do insumo do puxador com a geometria selecionada:
  * - Se `NONE`: Zera o consumo e custo.
- * - Se medida em metros (M): Calcula o comprimento total ou do pedaço (levando em conta face única vs dupla).
- * - Se pares (PAR): 1 par para ambos os lados ou 0.5 para lado único.
- * - Se unidade (UN): 2 unidades para ambos os lados ou 1 para lado único.
+ * - Se medida em metros (M): Calcula o comprimento total ou do pedaço (levando em conta face única vs dupla e folhas móveis).
+ * - Se pares (PAR): 1 par cobre 1 folha móvel frente e verso completa (se for 4 folhas com 2 móveis de encontro, são 2 pares).
+ * - Se unidade (UN): 1 unidade por lado por folha móvel.
  */
 export function syncHandleMaterialSelections(
   selections: MaterialSelection[],
   newHandleConfig: HandleConfig,
   heightMm: number | '',
   targetRequirementId?: string,
+  templateType?: string | null,
 ): MaterialSelection[] {
   const isBothSides = newHandleConfig.side === 'BOTH_SIDES';
   const sideMult = isBothSides ? 2 : 1;
   const isNone = newHandleConfig.handleType === 'NONE';
+  const movingLeaves = getMovingLeavesCount(templateType);
 
+  // Identifica o insumo de puxador principal ativo
   const activeHandleMat = selections.find(
     (s) =>
       (targetRequirementId && s.requirementId === targetRequirementId) ||
+      s.requirementId === 'req-handle' ||
       s.requirementId.startsWith('handle-mat-') ||
+      Boolean(s.materialName && s.materialName.toLowerCase().includes('puxador')) ||
+      Boolean(s.label && s.label.toLowerCase().includes('puxador')) ||
       isHandleOrLockMaterial(s)
   );
 
@@ -84,15 +103,18 @@ export function syncHandleMaterialSelections(
     let newQty: number;
     if (isMeter) {
       if (newHandleConfig.coverage === 'PIECE' && newHandleConfig.pieceLengthCm) {
-        newQty = parseFloat(((newHandleConfig.pieceLengthCm / 100) * sideMult).toFixed(2));
+        newQty = parseFloat(((newHandleConfig.pieceLengthCm / 100) * sideMult * movingLeaves).toFixed(2));
       } else {
         const h = typeof heightMm === 'number' && heightMm > 0 ? heightMm : DEFAULT_HEIGHT;
-        newQty = parseFloat(((h / 1000) * sideMult).toFixed(2));
+        newQty = parseFloat(((h / 1000) * sideMult * movingLeaves).toFixed(2));
       }
     } else if (isPar) {
-      newQty = isBothSides ? 1 : 0.5;
+      // 1 PAR já é composto pelas 2 pegadas (frente e verso) para 1 folha móvel.
+      // Portanto, portas normais levam 1 par, e portas de 4 folhas (2 móveis de encontro) levam 2 pares!
+      newQty = movingLeaves;
     } else {
-      newQty = isBothSides ? 2 : 1;
+      // Unidades avulsas: 1 por lado por folha móvel (ex: 2 lados = 2 UN para 1 folha, 4 UN para 4 folhas)
+      newQty = sideMult * movingLeaves;
     }
 
     const unitPrice = sel.unitPrice ?? 0;

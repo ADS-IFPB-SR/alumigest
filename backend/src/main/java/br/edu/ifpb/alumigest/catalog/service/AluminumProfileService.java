@@ -103,6 +103,10 @@ public class AluminumProfileService {
         if (request.weight() != null || request.commercialLine() != null) {
             material.setAttributesJson(aluminumProfileMapper.buildAttributesJson(request.weight(), request.commercialLine()));
         }
+
+        if (request.isHandle() != null) {
+            material.setHandle(request.isHandle());
+        }
         
         if (request.active() != null) {
             material.setActive(request.active());

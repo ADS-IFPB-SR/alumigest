@@ -45,7 +45,9 @@ public record AluminumProfileRequestDTO(
         @Positive(message = "O peso deve ser maior que zero")
         BigDecimal weight,
 
-        String familyCode
+        String familyCode,
+
+        Boolean isHandle
 ) {
     public AluminumProfileRequestDTO(
             String name,
@@ -58,6 +60,21 @@ public record AluminumProfileRequestDTO(
             BigDecimal salePrice,
             BigDecimal weight
     ) {
-        this(name, commercialReference, commercialLine, ncmCode, colorFinish, standardLengthM, costPrice, salePrice, weight, null);
+        this(name, commercialReference, commercialLine, ncmCode, colorFinish, standardLengthM, costPrice, salePrice, weight, null, false);
+    }
+
+    public AluminumProfileRequestDTO(
+            String name,
+            String commercialReference,
+            String commercialLine,
+            String ncmCode,
+            String colorFinish,
+            BigDecimal standardLengthM,
+            BigDecimal costPrice,
+            BigDecimal salePrice,
+            BigDecimal weight,
+            String familyCode
+    ) {
+        this(name, commercialReference, commercialLine, ncmCode, colorFinish, standardLengthM, costPrice, salePrice, weight, familyCode, false);
     }
 }

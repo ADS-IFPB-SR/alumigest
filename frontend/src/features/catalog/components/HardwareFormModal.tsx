@@ -67,14 +67,17 @@ export function HardwareFormModal({
       skuCode: '',
       name: '',
       ncmCode: '',
+      familyCode: '',
       unitMeasure: 'UN',
       costPrice: '',
       salePrice: '',
       active: true,
+      isHandle: false,
     },
   });
 
   const activeValue = watch('active');
+  const isHandleValue = watch('isHandle');
 
   useEffect(() => {
     if (!isOpen) {
@@ -86,6 +89,7 @@ export function HardwareFormModal({
         skuCode: initialData.skuCode || '',
         name: initialData.name || '',
         ncmCode: initialData.ncmCode || '',
+        familyCode: initialData.familyCode || '',
         unitMeasure:
           initialData.unitMeasure || 'UN',
         costPrice: formatCurrencyInput(
@@ -95,6 +99,7 @@ export function HardwareFormModal({
           (initialData.salePrice ?? 0).toFixed(2)
         ),
         active: initialData.active ?? true,
+        isHandle: initialData.isHandle ?? false,
       });
 
       return;
@@ -104,10 +109,12 @@ export function HardwareFormModal({
       skuCode: '',
       name: '',
       ncmCode: '',
+      familyCode: '',
       unitMeasure: 'UN',
       costPrice: '',
       salePrice: '',
       active: true,
+      isHandle: false,
     });
   }, [isOpen, initialData, reset]);
 
@@ -116,6 +123,7 @@ export function HardwareFormModal({
       name: data.name,
       skuCode: data.skuCode,
       unitMeasure: data.unitMeasure,
+      familyCode: data.familyCode?.trim() ? data.familyCode.trim() : undefined,
 
       calculationType:
         data.unitMeasure === 'UN'
@@ -137,6 +145,7 @@ export function HardwareFormModal({
         : undefined,
 
       active: data.active,
+      isHandle: data.isHandle,
     };
 
     if (isEditing) {
@@ -360,6 +369,25 @@ export function HardwareFormModal({
               error={errors.salePrice?.message}
             />
           </div>
+        </div>
+
+        {/* É Puxador? */}
+        <div className="col-span-1 md:col-span-2 mt-xs p-3 rounded-lg border border-border bg-background-light flex items-center justify-between">
+          <div>
+            <label className="font-medium text-sm text-foreground flex items-center gap-2 cursor-pointer" htmlFor="hardware-is-handle">
+              <span>Esta ferragem é um puxador / fecho?</span>
+            </label>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Habilite se este item for um puxador tubular, concha embutida, fecho ou maçaneta.
+            </p>
+          </div>
+          <input
+            id="hardware-is-handle"
+            type="checkbox"
+            checked={Boolean(isHandleValue)}
+            onChange={(e) => setValue('isHandle', e.target.checked)}
+            className="h-4 w-4 rounded border-border text-primary focus:ring-primary cursor-pointer"
+          />
         </div>
 
         {/* Status */}

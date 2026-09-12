@@ -21,7 +21,8 @@ public record AluminumProfileResponseDTO(
         boolean active,
         OffsetDateTime createdAt,
         OffsetDateTime updatedAt,
-        String familyCode
+        String familyCode,
+        boolean isHandle
 ) {
     public AluminumProfileResponseDTO(
             UUID id,
@@ -39,6 +40,26 @@ public record AluminumProfileResponseDTO(
             OffsetDateTime createdAt,
             OffsetDateTime updatedAt
     ) {
-        this(id, name, commercialReference, commercialLine, ncmCode, colorFinish, standardLengthM, unitMeasure, costPrice, salePrice, weight, active, createdAt, updatedAt, null);
+        this(id, name, commercialReference, commercialLine, ncmCode, colorFinish, standardLengthM, unitMeasure, costPrice, salePrice, weight, active, createdAt, updatedAt, null, false);
+    }
+
+    public AluminumProfileResponseDTO(
+            UUID id,
+            String name,
+            String commercialReference,
+            String commercialLine,
+            String ncmCode,
+            String colorFinish,
+            BigDecimal standardLengthM,
+            UnitMeasure unitMeasure,
+            BigDecimal costPrice,
+            BigDecimal salePrice,
+            BigDecimal weight,
+            boolean active,
+            OffsetDateTime createdAt,
+            OffsetDateTime updatedAt,
+            String familyCode
+    ) {
+        this(id, name, commercialReference, commercialLine, ncmCode, colorFinish, standardLengthM, unitMeasure, costPrice, salePrice, weight, active, createdAt, updatedAt, familyCode, false);
     }
 }

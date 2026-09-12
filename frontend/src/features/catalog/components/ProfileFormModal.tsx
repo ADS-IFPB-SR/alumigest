@@ -79,11 +79,13 @@ export function ProfileFormModal({
       costPrice: '',
       salePrice: '',
       active: true,
+      isHandle: false,
     },
   });
 
   const activeValue = watch('active');
   const familyCodeValue = watch('familyCode');
+  const isHandleValue = watch('isHandle');
 
   useEffect(() => {
     if (!isOpen) {
@@ -130,6 +132,9 @@ export function ProfileFormModal({
 
         active:
           initialData.active ?? true,
+
+        isHandle:
+          initialData.isHandle ?? false,
       });
 
       return;
@@ -147,6 +152,7 @@ export function ProfileFormModal({
       costPrice: '',
       salePrice: '',
       active: true,
+      isHandle: false,
     });
   }, [isOpen, initialData, reset]);
 
@@ -166,6 +172,7 @@ export function ProfileFormModal({
       costPrice: parseCurrencyString(data.costPrice),
       salePrice: parseCurrencyString(data.salePrice),
       active: data.active,
+      isHandle: data.isHandle,
     };
 
     if (isEditing) {
@@ -427,6 +434,25 @@ export function ProfileFormModal({
             />
           </div>
 
+        </div>
+
+        {/* É Puxador? */}
+        <div className="col-span-1 md:col-span-2 mt-xs p-3 rounded-lg border border-border bg-background-light flex items-center justify-between">
+          <div>
+            <label className="font-medium text-sm text-foreground flex items-center gap-2 cursor-pointer" htmlFor="profile-is-handle">
+              <span>Este perfil é um puxador?</span>
+            </label>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Habilite se este perfil de alumínio for utilizado como puxador integrado nas esquadrias.
+            </p>
+          </div>
+          <input
+            id="profile-is-handle"
+            type="checkbox"
+            checked={Boolean(isHandleValue)}
+            onChange={(e) => setValue('isHandle', e.target.checked)}
+            className="h-4 w-4 rounded border-border text-primary focus:ring-primary cursor-pointer"
+          />
         </div>
 
         {/* Status */}

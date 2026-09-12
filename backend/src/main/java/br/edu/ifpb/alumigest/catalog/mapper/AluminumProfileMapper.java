@@ -39,6 +39,9 @@ public class AluminumProfileMapper {
         material.setUnitMeasure(UnitMeasure.METRO);
         material.setCostPrice(request.costPrice());
         material.setSalePrice(request.salePrice());
+        if (request.isHandle() != null) {
+            material.setHandle(request.isHandle());
+        }
         
         if (request.weight() != null || request.commercialLine() != null) {
             material.setAttributesJson(buildAttributesJson(request.weight(), request.commercialLine()));
@@ -97,7 +100,8 @@ public class AluminumProfileMapper {
                 material.isActive(),
                 material.getCreatedAt(),
                 material.getUpdatedAt(),
-                material.getFamilyCode()
+                material.getFamilyCode(),
+                material.isHandle()
         );
     }
 }

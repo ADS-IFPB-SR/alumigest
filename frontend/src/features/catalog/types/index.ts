@@ -38,6 +38,7 @@ export interface ProfileDTO {
   createdAt?: string;
   updatedAt?: string;
   familyCode?: string;
+  isHandle?: boolean;
 }
 
 export interface HardwareDTO {
@@ -53,6 +54,7 @@ export interface HardwareDTO {
   createdAt?: string;
   updatedAt?: string;
   familyCode?: string;
+  isHandle?: boolean;
 }
 
 export interface FilmDTO {
@@ -87,6 +89,7 @@ export interface MaterialSummary {
   costPrice: number;
   colorFinish?: string;
   isActive: boolean;
+  isHandle?: boolean;
 }
 
 export interface Product {

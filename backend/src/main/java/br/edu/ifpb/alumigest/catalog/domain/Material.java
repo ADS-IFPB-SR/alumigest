@@ -93,6 +93,9 @@ public class Material {
     @Column(name = "attributes_json")
     private String attributesJson;
 
+    @Column(name = "is_handle", nullable = false)
+    private boolean isHandle = false;
+
     @Column(name = "is_active", nullable = false)
     private boolean isActive = true;
 
@@ -240,6 +243,14 @@ public class Material {
 
     public void setAttributesJson(String attributesJson) {
         this.attributesJson = attributesJson;
+    }
+
+    public boolean isHandle() {
+        return isHandle;
+    }
+
+    public void setHandle(boolean handle) {
+        isHandle = handle;
     }
 
     public boolean isActive() {

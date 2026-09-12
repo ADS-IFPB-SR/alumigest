@@ -68,24 +68,38 @@ export function useBuilderCatalog() {
   }, [glasses]);
 
   const availableHandleProfiles = useMemo(() => {
-    return profiles.map((p) => ({
-      id: p.id,
-      name: p.name,
-      price: p.salePrice ?? 0,
-      unit: p.unitMeasure ?? 'm',
-      categoryType: 'PROFILE' as CategoryType,
-      colorFinish: p.colorFinish,
-    }));
+    return profiles
+      .filter((p) => p.isHandle || p.name.toLowerCase().includes('puxador'))
+      .map((p) => ({
+        id: p.id,
+        name: p.name,
+        price: p.salePrice ?? 0,
+        unit: p.unitMeasure ?? 'm',
+        categoryType: 'PROFILE' as CategoryType,
+        colorFinish: p.colorFinish,
+        isHandle: p.isHandle,
+      }));
   }, [profiles]);
 
   const availableHandleHardwares = useMemo(() => {
-    return hardwares.map((h) => ({
-      id: h.id,
-      name: h.name,
-      price: h.salePrice ?? 0,
-      unit: h.unitMeasure ?? 'un',
-      categoryType: 'HARDWARE' as CategoryType,
-    }));
+    return hardwares
+      .filter(
+        (h) =>
+          h.isHandle ||
+          h.name.toLowerCase().includes('puxador') ||
+          h.name.toLowerCase().includes('concha') ||
+          h.name.toLowerCase().includes('fecho') ||
+          h.name.toLowerCase().includes('maçaneta') ||
+          h.name.toLowerCase().includes('macaneta'),
+      )
+      .map((h) => ({
+        id: h.id,
+        name: h.name,
+        price: h.salePrice ?? 0,
+        unit: h.unitMeasure ?? 'un',
+        categoryType: 'HARDWARE' as CategoryType,
+        isHandle: h.isHandle,
+      }));
   }, [hardwares]);
 
   return {

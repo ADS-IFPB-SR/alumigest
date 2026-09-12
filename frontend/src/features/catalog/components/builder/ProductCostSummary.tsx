@@ -77,7 +77,7 @@ function CadMockupCard({
         </div>
 
         {/* Contêiner da Maquete CAD com altura flexível e limpa */}
-        <div className="w-full h-48 flex items-center justify-center overflow-hidden py-1">
+        <div className="w-full h-64 flex items-center justify-center overflow-hidden py-1">
           <WindowSvgPreview
             templateType={templateType}
             widthMm={2000}
@@ -93,8 +93,8 @@ function CadMockupCard({
               customDistancesMm: templateConfig.drillingConfig?.customPositionsMm,
             }}
             templateName={DOOR_TEMPLATE_LABELS[templateType]}
-            baseWidth={220}
-            maxHeight={170}
+            baseWidth="100%"
+            maxHeight={240}
             minimal={true}
           />
         </div>
@@ -287,7 +287,7 @@ export function ProductCostSummary({
   const isSaveDisabled = !name.trim() || !templateType || categoryRequirements.length === 0 || isPending;
 
   return (
-    <aside className="w-full lg:w-72 xl:w-80 shrink-0 flex flex-col gap-4">
+    <aside className="w-full flex flex-col gap-4">
       {/* Card da Maquete Studio CAD */}
       <div className="bg-surface-container-lowest border border-outline-variant/80 rounded-xl p-3.5 shadow-xs transition-shadow hover:shadow-sm">
         <div className="flex items-center justify-between pb-2 mb-2 border-b border-outline-variant/60">

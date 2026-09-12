@@ -35,7 +35,8 @@ public class MaterialController {
                         m.getCommercialReference(), 
                         m.getSalePrice(), 
                         m.getCostPrice(),
-                        m.getUnitMeasure() != null ? m.getUnitMeasure().name() : ""))
+                        m.getUnitMeasure() != null ? m.getUnitMeasure().name() : "",
+                        m.isHandle()))
                 .toList();
         return ResponseEntity.ok(ApiResponse.ok("Materiais listados com sucesso", materials));
     }

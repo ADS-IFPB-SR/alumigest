@@ -40,7 +40,9 @@ public record HardwareRequestDTO(
         @jakarta.validation.constraints.Pattern(regexp = "^\\d{8}$", message = "O código NCM deve conter exatamente 8 dígitos numéricos")
         String ncmCode,
 
-        String familyCode
+        String familyCode,
+
+        Boolean isHandle
 ) {
     public HardwareRequestDTO(
             String skuCode,
@@ -51,6 +53,19 @@ public record HardwareRequestDTO(
             BigDecimal salePrice,
             String ncmCode
     ) {
-        this(skuCode, name, unitMeasure, calculationType, costPrice, salePrice, ncmCode, null);
+        this(skuCode, name, unitMeasure, calculationType, costPrice, salePrice, ncmCode, null, false);
+    }
+
+    public HardwareRequestDTO(
+            String skuCode,
+            String name,
+            UnitMeasure unitMeasure,
+            CalculationType calculationType,
+            BigDecimal costPrice,
+            BigDecimal salePrice,
+            String ncmCode,
+            String familyCode
+    ) {
+        this(skuCode, name, unitMeasure, calculationType, costPrice, salePrice, ncmCode, familyCode, false);
     }
 }
