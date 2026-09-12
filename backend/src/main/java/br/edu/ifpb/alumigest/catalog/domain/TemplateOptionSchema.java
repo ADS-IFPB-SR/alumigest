@@ -1,5 +1,6 @@
 package br.edu.ifpb.alumigest.catalog.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -8,6 +9,7 @@ import java.util.List;
  * Esquema que define quais campos e opções estarão visíveis e permitidos
  * para customização durante a elaboração de um orçamento baseado neste template.
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class TemplateOptionSchema implements Serializable {
 
     private boolean allowSlidingMode;
@@ -26,7 +28,9 @@ public class TemplateOptionSchema implements Serializable {
     private List<String> allowAluminumColors = new ArrayList<>();
     private List<String> allowGlassColors = new ArrayList<>();
 
-    public TemplateOptionSchema() {}
+    public TemplateOptionSchema() {
+        // Construtor vazio necessário para serialização/desserialização JSON (Jackson)
+    }
 
     public boolean isAllowSlidingMode() {
         return allowSlidingMode;

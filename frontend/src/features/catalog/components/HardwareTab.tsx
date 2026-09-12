@@ -80,14 +80,14 @@ const columns = [
         className="font-data-mono text-data-mono text-on-surface"
       >
         R${' '}
-        {row.salePrice
+        {(row.salePrice ?? 0)
           .toFixed(2)
           .replace('.', ',')}
       </span>
     ),
 
     exportValue: (row: HardwareDTO) =>
-      `R$ ${row.salePrice
+      `R$ ${(row.salePrice ?? 0)
         .toFixed(2)
         .replace('.', ',')}`,
 
@@ -122,15 +122,15 @@ const columns = [
 ];
 
 interface Props {
-  searchQuery: string;
-  filterStatus:
+  readonly searchQuery: string;
+  readonly filterStatus:
     | 'ALL'
     | 'ACTIVE'
     | 'INACTIVE';
-  onEdit: (
+  readonly onEdit: (
     item: HardwareDTO
   ) => void;
-  onViewDetails: (
+  readonly onViewDetails: (
     item: HardwareDTO
   ) => void;
 }
@@ -167,18 +167,8 @@ export function HardwareTab({
         hardware.name
           .toLowerCase()
           .includes(term) ||
-        (
-          hardware.commercialReference &&
-          hardware.commercialReference
-            .toLowerCase()
-            .includes(term)
-        ) ||
-        (
-          hardware.skuCode &&
-          hardware.skuCode
-            .toLowerCase()
-            .includes(term)
-        )
+        Boolean(hardware.commercialReference?.toLowerCase().includes(term)) ||
+        Boolean(hardware.skuCode?.toLowerCase().includes(term))
       );
     });
 

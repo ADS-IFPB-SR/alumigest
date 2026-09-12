@@ -1,9 +1,9 @@
 interface BudgetsPaginationProps {
-  currentPage: number;
-  totalPages: number;
-  totalElements: number;
-  pageSize: number;
-  onPageChange: (page: number) => void;
+  readonly currentPage: number;
+  readonly totalPages: number;
+  readonly totalElements: number;
+  readonly pageSize: number;
+  readonly onPageChange: (page: number) => void;
 }
 
 export function BudgetsPagination({
@@ -21,8 +21,7 @@ export function BudgetsPagination({
       return Array.from({ length: totalPages }, (_, i) => i);
     }
 
-    const pages: (number | 'ellipsis-start' | 'ellipsis-end')[] = [];
-    pages.push(0);
+    const pages: (number | 'ellipsis-start' | 'ellipsis-end')[] = [0];
 
     if (currentPage > 2) {
       pages.push('ellipsis-start');

@@ -2,6 +2,17 @@ import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 
+function getModalSaveLabel(isPending: boolean, isEditing: boolean): string {
+  if (isPending) return 'Salvando...';
+  return isEditing ? 'Atualizar' : 'Salvar';
+}
+
+function resolveCalculationType(unitMeasure: string): string {
+  if (unitMeasure === 'UN') return 'UNIT';
+  if (unitMeasure === 'PAR') return 'PAIR';
+  return 'LINEAR_METER';
+}
+
 import { Modal } from '../../../components/ui/Modal';
 import { Input } from '../../../components/ui/Input';
 import { Button } from '../../../components/ui/Button';
@@ -28,9 +39,9 @@ import {
 } from '../schemas/catalogSchemas';
 
 interface Props {
-  isOpen: boolean;
-  onClose: () => void;
-  initialData?: any;
+  readonly isOpen: boolean;
+  readonly onClose: () => void;
+  readonly initialData?: any;
 }
 
 export function HardwareFormModal({
@@ -67,14 +78,17 @@ export function HardwareFormModal({
       skuCode: '',
       name: '',
       ncmCode: '',
+      familyCode: '',
       unitMeasure: 'UN',
       costPrice: '',
       salePrice: '',
       active: true,
+      isHandle: false,
     },
   });
 
   const activeValue = watch('active');
+  const isHandleValue = watch('isHandle');
 
   useEffect(() => {
     if (!isOpen) {
@@ -86,6 +100,7 @@ export function HardwareFormModal({
         skuCode: initialData.skuCode || '',
         name: initialData.name || '',
         ncmCode: initialData.ncmCode || '',
+        familyCode: initialData.familyCode || '',
         unitMeasure:
           initialData.unitMeasure || 'UN',
         costPrice: formatCurrencyInput(
@@ -95,6 +110,7 @@ export function HardwareFormModal({
           (initialData.salePrice ?? 0).toFixed(2)
         ),
         active: initialData.active ?? true,
+        isHandle: initialData.isHandle ?? false,
       });
 
       return;
@@ -104,10 +120,12 @@ export function HardwareFormModal({
       skuCode: '',
       name: '',
       ncmCode: '',
+      familyCode: '',
       unitMeasure: 'UN',
       costPrice: '',
       salePrice: '',
       active: true,
+      isHandle: false,
     });
   }, [isOpen, initialData, reset]);
 
@@ -116,13 +134,9 @@ export function HardwareFormModal({
       name: data.name,
       skuCode: data.skuCode,
       unitMeasure: data.unitMeasure,
+      familyCode: data.familyCode?.trim() ? data.familyCode.trim() : undefined,
 
-      calculationType:
-        data.unitMeasure === 'UN'
-          ? 'UNIT'
-          : data.unitMeasure === 'PAR'
-            ? 'PAIR'
-            : 'LINEAR_METER',
+      calculationType: resolveCalculationType(data.unitMeasure),
 
       costPrice: parseCurrencyString(
         data.costPrice
@@ -137,6 +151,7 @@ export function HardwareFormModal({
         : undefined,
 
       active: data.active,
+      isHandle: data.isHandle,
     };
 
     if (isEditing) {
@@ -192,11 +207,7 @@ export function HardwareFormModal({
             onClick={handleSubmit(onSubmit)}
             disabled={isPending}
           >
-            {isPending
-              ? 'Salvando...'
-              : isEditing
-                ? 'Atualizar'
-                : 'Salvar'}
+            {getModalSaveLabel(isPending, isEditing)}
           </Button>
         </>
       }
@@ -360,6 +371,25 @@ export function HardwareFormModal({
               error={errors.salePrice?.message}
             />
           </div>
+        </div>
+
+        {/* É Puxador? */}
+        <div className="col-span-1 md:col-span-2 mt-xs p-3 rounded-lg border border-border bg-background-light flex items-center justify-between">
+          <div>
+            <label className="font-medium text-sm text-foreground flex items-center gap-2 cursor-pointer" htmlFor="hardware-is-handle">
+              <span>Esta ferragem é um puxador / fecho?</span>
+            </label>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Habilite se este item for um puxador tubular, concha embutida, fecho ou maçaneta.
+            </p>
+          </div>
+          <input
+            id="hardware-is-handle"
+            type="checkbox"
+            checked={Boolean(isHandleValue)}
+            onChange={(e) => setValue('isHandle', e.target.checked)}
+            className="h-4 w-4 rounded border-border text-primary focus:ring-primary cursor-pointer"
+          />
         </div>
 
         {/* Status */}

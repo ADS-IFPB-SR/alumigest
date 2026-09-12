@@ -1,16 +1,14 @@
 export type DoorTemplateType =
+  | 'SLIDING_DOOR_1F'
   | 'SLIDING_DOOR_2F'
+  | 'SLIDING_DOOR_3F'
   | 'SLIDING_DOOR_4F'
-  | 'PIVOTING_DOOR'
   | 'SWING_DOOR_1F'
   | 'SWING_DOOR_2F'
-  | 'SLIDING_WINDOW_2F'
-  | 'SLIDING_WINDOW_4F'
-  | 'MAXIM_AR_WINDOW'
-  | 'GLASS_BOX_FRONTAL'
-  | 'GLASS_BOX_CORNER'
-  | 'DRAWER_FRONT'
-  | 'FIXED_GLASS_FACADE';
+  | 'AWNING_WINDOW_1F'
+  | 'AWNING_WINDOW_1F_INV'
+  | 'FRONT_DRAWER'
+  | 'FIXED_PANEL';
 
 export type OpeningDirection =
   | 'LEFT_TO_RIGHT'
@@ -19,11 +17,21 @@ export type OpeningDirection =
   | 'OUTSIDE'
   | 'INSIDE';
 
-export type HandleType = 'BAR_TUBULAR' | 'SHELL_LOCK' | 'LEVER_HANDLE' | 'NONE';
+export type HandleType = 'BAR_TUBULAR' | 'PROFILE_HANDLE' | 'SHELL_LOCK' | 'LEVER_HANDLE' | 'NONE';
+export type HandlePosition = 'LEFT' | 'RIGHT' | 'TOP' | 'BOTTOM' | 'CENTER';
+export type HandleOrientation = 'HORIZONTAL' | 'VERTICAL';
 export type HandleSide = 'ONE_SIDE' | 'BOTH_SIDES';
 export type HandleCoverage = 'FULL' | 'PIECE';
 export type DivisionType = 'EQUAL' | 'CUSTOM_DISTANCE';
-export type CategoryType = 'GLASS' | 'PROFILE' | 'HARDWARE' | 'FILM' | 'ROLLERS';
+export type CategoryType = 'GLASS' | 'PROFILE' | 'HARDWARE' | 'FILM';
+
+export const HANDLE_POSITION_LABELS: Record<HandlePosition, string> = {
+  LEFT: 'Lateral Esquerda (Em pé)',
+  RIGHT: 'Lateral Direita (Em pé)',
+  TOP: 'Superior (Deitado no topo)',
+  BOTTOM: 'Inferior (Deitado na base)',
+  CENTER: 'Centro',
+};
 
 export type BudgetStatus =
   | 'DRAFT'
@@ -57,15 +65,24 @@ export interface DiscountRequest {
 // ============================================================
 export interface HandleConfig {
   handleType: HandleType;
+  position?: HandlePosition;
+  orientation?: HandleOrientation;
   side?: HandleSide;
   coverage?: HandleCoverage;
   pieceLengthCm?: number;
+  handlePosition?: HandlePosition;
+  handleLengthMm?: number;
 }
+
+export type DrillingPosition = 'SUPERIOR' | 'LATERAL' | 'FRONTAL';
 
 export interface DrillingConfig {
   holeCount: number;
-  divisionType: DivisionType;
+  divisionType?: DivisionType;
+  drillingPosition?: DrillingPosition;
   customDistancesMm?: number[];
+  customPositionsMm?: number[];
+  drillingMode?: string;
 }
 
 // ============================================================
@@ -93,6 +110,28 @@ export interface TemplateConfig {
   hasFixedPanel?: boolean;
 }
 
+import type {
+  TemplateOptionSchema,
+  DrillingConfig as CatalogDrillingConfig,
+  SlidingMode,
+} from '../../catalog/types/templates';
+
+export interface WindowTemplateConfig {
+  templateType?: string;
+  profileMm?: number;
+  aluminumColor?: string;
+  glassColor?: string;
+  glassFinish?: string;
+  openingDirection?: OpeningDirection;
+  slidingMode?: SlidingMode;
+  handleType?: HandleType;
+  handleConfig?: HandleConfig;
+  drillingConfig?: DrillingConfig | CatalogDrillingConfig;
+  optionSchema?: TemplateOptionSchema;
+  isSlatted?: boolean;
+  hasFixedPanel?: boolean;
+}
+
 // ============================================================
 // PRODUTO / TEMPLATE DE ESQUADRIA
 // ============================================================
@@ -105,14 +144,43 @@ export interface WindowTemplate {
   isActive: boolean;
   templateType?: string;
   catalogTemplateType?: string | null;
-  templateConfig?: any;
-  categoryRequirements?: any[];
+  templateConfig?: WindowTemplateConfig;
+  categoryRequirements?: (CategoryType | { categoryType: CategoryType; label?: string; isOptional?: boolean })[];
   items?: { id: string; materialId: string; materialName: string; quantity: number }[];
 }
 
 // ============================================================
 // ESTADO INTERNO DO BUILDER
 // ============================================================
+export interface BudgetItemCalculationOptionRequest {
+  materialId?: string;
+  categoryType: string;
+  manualQuantity?: number;
+}
+
+export interface BudgetItemCalculationRequest {
+  templateType?: string;
+  widthMm: number;
+  heightMm: number;
+  quantity: number;
+  options: BudgetItemCalculationOptionRequest[];
+}
+
+export interface BudgetItemCalculationOptionResult {
+  materialId: string;
+  categoryType: string;
+  suggestedQuantity: number;
+  physicalMinimumQuantity: number;
+  isBelowPhysicalMinimum: boolean;
+  warningMessage?: string;
+}
+
+export interface BudgetItemCalculationResponse {
+  physicalAreaM2: number;
+  physicalPerimeterM: number;
+  options: BudgetItemCalculationOptionResult[];
+}
+
 export interface MaterialSelection {
   requirementId: string;
   categoryType: CategoryType;
@@ -123,12 +191,17 @@ export interface MaterialSelection {
   unitMeasure: string;
   unitPrice: number;
   /**
-   * Quantidade técnica de insumo calculada e retornada pelo backend.
-   * O frontend NÃO calcula este valor através de fórmulas geométricas locais.
+   * Quantidade de insumo calculada ou informada pelo usuário.
    */
   quantity?: number;
-  /** Subtotal estimado se quantity for fornecida pelo backend */
+  /** Subtotal estimado */
   totalPrice?: number;
+  suggestedQuantity?: number;
+  physicalMinimumQuantity?: number;
+  isBelowPhysicalMinimum?: boolean;
+  warningMessage?: string;
+  isManualOverride?: boolean;
+  familyCode?: string;
 }
 
 export interface BuilderState {
@@ -148,7 +221,7 @@ export interface BuilderState {
 }
 
 // ============================================================
-// ITEM DO ORÇAMENTO — estrutura persistida e enviada à API
+// ITEM DO ORÃ‡AMENTO â€” estrutura persistida e enviada Ã  API
 // ============================================================
 export interface BudgetItemOption {
   id?: string;
@@ -189,6 +262,7 @@ export interface BudgetFormState {
   discountPercent: number;
   notes: string;
   commercialConditions: string;
+  validUntil?: string;
 }
 
 // ============================================================
@@ -260,14 +334,12 @@ export interface BudgetSummary {
 
 export interface BudgetPageResponse {
   content: BudgetSummary[];
-  totalElements?: number;
-  totalPages?: number;
-  page?: {
-    size?: number;
-    number?: number;
-    totalElements?: number;
-    totalPages?: number;
-  };
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  isFirst?: boolean;
+  isLast?: boolean;
 }
 
 export interface BudgetFilters {
@@ -279,7 +351,7 @@ export interface BudgetFilters {
 }
 
 // ============================================================
-// PAYLOADS DE CRIAÇÃO E DETALHE (MIX DEVELOP/MY)
+// PAYLOADS DE CRIAÃ‡ÃƒO E DETALHE (MIX DEVELOP/MY)
 // ============================================================
 export interface BudgetDetail extends BudgetSummary {
   notes?: string;
@@ -307,6 +379,7 @@ export interface CreateBudgetPayload {
   discountPercent: number;
   notes?: string;
   commercialConditions?: string;
+  validUntil?: string;
   items: {
     productId: string;
     templateType: string;
@@ -334,94 +407,21 @@ export interface TemplateTypeInfo {
 }
 
 export const TEMPLATE_TYPE_INFO: Record<DoorTemplateType, TemplateTypeInfo> = {
-  SLIDING_DOOR_2F: {
-    type: 'SLIDING_DOOR_2F',
-    label: 'Porta de Correr 2 Folhas',
-    description: '1 Folha Fixa + 1 Folha Móvel',
-    icon: 'door_sliding',
-    supportedDirections: ['LEFT_TO_RIGHT', 'RIGHT_TO_LEFT'],
-  },
-  SLIDING_DOOR_4F: {
-    type: 'SLIDING_DOOR_4F',
-    label: 'Porta de Correr 4 Folhas',
-    description: '2 Fixas Laterais + 2 Móveis Centrais',
-    icon: 'door_sliding',
-    supportedDirections: ['CENTER_TO_SIDES'],
-  },
-  PIVOTING_DOOR: {
-    type: 'PIVOTING_DOOR',
-    label: 'Porta Pivotante',
-    description: 'Eixo Deslocado',
-    icon: 'door_back',
-    supportedDirections: ['LEFT_TO_RIGHT', 'RIGHT_TO_LEFT'],
-  },
-  SWING_DOOR_1F: {
-    type: 'SWING_DOOR_1F',
-    label: 'Porta de Abrir 1 Folha',
-    description: 'Porta de Giro com 1 Folha',
-    icon: 'door_front',
-    supportedDirections: ['LEFT_TO_RIGHT', 'RIGHT_TO_LEFT'],
-  },
-  SWING_DOOR_2F: {
-    type: 'SWING_DOOR_2F',
-    label: 'Porta de Abrir 2 Folhas',
-    description: 'Porta de Giro com 2 Folhas',
-    icon: 'door_front',
-    supportedDirections: ['LEFT_TO_RIGHT', 'RIGHT_TO_LEFT'],
-  },
-  SLIDING_WINDOW_2F: {
-    type: 'SLIDING_WINDOW_2F',
-    label: 'Janela de Correr 2 Folhas',
-    description: '1 Fixa + 1 Móvel',
-    icon: 'window',
-    supportedDirections: ['LEFT_TO_RIGHT', 'RIGHT_TO_LEFT'],
-  },
-  SLIDING_WINDOW_4F: {
-    type: 'SLIDING_WINDOW_4F',
-    label: 'Janela de Correr 4 Folhas',
-    description: '2 Fixas + 2 Móveis',
-    icon: 'window',
-    supportedDirections: ['CENTER_TO_SIDES'],
-  },
-  MAXIM_AR_WINDOW: {
-    type: 'MAXIM_AR_WINDOW',
-    label: 'Janela Maxim-Ar',
-    description: 'Projeção Superior Basculante',
-    icon: 'window',
-    supportedDirections: ['OUTSIDE'],
-  },
-  GLASS_BOX_FRONTAL: {
-    type: 'GLASS_BOX_FRONTAL',
-    label: 'Box de Banheiro Frontal',
-    description: '1 Fixo + 1 Correr — F1',
-    icon: 'bathroom',
-    supportedDirections: ['LEFT_TO_RIGHT', 'RIGHT_TO_LEFT'],
-  },
-  GLASS_BOX_CORNER: {
-    type: 'GLASS_BOX_CORNER',
-    label: 'Box de Banheiro em Canto',
-    description: 'Formato em L — Canto',
-    icon: 'bathroom',
-    supportedDirections: ['CENTER_TO_SIDES'],
-  },
-  FIXED_GLASS_FACADE: {
-    type: 'FIXED_GLASS_FACADE',
-    label: 'Painel Fixo / Fachada',
-    description: 'Painel em Vidro Fixo',
-    icon: 'image',
-    supportedDirections: ['OUTSIDE'],
-  },
-  DRAWER_FRONT: {
-    type: 'DRAWER_FRONT',
-    label: 'Frente de Gaveta',
-    description: 'Perfil Alumínio c/ Puxador',
-    icon: 'table_rows',
-    supportedDirections: ['OUTSIDE'],
-  },
+  SLIDING_DOOR_1F: { type: 'SLIDING_DOOR_1F', label: 'Porta de Correr 1 Folha', description: '1 Folha Móvel', icon: 'door_sliding', supportedDirections: ['LEFT_TO_RIGHT', 'RIGHT_TO_LEFT'] },
+  SLIDING_DOOR_2F: { type: 'SLIDING_DOOR_2F', label: 'Porta de Correr 2 Folhas', description: '1 Fixa + 1 Móvel', icon: 'door_sliding', supportedDirections: ['LEFT_TO_RIGHT', 'RIGHT_TO_LEFT'] },
+  SLIDING_DOOR_3F: { type: 'SLIDING_DOOR_3F', label: 'Porta de Correr 3 Folhas', description: '1 Fixa + 2 Móveis', icon: 'door_sliding', supportedDirections: ['LEFT_TO_RIGHT', 'RIGHT_TO_LEFT'] },
+  SLIDING_DOOR_4F: { type: 'SLIDING_DOOR_4F', label: 'Porta de Correr 4 Folhas', description: '2 Fixas + 2 Móveis', icon: 'door_sliding', supportedDirections: ['CENTER_TO_SIDES'] },
+  SWING_DOOR_1F: { type: 'SWING_DOOR_1F', label: 'Porta de Giro 1 Folha', description: 'De abrir, 1 Folha', icon: 'door_front', supportedDirections: ['LEFT_TO_RIGHT', 'RIGHT_TO_LEFT'] },
+  SWING_DOOR_2F: { type: 'SWING_DOOR_2F', label: 'Porta de Giro 2 Folhas', description: 'De abrir, 2 Folhas', icon: 'door_front', supportedDirections: ['CENTER_TO_SIDES'] },
+  AWNING_WINDOW_1F: { type: 'AWNING_WINDOW_1F', label: 'Porta Basculante 1 Folha', description: 'Abertura superior (Maxim-ar)', icon: 'window', supportedDirections: ['OUTSIDE'] },
+  AWNING_WINDOW_1F_INV: { type: 'AWNING_WINDOW_1F_INV', label: 'Porta Basculante Inversa', description: 'Abertura inferior (Tombar)', icon: 'window', supportedDirections: ['INSIDE'] },
+  FRONT_DRAWER: { type: 'FRONT_DRAWER', label: 'Gaveta Frontal', description: 'Frente de Gaveta', icon: 'kitchen', supportedDirections: ['OUTSIDE'] },
+  FIXED_PANEL: { type: 'FIXED_PANEL', label: 'Painel Fixo', description: 'Quadro Fixo sem abertura', icon: 'grid_view', supportedDirections: [] },
 };
 
 export const HANDLE_TYPE_LABELS: Record<HandleType, string> = {
   BAR_TUBULAR: 'Tubular Inox',
+  PROFILE_HANDLE: 'Puxador Perfil',
   SHELL_LOCK: 'Fecho Concha',
   LEVER_HANDLE: 'Maçaneta',
   NONE: 'Nenhum',

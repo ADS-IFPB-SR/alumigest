@@ -47,9 +47,6 @@ class BudgetIntegrationTest {
     @Autowired
     private br.edu.ifpb.alumigest.catalog.repository.ProductRepository productRepository;
 
-    @Autowired
-    private br.edu.ifpb.alumigest.catalog.repository.ProductCategoryRepository productCategoryRepository;
-
     private Client savedClient;
     private br.edu.ifpb.alumigest.catalog.domain.Product savedProduct;
     private Material savedGlass;
@@ -64,13 +61,9 @@ class BudgetIntegrationTest {
         client.setPhone("83999999999");
         savedClient = clientRepository.save(client);
 
-        br.edu.ifpb.alumigest.catalog.domain.ProductCategory productCategory = new br.edu.ifpb.alumigest.catalog.domain.ProductCategory();
-        productCategory.setName("Janelas");
-        productCategory = productCategoryRepository.save(productCategory);
-
         br.edu.ifpb.alumigest.catalog.domain.Product product = new br.edu.ifpb.alumigest.catalog.domain.Product();
         product.setName("Janela Correr 2 Folhas");
-        product.setCategory(productCategory);
+        product.setTemplateType(br.edu.ifpb.alumigest.catalog.domain.DoorTemplateType.SLIDING_DOOR_2F);
         savedProduct = productRepository.save(product);
 
         MaterialGroup glassGroup = new MaterialGroup();
@@ -157,25 +150,25 @@ class BudgetIntegrationTest {
         assertThat(savedGlassOption.unitPrice()).isEqualByComparingTo("200.00");
         assertThat(savedGlassOption.totalPrice()).isEqualByComparingTo("600.00"); // 3 * 200
 
-        // Verifica cálculo do Perfil (Perímetro Sliding 2 Leaf = 4W + 6H = 4*2 + 6*1.5 = 8 + 9 = 17m)
+        // Verifica cálculo do Perfil (Perímetro Sliding 2 Leaf = 2W + 4H = 2*2 + 4*1.5 = 4 + 6 = 10m)
         var savedProfileOption = response.items().get(0).options().stream()
                 .filter(o -> o.materialId().equals(savedProfile.getId()))
                 .findFirst().orElseThrow();
 
-        assertThat(savedProfileOption.quantity()).isEqualByComparingTo("17.00");
+        assertThat(savedProfileOption.quantity()).isEqualByComparingTo("10.00");
         assertThat(savedProfileOption.unitPrice()).isEqualByComparingTo("50.00");
-        assertThat(savedProfileOption.totalPrice()).isEqualByComparingTo("850.00"); // 17 * 50
+        assertThat(savedProfileOption.totalPrice()).isEqualByComparingTo("500.00"); // 10 * 50
 
         // Verifica Subtotal e Total do Orçamento
-        // Material Total: 600 + 850 = 1450
+        // Material Total: 600 + 500 = 1100
         // Labor Cost: 150
-        // Subtotal = 1600.00
-        assertThat(response.subtotal()).isEqualByComparingTo("1600.00");
+        // Subtotal = 1250.00
+        assertThat(response.subtotal()).isEqualByComparingTo("1250.00");
         
-        // Desconto 10% de 1600 = 160
-        assertThat(response.discountValue()).isEqualByComparingTo("160.00");
+        // Desconto 10% de 1250 = 125
+        assertThat(response.discountValue()).isEqualByComparingTo("125.00");
         
-        // Total = 1600 - 160 = 1440
-        assertThat(response.total()).isEqualByComparingTo("1440.00");
+        // Total = 1250 - 125 = 1125
+        assertThat(response.total()).isEqualByComparingTo("1125.00");
     }
 }

@@ -98,10 +98,10 @@ const columns = [
 ];
 
 interface Props {
-  searchQuery: string;
-  filterStatus: 'ALL' | 'ACTIVE' | 'INACTIVE';
-  onEdit: (item: GlassDTO) => void;
-  onViewDetails: (item: GlassDTO) => void;
+  readonly searchQuery: string;
+  readonly filterStatus: 'ALL' | 'ACTIVE' | 'INACTIVE';
+  readonly onEdit: (item: GlassDTO) => void;
+  readonly onViewDetails: (item: GlassDTO) => void;
 }
 
 export function GlassTab({
@@ -123,12 +123,8 @@ export function GlassTab({
 
     return (
       g.name.toLowerCase().includes(term) ||
-      (g.commercialReference &&
-        g.commercialReference
-          .toLowerCase()
-          .includes(term)) ||
-      (g.skuCode &&
-        g.skuCode.toLowerCase().includes(term))
+      Boolean(g.commercialReference?.toLowerCase().includes(term)) ||
+      Boolean(g.skuCode?.toLowerCase().includes(term))
     );
   });
 

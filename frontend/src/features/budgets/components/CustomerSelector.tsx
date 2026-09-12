@@ -5,10 +5,139 @@ import { useCustomers, useCreateCustomer } from '../../customers/hooks/useCustom
 import type { CustomerSummaryDTO } from '../../customers/services/customersApi';
 
 interface CustomerSelectorProps {
-  selectedCustomer: { id: string; name: string; document: string; phone: string; address: string } | null;
-  onSelect: (customer: Customer) => void;
-  error?: string;
+  readonly selectedCustomer: { id: string; name: string; document: string; phone: string; address: string } | null;
+  readonly onSelect: (customer: Customer) => void;
+  readonly error?: string;
 }
+
+interface SelectedCustomerCardProps {
+  readonly customer: { id: string; name: string; document: string; phone: string; address: string };
+  readonly onClear: () => void;
+}
+
+const SelectedCustomerCard: React.FC<SelectedCustomerCardProps> = ({ customer, onClear }) => {
+  return (
+    <div className="flex items-start justify-between gap-sm bg-surface-container-low p-sm rounded-md border border-primary/30 shadow-xs">
+      <div className="flex items-start gap-sm min-w-0">
+        <span className="material-symbols-outlined text-primary text-[26px] mt-[2px] shrink-0">
+          account_circle
+        </span>
+        <div className="min-w-0">
+          <p className="font-label font-bold text-on-surface text-sm">{customer.name}</p>
+          <div className="flex items-center gap-sm flex-wrap text-xs text-on-surface-variant mt-xs">
+            {customer.document && (
+              <span className="font-data-mono bg-surface-container px-xs py-[2px] rounded border border-outline-variant/60">
+                Doc: {customer.document}
+              </span>
+            )}
+            {customer.phone && (
+              <span className="font-body">
+                Tel: {customer.phone}
+              </span>
+            )}
+          </div>
+          {customer.address && (
+            <p className="text-xs font-body text-secondary mt-xs truncate">
+              Endereço: {customer.address}
+            </p>
+          )}
+        </div>
+      </div>
+      <button
+        type="button"
+        onClick={onClear}
+        className="shrink-0 p-xs text-on-surface-variant hover:text-error hover:bg-error/10 rounded-md transition-colors"
+        title="Trocar ou remover cliente"
+        aria-label="Trocar cliente"
+      >
+        <span className="material-symbols-outlined text-[18px]">close</span>
+      </button>
+    </div>
+  );
+};
+
+interface CustomerDropdownProps {
+  readonly isLoading: boolean;
+  readonly customers: CustomerSummaryDTO[];
+  readonly query: string;
+  readonly onSelect: (customer: CustomerSummaryDTO) => void;
+  readonly onOpenCreateModal: () => void;
+}
+
+function formatCustomerLocation(cidade?: string, uf?: string): string {
+  if (!cidade) return '';
+  return uf ? ` · ${cidade}/${uf}` : ` · ${cidade}`;
+}
+
+const CustomerSearchResultsDropdown: React.FC<CustomerDropdownProps> = ({
+  isLoading,
+  customers,
+  query,
+  onSelect,
+  onOpenCreateModal,
+}) => {
+  if (isLoading) {
+    return (
+      <div className="p-md text-center text-xs text-on-surface-variant font-body flex items-center justify-center gap-xs">
+        <span className="material-symbols-outlined animate-spin text-[16px] text-primary">progress_activity</span>
+        <span>Buscando clientes no banco de dados...</span>
+      </div>
+    );
+  }
+
+  if (customers.length === 0) {
+    const trimmed = query.trim();
+    const emptyMessage = trimmed.length >= 2
+      ? `Nenhum cliente encontrado para "${query}".`
+      : 'Nenhum cliente cadastrado no sistema.';
+    const buttonText = trimmed ? `"${query}"` : 'novo cliente';
+
+    return (
+      <div className="p-md text-center text-sm text-on-surface-variant font-body">
+        <p className="text-xs">{emptyMessage}</p>
+        <button
+          type="button"
+          onClick={onOpenCreateModal}
+          className="mt-sm text-primary text-xs hover:underline font-label font-semibold flex items-center gap-xs mx-auto"
+        >
+          <span className="material-symbols-outlined text-[16px]">add_circle</span>
+          Cadastrar {buttonText} agora
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className="px-sm py-xs bg-surface-container-low border-b border-outline-variant/60 text-[11px] font-label text-on-surface-variant uppercase tracking-wider">
+        Clientes Cadastrados ({customers.length})
+      </div>
+      {customers.map((customer) => (
+        <button
+          key={customer.id}
+          type="button"
+          onClick={() => onSelect(customer)}
+          className="w-full flex items-start gap-sm px-md py-sm hover:bg-primary/5 hover:text-primary transition-colors border-b border-outline-variant/40 last:border-0 text-left group"
+        >
+          <span className="material-symbols-outlined text-secondary group-hover:text-primary text-[20px] mt-[2px] shrink-0">
+            person
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="font-label font-semibold text-on-surface group-hover:text-primary text-sm">
+              {customer.nomeCompleto}
+            </p>
+
+            <p className="text-xs text-on-surface-variant font-data-mono truncate mt-[2px]">
+              {customer.documento ? `Doc: ${customer.documento}` : 'Sem doc'}
+              {customer.telefone ? ` · ${customer.telefone}` : ''}
+              {formatCustomerLocation(customer.cidade, customer.uf)}
+            </p>
+          </div>
+        </button>
+      ))}
+    </div>
+  );
+};
 
 export const CustomerSelector: React.FC<CustomerSelectorProps> = ({
   selectedCustomer,
@@ -31,9 +160,12 @@ export const CustomerSelector: React.FC<CustomerSelectorProps> = ({
   }, [query]);
 
   // Busca real no backend via React Query
-  const { data: customers = [], isLoading: isLoadingCustomers } = useCustomers(
-    debouncedQuery.trim().length >= 2 ? debouncedQuery : undefined,
-  );
+  const { data, isLoading: isLoadingCustomers } = useCustomers({
+    busca: debouncedQuery.trim().length >= 2 ? debouncedQuery : undefined,
+    size: 50,
+  });
+
+  const customers = data?.content || [];
 
   const { mutate: createCustomer, isPending: isCreatingCustomer } = useCreateCustomer();
 
@@ -74,7 +206,7 @@ export const CustomerSelector: React.FC<CustomerSelectorProps> = ({
     inputRef.current?.focus();
   };
 
-  const handleQuickCreate = (data: {
+  const handleQuickCreate = (formData: {
     nomeCompleto: string;
     cpfCnpj?: string;
     telefone?: string;
@@ -90,19 +222,19 @@ export const CustomerSelector: React.FC<CustomerSelectorProps> = ({
   }) => {
     createCustomer(
       {
-        nomeCompleto: data.nomeCompleto.trim(),
+        nomeCompleto: formData.nomeCompleto.trim(),
         personType: 'FISICA',
-        documento: data.cpfCnpj?.trim() || undefined,
-        telefone: data.telefone?.trim() || undefined,
-        email: data.email?.trim() || undefined,
-        cep: data.cep?.trim() || undefined,
-        logradouro: data.logradouro?.trim() || undefined,
-        numero: data.numero?.trim() || undefined,
-        complemento: data.complemento?.trim() || undefined,
-        bairro: data.bairro?.trim() || undefined,
-        cidade: data.cidade?.trim() || undefined,
-        uf: data.uf?.trim() || undefined,
-        observacoes: data.observacoes?.trim() || undefined,
+        documento: formData.cpfCnpj?.trim() || undefined,
+        telefone: formData.telefone?.trim() || undefined,
+        email: formData.email?.trim() || undefined,
+        cep: formData.cep?.trim() || undefined,
+        logradouro: formData.logradouro?.trim() || undefined,
+        numero: formData.numero?.trim() || undefined,
+        complemento: formData.complemento?.trim() || undefined,
+        bairro: formData.bairro?.trim() || undefined,
+        cidade: formData.cidade?.trim() || undefined,
+        uf: formData.uf?.trim() || undefined,
+        observacoes: formData.observacoes?.trim() || undefined,
       },
       {
         onSuccess: (newCust) => {
@@ -137,49 +269,14 @@ export const CustomerSelector: React.FC<CustomerSelectorProps> = ({
           {selectedCustomer?.id && (
             <span className="text-xs font-label font-normal text-secondary flex items-center gap-xs">
               <span className="material-symbols-outlined text-[14px] text-success">check_circle</span>
-              Cliente Vinculado
+              <span>Cliente Vinculado</span>
             </span>
           )}
         </h3>
 
         {/* Cliente selecionado */}
         {selectedCustomer?.id ? (
-          <div className="flex items-start justify-between gap-sm bg-surface-container-low p-sm rounded-md border border-primary/30 shadow-xs">
-            <div className="flex items-start gap-sm min-w-0">
-              <span className="material-symbols-outlined text-primary text-[26px] mt-[2px] shrink-0">
-                account_circle
-              </span>
-              <div className="min-w-0">
-                <p className="font-label font-bold text-on-surface text-sm">{selectedCustomer.name}</p>
-                <div className="flex items-center gap-sm flex-wrap text-xs text-on-surface-variant mt-xs">
-                  {selectedCustomer.document && (
-                    <span className="font-data-mono bg-surface-container px-xs py-[2px] rounded border border-outline-variant/60">
-                      Doc: {selectedCustomer.document}
-                    </span>
-                  )}
-                  {selectedCustomer.phone && (
-                    <span className="font-body">
-                      Tel: {selectedCustomer.phone}
-                    </span>
-                  )}
-                </div>
-                {selectedCustomer.address && (
-                  <p className="text-xs font-body text-secondary mt-xs truncate">
-                    Endereço: {selectedCustomer.address}
-                  </p>
-                )}
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={handleClear}
-              className="shrink-0 p-xs text-on-surface-variant hover:text-error hover:bg-error/10 rounded-md transition-colors"
-              title="Trocar ou remover cliente"
-              aria-label="Trocar cliente"
-            >
-              <span className="material-symbols-outlined text-[18px]">close</span>
-            </button>
-          </div>
+          <SelectedCustomerCard customer={selectedCustomer} onClear={handleClear} />
         ) : (
           /* Autocomplete de busca com dados do Backend */
           <div ref={containerRef} className="relative">
@@ -216,59 +313,16 @@ export const CustomerSelector: React.FC<CustomerSelectorProps> = ({
             {/* Dropdown de resultados conectado ao Backend */}
             {isDropdownOpen && (
               <div className="absolute left-0 right-0 top-full mt-xs bg-surface-container-lowest border border-outline-variant rounded-md shadow-xl z-30 max-h-64 overflow-y-auto">
-                {isLoadingCustomers ? (
-                  <div className="p-md text-center text-xs text-on-surface-variant font-body flex items-center justify-center gap-xs">
-                    <span className="material-symbols-outlined animate-spin text-[16px] text-primary">progress_activity</span>
-                    Buscando clientes no banco de dados...
-                  </div>
-                ) : customers.length === 0 ? (
-                  <div className="p-md text-center text-sm text-on-surface-variant font-body">
-                    <p className="text-xs">
-                      {query.trim().length >= 2
-                        ? `Nenhum cliente encontrado para "${query}".`
-                        : 'Nenhum cliente cadastrado no sistema.'}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsDropdownOpen(false);
-                        setIsCreateModalOpen(true);
-                      }}
-                      className="mt-sm text-primary text-xs hover:underline font-label font-semibold flex items-center gap-xs mx-auto"
-                    >
-                      <span className="material-symbols-outlined text-[16px]">add_circle</span>
-                      Cadastrar {query.trim() ? `"${query}"` : 'novo cliente'} agora
-                    </button>
-                  </div>
-                ) : (
-                  <div>
-                    <div className="px-sm py-xs bg-surface-container-low border-b border-outline-variant/60 text-[11px] font-label text-on-surface-variant uppercase tracking-wider">
-                      Clientes Cadastrados ({customers.length})
-                    </div>
-                    {customers.map((customer) => (
-                      <button
-                        key={customer.id}
-                        type="button"
-                        onClick={() => handleSelect(customer)}
-                        className="w-full flex items-start gap-sm px-md py-sm hover:bg-primary/5 hover:text-primary transition-colors border-b border-outline-variant/40 last:border-0 text-left group"
-                      >
-                        <span className="material-symbols-outlined text-secondary group-hover:text-primary text-[20px] mt-[2px] shrink-0">
-                          person
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <p className="font-label font-semibold text-on-surface group-hover:text-primary text-sm">
-                            {customer.nomeCompleto}
-                          </p>
-                          <p className="text-xs text-on-surface-variant font-data-mono truncate mt-[2px]">
-                            {customer.documento ? `Doc: ${customer.documento}` : 'Sem doc'}
-                            {customer.telefone ? ` · ${customer.telefone}` : ''}
-                            {customer.cidade ? ` · ${customer.cidade}${customer.uf ? `/${customer.uf}` : ''}` : ''}
-                          </p>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
+                <CustomerSearchResultsDropdown
+                  isLoading={isLoadingCustomers}
+                  customers={customers}
+                  query={query}
+                  onSelect={handleSelect}
+                  onOpenCreateModal={() => {
+                    setIsDropdownOpen(false);
+                    setIsCreateModalOpen(true);
+                  }}
+                />
               </div>
             )}
           </div>

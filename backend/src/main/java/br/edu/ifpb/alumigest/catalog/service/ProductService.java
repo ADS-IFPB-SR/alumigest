@@ -1,15 +1,9 @@
 package br.edu.ifpb.alumigest.catalog.service;
 
-import br.edu.ifpb.alumigest.catalog.domain.Material;
 import br.edu.ifpb.alumigest.catalog.domain.Product;
-import br.edu.ifpb.alumigest.catalog.domain.ProductCategory;
-import br.edu.ifpb.alumigest.catalog.domain.ProductItem;
-import br.edu.ifpb.alumigest.catalog.dto.ProductItemRequestDTO;
 import br.edu.ifpb.alumigest.catalog.dto.ProductRequestDTO;
 import br.edu.ifpb.alumigest.catalog.dto.ProductResponseDTO;
 import br.edu.ifpb.alumigest.catalog.mapper.ProductMapper;
-import br.edu.ifpb.alumigest.catalog.repository.MaterialRepository;
-import br.edu.ifpb.alumigest.catalog.repository.ProductCategoryRepository;
 import br.edu.ifpb.alumigest.catalog.repository.ProductRepository;
 import br.edu.ifpb.alumigest.common.exception.BusinessException;
 import br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException;
@@ -18,26 +12,19 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 public class ProductService implements IProductService {
 
+    private static final String PRODUCT_NOT_FOUND_MSG = "Produto não encontrado com o ID informado.";
+
     private final ProductRepository productRepository;
-    private final MaterialRepository materialRepository;
-    private final ProductCategoryRepository productCategoryRepository;
     private final ProductMapper productMapper;
 
     public ProductService(ProductRepository productRepository,
-                          MaterialRepository materialRepository,
-                          ProductCategoryRepository productCategoryRepository,
                           ProductMapper productMapper) {
         this.productRepository = productRepository;
-        this.materialRepository = materialRepository;
-        this.productCategoryRepository = productCategoryRepository;
         this.productMapper = productMapper;
     }
 
@@ -50,20 +37,12 @@ public class ProductService implements IProductService {
 
         validateTemplateRequirements(request);
 
-        ProductCategory category = productCategoryRepository.findById(request.categoryId())
-                .orElseThrow(() -> new ResourceNotFoundException("Categoria não encontrada: " + request.categoryId()));
-
         Product product = new Product();
         product.setName(request.name());
-        product.setCategory(category);
         product.setTemplateType(request.templateType());
         product.setTemplateConfig(productMapper.toTemplateConfig(request.templateConfig()));
         product.setCategoryRequirements(request.categoryRequirements());
         product.setActive(true);
-
-        if (request.items() != null && !request.items().isEmpty()) {
-            attachProductItems(product, request.items());
-        }
 
         Product savedProduct = productRepository.save(product);
         return productMapper.toResponse(savedProduct);
@@ -82,7 +61,7 @@ public class ProductService implements IProductService {
     @Transactional(readOnly = true)
     public ProductResponseDTO findById(UUID id) {
         Product product = productRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Produto não encontrado com o ID informado."));
+                .orElseThrow(() -> new ResourceNotFoundException(PRODUCT_NOT_FOUND_MSG));
         return productMapper.toResponse(product);
     }
 
@@ -96,21 +75,12 @@ public class ProductService implements IProductService {
         validateTemplateRequirements(request);
 
         Product product = productRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Produto não encontrado com o ID informado."));
-
-        ProductCategory category = productCategoryRepository.findById(request.categoryId())
-                .orElseThrow(() -> new ResourceNotFoundException("Categoria não encontrada: " + request.categoryId()));
+                .orElseThrow(() -> new ResourceNotFoundException(PRODUCT_NOT_FOUND_MSG));
 
         product.setName(request.name());
-        product.setCategory(category);
         product.setTemplateType(request.templateType());
         product.setTemplateConfig(productMapper.toTemplateConfig(request.templateConfig()));
         product.setCategoryRequirements(request.categoryRequirements());
-
-        product.getItems().clear();
-        if (request.items() != null && !request.items().isEmpty()) {
-            attachProductItems(product, request.items());
-        }
 
         return productMapper.toResponse(productRepository.save(product));
     }
@@ -119,34 +89,18 @@ public class ProductService implements IProductService {
     @Transactional
     public void inactivateProduct(UUID id) {
         Product product = productRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Produto não encontrado com o ID informado."));
+                .orElseThrow(() -> new ResourceNotFoundException(PRODUCT_NOT_FOUND_MSG));
 
         product.setActive(false);
         productRepository.save(product);
     }
 
     private void validateTemplateRequirements(ProductRequestDTO request) {
-        if (request.templateType() != null) {
-            if (request.categoryRequirements() == null || request.categoryRequirements().isEmpty()) {
-                throw new BusinessException("Templates de produto exigem ao menos uma categoria de insumo (categoryRequirements).");
-            }
+        if (request.templateType() == null) {
+            throw new BusinessException("O modelo de esquadria (templateType) é obrigatório.");
         }
-    }
-
-    private void attachProductItems(Product product, java.util.List<ProductItemRequestDTO> items) {
-        Map<UUID, BigDecimal> groupedItems = items.stream()
-                .collect(Collectors.toMap(
-                        ProductItemRequestDTO::materialId,
-                        ProductItemRequestDTO::quantity,
-                        BigDecimal::add
-                ));
-
-        for (Map.Entry<UUID, BigDecimal> entry : groupedItems.entrySet()) {
-            Material material = materialRepository.findByIdAndIsActiveTrue(entry.getKey())
-                    .orElseThrow(() -> new ResourceNotFoundException("Material não encontrado ou inativo: " + entry.getKey()));
-
-            ProductItem productItem = new ProductItem(material, entry.getValue());
-            product.addItem(productItem);
+        if (request.categoryRequirements() == null || request.categoryRequirements().isEmpty()) {
+            throw new BusinessException("O produto exige ao menos uma categoria de insumo (categoryRequirements).");
         }
     }
 }

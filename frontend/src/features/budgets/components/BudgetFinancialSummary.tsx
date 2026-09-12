@@ -4,28 +4,28 @@ import { Button } from '../../../components/ui/Button';
 
 interface BudgetFinancialSummaryProps {
   /** Número de itens — usado no label "N item(s)" */
-  itemCount: number;
+  readonly itemCount: number;
   /** Subtotal dos itens (apenas esquadrias) */
-  itemsSubtotal: number;
+  readonly itemsSubtotal: number;
   /** Mão de obra geral (opcional) */
-  laborCost?: number;
+  readonly laborCost?: number;
   /** Subtotal bruto = itemsSubtotal + laborCost */
-  subtotal: number;
+  readonly subtotal: number;
   /** Percentual de desconto (0-100) */
-  discountPercent: number;
+  readonly discountPercent: number;
   /** Valor calculado do desconto = subtotal × discountPercent / 100 */
-  discountValue: number;
+  readonly discountValue: number;
   /** Total líquido = subtotal - discountValue */
-  total: number;
+  readonly total: number;
   /** Callback de submissão */
-  onSave: () => void;
+  readonly onSave: () => void;
   /** Estado de loading durante a requisição de criação */
-  isSaving: boolean;
+  readonly isSaving: boolean;
   /**
    * Quando false, o botão de salvar fica desabilitado.
    * Obrigatório ter cliente selecionado + ao menos 1 item.
    */
-  canSave: boolean;
+  readonly canSave: boolean;
 }
 
 /**

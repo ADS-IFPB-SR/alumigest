@@ -5,7 +5,6 @@ import type {
   HardwareDTO,
   FilmDTO,
   PageResponse,
-  ProductCategory,
   MaterialSummary,
   Product,
   ProductRequest,
@@ -74,15 +73,7 @@ export const catalogApi = {
     return response.data;
   },
 
-  // ── Product Categories ────────────────────────────────────────────────────
-  getProductCategories: async (): Promise<ProductCategory[]> => {
-    const response = await api.get<ProductCategory[]>('/catalog/product-categories');
-    return response.data;
-  },
-  createProductCategory: async (data: { name: string; description?: string }) => {
-    const response = await api.post<ProductCategory>('/catalog/product-categories', data);
-    return response.data;
-  },
+
 
   // ── Material Summary (lista unificada para o builder) ─────────────────────
   // Consome o endpoint /catalog/materials que o MaterialController já fornece.
@@ -111,6 +102,17 @@ export const catalogApi = {
   inactivateProduct: async (id: string) => {
     const response = await api.delete(`/catalog/products/${id}`);
     return response.data;
+  },
+
+  // ── Material Families ─────────────────────────────────────────────────────
+  getMaterialFamilies: async (groupCode?: string): Promise<string[]> => {
+    const params = groupCode ? `?groupCode=${encodeURIComponent(groupCode)}` : '';
+    const response = await api.get<any>(`/catalog/materials/families${params}`);
+    // O interceptor do axios já desempacota response.data = response.data.data quando 'data' existe
+    if (Array.isArray(response.data)) {
+      return response.data;
+    }
+    return response.data?.data ?? [];
   },
 };
 

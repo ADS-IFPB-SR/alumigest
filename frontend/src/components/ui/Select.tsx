@@ -1,14 +1,14 @@
 import React from 'react';
 
 export interface SelectOption {
-  value: string | number;
-  label: string;
+  readonly value: string | number;
+  readonly label: string;
 }
 
 interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
-  label: string;
-  options: SelectOption[];
-  error?: string;
+  readonly label: string;
+  readonly options: readonly SelectOption[];
+  readonly error?: string;
 }
 
 export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
@@ -17,6 +17,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
       <div className="flex flex-col gap-xs w-full">
         <label className="font-label-bold text-label-bold text-on-surface dark:text-inverse-on-surface text-xs">
           {label}
+          {props.required && <span className="text-error ml-[2px]">*</span>}
         </label>
         <div className="relative">
           <select

@@ -23,7 +23,11 @@ const queryClient = new QueryClient({
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <Toaster position="top-right" />
+      <Toaster 
+        position="top-right" 
+        toastOptions={{ style: { zIndex: 999999 } }}
+        containerStyle={{ zIndex: 999999 }}
+      />
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<DashboardLayout />}>

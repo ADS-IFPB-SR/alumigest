@@ -2,6 +2,11 @@ import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 
+function getModalSaveLabel(isPending: boolean, isEditing: boolean): string {
+  if (isPending) return 'Salvando...';
+  return isEditing ? 'Atualizar' : 'Salvar';
+}
+
 import { Modal } from '../../../components/ui/Modal';
 import { Input } from '../../../components/ui/Input';
 import { Button } from '../../../components/ui/Button';
@@ -24,10 +29,12 @@ import {
   type GlassFormValues,
 } from '../schemas/catalogSchemas';
 
+import { FamilyAutocompleteInput } from './FamilyAutocompleteInput';
+
 interface Props {
-  isOpen: boolean;
-  onClose: () => void;
-  initialData?: any;
+  readonly isOpen: boolean;
+  readonly onClose: () => void;
+  readonly initialData?: any;
 }
 
 export function GlassFormModal({
@@ -64,6 +71,7 @@ export function GlassFormModal({
       ncmCode: '',
       thicknessMm: '8',
       colorFinish: '',
+      familyCode: '',
       maxWidthMm: '2000',
       maxHeightMm: '3000',
       costPrice: '',
@@ -73,6 +81,7 @@ export function GlassFormModal({
   });
 
   const activeValue = watch('active');
+  const familyCodeValue = watch('familyCode');
 
   useEffect(() => {
     if (!isOpen) {
@@ -85,6 +94,7 @@ export function GlassFormModal({
         ncmCode: initialData.ncmCode ?? '',
         thicknessMm: initialData.thicknessMm?.toString() ?? '8',
         colorFinish: initialData.colorFinish ?? '',
+        familyCode: initialData.familyCode ?? '',
         maxWidthMm: initialData.maxWidthMm?.toString() ?? '2000',
         maxHeightMm: initialData.maxHeightMm?.toString() ?? '3000',
         costPrice: formatCurrencyInput(
@@ -108,6 +118,7 @@ export function GlassFormModal({
       ncmCode: '',
       thicknessMm: '8',
       colorFinish: '',
+      familyCode: '',
       maxWidthMm: '2000',
       maxHeightMm: '3000',
       costPrice: '',
@@ -121,6 +132,7 @@ export function GlassFormModal({
       name: data.name,
       thicknessMm: Number(data.thicknessMm),
       colorFinish: data.colorFinish,
+      familyCode: data.familyCode?.trim() ? data.familyCode.trim() : undefined,
       maxWidthMm: Number(data.maxWidthMm),
       maxHeightMm: Number(data.maxHeightMm),
       costPrice: parseCurrencyString(data.costPrice),
@@ -184,11 +196,7 @@ export function GlassFormModal({
             onClick={handleSubmit(onSubmit)}
             disabled={isPending}
           >
-            {isPending
-              ? 'Salvando...'
-              : isEditing
-                ? 'Atualizar'
-                : 'Salvar'}
+            {getModalSaveLabel(isPending, isEditing)}
           </Button>
         </>
       }
@@ -291,6 +299,22 @@ export function GlassFormModal({
               },
             })}
             error={errors.colorFinish?.message}
+          />
+        </div>
+
+        {/* Família do Material (Agrupamento de Cores) */}
+        <div
+          data-cy="glass-form-family-code-field"
+          className="col-span-1 md:col-span-2"
+        >
+          <FamilyAutocompleteInput
+            data-cy="glass-form-family-code"
+            label="Família do Vidro (Opcional - Troca de Cor)"
+            placeholder="Ex: FAM-VIDRO-TEMP-8MM"
+            groupCode="VIDRO"
+            value={familyCodeValue ?? ''}
+            onChange={(val) => setValue('familyCode', val, { shouldValidate: true })}
+            error={errors.familyCode?.message}
           />
         </div>
 
