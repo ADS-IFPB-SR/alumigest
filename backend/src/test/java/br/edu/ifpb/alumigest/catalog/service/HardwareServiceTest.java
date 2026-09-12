@@ -27,6 +27,7 @@ import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -90,8 +91,8 @@ class HardwareServiceTest {
         hardwareMaterial.setSalePrice(new BigDecimal("15.50"));
         hardwareMaterial.setActive(true);
         hardwareMaterial.setGroup(ferragemGroup);
-        hardwareMaterial.setCreatedAt(OffsetDateTime.now());
-        hardwareMaterial.setUpdatedAt(OffsetDateTime.now());
+        hardwareMaterial.setCreatedAt(OffsetDateTime.now(ZoneOffset.UTC));
+        hardwareMaterial.setUpdatedAt(OffsetDateTime.now(ZoneOffset.UTC));
     }
 
     // =========================================================================

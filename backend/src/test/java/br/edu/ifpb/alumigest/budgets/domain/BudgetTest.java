@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -32,7 +33,7 @@ class BudgetTest {
     @DisplayName("Deve manter validUntil customizado no onCreate")
     void onCreate_WithCustomValidUntil_ShouldPreserveCustomDate() {
         Budget budget = new Budget();
-        OffsetDateTime customValidUntil = OffsetDateTime.now().plusDays(30);
+        OffsetDateTime customValidUntil = OffsetDateTime.now(ZoneOffset.UTC).plusDays(30);
         budget.setValidUntil(customValidUntil);
 
         budget.onCreate();
