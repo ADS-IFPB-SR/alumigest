@@ -68,7 +68,7 @@ export const Step2Materials: React.FC<Step2MaterialsProps> = ({
         <div className="flex items-center justify-between pb-xs border-b border-outline-variant/50">
           <h3 className="text-sm font-label font-bold text-on-surface flex items-center gap-xs uppercase tracking-wider">
             <span className="material-symbols-outlined text-[18px] text-primary">palette</span>
-            Acabamentos do Modelo
+            <span>Acabamentos do Modelo</span>
           </h3>
           <span className="text-xs font-label text-on-surface-variant">Cores Gerais</span>
         </div>

@@ -47,6 +47,6 @@ export function Tabs({ children, defaultIndex = 0 }: TabsProps) {
   );
 }
 
-export function Tab({ children }: TabProps) {
+export function Tab({ children, label: _label, dataCy: _dataCy }: Readonly<TabProps>) {
   return <>{children}</>;
 }

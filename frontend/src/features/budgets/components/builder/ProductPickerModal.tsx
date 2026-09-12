@@ -166,74 +166,85 @@ export const ProductPickerModal: React.FC<ProductPickerModalProps> = ({
 
         {/* Grid de Produtos */}
         <main className="flex-1 overflow-y-auto p-md sm:p-lg bg-surface">
-          {isLoading ? (
-            <div className="h-full min-h-[300px] flex flex-col items-center justify-center text-secondary gap-sm">
-              <span className="material-symbols-outlined animate-spin text-[36px] text-primary">
-                progress_activity
-              </span>
-              <span className="text-sm font-medium">Carregando catálogo de esquadrias...</span>
-            </div>
-          ) : filteredProducts.length === 0 ? (
-            <div className="h-full min-h-[300px] flex flex-col items-center justify-center text-secondary gap-sm border-2 border-dashed border-outline-variant/60 rounded-xl my-4 p-lg text-center">
-              <span className="material-symbols-outlined text-[56px] text-outline">
-                {configuredProducts.length === 0 ? 'category' : 'search_off'}
-              </span>
-              <p className="text-base font-semibold text-on-surface">
-                {configuredProducts.length === 0
-                  ? 'Nenhuma esquadria configurada no catálogo'
-                  : 'Nenhuma esquadria encontrada'}
-              </p>
-              <p className="text-xs text-secondary max-w-sm">
-                {configuredProducts.length === 0
-                  ? 'Cadastre e configure novos modelos de esquadrias no menu Produtos para utilizá-los na montagem de orçamentos.'
-                  : 'Tente ajustar os termos de busca ou selecione outra categoria acima.'}
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-sm sm:gap-md">
-              {filteredProducts.map((product) => (
-                <button
-                  key={product.id}
-                  type="button"
-                  onClick={() => onSelectProduct(product.id)}
-                  aria-label={`Selecionar esquadria ${product.name}`}
-                  className="flex flex-col text-left bg-surface-container-low dark:bg-surface-container border border-outline-variant/70 hover:border-primary dark:hover:border-primary/60 rounded-xl overflow-hidden hover:shadow-lg active:scale-[0.99] transition-all group focus:outline-none focus:ring-2 focus:ring-primary shadow-xs cursor-pointer"
-                >
-                  {/* Miniatura CAD com Desenho 100% Completo */}
-                  <div className="w-full h-48 sm:h-52 bg-surface-container-lowest/80 dark:bg-surface-container-lowest relative p-3 flex items-center justify-center border-b border-outline-variant/40 group-hover:border-primary/20 transition-colors">
-                    <WindowSvgPreview
-                      templateType={product.resolvedTemplateType}
-                      widthMm={1000}
-                      heightMm={1000}
-                      aluminumColor={product.templateConfig?.aluminumColor}
-                      glassFinish={product.templateConfig?.glassColor}
-                      handleConfig={product.templateConfig?.handleConfig || { handleType: 'NONE' }}
-                      drillingConfig={{
-                        holeCount: product.templateConfig?.drillingConfig?.holeCount || 0,
-                        divisionType:
-                          product.templateConfig?.drillingConfig?.drillingMode === 'CUSTOM'
-                            ? 'CUSTOM_DISTANCE'
-                            : 'EQUAL',
-                        customDistancesMm:
-                          product.templateConfig?.drillingConfig?.customPositionsMm,
-                      }}
-                      openingDirection={product.templateConfig?.openingDirection || 'LEFT_TO_RIGHT'}
-                      minimal={true}
-                      baseWidth="100%"
-                      maxHeight="100%"
-                    />
-                  </div>
+          {(() => {
+            if (isLoading) {
+              return (
+                <div className="h-full min-h-[300px] flex flex-col items-center justify-center text-secondary gap-sm">
+                  <span className="material-symbols-outlined animate-spin text-[36px] text-primary">
+                    progress_activity
+                  </span>
+                  <span className="text-sm font-medium">Carregando catálogo de esquadrias...</span>
+                </div>
+              );
+            }
 
-                  {/* Detalhes do Modelo - Somente o Nome Completo */}
-                  <div className="p-3.5 flex items-center justify-center flex-1 min-h-[58px] bg-surface-container-low dark:bg-surface-container group-hover:bg-surface-container-high transition-colors text-center">
-                    <h3 className="font-title-sm text-sm font-bold text-on-surface leading-snug break-words group-hover:text-primary transition-colors">
-                      {product.name}
-                    </h3>
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
+            if (filteredProducts.length === 0) {
+              const hasNoConfigured = configuredProducts.length === 0;
+              return (
+                <div className="h-full min-h-[300px] flex flex-col items-center justify-center text-secondary gap-sm border-2 border-dashed border-outline-variant/60 rounded-xl my-4 p-lg text-center">
+                  <span className="material-symbols-outlined text-[56px] text-outline">
+                    {hasNoConfigured ? 'category' : 'search_off'}
+                  </span>
+                  <p className="text-base font-semibold text-on-surface">
+                    {hasNoConfigured
+                      ? 'Nenhuma esquadria configurada no catálogo'
+                      : 'Nenhuma esquadria encontrada'}
+                  </p>
+                  <p className="text-xs text-secondary max-w-sm">
+                    {hasNoConfigured
+                      ? 'Cadastre e configure novos modelos de esquadrias no menu Produtos para utilizá-los na montagem de orçamentos.'
+                      : 'Tente ajustar os termos de busca ou selecione outra categoria acima.'}
+                  </p>
+                </div>
+              );
+            }
+
+            return (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-sm sm:gap-md">
+                {filteredProducts.map((product) => (
+                  <button
+                    key={product.id}
+                    type="button"
+                    onClick={() => onSelectProduct(product.id)}
+                    aria-label={`Selecionar esquadria ${product.name}`}
+                    className="flex flex-col text-left bg-surface-container-low dark:bg-surface-container border border-outline-variant/70 hover:border-primary dark:hover:border-primary/60 rounded-xl overflow-hidden hover:shadow-lg active:scale-[0.99] transition-all group focus:outline-none focus:ring-2 focus:ring-primary shadow-xs cursor-pointer"
+                  >
+                    {/* Miniatura CAD com Desenho 100% Completo */}
+                    <div className="w-full h-48 sm:h-52 bg-surface-container-lowest/80 dark:bg-surface-container-lowest relative p-3 flex items-center justify-center border-b border-outline-variant/40 group-hover:border-primary/20 transition-colors">
+                      <WindowSvgPreview
+                        templateType={product.resolvedTemplateType}
+                        widthMm={1000}
+                        heightMm={1000}
+                        aluminumColor={product.templateConfig?.aluminumColor}
+                        glassFinish={product.templateConfig?.glassColor}
+                        handleConfig={product.templateConfig?.handleConfig || { handleType: 'NONE' }}
+                        drillingConfig={{
+                          holeCount: product.templateConfig?.drillingConfig?.holeCount || 0,
+                          divisionType:
+                            product.templateConfig?.drillingConfig?.drillingMode === 'CUSTOM'
+                              ? 'CUSTOM_DISTANCE'
+                              : 'EQUAL',
+                          customDistancesMm:
+                            product.templateConfig?.drillingConfig?.customPositionsMm,
+                        }}
+                        openingDirection={product.templateConfig?.openingDirection || 'LEFT_TO_RIGHT'}
+                        minimal={true}
+                        baseWidth="100%"
+                        maxHeight="100%"
+                      />
+                    </div>
+
+                    {/* Detalhes do Modelo - Somente o Nome Completo */}
+                    <div className="p-3.5 flex items-center justify-center flex-1 min-h-[58px] bg-surface-container-low dark:bg-surface-container group-hover:bg-surface-container-high transition-colors text-center">
+                      <h3 className="font-title-sm text-sm font-bold text-on-surface leading-snug break-words group-hover:text-primary transition-colors">
+                        {product.name}
+                      </h3>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            );
+          })()}
         </main>
       </div>
     </div>,

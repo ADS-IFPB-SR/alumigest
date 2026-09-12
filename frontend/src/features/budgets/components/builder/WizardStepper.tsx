@@ -20,6 +20,17 @@ export const WizardStepper: React.FC<WizardStepperProps> = ({ currentStep, onGoT
           const isActive = currentStep === step.num;
           const isCompleted = currentStep > step.num;
 
+          let circleClass = 'bg-surface-container-highest text-on-surface-variant';
+          let titleClass = 'text-on-surface-variant';
+
+          if (isActive) {
+            circleClass = 'bg-primary text-on-primary shadow-xs ring-2 ring-primary/30';
+            titleClass = 'text-primary';
+          } else if (isCompleted) {
+            circleClass = 'bg-primary/20 text-primary hover:bg-primary/30';
+            titleClass = 'text-on-surface';
+          }
+
           return (
             <React.Fragment key={step.num}>
               <button
@@ -30,13 +41,7 @@ export const WizardStepper: React.FC<WizardStepperProps> = ({ currentStep, onGoT
                 title={step.fullTitle}
               >
                 <div
-                  className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-label font-bold transition-all ${
-                    isActive
-                      ? 'bg-primary text-on-primary shadow-xs ring-2 ring-primary/30'
-                      : isCompleted
-                      ? 'bg-primary/20 text-primary hover:bg-primary/30'
-                      : 'bg-surface-container-highest text-on-surface-variant'
-                  }`}
+                  className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-label font-bold transition-all ${circleClass}`}
                 >
                   {isCompleted ? (
                     <span className="material-symbols-outlined text-[14px] sm:text-[18px]">check</span>
@@ -46,9 +51,7 @@ export const WizardStepper: React.FC<WizardStepperProps> = ({ currentStep, onGoT
                 </div>
                 <div className="flex flex-col text-left">
                   <span
-                    className={`text-[11px] sm:text-xs font-label font-bold leading-tight ${
-                      isActive ? 'text-primary' : isCompleted ? 'text-on-surface' : 'text-on-surface-variant'
-                    }`}
+                    className={`text-[11px] sm:text-xs font-label font-bold leading-tight ${titleClass}`}
                   >
                     <span className="sm:hidden">{step.title}</span>
                     <span className="hidden sm:inline">{step.fullTitle}</span>

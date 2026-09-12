@@ -48,6 +48,8 @@ export const BASE_GLASS_FINISHES = [
   'Reflecta Bronze',
 ];
 
+export type BuilderStep = 1 | 2 | 3 | 4;
+
 export const CATEGORY_ICONS: Record<CategoryType, string> = {
   GLASS: 'grid_view',
   PROFILE: 'view_stream',
@@ -181,10 +183,7 @@ function computeEditingDrillDistances(editingItem: BudgetItem): number[] {
   const editH = editingItem.heightMm ?? 2100;
   const step = Math.round(editH / (editCount + 1));
   const fallbackDists = Array.from({ length: editCount }, (_, i) => step * (i + 1));
-  if (
-    editingItem.drillingConfig?.customDistancesMm &&
-    editingItem.drillingConfig.customDistancesMm.length === editCount
-  ) {
+  if (editingItem.drillingConfig?.customDistancesMm?.length === editCount) {
     return editingItem.drillingConfig.customDistancesMm;
   }
   return fallbackDists;
@@ -258,13 +257,21 @@ function computeDefaultHandleConfig(cfgHandle: any): HandleConfig {
   };
 }
 
+function resolveDefaultDrillPositions(cfgDrill: any): number[] {
+  if (cfgDrill?.customPositionsMm && cfgDrill.customPositionsMm.length > 0) {
+    return cfgDrill.customPositionsMm;
+  }
+  if (cfgDrill && 'customDistancesMm' in cfgDrill && cfgDrill.customDistancesMm && cfgDrill.customDistancesMm.length > 0) {
+    return cfgDrill.customDistancesMm;
+  }
+  return [100, 500, 560, 100];
+}
+
 function computeDefaultDrillingConfig(cfgDrill: any): DrillingConfig {
-  const drillPositions = (cfgDrill?.customPositionsMm && cfgDrill.customPositionsMm.length > 0)
-    ? cfgDrill.customPositionsMm
-    : (cfgDrill && 'customDistancesMm' in cfgDrill && cfgDrill.customDistancesMm && cfgDrill.customDistancesMm.length > 0)
-    ? cfgDrill.customDistancesMm
-    : [100, 500, 560, 100];
-  const isCustom = cfgDrill && ('drillingMode' in cfgDrill ? cfgDrill.drillingMode === 'CUSTOM' : cfgDrill.divisionType === 'CUSTOM_DISTANCE');
+  const drillPositions = resolveDefaultDrillPositions(cfgDrill);
+  const isCustom = cfgDrill?.drillingMode
+    ? cfgDrill.drillingMode === 'CUSTOM'
+    : cfgDrill?.divisionType === 'CUSTOM_DISTANCE';
 
   return {
     holeCount: cfgDrill?.holeCount ?? 2,
@@ -344,16 +351,18 @@ function deriveHandleTypeFromMaterial(mat: { name: string }, currentType: Handle
   return currentType;
 }
 
-function parseDimensionValue(val: number | string | undefined): number {
+type DimensionInput = number | string | undefined;
+
+function parseDimensionValue(val: DimensionInput): number {
   if (typeof val === 'number') return val;
   if (typeof val === 'string') return Number.parseFloat(val) || 0;
   return 0;
 }
 
 function validateStep1Dimensions(
-  widthMm: number | string | undefined,
-  heightMm: number | string | undefined,
-  quantity: number | string | undefined,
+  widthMm: DimensionInput,
+  heightMm: DimensionInput,
+  quantity: DimensionInput,
 ): Record<string, string> {
   const errors: Record<string, string> = {};
   const w = parseDimensionValue(widthMm);
@@ -425,14 +434,14 @@ export function useWindowBuilderState({
   const dynamicAluminumColors = useMemo(() => {
     const fromCatalog = profiles
       .map((p) => p.colorFinish)
-      .filter((c): c is string => Boolean(c && c.trim()));
+      .filter((c): c is string => Boolean(c?.trim()));
     return Array.from(new Set([...BASE_ALUMINUM_COLORS, ...fromCatalog]));
   }, [profiles]);
 
   const dynamicGlassFinishes = useMemo(() => {
     const fromCatalog = glasses
       .map((g) => g.colorFinish)
-      .filter((c): c is string => Boolean(c && c.trim()));
+      .filter((c): c is string => Boolean(c?.trim()));
     return Array.from(new Set([...BASE_GLASS_FINISHES, ...fromCatalog]));
   }, [glasses]);
 
@@ -462,7 +471,7 @@ export function useWindowBuilderState({
 
   const [holeDistanceInputs, setHoleDistanceInputs] = useState<string[]>(['700', '1400']);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4>(1);
+  const [currentStep, setCurrentStep] = useState<BuilderStep>(1);
   const [isMobileCadExpanded, setIsMobileCadExpanded] = useState(false);
   const hasInitializedRef = useRef(false);
 
@@ -602,6 +611,13 @@ export function useWindowBuilderState({
     else if (catType === 'HARDWARE' && hardwares.length > 0) defaultMat = { id: hardwares[0].id, name: hardwares[0].name, price: hardwares[0].salePrice ?? 0, unit: hardwares[0].unitMeasure ?? 'un' };
     else if (catType === 'FILM' && films.length > 0) defaultMat = { id: films[0].id, name: films[0].name, price: films[0].salePrice ?? 0, unit: 'm²' };
 
+    const resolveUnitMeasure = () => {
+      if (defaultMat?.unit) return defaultMat.unit;
+      if (catType === 'GLASS' || catType === 'FILM') return 'm²';
+      if (catType === 'PROFILE') return 'm';
+      return 'un';
+    };
+
     const newSel: MaterialSelection = {
       requirementId: `custom-mat-${Date.now()}`,
       categoryType: catType,
@@ -609,7 +625,7 @@ export function useWindowBuilderState({
       isOptional: true,
       materialId: defaultMat?.id ?? '',
       materialName: defaultMat?.name ?? '',
-      unitMeasure: defaultMat?.unit ?? (catType === 'GLASS' || catType === 'FILM' ? 'm²' : catType === 'PROFILE' ? 'm' : 'un'),
+      unitMeasure: resolveUnitMeasure(),
       unitPrice: defaultMat?.price ?? 0,
       quantity: 1,
       totalPrice: defaultMat?.price ?? 0,

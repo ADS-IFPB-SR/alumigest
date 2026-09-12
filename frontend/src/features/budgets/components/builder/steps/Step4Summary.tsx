@@ -25,7 +25,7 @@ export const Step4Summary: React.FC<Step4SummaryProps> = ({
         <div className="flex items-center justify-between pb-xs border-b border-outline-variant">
           <h3 className="text-base font-label font-bold text-on-surface uppercase tracking-wider flex items-center gap-xs">
             <span className="material-symbols-outlined text-[20px] text-primary">task_alt</span>
-            Ficha Técnica & Resumo
+            <span>Ficha Técnica & Resumo</span>
           </h3>
           <span className="text-xs font-label text-primary font-bold uppercase tracking-wider">
             Pronto para salvar

@@ -4,7 +4,7 @@ import { Button } from '../../../components/ui/Button';
 interface Props {
   readonly isOpen: boolean;
   readonly onClose: () => void;
-  readonly item: any | null;
+  readonly item: any;
   readonly onEdit: () => void;
 }
 

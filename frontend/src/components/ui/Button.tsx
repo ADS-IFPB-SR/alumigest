@@ -5,7 +5,7 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
  readonly icon?: string;
 }
 
-export function Button({ variant = 'primary', icon, children, className = '', type = 'button', ...props }: ButtonProps) {
+export function Button({ variant = 'primary', icon, children, className = '', type = 'button', ...props }: Readonly<ButtonProps>) {
  const baseClasses ="shrink-0 flex items-center justify-center gap-xs px-md py-xs sm:py-sm rounded-md font-label text-label-bold text-xs sm:text-body-sm transition-all shadow-xs cursor-pointer active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed";
  
  const variants = {

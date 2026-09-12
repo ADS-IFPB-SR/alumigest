@@ -186,21 +186,21 @@ function CadPreviewOptions({ templateConfig }: CadPreviewOptionsProps) {
         ) : (
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-surface-container-highest/60 text-secondary">
             <span className="material-symbols-outlined text-[13px]">block</span>
-            Sem Puxador
+            <span>Sem Puxador</span>
           </span>
         )}
 
         {templateConfig.openingDirection && (
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-surface-container-highest/60 text-secondary">
             <span className="material-symbols-outlined text-[13px]">swipe</span>
-            {OPENING_DIRECTION_LABELS[templateConfig.openingDirection] || templateConfig.openingDirection}
+            <span>{OPENING_DIRECTION_LABELS[templateConfig.openingDirection] || templateConfig.openingDirection}</span>
           </span>
         )}
 
         {hasDrilling ? (
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-primary/10 text-primary font-medium">
             <span className="material-symbols-outlined text-[13px]">circle</span>
-            {drillCfg.holeCount} Furos
+            <span>{drillCfg.holeCount} Furos</span>
             <span className="text-secondary font-normal">
               ({(drillCfg.drillingPosition && DRILLING_POSITION_LABELS[drillCfg.drillingPosition]) || 'Lateral'})
             </span>
@@ -253,7 +253,7 @@ function ValidationAlert({ name, templateType, categoryCount }: ValidationAlertP
     <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-800 text-xs flex flex-col gap-1">
       <span className="font-semibold flex items-center gap-1">
         <span className="material-symbols-outlined text-[16px]">info</span>
-        Pendências para salvar:
+        <span>Pendências para salvar:</span>
       </span>
       <ul className="list-disc list-inside text-[11px] pl-1 space-y-0.5">
         {!name.trim() && <li>Preencha o nome comercial</li>}
@@ -295,7 +295,7 @@ export function ProductCostSummary({
         <div className="flex items-center justify-between pb-2 mb-2 border-b border-outline-variant/60">
           <span className="text-xs font-semibold text-on-surface flex items-center gap-1.5">
             <span className="material-symbols-outlined text-[15px] text-primary">view_in_ar</span>
-            Maquete Studio CAD
+            <span>Maquete Studio CAD</span>
           </span>
           <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-primary/10 text-primary font-bold">
             VETORIAL

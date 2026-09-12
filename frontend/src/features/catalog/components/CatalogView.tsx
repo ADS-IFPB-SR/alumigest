@@ -16,7 +16,7 @@ import type { MaterialType } from '../types';
 export function CatalogView() {
   const [isSelectionModalOpen, setIsSelectionModalOpen] = useState(false);
   const [activeFormType, setActiveFormType] = useState<MaterialType | null>(null);
-  const [editingItem, setEditingItem] = useState<any | null>(null);
+  const [editingItem, setEditingItem] = useState<any>(null);
   const [detailsItem, setDetailsItem] = useState<{ item: any; tipo: MaterialType } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL');

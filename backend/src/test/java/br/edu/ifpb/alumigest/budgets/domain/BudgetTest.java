@@ -1,8 +1,6 @@
 package br.edu.ifpb.alumigest.budgets.domain;
 
-import br.edu.ifpb.alumigest.catalog.domain.Material;
 import br.edu.ifpb.alumigest.catalog.domain.MaterialCategoryType;
-import br.edu.ifpb.alumigest.catalog.domain.Product;
 import br.edu.ifpb.alumigest.clients.domain.Client;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

@@ -113,12 +113,7 @@ export function ProfileTab({
 
     return (
       profile.name.toLowerCase().includes(term) ||
-      (
-        profile.commercialReference &&
-        profile.commercialReference
-          .toLowerCase()
-          .includes(term)
-      )
+      Boolean(profile.commercialReference?.toLowerCase().includes(term))
     );
   });
 

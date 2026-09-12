@@ -47,18 +47,12 @@ interface SvgRenderContext {
 type SvgTemplateRenderer = (ctx: SvgRenderContext) => React.ReactNode;
 
 const SVG_RENDERERS: Record<DoorTemplateType, SvgTemplateRenderer> = {
-  SLIDING_DOOR_1F: (ctx) =>
-    renderSlidingDoor1F(ctx.svgW, ctx.svgH, ctx.inverted, ctx.handleConfig, ctx.drillingConfig, ctx.widthMm, ctx.heightMm, ctx.theme),
-  SLIDING_DOOR_2F: (ctx) =>
-    renderSlidingDoor2F(ctx.svgW, ctx.svgH, ctx.inverted, ctx.handleConfig, ctx.drillingConfig, ctx.widthMm, ctx.heightMm, ctx.theme),
-  SLIDING_DOOR_3F: (ctx) =>
-    renderSlidingDoor3F(ctx.svgW, ctx.svgH, ctx.inverted, ctx.handleConfig, ctx.drillingConfig, ctx.widthMm, ctx.heightMm, ctx.theme),
-  SLIDING_DOOR_4F: (ctx) =>
-    renderSlidingDoor4F(ctx.svgW, ctx.svgH, ctx.handleConfig, ctx.drillingConfig, ctx.widthMm, ctx.heightMm, ctx.theme),
-  SWING_DOOR_1F: (ctx) =>
-    renderSwingDoor(ctx.svgW, ctx.svgH, 1, ctx.inverted, ctx.handleConfig, ctx.drillingConfig, ctx.widthMm, ctx.heightMm, ctx.theme),
-  SWING_DOOR_2F: (ctx) =>
-    renderSwingDoor(ctx.svgW, ctx.svgH, 2, ctx.inverted, ctx.handleConfig, ctx.drillingConfig, ctx.widthMm, ctx.heightMm, ctx.theme),
+  SLIDING_DOOR_1F: (ctx) => renderSlidingDoor1F(ctx),
+  SLIDING_DOOR_2F: (ctx) => renderSlidingDoor2F(ctx),
+  SLIDING_DOOR_3F: (ctx) => renderSlidingDoor3F(ctx),
+  SLIDING_DOOR_4F: (ctx) => renderSlidingDoor4F(ctx),
+  SWING_DOOR_1F: (ctx) => renderSwingDoor(1, ctx),
+  SWING_DOOR_2F: (ctx) => renderSwingDoor(2, ctx),
   AWNING_WINDOW_1F: (ctx) =>
     renderAwningWindow1F(ctx.svgW, ctx.svgH, false, ctx.handleConfig, ctx.drillingConfig, ctx.heightMm, ctx.theme),
   AWNING_WINDOW_1F_INV: (ctx) =>

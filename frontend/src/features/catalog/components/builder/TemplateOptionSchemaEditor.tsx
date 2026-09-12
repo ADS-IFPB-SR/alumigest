@@ -48,6 +48,22 @@ function getDefaultOptionSchema(app: (typeof TEMPLATE_APPLICABLE_OPTIONS)[DoorTe
   };
 }
 
+function formatHoleCountLabel(num: number): string {
+  if (num === 0) return 'Sem furos';
+  if (num === 1) return '1 Furo';
+  return `${num} Furos`;
+}
+
+function computeAdjustedHoleCount(position: string, currentCount: number): number {
+  if (position === 'FRONTAL' && currentCount < 4) {
+    return 4;
+  }
+  if (currentCount === 0) {
+    return 2;
+  }
+  return currentCount;
+}
+
 function getInitialTemplateConfig(
   app: (typeof TEMPLATE_APPLICABLE_OPTIONS)[DoorTemplateType],
   defaultDrillPos: DrillingPosition,
@@ -288,7 +304,7 @@ function DrillingSection({
                       : 'border-outline-variant/60 bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container-low'
                   }`}
                 >
-                  {num === 0 ? 'Sem furos' : `${num} Furo${num > 1 ? 's' : ''}`}
+                  {formatHoleCountLabel(num)}
                 </button>
               );
             })}
@@ -535,7 +551,7 @@ export function TemplateOptionSchemaEditor({
       if (setTemplateConfig) {
         setTemplateConfig((prev) => {
           const currentCount = prev.drillingConfig?.holeCount ?? 2;
-          const adjustedCount = (val === 'FRONTAL' && currentCount < 4) ? 4 : (currentCount === 0 ? 2 : currentCount);
+          const adjustedCount = computeAdjustedHoleCount(val, currentCount);
           return {
             ...prev,
             drillingConfig: {
@@ -558,7 +574,7 @@ export function TemplateOptionSchemaEditor({
       const nextActive = !isCurrentlySelected ? val : (next[0] || fallbackPos);
       setTemplateConfig((prev) => {
         const currentCount = prev.drillingConfig?.holeCount ?? 2;
-        const adjustedCount = (nextActive === 'FRONTAL' && currentCount < 4) ? 4 : (currentCount === 0 ? 2 : currentCount);
+        const adjustedCount = computeAdjustedHoleCount(nextActive, currentCount);
         return {
           ...prev,
           drillingConfig: {
@@ -859,18 +875,18 @@ function ChipGroup<T extends string>({ items, labels, selected, activeItem, onTo
       {items.map((item) => {
         const isChecked = selected.includes(item);
         const isActive = isChecked && activeItem === item;
+        let buttonClass = 'border-outline-variant/60 bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface';
+        if (isActive) {
+          buttonClass = 'border-primary bg-primary/15 text-primary font-bold shadow-xs ring-1 ring-primary/40';
+        } else if (isChecked) {
+          buttonClass = 'border-primary/50 bg-primary/8 text-primary font-semibold shadow-xs';
+        }
         return (
           <button
             key={item}
             type="button"
             onClick={() => onToggleItem(item)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all cursor-pointer ${
-              isActive
-                ? 'border-primary bg-primary/15 text-primary font-bold shadow-xs ring-1 ring-primary/40'
-                : isChecked
-                ? 'border-primary/50 bg-primary/8 text-primary font-semibold shadow-xs'
-                : 'border-outline-variant/60 bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface'
-            }`}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all cursor-pointer ${buttonClass}`}
           >
             <span
               className={`w-3.5 h-3.5 rounded flex items-center justify-center text-[10px] border transition-colors ${

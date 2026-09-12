@@ -131,23 +131,9 @@ function renderDoubleLeafSwingDoor({
   );
 }
 
-export function renderSwingDoor(
-  svgW: number, svgH: number, leafCount: 1 | 2, inverted: boolean,
-  handleConfig: HandleConfig, drillingConfig: DrillingConfig,
-  widthMm: number, heightMm: number,
-  theme: SvgTheme,
-) {
-  const props: SwingDoorRenderProps = {
-    svgW,
-    svgH,
-    inverted,
-    handleConfig,
-    drillingConfig,
-    widthMm,
-    heightMm,
-    theme,
-  };
+export type { SwingDoorRenderProps };
 
+export function renderSwingDoor(leafCount: 1 | 2, props: SwingDoorRenderProps) {
   if (leafCount === 1) {
     return renderSingleLeafSwingDoor(props);
   }

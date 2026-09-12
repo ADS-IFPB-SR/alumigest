@@ -67,7 +67,7 @@ export const Step3Mechanics: React.FC<Step3MechanicsProps> = ({
         <div className="flex items-center justify-between pb-xs border-b border-outline-variant">
           <h3 className="text-sm font-label font-bold text-on-surface uppercase tracking-wider flex items-center gap-xs">
             <span className="material-symbols-outlined text-[18px] text-primary">tune</span>
-            Mecânica da Folha & Puxador
+            <span>Mecânica da Folha & Puxador</span>
           </h3>
         </div>
 
@@ -75,7 +75,7 @@ export const Step3Mechanics: React.FC<Step3MechanicsProps> = ({
         <div className="flex flex-col gap-xs">
           <div className="text-xs sm:text-sm font-label font-semibold text-on-surface flex items-center gap-xs mb-1">
             <span className="material-symbols-outlined text-[16px] text-primary">swap_horiz</span>
-            Sentido de Abertura da Folha
+            <span>Sentido de Abertura da Folha</span>
           </div>
           <div className={`grid ${supportedDirections.length > 1 ? 'grid-cols-2' : 'grid-cols-1'} gap-xs`}>
             {supportedDirections.map((dir) => {
@@ -112,7 +112,7 @@ export const Step3Mechanics: React.FC<Step3MechanicsProps> = ({
         <div className="pt-xs border-t border-outline-variant/50 flex flex-col gap-xs">
           <div className="text-xs sm:text-sm font-label font-semibold text-on-surface flex items-center gap-xs mb-1">
             <span className="material-symbols-outlined text-[16px] text-primary">hardware</span>
-            Puxador & Ferragens de Manuseio
+            <span>Puxador & Ferragens de Manuseio</span>
           </div>
           <div className="grid grid-cols-2 gap-sm">
             <div>
@@ -196,7 +196,7 @@ export const Step3Mechanics: React.FC<Step3MechanicsProps> = ({
         <div className="flex items-center justify-between pb-xs border-b border-outline-variant">
           <h3 className="text-sm font-label font-bold text-on-surface uppercase tracking-wider flex items-center gap-xs">
             <span className="material-symbols-outlined text-[18px] text-primary">adjust</span>
-            Furação do Vidro
+            <span>Furação do Vidro</span>
           </h3>
           <span className="text-xs font-data-mono text-on-surface-variant bg-surface-container px-2 py-0.5 rounded border border-outline-variant/50">
             {formatHoleCountLabel(drillingConfig.holeCount)}

@@ -70,7 +70,7 @@ export function Table<
 
             return value !== null &&
               value !== undefined
-              ? String(value).replace(/;/g, ',')
+              ? String(value).replaceAll(';', ',')
               : '';
           }
 
@@ -79,7 +79,7 @@ export function Table<
 
             return value !== null &&
               value !== undefined
-              ? String(value).replace(/;/g, ',')
+              ? String(value).replaceAll(';', ',')
               : '';
           }
 
@@ -108,7 +108,7 @@ export function Table<
 
     link.setAttribute(
       'download',
-      `exportacao_${new Date().getTime()}.csv`
+      `exportacao_${Date.now()}.csv`
     );
 
     document.body.appendChild(link);

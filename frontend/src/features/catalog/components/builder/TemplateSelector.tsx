@@ -46,7 +46,8 @@ export function TemplateSelector({
   templateType,
   setTemplateType,
   templateConfig,
-}: TemplateSelectorProps) {
+  setTemplateConfig: _setTemplateConfig,
+}: Readonly<TemplateSelectorProps>) {
   const [selectedGroupFilter, setSelectedGroupFilter] = useState<string>('all');
 
   // Filtra templates de acordo com a aba selecionada

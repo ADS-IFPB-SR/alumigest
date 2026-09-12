@@ -93,7 +93,11 @@ public class Client {
     @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt;
 
+    /**
+     * Construtor sem argumentos exigido pelo JPA.
+     */
     public Client() {
+        // Construtor sem argumentos exigido pelo JPA
     }
 
     public static Builder builder() {

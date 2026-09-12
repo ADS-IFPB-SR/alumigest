@@ -123,12 +123,8 @@ export function GlassTab({
 
     return (
       g.name.toLowerCase().includes(term) ||
-      (g.commercialReference &&
-        g.commercialReference
-          .toLowerCase()
-          .includes(term)) ||
-      (g.skuCode &&
-        g.skuCode.toLowerCase().includes(term))
+      Boolean(g.commercialReference?.toLowerCase().includes(term)) ||
+      Boolean(g.skuCode?.toLowerCase().includes(term))
     );
   });
 

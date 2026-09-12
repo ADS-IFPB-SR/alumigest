@@ -100,18 +100,8 @@ export function FilmTab({
 
     return (
       film.name.toLowerCase().includes(term) ||
-      (
-        film.commercialReference &&
-        film.commercialReference
-          .toLowerCase()
-          .includes(term)
-      ) ||
-      (
-        film.skuCode &&
-        film.skuCode
-          .toLowerCase()
-          .includes(term)
-      )
+      Boolean(film.commercialReference?.toLowerCase().includes(term)) ||
+      Boolean(film.skuCode?.toLowerCase().includes(term))
     );
   });
 

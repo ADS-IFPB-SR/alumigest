@@ -29,7 +29,7 @@ export const Step1Dimensions: React.FC<Step1DimensionsProps> = ({
         <div className="flex items-center justify-between pb-xs border-b border-outline-variant">
           <h3 className="text-base font-label font-bold text-on-surface uppercase tracking-wider flex items-center gap-xs">
             <span className="material-symbols-outlined text-[20px] text-primary">aspect_ratio</span>
-            1. Medidas e Quantidade
+            <span>1. Medidas e Quantidade</span>
           </h3>
           <span className="text-xs font-label text-secondary font-medium">Dimensões físicas</span>
         </div>

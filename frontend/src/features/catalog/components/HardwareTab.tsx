@@ -167,18 +167,8 @@ export function HardwareTab({
         hardware.name
           .toLowerCase()
           .includes(term) ||
-        (
-          hardware.commercialReference &&
-          hardware.commercialReference
-            .toLowerCase()
-            .includes(term)
-        ) ||
-        (
-          hardware.skuCode &&
-          hardware.skuCode
-            .toLowerCase()
-            .includes(term)
-        )
+        Boolean(hardware.commercialReference?.toLowerCase().includes(term)) ||
+        Boolean(hardware.skuCode?.toLowerCase().includes(term))
       );
     });
 

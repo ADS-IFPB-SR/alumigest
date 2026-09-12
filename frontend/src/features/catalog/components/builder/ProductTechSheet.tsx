@@ -48,7 +48,7 @@ export function ProductTechSheet({ items, setItems, materials }: ProductTechShee
       
       if (isIntegerUnit) {
         // Only allow digits
-        sanitized = value.replace(/[^0-9]/g, '');
+        sanitized = value.replace(/\D/g, '');
       } else {
         // Permitir apenas uma vírgula ou ponto para unidades fracionáveis
         const parts = sanitized.replace(',', '.').split('.');

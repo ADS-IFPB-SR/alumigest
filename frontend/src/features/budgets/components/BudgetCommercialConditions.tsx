@@ -68,7 +68,7 @@ export const BudgetCommercialConditions: React.FC<BudgetCommercialConditionsProp
     <div className="bg-surface-container-lowest border border-outline-variant rounded-lg p-md shadow-sm flex flex-col gap-md">
       <h3 className="font-label font-semibold text-on-surface text-sm pb-xs border-b border-outline-variant flex items-center gap-xs">
         <span className="material-symbols-outlined text-[16px] text-secondary">notes</span>
-        Condições Comerciais
+        <span>Condições Comerciais</span>
       </h3>
 
       {/* Grid: Mão de Obra e Desconto */}

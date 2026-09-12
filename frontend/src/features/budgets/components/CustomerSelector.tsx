@@ -80,7 +80,7 @@ const CustomerSearchResultsDropdown: React.FC<CustomerDropdownProps> = ({
     return (
       <div className="p-md text-center text-xs text-on-surface-variant font-body flex items-center justify-center gap-xs">
         <span className="material-symbols-outlined animate-spin text-[16px] text-primary">progress_activity</span>
-        Buscando clientes no banco de dados...
+        <span>Buscando clientes no banco de dados...</span>
       </div>
     );
   }
@@ -269,7 +269,7 @@ export const CustomerSelector: React.FC<CustomerSelectorProps> = ({
           {selectedCustomer?.id && (
             <span className="text-xs font-label font-normal text-secondary flex items-center gap-xs">
               <span className="material-symbols-outlined text-[14px] text-success">check_circle</span>
-              Cliente Vinculado
+              <span>Cliente Vinculado</span>
             </span>
           )}
         </h3>
