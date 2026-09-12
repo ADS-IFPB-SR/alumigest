@@ -13,6 +13,7 @@ const STATUS_STYLES: Record<BudgetStatus, string> = {
   APPROVED: 'bg-success/10 text-success border-success/30',
   REJECTED: 'bg-error-container text-on-error-container border-error/30',
   CANCELLED: 'bg-surface-container-highest text-on-surface-variant border-outline/40',
+  EXPIRED: 'bg-amber-500/10 text-amber-600 border-amber-500/30 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800/40',
 };
 
 export function StatusBadge({ status, showIcon = true, className = '' }: StatusBadgeProps) {
