@@ -1,9 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useParams, useLocation, useNavigate } from 'react-router-dom';
 import { useBudget, useDeleteBudget, useUpdateBudgetStatus, useCreateBudget } from '../features/budgets/hooks/useBudgets';
 import { Button } from '../components/ui/Button';
 import {
-  BUDGET_STATUS_CONFIG,
   TEMPLATE_TYPE_INFO,
   type BudgetStatus,
   type DoorTemplateType,
@@ -11,10 +10,11 @@ import {
 } from '../features/budgets/types';
 import { formatBRL } from '../features/budgets/utils/calculations';
 import { WindowSvgPreview } from '../features/budgets/components/builder/WindowSvgPreview';
-import { StatusBadge } from '../features/budgets/components/StatusBadge';
 import { BudgetMaterialsSummary } from '../features/budgets/components/BudgetMaterialsSummary';
+import { BudgetStatusPipeline } from '../features/budgets/components/BudgetStatusPipeline';
 
-const ALL_STATUSES: BudgetStatus[] = ['DRAFT', 'SENT', 'APPROVED', 'REJECTED', 'CANCELLED'];
+// Removemos ALL_STATUSES pois agora usamos o Pipeline
+// const ALL_STATUSES: BudgetStatus[] = ['DRAFT', 'SENT', 'APPROVED', 'REJECTED', 'CANCELLED'];
 
 export function BudgetDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -27,19 +27,7 @@ export function BudgetDetailPage() {
   const { mutate: createBudget, isPending: isDuplicating } = useCreateBudget();
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
-  const statusMenuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (statusMenuRef.current && !statusMenuRef.current.contains(event.target as Node)) {
-        setIsStatusDropdownOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   const toggleItemExpanded = (itemId: string) => {
     setExpandedItems((prev) => ({
@@ -159,62 +147,13 @@ export function BudgetDetailPage() {
             {budget.code}
           </h1>
 
-          {/* Seletor Elegante de Status Dropdown em Destaque */}
-          <div className="relative ml-xs sm:ml-sm" ref={statusMenuRef}>
-            <button
-              type="button"
-              onClick={() => setIsStatusDropdownOpen((prev) => !prev)}
+          {/* Pipeline Visual de Status (CRM) */}
+          <div className="ml-xs sm:ml-sm flex-shrink-0">
+            <BudgetStatusPipeline
+              status={budget.status}
+              onChange={handleStatusChange}
               disabled={isUpdatingStatus}
-              className="group flex items-center gap-2 px-3 py-1.5 rounded-full border shadow-2xs hover:shadow-xs transition-all duration-150 focus:outline-none active:scale-95 disabled:opacity-50 cursor-pointer bg-surface hover:bg-surface-container-low"
-              title="Clique para alterar o status da proposta"
-              aria-expanded={isStatusDropdownOpen}
-              aria-haspopup="true"
-            >
-              <StatusBadge status={budget.status} className="!text-xs !py-1 !px-2.5 shadow-none border-0 font-bold" />
-              <span className="material-symbols-outlined text-[18px] text-on-surface-variant group-hover:text-primary transition-transform duration-200" style={{ transform: isStatusDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}>
-                expand_more
-              </span>
-            </button>
-
-            {isStatusDropdownOpen && (
-              <div className="absolute left-0 mt-2 w-56 bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-xl py-2 z-50 animate-fadeIn flex flex-col gap-1 backdrop-blur-md">
-                <div className="px-3.5 py-1 text-[11px] font-label font-bold text-on-surface-variant uppercase tracking-wider border-b border-outline-variant/40 flex items-center justify-between">
-                  <span>Alterar Status</span>
-                  <span className="material-symbols-outlined text-[14px]">tune</span>
-                </div>
-                {ALL_STATUSES.map((st) => {
-                  const cfg = BUDGET_STATUS_CONFIG[st];
-                  const isSelected = budget.status === st;
-                  return (
-                    <button
-                      key={st}
-                      type="button"
-                      onClick={() => {
-                        handleStatusChange(st);
-                        setIsStatusDropdownOpen(false);
-                      }}
-                      className={`flex items-center justify-between px-3.5 py-2 text-xs font-label font-medium transition-all text-left mx-1 rounded-lg ${
-                        isSelected
-                          ? 'bg-primary/10 text-primary font-bold shadow-2xs'
-                          : 'text-on-surface hover:bg-surface-container'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <span className={`material-symbols-outlined text-[18px] ${isSelected ? 'text-primary' : 'text-on-surface-variant'}`}>
-                          {cfg.icon}
-                        </span>
-                        <span className="text-sm">{cfg.label}</span>
-                      </div>
-                      {isSelected && (
-                        <span className="material-symbols-outlined text-[18px] text-primary">
-                          check_circle
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
+            />
           </div>
         </div>
 
