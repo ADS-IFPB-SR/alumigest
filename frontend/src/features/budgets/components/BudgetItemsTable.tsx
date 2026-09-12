@@ -68,7 +68,7 @@ export const BudgetItemsTable: React.FC<BudgetItemsTableProps> = ({
             <tbody className="divide-y divide-outline-variant/40">
               {items.map((item, idx) => {
                 const mainMaterial = item.options.find((o) => o.categoryType === 'GLASS') ?? item.options[0];
-                const openDir = item.templateConfig.openingDirection;
+                const openDir = item.templateConfig?.openingDirection;
                 return (
                   <tr
                     key={item.tempId}
