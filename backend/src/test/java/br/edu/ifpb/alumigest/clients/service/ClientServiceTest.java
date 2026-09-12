@@ -10,12 +10,11 @@ import br.edu.ifpb.alumigest.clients.repository.ClientRepository;
 import br.edu.ifpb.alumigest.common.dto.PageResponse;
 import br.edu.ifpb.alumigest.common.exception.ConflictException;
 import br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -28,8 +27,6 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -42,7 +39,7 @@ class ClientServiceTest {
 
     private ClientService clientService;
 
-    @org.junit.jupiter.api.BeforeEach
+    @BeforeEach
     void setUp() {
         clientService = new ClientService(clientRepository, clientMapper);
     }
@@ -174,7 +171,7 @@ class ClientServiceTest {
         client.setId(UUID.randomUUID());
 
         Page<Client> page = new PageImpl<>(List.of(client), pageable, 1);
-        when(clientRepository.searchClients(eq("silva"), eq(PersonType.FISICA), eq(true), eq(pageable))).thenReturn(page);
+        when(clientRepository.searchClients("silva", PersonType.FISICA, true, pageable)).thenReturn(page);
 
         // Act
         PageResponse<ClientSummaryDTO> result = clientService.findAll("silva", PersonType.FISICA, true, pageable);

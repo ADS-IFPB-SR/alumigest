@@ -3,20 +3,20 @@ import { WindowSvgPreview } from './WindowSvgPreview';
 import type { DoorTemplateType, HandleConfig, DrillingConfig, OpeningDirection } from '../../types';
 
 export interface CadPreviewPanelProps {
-  svgTemplate: DoorTemplateType;
-  svgW: number;
-  svgH: number;
-  openingDirection: OpeningDirection;
-  handleConfig: HandleConfig;
-  drillingConfig: DrillingConfig;
-  templateName?: string;
-  aluminumColor?: string;
-  glassFinish?: string;
-  unitAreaM2: string;
-  totalQty: number;
-  currentStep: 1 | 2 | 3 | 4;
-  isMobileCadExpanded: boolean;
-  onToggleMobileCad: () => void;
+  readonly svgTemplate: DoorTemplateType;
+  readonly svgW: number;
+  readonly svgH: number;
+  readonly openingDirection: OpeningDirection;
+  readonly handleConfig: HandleConfig;
+  readonly drillingConfig: DrillingConfig;
+  readonly templateName?: string;
+  readonly aluminumColor?: string;
+  readonly glassFinish?: string;
+  readonly unitAreaM2: string;
+  readonly totalQty: number;
+  readonly currentStep: 1 | 2 | 3 | 4;
+  readonly isMobileCadExpanded: boolean;
+  readonly onToggleMobileCad: () => void;
 }
 
 export const CadPreviewPanel: React.FC<CadPreviewPanelProps> = ({

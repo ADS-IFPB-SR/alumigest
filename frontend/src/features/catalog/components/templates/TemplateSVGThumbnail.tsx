@@ -2,9 +2,9 @@ import { WindowSvgPreview } from '../../../budgets/components/builder/WindowSvgP
 import type { DoorTemplateType } from '../../types/templates';
 
 interface TemplateSVGThumbnailProps {
-  templateType?: DoorTemplateType;
-  size?: number;
-  className?: string;
+  readonly templateType?: DoorTemplateType;
+  readonly size?: number;
+  readonly className?: string;
 }
 
 /**

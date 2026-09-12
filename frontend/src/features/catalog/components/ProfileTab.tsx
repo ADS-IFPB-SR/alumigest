@@ -88,10 +88,10 @@ const columns = [
 ];
 
 interface Props {
-  searchQuery: string;
-  filterStatus: 'ALL' | 'ACTIVE' | 'INACTIVE';
-  onEdit: (item: ProfileDTO) => void;
-  onViewDetails: (item: ProfileDTO) => void;
+  readonly searchQuery: string;
+  readonly filterStatus: 'ALL' | 'ACTIVE' | 'INACTIVE';
+  readonly onEdit: (item: ProfileDTO) => void;
+  readonly onViewDetails: (item: ProfileDTO) => void;
 }
 
 export function ProfileTab({

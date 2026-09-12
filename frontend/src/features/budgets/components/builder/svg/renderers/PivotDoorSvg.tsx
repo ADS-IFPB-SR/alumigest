@@ -28,14 +28,14 @@ function computeSingleLeafHandle(
 }
 
 interface SwingDoorRenderProps {
-  svgW: number;
-  svgH: number;
-  inverted?: boolean;
-  handleConfig: HandleConfig;
-  drillingConfig: DrillingConfig;
-  widthMm: number;
-  heightMm: number;
-  theme: SvgTheme;
+  readonly svgW: number;
+  readonly svgH: number;
+  readonly inverted?: boolean;
+  readonly handleConfig: HandleConfig;
+  readonly drillingConfig: DrillingConfig;
+  readonly widthMm: number;
+  readonly heightMm: number;
+  readonly theme: SvgTheme;
 }
 
 function renderSingleLeafSwingDoor({

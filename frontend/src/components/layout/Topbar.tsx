@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 
 interface TopbarProps {
-  onMenuClick: () => void;
+  readonly onMenuClick: () => void;
 }
 
 export function Topbar({ onMenuClick }: TopbarProps) {

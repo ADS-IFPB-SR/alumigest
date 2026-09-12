@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 
 interface TabProps {
-  label: string;
-  children: React.ReactNode;
-  dataCy?: string;
+  readonly label: string;
+  readonly children: React.ReactNode;
+  readonly dataCy?: string;
 }
 
 interface TabsProps {
-  children: React.ReactElement<TabProps>[];
-  defaultIndex?: number;
+  readonly children: React.ReactElement<TabProps>[];
+  readonly defaultIndex?: number;
 }
 
 export function Tabs({ children, defaultIndex = 0 }: TabsProps) {

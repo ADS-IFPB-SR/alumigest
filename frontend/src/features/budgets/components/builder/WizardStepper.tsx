@@ -1,8 +1,8 @@
 import React from 'react';
 
 export interface WizardStepperProps {
-  currentStep: 1 | 2 | 3 | 4;
-  onGoToStep: (step: 1 | 2 | 3 | 4) => void;
+  readonly currentStep: 1 | 2 | 3 | 4;
+  readonly onGoToStep: (step: 1 | 2 | 3 | 4) => void;
 }
 
 const STEPS = [

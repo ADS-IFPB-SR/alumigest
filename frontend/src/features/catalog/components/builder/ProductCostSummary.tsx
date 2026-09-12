@@ -20,14 +20,14 @@ const DRILLING_POSITION_LABELS: Record<string, string> = {
 };
 
 interface ProductCostSummaryProps {
-  name: string;
-  templateType: DoorTemplateType | null;
-  templateConfig: Partial<TemplateConfig>;
-  setTemplateConfig: (val: Partial<TemplateConfig>) => void;
-  categoryRequirements: MaterialCategoryType[];
-  onSave: () => void;
-  isPending: boolean;
-  isEditing: boolean;
+  readonly name: string;
+  readonly templateType: DoorTemplateType | null;
+  readonly templateConfig: Partial<TemplateConfig>;
+  readonly setTemplateConfig: (val: Partial<TemplateConfig>) => void;
+  readonly categoryRequirements: readonly MaterialCategoryType[];
+  readonly onSave: () => void;
+  readonly isPending: boolean;
+  readonly isEditing: boolean;
 }
 
 function getSaveButtonLabel(isPending: boolean, isEditing: boolean): string {
@@ -36,12 +36,12 @@ function getSaveButtonLabel(isPending: boolean, isEditing: boolean): string {
 }
 
 interface CadMockupCardProps {
-  templateType: DoorTemplateType | null;
-  templateConfig: Partial<TemplateConfig>;
-  profileMm: number;
-  aluminumColor: string;
-  glassColor: string;
-  onColorChange: (field: keyof TemplateConfig, value: string) => void;
+  readonly templateType: DoorTemplateType | null;
+  readonly templateConfig: Partial<TemplateConfig>;
+  readonly profileMm: number;
+  readonly aluminumColor: string;
+  readonly glassColor: string;
+  readonly onColorChange: (field: keyof TemplateConfig, value: string) => void;
 }
 
 function CadMockupCard({
@@ -157,7 +157,7 @@ function CadMockupCard({
 }
 
 interface CadPreviewOptionsProps {
-  templateConfig: Partial<TemplateConfig>;
+  readonly templateConfig: Partial<TemplateConfig>;
 }
 
 function CadPreviewOptions({ templateConfig }: CadPreviewOptionsProps) {
@@ -212,7 +212,7 @@ function CadPreviewOptions({ templateConfig }: CadPreviewOptionsProps) {
 }
 
 interface CategoryBadgesListProps {
-  categoryRequirements: MaterialCategoryType[];
+  readonly categoryRequirements: readonly MaterialCategoryType[];
 }
 
 function CategoryBadgesList({ categoryRequirements }: CategoryBadgesListProps) {
@@ -243,9 +243,9 @@ function CategoryBadgesList({ categoryRequirements }: CategoryBadgesListProps) {
 }
 
 interface ValidationAlertProps {
-  name: string;
-  templateType: DoorTemplateType | null;
-  categoryCount: number;
+  readonly name: string;
+  readonly templateType: DoorTemplateType | null;
+  readonly categoryCount: number;
 }
 
 function ValidationAlert({ name, templateType, categoryCount }: ValidationAlertProps) {

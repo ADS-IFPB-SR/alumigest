@@ -10,9 +10,9 @@ function formatOpeningDirectionArrow(openDir?: string): string {
 }
 
 interface BudgetItemsTableProps {
-  items: BudgetItem[];
-  onEdit: (item: BudgetItem) => void;
-  onDelete: (tempId: string) => void;
+  readonly items: BudgetItem[];
+  readonly onEdit: (item: BudgetItem) => void;
+  readonly onDelete: (tempId: string) => void;
 }
 
 export const BudgetItemsTable: React.FC<BudgetItemsTableProps> = ({

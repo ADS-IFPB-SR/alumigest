@@ -3,20 +3,20 @@ import type { BudgetSummary } from '../types';
 import { StatusBadge } from './StatusBadge';
 
 interface BudgetsTableProps {
-  data: BudgetSummary[];
-  sortField?: string;
-  sortDirection?: 'asc' | 'desc';
-  onSort: (field: string) => void;
+  readonly data: readonly BudgetSummary[];
+  readonly sortField?: string;
+  readonly sortDirection?: 'asc' | 'desc';
+  readonly onSort: (field: string) => void;
 }
 
 interface SortableHeaderProps {
-  label: string;
-  field: string;
-  activeField?: string;
-  direction?: 'asc' | 'desc';
-  onSort: (field: string) => void;
-  align?: 'left' | 'right' | 'center';
-  className?: string;
+  readonly label: string;
+  readonly field: string;
+  readonly activeField?: string;
+  readonly direction?: 'asc' | 'desc';
+  readonly onSort: (field: string) => void;
+  readonly align?: 'left' | 'right' | 'center';
+  readonly className?: string;
 }
 
 function getAlignmentClasses(align: 'left' | 'center' | 'right'): string {
@@ -66,7 +66,7 @@ function SortableHeader({
 function formatDate(isoDate: string): string {
   if (!isoDate) return '-';
   const date = new Date(isoDate);
-  if (isNaN(date.getTime())) return isoDate;
+  if (Number.isNaN(date.getTime())) return isoDate;
   return date.toLocaleDateString('pt-BR', {
     day: '2-digit',
     month: '2-digit',

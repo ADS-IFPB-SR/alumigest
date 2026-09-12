@@ -1,22 +1,22 @@
 import React from 'react';
 
 interface Column<T> {
-  header: string;
-  accessor: keyof T | ((row: T) => React.ReactNode);
-  exportValue?: (
+  readonly header: string;
+  readonly accessor: keyof T | ((row: T) => React.ReactNode);
+  readonly exportValue?: (
     row: T
   ) => string | number | boolean | null | undefined;
-  align?: 'left' | 'center' | 'right';
-  className?: string;
+  readonly align?: 'left' | 'center' | 'right';
+  readonly className?: string;
 }
 
 interface TableProps<T> {
-  columns: Column<T>[];
-  data: T[];
+  readonly columns: readonly Column<T>[];
+  readonly data: readonly T[];
 
-  onEdit?: (row: T) => void;
-  onViewDetails?: (row: T) => void;
-  onDelete?: (row: T) => void;
+  readonly onEdit?: (row: T) => void;
+  readonly onViewDetails?: (row: T) => void;
+  readonly onDelete?: (row: T) => void;
 
   /**
    * Define o data-cy da linha.
@@ -24,7 +24,7 @@ interface TableProps<T> {
    * rowTestId={() => 'glass-row'}
    * rowTestId={() => 'profile-row'}
    */
-  rowTestId?: (row: T) => string | undefined;
+  readonly rowTestId?: (row: T) => string | undefined;
 
   /**
    * Define atributos adicionais para a linha.
@@ -35,7 +35,7 @@ interface TableProps<T> {
    *   'data-glass-name': row.name
    * })}
    */
-  rowTestAttributes?: (
+  readonly rowTestAttributes?: (
     row: T
   ) => Record<string, string | undefined>;
 }

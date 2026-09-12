@@ -2,17 +2,17 @@ import React from 'react';
 import { formatBRL } from '../utils/calculations';
 
 interface BudgetCommercialConditionsProps {
-  laborCost: number;
-  onLaborCostChange: (value: number) => void;
-  discountPercent: number;
-  onDiscountChange: (value: number) => void;
-  notes: string;
-  onNotesChange: (value: string) => void;
-  commercialConditions: string;
-  onCommercialConditionsChange: (value: string) => void;
+  readonly laborCost: number;
+  readonly onLaborCostChange: (value: number) => void;
+  readonly discountPercent: number;
+  readonly onDiscountChange: (value: number) => void;
+  readonly notes: string;
+  readonly onNotesChange: (value: string) => void;
+  readonly commercialConditions: string;
+  readonly onCommercialConditionsChange: (value: string) => void;
   /** Subtotal bruto — exibido como referência ao lado do campo de desconto */
-  subtotal: number;
-  errors?: { discountPercent?: string };
+  readonly subtotal: number;
+  readonly errors?: { readonly discountPercent?: string };
 }
 
 /**
@@ -44,8 +44,8 @@ export const BudgetCommercialConditions: React.FC<BudgetCommercialConditionsProp
       onLaborCostChange(0);
       return;
     }
-    const val = parseFloat(cleaned);
-    if (!isNaN(val) && val >= 0) {
+    const val = Number.parseFloat(cleaned);
+    if (!Number.isNaN(val) && val >= 0) {
       onLaborCostChange(val);
     }
   };
@@ -56,8 +56,8 @@ export const BudgetCommercialConditions: React.FC<BudgetCommercialConditionsProp
       onDiscountChange(0);
       return;
     }
-    const val = parseFloat(cleaned);
-    if (!isNaN(val) && val >= 0 && val <= 100) {
+    const val = Number.parseFloat(cleaned);
+    if (!Number.isNaN(val) && val >= 0 && val <= 100) {
       onDiscountChange(val);
     }
   };

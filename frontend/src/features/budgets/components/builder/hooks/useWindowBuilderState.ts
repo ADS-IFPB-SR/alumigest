@@ -88,8 +88,8 @@ function buildDefaultSelectionsForTemplate(
   w: number,
   h: number,
 ): MaterialSelection[] {
-  const areaM2 = parseFloat(((w / 1000) * (h / 1000)).toFixed(2));
-  const perimeterM = parseFloat(((2 * (w + h)) / 1000).toFixed(2));
+  const areaM2 = Number.parseFloat(((w / 1000) * (h / 1000)).toFixed(2));
+  const perimeterM = Number.parseFloat(((2 * (w + h)) / 1000).toFixed(2));
 
   if (targetTemplate.categoryRequirements && targetTemplate.categoryRequirements.length > 0) {
     return targetTemplate.categoryRequirements.map((req, idx) => {
@@ -171,7 +171,7 @@ function buildEditingItemSelections(
       unitMeasure: opt.unitMeasure || mat?.unit || 'un',
       unitPrice: price,
       quantity: qty,
-      totalPrice: qty !== undefined ? parseFloat((qty * price).toFixed(2)) : undefined,
+      totalPrice: qty !== undefined ? Number.parseFloat((qty * price).toFixed(2)) : undefined,
     };
   });
 }
@@ -374,11 +374,11 @@ function getMissingRequiredMaterialLabels(selections: MaterialSelection[]): stri
 }
 
 interface UseWindowBuilderStateProps {
-  isOpen: boolean;
-  selectedProductId?: string | null;
-  editingItem?: BudgetItem | null;
-  onAddItem: (item: BudgetItem) => void;
-  onClose: () => void;
+  readonly isOpen: boolean;
+  readonly selectedProductId?: string | null;
+  readonly editingItem?: BudgetItem | null;
+  readonly onAddItem: (item: BudgetItem) => void;
+  readonly onClose: () => void;
 }
 
 export function useWindowBuilderState({
@@ -580,8 +580,8 @@ export function useWindowBuilderState({
         let qty: number | undefined = undefined;
 
         if (valStr !== undefined) {
-          const num = parseFloat(String(valStr).replace(',', '.'));
-          if (!isNaN(num) && num >= 0) {
+          const num = Number.parseFloat(String(valStr).replace(',', '.'));
+          if (!Number.isNaN(num) && num >= 0) {
             qty = isIntegerUnit ? Math.floor(num) : num;
           }
         }
@@ -589,7 +589,7 @@ export function useWindowBuilderState({
         return {
           ...s,
           quantity: qty,
-          totalPrice: qty !== undefined ? parseFloat((qty * s.unitPrice).toFixed(2)) : undefined,
+          totalPrice: qty !== undefined ? Number.parseFloat((qty * s.unitPrice).toFixed(2)) : undefined,
         };
       }),
     }));
@@ -682,28 +682,17 @@ export function useWindowBuilderState({
     const currentH = typeof state.heightMm === 'number' && state.heightMm > 0 ? state.heightMm : DEFAULT_HEIGHT;
     const defaults = getDefaultHoleDistances(count, currentH);
 
-    setHoleDistanceInputs((prev) => {
-      const next: string[] = [];
-      for (let i = 0; i < count; i++) {
-        if (prev[i] !== undefined && prev[i] !== '' && prev[i] !== '0') {
-          next.push(prev[i]);
-        } else {
-          next.push(String(defaults[i]));
-        }
-      }
-      return next;
-    });
+    setHoleDistanceInputs((prev) =>
+      Array.from({ length: count }, (_, i) =>
+        prev[i] !== undefined && prev[i] !== '' && prev[i] !== '0' ? prev[i] : String(defaults[i])
+      )
+    );
 
     setState((prev) => {
       const currentDists = prev.drillingConfig.customDistancesMm ?? [];
-      const nextDists: number[] = [];
-      for (let i = 0; i < count; i++) {
-        if (currentDists[i] !== undefined && currentDists[i] > 0) {
-          nextDists.push(currentDists[i]);
-        } else {
-          nextDists.push(defaults[i]);
-        }
-      }
+      const nextDists = Array.from({ length: count }, (_, i) =>
+        currentDists[i] !== undefined && currentDists[i] > 0 ? currentDists[i] : defaults[i]
+      );
 
       return {
         ...prev,
@@ -745,13 +734,13 @@ export function useWindowBuilderState({
       return next;
     });
 
-    const parsedNum = parseInt(val, 10);
+    const parsedNum = Number.parseInt(val, 10);
     setState((prev) => {
       const dists = [...(prev.drillingConfig.customDistancesMm ?? [])];
       while (dists.length < prev.drillingConfig.holeCount) {
         dists.push(0);
       }
-      dists[index] = !isNaN(parsedNum) && parsedNum > 0 ? parsedNum : 0;
+      dists[index] = !Number.isNaN(parsedNum) && parsedNum > 0 ? parsedNum : 0;
       return {
         ...prev,
         drillingConfig: {

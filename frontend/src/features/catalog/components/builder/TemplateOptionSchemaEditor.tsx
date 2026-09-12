@@ -24,11 +24,11 @@ import {
 } from '../../types/templates';
 
 interface TemplateOptionSchemaEditorProps {
-  templateType: DoorTemplateType | null;
-  optionSchema: Partial<TemplateOptionSchema>;
-  setOptionSchema: (val: Partial<TemplateOptionSchema>) => void;
-  templateConfig?: Partial<TemplateConfig>;
-  setTemplateConfig?: React.Dispatch<React.SetStateAction<Partial<TemplateConfig>>>;
+  readonly templateType: DoorTemplateType | null;
+  readonly optionSchema: Partial<TemplateOptionSchema>;
+  readonly setOptionSchema: (val: Partial<TemplateOptionSchema>) => void;
+  readonly templateConfig?: Partial<TemplateConfig>;
+  readonly setTemplateConfig?: React.Dispatch<React.SetStateAction<Partial<TemplateConfig>>>;
 }
 
 function getDefaultOptionSchema(app: (typeof TEMPLATE_APPLICABLE_OPTIONS)[DoorTemplateType], defaultDrillPos: DrillingPosition): Partial<TemplateOptionSchema> {
@@ -77,12 +77,12 @@ function getInitialTemplateConfig(
 
 // --- Seção: Sentido de Abertura ---
 interface OpeningDirectionSectionProps {
-  optionSchema: Partial<TemplateOptionSchema>;
-  templateConfig?: Partial<TemplateConfig>;
-  isOpen: boolean;
-  onToggleOpen: () => void;
-  onToggleEnabled: (enabled: boolean) => void;
-  onToggleItem: (val: OpeningDirection) => void;
+  readonly optionSchema: Partial<TemplateOptionSchema>;
+  readonly templateConfig?: Partial<TemplateConfig>;
+  readonly isOpen: boolean;
+  readonly onToggleOpen: () => void;
+  readonly onToggleEnabled: (enabled: boolean) => void;
+  readonly onToggleItem: (val: OpeningDirection) => void;
 }
 
 function OpeningDirectionSection({
@@ -120,12 +120,12 @@ function OpeningDirectionSection({
 
 // --- Seção: Modo de Correr ---
 interface SlidingModeSectionProps {
-  optionSchema: Partial<TemplateOptionSchema>;
-  templateConfig?: Partial<TemplateConfig>;
-  isOpen: boolean;
-  onToggleOpen: () => void;
-  onToggleEnabled: (enabled: boolean) => void;
-  onToggleItem: (val: SlidingMode) => void;
+  readonly optionSchema: Partial<TemplateOptionSchema>;
+  readonly templateConfig?: Partial<TemplateConfig>;
+  readonly isOpen: boolean;
+  readonly onToggleOpen: () => void;
+  readonly onToggleEnabled: (enabled: boolean) => void;
+  readonly onToggleItem: (val: SlidingMode) => void;
 }
 
 function SlidingModeSection({
@@ -163,13 +163,13 @@ function SlidingModeSection({
 
 // --- Seção: Puxador ---
 interface HandleSectionProps {
-  optionSchema: Partial<TemplateOptionSchema>;
-  templateConfig?: Partial<TemplateConfig>;
-  isOpen: boolean;
-  onToggleOpen: () => void;
-  onToggleEnabled: (enabled: boolean) => void;
-  onToggleType: (val: HandleType) => void;
-  onTogglePosition: (val: HandlePosition) => void;
+  readonly optionSchema: Partial<TemplateOptionSchema>;
+  readonly templateConfig?: Partial<TemplateConfig>;
+  readonly isOpen: boolean;
+  readonly onToggleOpen: () => void;
+  readonly onToggleEnabled: (enabled: boolean) => void;
+  readonly onToggleType: (val: HandleType) => void;
+  readonly onTogglePosition: (val: HandlePosition) => void;
 }
 
 function HandleSection({
@@ -223,15 +223,15 @@ function HandleSection({
 
 // --- Seção: Furações ---
 interface DrillingSectionProps {
-  templateType: DoorTemplateType;
-  optionSchema: Partial<TemplateOptionSchema>;
-  templateConfig?: Partial<TemplateConfig>;
-  isOpen: boolean;
-  onToggleOpen: () => void;
-  onToggleEnabled: (enabled: boolean) => void;
-  onTogglePosition: (val: DrillingPosition) => void;
-  onToggleMode: (val: HoleDrillingMode) => void;
-  onSetHoleCount: (count: number) => void;
+  readonly templateType: DoorTemplateType;
+  readonly optionSchema: Partial<TemplateOptionSchema>;
+  readonly templateConfig?: Partial<TemplateConfig>;
+  readonly isOpen: boolean;
+  readonly onToggleOpen: () => void;
+  readonly onToggleEnabled: (enabled: boolean) => void;
+  readonly onTogglePosition: (val: DrillingPosition) => void;
+  readonly onToggleMode: (val: HoleDrillingMode) => void;
+  readonly onSetHoleCount: (count: number) => void;
 }
 
 function DrillingSection({
@@ -329,14 +329,14 @@ function DrillingSection({
 
 // --- Seção: Cores e Acabamentos ---
 interface ColorPaletteSectionProps {
-  icon: string;
-  title: string;
-  colors: readonly { hex: string; name: string }[];
-  selectedColors?: string[];
-  isOpen: boolean;
-  onToggleOpen: () => void;
-  onToggleEnabled: (enabled: boolean) => void;
-  onToggleColor: (hex: string) => void;
+  readonly icon: string;
+  readonly title: string;
+  readonly colors: readonly { readonly hex: string; readonly name: string }[];
+  readonly selectedColors?: readonly string[];
+  readonly isOpen: boolean;
+  readonly onToggleOpen: () => void;
+  readonly onToggleEnabled: (enabled: boolean) => void;
+  readonly onToggleColor: (hex: string) => void;
 }
 
 function ColorPaletteSection({
@@ -754,14 +754,14 @@ export function TemplateOptionSchemaEditor({
 
 // --- Componente de Acordeão com Switch integrado ---
 interface ModernAccordionProps {
-  icon: string;
-  title: string;
-  enabled: boolean;
-  onToggle: (val: boolean) => void;
-  summary: string;
-  isOpen: boolean;
-  onToggleOpen: () => void;
-  children: React.ReactNode;
+  readonly icon: string;
+  readonly title: string;
+  readonly enabled: boolean;
+  readonly onToggle: (val: boolean) => void;
+  readonly summary: string;
+  readonly isOpen: boolean;
+  readonly onToggleOpen: () => void;
+  readonly children: React.ReactNode;
 }
 
 function ModernAccordion({
@@ -846,11 +846,11 @@ function ModernAccordion({
 
 // --- Grupo de Chips Selecionáveis ---
 interface ChipGroupProps<T extends string> {
-  items: T[];
-  labels: Record<T, string>;
-  selected: T[];
-  activeItem?: T;
-  onToggleItem: (item: T) => void;
+  readonly items: readonly T[];
+  readonly labels: Record<T, string>;
+  readonly selected: readonly T[];
+  readonly activeItem?: T;
+  readonly onToggleItem: (item: T) => void;
 }
 
 function ChipGroup<T extends string>({ items, labels, selected, activeItem, onToggleItem }: ChipGroupProps<T>) {

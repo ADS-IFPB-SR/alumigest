@@ -5,14 +5,14 @@ import { useCustomers, useCreateCustomer } from '../../customers/hooks/useCustom
 import type { CustomerSummaryDTO } from '../../customers/services/customersApi';
 
 interface CustomerSelectorProps {
-  selectedCustomer: { id: string; name: string; document: string; phone: string; address: string } | null;
-  onSelect: (customer: Customer) => void;
-  error?: string;
+  readonly selectedCustomer: { id: string; name: string; document: string; phone: string; address: string } | null;
+  readonly onSelect: (customer: Customer) => void;
+  readonly error?: string;
 }
 
 interface SelectedCustomerCardProps {
-  customer: { id: string; name: string; document: string; phone: string; address: string };
-  onClear: () => void;
+  readonly customer: { id: string; name: string; document: string; phone: string; address: string };
+  readonly onClear: () => void;
 }
 
 const SelectedCustomerCard: React.FC<SelectedCustomerCardProps> = ({ customer, onClear }) => {
@@ -57,11 +57,11 @@ const SelectedCustomerCard: React.FC<SelectedCustomerCardProps> = ({ customer, o
 };
 
 interface CustomerDropdownProps {
-  isLoading: boolean;
-  customers: CustomerSummaryDTO[];
-  query: string;
-  onSelect: (customer: CustomerSummaryDTO) => void;
-  onOpenCreateModal: () => void;
+  readonly isLoading: boolean;
+  readonly customers: CustomerSummaryDTO[];
+  readonly query: string;
+  readonly onSelect: (customer: CustomerSummaryDTO) => void;
+  readonly onOpenCreateModal: () => void;
 }
 
 function formatCustomerLocation(cidade?: string, uf?: string): string {

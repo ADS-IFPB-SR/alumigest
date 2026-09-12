@@ -122,15 +122,15 @@ const columns = [
 ];
 
 interface Props {
-  searchQuery: string;
-  filterStatus:
+  readonly searchQuery: string;
+  readonly filterStatus:
     | 'ALL'
     | 'ACTIVE'
     | 'INACTIVE';
-  onEdit: (
+  readonly onEdit: (
     item: HardwareDTO
   ) => void;
-  onViewDetails: (
+  readonly onViewDetails: (
     item: HardwareDTO
   ) => void;
 }
