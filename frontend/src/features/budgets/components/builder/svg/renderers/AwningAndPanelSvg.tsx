@@ -3,13 +3,14 @@ import type { SvgTheme } from '../../../../utils/svgTheme';
 import { FRAME_W, ARROW_COLOR, COTA_COLOR } from '../svgConstants';
 import { HorizontalDimension } from '../SvgDimensions';
 import { DrillingHoles } from '../SvgDrillingHoles';
-import { HandleElement } from '../SvgHandleElement';
+import { HandleElement, HandlePieceDimension } from '../SvgHandleElement';
 
 export function renderAwningWindow1F(
   svgW: number, svgH: number, inverted: boolean,
   handleConfig: HandleConfig, drillingConfig: DrillingConfig,
   heightMm: number,
-  theme: SvgTheme
+  theme: SvgTheme,
+  widthMm?: number,
 ) {
   const fw = FRAME_W;
   const innerW = svgW - fw * 2;
@@ -28,7 +29,10 @@ export function renderAwningWindow1F(
       </text>
       <line x1={fw} y1={inverted ? svgH - fw : fw} x2={svgW - fw} y2={inverted ? svgH - fw : fw} stroke={ARROW_COLOR} strokeWidth={2} strokeDasharray="4 4" opacity={0.6} />
       {handleConfig.handleType !== 'NONE' && (
-        <HandleElement handleConfig={handleConfig} svgH={svgH} frameW={fw} posX={handlePosX} heightMm={heightMm} />
+        <>
+          <HandleElement handleConfig={handleConfig} svgH={svgH} frameW={fw} posX={handlePosX} heightMm={heightMm} widthMm={widthMm} leafW={innerW} leafX={fw} />
+          <HandlePieceDimension svgH={svgH} frameW={fw} posX={handlePosX} handleConfig={handleConfig} heightMm={heightMm} widthMm={widthMm} leafW={innerW} leafX={fw} />
+        </>
       )}
       {drillingConfig.holeCount > 0 && (
         <DrillingHoles

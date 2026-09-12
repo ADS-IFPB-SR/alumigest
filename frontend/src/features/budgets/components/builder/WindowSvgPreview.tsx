@@ -54,9 +54,9 @@ const SVG_RENDERERS: Record<DoorTemplateType, SvgTemplateRenderer> = {
   SWING_DOOR_2F: (ctx) =>
     renderSwingDoor(ctx.svgW, ctx.svgH, 2, ctx.inverted, ctx.handleConfig, ctx.drillingConfig, ctx.widthMm, ctx.heightMm, ctx.theme),
   AWNING_WINDOW_1F: (ctx) =>
-    renderAwningWindow1F(ctx.svgW, ctx.svgH, false, ctx.handleConfig, ctx.drillingConfig, ctx.heightMm, ctx.theme),
+    renderAwningWindow1F(ctx.svgW, ctx.svgH, false, ctx.handleConfig, ctx.drillingConfig, ctx.heightMm, ctx.theme, ctx.widthMm),
   AWNING_WINDOW_1F_INV: (ctx) =>
-    renderAwningWindow1F(ctx.svgW, ctx.svgH, true, ctx.handleConfig, ctx.drillingConfig, ctx.heightMm, ctx.theme),
+    renderAwningWindow1F(ctx.svgW, ctx.svgH, true, ctx.handleConfig, ctx.drillingConfig, ctx.heightMm, ctx.theme, ctx.widthMm),
   FRONT_DRAWER: (ctx) =>
     renderDrawerFront(ctx.svgW, ctx.svgH, ctx.handleConfig, ctx.drillingConfig, ctx.widthMm, ctx.heightMm, ctx.theme),
   FIXED_PANEL: (ctx) =>

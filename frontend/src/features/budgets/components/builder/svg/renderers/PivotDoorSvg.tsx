@@ -3,7 +3,7 @@ import type { SvgTheme } from '../../../../utils/svgTheme';
 import { FRAME_W, ARROW_COLOR } from '../svgConstants';
 import { SwingArc, HorizontalDimension } from '../SvgDimensions';
 import { DrillingHoles } from '../SvgDrillingHoles';
-import { HandleElement } from '../SvgHandleElement';
+import { HandleElement, HandlePieceDimension } from '../SvgHandleElement';
 
 function computeSingleLeafHandle(
   pos: string | undefined,
@@ -52,7 +52,8 @@ function renderSingleLeafSwingDoor(
       <rect x={fw} y={fw} width={innerW} height={innerH} fill={theme.glassFill} stroke={theme.glassStroke} strokeWidth={1} />
       <line x1={hingeSide} y1={fw} x2={hingeSide} y2={svgH - fw} stroke={theme.frameStroke} strokeWidth={3} />
       <SwingArc x={hingeSide} y={svgH - fw} radius={arcRadius} startAngle={-90} endAngle={inverted ? -180 : 0} />
-      <HandleElement handleConfig={handleConfig} svgH={svgH} frameW={fw} posX={posX} mirrored={mirr} heightMm={heightMm} />
+      <HandleElement handleConfig={handleConfig} svgH={svgH} frameW={fw} posX={posX} mirrored={mirr} heightMm={heightMm} widthMm={widthMm} leafW={innerW} leafX={fw} />
+      <HandlePieceDimension svgH={svgH} frameW={fw} posX={posX} handleConfig={handleConfig} heightMm={heightMm} widthMm={widthMm} leafW={innerW} leafX={fw} mirrored={mirr} />
       {drillingConfig.holeCount > 0 && (
         <DrillingHoles
           svgH={svgH}
@@ -97,8 +98,10 @@ function renderDoubleLeafSwingDoor(
       <line x1={svgW - fw} y1={fw} x2={svgW - fw} y2={svgH - fw} stroke={theme.frameStroke} strokeWidth={3} />
       <SwingArc x={fw} y={svgH - fw} radius={halfW} startAngle={-90} endAngle={0} />
       <SwingArc x={svgW - fw} y={svgH - fw} radius={halfW} startAngle={-90} endAngle={-180} />
-      <HandleElement handleConfig={handleConfig} svgH={svgH} frameW={fw} posX={fw + halfW - fw} heightMm={heightMm} />
-      <HandleElement handleConfig={handleConfig} svgH={svgH} frameW={fw} posX={fw + halfW + 2} mirrored heightMm={heightMm} />
+      <HandleElement handleConfig={handleConfig} svgH={svgH} frameW={fw} posX={fw + halfW - fw} heightMm={heightMm} widthMm={widthMm} leafW={halfW} leafX={fw} />
+      <HandlePieceDimension svgH={svgH} frameW={fw} posX={fw + halfW - fw} handleConfig={handleConfig} heightMm={heightMm} widthMm={widthMm} leafW={halfW} leafX={fw} />
+      <HandleElement handleConfig={handleConfig} svgH={svgH} frameW={fw} posX={fw + halfW + 2} mirrored heightMm={heightMm} widthMm={widthMm} leafW={halfW} leafX={fw + halfW} />
+      <HandlePieceDimension svgH={svgH} frameW={fw} posX={fw + halfW + 2} mirrored handleConfig={handleConfig} heightMm={heightMm} widthMm={widthMm} leafW={halfW} leafX={fw + halfW} />
       {drillingConfig.holeCount > 0 && (
         <DrillingHoles
           svgH={svgH}

@@ -43,6 +43,7 @@ export function useHandleBuilder({
     (type: HandleType) => {
       setHandleConfig((prev) => {
         const isProfile = type === 'PROFILE_HANDLE';
+        const isProfileOrBar = isProfile || type === 'BAR_TUBULAR';
         const currentPos = prev.position;
         const validPosition =
           currentPos && allowedHandlePositions.includes(currentPos)
@@ -59,6 +60,7 @@ export function useHandleBuilder({
             isProfile && prev.coverage === 'PIECE'
               ? prev.pieceLengthCm ?? 40
               : undefined,
+          orientation: prev.orientation ?? (isProfileOrBar ? 'VERTICAL' : undefined),
         };
 
         onConfigChange?.(newConfig);
@@ -71,11 +73,11 @@ export function useHandleBuilder({
   const handleHandlePositionChange = useCallback(
     (position: HandlePosition) => {
       setHandleConfig((prev) => {
-        // Se a posição for lateral (LEFT ou RIGHT), força para VERTICAL
-        // Se for topo/base, força para HORIZONTAL
-        // Se for centro, mantém a orientação atual ou vertical
+        const isProfileOrBar = prev.handleType === 'PROFILE_HANDLE' || prev.handleType === 'BAR_TUBULAR';
         let nextOrientation: HandleOrientation = prev.orientation ?? 'VERTICAL';
-        if (position === 'TOP' || position === 'BOTTOM') {
+        if (isProfileOrBar) {
+          nextOrientation = prev.orientation ?? (position === 'TOP' || position === 'BOTTOM' ? 'HORIZONTAL' : 'VERTICAL');
+        } else if (position === 'TOP' || position === 'BOTTOM') {
           nextOrientation = 'HORIZONTAL';
         } else if (position === 'LEFT' || position === 'RIGHT') {
           nextOrientation = 'VERTICAL';

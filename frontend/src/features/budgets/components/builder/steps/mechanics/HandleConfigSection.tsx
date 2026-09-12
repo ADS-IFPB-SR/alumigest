@@ -249,35 +249,44 @@ export const HandleConfigSection: React.FC<HandleConfigSectionProps> = ({
           {(handleConfig.handleType === 'PROFILE_HANDLE' || handleConfig.handleType === 'BAR_TUBULAR') && (
             <div className="flex flex-col gap-1.5">
               <span className="text-xs sm:text-sm font-label font-medium text-on-surface block">
-                Orientação da Barra no Gabarito CAD
+                Orientação do Puxador / Barra
               </span>
               <div className="grid grid-cols-2 gap-xs">
-                <button
-                  type="button"
-                  onClick={() => onHandleOrientationChange?.('HORIZONTAL')}
-                  aria-pressed={(handleConfig.orientation ?? (handleConfig.position === 'TOP' || handleConfig.position === 'BOTTOM' ? 'HORIZONTAL' : 'VERTICAL')) === 'HORIZONTAL'}
-                  className={`py-2 px-2.5 rounded-lg border text-left flex items-center justify-center gap-2 transition-all cursor-pointer ${
-                    (handleConfig.orientation ?? (handleConfig.position === 'TOP' || handleConfig.position === 'BOTTOM' ? 'HORIZONTAL' : 'VERTICAL')) === 'HORIZONTAL'
-                      ? 'bg-primary/10 border-primary text-primary shadow-xs ring-1 ring-primary/40 font-bold'
-                      : 'bg-surface border-outline-variant text-on-surface hover:bg-surface-container'
-                  }`}
-                >
-                  <span className="material-symbols-outlined text-[18px]">horizontal_distribute</span>
-                  <span className="text-xs font-label">Deitada (Horizontal)</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onHandleOrientationChange?.('VERTICAL')}
-                  aria-pressed={(handleConfig.orientation ?? (handleConfig.position === 'TOP' || handleConfig.position === 'BOTTOM' ? 'HORIZONTAL' : 'VERTICAL')) === 'VERTICAL'}
-                  className={`py-2 px-2.5 rounded-lg border text-left flex items-center justify-center gap-2 transition-all cursor-pointer ${
-                    (handleConfig.orientation ?? (handleConfig.position === 'TOP' || handleConfig.position === 'BOTTOM' ? 'HORIZONTAL' : 'VERTICAL')) === 'VERTICAL'
-                      ? 'bg-primary/10 border-primary text-primary shadow-xs ring-1 ring-primary/40 font-bold'
-                      : 'bg-surface border-outline-variant text-on-surface hover:bg-surface-container'
-                  }`}
-                >
-                  <span className="material-symbols-outlined text-[18px]">vertical_distribute</span>
-                  <span className="text-xs font-label">Em pé (Vertical)</span>
-                </button>
+                {(() => {
+                  const activeOrientation = handleConfig.orientation ?? (
+                    handleConfig.position === 'TOP' || handleConfig.position === 'BOTTOM' ? 'HORIZONTAL' : 'VERTICAL'
+                  );
+                  return (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => onHandleOrientationChange?.('HORIZONTAL')}
+                        aria-pressed={activeOrientation === 'HORIZONTAL'}
+                        className={`py-2 px-2.5 rounded-lg border text-left flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                          activeOrientation === 'HORIZONTAL'
+                            ? 'bg-primary/10 border-primary text-primary shadow-xs ring-1 ring-primary/40 font-bold'
+                            : 'bg-surface border-outline-variant text-on-surface hover:bg-surface-container'
+                        }`}
+                      >
+                        <span className="material-symbols-outlined text-[18px]">horizontal_distribute</span>
+                        <span className="text-xs font-label">Deitada (Horizontal)</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onHandleOrientationChange?.('VERTICAL')}
+                        aria-pressed={activeOrientation === 'VERTICAL'}
+                        className={`py-2 px-2.5 rounded-lg border text-left flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                          activeOrientation === 'VERTICAL'
+                            ? 'bg-primary/10 border-primary text-primary shadow-xs ring-1 ring-primary/40 font-bold'
+                            : 'bg-surface border-outline-variant text-on-surface hover:bg-surface-container'
+                        }`}
+                      >
+                        <span className="material-symbols-outlined text-[18px]">vertical_distribute</span>
+                        <span className="text-xs font-label">Em pé (Vertical)</span>
+                      </button>
+                    </>
+                  );
+                })()}
               </div>
             </div>
           )}
@@ -299,7 +308,7 @@ export const HandleConfigSection: React.FC<HandleConfigSectionProps> = ({
               </select>
             </div>
 
-            {/* Extensão no Gabarito (Apenas para Perfil Puxador de Alumínio) */}
+            {/* Extensão no Gabarito (Exclusivo para Perfil Puxador) */}
             {handleConfig.handleType === 'PROFILE_HANDLE' && (
               <div>
                 <label htmlFor="handle-coverage-select" className="text-xs sm:text-sm font-label font-medium text-on-surface block mb-1">
@@ -319,12 +328,12 @@ export const HandleConfigSection: React.FC<HandleConfigSectionProps> = ({
             )}
           </div>
 
-          {/* Medida do Pedaço (cm) — Exclusivo para Perfil Puxador em Pedaço */}
+          {/* Medida do Pedaço (cm) — Apenas para Perfil Puxador em Pedaço */}
           {handleConfig.handleType === 'PROFILE_HANDLE' &&
             handleConfig.coverage === 'PIECE' && (
               <div className="mt-1">
                 <label htmlFor="handle-length-input" className="text-xs sm:text-sm font-label font-medium text-on-surface block mb-1">
-                  Comprimento do Pedaço (cm) — Reflete fielmente no corte e SVG
+                  Comprimento do Pedaço (cm) — Reflete fielmente no corte e consumo
                 </label>
                 <input
                   id="handle-length-input"

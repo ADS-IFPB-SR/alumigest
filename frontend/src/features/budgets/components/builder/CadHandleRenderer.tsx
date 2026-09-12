@@ -49,9 +49,10 @@ export const CadHandleRenderer: React.FC<CadHandleRendererProps> = ({
   const isBothSides = side === 'BOTH_SIDES';
   const isHorizontal = position === 'TOP' || position === 'BOTTOM';
   const isCenter = position === 'CENTER';
+  const isProfileOrBar = handleType === 'PROFILE_HANDLE' || handleType === 'BAR_TUBULAR';
   const isActuallyHorizontal = orientation
     ? orientation === 'HORIZONTAL'
-    : (isHorizontal || (isCenter && widthMm >= heightMm));
+    : (!isProfileOrBar && (isHorizontal || (isCenter && widthMm >= heightMm)));
 
   // ──────────────────────────────────────────────────────────────────────────
   // 1. RENDERIZAÇÃO HORIZONTAL (Deitado - Basculante / Maxim-ar / Base ou Topo / Barra Horizontal)

@@ -1,5 +1,6 @@
 import React from 'react';
 import type { BuilderState } from '../../../types';
+import { HANDLE_TYPE_LABELS } from '../../../types';
 import { formatBRL } from '../../../utils/calculations';
 
 export interface Step4SummaryProps {
@@ -18,6 +19,14 @@ export const Step4Summary: React.FC<Step4SummaryProps> = ({
   totalQty,
 }) => {
   const configuredMaterials = state.materialSelections.filter((s) => s.materialId);
+
+  const handleType = state.handleConfig?.handleType;
+  const handleLabel = !handleType || handleType === 'NONE'
+    ? 'Sem Puxador'
+    : (HANDLE_TYPE_LABELS[handleType] ?? handleType);
+
+  const holeCount = state.drillingConfig?.holeCount ?? 0;
+  const drillingLabel = holeCount === 0 ? 'Sem furos' : holeCount === 1 ? '1 furo' : `${holeCount} furos`;
 
   return (
     <div className="flex flex-col gap-md animate-fadeIn">
@@ -56,8 +65,11 @@ export const Step4Summary: React.FC<Step4SummaryProps> = ({
           </div>
           <div className="bg-surface-container-low p-sm rounded border border-outline-variant/50">
             <span className="text-xs text-secondary block font-label">Puxador / Furação</span>
-            <strong className="text-on-surface font-body truncate block">
-              {state.handleConfig.handleType === 'NONE' ? 'Sem Puxador' : state.handleConfig.handleType} • {state.drillingConfig.holeCount} furos
+            <strong
+              className="text-on-surface font-body text-xs sm:text-sm leading-snug block break-words"
+              title={`${handleLabel} • ${drillingLabel}`}
+            >
+              {handleLabel} • {drillingLabel}
             </strong>
           </div>
         </div>
