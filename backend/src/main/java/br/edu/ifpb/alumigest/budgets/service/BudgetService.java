@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Year;
+import java.time.ZoneOffset;
 import java.util.UUID;
 
 @Service
@@ -177,7 +178,7 @@ public class BudgetService {
     }
 
     private String generateBudgetCode() {
-        int currentYear = Year.now().getValue();
+        int currentYear = Year.now(ZoneOffset.UTC).getValue();
         String prefix = String.format("ORC-%d-", currentYear);
 
         return budgetRepository.findTopByCodeStartingWithOrderByCodeDesc(prefix)

@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.Map;
 
 @RestController
@@ -23,7 +24,7 @@ public class HealthController {
                 "status", "UP",
                 "application", "AlumiGest Backend",
                 "version", "0.1.0-SNAPSHOT",
-                "timestamp", LocalDateTime.now(),
+                "timestamp", LocalDateTime.now(ZoneOffset.UTC),
                 "partner", "Alumiportas",
                 "institution", "IFPB Campus Sousa"
         );

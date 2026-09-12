@@ -24,6 +24,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
 
@@ -91,8 +92,8 @@ class ClientControllerTest {
                 "PB",
                 "Observação",
                 true,
-                OffsetDateTime.now(),
-                OffsetDateTime.now()
+                OffsetDateTime.now(ZoneOffset.UTC),
+                OffsetDateTime.now(ZoneOffset.UTC)
         );
 
         when(clientService.create(any(ClientRequestDTO.class))).thenReturn(response);

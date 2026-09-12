@@ -15,6 +15,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -100,6 +101,7 @@ public class Client {
     }
 
     public static class Builder {
+        private UUID id;
         private String fullName;
         private PersonType personType = PersonType.FISICA;
         private String documentNumber;
@@ -113,6 +115,11 @@ public class Client {
         private String city;
         private String state;
         private String notes;
+
+        public Builder id(UUID id) {
+            this.id = id;
+            return this;
+        }
 
         public Builder fullName(String fullName) {
             this.fullName = fullName;
@@ -181,6 +188,7 @@ public class Client {
 
         public Client build() {
             Client client = new Client();
+            client.setId(this.id);
             client.setFullName(this.fullName);
             client.setPersonType(this.personType != null ? this.personType : PersonType.FISICA);
             client.setDocumentNumber(this.documentNumber);
@@ -201,13 +209,13 @@ public class Client {
 
     @PrePersist
     protected void onCreate() {
-        this.createdAt = OffsetDateTime.now();
-        this.updatedAt = OffsetDateTime.now();
+        this.createdAt = OffsetDateTime.now(ZoneOffset.UTC);
+        this.updatedAt = OffsetDateTime.now(ZoneOffset.UTC);
     }
 
     @PreUpdate
     protected void onUpdate() {
-        this.updatedAt = OffsetDateTime.now();
+        this.updatedAt = OffsetDateTime.now(ZoneOffset.UTC);
     }
 
     // Métodos de Domínio

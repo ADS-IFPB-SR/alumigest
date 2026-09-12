@@ -28,6 +28,7 @@ import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -82,8 +83,8 @@ class AluminumProfileServiceTest {
         aluminumMaterial.setSalePrice(new BigDecimal("65.00"));
         aluminumMaterial.setActive(true);
         aluminumMaterial.setGroup(aluminumGroup);
-        aluminumMaterial.setCreatedAt(OffsetDateTime.now());
-        aluminumMaterial.setUpdatedAt(OffsetDateTime.now());
+        aluminumMaterial.setCreatedAt(OffsetDateTime.now(ZoneOffset.UTC));
+        aluminumMaterial.setUpdatedAt(OffsetDateTime.now(ZoneOffset.UTC));
     }
 
     @Nested
@@ -259,8 +260,8 @@ class AluminumProfileServiceTest {
             savedMaterial.setSalePrice(request.salePrice());
             savedMaterial.setActive(true);
             savedMaterial.setGroup(aluminumGroup);
-            savedMaterial.setCreatedAt(OffsetDateTime.now());
-            savedMaterial.setUpdatedAt(OffsetDateTime.now());
+            savedMaterial.setCreatedAt(OffsetDateTime.now(ZoneOffset.UTC));
+            savedMaterial.setUpdatedAt(OffsetDateTime.now(ZoneOffset.UTC));
 
             when(materialGroupRepository.findByCode("ALUMINIO"))
                     .thenReturn(Optional.of(aluminumGroup));
