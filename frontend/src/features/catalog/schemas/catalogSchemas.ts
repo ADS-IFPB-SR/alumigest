@@ -6,12 +6,12 @@ const basePriceRefinement = (data: { costPrice: string; salePrice: string }, ctx
   const sale = parseCurrencyString(data.salePrice);
   
   if (cost <= 0) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'O preço de custo deve ser maior que zero.', path: ['costPrice'] });
+    ctx.addIssue({ code: 'custom', message: 'O preço de custo deve ser maior que zero.', path: ['costPrice'] });
   }
   if (sale <= 0) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'O preço de venda deve ser maior que zero.', path: ['salePrice'] });
+    ctx.addIssue({ code: 'custom', message: 'O preço de venda deve ser maior que zero.', path: ['salePrice'] });
   } else if (sale <= cost) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'O preço de venda deve ser maior que o custo.', path: ['salePrice'] });
+    ctx.addIssue({ code: 'custom', message: 'O preço de venda deve ser maior que o custo.', path: ['salePrice'] });
   }
 };
 

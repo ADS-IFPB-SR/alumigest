@@ -72,10 +72,10 @@ const columns = [
 ];
 
 interface Props {
-  searchQuery: string;
-  filterStatus: 'ALL' | 'ACTIVE' | 'INACTIVE';
-  onEdit: (item: FilmDTO) => void;
-  onViewDetails: (item: FilmDTO) => void;
+  readonly searchQuery: string;
+  readonly filterStatus: 'ALL' | 'ACTIVE' | 'INACTIVE';
+  readonly onEdit: (item: FilmDTO) => void;
+  readonly onViewDetails: (item: FilmDTO) => void;
 }
 
 export function FilmTab({
@@ -100,18 +100,8 @@ export function FilmTab({
 
     return (
       film.name.toLowerCase().includes(term) ||
-      (
-        film.commercialReference &&
-        film.commercialReference
-          .toLowerCase()
-          .includes(term)
-      ) ||
-      (
-        film.skuCode &&
-        film.skuCode
-          .toLowerCase()
-          .includes(term)
-      )
+      Boolean(film.commercialReference?.toLowerCase().includes(term)) ||
+      Boolean(film.skuCode?.toLowerCase().includes(term))
     );
   });
 

@@ -14,19 +14,30 @@ import type {
  * Propriedades para a seção de configuração do puxador e insumo vinculado.
  */
 export interface HandleConfigSectionProps {
-  handleConfig: HandleConfig;
-  handleMaterial?: MaterialSelection | null;
-  availableHandleProfiles?: Array<{ id: string; name: string; price: number; unit: string; colorFinish?: string }>;
-  availableHandleHardwares?: Array<{ id: string; name: string; price: number; unit: string }>;
-  allowedHandlePositions?: HandlePosition[];
-  onHandleTypeChange: (type: HandleType) => void;
-  onHandlePositionChange: (pos: HandlePosition) => void;
-  onHandleOrientationChange?: (orientation: HandleOrientation) => void;
-  onHandleSideChange: (side: HandleSide) => void;
-  onHandleCoverageChange: (coverage: HandleCoverage) => void;
-  onHandlePieceLengthChange: (length: number) => void;
-  onSelectHandleMaterial?: (materialId: string) => void;
-  onGoToMaterials?: () => void;
+  readonly handleConfig: HandleConfig;
+  readonly handleMaterial?: MaterialSelection | null;
+  readonly availableHandleProfiles?: readonly {
+    readonly id: string;
+    readonly name: string;
+    readonly price: number;
+    readonly unit: string;
+    readonly colorFinish?: string;
+  }[];
+  readonly availableHandleHardwares?: readonly {
+    readonly id: string;
+    readonly name: string;
+    readonly price: number;
+    readonly unit: string;
+  }[];
+  readonly allowedHandlePositions?: readonly HandlePosition[];
+  readonly onHandleTypeChange: (type: HandleType) => void;
+  readonly onHandlePositionChange: (pos: HandlePosition) => void;
+  readonly onHandleOrientationChange?: (orientation: HandleOrientation) => void;
+  readonly onHandleSideChange: (side: HandleSide) => void;
+  readonly onHandleCoverageChange: (coverage: HandleCoverage) => void;
+  readonly onHandlePieceLengthChange: (length: number) => void;
+  readonly onSelectHandleMaterial?: (materialId: string) => void;
+  readonly onGoToMaterials?: () => void;
 }
 
 /**

@@ -24,7 +24,7 @@ export function calcItemSubtotal(
     return acc + qty * opt.unitPrice;
   }, 0);
   const qty = typeof quantity === 'number' && quantity > 0 ? quantity : 1;
-  return parseFloat((materialsUnitCost * qty + (laborCost || 0)).toFixed(2));
+  return Number.parseFloat((materialsUnitCost * qty + (laborCost || 0)).toFixed(2));
 }
 
 /**

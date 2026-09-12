@@ -2,9 +2,9 @@ import type { BudgetStatus } from '../types';
 import { getBudgetStatusTheme } from '../utils/statusTheme';
 
 interface StatusBadgeProps {
-  status: BudgetStatus;
-  showIcon?: boolean;
-  className?: string;
+  readonly status: BudgetStatus;
+  readonly showIcon?: boolean;
+  readonly className?: string;
 }
 
 export function StatusBadge({ status, showIcon = true, className = '' }: StatusBadgeProps) {

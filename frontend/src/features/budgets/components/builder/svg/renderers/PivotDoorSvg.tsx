@@ -27,16 +27,27 @@ function computeSingleLeafHandle(
   };
 }
 
-function renderSingleLeafSwingDoor(
-  svgW: number,
-  svgH: number,
-  inverted: boolean,
-  handleConfig: HandleConfig,
-  drillingConfig: DrillingConfig,
-  widthMm: number,
-  heightMm: number,
-  theme: SvgTheme,
-) {
+interface SwingDoorRenderProps {
+  readonly svgW: number;
+  readonly svgH: number;
+  readonly inverted?: boolean;
+  readonly handleConfig: HandleConfig;
+  readonly drillingConfig: DrillingConfig;
+  readonly widthMm: number;
+  readonly heightMm: number;
+  readonly theme: SvgTheme;
+}
+
+function renderSingleLeafSwingDoor({
+  svgW,
+  svgH,
+  inverted = false,
+  handleConfig,
+  drillingConfig,
+  widthMm,
+  heightMm,
+  theme,
+}: SwingDoorRenderProps) {
   const fw = FRAME_W;
   const innerW = svgW - fw * 2;
   const innerH = svgH - fw * 2;
@@ -75,15 +86,15 @@ function renderSingleLeafSwingDoor(
   );
 }
 
-function renderDoubleLeafSwingDoor(
-  svgW: number,
-  svgH: number,
-  handleConfig: HandleConfig,
-  drillingConfig: DrillingConfig,
-  widthMm: number,
-  heightMm: number,
-  theme: SvgTheme,
-) {
+function renderDoubleLeafSwingDoor({
+  svgW,
+  svgH,
+  handleConfig,
+  drillingConfig,
+  widthMm,
+  heightMm,
+  theme,
+}: SwingDoorRenderProps) {
   const fw = FRAME_W;
   const innerW = svgW - fw * 2;
   const innerH = svgH - fw * 2;
@@ -160,32 +171,12 @@ function renderDoubleLeafSwingDoor(
   );
 }
 
-export function renderSwingDoor(
-  svgW: number, svgH: number, leafCount: 1 | 2, inverted: boolean,
-  handleConfig: HandleConfig, drillingConfig: DrillingConfig,
-  widthMm: number, heightMm: number,
-  theme: SvgTheme,
-) {
+export type { SwingDoorRenderProps };
+
+export function renderSwingDoor(leafCount: 1 | 2, props: SwingDoorRenderProps) {
   if (leafCount === 1) {
-    return renderSingleLeafSwingDoor(
-      svgW,
-      svgH,
-      inverted,
-      handleConfig,
-      drillingConfig,
-      widthMm,
-      heightMm,
-      theme,
-    );
+    return renderSingleLeafSwingDoor(props);
   }
 
-  return renderDoubleLeafSwingDoor(
-    svgW,
-    svgH,
-    handleConfig,
-    drillingConfig,
-    widthMm,
-    heightMm,
-    theme,
-  );
+  return renderDoubleLeafSwingDoor(props);
 }

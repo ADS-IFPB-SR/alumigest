@@ -2,10 +2,10 @@ import { Modal } from '../../../components/ui/Modal';
 import { Button } from '../../../components/ui/Button';
 
 interface Props {
-  isOpen: boolean;
-  onClose: () => void;
-  item: any | null;
-  onEdit: () => void;
+  readonly isOpen: boolean;
+  readonly onClose: () => void;
+  readonly item: any;
+  readonly onEdit: () => void;
 }
 
 export function MaterialDetailsModal({

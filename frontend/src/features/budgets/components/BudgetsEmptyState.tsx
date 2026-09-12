@@ -1,8 +1,8 @@
 import { useNavigate } from 'react-router-dom';
 
 interface BudgetsEmptyStateProps {
-  type: 'no-data' | 'no-results' | 'error';
-  onRetry?: () => void;
+  readonly type: 'no-data' | 'no-results' | 'error';
+  readonly onRetry?: () => void;
 }
 
 export function BudgetsEmptyState({ type, onRetry }: BudgetsEmptyStateProps) {
@@ -29,7 +29,7 @@ export function BudgetsEmptyState({ type, onRetry }: BudgetsEmptyStateProps) {
             className="flex items-center gap-xs px-md py-sm bg-primary text-on-primary rounded-md font-label font-semibold text-sm shadow-sm hover:bg-primary-container transition-all active:scale-95 cursor-pointer"
           >
             <span className="material-symbols-outlined text-[18px]">refresh</span>
-            Tentar novamente
+            <span>Tentar novamente</span>
           </button>
         )}
       </div>
@@ -73,7 +73,7 @@ export function BudgetsEmptyState({ type, onRetry }: BudgetsEmptyStateProps) {
         className="flex items-center gap-xs px-md py-sm bg-primary text-on-primary rounded-md font-label font-semibold text-sm shadow-sm hover:bg-primary-container transition-all active:scale-95 cursor-pointer"
       >
         <span className="material-symbols-outlined text-[18px]">add</span>
-        Criar Primeiro Orçamento
+        <span>Criar Primeiro Orçamento</span>
       </button>
     </div>
   );

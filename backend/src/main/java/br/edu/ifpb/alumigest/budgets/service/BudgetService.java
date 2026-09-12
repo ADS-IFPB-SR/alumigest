@@ -203,7 +203,7 @@ public class BudgetService {
     }
 
     private String generateBudgetCode() {
-        int currentYear = Year.now().getValue();
+        int currentYear = Year.now(ZoneOffset.UTC).getValue();
         String prefix = String.format("ORC-%d-", currentYear);
 
         return budgetRepository.findTopByCodeStartingWithOrderByCodeDesc(prefix)

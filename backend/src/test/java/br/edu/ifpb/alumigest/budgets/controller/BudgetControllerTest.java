@@ -1,16 +1,20 @@
 package br.edu.ifpb.alumigest.budgets.controller;
 
 import br.edu.ifpb.alumigest.budgets.domain.BudgetStatus;
+import br.edu.ifpb.alumigest.budgets.dto.BudgetItemCalculationRequestDTO;
+import br.edu.ifpb.alumigest.budgets.dto.BudgetItemCalculationResponseDTO;
+import br.edu.ifpb.alumigest.budgets.dto.BudgetItemRequestDTO;
 import br.edu.ifpb.alumigest.budgets.dto.BudgetRequestDTO;
 import br.edu.ifpb.alumigest.budgets.dto.BudgetResponseDTO;
 import br.edu.ifpb.alumigest.budgets.dto.BudgetStatusUpdateDTO;
 import br.edu.ifpb.alumigest.budgets.dto.BudgetSummaryResponseDTO;
+import br.edu.ifpb.alumigest.budgets.service.BudgetQuantityService;
 import br.edu.ifpb.alumigest.budgets.service.BudgetService;
 import br.edu.ifpb.alumigest.common.dto.PageResponse;
 import br.edu.ifpb.alumigest.common.exception.BudgetImmutableException;
-import br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException;
 import br.edu.ifpb.alumigest.common.exception.GlobalExceptionHandler;
 import br.edu.ifpb.alumigest.common.exception.InvalidBudgetStatusTransitionException;
+import br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -25,14 +29,12 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-import br.edu.ifpb.alumigest.budgets.dto.BudgetItemRequestDTO;
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -47,7 +49,7 @@ class BudgetControllerTest {
     private BudgetService budgetService;
 
     @Mock
-    private br.edu.ifpb.alumigest.budgets.service.BudgetQuantityService budgetQuantityService;
+    private BudgetQuantityService budgetQuantityService;
 
     @InjectMocks
     private BudgetController budgetController;
@@ -184,20 +186,20 @@ class BudgetControllerTest {
     @Test
     @DisplayName("Deve retornar 200 no preview de cálculo de insumos")
     void previewCalculation_ShouldReturn200() throws Exception {
-        var request = new br.edu.ifpb.alumigest.budgets.dto.BudgetItemCalculationRequestDTO(
+        var request = new BudgetItemCalculationRequestDTO(
                 "SLIDING_DOOR_2F",
                 new BigDecimal("2000"),
                 new BigDecimal("2100"),
                 1,
-                List.of(new br.edu.ifpb.alumigest.budgets.dto.BudgetItemCalculationRequestDTO.BudgetItemOptionCalculationDTO(
+                List.of(new BudgetItemCalculationRequestDTO.BudgetItemOptionCalculationDTO(
                         UUID.randomUUID(), "GLASS", new BigDecimal("4.20")
                 ))
         );
 
-        var response = new br.edu.ifpb.alumigest.budgets.dto.BudgetItemCalculationResponseDTO(
+        var response = new BudgetItemCalculationResponseDTO(
                 new BigDecimal("4.20"),
                 new BigDecimal("8.20"),
-                List.of(new br.edu.ifpb.alumigest.budgets.dto.BudgetItemCalculationResponseDTO.BudgetItemOptionCalculationResultDTO(
+                List.of(new BudgetItemCalculationResponseDTO.BudgetItemOptionCalculationResultDTO(
                         UUID.randomUUID(), "GLASS", new BigDecimal("4.20"), new BigDecimal("4.20"), false, null
                 ))
         );

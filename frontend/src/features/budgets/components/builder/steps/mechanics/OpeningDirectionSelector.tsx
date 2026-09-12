@@ -6,11 +6,11 @@ import type { OpeningDirection } from '../../../../types';
  */
 export interface OpeningDirectionSelectorProps {
   /** Sentido de abertura selecionado */
-  openingDirection: OpeningDirection;
+  readonly openingDirection: OpeningDirection;
   /** Opções de sentido de abertura suportadas pelo template */
-  supportedDirections: OpeningDirection[];
+  readonly supportedDirections: readonly OpeningDirection[];
   /** Callback notificado ao alternar o sentido */
-  onOpeningDirectionChange: (dir: OpeningDirection) => void;
+  readonly onOpeningDirectionChange: (dir: OpeningDirection) => void;
 }
 
 /**

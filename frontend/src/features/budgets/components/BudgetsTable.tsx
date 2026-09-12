@@ -3,20 +3,26 @@ import type { BudgetSummary } from '../types';
 import { StatusBadge } from './StatusBadge';
 
 interface BudgetsTableProps {
-  data: BudgetSummary[];
-  sortField?: string;
-  sortDirection?: 'asc' | 'desc';
-  onSort: (field: string) => void;
+  readonly data: readonly BudgetSummary[];
+  readonly sortField?: string;
+  readonly sortDirection?: 'asc' | 'desc';
+  readonly onSort: (field: string) => void;
 }
 
 interface SortableHeaderProps {
-  label: string;
-  field: string;
-  activeField?: string;
-  direction?: 'asc' | 'desc';
-  onSort: (field: string) => void;
-  align?: 'left' | 'right' | 'center';
-  className?: string;
+  readonly label: string;
+  readonly field: string;
+  readonly activeField?: string;
+  readonly direction?: 'asc' | 'desc';
+  readonly onSort: (field: string) => void;
+  readonly align?: 'left' | 'right' | 'center';
+  readonly className?: string;
+}
+
+function getAlignmentClasses(align: 'left' | 'center' | 'right'): string {
+  if (align === 'right') return 'justify-end text-right';
+  if (align === 'center') return 'justify-center text-center';
+  return 'justify-start text-left';
 }
 
 function SortableHeader({
@@ -40,13 +46,7 @@ function SortableHeader({
         type="button"
         aria-label={`Ordenar por ${label}`}
         onClick={() => onSort(field)}
-        className={`w-full p-xs sm:p-sm lg:p-md flex items-center gap-xs cursor-pointer select-none hover:bg-surface-container transition-colors ${
-          align === 'right'
-            ? 'justify-end text-right'
-            : align === 'center'
-              ? 'justify-center text-center'
-              : 'justify-start text-left'
-        }`}
+        className={`w-full p-xs sm:p-sm lg:p-md flex items-center gap-xs cursor-pointer select-none hover:bg-surface-container transition-colors ${getAlignmentClasses(align)}`}
       >
         <span>{label}</span>
         <span
@@ -66,7 +66,7 @@ function SortableHeader({
 function formatDate(isoDate: string): string {
   if (!isoDate) return '-';
   const date = new Date(isoDate);
-  if (isNaN(date.getTime())) return isoDate;
+  if (Number.isNaN(date.getTime())) return isoDate;
   return date.toLocaleDateString('pt-BR', {
     day: '2-digit',
     month: '2-digit',

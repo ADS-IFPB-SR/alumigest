@@ -3,11 +3,17 @@ import type { BudgetItem } from '../types';
 import { TEMPLATE_TYPE_INFO } from '../types';
 import { formatBRL } from '../utils/calculations';
 
+function formatOpeningDirectionArrow(openDir?: string): string {
+  if (openDir === 'LEFT_TO_RIGHT') return '→';
+  if (openDir === 'RIGHT_TO_LEFT') return '←';
+  return openDir ?? '';
+}
+
 interface BudgetItemsTableProps {
-  items: BudgetItem[];
-  onEdit: (item: BudgetItem) => void;
-  onDuplicate: (item: BudgetItem) => void;
-  onDelete: (tempId: string) => void;
+  readonly items: BudgetItem[];
+  readonly onEdit: (item: BudgetItem) => void;
+  readonly onDuplicate: (item: BudgetItem) => void;
+  readonly onDelete: (tempId: string) => void;
 }
 
 export const BudgetItemsTable: React.FC<BudgetItemsTableProps> = ({
@@ -79,7 +85,7 @@ export const BudgetItemsTable: React.FC<BudgetItemsTableProps> = ({
                         </span>
                         <span className="text-xs text-on-surface-variant font-body">
                           Modelo: {item.templateType ? (TEMPLATE_TYPE_INFO[item.templateType as keyof typeof TEMPLATE_TYPE_INFO]?.label || item.templateType) : 'Básico'}
-                          {openDir && <span className="ml-xs text-secondary">· {openDir === 'LEFT_TO_RIGHT' ? '→' : openDir === 'RIGHT_TO_LEFT' ? '←' : openDir}</span>}
+                          {openDir && <span className="ml-xs text-secondary">· {formatOpeningDirectionArrow(openDir)}</span>}
                         </span>
                       </div>
                     </td>

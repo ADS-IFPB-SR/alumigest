@@ -4,17 +4,38 @@ import type { GlassDTO, ProfileDTO, HardwareDTO, FilmDTO } from '../../../../cat
 import { formatBRL } from '../../../utils/calculations';
 import { getSwatchColor } from '../../../utils/mapCatalogTemplate';
 
+function getDefaultUnitMeasure(categoryType: string): string {
+  if (categoryType === 'GLASS' || categoryType === 'FILM') return 'm²';
+  if (categoryType === 'PROFILE') return 'm';
+  return 'un';
+}
+
+function formatMaterialDisplayPrice(
+  categoryPrice: number | undefined,
+  materialId: string | undefined,
+  unitPrice: number,
+  unitMeasure: string,
+): string {
+  if (categoryPrice !== undefined) {
+    return formatBRL(categoryPrice);
+  }
+  if (materialId) {
+    return `${formatBRL(unitPrice)} / ${unitMeasure}`;
+  }
+  return '—';
+}
+
 export interface Step2MaterialsProps {
-  materialSelections: MaterialSelection[];
-  glasses: GlassDTO[];
-  profiles: ProfileDTO[];
-  hardwares: HardwareDTO[];
-  films: FilmDTO[];
-  categoryIcons: Record<CategoryType, string>;
-  onAddMaterial: (catType: CategoryType) => void;
-  onRemoveMaterial: (reqId: string) => void;
-  onMaterialChange: (reqId: string, materialId: string) => void;
-  onMaterialQtyChange: (reqId: string, val: string) => void;
+  readonly materialSelections: MaterialSelection[];
+  readonly glasses: GlassDTO[];
+  readonly profiles: ProfileDTO[];
+  readonly hardwares: HardwareDTO[];
+  readonly films: FilmDTO[];
+  readonly categoryIcons: Record<CategoryType, string>;
+  readonly onAddMaterial: (catType: CategoryType) => void;
+  readonly onRemoveMaterial: (reqId: string) => void;
+  readonly onMaterialChange: (reqId: string, materialId: string) => void;
+  readonly onMaterialQtyChange: (reqId: string, val: string) => void;
 }
 
 export const Step2Materials: React.FC<Step2MaterialsProps> = ({
@@ -107,7 +128,7 @@ export const Step2Materials: React.FC<Step2MaterialsProps> = ({
 
 
               const categoryPrice = sel.totalPrice;
-              const unitMeasure = sel.unitMeasure ?? (categoryType === 'GLASS' || categoryType === 'FILM' ? 'm²' : categoryType === 'PROFILE' ? 'm' : 'un');
+              const unitMeasure = sel.unitMeasure ?? getDefaultUnitMeasure(categoryType);
 
               // Consulta direta ao dicionário de catálogo por categoria
               const categoryItems = catalogByCategory[categoryType] ?? [];
@@ -137,7 +158,7 @@ export const Step2Materials: React.FC<Step2MaterialsProps> = ({
                     <div className="flex items-center gap-xs min-w-0">
                       <span className="material-symbols-outlined text-[18px] text-primary">{iconName}</span>
                       <span className="text-sm font-label font-semibold text-on-surface truncate">
-                        {sel.label} {sel.isOptional && <span className="text-on-surface-variant font-normal text-xs">(Opcional)</span>}
+                        {sel.label}{' '}{sel.isOptional && <span className="text-on-surface-variant font-normal text-xs">(Opcional)</span>}
                       </span>
                       {currentCatalogItem?.familyCode && (
                         <span className="text-[10px] uppercase font-data-mono px-1.5 py-0.5 rounded bg-surface border border-outline-variant text-secondary font-medium tracking-wide">
@@ -147,11 +168,7 @@ export const Step2Materials: React.FC<Step2MaterialsProps> = ({
                     </div>
                     <div className="flex items-center gap-xs shrink-0">
                       <span className="font-data-mono font-bold text-primary text-sm sm:text-base">
-                        {categoryPrice !== undefined
-                          ? formatBRL(categoryPrice)
-                          : sel.materialId
-                          ? `${formatBRL(sel.unitPrice)} / ${unitMeasure}`
-                          : '—'}
+                        {formatMaterialDisplayPrice(categoryPrice, sel.materialId, sel.unitPrice, unitMeasure)}
                       </span>
                       {sel.isOptional && (
                         <button

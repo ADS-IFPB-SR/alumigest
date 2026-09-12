@@ -2,9 +2,9 @@ import { Link } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
 
 interface Props {
- title: string;
- icon: string;
- description: string;
+ readonly title: string;
+ readonly icon: string;
+ readonly description: string;
 }
 
 export function PlaceholderPage({ title, icon, description }: Props) {

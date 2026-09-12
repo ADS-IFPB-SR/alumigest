@@ -2,7 +2,7 @@ import type { MaterialCategoryType } from '../types/templates';
 import { MATERIAL_CATEGORY_LABELS, MATERIAL_CATEGORY_ICONS } from '../types/templates';
 
 interface CategoryBadgesProps {
-  categories?: MaterialCategoryType[];
+  readonly categories?: readonly MaterialCategoryType[];
 }
 
 const BADGE_COLORS: Record<MaterialCategoryType, string> = {
@@ -16,7 +16,7 @@ const BADGE_COLORS: Record<MaterialCategoryType, string> = {
  * Badges coloridos para exibir categorias de insumos requeridas em listagens.
  */
 export function CategoryBadges({ categories }: CategoryBadgesProps) {
-  if (!categories || categories.length === 0) {
+  if (!categories?.length) {
     return (
       <span className="font-body-sm text-body-sm text-on-surface-variant italic">—</span>
     );

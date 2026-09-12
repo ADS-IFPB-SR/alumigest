@@ -20,42 +20,42 @@ import { DrillingConfigSection } from './mechanics/DrillingConfigSection';
  */
 export interface Step3MechanicsProps {
   /** Sentido de abertura atual */
-  openingDirection: OpeningDirection;
+  readonly openingDirection: OpeningDirection;
   /** Opções de sentido de abertura suportadas pela tipologia */
-  supportedDirections: OpeningDirection[];
+  readonly supportedDirections: readonly OpeningDirection[];
   /** Configuração geométrica do puxador */
-  handleConfig: HandleConfig;
+  readonly handleConfig: HandleConfig;
   /** Material de puxador atualmente vinculado (se houver) */
-  handleMaterial?: MaterialSelection | null;
+  readonly handleMaterial?: MaterialSelection | null;
   /** Perfis de puxador disponíveis no catálogo */
-  availableHandleProfiles?: Array<{ id: string; name: string; price: number; unit: string; colorFinish?: string }>;
+  readonly availableHandleProfiles?: ReadonlyArray<{ id: string; name: string; price: number; unit: string; colorFinish?: string }>;
   /** Ferragens de puxador disponíveis no catálogo */
-  availableHandleHardwares?: Array<{ id: string; name: string; price: number; unit: string }>;
+  readonly availableHandleHardwares?: ReadonlyArray<{ id: string; name: string; price: number; unit: string }>;
   /** Posições de puxador autorizadas pela tipologia */
-  allowedHandlePositions?: HandlePosition[];
+  readonly allowedHandlePositions?: readonly HandlePosition[];
   /** Configuração de furação */
-  drillingConfig: DrillingConfig;
+  readonly drillingConfig: DrillingConfig;
   /** Buffer de valores milimetrados das distâncias dos furos */
-  holeDistanceInputs: string[];
+  readonly holeDistanceInputs: readonly string[];
   /** Altura da esquadria em mm */
-  heightMm: number | '';
+  readonly heightMm: number | '';
   /** Observações técnicas livres */
-  notes: string;
+  readonly notes: string;
   /** Altura padrão de fallback */
-  defaultHeight: number;
-  onOpeningDirectionChange: (dir: OpeningDirection) => void;
-  onHandleTypeChange: (type: HandleType) => void;
-  onHandlePositionChange: (pos: HandlePosition) => void;
-  onHandleOrientationChange?: (orientation: HandleOrientation) => void;
-  onHandleSideChange: (side: HandleSide) => void;
-  onHandleCoverageChange: (coverage: HandleCoverage) => void;
-  onHandlePieceLengthChange: (length: number) => void;
-  onSelectHandleMaterial?: (materialId: string) => void;
-  onHoleCountChange: (count: number) => void;
-  onDivisionTypeChange: (type: DivisionType) => void;
-  onSingleHoleDistanceChange: (index: number, val: string) => void;
-  onNotesChange: (notes: string) => void;
-  onGoToMaterials?: () => void;
+  readonly defaultHeight: number;
+  readonly onOpeningDirectionChange: (dir: OpeningDirection) => void;
+  readonly onHandleTypeChange: (type: HandleType) => void;
+  readonly onHandlePositionChange: (pos: HandlePosition) => void;
+  readonly onHandleOrientationChange?: (orientation: HandleOrientation) => void;
+  readonly onHandleSideChange: (side: HandleSide) => void;
+  readonly onHandleCoverageChange: (coverage: HandleCoverage) => void;
+  readonly onHandlePieceLengthChange: (length: number) => void;
+  readonly onSelectHandleMaterial?: (materialId: string) => void;
+  readonly onHoleCountChange: (count: number) => void;
+  readonly onDivisionTypeChange: (type: DivisionType) => void;
+  readonly onSingleHoleDistanceChange: (index: number, val: string) => void;
+  readonly onNotesChange: (notes: string) => void;
+  readonly onGoToMaterials?: () => void;
 }
 
 /**
@@ -100,7 +100,7 @@ export const Step3Mechanics: React.FC<Step3MechanicsProps> = ({
         <div className="flex items-center justify-between pb-xs border-b border-outline-variant">
           <h3 className="text-sm font-label font-bold text-on-surface uppercase tracking-wider flex items-center gap-xs">
             <span className="material-symbols-outlined text-[18px] text-primary">tune</span>
-            Mecânica da Folha & Puxador
+            <span>Mecânica da Folha & Puxador</span>
           </h3>
         </div>
 

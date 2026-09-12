@@ -2,6 +2,17 @@ import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 
+function getModalSaveLabel(isPending: boolean, isEditing: boolean): string {
+  if (isPending) return 'Salvando...';
+  return isEditing ? 'Atualizar' : 'Salvar';
+}
+
+function resolveCalculationType(unitMeasure: string): string {
+  if (unitMeasure === 'UN') return 'UNIT';
+  if (unitMeasure === 'PAR') return 'PAIR';
+  return 'LINEAR_METER';
+}
+
 import { Modal } from '../../../components/ui/Modal';
 import { Input } from '../../../components/ui/Input';
 import { Button } from '../../../components/ui/Button';
@@ -28,9 +39,9 @@ import {
 } from '../schemas/catalogSchemas';
 
 interface Props {
-  isOpen: boolean;
-  onClose: () => void;
-  initialData?: any;
+  readonly isOpen: boolean;
+  readonly onClose: () => void;
+  readonly initialData?: any;
 }
 
 export function HardwareFormModal({
@@ -125,12 +136,7 @@ export function HardwareFormModal({
       unitMeasure: data.unitMeasure,
       familyCode: data.familyCode?.trim() ? data.familyCode.trim() : undefined,
 
-      calculationType:
-        data.unitMeasure === 'UN'
-          ? 'UNIT'
-          : data.unitMeasure === 'PAR'
-            ? 'PAIR'
-            : 'LINEAR_METER',
+      calculationType: resolveCalculationType(data.unitMeasure),
 
       costPrice: parseCurrencyString(
         data.costPrice
@@ -201,11 +207,7 @@ export function HardwareFormModal({
             onClick={handleSubmit(onSubmit)}
             disabled={isPending}
           >
-            {isPending
-              ? 'Salvando...'
-              : isEditing
-                ? 'Atualizar'
-                : 'Salvar'}
+            {getModalSaveLabel(isPending, isEditing)}
           </Button>
         </>
       }

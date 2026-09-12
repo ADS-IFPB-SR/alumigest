@@ -17,9 +17,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
@@ -29,6 +27,7 @@ import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -92,8 +91,8 @@ class HardwareServiceTest {
         hardwareMaterial.setSalePrice(new BigDecimal("15.50"));
         hardwareMaterial.setActive(true);
         hardwareMaterial.setGroup(ferragemGroup);
-        hardwareMaterial.setCreatedAt(OffsetDateTime.now());
-        hardwareMaterial.setUpdatedAt(OffsetDateTime.now());
+        hardwareMaterial.setCreatedAt(OffsetDateTime.now(ZoneOffset.UTC));
+        hardwareMaterial.setUpdatedAt(OffsetDateTime.now(ZoneOffset.UTC));
     }
 
     // =========================================================================

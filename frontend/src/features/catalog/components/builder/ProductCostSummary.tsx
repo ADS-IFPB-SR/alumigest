@@ -13,15 +13,21 @@ import {
   GLASS_COLORS,
 } from '../../types/templates';
 
+const DRILLING_POSITION_LABELS: Record<string, string> = {
+  SUPERIOR: 'Superior',
+  FRONTAL: 'Frontal',
+  LATERAL: 'Lateral',
+};
+
 interface ProductCostSummaryProps {
-  name: string;
-  templateType: DoorTemplateType | null;
-  templateConfig: Partial<TemplateConfig>;
-  setTemplateConfig: (val: Partial<TemplateConfig>) => void;
-  categoryRequirements: MaterialCategoryType[];
-  onSave: () => void;
-  isPending: boolean;
-  isEditing: boolean;
+  readonly name: string;
+  readonly templateType: DoorTemplateType | null;
+  readonly templateConfig: Partial<TemplateConfig>;
+  readonly setTemplateConfig: (val: Partial<TemplateConfig>) => void;
+  readonly categoryRequirements: readonly MaterialCategoryType[];
+  readonly onSave: () => void;
+  readonly isPending: boolean;
+  readonly isEditing: boolean;
 }
 
 function getSaveButtonLabel(isPending: boolean, isEditing: boolean): string {
@@ -30,12 +36,12 @@ function getSaveButtonLabel(isPending: boolean, isEditing: boolean): string {
 }
 
 interface CadMockupCardProps {
-  templateType: DoorTemplateType | null;
-  templateConfig: Partial<TemplateConfig>;
-  profileMm: number;
-  aluminumColor: string;
-  glassColor: string;
-  onColorChange: (field: keyof TemplateConfig, value: string) => void;
+  readonly templateType: DoorTemplateType | null;
+  readonly templateConfig: Partial<TemplateConfig>;
+  readonly profileMm: number;
+  readonly aluminumColor: string;
+  readonly glassColor: string;
+  readonly onColorChange: (field: keyof TemplateConfig, value: string) => void;
 }
 
 function CadMockupCard({
@@ -151,7 +157,7 @@ function CadMockupCard({
 }
 
 interface CadPreviewOptionsProps {
-  templateConfig: Partial<TemplateConfig>;
+  readonly templateConfig: Partial<TemplateConfig>;
 }
 
 function CadPreviewOptions({ templateConfig }: CadPreviewOptionsProps) {
@@ -180,27 +186,23 @@ function CadPreviewOptions({ templateConfig }: CadPreviewOptionsProps) {
         ) : (
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-surface-container-highest/60 text-secondary">
             <span className="material-symbols-outlined text-[13px]">block</span>
-            Sem Puxador
+            <span>Sem Puxador</span>
           </span>
         )}
 
         {templateConfig.openingDirection && (
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-surface-container-highest/60 text-secondary">
             <span className="material-symbols-outlined text-[13px]">swipe</span>
-            {OPENING_DIRECTION_LABELS[templateConfig.openingDirection] || templateConfig.openingDirection}
+            <span>{OPENING_DIRECTION_LABELS[templateConfig.openingDirection] || templateConfig.openingDirection}</span>
           </span>
         )}
 
         {hasDrilling ? (
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-primary/10 text-primary font-medium">
             <span className="material-symbols-outlined text-[13px]">circle</span>
-            {drillCfg.holeCount} Furos
+            <span>{drillCfg.holeCount} Furos</span>
             <span className="text-secondary font-normal">
-              ({drillCfg.drillingPosition === 'SUPERIOR'
-                ? 'Superior'
-                : drillCfg.drillingPosition === 'FRONTAL'
-                ? 'Frontal'
-                : 'Lateral'})
+              ({(drillCfg.drillingPosition && DRILLING_POSITION_LABELS[drillCfg.drillingPosition]) || 'Lateral'})
             </span>
           </span>
         ) : null}
@@ -210,7 +212,7 @@ function CadPreviewOptions({ templateConfig }: CadPreviewOptionsProps) {
 }
 
 interface CategoryBadgesListProps {
-  categoryRequirements: MaterialCategoryType[];
+  readonly categoryRequirements: readonly MaterialCategoryType[];
 }
 
 function CategoryBadgesList({ categoryRequirements }: CategoryBadgesListProps) {
@@ -241,9 +243,9 @@ function CategoryBadgesList({ categoryRequirements }: CategoryBadgesListProps) {
 }
 
 interface ValidationAlertProps {
-  name: string;
-  templateType: DoorTemplateType | null;
-  categoryCount: number;
+  readonly name: string;
+  readonly templateType: DoorTemplateType | null;
+  readonly categoryCount: number;
 }
 
 function ValidationAlert({ name, templateType, categoryCount }: ValidationAlertProps) {
@@ -251,7 +253,7 @@ function ValidationAlert({ name, templateType, categoryCount }: ValidationAlertP
     <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-800 text-xs flex flex-col gap-1">
       <span className="font-semibold flex items-center gap-1">
         <span className="material-symbols-outlined text-[16px]">info</span>
-        Pendências para salvar:
+        <span>Pendências para salvar:</span>
       </span>
       <ul className="list-disc list-inside text-[11px] pl-1 space-y-0.5">
         {!name.trim() && <li>Preencha o nome comercial</li>}
@@ -293,7 +295,7 @@ export function ProductCostSummary({
         <div className="flex items-center justify-between pb-2 mb-2 border-b border-outline-variant/60">
           <span className="text-xs font-semibold text-on-surface flex items-center gap-1.5">
             <span className="material-symbols-outlined text-[15px] text-primary">view_in_ar</span>
-            Maquete Studio CAD
+            <span>Maquete Studio CAD</span>
           </span>
           <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-primary/10 text-primary font-bold">
             VETORIAL
@@ -345,6 +347,7 @@ export function ProductCostSummary({
 
         {/* Ação Primária */}
         <button
+          type="button"
           onClick={onSave}
           disabled={isSaveDisabled}
           className="mt-4 w-full py-3 px-4 bg-primary text-on-primary rounded-xl font-semibold text-sm shadow-sm hover:shadow-md hover:bg-primary-container hover:text-on-primary-container transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"

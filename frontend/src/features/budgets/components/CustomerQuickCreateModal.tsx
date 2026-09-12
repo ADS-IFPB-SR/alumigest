@@ -6,11 +6,11 @@ import { Input } from '../../../components/ui/Input';
 import { customerSchema } from '../../customers/schemas/customerSchema';
 
 interface CustomerQuickCreateModalProps {
-  isOpen: boolean;
-  initialName?: string;
-  onClose: () => void;
-  onSubmit: (data: CustomerRequest) => void;
-  isLoading: boolean;
+  readonly isOpen: boolean;
+  readonly initialName?: string;
+  readonly onClose: () => void;
+  readonly onSubmit: (data: CustomerRequest) => void;
+  readonly isLoading: boolean;
 }
 
 const ESTADOS_BR = [
@@ -91,8 +91,8 @@ export const CustomerQuickCreateModal: React.FC<CustomerQuickCreateModalProps> =
     return true;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = (e?: React.SyntheticEvent) => {
+    e?.preventDefault();
     if (!validate()) return;
     onSubmit({
       ...form,

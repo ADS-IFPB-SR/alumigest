@@ -2,11 +2,11 @@ import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 
 interface ModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  title: string;
-  children: React.ReactNode;
-  footer?: React.ReactNode;
+  readonly isOpen: boolean;
+  readonly onClose: () => void;
+  readonly title: string;
+  readonly children: React.ReactNode;
+  readonly footer?: React.ReactNode;
 }
 
 export function Modal({ isOpen, onClose, title, children, footer }: ModalProps) {

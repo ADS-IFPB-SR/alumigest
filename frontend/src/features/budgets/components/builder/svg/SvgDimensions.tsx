@@ -5,8 +5,8 @@ import { ARROW_COLOR, COTA_COLOR, COTA_STROKE } from './svgConstants';
 export const SwingArc = ({
   x, y, radius, startAngle, endAngle, color = ARROW_COLOR,
 }: {
-  x: number; y: number; radius: number;
-  startAngle: number; endAngle: number; color?: string;
+  readonly x: number; readonly y: number; readonly radius: number;
+  readonly startAngle: number; readonly endAngle: number; readonly color?: string;
 }) => {
   const toRad = (deg: number) => (deg * Math.PI) / 180;
   const x1 = x + radius * Math.cos(toRad(startAngle));
@@ -27,12 +27,12 @@ export const SwingArc = ({
 };
 
 export interface HorizontalDimensionProps {
-  x1: number;
-  x2: number;
-  y: number;
-  label: string;
-  offsetDir?: 'above' | 'below';
-  offsetDist?: number;
+  readonly x1: number;
+  readonly x2: number;
+  readonly y: number;
+  readonly label: string;
+  readonly offsetDir?: 'above' | 'below';
+  readonly offsetDist?: number;
 }
 
 /**
@@ -78,12 +78,12 @@ export const HorizontalDimension: React.FC<HorizontalDimensionProps> = ({
 };
 
 export interface VerticalDimensionProps {
-  x: number;
-  y1: number;
-  y2: number;
-  label: string;
-  offsetDir?: 'left' | 'right';
-  offsetDist?: number;
+  readonly x: number;
+  readonly y1: number;
+  readonly y2: number;
+  readonly label: string;
+  readonly offsetDir?: 'left' | 'right';
+  readonly offsetDist?: number;
 }
 
 /**

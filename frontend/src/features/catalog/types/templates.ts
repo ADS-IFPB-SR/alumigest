@@ -64,8 +64,8 @@ export type HexColor = `#${string}`;
 export interface TemplateConfig {
   templateType: DoorTemplateType;
   profileMm: number;
-  aluminumColor: HexColor | string;
-  glassColor: HexColor | string;
+  aluminumColor: string;
+  glassColor: string;
   openingDirection?: OpeningDirection;
   slidingMode?: SlidingMode;
   handleConfig?: HandleConfig;

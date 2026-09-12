@@ -3,21 +3,21 @@ import { WindowSvgPreview } from './WindowSvgPreview';
 import type { DoorTemplateType, HandleConfig, DrillingConfig, OpeningDirection, MaterialSelection } from '../../types';
 
 export interface CadPreviewPanelProps {
-  svgTemplate: DoorTemplateType;
-  svgW: number;
-  svgH: number;
-  openingDirection: OpeningDirection;
-  handleConfig: HandleConfig;
-  handleMaterial?: MaterialSelection | null;
-  drillingConfig: DrillingConfig;
-  templateName?: string;
-  aluminumColor?: string;
-  glassFinish?: string;
-  unitAreaM2: string;
-  totalQty: number;
-  currentStep: 1 | 2 | 3 | 4;
-  isMobileCadExpanded: boolean;
-  onToggleMobileCad: () => void;
+  readonly svgTemplate: DoorTemplateType;
+  readonly svgW: number;
+  readonly svgH: number;
+  readonly openingDirection: OpeningDirection;
+  readonly handleConfig: HandleConfig;
+  readonly handleMaterial?: MaterialSelection | null;
+  readonly drillingConfig: DrillingConfig;
+  readonly templateName?: string;
+  readonly aluminumColor?: string;
+  readonly glassFinish?: string;
+  readonly unitAreaM2: string;
+  readonly totalQty: number;
+  readonly currentStep: 1 | 2 | 3 | 4;
+  readonly isMobileCadExpanded: boolean;
+  readonly onToggleMobileCad: () => void;
 }
 
 export const CadPreviewPanel: React.FC<CadPreviewPanelProps> = ({
@@ -74,7 +74,7 @@ export const CadPreviewPanel: React.FC<CadPreviewPanelProps> = ({
         <div className="hidden lg:flex items-center justify-between pb-xs border-b border-outline-variant/50">
           <h3 className="text-sm font-label font-bold text-on-surface flex items-center gap-xs uppercase tracking-wider">
             <span className="material-symbols-outlined text-[20px] text-primary">architecture</span>
-            Gabarito Técnico CAD
+            <span>Gabarito Técnico CAD</span>
           </h3>
           <div className="flex items-center gap-xs">
             <span className="text-xs font-data-mono font-bold text-primary bg-primary/10 px-2.5 py-0.5 rounded border border-primary/30">

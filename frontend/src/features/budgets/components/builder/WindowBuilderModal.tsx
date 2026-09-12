@@ -16,11 +16,11 @@ import {
 } from './hooks/useWindowBuilderState';
 
 export interface WindowBuilderModalProps {
-  isOpen: boolean;
-  selectedProductId?: string | null;
-  onClose: () => void;
-  onAddItem: (item: BudgetItem) => void;
-  editingItem?: BudgetItem | null;
+  readonly isOpen: boolean;
+  readonly selectedProductId?: string | null;
+  readonly onClose: () => void;
+  readonly onAddItem: (item: BudgetItem) => void;
+  readonly editingItem?: BudgetItem | null;
 }
 
 export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({

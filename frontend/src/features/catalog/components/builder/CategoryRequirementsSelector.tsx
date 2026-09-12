@@ -6,9 +6,9 @@ import {
 } from '../../types/templates';
 
 interface CategoryRequirementsSelectorProps {
-  templateType: DoorTemplateType | null;
-  selectedCategories: MaterialCategoryType[];
-  setSelectedCategories: (val: MaterialCategoryType[]) => void;
+  readonly templateType: DoorTemplateType | null;
+  readonly selectedCategories: readonly MaterialCategoryType[];
+  readonly setSelectedCategories: (val: MaterialCategoryType[]) => void;
 }
 
 const ALL_CATEGORIES: MaterialCategoryType[] = ['GLASS', 'PROFILE', 'HARDWARE', 'FILM'];

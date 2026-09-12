@@ -2,9 +2,9 @@ import { Modal } from '../../../components/ui/Modal';
 import type { MaterialType } from '../types';
 
 interface Props {
-  isOpen: boolean;
-  onClose: () => void;
-  onSelect: (tipo: MaterialType) => void;
+  readonly isOpen: boolean;
+  readonly onClose: () => void;
+  readonly onSelect: (tipo: MaterialType) => void;
 }
 
 const tipos: {

@@ -137,6 +137,11 @@ export function ProductBuilderPage() {
     }
   };
 
+  const getSaveButtonText = () => {
+    if (isPending) return 'Salvando...';
+    return isEditing ? 'Atualizar' : 'Salvar';
+  };
+
   const isSaveDisabled = isPending || !name.trim() || !templateType || categoryRequirements.length === 0;
 
   return (
@@ -146,7 +151,7 @@ export function ProductBuilderPage() {
         <div className="flex items-center gap-2 text-xs text-on-surface-variant font-medium">
           <Link to="/produtos" className="hover:text-primary transition-colors flex items-center gap-1">
             <span className="material-symbols-outlined text-[16px]">arrow_back</span>
-            Produtos Finais
+            <span>Produtos Finais</span>
           </Link>
           <span className="text-on-surface-variant/40">/</span>
           <span className="text-on-surface font-semibold">
@@ -154,6 +159,7 @@ export function ProductBuilderPage() {
           </span>
         </div>
         
+        {/* Action Buttons */}
         <div className="flex items-center gap-2">
           <button 
             type="button"
@@ -169,7 +175,7 @@ export function ProductBuilderPage() {
             className="flex items-center gap-1.5 px-4 py-1.5 bg-primary text-on-primary rounded-lg text-xs font-semibold hover:bg-primary-container hover:text-on-primary-container transition-all shadow-xs disabled:opacity-50 cursor-pointer"
           >
             <span className="material-symbols-outlined text-[16px]">save</span>
-            {isPending ? 'Salvando...' : (isEditing ? 'Atualizar' : 'Salvar')}
+            {getSaveButtonText()}
           </button>
         </div>
       </div>

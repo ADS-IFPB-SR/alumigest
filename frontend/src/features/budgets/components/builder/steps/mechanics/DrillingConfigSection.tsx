@@ -6,16 +6,16 @@ import type { DrillingConfig, DivisionType } from '../../../../types';
  */
 export interface DrillingConfigSectionProps {
   /** Configuração ativa de furação */
-  drillingConfig: DrillingConfig;
+  readonly drillingConfig: DrillingConfig;
   /** Buffer de valores milimetrados para digitação */
-  holeDistanceInputs: string[];
+  readonly holeDistanceInputs: readonly string[];
   /** Altura da esquadria em mm */
-  heightMm: number | '';
+  readonly heightMm: number | '';
   /** Altura padrão de fallback */
-  defaultHeight: number;
-  onHoleCountChange: (count: number) => void;
-  onDivisionTypeChange: (type: DivisionType) => void;
-  onSingleHoleDistanceChange: (index: number, val: string) => void;
+  readonly defaultHeight: number;
+  readonly onHoleCountChange: (count: number) => void;
+  readonly onDivisionTypeChange: (type: DivisionType) => void;
+  readonly onSingleHoleDistanceChange: (index: number, val: string) => void;
 }
 
 /**
