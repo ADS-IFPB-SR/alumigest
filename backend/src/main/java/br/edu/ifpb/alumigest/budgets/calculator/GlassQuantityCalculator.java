@@ -20,6 +20,11 @@ public class GlassQuantityCalculator implements MaterialQuantityCalculator {
     public BigDecimal calculate(TemplateType templateType, int widthMm, int heightMm, int quantity,
             BigDecimal requestedMaterialQty) {
 
+        // Se o usuário informou manualmente uma metragem válida de vidro, respeita o valor informado
+        if (requestedMaterialQty != null && requestedMaterialQty.compareTo(BigDecimal.ZERO) > 0) {
+            return requestedMaterialQty;
+        }
+
         BigDecimal widthM = BigDecimal.valueOf(widthMm).divide(BigDecimal.valueOf(1000), 4, RoundingMode.HALF_UP);
         BigDecimal heightM = BigDecimal.valueOf(heightMm).divide(BigDecimal.valueOf(1000), 4, RoundingMode.HALF_UP);
 

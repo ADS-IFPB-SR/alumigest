@@ -72,6 +72,10 @@ public class Material {
     @Column(name = "color_finish", length = 50)
     private String colorFinish;
 
+    @Size(max = 50, message = "Código de família deve ter no máximo 50 caracteres")
+    @Column(name = "family_code", length = 50)
+    private String familyCode;
+
     @PositiveOrZero(message = "Comprimento padrão deve ser maior ou igual a zero")
     @Column(name = "standard_length_m", precision = 6, scale = 2)
     private BigDecimal standardLengthM;
@@ -87,6 +91,9 @@ public class Material {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "attributes_json")
     private String attributesJson;
+
+    @Column(name = "is_handle", nullable = false)
+    private boolean isHandle = false;
 
     @Column(name = "is_active", nullable = false)
     private boolean isActive = true;
@@ -237,6 +244,14 @@ public class Material {
         this.attributesJson = attributesJson;
     }
 
+    public boolean isHandle() {
+        return isHandle;
+    }
+
+    public void setHandle(boolean handle) {
+        isHandle = handle;
+    }
+
     public boolean isActive() {
         return isActive;
     }
@@ -251,6 +266,14 @@ public class Material {
 
     public void setCreatedAt(OffsetDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public String getFamilyCode() {
+        return familyCode;
+    }
+
+    public void setFamilyCode(String familyCode) {
+        this.familyCode = familyCode;
     }
 
     public OffsetDateTime getUpdatedAt() {

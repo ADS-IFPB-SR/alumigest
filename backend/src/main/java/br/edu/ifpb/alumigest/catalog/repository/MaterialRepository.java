@@ -94,4 +94,12 @@ public interface MaterialRepository extends JpaRepository<Material, UUID> {
             @Param("thickness") BigDecimal thickness,
             @Param("color") String color,
             Pageable pageable);
+
+    @Query("SELECT DISTINCT m.familyCode FROM Material m " +
+            "WHERE m.isActive = true " +
+            "AND m.familyCode IS NOT NULL " +
+            "AND TRIM(m.familyCode) <> '' " +
+            "AND (CAST(:groupCode AS string) IS NULL OR m.group.code = :groupCode) " +
+            "ORDER BY m.familyCode ASC")
+    List<String> findDistinctFamilyCodesByGroupCode(@Param("groupCode") String groupCode);
 }

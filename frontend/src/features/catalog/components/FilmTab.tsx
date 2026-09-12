@@ -39,13 +39,13 @@ const columns = [
         className="font-data-mono text-data-mono text-on-surface"
       >
         R${' '}
-        {row.salePrice
+        {(row.salePrice ?? 0)
           .toFixed(2)
           .replace('.', ',')}
       </span>
     ),
     exportValue: (row: FilmDTO) =>
-      `R$ ${row.salePrice
+      `R$ ${(row.salePrice ?? 0)
         .toFixed(2)
         .replace('.', ',')}`,
     align: 'right' as const,

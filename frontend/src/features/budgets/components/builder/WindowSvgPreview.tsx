@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import { FullscreenPreviewModal } from './FullscreenPreviewModal';
 import type {
+  DoorTemplateType,
   OpeningDirection,
   HandleConfig,
   DrillingConfig,
-  DoorTemplateType,
+  MaterialSelection,
 } from '../../types';
 import { getSvgTheme } from '../../utils/svgTheme';
 import type { SvgTheme } from '../../utils/svgTheme';
-
 import { FRAME_W } from './svg/svgConstants';
 
 const DRILLING_POS_LABELS: Record<string, string> = {
@@ -54,36 +54,53 @@ const SVG_RENDERERS: Record<DoorTemplateType, SvgTemplateRenderer> = {
   SWING_DOOR_1F: (ctx) => renderSwingDoor(1, ctx),
   SWING_DOOR_2F: (ctx) => renderSwingDoor(2, ctx),
   AWNING_WINDOW_1F: (ctx) =>
-    renderAwningWindow1F(ctx.svgW, ctx.svgH, false, ctx.handleConfig, ctx.drillingConfig, ctx.heightMm, ctx.theme),
+    renderAwningWindow1F(ctx.svgW, ctx.svgH, false, ctx.handleConfig, ctx.drillingConfig, ctx.heightMm, ctx.theme, ctx.widthMm),
   AWNING_WINDOW_1F_INV: (ctx) =>
-    renderAwningWindow1F(ctx.svgW, ctx.svgH, true, ctx.handleConfig, ctx.drillingConfig, ctx.heightMm, ctx.theme),
+    renderAwningWindow1F(ctx.svgW, ctx.svgH, true, ctx.handleConfig, ctx.drillingConfig, ctx.heightMm, ctx.theme, ctx.widthMm),
   FRONT_DRAWER: (ctx) =>
     renderDrawerFront(ctx.svgW, ctx.svgH, ctx.handleConfig, ctx.drillingConfig, ctx.widthMm, ctx.heightMm, ctx.theme),
   FIXED_PANEL: (ctx) =>
     renderFixedFacade(ctx.svgW, ctx.svgH, ctx.drillingConfig, ctx.widthMm, ctx.heightMm, ctx.theme),
 };
-
 export interface WindowSvgPreviewProps {
+  /** Identificador da tipologia SVG (ex: SLIDING_DOOR_2F, SWING_DOOR_1F) */
   readonly templateType: string;
+  /** Largura total da esquadria em milímetros */
   readonly widthMm?: number;
+  /** Altura total da esquadria em milímetros */
   readonly heightMm?: number;
+  /** Sentido de abertura da folha (da esquerda para direita, inverso, etc.) */
   readonly openingDirection?: OpeningDirection;
+  /** Configuração geométrica do puxador (tipo, lado, posição, extensão) */
   readonly handleConfig?: HandleConfig;
+  /** Material de estoque vinculado ao puxador (para resolução de acabamento) */
+  readonly handleMaterial?: MaterialSelection | null;
+  /** Configuração de furação técnica da folha */
   readonly drillingConfig?: DrillingConfig;
+  /** Nome amigável do modelo para legenda */
   readonly templateName?: string;
+  /** Cor do perfil de alumínio (ex: Preto Fosco, Bronze, Fosco Anodizado) */
   readonly aluminumColor?: string;
+  /** Acabamento do vidro (ex: Fumê / Cinza, Incolor, Verde) */
   readonly glassFinish?: string;
+  /** Largura base máxima para renderização responsiva */
   readonly baseWidth?: string | number;
+  /** Altura máxima para contenção de layout */
   readonly maxHeight?: string | number;
   readonly minimal?: boolean;
 }
-
+/**
+ * Componente orquestrador de desenho técnico vetorial (CAD / Blueprint SVG).
+ * Renderiza em escala paramétrica as folhas, caixilhos, vidros, puxadores,
+ * cotas milimetradas e furações da esquadria, com suporte a visualização em tela cheia.
+ */
 const WindowSvgPreviewComponent: React.FC<WindowSvgPreviewProps> = ({
   templateType,
   widthMm = 0,
   heightMm = 0,
   openingDirection = 'LEFT_TO_RIGHT',
   handleConfig = { handleType: 'BAR_TUBULAR', side: 'ONE_SIDE', pieceLengthCm: 40, coverage: 'PIECE' },
+  handleMaterial: _handleMaterial,
   drillingConfig = { holeCount: 2, divisionType: 'EQUAL' },
   templateName,
   aluminumColor,

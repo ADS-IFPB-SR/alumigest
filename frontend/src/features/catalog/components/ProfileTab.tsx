@@ -38,13 +38,13 @@ const columns = [
         data-cy="profile-length"
         className="font-data-mono text-data-mono text-secondary"
       >
-        {row.standardLengthM
+        {(row.standardLengthM ?? 0)
           .toFixed(1)
           .replace('.', ',')}
       </span>
     ),
     exportValue: (row: ProfileDTO) =>
-      row.standardLengthM.toFixed(1).replace('.', ','),
+      (row.standardLengthM ?? 0).toFixed(1).replace('.', ','),
   },
 
   {
@@ -55,13 +55,13 @@ const columns = [
         className="font-data-mono text-data-mono text-on-surface"
       >
         R${' '}
-        {row.salePrice
+        {(row.salePrice ?? 0)
           .toFixed(2)
           .replace('.', ',')}
       </span>
     ),
     exportValue: (row: ProfileDTO) =>
-      `R$ ${row.salePrice
+      `R$ ${(row.salePrice ?? 0)
         .toFixed(2)
         .replace('.', ',')}`,
     align: 'right' as const,

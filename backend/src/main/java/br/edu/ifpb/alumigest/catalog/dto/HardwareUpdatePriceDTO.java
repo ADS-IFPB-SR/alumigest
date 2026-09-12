@@ -36,6 +36,20 @@ public record HardwareUpdatePriceDTO(
         @jakarta.validation.constraints.Pattern(regexp = "^\\d{8}$", message = "O código NCM deve conter exatamente 8 dígitos numéricos")
         String ncmCode,
         
-        Boolean active
+        Boolean active,
+        String familyCode,
+        Boolean isHandle
 ) {
+    public HardwareUpdatePriceDTO(
+            String skuCode,
+            String name,
+            br.edu.ifpb.alumigest.catalog.domain.UnitMeasure unitMeasure,
+            br.edu.ifpb.alumigest.catalog.domain.CalculationType calculationType,
+            BigDecimal costPrice,
+            BigDecimal salePrice,
+            String ncmCode,
+            Boolean active
+    ) {
+        this(skuCode, name, unitMeasure, calculationType, costPrice, salePrice, ncmCode, active, null, null);
+    }
 }

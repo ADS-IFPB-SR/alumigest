@@ -76,7 +76,8 @@ export function renderSlidingDoor1F(props: SlidingDoorRenderProps) {
 
       <text x={fw + innerW / 2} y={svgH / 2} textAnchor="middle" fontSize={12} fontFamily="JetBrains Mono, monospace" fill={theme.frameStroke} opacity={0.5}>MÓVEL</text>
 
-      <HandleElement handleConfig={handleConfig} svgH={svgH} frameW={fw} posX={handlePosX} mirrored={handleMirr} heightMm={heightMm} />
+      <HandleElement handleConfig={handleConfig} svgH={svgH} frameW={fw} posX={handlePosX} mirrored={handleMirr} heightMm={heightMm} widthMm={widthMm} leafW={innerW} leafX={fw} />
+      <HandlePieceDimension svgH={svgH} frameW={fw} posX={handlePosX} handleConfig={handleConfig} heightMm={heightMm} widthMm={widthMm} leafW={innerW} leafX={fw} mirrored={handleMirr} />
       {drillingConfig.holeCount > 0 && (
         <DrillingHoles
           svgH={svgH}
@@ -149,8 +150,8 @@ export function renderSlidingDoor2F(props: SlidingDoorRenderProps) {
       <rect x={fw + halfW - 1} y={fw} width={2} height={innerH} fill={theme.frameStroke} opacity={0.8} />
 
       {/* Puxador */}
-      <HandleElement handleConfig={handleConfig} svgH={svgH} frameW={fw} posX={handlePosX} mirrored={handleMirr} heightMm={heightMm} />
-      <HandlePieceDimension svgH={svgH} frameW={fw} posX={handlePosX} handleConfig={handleConfig} heightMm={heightMm} mirrored={handleMirr} />
+      <HandleElement handleConfig={handleConfig} svgH={svgH} frameW={fw} posX={handlePosX} mirrored={handleMirr} heightMm={heightMm} widthMm={widthMm} leafW={halfW} leafX={mobileX} />
+      <HandlePieceDimension svgH={svgH} frameW={fw} posX={handlePosX} handleConfig={handleConfig} heightMm={heightMm} widthMm={widthMm} leafW={halfW} leafX={mobileX} mirrored={handleMirr} />
 
       {/* Furação */}
       {drillingConfig.holeCount > 0 && (
@@ -233,7 +234,8 @@ export function renderSlidingDoor3F(props: SlidingDoorRenderProps) {
       <rect x={fw + thirdW - 1} y={fw} width={2} height={innerH} fill={theme.frameStroke} opacity={0.8} />
       <rect x={fw + thirdW * 2 - 1} y={fw} width={2} height={innerH} fill={theme.frameStroke} opacity={0.8} />
 
-      <HandleElement handleConfig={handleConfig} svgH={svgH} frameW={fw} posX={handlePosX} mirrored={handleMirr} heightMm={heightMm} />
+      <HandleElement handleConfig={handleConfig} svgH={svgH} frameW={fw} posX={handlePosX} mirrored={handleMirr} heightMm={heightMm} widthMm={widthMm} leafW={thirdW} leafX={mobile2X} />
+      <HandlePieceDimension svgH={svgH} frameW={fw} posX={handlePosX} handleConfig={handleConfig} heightMm={heightMm} widthMm={widthMm} leafW={thirdW} leafX={mobile2X} mirrored={handleMirr} />
       {drillingConfig.holeCount > 0 && (
         <DrillingHoles
           svgH={svgH}
@@ -285,8 +287,10 @@ export function renderSlidingDoor4F(props: SlidingDoorRenderProps) {
         </g>
       ))}
 
-      <HandleElement handleConfig={handleConfig} svgH={svgH} frameW={fw} posX={fw + qW + qW * 0.1} heightMm={heightMm} />
-      <HandleElement handleConfig={handleConfig} svgH={svgH} frameW={fw} posX={fw + qW * 3 - fw * 1.5} mirrored heightMm={heightMm} />
+      <HandleElement handleConfig={handleConfig} svgH={svgH} frameW={fw} posX={fw + qW + qW * 0.1} heightMm={heightMm} widthMm={widthMm} leafW={qW} leafX={fw + qW} />
+      <HandlePieceDimension svgH={svgH} frameW={fw} posX={fw + qW + qW * 0.1} handleConfig={handleConfig} heightMm={heightMm} widthMm={widthMm} leafW={qW} leafX={fw + qW} />
+      <HandleElement handleConfig={handleConfig} svgH={svgH} frameW={fw} posX={fw + qW * 3 - fw * 1.5} mirrored heightMm={heightMm} widthMm={widthMm} leafW={qW} leafX={fw + qW * 2} />
+      <HandlePieceDimension svgH={svgH} frameW={fw} posX={fw + qW * 3 - fw * 1.5} mirrored handleConfig={handleConfig} heightMm={heightMm} widthMm={widthMm} leafW={qW} leafX={fw + qW * 2} />
       {drillingConfig.holeCount > 0 && (
         <DrillingHoles
           svgH={svgH}

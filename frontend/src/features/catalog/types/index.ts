@@ -21,6 +21,7 @@ export interface GlassDTO {
   supplierId?: string;
   supplierName?: string;
   active?: boolean;
+  familyCode?: string;
 }
 
 export interface ProfileDTO {
@@ -36,6 +37,8 @@ export interface ProfileDTO {
   active: boolean;
   createdAt?: string;
   updatedAt?: string;
+  familyCode?: string;
+  isHandle?: boolean;
 }
 
 export interface HardwareDTO {
@@ -50,6 +53,8 @@ export interface HardwareDTO {
   active: boolean;
   createdAt?: string;
   updatedAt?: string;
+  familyCode?: string;
+  isHandle?: boolean;
 }
 
 export interface FilmDTO {
@@ -61,6 +66,7 @@ export interface FilmDTO {
   salePrice: number;
   unitMeasure: string;
   active?: boolean;
+  familyCode?: string;
 }
 
 export interface PageResponse<T> {
@@ -83,6 +89,7 @@ export interface MaterialSummary {
   costPrice: number;
   colorFinish?: string;
   isActive: boolean;
+  isHandle?: boolean;
 }
 
 export interface Product {

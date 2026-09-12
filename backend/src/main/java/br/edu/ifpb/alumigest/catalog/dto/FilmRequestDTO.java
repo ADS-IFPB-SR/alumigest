@@ -36,7 +36,21 @@ public record FilmRequestDTO(
         
         @NotNull(message = "A largura máxima da bobina é obrigatória")
         @Positive(message = "A largura máxima deve ser maior que zero")
-        BigDecimal maxWidthMm
+        BigDecimal maxWidthMm,
 
+        String familyCode
 ) {
+    public FilmRequestDTO(
+            String name,
+            String colorFinish,
+            BigDecimal salePrice,
+            String commercialReference,
+            String ncmCode,
+            BigDecimal costPrice,
+            BigDecimal thicknessMm,
+            BigDecimal standardLengthM,
+            BigDecimal maxWidthMm
+    ) {
+        this(name, colorFinish, salePrice, commercialReference, ncmCode, costPrice, thicknessMm, standardLengthM, maxWidthMm, null);
+    }
 }

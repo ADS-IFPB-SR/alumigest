@@ -7,8 +7,11 @@ import type {
   BudgetDetail,
   CreateBudgetPayload,
   WindowTemplate,
+  BudgetItemCalculationRequest,
+  BudgetItemCalculationResponse,
 } from '../types';
 import type { PageResponse } from '../../catalog/types';
+
 
 
 function parseJsonConfig<T>(raw: unknown, fallback: T): T {
@@ -29,6 +32,7 @@ function toBackendBudgetPayload(data: CreateBudgetPayload) {
     clientId: data.customerId,
     discountPercent: data.discountPercent,
     notes: data.notes,
+    validUntil: data.validUntil ? (data.validUntil.includes('T') ? data.validUntil : `${data.validUntil}T23:59:59Z`) : undefined,
     items: data.items.map((item) => ({
       productId: item.productId,
       widthMm: item.width,
@@ -168,16 +172,19 @@ export const budgetsApi = {
           itemCount: Number(b.itemCount ?? 1),
         }));
 
+        const totalElements = Number(response.data.totalElements ?? mappedContent.length);
+        const totalPages = Number(response.data.totalPages ?? Math.max(1, Math.ceil(totalElements / filters.size)));
+        const pageNumber = Number(response.data.page ?? filters.page);
+        const pageSize = Number(response.data.size ?? filters.size);
+
         return {
           content: mappedContent,
-          totalElements: response.data.totalElements ?? mappedContent.length,
-          totalPages: response.data.totalPages ?? 1,
-          page: {
-            size: response.data.size ?? filters.size,
-            number: response.data.page ?? filters.page,
-            totalElements: response.data.totalElements ?? mappedContent.length,
-            totalPages: response.data.totalPages ?? 1,
-          },
+          page: pageNumber,
+          size: pageSize,
+          totalElements,
+          totalPages,
+          isFirst: pageNumber === 0,
+          isLast: pageNumber >= totalPages - 1,
         };
       }
       throw new Error('Formato de resposta inválido da API');
@@ -231,6 +238,13 @@ export const budgetsApi = {
       { baseURL: '' },
     );
     return mapBackendToBudgetDetail(response.data);
+  },
+
+  previewItemCalculation: async (payload: BudgetItemCalculationRequest): Promise<BudgetItemCalculationResponse> => {
+    const response = await api.post<BudgetItemCalculationResponse>('/api/orcamentos/items/preview-calculation', payload, {
+      baseURL: '',
+    });
+    return response.data;
   },
 };
 

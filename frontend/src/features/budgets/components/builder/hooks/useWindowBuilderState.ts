@@ -5,6 +5,8 @@ import type {
   BuilderState,
   BudgetItem,
   HandleConfig,
+  HandlePosition,
+  HandleOrientation,
   DrillingConfig,
   HandleType,
   HandleSide,
@@ -13,6 +15,7 @@ import type {
   MaterialSelection,
   CategoryType,
   WindowTemplate,
+  BudgetItemCalculationRequest,
 } from '../../../types';
 import type { Product, GlassDTO, ProfileDTO, HardwareDTO, FilmDTO } from '../../../../catalog/types';
 import {
@@ -23,6 +26,7 @@ import {
   useFilms,
 } from '../../../../catalog/hooks/useCatalog';
 import { calcItemSubtotal } from '../../../utils/calculations';
+import { budgetsApi } from '../../../services/budgetsApi';
 import {
   getDefaultSvgTemplateForCatalogType,
   mapCatalogAluminumColor,
@@ -30,6 +34,8 @@ import {
 } from '../../../utils/mapCatalogTemplate';
 import { TEMPLATE_TYPE_INFO } from '../../../types';
 import toast from 'react-hot-toast';
+
+import { syncHandleMaterialSelections, isHandleOrLockMaterial } from './useMaterialSync';
 
 export const BASE_ALUMINUM_COLORS = [
   'Alumínio Fosco / Anodizado',
@@ -75,12 +81,30 @@ interface CatalogMaterialLookup {
   categoryType: CategoryType;
 }
 
-function computeRequirementMeasure(catType: CategoryType, areaM2: number, perimeterM: number): { qty: number; unit: string } {
+function estimateProfileLinearMeters(templateType: string | undefined, w: number, h: number): number {
+  const widthM = (w || 0) / 1000;
+  const heightM = (h || 0) / 1000;
+  const t = (templateType || '').toUpperCase();
+  if (t === 'SWING_DOOR_2F' || t === 'SWING_2_LEAF' || t === 'SLIDING_DOOR_2F' || t === 'SLIDING_2_LEAF') {
+    // 2 Folhas: 2 Larguras + 4 Alturas (Ex: 1600x2150 => 2*1.6 + 4*2.15 = 3.20 + 8.60 = 11.80m)
+    return parseFloat((2 * widthM + 4 * heightM).toFixed(2));
+  }
+  if (t === 'SLIDING_DOOR_3F' || t === 'SLIDING_3_LEAF') {
+    return parseFloat((2 * widthM + 6 * heightM).toFixed(2));
+  }
+  if (t === 'SLIDING_DOOR_4F' || t === 'SLIDING_4_LEAF') {
+    return parseFloat((2 * widthM + 8 * heightM).toFixed(2));
+  }
+  // 1 Folha ou padrão
+  return parseFloat(((2 * ((w || 0) + (h || 0))) / 1000).toFixed(2));
+}
+
+function computeRequirementMeasure(catType: CategoryType, areaM2: number, profileMeters: number): { qty: number; unit: string } {
   if (catType === 'GLASS' || catType === 'FILM') {
     return { qty: areaM2, unit: 'm²' };
   }
   if (catType === 'PROFILE') {
-    return { qty: perimeterM, unit: 'm' };
+    return { qty: profileMeters, unit: 'm' };
   }
   return { qty: 1, unit: 'un' };
 }
@@ -91,12 +115,13 @@ function buildDefaultSelectionsForTemplate(
   h: number,
 ): MaterialSelection[] {
   const areaM2 = Number.parseFloat(((w / 1000) * (h / 1000)).toFixed(2));
-  const perimeterM = Number.parseFloat(((2 * (w + h)) / 1000).toFixed(2));
+  const tType = targetTemplate.templateType || targetTemplate.catalogTemplateType || undefined;
+  const profileM = estimateProfileLinearMeters(tType, w, h);
 
   if (targetTemplate.categoryRequirements && targetTemplate.categoryRequirements.length > 0) {
     return targetTemplate.categoryRequirements.map((req, idx) => {
       const catType: CategoryType = typeof req === 'string' ? (req as CategoryType) : (req.categoryType as CategoryType);
-      const { qty, unit } = computeRequirementMeasure(catType, areaM2, perimeterM);
+      const { qty, unit } = computeRequirementMeasure(catType, areaM2, profileM);
 
       return {
         requirementId: `req-${targetTemplate.id}-${catType}-${idx}`,
@@ -108,6 +133,8 @@ function buildDefaultSelectionsForTemplate(
         unitMeasure: unit,
         unitPrice: 0,
         quantity: qty,
+        suggestedQuantity: qty,
+        physicalMinimumQuantity: qty,
         totalPrice: 0,
       };
     });
@@ -124,6 +151,8 @@ function buildDefaultSelectionsForTemplate(
       unitMeasure: 'm²',
       unitPrice: 0,
       quantity: areaM2,
+      suggestedQuantity: areaM2,
+      physicalMinimumQuantity: areaM2,
       totalPrice: 0,
     },
     {
@@ -135,7 +164,9 @@ function buildDefaultSelectionsForTemplate(
       materialName: '',
       unitMeasure: 'm',
       unitPrice: 0,
-      quantity: perimeterM,
+      quantity: profileM,
+      suggestedQuantity: profileM,
+      physicalMinimumQuantity: profileM,
       totalPrice: 0,
     },
     {
@@ -148,6 +179,8 @@ function buildDefaultSelectionsForTemplate(
       unitMeasure: 'un',
       unitPrice: 0,
       quantity: 1,
+      suggestedQuantity: 1,
+      physicalMinimumQuantity: 1,
       totalPrice: 0,
     },
   ];
@@ -343,11 +376,17 @@ function deriveGlassFinishFromMaterial(mat: { name: string; colorFinish?: string
   return currentFinish ?? 'Fumê / Cinza';
 }
 
-function deriveHandleTypeFromMaterial(mat: { name: string }, currentType: HandleType): HandleType {
+function deriveHandleTypeFromMaterial(
+  mat: { name: string; categoryType?: CategoryType; isHandle?: boolean },
+  currentType: HandleType,
+): HandleType {
   const n = mat.name.toLowerCase();
-  if (n.includes('tubular') || n.includes('inox') || n.includes('barra')) return 'BAR_TUBULAR';
+  if (mat.categoryType === 'PROFILE') return 'PROFILE_HANDLE';
   if (n.includes('concha') || n.includes('fecho')) return 'SHELL_LOCK';
   if (n.includes('maçaneta') || n.includes('macaneta') || n.includes('alavanca')) return 'LEVER_HANDLE';
+  if (mat.categoryType === 'HARDWARE') return 'BAR_TUBULAR';
+  if (n.includes('perfil') && n.includes('puxador')) return 'PROFILE_HANDLE';
+  if (n.includes('tubular') || n.includes('barra') || n.includes('inox')) return 'BAR_TUBULAR';
   return currentType;
 }
 
@@ -517,6 +556,89 @@ export function useWindowBuilderState({
     setErrors({});
   }, [isOpen, editingItem, templates, findCatalogMaterial, selectedProductId]);
 
+  const materialSelectionsRef = useRef(state.materialSelections);
+  materialSelectionsRef.current = state.materialSelections;
+
+  const selectionsKey = useMemo(() => {
+    return state.materialSelections
+      .map((s) => `${s.requirementId}:${s.materialId}:${s.quantity}:${s.isManualOverride}`)
+      .join('|');
+  }, [state.materialSelections]);
+
+  // Sincronização reativa com o motor de cálculo backend (/api/orcamentos/items/preview-calculation)
+  useEffect(() => {
+    if (!isOpen) return;
+    const w = typeof state.widthMm === 'number' ? state.widthMm : 0;
+    const h = typeof state.heightMm === 'number' ? state.heightMm : 0;
+    const qty = typeof state.quantity === 'number' && state.quantity > 0 ? state.quantity : 1;
+    if (w <= 0 || h <= 0) return;
+
+    const selections = materialSelectionsRef.current;
+    if (!selections || selections.length === 0) return;
+
+    const timer = setTimeout(async () => {
+      try {
+        const payload: BudgetItemCalculationRequest = {
+          templateType: svgTemplate || 'SLIDING_DOOR_2F',
+          widthMm: w,
+          heightMm: h,
+          quantity: qty,
+          options: selections.map((s) => ({
+            materialId: s.materialId,
+            categoryType: s.categoryType,
+            manualQuantity: s.isManualOverride ? s.quantity : undefined,
+          })),
+        };
+
+        const res = await budgetsApi.previewItemCalculation(payload);
+        if (!res || !res.options) return;
+
+        setState((prev) => {
+          const updatedSelections = prev.materialSelections.map((sel, idx) => {
+            const optRes =
+              (sel.materialId ? res.options.find((o) => o.materialId === sel.materialId) : null) ??
+              res.options[idx];
+            if (!optRes) return sel;
+
+            const suggested = optRes.suggestedQuantity;
+            const physMin = optRes.physicalMinimumQuantity;
+            const isBelow = optRes.isBelowPhysicalMinimum;
+            const warning = optRes.warningMessage;
+
+            const isPuxadorOrHardware = isHandleOrLockMaterial(sel);
+
+            const currentQty =
+              (sel.isManualOverride || isPuxadorOrHardware) && sel.quantity !== undefined
+                ? sel.quantity
+                : suggested;
+            const unitPrice = sel.unitPrice ?? 0;
+            const totalPrice =
+              currentQty !== undefined ? parseFloat((currentQty * unitPrice).toFixed(2)) : undefined;
+
+            return {
+              ...sel,
+              suggestedQuantity: suggested,
+              physicalMinimumQuantity: physMin,
+              quantity: currentQty,
+              totalPrice,
+              isBelowPhysicalMinimum: isBelow,
+              warningMessage: warning,
+            };
+          });
+
+          return {
+            ...prev,
+            materialSelections: updatedSelections,
+          };
+        });
+      } catch (err) {
+        console.error('Erro ao sincronizar cálculo de materiais com o backend:', err);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [isOpen, state.widthMm, state.heightMm, state.quantity, svgTemplate, selectionsKey]);
+
   const handleMaterialChange = (requirementId: string, materialId: string) => {
     const selIndex = state.materialSelections.findIndex((s) => s.requirementId === requirementId);
     if (selIndex === -1) return;
@@ -551,30 +673,77 @@ export function useWindowBuilderState({
       const nextGlass = sel.categoryType === 'GLASS' && mat
         ? deriveGlassFinishFromMaterial(mat, prev.glassFinish)
         : prev.glassFinish;
-      const nextHandleType = sel.categoryType === 'HARDWARE' && mat
-        ? deriveHandleTypeFromMaterial(mat, prev.handleConfig.handleType)
+      const isHandleMat = Boolean(
+        (mat as any)?.isHandle ??
+        (mat?.name && (
+          mat.name.toLowerCase().includes('puxador') ||
+          mat.name.toLowerCase().includes('concha') ||
+          mat.name.toLowerCase().includes('fecho') ||
+          mat.name.toLowerCase().includes('maçaneta') ||
+          mat.name.toLowerCase().includes('macaneta')
+        ))
+      );
+
+      const nextHandleType = isHandleMat && mat
+        ? deriveHandleTypeFromMaterial({ name: mat.name, categoryType: sel.categoryType, isHandle: (mat as any)?.isHandle }, prev.handleConfig.handleType)
         : prev.handleConfig.handleType;
+
+      const isProfile = nextHandleType === 'PROFILE_HANDLE';
+      const isProfileOrBar = isProfile || nextHandleType === 'BAR_TUBULAR';
+      const nextHandleConfig: HandleConfig = isHandleMat
+        ? {
+            ...prev.handleConfig,
+            handleType: nextHandleType,
+            side: prev.handleConfig.side ?? 'ONE_SIDE',
+            coverage: isProfile ? prev.handleConfig.coverage ?? 'FULL' : undefined,
+            pieceLengthCm: isProfile ? prev.handleConfig.pieceLengthCm ?? 40 : undefined,
+            orientation: prev.handleConfig.orientation ?? (isProfileOrBar ? 'VERTICAL' : undefined),
+          }
+        : prev.handleConfig;
+
+      const nextUnit = mat?.unit ?? sel.unitMeasure;
+      const isNewUnitPiece = nextUnit === 'un' || nextUnit === 'UN' || nextUnit === 'par' || nextUnit === 'PAR';
+      const isOldUnitPiece = sel.unitMeasure === 'un' || sel.unitMeasure === 'UN' || sel.unitMeasure === 'par' || sel.unitMeasure === 'PAR';
+
+      let nextQuantity = sel.quantity;
+      if (isNewUnitPiece && !isOldUnitPiece) {
+        nextQuantity = 1;
+      } else if (!isNewUnitPiece && isOldUnitPiece) {
+        const w = typeof prev.widthMm === 'number' ? prev.widthMm : DEFAULT_WIDTH;
+        const h = typeof prev.heightMm === 'number' ? prev.heightMm : DEFAULT_HEIGHT;
+        const areaM2 = parseFloat(((w / 1000) * (h / 1000)).toFixed(2));
+        const profileM = estimateProfileLinearMeters(svgTemplate, w, h);
+        const computed = computeRequirementMeasure(sel.categoryType, areaM2, profileM);
+        nextQuantity = computed.qty;
+      }
+
+      const updated = prev.materialSelections.map((s) =>
+        s.requirementId === requirementId
+          ? {
+              ...s,
+              materialId,
+              materialName: mat?.name ?? '',
+              label: isHandleMat
+                ? (sel.categoryType === 'PROFILE' ? 'Perfil Puxador' : 'Puxador / Ferragem')
+                : s.label,
+              unitMeasure: nextUnit,
+              unitPrice,
+              quantity: nextQuantity,
+              totalPrice: (nextQuantity ?? 1) * unitPrice,
+            }
+          : s,
+      );
+
+      const nextSelections = isHandleMat
+        ? syncHandleMaterialSelections(updated, nextHandleConfig, prev.heightMm, requirementId, svgTemplate)
+        : updated;
 
       return {
         ...prev,
         aluminumColor: nextAlum,
         glassFinish: nextGlass,
-        handleConfig: {
-          ...prev.handleConfig,
-          handleType: nextHandleType,
-        },
-        materialSelections: prev.materialSelections.map((s) =>
-          s.requirementId === requirementId
-            ? {
-                ...s,
-                materialId,
-                materialName: mat?.name ?? '',
-                unitMeasure: mat?.unit ?? s.unitMeasure,
-                unitPrice,
-                totalPrice: (s.quantity ?? 1) * unitPrice,
-              }
-            : s,
-        ),
+        handleConfig: nextHandleConfig,
+        materialSelections: nextSelections,
       };
     });
   };
@@ -598,6 +767,7 @@ export function useWindowBuilderState({
         return {
           ...s,
           quantity: qty,
+          isManualOverride: true,
           totalPrice: qty !== undefined ? Number.parseFloat((qty * s.unitPrice).toFixed(2)) : undefined,
         };
       }),
@@ -645,43 +815,278 @@ export function useWindowBuilderState({
   };
 
   const handleHandleTypeChange = (type: HandleType) => {
-    setState((prev) => ({
-      ...prev,
-      handleConfig: {
+    setState((prev) => {
+      const isProfile = type === 'PROFILE_HANDLE';
+      const isProfileOrBar = isProfile || type === 'BAR_TUBULAR';
+      const nextHandleConfig: HandleConfig = {
         ...prev.handleConfig,
         handleType: type,
         side: prev.handleConfig.side ?? 'ONE_SIDE',
-        coverage: type === 'BAR_TUBULAR' ? prev.handleConfig.coverage ?? 'FULL' : undefined,
-      },
-    }));
+        coverage: isProfile ? prev.handleConfig.coverage ?? 'FULL' : undefined,
+        pieceLengthCm: isProfile ? prev.handleConfig.pieceLengthCm ?? 40 : undefined,
+        orientation: prev.handleConfig.orientation ?? (isProfileOrBar ? 'VERTICAL' : undefined),
+      };
+
+      const nextSelections = syncHandleMaterialSelections(
+        prev.materialSelections,
+        nextHandleConfig,
+        prev.heightMm,
+        undefined,
+        svgTemplate,
+      );
+
+      return {
+        ...prev,
+        handleConfig: nextHandleConfig,
+        materialSelections: nextSelections,
+      };
+    });
   };
 
   const handleHandleSideChange = (side: HandleSide) => {
-    setState((prev) => ({
-      ...prev,
-      handleConfig: { ...prev.handleConfig, side },
-    }));
+    setState((prev) => {
+      const nextHandleConfig = { ...prev.handleConfig, side };
+      const nextSelections = syncHandleMaterialSelections(
+        prev.materialSelections,
+        nextHandleConfig,
+        prev.heightMm,
+        undefined,
+        svgTemplate,
+      );
+      return {
+        ...prev,
+        handleConfig: nextHandleConfig,
+        materialSelections: nextSelections,
+      };
+    });
   };
 
   const handleHandleCoverageChange = (coverage: HandleCoverage) => {
+    setState((prev) => {
+      const nextHandleConfig: HandleConfig = {
+        ...prev.handleConfig,
+        coverage,
+        pieceLengthCm: coverage === 'PIECE' ? prev.handleConfig.pieceLengthCm ?? 40 : undefined,
+      };
+      const nextSelections = syncHandleMaterialSelections(
+        prev.materialSelections,
+        nextHandleConfig,
+        prev.heightMm,
+        undefined,
+        svgTemplate,
+      );
+      return {
+        ...prev,
+        handleConfig: nextHandleConfig,
+        materialSelections: nextSelections,
+      };
+    });
+  };
+
+  const handleHandlePieceLengthChange = (pieceLengthCm: number) => {
+    setState((prev) => {
+      const nextHandleConfig = {
+        ...prev.handleConfig,
+        pieceLengthCm,
+      };
+      const nextSelections = syncHandleMaterialSelections(
+        prev.materialSelections,
+        nextHandleConfig,
+        prev.heightMm,
+        undefined,
+        svgTemplate,
+      );
+      return {
+        ...prev,
+        handleConfig: nextHandleConfig,
+        materialSelections: nextSelections,
+      };
+    });
+  };
+
+  const allowedHandlePositions = useMemo(() => {
+    return ['LEFT', 'RIGHT', 'CENTER', 'TOP', 'BOTTOM'] as HandlePosition[];
+  }, []);
+
+  const handleHandlePositionChange = (position: HandlePosition) => {
+    setState((prev) => {
+      const isProfileOrBar =
+        prev.handleConfig.handleType === 'PROFILE_HANDLE' ||
+        prev.handleConfig.handleType === 'BAR_TUBULAR';
+
+      let nextOrientation: HandleOrientation = prev.handleConfig.orientation ?? 'VERTICAL';
+      if (isProfileOrBar) {
+        // Quando é perfil puxador ou tubular inox, preservar a orientação definida
+        nextOrientation = prev.handleConfig.orientation ?? (position === 'TOP' || position === 'BOTTOM' ? 'HORIZONTAL' : 'VERTICAL');
+      } else if (position === 'TOP' || position === 'BOTTOM') {
+        nextOrientation = 'HORIZONTAL';
+      } else if (position === 'LEFT' || position === 'RIGHT') {
+        nextOrientation = 'VERTICAL';
+      }
+
+      return {
+        ...prev,
+        handleConfig: {
+          ...prev.handleConfig,
+          handlePosition: position,
+          position,
+          orientation: nextOrientation,
+        },
+      };
+    });
+  };
+
+  const handleHandleOrientationChange = (orientation: HandleOrientation) => {
     setState((prev) => ({
       ...prev,
       handleConfig: {
         ...prev.handleConfig,
-        coverage,
-        pieceLengthCm: coverage === 'PIECE' ? prev.handleConfig.pieceLengthCm ?? 40 : undefined,
+        orientation,
       },
     }));
   };
 
-  const handleHandlePieceLengthChange = (pieceLengthCm: number) => {
-    setState((prev) => ({
-      ...prev,
-      handleConfig: {
+  const handleHeightChange = (heightMm: number | '') => {
+    setState((prev) => {
+      const nextSelections = syncHandleMaterialSelections(
+        prev.materialSelections,
+        prev.handleConfig,
+        heightMm,
+        undefined,
+        svgTemplate,
+      );
+      return {
+        ...prev,
+        heightMm,
+        materialSelections: nextSelections,
+      };
+    });
+  };
+
+  const availableHandleProfiles = useMemo(() => {
+    return profiles
+      .filter((p) => p.isHandle || p.name.toLowerCase().includes('puxador'))
+      .map((p) => ({
+        id: p.id,
+        name: p.name,
+        price: p.salePrice ?? 0,
+        unit: p.unitMeasure ?? 'm',
+        colorFinish: p.colorFinish,
+        isHandle: p.isHandle,
+      }));
+  }, [profiles]);
+
+  const availableHandleHardwares = useMemo(() => {
+    return hardwares
+      .filter(
+        (h) =>
+          h.isHandle ||
+          h.name.toLowerCase().includes('puxador') ||
+          h.name.toLowerCase().includes('concha') ||
+          h.name.toLowerCase().includes('fecho') ||
+          h.name.toLowerCase().includes('maçaneta') ||
+          h.name.toLowerCase().includes('macaneta'),
+      )
+      .map((h) => ({
+        id: h.id,
+        name: h.name,
+        price: h.salePrice ?? 0,
+        unit: h.unitMeasure ?? 'un',
+        isHandle: h.isHandle,
+      }));
+  }, [hardwares]);
+
+  const handleMaterial = useMemo(() => {
+    return state.materialSelections.find(isHandleOrLockMaterial) ?? null;
+  }, [state.materialSelections]);
+
+  const handleSelectHandleMaterial = (materialId: string, category?: 'PROFILE' | 'HARDWARE') => {
+    if (!materialId) {
+      setState((prev) => {
+        const existingIdx = prev.materialSelections.findIndex(isHandleOrLockMaterial);
+        if (existingIdx === -1) return prev;
+
+        const nextSelections = [...prev.materialSelections];
+        if (nextSelections[existingIdx].requirementId === 'req-handle') {
+          nextSelections.splice(existingIdx, 1);
+        } else {
+          nextSelections[existingIdx] = {
+            ...nextSelections[existingIdx],
+            materialId: '',
+            materialName: '',
+            unitPrice: 0,
+            quantity: 0,
+            totalPrice: 0,
+          };
+        }
+        return {
+          ...prev,
+          materialSelections: nextSelections,
+        };
+      });
+      return;
+    }
+
+    const isProfile = category ? category === 'PROFILE' : profiles.some((p) => p.id === materialId);
+    const resolvedCategory: CategoryType = isProfile ? 'PROFILE' : 'HARDWARE';
+    const list = isProfile ? profiles : hardwares;
+    const mat = list.find((m) => m.id === materialId);
+    if (!mat) return;
+
+    setState((prev) => {
+      const existingIdx = prev.materialSelections.findIndex(isHandleOrLockMaterial);
+      const reqId = existingIdx >= 0 ? prev.materialSelections[existingIdx].requirementId : 'req-handle';
+
+      const nextHandleType = deriveHandleTypeFromMaterial(
+        { name: mat.name, categoryType: resolvedCategory },
+        prev.handleConfig.handleType,
+      );
+      const isProfileHandle = nextHandleType === 'PROFILE_HANDLE';
+      const isProfileOrBar = isProfileHandle || nextHandleType === 'BAR_TUBULAR';
+      const nextHandleConfig: HandleConfig = {
         ...prev.handleConfig,
-        pieceLengthCm,
-      },
-    }));
+        handleType: nextHandleType,
+        side: prev.handleConfig.side ?? 'ONE_SIDE',
+        coverage: isProfileHandle ? prev.handleConfig.coverage ?? 'FULL' : undefined,
+        pieceLengthCm: isProfileHandle ? prev.handleConfig.pieceLengthCm ?? 40 : undefined,
+        orientation: prev.handleConfig.orientation ?? (isProfileOrBar ? 'VERTICAL' : undefined),
+      };
+
+      const selItem: MaterialSelection = {
+        ...(existingIdx >= 0 ? prev.materialSelections[existingIdx] : {}),
+        requirementId: reqId,
+        categoryType: resolvedCategory,
+        label: resolvedCategory === 'PROFILE' ? 'Perfil Puxador' : 'Puxador / Ferragem',
+        materialId: mat.id,
+        materialName: mat.name,
+        unitMeasure: mat.unitMeasure ?? (isProfile ? 'm' : 'un'),
+        unitPrice: mat.salePrice ?? 0,
+        quantity: 1,
+        totalPrice: mat.salePrice ?? 0,
+        isOptional: existingIdx >= 0 ? prev.materialSelections[existingIdx].isOptional : true,
+      };
+
+      const nextSelections = [...prev.materialSelections];
+      if (existingIdx >= 0) {
+        nextSelections[existingIdx] = selItem;
+      } else {
+        nextSelections.push(selItem);
+      }
+
+      const syncedSelections = syncHandleMaterialSelections(
+        nextSelections,
+        nextHandleConfig,
+        prev.heightMm,
+        reqId,
+        svgTemplate,
+      );
+
+      return {
+        ...prev,
+        handleConfig: nextHandleConfig,
+        materialSelections: syncedSelections,
+      };
+    });
   };
 
   const getDefaultHoleDistances = (count: number, height: number): number[] => {
@@ -774,10 +1179,10 @@ export function useWindowBuilderState({
     if (!w || !h) return 0;
     return calcItemSubtotal(
       state.materialSelections.map((s) => ({ quantity: s.quantity, unitPrice: s.unitPrice })),
-      0,
+      state.laborCost ?? 0,
       qty,
     );
-  }, [state.materialSelections, state.quantity, state.widthMm, state.heightMm]);
+  }, [state.materialSelections, state.quantity, state.widthMm, state.heightMm, state.laborCost]);
 
   const validateStep = (step: 1 | 2 | 3 | 4): boolean => {
     if (step === 1) {
@@ -912,6 +1317,7 @@ export function useWindowBuilderState({
     setIsMobileCadExpanded,
     svgTemplate,
     supportedDirections,
+    allowedHandlePositions,
     dynamicAluminumColors,
     dynamicGlassFinishes,
     glasses,
@@ -924,14 +1330,21 @@ export function useWindowBuilderState({
     svgH,
     unitAreaM2,
     totalQty,
+    handleMaterial,
+    availableHandleProfiles,
+    availableHandleHardwares,
+    handleSelectHandleMaterial,
     handleMaterialChange,
     handleMaterialQtyChange,
     handleAddMaterial,
     handleRemoveMaterial,
     handleHandleTypeChange,
+    handleHandlePositionChange,
+    handleHandleOrientationChange,
     handleHandleSideChange,
     handleHandleCoverageChange,
     handleHandlePieceLengthChange,
+    handleHeightChange,
     handleHoleCountChange,
     handleDivisionTypeChange,
     handleSingleHoleDistanceChange,

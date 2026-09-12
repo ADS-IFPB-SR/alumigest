@@ -21,6 +21,10 @@ export function BudgetsFilters({
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    if (localSearch === searchTerm) {
+      return;
+    }
+
     if (debounceRef.current) {
       clearTimeout(debounceRef.current);
     }
@@ -34,7 +38,7 @@ export function BudgetsFilters({
         clearTimeout(debounceRef.current);
       }
     };
-  }, [localSearch, onSearchChange]);
+  }, [localSearch, searchTerm, onSearchChange]);
 
   useEffect(() => {
     setLocalSearch(searchTerm);

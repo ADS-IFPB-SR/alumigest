@@ -1,4 +1,4 @@
-﻿# ==========================================
+# ==========================================
 # AlumiGest Monorepo - .gitignore
 # ==========================================
 
@@ -60,3 +60,5 @@ specs/
 
 # Configurações Locais
 .env
+.prototipos_sprint3_exemplo/
+modular-prototype.html

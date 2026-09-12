@@ -59,13 +59,13 @@ export function BudgetsView() {
     setPage(0);
   }, []);
 
-  const handleCreate = () => {
+  const handleCreate = useCallback(() => {
     navigate('/orcamentos/novo');
-  };
+  }, [navigate]);
 
-  const budgets = budgetsData?.content || [];
-  const totalElements = budgetsData?.totalElements ?? budgetsData?.page?.totalElements ?? 0;
-  const totalPages = budgetsData?.totalPages ?? budgetsData?.page?.totalPages ?? 1;
+  const budgets = budgetsData?.content ?? [];
+  const totalElements = budgetsData?.totalElements ?? 0;
+  const totalPages = budgetsData?.totalPages ?? 1;
 
   const isFiltering = Boolean(status || search);
 

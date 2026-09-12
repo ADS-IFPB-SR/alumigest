@@ -100,4 +100,53 @@ describe('WindowSvgPreview (Studio CAD)', () => {
 
     expect(ltrContainer.innerHTML).not.toEqual(rtlContainer.innerHTML)
   })
+
+  it('deve renderizar o puxador tubular inox deitado (HORIZONTAL) com selo 2L', () => {
+    const { container } = render(
+      <WindowSvgPreview
+        templateType="SLIDING_DOOR_2F"
+        widthMm={1600}
+        heightMm={2100}
+        handleConfig={{
+          handleType: 'BAR_TUBULAR',
+          side: 'BOTH_SIDES',
+          pieceLengthCm: 40,
+          coverage: 'PIECE',
+          orientation: 'HORIZONTAL',
+          position: 'CENTER',
+        }}
+      />
+    )
+
+    // Cota de 400mm visível
+    expect(screen.getByText('400mm')).toBeInTheDocument()
+    // Identificador 2L visível
+    expect(screen.getByText('2L')).toBeInTheDocument()
+    // O rect horizontal deve ter height="5"
+    const rects = Array.from(container.querySelectorAll('rect'))
+    const horizontalHandleRect = rects.find((r) => r.getAttribute('height') === '5')
+    expect(horizontalHandleRect).toBeDefined()
+  })
+
+  it('deve renderizar o perfil puxador deitado (HORIZONTAL) com cobertura TOTAL (FULL)', () => {
+    const { container } = render(
+      <WindowSvgPreview
+        templateType="SLIDING_DOOR_2F"
+        widthMm={1600}
+        heightMm={2100}
+        handleConfig={{
+          handleType: 'PROFILE_HANDLE',
+          side: 'ONE_SIDE',
+          coverage: 'FULL',
+          orientation: 'HORIZONTAL',
+          position: 'TOP',
+        }}
+      />
+    )
+
+    // O rect horizontal de topo deve ter height="5"
+    const rects = Array.from(container.querySelectorAll('rect'))
+    const horizontalHandleRect = rects.find((r) => r.getAttribute('height') === '5')
+    expect(horizontalHandleRect).toBeDefined()
+  })
 })

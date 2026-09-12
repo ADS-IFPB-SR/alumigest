@@ -103,5 +103,16 @@ export const catalogApi = {
     const response = await api.delete(`/catalog/products/${id}`);
     return response.data;
   },
+
+  // ── Material Families ─────────────────────────────────────────────────────
+  getMaterialFamilies: async (groupCode?: string): Promise<string[]> => {
+    const params = groupCode ? `?groupCode=${encodeURIComponent(groupCode)}` : '';
+    const response = await api.get<any>(`/catalog/materials/families${params}`);
+    // O interceptor do axios já desempacota response.data = response.data.data quando 'data' existe
+    if (Array.isArray(response.data)) {
+      return response.data;
+    }
+    return response.data?.data ?? [];
+  },
 };
 

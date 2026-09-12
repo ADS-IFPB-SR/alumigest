@@ -10,9 +10,11 @@ interface BudgetCommercialConditionsProps {
   readonly onNotesChange: (value: string) => void;
   readonly commercialConditions: string;
   readonly onCommercialConditionsChange: (value: string) => void;
+  readonly validUntil?: string;
+  readonly onValidUntilChange?: (value: string) => void;
   /** Subtotal bruto — exibido como referência ao lado do campo de desconto */
   readonly subtotal: number;
-  readonly errors?: { readonly discountPercent?: string };
+  readonly errors?: { readonly discountPercent?: string; readonly validUntil?: string };
 }
 
 /**
@@ -35,9 +37,17 @@ export const BudgetCommercialConditions: React.FC<BudgetCommercialConditionsProp
   onNotesChange,
   commercialConditions,
   onCommercialConditionsChange,
+  validUntil = '',
+  onValidUntilChange,
   subtotal,
   errors = DEFAULT_ERRORS,
 }) => {
+  const handleValidityPreset = (days: number) => {
+    const d = new Date();
+    d.setDate(d.getDate() + days);
+    const isoDate = d.toISOString().split('T')[0];
+    onValidUntilChange?.(isoDate);
+  };
   const handleLaborCostChange = (str: string) => {
     const cleaned = str.replace(',', '.').replace(/[^0-9.]/g, '');
     if (cleaned === '' || cleaned === '.') {
@@ -137,6 +147,59 @@ export const BudgetCommercialConditions: React.FC<BudgetCommercialConditionsProp
           {errors.discountPercent && (
             <p id="discount-error" className="text-error text-xs mt-xs font-body">
               {errors.discountPercent}
+            </p>
+          )}
+        </div>
+
+        {/* Validade da Proposta */}
+        <div className="sm:col-span-2">
+          <div className="flex items-center justify-between flex-wrap gap-xs mb-xs">
+            <label
+              htmlFor="budget-valid-until"
+              className="block text-xs font-label font-semibold text-on-surface-variant uppercase tracking-wider"
+            >
+              Validade da Proposta
+            </label>
+            <div className="flex items-center gap-1">
+              <span className="text-[11px] text-secondary font-label">Atalhos:</span>
+              <button
+                type="button"
+                onClick={() => handleValidityPreset(7)}
+                className="px-2 py-0.5 rounded text-[11px] font-label font-medium bg-surface-container hover:bg-surface-container-high text-on-surface-variant border border-outline-variant/60 transition-colors"
+              >
+                7 dias
+              </button>
+              <button
+                type="button"
+                onClick={() => handleValidityPreset(15)}
+                className="px-2 py-0.5 rounded text-[11px] font-label font-medium bg-surface-container hover:bg-surface-container-high text-on-surface-variant border border-outline-variant/60 transition-colors"
+              >
+                15 dias
+              </button>
+              <button
+                type="button"
+                onClick={() => handleValidityPreset(30)}
+                className="px-2 py-0.5 rounded text-[11px] font-label font-medium bg-surface-container hover:bg-surface-container-high text-on-surface-variant border border-outline-variant/60 transition-colors"
+              >
+                30 dias
+              </button>
+            </div>
+          </div>
+          <div className="relative max-w-xs">
+            <input
+              id="budget-valid-until"
+              type="date"
+              min={new Date().toISOString().split('T')[0]}
+              value={validUntil}
+              onChange={(e) => onValidUntilChange?.(e.target.value)}
+              className={`w-full px-sm py-xs bg-surface-container-lowest border rounded-sm font-data-mono text-data-mono text-on-surface focus:border-primary focus:outline-none transition-all ${
+                errors.validUntil ? 'border-error' : 'border-outline-variant'
+              }`}
+            />
+          </div>
+          {errors.validUntil && (
+            <p className="text-error text-xs mt-xs font-body">
+              {errors.validUntil}
             </p>
           )}
         </div>

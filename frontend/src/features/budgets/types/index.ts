@@ -17,11 +17,21 @@ export type OpeningDirection =
   | 'OUTSIDE'
   | 'INSIDE';
 
-export type HandleType = 'BAR_TUBULAR' | 'SHELL_LOCK' | 'LEVER_HANDLE' | 'NONE';
+export type HandleType = 'BAR_TUBULAR' | 'PROFILE_HANDLE' | 'SHELL_LOCK' | 'LEVER_HANDLE' | 'NONE';
+export type HandlePosition = 'LEFT' | 'RIGHT' | 'TOP' | 'BOTTOM' | 'CENTER';
+export type HandleOrientation = 'HORIZONTAL' | 'VERTICAL';
 export type HandleSide = 'ONE_SIDE' | 'BOTH_SIDES';
 export type HandleCoverage = 'FULL' | 'PIECE';
 export type DivisionType = 'EQUAL' | 'CUSTOM_DISTANCE';
 export type CategoryType = 'GLASS' | 'PROFILE' | 'HARDWARE' | 'FILM';
+
+export const HANDLE_POSITION_LABELS: Record<HandlePosition, string> = {
+  LEFT: 'Lateral Esquerda (Em pé)',
+  RIGHT: 'Lateral Direita (Em pé)',
+  TOP: 'Superior (Deitado no topo)',
+  BOTTOM: 'Inferior (Deitado na base)',
+  CENTER: 'Centro',
+};
 
 export type BudgetStatus =
   | 'DRAFT'
@@ -31,17 +41,16 @@ export type BudgetStatus =
   | 'CANCELLED';
 
 // ============================================================
-// CONFIGURAÃ‡Ã•ES DE PUXADOR E FURAÃ‡ÃƒO
+// CONFIGURAÇÕES DE PUXADOR E FURAÇÃO
 // ============================================================
-export type HandlePosition = 'RIGHT' | 'LEFT' | 'TOP' | 'BOTTOM' | 'CENTER';
-
 export interface HandleConfig {
   handleType: HandleType;
+  position?: HandlePosition;
+  orientation?: HandleOrientation;
   side?: HandleSide;
   coverage?: HandleCoverage;
   pieceLengthCm?: number;
   handlePosition?: HandlePosition;
-  position?: HandlePosition;
   handleLengthMm?: number;
 }
 
@@ -123,6 +132,35 @@ export interface WindowTemplate {
 // ============================================================
 // ESTADO INTERNO DO BUILDER
 // ============================================================
+export interface BudgetItemCalculationOptionRequest {
+  materialId?: string;
+  categoryType: string;
+  manualQuantity?: number;
+}
+
+export interface BudgetItemCalculationRequest {
+  templateType?: string;
+  widthMm: number;
+  heightMm: number;
+  quantity: number;
+  options: BudgetItemCalculationOptionRequest[];
+}
+
+export interface BudgetItemCalculationOptionResult {
+  materialId: string;
+  categoryType: string;
+  suggestedQuantity: number;
+  physicalMinimumQuantity: number;
+  isBelowPhysicalMinimum: boolean;
+  warningMessage?: string;
+}
+
+export interface BudgetItemCalculationResponse {
+  physicalAreaM2: number;
+  physicalPerimeterM: number;
+  options: BudgetItemCalculationOptionResult[];
+}
+
 export interface MaterialSelection {
   requirementId: string;
   categoryType: CategoryType;
@@ -133,12 +171,17 @@ export interface MaterialSelection {
   unitMeasure: string;
   unitPrice: number;
   /**
-   * Quantidade tÃ©cnica de insumo calculada e retornada pelo backend.
-   * O frontend NÃƒO calcula este valor atravÃ©s de fÃ³rmulas geomÃ©tricas locais.
+   * Quantidade de insumo calculada ou informada pelo usuário.
    */
   quantity?: number;
-  /** Subtotal estimado se quantity for fornecida pelo backend */
+  /** Subtotal estimado */
   totalPrice?: number;
+  suggestedQuantity?: number;
+  physicalMinimumQuantity?: number;
+  isBelowPhysicalMinimum?: boolean;
+  warningMessage?: string;
+  isManualOverride?: boolean;
+  familyCode?: string;
 }
 
 export interface BuilderState {
@@ -199,6 +242,7 @@ export interface BudgetFormState {
   discountPercent: number;
   notes: string;
   commercialConditions: string;
+  validUntil?: string;
 }
 
 // ============================================================
@@ -266,14 +310,12 @@ export interface BudgetSummary {
 
 export interface BudgetPageResponse {
   content: BudgetSummary[];
-  totalElements?: number;
-  totalPages?: number;
-  page?: {
-    size?: number;
-    number?: number;
-    totalElements?: number;
-    totalPages?: number;
-  };
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  isFirst?: boolean;
+  isLast?: boolean;
 }
 
 export interface BudgetFilters {
@@ -313,6 +355,7 @@ export interface CreateBudgetPayload {
   discountPercent: number;
   notes?: string;
   commercialConditions?: string;
+  validUntil?: string;
   items: {
     productId: string;
     templateType: string;
@@ -344,18 +387,19 @@ export const TEMPLATE_TYPE_INFO: Record<DoorTemplateType, TemplateTypeInfo> = {
   SLIDING_DOOR_2F: { type: 'SLIDING_DOOR_2F', label: 'Porta de Correr 2 Folhas', description: '1 Fixa + 1 Móvel', icon: 'door_sliding', supportedDirections: ['LEFT_TO_RIGHT', 'RIGHT_TO_LEFT'] },
   SLIDING_DOOR_3F: { type: 'SLIDING_DOOR_3F', label: 'Porta de Correr 3 Folhas', description: '1 Fixa + 2 Móveis', icon: 'door_sliding', supportedDirections: ['LEFT_TO_RIGHT', 'RIGHT_TO_LEFT'] },
   SLIDING_DOOR_4F: { type: 'SLIDING_DOOR_4F', label: 'Porta de Correr 4 Folhas', description: '2 Fixas + 2 Móveis', icon: 'door_sliding', supportedDirections: ['CENTER_TO_SIDES'] },
-  SWING_DOOR_1F: { type: 'SWING_DOOR_1F', label: 'Porta de Giro 1 Folha', description: 'De abrir, 1 Folha', icon: 'door_front', supportedDirections: ['LEFT_TO_RIGHT', 'RIGHT_TO_LEFT', 'OUTSIDE', 'INSIDE'] },
-  SWING_DOOR_2F: { type: 'SWING_DOOR_2F', label: 'Porta de Giro 2 Folhas', description: 'De abrir, 2 Folhas', icon: 'door_front', supportedDirections: ['CENTER_TO_SIDES', 'OUTSIDE', 'INSIDE'] },
-  AWNING_WINDOW_1F: { type: 'AWNING_WINDOW_1F', label: 'Porta Basculante 1 Folha', description: 'Abertura superior', icon: 'window', supportedDirections: ['OUTSIDE'] },
-  AWNING_WINDOW_1F_INV: { type: 'AWNING_WINDOW_1F_INV', label: 'Porta Basculante Inversa', description: 'Abertura inferior', icon: 'window', supportedDirections: ['INSIDE'] },
+  SWING_DOOR_1F: { type: 'SWING_DOOR_1F', label: 'Porta de Giro 1 Folha', description: 'De abrir, 1 Folha', icon: 'door_front', supportedDirections: ['LEFT_TO_RIGHT', 'RIGHT_TO_LEFT'] },
+  SWING_DOOR_2F: { type: 'SWING_DOOR_2F', label: 'Porta de Giro 2 Folhas', description: 'De abrir, 2 Folhas', icon: 'door_front', supportedDirections: ['CENTER_TO_SIDES'] },
+  AWNING_WINDOW_1F: { type: 'AWNING_WINDOW_1F', label: 'Porta Basculante 1 Folha', description: 'Abertura superior (Maxim-ar)', icon: 'window', supportedDirections: ['OUTSIDE'] },
+  AWNING_WINDOW_1F_INV: { type: 'AWNING_WINDOW_1F_INV', label: 'Porta Basculante Inversa', description: 'Abertura inferior (Tombar)', icon: 'window', supportedDirections: ['INSIDE'] },
   FRONT_DRAWER: { type: 'FRONT_DRAWER', label: 'Gaveta Frontal', description: 'Frente de Gaveta', icon: 'kitchen', supportedDirections: ['OUTSIDE'] },
   FIXED_PANEL: { type: 'FIXED_PANEL', label: 'Painel Fixo', description: 'Quadro Fixo sem abertura', icon: 'grid_view', supportedDirections: [] },
 };
 
 export const HANDLE_TYPE_LABELS: Record<HandleType, string> = {
   BAR_TUBULAR: 'Tubular Inox',
+  PROFILE_HANDLE: 'Puxador Perfil',
   SHELL_LOCK: 'Fecho Concha',
-  LEVER_HANDLE: 'MaÃ§aneta',
+  LEVER_HANDLE: 'Maçaneta',
   NONE: 'Nenhum',
 };
 
@@ -365,13 +409,13 @@ export const HANDLE_SIDE_LABELS: Record<HandleSide, string> = {
 };
 
 export const HANDLE_COVERAGE_LABELS: Record<HandleCoverage, string> = {
-  FULL: 'ExtensÃ£o Inteira',
-  PIECE: 'PedaÃ§o (tamanho em cm)',
+  FULL: 'Extensão Inteira',
+  PIECE: 'Pedaço (tamanho em cm)',
 };
 
 export const DIVISION_TYPE_LABELS: Record<DivisionType, string> = {
   EQUAL: 'Por Igual',
-  CUSTOM_DISTANCE: 'DistÃ¢ncia Customizada',
+  CUSTOM_DISTANCE: 'Distância Customizada',
 };
 
 export const OPENING_DIRECTION_LABELS: Record<OpeningDirection, string> = {

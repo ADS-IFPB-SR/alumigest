@@ -237,3 +237,12 @@ export const useInactivateProduct = () => {
     },
   });
 };
+// --- Material Families ---
+export const useMaterialFamilies = (groupCode?: string) => {
+  return useQuery({
+    queryKey: ['material-families', groupCode],
+    queryFn: () => catalogApi.getMaterialFamilies(groupCode),
+    staleTime: 1000 * 60 * 5, // 5 minutos de cache
+  });
+};
+
