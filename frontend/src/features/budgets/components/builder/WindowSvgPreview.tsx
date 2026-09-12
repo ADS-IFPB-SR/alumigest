@@ -10,6 +10,12 @@ import { getSvgTheme } from '../../utils/svgTheme';
 import type { SvgTheme } from '../../utils/svgTheme';
 
 import { FRAME_W } from './svg/svgConstants';
+
+const DRILLING_POS_LABELS: Record<string, string> = {
+  SUPERIOR: 'Borda Superior',
+  FRONTAL: 'Frontal',
+  LATERAL: 'Lateral',
+};
 import { SvgDefs } from './svg/SvgDefs';
 import { HorizontalDimension, VerticalDimension } from './svg/SvgDimensions';
 import {
@@ -28,31 +34,25 @@ import {
 export type { SvgTheme };
 
 interface SvgRenderContext {
-  svgW: number;
-  svgH: number;
-  inverted: boolean;
-  handleConfig: HandleConfig;
-  drillingConfig: DrillingConfig;
-  widthMm: number;
-  heightMm: number;
-  theme: SvgTheme;
+  readonly svgW: number;
+  readonly svgH: number;
+  readonly inverted: boolean;
+  readonly handleConfig: HandleConfig;
+  readonly drillingConfig: DrillingConfig;
+  readonly widthMm: number;
+  readonly heightMm: number;
+  readonly theme: SvgTheme;
 }
 
 type SvgTemplateRenderer = (ctx: SvgRenderContext) => React.ReactNode;
 
 const SVG_RENDERERS: Record<DoorTemplateType, SvgTemplateRenderer> = {
-  SLIDING_DOOR_1F: (ctx) =>
-    renderSlidingDoor1F(ctx.svgW, ctx.svgH, ctx.inverted, ctx.handleConfig, ctx.drillingConfig, ctx.widthMm, ctx.heightMm, ctx.theme),
-  SLIDING_DOOR_2F: (ctx) =>
-    renderSlidingDoor2F(ctx.svgW, ctx.svgH, ctx.inverted, ctx.handleConfig, ctx.drillingConfig, ctx.widthMm, ctx.heightMm, ctx.theme),
-  SLIDING_DOOR_3F: (ctx) =>
-    renderSlidingDoor3F(ctx.svgW, ctx.svgH, ctx.inverted, ctx.handleConfig, ctx.drillingConfig, ctx.widthMm, ctx.heightMm, ctx.theme),
-  SLIDING_DOOR_4F: (ctx) =>
-    renderSlidingDoor4F(ctx.svgW, ctx.svgH, ctx.handleConfig, ctx.drillingConfig, ctx.widthMm, ctx.heightMm, ctx.theme),
-  SWING_DOOR_1F: (ctx) =>
-    renderSwingDoor(ctx.svgW, ctx.svgH, 1, ctx.inverted, ctx.handleConfig, ctx.drillingConfig, ctx.widthMm, ctx.heightMm, ctx.theme),
-  SWING_DOOR_2F: (ctx) =>
-    renderSwingDoor(ctx.svgW, ctx.svgH, 2, ctx.inverted, ctx.handleConfig, ctx.drillingConfig, ctx.widthMm, ctx.heightMm, ctx.theme),
+  SLIDING_DOOR_1F: (ctx) => renderSlidingDoor1F(ctx),
+  SLIDING_DOOR_2F: (ctx) => renderSlidingDoor2F(ctx),
+  SLIDING_DOOR_3F: (ctx) => renderSlidingDoor3F(ctx),
+  SLIDING_DOOR_4F: (ctx) => renderSlidingDoor4F(ctx),
+  SWING_DOOR_1F: (ctx) => renderSwingDoor(1, ctx),
+  SWING_DOOR_2F: (ctx) => renderSwingDoor(2, ctx),
   AWNING_WINDOW_1F: (ctx) =>
     renderAwningWindow1F(ctx.svgW, ctx.svgH, false, ctx.handleConfig, ctx.drillingConfig, ctx.heightMm, ctx.theme),
   AWNING_WINDOW_1F_INV: (ctx) =>
@@ -64,18 +64,18 @@ const SVG_RENDERERS: Record<DoorTemplateType, SvgTemplateRenderer> = {
 };
 
 export interface WindowSvgPreviewProps {
-  templateType: string;
-  widthMm?: number;
-  heightMm?: number;
-  openingDirection?: OpeningDirection;
-  handleConfig?: HandleConfig;
-  drillingConfig?: DrillingConfig;
-  templateName?: string;
-  aluminumColor?: string;
-  glassFinish?: string;
-  baseWidth?: string | number;
-  maxHeight?: string | number;
-  minimal?: boolean;
+  readonly templateType: string;
+  readonly widthMm?: number;
+  readonly heightMm?: number;
+  readonly openingDirection?: OpeningDirection;
+  readonly handleConfig?: HandleConfig;
+  readonly drillingConfig?: DrillingConfig;
+  readonly templateName?: string;
+  readonly aluminumColor?: string;
+  readonly glassFinish?: string;
+  readonly baseWidth?: string | number;
+  readonly maxHeight?: string | number;
+  readonly minimal?: boolean;
 }
 
 const WindowSvgPreviewComponent: React.FC<WindowSvgPreviewProps> = ({
@@ -169,24 +169,24 @@ const WindowSvgPreviewComponent: React.FC<WindowSvgPreviewProps> = ({
     <>
       <span className="flex items-center gap-1">
         <span className="inline-block w-3 h-3 rounded-sm" style={{ background: theme.glassFill, border: `1px solid ${theme.glassStroke}` }} />
-        Móvel
+        <span>Móvel</span>
       </span>
       <span className="flex items-center gap-1">
         <span className="inline-block w-3 h-3 rounded-sm" style={{ background: theme.fixedGlassFill, border: `1px solid ${theme.glassStroke}` }} />
-        Fixo
+        <span>Fixo</span>
       </span>
       {handleConfig.handleType !== 'NONE' && (
         <span className="flex items-center gap-1 text-primary">
           <span className="material-symbols-outlined text-[14px]">hardware</span>
-          {handleConfig.side === 'BOTH_SIDES' ? 'Puxador 2 Lados' : 'Puxador 1 Lado'}
+          <span>{handleConfig.side === 'BOTH_SIDES' ? 'Puxador 2 Lados' : 'Puxador 1 Lado'}</span>
         </span>
       )}
       {drillingConfig.holeCount > 0 && (
         <span className="flex items-center gap-1">
           <span className="inline-block w-2 h-2 rounded-full bg-on-surface" />
-          {drillingConfig.holeCount} Furo{drillingConfig.holeCount > 1 ? 's' : ''}
+          <span>{drillingConfig.holeCount} Furo{drillingConfig.holeCount > 1 ? 's' : ''}</span>
           {drillingConfig.drillingPosition &&
-            ` (${drillingConfig.drillingPosition === 'SUPERIOR' ? 'Borda Superior' : drillingConfig.drillingPosition === 'FRONTAL' ? 'Frontal' : 'Lateral'})`}
+            <span>{` (${DRILLING_POS_LABELS[drillingConfig.drillingPosition] || 'Lateral'})`}</span>}
         </span>
       )}
     </>

@@ -1,15 +1,15 @@
 import React from 'react';
 
 export interface Step1DimensionsProps {
-  widthMm: number | '';
-  heightMm: number | '';
-  quantity: number | '';
-  errors: Record<string, string>;
-  unitAreaM2: string;
-  totalQty: number;
-  onWidthChange: (val: number | '') => void;
-  onHeightChange: (val: number | '') => void;
-  onQuantityChange: (val: number | '') => void;
+  readonly widthMm: number | '';
+  readonly heightMm: number | '';
+  readonly quantity: number | '';
+  readonly errors: Record<string, string>;
+  readonly unitAreaM2: string;
+  readonly totalQty: number;
+  readonly onWidthChange: (val: number | '') => void;
+  readonly onHeightChange: (val: number | '') => void;
+  readonly onQuantityChange: (val: number | '') => void;
 }
 
 export const Step1Dimensions: React.FC<Step1DimensionsProps> = ({
@@ -29,7 +29,7 @@ export const Step1Dimensions: React.FC<Step1DimensionsProps> = ({
         <div className="flex items-center justify-between pb-xs border-b border-outline-variant">
           <h3 className="text-base font-label font-bold text-on-surface uppercase tracking-wider flex items-center gap-xs">
             <span className="material-symbols-outlined text-[20px] text-primary">aspect_ratio</span>
-            1. Medidas e Quantidade
+            <span>1. Medidas e Quantidade</span>
           </h3>
           <span className="text-xs font-label text-secondary font-medium">Dimensões físicas</span>
         </div>
@@ -48,7 +48,7 @@ export const Step1Dimensions: React.FC<Step1DimensionsProps> = ({
               min={100}
               max={9999}
               value={widthMm}
-              onChange={(e) => onWidthChange(parseInt(e.target.value, 10) || '')}
+              onChange={(e) => onWidthChange(Number.parseInt(e.target.value, 10) || '')}
               aria-label="Largura em milímetros"
               className={`w-full py-2.5 px-3 bg-surface border rounded-lg text-base font-data-mono text-on-surface focus:border-primary focus:outline-none transition-colors ${
                 errors.widthMm ? 'border-error' : 'border-outline-variant'
@@ -70,7 +70,7 @@ export const Step1Dimensions: React.FC<Step1DimensionsProps> = ({
               min={100}
               max={9999}
               value={heightMm}
-              onChange={(e) => onHeightChange(parseInt(e.target.value, 10) || '')}
+              onChange={(e) => onHeightChange(Number.parseInt(e.target.value, 10) || '')}
               aria-label="Altura em milímetros"
               className={`w-full py-2.5 px-3 bg-surface border rounded-lg text-base font-data-mono text-on-surface focus:border-primary focus:outline-none transition-colors ${
                 errors.heightMm ? 'border-error' : 'border-outline-variant'
@@ -94,7 +94,7 @@ export const Step1Dimensions: React.FC<Step1DimensionsProps> = ({
               value={quantity}
               onChange={(e) => {
                 const val = e.target.value;
-                onQuantityChange(val === '' ? '' : Math.max(1, parseInt(val, 10) || 1));
+                onQuantityChange(val === '' ? '' : Math.max(1, Number.parseInt(val, 10) || 1));
               }}
               aria-label="Quantidade de Esquadrias"
               className={`w-full py-2.5 px-3 bg-surface border rounded-lg text-base font-data-mono text-on-surface focus:border-primary focus:outline-none transition-colors ${
@@ -110,7 +110,7 @@ export const Step1Dimensions: React.FC<Step1DimensionsProps> = ({
           <span className="material-symbols-outlined text-[24px] text-primary">straighten</span>
           <div>
             <div className="text-sm font-body text-on-surface">
-              Área unitária do vão: <strong className="font-data-mono font-bold text-base">{unitAreaM2} m²</strong>
+              Área unitária do vão:{' '}<strong className="font-data-mono font-bold text-base">{unitAreaM2} m²</strong>
             </div>
             {totalQty > 1 && (
               <div className="text-xs font-data-mono text-secondary">

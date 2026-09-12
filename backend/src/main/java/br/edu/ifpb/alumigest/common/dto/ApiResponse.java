@@ -3,6 +3,7 @@ package br.edu.ifpb.alumigest.common.dto;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record ApiResponse<T>(
@@ -12,14 +13,14 @@ public record ApiResponse<T>(
         LocalDateTime timestamp
 ) {
     public static <T> ApiResponse<T> ok(T data) {
-        return new ApiResponse<>(true, "Operação realizada com sucesso", data, LocalDateTime.now());
+        return new ApiResponse<>(true, "Operação realizada com sucesso", data, LocalDateTime.now(ZoneOffset.UTC));
     }
 
     public static <T> ApiResponse<T> ok(String message, T data) {
-        return new ApiResponse<>(true, message, data, LocalDateTime.now());
+        return new ApiResponse<>(true, message, data, LocalDateTime.now(ZoneOffset.UTC));
     }
 
     public static <T> ApiResponse<T> created(String message, T data) {
-        return new ApiResponse<>(true, message, data, LocalDateTime.now());
+        return new ApiResponse<>(true, message, data, LocalDateTime.now(ZoneOffset.UTC));
     }
 }

@@ -2,22 +2,22 @@ import type { DrillingPosition } from '../../../types';
 import { HOLE_COLOR, HOLE_STROKE, COTA_COLOR, COTA_STROKE } from './svgConstants';
 
 export interface DrillingHolesProps {
-  svgH: number;
-  svgW?: number;
-  frameW: number;
-  count: number;
-  divisionType?: string;
-  drillingPosition?: DrillingPosition;
-  customDistancesMm?: number[];
-  widthMm?: number;
-  heightMm: number;
-  posX: number;
-  mirrored?: boolean;
+  readonly svgH: number;
+  readonly svgW?: number;
+  readonly frameW: number;
+  readonly count: number;
+  readonly divisionType?: string;
+  readonly drillingPosition?: DrillingPosition;
+  readonly customDistancesMm?: readonly number[];
+  readonly widthMm?: number;
+  readonly heightMm: number;
+  readonly posX: number;
+  readonly mirrored?: boolean;
 }
 
 interface TopHolePosition {
-  px: number;
-  distMm: number;
+  readonly px: number;
+  readonly distMm: number;
 }
 
 const SuperiorHoles: React.FC<DrillingHolesProps> = ({
@@ -31,21 +31,18 @@ const SuperiorHoles: React.FC<DrillingHolesProps> = ({
   const innerW = svgW - frameW * 2;
   const holeR = Math.min(3.2, innerW / (count * 6));
   const py = frameW + 4;
-  const topPositions: TopHolePosition[] = [];
+  const stepPx = innerW / (count + 1);
+  const stepMm = Math.round(widthMm / (count + 1));
 
-  if (divisionType === 'CUSTOM_DISTANCE' && customDistancesMm?.length) {
-    const scale = innerW / Math.max(widthMm, 1);
-    customDistancesMm.forEach((d) => {
-      const x = frameW + d * scale;
-      if (x >= frameW && x <= svgW - frameW) topPositions.push({ px: x, distMm: d });
-    });
-  } else {
-    const stepPx = innerW / (count + 1);
-    const stepMm = Math.round(widthMm / (count + 1));
-    for (let i = 1; i <= count; i++) {
-      topPositions.push({ px: frameW + stepPx * i, distMm: Math.round(stepMm * i) });
-    }
-  }
+  const topPositions: TopHolePosition[] =
+    divisionType === 'CUSTOM_DISTANCE' && customDistancesMm?.length
+      ? customDistancesMm
+          .map((d) => ({ px: frameW + d * (innerW / Math.max(widthMm, 1)), distMm: d }))
+          .filter((pos) => pos.px >= frameW && pos.px <= svgW - frameW)
+      : Array.from({ length: count }, (_, idx) => {
+          const i = idx + 1;
+          return { px: frameW + stepPx * i, distMm: Math.round(stepMm * i) };
+        });
 
   return (
     <g className="drilling-holes-layer-superior">
@@ -74,11 +71,11 @@ const SuperiorHoles: React.FC<DrillingHolesProps> = ({
 };
 
 interface FrontHolePosition {
-  px: number;
-  py: number;
-  cornerX: number;
-  cornerY: number;
-  label: string;
+  readonly px: number;
+  readonly py: number;
+  readonly cornerX: number;
+  readonly cornerY: number;
+  readonly label: string;
 }
 
 const FrontalHoles: React.FC<DrillingHolesProps> = ({
@@ -102,14 +99,13 @@ const FrontalHoles: React.FC<DrillingHolesProps> = ({
     { px: frameW + innerW - insetX, py: frameW + insetY, cornerX: frameW + innerW, cornerY: frameW, label: 'Sup. Dir.' },
     { px: frameW + insetX, py: frameW + innerH - insetY, cornerX: frameW, cornerY: frameW + innerH, label: 'Inf. Esq.' },
     { px: frameW + innerW - insetX, py: frameW + innerH - insetY, cornerX: frameW + innerW, cornerY: frameW + innerH, label: 'Inf. Dir.' },
+    ...(count > 4
+      ? [
+          { px: frameW + insetX, py: frameW + innerH / 2, cornerX: frameW, cornerY: frameW + innerH / 2, label: 'Médio Esq.' },
+          { px: frameW + innerW - insetX, py: frameW + innerH / 2, cornerX: frameW + innerW, cornerY: frameW + innerH / 2, label: 'Médio Dir.' },
+        ]
+      : []),
   ];
-
-  if (count > 4) {
-    frontPositions.push(
-      { px: frameW + insetX, py: frameW + innerH / 2, cornerX: frameW, cornerY: frameW + innerH / 2, label: 'Médio Esq.' },
-      { px: frameW + innerW - insetX, py: frameW + innerH / 2, cornerX: frameW + innerW, cornerY: frameW + innerH / 2, label: 'Médio Dir.' }
-    );
-  }
 
   return (
     <g className="drilling-holes-layer-frontal">
@@ -149,8 +145,8 @@ const FrontalHoles: React.FC<DrillingHolesProps> = ({
 };
 
 interface LateralHolePosition {
-  py: number;
-  distMm: number;
+  readonly py: number;
+  readonly distMm: number;
 }
 
 const LateralHoles: React.FC<DrillingHolesProps> = ({
@@ -165,21 +161,18 @@ const LateralHoles: React.FC<DrillingHolesProps> = ({
 }) => {
   const innerH = svgH - frameW * 2;
   const holeR = Math.min(3.5, innerH / (count * 4));
-  const positions: LateralHolePosition[] = [];
+  const stepPx = innerH / (count + 1);
+  const stepMm = Math.round(heightMm / (count + 1));
 
-  if (divisionType === 'CUSTOM_DISTANCE' && customDistancesMm?.length) {
-    const scale = innerH / Math.max(heightMm, 1);
-    customDistancesMm.forEach((d) => {
-      const y = frameW + d * scale;
-      if (y >= frameW && y <= svgH - frameW) positions.push({ py: y, distMm: d });
-    });
-  } else {
-    const stepPx = innerH / (count + 1);
-    const stepMm = Math.round(heightMm / (count + 1));
-    for (let i = 1; i <= count; i++) {
-      positions.push({ py: frameW + stepPx * i, distMm: Math.round(stepMm * i) });
-    }
-  }
+  const positions: LateralHolePosition[] =
+    divisionType === 'CUSTOM_DISTANCE' && customDistancesMm?.length
+      ? customDistancesMm
+          .map((d) => ({ py: frameW + d * (innerH / Math.max(heightMm, 1)), distMm: d }))
+          .filter((pos) => pos.py >= frameW && pos.py <= svgH - frameW)
+      : Array.from({ length: count }, (_, idx) => {
+          const i = idx + 1;
+          return { py: frameW + stepPx * i, distMm: Math.round(stepMm * i) };
+        });
 
   const cotaOffset = mirrored ? 14 : -14;
   const textAnchor = mirrored ? 'start' : 'end';

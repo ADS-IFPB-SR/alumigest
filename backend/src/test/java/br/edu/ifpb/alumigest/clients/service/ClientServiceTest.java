@@ -10,12 +10,11 @@ import br.edu.ifpb.alumigest.clients.repository.ClientRepository;
 import br.edu.ifpb.alumigest.common.dto.PageResponse;
 import br.edu.ifpb.alumigest.common.exception.ConflictException;
 import br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -28,8 +27,6 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -42,7 +39,7 @@ class ClientServiceTest {
 
     private ClientService clientService;
 
-    @org.junit.jupiter.api.BeforeEach
+    @BeforeEach
     void setUp() {
         clientService = new ClientService(clientRepository, clientMapper);
     }
@@ -157,12 +154,24 @@ class ClientServiceTest {
     void findAll_ShouldReturnPaginatedClients() {
         // Arrange
         Pageable pageable = PageRequest.of(0, 10);
-        Client client = new Client("João da Silva", PersonType.FISICA, "123.456.789-00", "(83) 99999-0000", "joao@email.com",
-                "58300-000", "Rua das Flores", "123", "Casa", "Centro", "Santa Rita", "PB", null);
+        Client client = Client.builder()
+                .fullName("João da Silva")
+                .personType(PersonType.FISICA)
+                .documentNumber("123.456.789-00")
+                .phone("(83) 99999-0000")
+                .email("joao@email.com")
+                .zipCode("58300-000")
+                .street("Rua das Flores")
+                .number("123")
+                .complement("Casa")
+                .neighborhood("Centro")
+                .city("Santa Rita")
+                .state("PB")
+                .build();
         client.setId(UUID.randomUUID());
 
         Page<Client> page = new PageImpl<>(List.of(client), pageable, 1);
-        when(clientRepository.searchClients(eq("silva"), eq(PersonType.FISICA), eq(true), eq(pageable))).thenReturn(page);
+        when(clientRepository.searchClients("silva", PersonType.FISICA, true, pageable)).thenReturn(page);
 
         // Act
         PageResponse<ClientSummaryDTO> result = clientService.findAll("silva", PersonType.FISICA, true, pageable);
@@ -180,8 +189,21 @@ class ClientServiceTest {
     void findById_ShouldReturnClient_WhenIdExists() {
         // Arrange
         UUID id = UUID.randomUUID();
-        Client client = new Client("Maria Souza", PersonType.FISICA, "987.654.321-99", "(83) 98888-7777", "maria@email.com",
-                "58000-000", "Av Principal", "456", "Apto 2", "Manaíra", "João Pessoa", "PB", "Obs");
+        Client client = Client.builder()
+                .fullName("Maria Souza")
+                .personType(PersonType.FISICA)
+                .documentNumber("987.654.321-99")
+                .phone("(83) 98888-7777")
+                .email("maria@email.com")
+                .zipCode("58000-000")
+                .street("Av Principal")
+                .number("456")
+                .complement("Apto 2")
+                .neighborhood("Manaíra")
+                .city("João Pessoa")
+                .state("PB")
+                .notes("Obs")
+                .build();
         client.setId(id);
 
         when(clientRepository.findById(id)).thenReturn(Optional.of(client));
@@ -213,7 +235,11 @@ class ClientServiceTest {
     void update_ShouldUpdateAndReturnClient_WhenValid() {
         // Arrange
         UUID id = UUID.randomUUID();
-        Client client = new Client("Nome Antigo", PersonType.FISICA, "111.222.333-44", null, null, null, null, null, null, null, null, null, null);
+        Client client = Client.builder()
+                .fullName("Nome Antigo")
+                .personType(PersonType.FISICA)
+                .documentNumber("111.222.333-44")
+                .build();
         client.setId(id);
 
         ClientRequestDTO updateRequest = new ClientRequestDTO(
@@ -251,7 +277,11 @@ class ClientServiceTest {
     void update_ShouldThrowConflict_WhenDocumentBelongsToAnotherClient() {
         // Arrange
         UUID id = UUID.randomUUID();
-        Client client = new Client("Nome", PersonType.FISICA, "111.222.333-44", null, null, null, null, null, null, null, null, null, null);
+        Client client = Client.builder()
+                .fullName("Nome")
+                .personType(PersonType.FISICA)
+                .documentNumber("111.222.333-44")
+                .build();
         client.setId(id);
 
         ClientRequestDTO updateRequest = new ClientRequestDTO(
@@ -275,7 +305,10 @@ class ClientServiceTest {
     void toggleStatus_ShouldInvertIsActiveStatus() {
         // Arrange
         UUID id = UUID.randomUUID();
-        Client client = new Client("Cliente Teste", PersonType.FISICA, null, null, null, null, null, null, null, null, null, null, null);
+        Client client = Client.builder()
+                .fullName("Cliente Teste")
+                .personType(PersonType.FISICA)
+                .build();
         client.setId(id);
         client.setActive(true);
 

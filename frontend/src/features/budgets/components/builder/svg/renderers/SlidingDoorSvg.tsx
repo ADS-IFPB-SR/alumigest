@@ -5,12 +5,19 @@ import { HorizontalDimension } from '../SvgDimensions';
 import { DrillingHoles } from '../SvgDrillingHoles';
 import { HandleElement, HandlePieceDimension } from '../SvgHandleElement';
 
-export function renderSlidingDoor1F(
-  svgW: number, svgH: number, inverted: boolean,
-  handleConfig: HandleConfig, drillingConfig: DrillingConfig,
-  widthMm: number, heightMm: number,
-  theme: SvgTheme,
-) {
+export interface SlidingDoorRenderProps {
+  readonly svgW: number;
+  readonly svgH: number;
+  readonly inverted?: boolean;
+  readonly handleConfig: HandleConfig;
+  readonly drillingConfig: DrillingConfig;
+  readonly widthMm: number;
+  readonly heightMm: number;
+  readonly theme: SvgTheme;
+}
+
+export function renderSlidingDoor1F(props: SlidingDoorRenderProps) {
+  const { svgW, svgH, inverted = false, handleConfig, drillingConfig, widthMm, heightMm, theme } = props;
   const fw = FRAME_W;
   const innerW = svgW - fw * 2;
   const innerH = svgH - fw * 2;
@@ -92,12 +99,8 @@ export function renderSlidingDoor1F(
   );
 }
 
-export function renderSlidingDoor2F(
-  svgW: number, svgH: number, inverted: boolean,
-  handleConfig: HandleConfig, drillingConfig: DrillingConfig,
-  widthMm: number, heightMm: number,
-  theme: SvgTheme,
-) {
+export function renderSlidingDoor2F(props: SlidingDoorRenderProps) {
+  const { svgW, svgH, inverted = false, handleConfig, drillingConfig, widthMm, heightMm, theme } = props;
   const fw = FRAME_W;
   const innerW = svgW - fw * 2;
   const innerH = svgH - fw * 2;
@@ -178,19 +181,15 @@ export function renderSlidingDoor2F(
   );
 }
 
-export function renderSlidingDoor3F(
-  svgW: number, svgH: number, inverted: boolean,
-  handleConfig: HandleConfig, drillingConfig: DrillingConfig,
-  _widthMm: number, heightMm: number,
-  theme: SvgTheme,
-) {
+export function renderSlidingDoor3F(props: SlidingDoorRenderProps) {
+  const { svgW, svgH, inverted = false, handleConfig, drillingConfig, widthMm, heightMm, theme } = props;
   const fw = FRAME_W;
   const innerW = svgW - fw * 2;
   const innerH = svgH - fw * 2;
   const thirdW = innerW / 3;
 
   const fixedX = inverted ? fw + thirdW * 2 : fw;
-  const mobile1X = inverted ? fw + thirdW : fw + thirdW;
+  const mobile1X = fw + thirdW;
   const mobile2X = inverted ? fw : fw + thirdW * 2;
 
   const railY1 = fw;
@@ -244,7 +243,7 @@ export function renderSlidingDoor3F(
           divisionType={drillingConfig.divisionType}
           drillingPosition={drillingConfig.drillingPosition || 'SUPERIOR'}
           customDistancesMm={drillingConfig.customDistancesMm}
-          widthMm={_widthMm || 1500}
+          widthMm={widthMm || 1500}
           heightMm={heightMm}
           posX={inverted ? fixedX + thirdW - fw * 1.5 : fixedX + fw * 1.5}
           mirrored={inverted}
@@ -260,12 +259,8 @@ export function renderSlidingDoor3F(
   );
 }
 
-export function renderSlidingDoor4F(
-  svgW: number, svgH: number,
-  handleConfig: HandleConfig, drillingConfig: DrillingConfig,
-  widthMm: number, heightMm: number,
-  theme: SvgTheme,
-) {
+export function renderSlidingDoor4F(props: SlidingDoorRenderProps) {
+  const { svgW, svgH, handleConfig, drillingConfig, widthMm, heightMm, theme } = props;
   const fw = FRAME_W;
   const innerW = svgW - fw * 2;
   const innerH = svgH - fw * 2;

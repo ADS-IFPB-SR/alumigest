@@ -7,6 +7,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class FilmQuantityCalculator implements MaterialQuantityCalculator {
 
+    private static final BigDecimal MIN_AREA = new BigDecimal("0.25");
+
     @Override
     public CategoryType getCategoryType() {
         return CategoryType.FILM;
@@ -21,7 +23,6 @@ public class FilmQuantityCalculator implements MaterialQuantityCalculator {
 
         BigDecimal areaPerItem = widthM.multiply(heightM);
 
-        BigDecimal MIN_AREA = new BigDecimal("0.25");
         if (areaPerItem.compareTo(MIN_AREA) < 0) {
             areaPerItem = MIN_AREA;
         }

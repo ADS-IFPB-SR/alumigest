@@ -10,7 +10,6 @@ import br.edu.ifpb.alumigest.common.dto.PageResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
@@ -36,11 +35,9 @@ public class BudgetController {
 
     @PostMapping
     @Operation(summary = "Criar orçamento", description = "Cria um novo orçamento e retorna o DTO detalhado.")
-    @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "Orçamento criado com sucesso"),
-            @ApiResponse(responseCode = "400", description = "Dados inválidos"),
-            @ApiResponse(responseCode = "404", description = "Cliente não encontrado")
-    })
+    @ApiResponse(responseCode = "201", description = "Orçamento criado com sucesso")
+    @ApiResponse(responseCode = "400", description = "Dados inválidos")
+    @ApiResponse(responseCode = "404", description = "Cliente não encontrado")
     public ResponseEntity<BudgetResponseDTO> create(@RequestBody @Valid BudgetRequestDTO request) {
         BudgetResponseDTO response = budgetService.create(request);
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()
@@ -52,9 +49,7 @@ public class BudgetController {
 
     @GetMapping
     @Operation(summary = "Listar orçamentos", description = "Lista orçamentos de forma paginada com suporte a busca textual por código/cliente e filtro de status.")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Lista paginada de orçamentos")
-    })
+    @ApiResponse(responseCode = "200", description = "Lista paginada de orçamentos")
     public ResponseEntity<PageResponse<BudgetSummaryResponseDTO>> findAll(
             @Parameter(description = "Termo para busca textual (código ou nome do cliente)")
             @RequestParam(required = false) String busca,
@@ -68,10 +63,8 @@ public class BudgetController {
 
     @GetMapping("/{id}")
     @Operation(summary = "Buscar orçamento por ID", description = "Retorna os detalhes completos do orçamento.")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Orçamento encontrado"),
-            @ApiResponse(responseCode = "404", description = "Orçamento não encontrado")
-    })
+    @ApiResponse(responseCode = "200", description = "Orçamento encontrado")
+    @ApiResponse(responseCode = "404", description = "Orçamento não encontrado")
     public ResponseEntity<BudgetResponseDTO> findById(@PathVariable UUID id) {
         BudgetResponseDTO response = budgetService.findById(id);
         return ResponseEntity.ok(response);
@@ -79,12 +72,10 @@ public class BudgetController {
 
     @PutMapping("/{id}")
     @Operation(summary = "Atualizar orçamento", description = "Atualiza os dados de um orçamento que está no status DRAFT.")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Orçamento atualizado com sucesso"),
-            @ApiResponse(responseCode = "400", description = "Dados inválidos"),
-            @ApiResponse(responseCode = "404", description = "Orçamento não encontrado"),
-            @ApiResponse(responseCode = "422", description = "Orçamento imutável")
-    })
+    @ApiResponse(responseCode = "200", description = "Orçamento atualizado com sucesso")
+    @ApiResponse(responseCode = "400", description = "Dados inválidos")
+    @ApiResponse(responseCode = "404", description = "Orçamento não encontrado")
+    @ApiResponse(responseCode = "422", description = "Orçamento imutável")
     public ResponseEntity<BudgetResponseDTO> update(
             @PathVariable UUID id,
             @RequestBody @Valid BudgetRequestDTO request) {
@@ -95,12 +86,10 @@ public class BudgetController {
 
     @PatchMapping("/{id}/status")
     @Operation(summary = "Atualizar status do orçamento", description = "Altera o status do orçamento seguindo as regras de transição permitidas.")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Status do orçamento alterado com sucesso"),
-            @ApiResponse(responseCode = "400", description = "Status inválido"),
-            @ApiResponse(responseCode = "404", description = "Orçamento não encontrado"),
-            @ApiResponse(responseCode = "422", description = "Transição inválida")
-    })
+    @ApiResponse(responseCode = "200", description = "Status do orçamento alterado com sucesso")
+    @ApiResponse(responseCode = "400", description = "Status inválido")
+    @ApiResponse(responseCode = "404", description = "Orçamento não encontrado")
+    @ApiResponse(responseCode = "422", description = "Transição inválida")
     public ResponseEntity<Void> updateStatus(
             @PathVariable UUID id,
             @RequestBody @Valid BudgetStatusUpdateDTO statusDto) {
@@ -111,11 +100,9 @@ public class BudgetController {
 
     @PostMapping("/{id}/recalcular")
     @Operation(summary = "Forçar recálculo", description = "Força o recálculo de quantidades e preços de um orçamento DRAFT.")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Orçamento recalculado"),
-            @ApiResponse(responseCode = "404", description = "Orçamento não encontrado"),
-            @ApiResponse(responseCode = "422", description = "Orçamento imutável")
-    })
+    @ApiResponse(responseCode = "200", description = "Orçamento recalculado")
+    @ApiResponse(responseCode = "404", description = "Orçamento não encontrado")
+    @ApiResponse(responseCode = "422", description = "Orçamento imutável")
     public ResponseEntity<BudgetResponseDTO> recalculate(@PathVariable UUID id) {
         BudgetResponseDTO response = budgetService.recalculate(id);
         return ResponseEntity.ok(response);
@@ -123,11 +110,9 @@ public class BudgetController {
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Cancelar orçamento", description = "Cancela o orçamento alterando seu status para CANCELLED (soft delete).")
-    @ApiResponses({
-            @ApiResponse(responseCode = "204", description = "Orçamento cancelado com sucesso"),
-            @ApiResponse(responseCode = "404", description = "Orçamento não encontrado"),
-            @ApiResponse(responseCode = "422", description = "Transição para cancelado inválida")
-    })
+    @ApiResponse(responseCode = "204", description = "Orçamento cancelado com sucesso")
+    @ApiResponse(responseCode = "404", description = "Orçamento não encontrado")
+    @ApiResponse(responseCode = "422", description = "Transição para cancelado inválida")
     public ResponseEntity<Void> delete(@PathVariable UUID id) {
         budgetService.delete(id);
         return ResponseEntity.noContent().build();

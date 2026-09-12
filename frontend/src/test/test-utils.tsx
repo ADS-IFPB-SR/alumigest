@@ -31,7 +31,7 @@ export function renderWithProviders(
     ...renderOptions
   }: CustomRenderOptions = {}
 ) {
-  function AllTheProviders({ children }: { children: ReactNode }) {
+  function AllTheProviders({ children }: { readonly children: ReactNode }) {
     return (
       <QueryClientProvider client={queryClient}>
         <MemoryRouter initialEntries={[route]}>

@@ -24,11 +24,11 @@ import {
 } from '../../types/templates';
 
 interface TemplateOptionSchemaEditorProps {
-  templateType: DoorTemplateType | null;
-  optionSchema: Partial<TemplateOptionSchema>;
-  setOptionSchema: (val: Partial<TemplateOptionSchema>) => void;
-  templateConfig?: Partial<TemplateConfig>;
-  setTemplateConfig?: React.Dispatch<React.SetStateAction<Partial<TemplateConfig>>>;
+  readonly templateType: DoorTemplateType | null;
+  readonly optionSchema: Partial<TemplateOptionSchema>;
+  readonly setOptionSchema: (val: Partial<TemplateOptionSchema>) => void;
+  readonly templateConfig?: Partial<TemplateConfig>;
+  readonly setTemplateConfig?: React.Dispatch<React.SetStateAction<Partial<TemplateConfig>>>;
 }
 
 function getDefaultOptionSchema(app: (typeof TEMPLATE_APPLICABLE_OPTIONS)[DoorTemplateType], defaultDrillPos: DrillingPosition): Partial<TemplateOptionSchema> {
@@ -46,6 +46,22 @@ function getDefaultOptionSchema(app: (typeof TEMPLATE_APPLICABLE_OPTIONS)[DoorTe
     allowAluminumColors: ALUMINUM_COLORS.map(c => c.hex),
     allowGlassColors: GLASS_COLORS.map(c => c.hex),
   };
+}
+
+function formatHoleCountLabel(num: number): string {
+  if (num === 0) return 'Sem furos';
+  if (num === 1) return '1 Furo';
+  return `${num} Furos`;
+}
+
+function computeAdjustedHoleCount(position: string, currentCount: number): number {
+  if (position === 'FRONTAL' && currentCount < 4) {
+    return 4;
+  }
+  if (currentCount === 0) {
+    return 2;
+  }
+  return currentCount;
 }
 
 function getInitialTemplateConfig(
@@ -77,12 +93,12 @@ function getInitialTemplateConfig(
 
 // --- Seção: Sentido de Abertura ---
 interface OpeningDirectionSectionProps {
-  optionSchema: Partial<TemplateOptionSchema>;
-  templateConfig?: Partial<TemplateConfig>;
-  isOpen: boolean;
-  onToggleOpen: () => void;
-  onToggleEnabled: (enabled: boolean) => void;
-  onToggleItem: (val: OpeningDirection) => void;
+  readonly optionSchema: Partial<TemplateOptionSchema>;
+  readonly templateConfig?: Partial<TemplateConfig>;
+  readonly isOpen: boolean;
+  readonly onToggleOpen: () => void;
+  readonly onToggleEnabled: (enabled: boolean) => void;
+  readonly onToggleItem: (val: OpeningDirection) => void;
 }
 
 function OpeningDirectionSection({
@@ -120,12 +136,12 @@ function OpeningDirectionSection({
 
 // --- Seção: Modo de Correr ---
 interface SlidingModeSectionProps {
-  optionSchema: Partial<TemplateOptionSchema>;
-  templateConfig?: Partial<TemplateConfig>;
-  isOpen: boolean;
-  onToggleOpen: () => void;
-  onToggleEnabled: (enabled: boolean) => void;
-  onToggleItem: (val: SlidingMode) => void;
+  readonly optionSchema: Partial<TemplateOptionSchema>;
+  readonly templateConfig?: Partial<TemplateConfig>;
+  readonly isOpen: boolean;
+  readonly onToggleOpen: () => void;
+  readonly onToggleEnabled: (enabled: boolean) => void;
+  readonly onToggleItem: (val: SlidingMode) => void;
 }
 
 function SlidingModeSection({
@@ -163,13 +179,13 @@ function SlidingModeSection({
 
 // --- Seção: Puxador ---
 interface HandleSectionProps {
-  optionSchema: Partial<TemplateOptionSchema>;
-  templateConfig?: Partial<TemplateConfig>;
-  isOpen: boolean;
-  onToggleOpen: () => void;
-  onToggleEnabled: (enabled: boolean) => void;
-  onToggleType: (val: HandleType) => void;
-  onTogglePosition: (val: HandlePosition) => void;
+  readonly optionSchema: Partial<TemplateOptionSchema>;
+  readonly templateConfig?: Partial<TemplateConfig>;
+  readonly isOpen: boolean;
+  readonly onToggleOpen: () => void;
+  readonly onToggleEnabled: (enabled: boolean) => void;
+  readonly onToggleType: (val: HandleType) => void;
+  readonly onTogglePosition: (val: HandlePosition) => void;
 }
 
 function HandleSection({
@@ -223,15 +239,15 @@ function HandleSection({
 
 // --- Seção: Furações ---
 interface DrillingSectionProps {
-  templateType: DoorTemplateType;
-  optionSchema: Partial<TemplateOptionSchema>;
-  templateConfig?: Partial<TemplateConfig>;
-  isOpen: boolean;
-  onToggleOpen: () => void;
-  onToggleEnabled: (enabled: boolean) => void;
-  onTogglePosition: (val: DrillingPosition) => void;
-  onToggleMode: (val: HoleDrillingMode) => void;
-  onSetHoleCount: (count: number) => void;
+  readonly templateType: DoorTemplateType;
+  readonly optionSchema: Partial<TemplateOptionSchema>;
+  readonly templateConfig?: Partial<TemplateConfig>;
+  readonly isOpen: boolean;
+  readonly onToggleOpen: () => void;
+  readonly onToggleEnabled: (enabled: boolean) => void;
+  readonly onTogglePosition: (val: DrillingPosition) => void;
+  readonly onToggleMode: (val: HoleDrillingMode) => void;
+  readonly onSetHoleCount: (count: number) => void;
 }
 
 function DrillingSection({
@@ -247,7 +263,12 @@ function DrillingSection({
 }: DrillingSectionProps) {
   const defaultPos = TEMPLATE_DEFAULT_DRILLING_POSITION[templateType] || 'SUPERIOR';
   const currentPos = templateConfig?.drillingConfig?.drillingPosition || defaultPos;
-  const posLabel = currentPos === 'SUPERIOR' ? 'Borda Superior' : currentPos === 'FRONTAL' ? 'Frontal' : 'Lateral';
+  const posMap: Record<string, string> = {
+    SUPERIOR: 'Borda Superior',
+    FRONTAL: 'Frontal',
+    LATERAL: 'Lateral',
+  };
+  const posLabel = posMap[currentPos] || 'Lateral';
 
   const summary = optionSchema.allowDrilling
     ? `${templateConfig?.drillingConfig?.holeCount ?? 2} furos · ${posLabel} · ${optionSchema.allowedDrillingPositions?.length || 0} posições`
@@ -283,7 +304,7 @@ function DrillingSection({
                       : 'border-outline-variant/60 bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container-low'
                   }`}
                 >
-                  {num === 0 ? 'Sem furos' : `${num} Furo${num > 1 ? 's' : ''}`}
+                  {formatHoleCountLabel(num)}
                 </button>
               );
             })}
@@ -324,14 +345,14 @@ function DrillingSection({
 
 // --- Seção: Cores e Acabamentos ---
 interface ColorPaletteSectionProps {
-  icon: string;
-  title: string;
-  colors: readonly { hex: string; name: string }[];
-  selectedColors?: string[];
-  isOpen: boolean;
-  onToggleOpen: () => void;
-  onToggleEnabled: (enabled: boolean) => void;
-  onToggleColor: (hex: string) => void;
+  readonly icon: string;
+  readonly title: string;
+  readonly colors: readonly { readonly hex: string; readonly name: string }[];
+  readonly selectedColors?: readonly string[];
+  readonly isOpen: boolean;
+  readonly onToggleOpen: () => void;
+  readonly onToggleEnabled: (enabled: boolean) => void;
+  readonly onToggleColor: (hex: string) => void;
 }
 
 function ColorPaletteSection({
@@ -530,7 +551,7 @@ export function TemplateOptionSchemaEditor({
       if (setTemplateConfig) {
         setTemplateConfig((prev) => {
           const currentCount = prev.drillingConfig?.holeCount ?? 2;
-          const adjustedCount = (val === 'FRONTAL' && currentCount < 4) ? 4 : (currentCount === 0 ? 2 : currentCount);
+          const adjustedCount = computeAdjustedHoleCount(val, currentCount);
           return {
             ...prev,
             drillingConfig: {
@@ -553,7 +574,7 @@ export function TemplateOptionSchemaEditor({
       const nextActive = !isCurrentlySelected ? val : (next[0] || fallbackPos);
       setTemplateConfig((prev) => {
         const currentCount = prev.drillingConfig?.holeCount ?? 2;
-        const adjustedCount = (nextActive === 'FRONTAL' && currentCount < 4) ? 4 : (currentCount === 0 ? 2 : currentCount);
+        const adjustedCount = computeAdjustedHoleCount(nextActive, currentCount);
         return {
           ...prev,
           drillingConfig: {
@@ -749,14 +770,14 @@ export function TemplateOptionSchemaEditor({
 
 // --- Componente de Acordeão com Switch integrado ---
 interface ModernAccordionProps {
-  icon: string;
-  title: string;
-  enabled: boolean;
-  onToggle: (val: boolean) => void;
-  summary: string;
-  isOpen: boolean;
-  onToggleOpen: () => void;
-  children: React.ReactNode;
+  readonly icon: string;
+  readonly title: string;
+  readonly enabled: boolean;
+  readonly onToggle: (val: boolean) => void;
+  readonly summary: string;
+  readonly isOpen: boolean;
+  readonly onToggleOpen: () => void;
+  readonly children: React.ReactNode;
 }
 
 function ModernAccordion({
@@ -841,11 +862,11 @@ function ModernAccordion({
 
 // --- Grupo de Chips Selecionáveis ---
 interface ChipGroupProps<T extends string> {
-  items: T[];
-  labels: Record<T, string>;
-  selected: T[];
-  activeItem?: T;
-  onToggleItem: (item: T) => void;
+  readonly items: readonly T[];
+  readonly labels: Record<T, string>;
+  readonly selected: readonly T[];
+  readonly activeItem?: T;
+  readonly onToggleItem: (item: T) => void;
 }
 
 function ChipGroup<T extends string>({ items, labels, selected, activeItem, onToggleItem }: ChipGroupProps<T>) {
@@ -854,18 +875,18 @@ function ChipGroup<T extends string>({ items, labels, selected, activeItem, onTo
       {items.map((item) => {
         const isChecked = selected.includes(item);
         const isActive = isChecked && activeItem === item;
+        let buttonClass = 'border-outline-variant/60 bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface';
+        if (isActive) {
+          buttonClass = 'border-primary bg-primary/15 text-primary font-bold shadow-xs ring-1 ring-primary/40';
+        } else if (isChecked) {
+          buttonClass = 'border-primary/50 bg-primary/8 text-primary font-semibold shadow-xs';
+        }
         return (
           <button
             key={item}
             type="button"
             onClick={() => onToggleItem(item)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all cursor-pointer ${
-              isActive
-                ? 'border-primary bg-primary/15 text-primary font-bold shadow-xs ring-1 ring-primary/40'
-                : isChecked
-                ? 'border-primary/50 bg-primary/8 text-primary font-semibold shadow-xs'
-                : 'border-outline-variant/60 bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface'
-            }`}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all cursor-pointer ${buttonClass}`}
           >
             <span
               className={`w-3.5 h-3.5 rounded flex items-center justify-center text-[10px] border transition-colors ${

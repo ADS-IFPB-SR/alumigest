@@ -9,7 +9,6 @@ import br.edu.ifpb.alumigest.common.dto.PageResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
@@ -42,11 +41,9 @@ public class ClientController {
 
     @PostMapping
     @Operation(summary = "Cadastrar novo cliente", description = "Registra um cliente com tipo de pessoa (FISICA ou JURIDICA) e documento único.")
-    @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "Cliente cadastrado com sucesso"),
-            @ApiResponse(responseCode = "400", description = "Dados inválidos fornecidos no corpo da requisição"),
-            @ApiResponse(responseCode = "409", description = "Conflito: Documento (CPF/CNPJ) já cadastrado para outro cliente")
-    })
+    @ApiResponse(responseCode = "201", description = "Cliente cadastrado com sucesso")
+    @ApiResponse(responseCode = "400", description = "Dados inválidos fornecidos no corpo da requisição")
+    @ApiResponse(responseCode = "409", description = "Conflito: Documento (CPF/CNPJ) já cadastrado para outro cliente")
     public ResponseEntity<ClientResponseDTO> create(@RequestBody @Valid ClientRequestDTO request) {
         ClientResponseDTO response = clientService.create(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -54,9 +51,7 @@ public class ClientController {
 
     @GetMapping
     @Operation(summary = "Listar clientes", description = "Lista clientes de forma paginada com suporte a busca textual, tipo de pessoa (FISICA/JURIDICA) e status.")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Lista paginada de clientes recuperada com sucesso")
-    })
+    @ApiResponse(responseCode = "200", description = "Lista paginada de clientes recuperada com sucesso")
     public ResponseEntity<PageResponse<ClientSummaryDTO>> findAll(
             @Parameter(description = "Termo para busca textual (nome, documento, telefone ou cidade)")
             @RequestParam(required = false) String busca,
@@ -72,10 +67,8 @@ public class ClientController {
 
     @GetMapping("/{id}")
     @Operation(summary = "Buscar cliente por ID", description = "Retorna os detalhes completos do cliente e seu endereço cadastrado.")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Cliente encontrado"),
-            @ApiResponse(responseCode = "404", description = "Cliente não encontrado")
-    })
+    @ApiResponse(responseCode = "200", description = "Cliente encontrado")
+    @ApiResponse(responseCode = "404", description = "Cliente não encontrado")
     public ResponseEntity<ClientResponseDTO> findById(@PathVariable UUID id) {
         ClientResponseDTO response = clientService.findById(id);
         return ResponseEntity.ok(response);
@@ -83,12 +76,10 @@ public class ClientController {
 
     @PutMapping("/{id}")
     @Operation(summary = "Atualizar cliente", description = "Atualiza todas as informações do cliente especificado pelo ID.")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Cliente atualizado com sucesso"),
-            @ApiResponse(responseCode = "400", description = "Dados inválidos fornecidos"),
-            @ApiResponse(responseCode = "404", description = "Cliente não encontrado"),
-            @ApiResponse(responseCode = "409", description = "Conflito: Documento já pertence a outro cliente")
-    })
+    @ApiResponse(responseCode = "200", description = "Cliente atualizado com sucesso")
+    @ApiResponse(responseCode = "400", description = "Dados inválidos fornecidos")
+    @ApiResponse(responseCode = "404", description = "Cliente não encontrado")
+    @ApiResponse(responseCode = "409", description = "Conflito: Documento já pertence a outro cliente")
     public ResponseEntity<ClientResponseDTO> update(
             @PathVariable UUID id,
             @RequestBody @Valid ClientRequestDTO request) {
@@ -99,10 +90,8 @@ public class ClientController {
 
     @PatchMapping("/{id}/status")
     @Operation(summary = "Alternar status do cliente", description = "Ativa ou inativa o cliente (soft delete) mantendo seu histórico.")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Status do cliente alterado com sucesso"),
-            @ApiResponse(responseCode = "404", description = "Cliente não encontrado")
-    })
+    @ApiResponse(responseCode = "200", description = "Status do cliente alterado com sucesso")
+    @ApiResponse(responseCode = "404", description = "Cliente não encontrado")
     public ResponseEntity<ClientResponseDTO> toggleStatus(@PathVariable UUID id) {
         ClientResponseDTO response = clientService.toggleStatus(id);
         return ResponseEntity.ok(response);

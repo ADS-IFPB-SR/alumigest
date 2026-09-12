@@ -49,19 +49,13 @@ public class ProfileQuantityCalculator implements MaterialQuantityCalculator {
                 totalPerUnit = w.multiply(BigDecimal.valueOf(3)).add(h.multiply(BigDecimal.valueOf(6)));
                 break;
 
-            case MAX_AR_WINDOW_1_LEAF:
-            case MAX_AR_WINDOW_INVERSE_1_LEAF:
+            case MAX_AR_WINDOW_1_LEAF, MAX_AR_WINDOW_INVERSE_1_LEAF:
                 // Marco perimetral (2W + 2H) + Caixilho da folha (2W + 2H)
                 totalPerUnit = w.multiply(BigDecimal.valueOf(4)).add(h.multiply(BigDecimal.valueOf(4)));
                 break;
 
-            case DRAWER_FRONT:
-                // Frente de Gaveta: Quadro perimetral (2W + 2H)
-                totalPerUnit = w.add(h).multiply(BigDecimal.valueOf(2));
-                break;
-
-            case FIXED_PANEL:
-                // Arremate perimetral da fachada (2W + 2H)
+            case DRAWER_FRONT, FIXED_PANEL:
+                // Frente de Gaveta / Arremate perimetral da fachada (2W + 2H)
                 totalPerUnit = w.add(h).multiply(BigDecimal.valueOf(2));
                 break;
 

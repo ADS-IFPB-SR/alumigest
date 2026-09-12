@@ -8,6 +8,7 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -49,13 +50,13 @@ public class Product {
 
     @PrePersist
     protected void onCreate() {
-        this.createdAt = OffsetDateTime.now();
-        this.updatedAt = OffsetDateTime.now();
+        this.createdAt = OffsetDateTime.now(ZoneOffset.UTC);
+        this.updatedAt = OffsetDateTime.now(ZoneOffset.UTC);
     }
 
     @PreUpdate
     protected void onUpdate() {
-        this.updatedAt = OffsetDateTime.now();
+        this.updatedAt = OffsetDateTime.now(ZoneOffset.UTC);
     }
 
     /**

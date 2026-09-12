@@ -11,10 +11,9 @@ import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.Objects;
 import java.util.UUID;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 /**
  * Entidade universal que representa insumos e matérias-primas no catálogo.
  * Suporta vidros (2mm, 4mm, comuns, temperados), perfis de alumínio (linhas Rometal/Alternativa em 3m/6m),
@@ -104,7 +103,7 @@ public class Material {
 
     @PrePersist
     protected void onCreate() {
-        OffsetDateTime now = OffsetDateTime.now();
+        OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
         if (this.createdAt == null) {
             this.createdAt = now;
         }
@@ -115,7 +114,7 @@ public class Material {
 
     @PreUpdate
     protected void onUpdate() {
-        this.updatedAt = OffsetDateTime.now();
+        this.updatedAt = OffsetDateTime.now(ZoneOffset.UTC);
     }
 
     public UUID getId() {

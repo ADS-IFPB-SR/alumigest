@@ -10,23 +10,35 @@ import type {
 } from '../../../types';
 
 export interface Step3MechanicsProps {
-  openingDirection: OpeningDirection;
-  supportedDirections: OpeningDirection[];
-  handleConfig: HandleConfig;
-  drillingConfig: DrillingConfig;
-  holeDistanceInputs: string[];
-  heightMm: number | '';
-  notes: string;
-  defaultHeight: number;
-  onOpeningDirectionChange: (dir: OpeningDirection) => void;
-  onHandleTypeChange: (type: HandleType) => void;
-  onHandleSideChange: (side: HandleSide) => void;
-  onHandleCoverageChange: (coverage: HandleCoverage) => void;
-  onHandlePieceLengthChange: (length: number) => void;
-  onHoleCountChange: (count: number) => void;
-  onDivisionTypeChange: (type: DivisionType) => void;
-  onSingleHoleDistanceChange: (index: number, val: string) => void;
-  onNotesChange: (notes: string) => void;
+  readonly openingDirection: OpeningDirection;
+  readonly supportedDirections: readonly OpeningDirection[];
+  readonly handleConfig: HandleConfig;
+  readonly drillingConfig: DrillingConfig;
+  readonly holeDistanceInputs: readonly string[];
+  readonly heightMm: number | '';
+  readonly notes: string;
+  readonly defaultHeight: number;
+  readonly onOpeningDirectionChange: (dir: OpeningDirection) => void;
+  readonly onHandleTypeChange: (type: HandleType) => void;
+  readonly onHandleSideChange: (side: HandleSide) => void;
+  readonly onHandleCoverageChange: (coverage: HandleCoverage) => void;
+  readonly onHandlePieceLengthChange: (length: number) => void;
+  readonly onHoleCountChange: (count: number) => void;
+  readonly onDivisionTypeChange: (type: DivisionType) => void;
+  readonly onSingleHoleDistanceChange: (index: number, val: string) => void;
+  readonly onNotesChange: (notes: string) => void;
+}
+
+function formatHoleCountLabel(holeCount: number): string {
+  if (holeCount === 0) return 'Sem furação';
+  const unit = holeCount === 1 ? 'furo' : 'furos';
+  return `${holeCount} ${unit}`;
+}
+
+function getHoleGridColsClass(holeCount: number): string {
+  if (holeCount === 1) return 'grid-cols-1';
+  if (holeCount === 3) return 'grid-cols-3';
+  return 'grid-cols-2';
 }
 
 export const Step3Mechanics: React.FC<Step3MechanicsProps> = ({
@@ -55,7 +67,7 @@ export const Step3Mechanics: React.FC<Step3MechanicsProps> = ({
         <div className="flex items-center justify-between pb-xs border-b border-outline-variant">
           <h3 className="text-sm font-label font-bold text-on-surface uppercase tracking-wider flex items-center gap-xs">
             <span className="material-symbols-outlined text-[18px] text-primary">tune</span>
-            Mecânica da Folha & Puxador
+            <span>Mecânica da Folha & Puxador</span>
           </h3>
         </div>
 
@@ -63,7 +75,7 @@ export const Step3Mechanics: React.FC<Step3MechanicsProps> = ({
         <div className="flex flex-col gap-xs">
           <div className="text-xs sm:text-sm font-label font-semibold text-on-surface flex items-center gap-xs mb-1">
             <span className="material-symbols-outlined text-[16px] text-primary">swap_horiz</span>
-            Sentido de Abertura da Folha
+            <span>Sentido de Abertura da Folha</span>
           </div>
           <div className={`grid ${supportedDirections.length > 1 ? 'grid-cols-2' : 'grid-cols-1'} gap-xs`}>
             {supportedDirections.map((dir) => {
@@ -100,7 +112,7 @@ export const Step3Mechanics: React.FC<Step3MechanicsProps> = ({
         <div className="pt-xs border-t border-outline-variant/50 flex flex-col gap-xs">
           <div className="text-xs sm:text-sm font-label font-semibold text-on-surface flex items-center gap-xs mb-1">
             <span className="material-symbols-outlined text-[16px] text-primary">hardware</span>
-            Puxador & Ferragens de Manuseio
+            <span>Puxador & Ferragens de Manuseio</span>
           </div>
           <div className="grid grid-cols-2 gap-sm">
             <div>
@@ -168,7 +180,7 @@ export const Step3Mechanics: React.FC<Step3MechanicsProps> = ({
                     min={10}
                     max={300}
                     value={handleConfig.pieceLengthCm ?? 40}
-                    onChange={(e) => onHandlePieceLengthChange(parseInt(e.target.value, 10) || 40)}
+                    onChange={(e) => onHandlePieceLengthChange(Number.parseInt(e.target.value, 10) || 40)}
                     aria-label="Comprimento do Puxador em centímetros"
                     className="w-full text-sm py-2 px-2.5 bg-surface border border-outline-variant rounded font-data-mono text-on-surface focus:border-primary focus:outline-none transition-colors"
                   />
@@ -184,12 +196,10 @@ export const Step3Mechanics: React.FC<Step3MechanicsProps> = ({
         <div className="flex items-center justify-between pb-xs border-b border-outline-variant">
           <h3 className="text-sm font-label font-bold text-on-surface uppercase tracking-wider flex items-center gap-xs">
             <span className="material-symbols-outlined text-[18px] text-primary">adjust</span>
-            Furação do Vidro
+            <span>Furação do Vidro</span>
           </h3>
           <span className="text-xs font-data-mono text-on-surface-variant bg-surface-container px-2 py-0.5 rounded border border-outline-variant/50">
-            {drillingConfig.holeCount === 0
-              ? 'Sem furação'
-              : `${drillingConfig.holeCount} ${drillingConfig.holeCount === 1 ? 'furo' : 'furos'}`}
+            {formatHoleCountLabel(drillingConfig.holeCount)}
           </span>
         </div>
 
@@ -201,7 +211,7 @@ export const Step3Mechanics: React.FC<Step3MechanicsProps> = ({
             <select
               id="hole-count-select"
               value={drillingConfig.holeCount}
-              onChange={(e) => onHoleCountChange(parseInt(e.target.value, 10))}
+              onChange={(e) => onHoleCountChange(Number.parseInt(e.target.value, 10))}
               aria-label="Quantidade de Furos"
               className="w-full text-sm py-2 px-2.5 bg-surface border border-outline-variant rounded font-body text-on-surface focus:border-primary focus:outline-none"
             >
@@ -241,15 +251,7 @@ export const Step3Mechanics: React.FC<Step3MechanicsProps> = ({
                 Topo até base (máx {typeof heightMm === 'number' ? heightMm : defaultHeight} mm)
               </span>
             </div>
-            <div
-              className={`grid ${
-                drillingConfig.holeCount === 1
-                  ? 'grid-cols-1'
-                  : drillingConfig.holeCount === 3
-                  ? 'grid-cols-3'
-                  : 'grid-cols-2'
-              } gap-sm mt-xs`}
-            >
+            <div className={`grid ${getHoleGridColsClass(drillingConfig.holeCount)} gap-sm mt-xs`}>
               {Array.from({ length: drillingConfig.holeCount }, (_, i) => {
                 const holeNum = i + 1;
                 const val = holeDistanceInputs[i] ?? '';

@@ -1,14 +1,14 @@
 import React from 'react';
 
 export interface SelectOption {
-  value: string | number;
-  label: string;
+  readonly value: string | number;
+  readonly label: string;
 }
 
 interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
-  label: string;
-  options: SelectOption[];
-  error?: string;
+  readonly label: string;
+  readonly options: readonly SelectOption[];
+  readonly error?: string;
 }
 
 export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(

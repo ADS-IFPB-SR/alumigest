@@ -69,6 +69,36 @@ export function BudgetsView() {
 
   const isFiltering = Boolean(status || search);
 
+  const renderContent = () => {
+    if (isLoading) {
+      return <BudgetsLoadingSkeleton />;
+    }
+    if (isError) {
+      return <BudgetsEmptyState type="error" onRetry={() => refetch()} />;
+    }
+    if (budgets.length === 0) {
+      const emptyType = isFiltering ? 'no-results' : 'no-data';
+      return <BudgetsEmptyState type={emptyType} />;
+    }
+    return (
+      <>
+        <BudgetsTable
+          data={budgets}
+          sortField={sortField}
+          sortDirection={sortDirection}
+          onSort={handleSort}
+        />
+        <BudgetsPagination
+          currentPage={page}
+          totalPages={totalPages}
+          totalElements={totalElements}
+          pageSize={pageSize}
+          onPageChange={setPage}
+        />
+      </>
+    );
+  };
+
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden">
       <div className="flex flex-col gap-xs mb-md flex-none">
@@ -111,29 +141,7 @@ export function BudgetsView() {
       </div>
 
       <div className="flex-1 overflow-hidden flex flex-col bg-surface-container-lowest border border-outline-variant rounded-lg shadow-xs">
-        {isLoading ? (
-          <BudgetsLoadingSkeleton />
-        ) : isError ? (
-          <BudgetsEmptyState type="error" onRetry={() => refetch()} />
-        ) : budgets.length === 0 ? (
-          <BudgetsEmptyState type={isFiltering ? 'no-results' : 'no-data'} />
-        ) : (
-          <>
-            <BudgetsTable
-              data={budgets}
-              sortField={sortField}
-              sortDirection={sortDirection}
-              onSort={handleSort}
-            />
-            <BudgetsPagination
-              currentPage={page}
-              totalPages={totalPages}
-              totalElements={totalElements}
-              pageSize={pageSize}
-              onPageChange={setPage}
-            />
-          </>
-        )}
+        {renderContent()}
       </div>
     </div>
   );

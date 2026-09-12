@@ -3,11 +3,11 @@ import type { BuilderState } from '../../../types';
 import { formatBRL } from '../../../utils/calculations';
 
 export interface Step4SummaryProps {
-  state: BuilderState;
-  svgW: number;
-  svgH: number;
-  unitAreaM2: string;
-  totalQty: number;
+  readonly state: BuilderState;
+  readonly svgW: number;
+  readonly svgH: number;
+  readonly unitAreaM2: string;
+  readonly totalQty: number;
 }
 
 export const Step4Summary: React.FC<Step4SummaryProps> = ({
@@ -25,7 +25,7 @@ export const Step4Summary: React.FC<Step4SummaryProps> = ({
         <div className="flex items-center justify-between pb-xs border-b border-outline-variant">
           <h3 className="text-base font-label font-bold text-on-surface uppercase tracking-wider flex items-center gap-xs">
             <span className="material-symbols-outlined text-[20px] text-primary">task_alt</span>
-            Ficha Técnica & Resumo
+            <span>Ficha Técnica & Resumo</span>
           </h3>
           <span className="text-xs font-label text-primary font-bold uppercase tracking-wider">
             Pronto para salvar
@@ -40,7 +40,7 @@ export const Step4Summary: React.FC<Step4SummaryProps> = ({
           </div>
           <div className="bg-surface-container-low p-sm rounded border border-outline-variant/50">
             <span className="text-xs text-secondary block font-label">Quantidade</span>
-            <strong className="text-on-surface font-data-mono">{totalQty} {totalQty > 1 ? 'unidades' : 'unidade'}</strong>
+            <strong className="text-on-surface font-data-mono">{totalQty}{' '}{totalQty > 1 ? 'unidades' : 'unidade'}</strong>
           </div>
           <div className="bg-surface-container-low p-sm rounded border border-outline-variant/50">
             <span className="text-xs text-secondary block font-label">Área Total</span>
