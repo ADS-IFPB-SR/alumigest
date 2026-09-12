@@ -1,4 +1,9 @@
 import { useEffect } from 'react';
+
+function getModalSaveLabel(isPending: boolean, isEditing: boolean): string {
+  if (isPending) return 'Salvando...';
+  return isEditing ? 'Atualizar' : 'Salvar';
+}
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 
@@ -28,9 +33,9 @@ import {
 } from '../schemas/catalogSchemas';
 
 interface Props {
-  isOpen: boolean;
-  onClose: () => void;
-  initialData?: any;
+  readonly isOpen: boolean;
+  readonly onClose: () => void;
+  readonly initialData?: any;
 }
 
 export function FilmFormModal({
@@ -215,11 +220,7 @@ export function FilmFormModal({
             onClick={handleSubmit(onSubmit)}
             disabled={isPending}
           >
-            {isPending
-              ? 'Salvando...'
-              : isEditing
-                ? 'Atualizar'
-                : 'Salvar'}
+            {getModalSaveLabel(isPending, isEditing)}
           </Button>
         </>
       }

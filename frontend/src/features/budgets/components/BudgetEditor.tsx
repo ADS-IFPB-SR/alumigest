@@ -11,32 +11,35 @@ import { CustomerSelector } from './CustomerSelector';
 import { BudgetItemsTable } from './BudgetItemsTable';
 import { BudgetCommercialConditions } from './BudgetCommercialConditions';
 import { BudgetFinancialSummary } from './BudgetFinancialSummary';
+import { BudgetMaterialsSummary } from './BudgetMaterialsSummary';
 import { WindowBuilderModal } from './builder/WindowBuilderModal';
 import { Button } from '../../../components/ui/Button';
+import { ProductPickerModal } from './builder/ProductPickerModal';
+import { budgetFormSchema } from '../schemas/budgetSchema';
 import toast from 'react-hot-toast';
 
 // ─── Estado inicial ────────────────────────────────────────────────────────
-const createInitialFormState = (): BudgetFormState => ({
-  customerId:           '',
-  customerName:         '',
-  customerDocument:     '',
-  customerPhone:        '',
-  customerAddress:      '',
-  items:                [],
-  laborCost:            0,
-  discountPercent:      0,
-  notes:                '',
-  commercialConditions: '',
-});
+const createInitialFormState = (): BudgetFormState => {
+  const defaultValid = new Date();
+  defaultValid.setDate(defaultValid.getDate() + 15);
+  return {
+    customerId:           '',
+    customerName:         '',
+    customerDocument:     '',
+    customerPhone:        '',
+    customerAddress:      '',
+    items:                [],
+    laborCost:            0,
+    discountPercent:      0,
+    notes:                '',
+    commercialConditions: '',
+    validUntil:           defaultValid.toISOString().split('T')[0],
+  };
+};
 
 // ─── Componente ─────────────────────────────────────────────────────────────
 /**
  * Editor de orçamento em tela única (suporta criação e edição).
- *
- * Todas as seções são exibidas simultaneamente:
- *   1. Cliente
- *   2. Esquadrias
- *   3. Condições Comerciais + Resumo Financeiro (grid 2 colunas no desktop)
  */
 export const BudgetEditor: React.FC = () => {
   const navigate = useNavigate();
@@ -45,7 +48,11 @@ export const BudgetEditor: React.FC = () => {
 
   const { data: existingBudget, isLoading: isLoadingBudget } = useBudget(id);
   const [form, setForm] = useState<BudgetFormState>(createInitialFormState);
+  
+  const [isProductPickerOpen, setIsProductPickerOpen] = useState(false);
   const [isBuilderOpen, setIsBuilderOpen] = useState(false);
+  
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [editingItem, setEditingItem] = useState<BudgetItem | null>(null);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
@@ -86,6 +93,7 @@ export const BudgetEditor: React.FC = () => {
         discountPercent: existingBudget.discountPercent,
         notes: existingBudget.notes ?? '',
         commercialConditions: existingBudget.commercialConditions ?? '',
+        validUntil: existingBudget.validUntil ? existingBudget.validUntil.split('T')[0] : '',
       });
     }
   }, [existingBudget, isEditing]);
@@ -116,7 +124,6 @@ export const BudgetEditor: React.FC = () => {
   // ─── Handlers de Cliente ──────────────────────────────────────────────────
   const handleCustomerSelect = useCallback((customer: Customer) => {
     if (!customer.id) {
-      // Troca/remoção de cliente: itens são preservados
       setForm((prev) => ({
         ...prev,
         customerId:       '',
@@ -157,12 +164,27 @@ export const BudgetEditor: React.FC = () => {
       return;
     }
     setEditingItem(null);
-    setIsBuilderOpen(true);
+    setSelectedProductId(null);
+    setIsProductPickerOpen(true); // Abre o Product Picker em vez do Builder!
   };
 
   const handleEditItem = (item: BudgetItem) => {
     setEditingItem(item);
     setIsBuilderOpen(true);
+  };
+
+  const handleDuplicateItem = (item: BudgetItem) => {
+    const duplicatedItem: BudgetItem = {
+      ...item,
+      tempId: `item-dup-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      productName: `${item.productName} (Cópia)`,
+      options: item.options.map((opt) => ({ ...opt })),
+    };
+    setForm((prev) => ({
+      ...prev,
+      items: [...prev.items, duplicatedItem],
+    }));
+    toast.success(`Esquadria "${item.productName}" duplicada com sucesso!`);
   };
 
   const handleDeleteItem = (tempId: string) => {
@@ -191,23 +213,26 @@ export const BudgetEditor: React.FC = () => {
 
   // ─── Validação — chamada sempre antes do submit ───────────────────────────
   const validate = (): boolean => {
-    const errs: Record<string, string> = {};
+    const parsed = budgetFormSchema.safeParse(form);
+    
+    if (!parsed.success) {
+      const errs: Record<string, string> = {};
+      let firstErrorMsg = '';
 
-    if (!form.customerId) {
-      errs.customerId = 'Selecione um cliente para o orçamento.';
-    }
-    if (form.items.length === 0) {
-      errs.items = 'Adicione ao menos uma esquadria ao orçamento.';
-    }
-    if (form.discountPercent < 0 || form.discountPercent > 100) {
-      errs.discountPercent = 'Desconto deve ser entre 0% e 100%.';
-    }
-
-    setFormErrors(errs);
-    if (Object.keys(errs).length > 0) {
-      toast.error(Object.values(errs)[0]);
+      parsed.error.issues.forEach((err) => {
+        const path = err.path[0] as string;
+        if (!errs[path]) {
+          errs[path] = err.message;
+          if (!firstErrorMsg) firstErrorMsg = err.message;
+        }
+      });
+      
+      setFormErrors(errs);
+      toast.error(firstErrorMsg);
       return false;
     }
+    
+    setFormErrors({});
     return true;
   };
 
@@ -223,6 +248,7 @@ export const BudgetEditor: React.FC = () => {
       discountPercent:      form.discountPercent,
       notes:                form.notes               || undefined,
       commercialConditions: form.commercialConditions || undefined,
+      validUntil:           form.validUntil          || undefined,
       items: form.items.map((item) => ({
         productId:      item.productId,
         templateType:   item.templateType,
@@ -404,11 +430,15 @@ export const BudgetEditor: React.FC = () => {
 
             {/* Lista de itens ou empty state */}
             {form.items.length > 0 ? (
-              <BudgetItemsTable
-                items={form.items}
-                onEdit={handleEditItem}
-                onDelete={handleDeleteItem}
-              />
+              <div className="flex flex-col gap-md">
+                <BudgetItemsTable
+                  items={form.items}
+                  onEdit={handleEditItem}
+                  onDuplicate={handleDuplicateItem}
+                  onDelete={handleDeleteItem}
+                />
+                <BudgetMaterialsSummary items={form.items} />
+              </div>
             ) : (
               <div className="bg-surface-container-lowest border border-outline-variant border-dashed rounded-lg p-xl text-center flex flex-col items-center gap-sm">
                 <span className="material-symbols-outlined text-on-surface-variant text-[40px]">
@@ -466,8 +496,12 @@ export const BudgetEditor: React.FC = () => {
                 onCommercialConditionsChange={(val) =>
                   setForm((p) => ({ ...p, commercialConditions: val }))
                 }
+                validUntil={form.validUntil}
+                onValidUntilChange={(val) =>
+                  setForm((p) => ({ ...p, validUntil: val }))
+                }
                 subtotal={subtotal}
-                errors={{ discountPercent: formErrors.discountPercent }}
+                errors={{ discountPercent: formErrors.discountPercent, validUntil: formErrors.validUntil }}
               />
 
               {/* Coluna direita: valores derivados + salvar (sticky) */}
@@ -491,12 +525,25 @@ export const BudgetEditor: React.FC = () => {
         </div>
       </main>
 
+      {/* ── ProductPickerModal ──────────────────────────────────────────────── */}
+      <ProductPickerModal
+        isOpen={isProductPickerOpen}
+        onClose={() => setIsProductPickerOpen(false)}
+        onSelectProduct={(productId) => {
+          setSelectedProductId(productId);
+          setIsProductPickerOpen(false);
+          setIsBuilderOpen(true);
+        }}
+      />
+
       {/* ── WindowBuilderModal ──────────────────────────────────────────────── */}
       <WindowBuilderModal
         isOpen={isBuilderOpen}
+        selectedProductId={selectedProductId}
         onClose={() => {
           setIsBuilderOpen(false);
           setEditingItem(null);
+          setSelectedProductId(null);
         }}
         onAddItem={handleAddOrUpdateItem}
         editingItem={editingItem}

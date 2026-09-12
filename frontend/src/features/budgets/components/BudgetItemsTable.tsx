@@ -3,15 +3,23 @@ import type { BudgetItem } from '../types';
 import { TEMPLATE_TYPE_INFO } from '../types';
 import { formatBRL } from '../utils/calculations';
 
+function formatOpeningDirectionArrow(openDir?: string): string {
+  if (openDir === 'LEFT_TO_RIGHT') return '→';
+  if (openDir === 'RIGHT_TO_LEFT') return '←';
+  return openDir ?? '';
+}
+
 interface BudgetItemsTableProps {
-  items: BudgetItem[];
-  onEdit: (item: BudgetItem) => void;
-  onDelete: (tempId: string) => void;
+  readonly items: BudgetItem[];
+  readonly onEdit: (item: BudgetItem) => void;
+  readonly onDuplicate: (item: BudgetItem) => void;
+  readonly onDelete: (tempId: string) => void;
 }
 
 export const BudgetItemsTable: React.FC<BudgetItemsTableProps> = ({
   items,
   onEdit,
+  onDuplicate,
   onDelete,
 }) => {
   const [itemToDelete, setItemToDelete] = React.useState<BudgetItem | null>(null);
@@ -60,7 +68,7 @@ export const BudgetItemsTable: React.FC<BudgetItemsTableProps> = ({
             <tbody className="divide-y divide-outline-variant/40">
               {items.map((item, idx) => {
                 const mainMaterial = item.options.find((o) => o.categoryType === 'GLASS') ?? item.options[0];
-                const openDir = item.templateConfig.openingDirection;
+                const openDir = item.templateConfig?.openingDirection;
                 return (
                   <tr
                     key={item.tempId}
@@ -77,7 +85,7 @@ export const BudgetItemsTable: React.FC<BudgetItemsTableProps> = ({
                         </span>
                         <span className="text-xs text-on-surface-variant font-body">
                           Modelo: {item.templateType ? (TEMPLATE_TYPE_INFO[item.templateType as keyof typeof TEMPLATE_TYPE_INFO]?.label || item.templateType) : 'Básico'}
-                          {openDir && <span className="ml-xs text-secondary">· {openDir === 'LEFT_TO_RIGHT' ? '→' : openDir === 'RIGHT_TO_LEFT' ? '←' : openDir}</span>}
+                          {openDir && <span className="ml-xs text-secondary">· {formatOpeningDirectionArrow(openDir)}</span>}
                         </span>
                       </div>
                     </td>
@@ -126,6 +134,15 @@ export const BudgetItemsTable: React.FC<BudgetItemsTableProps> = ({
                     {/* Ações */}
                     <td className="px-sm py-sm text-center sticky right-0 bg-surface-container-lowest border-l border-outline-variant/40 shadow-[-4px_0px_8px_rgba(0,0,0,0.05)] group-hover:bg-surface-container-high transition-colors">
                       <div className="flex items-center justify-center gap-xs">
+                        <button
+                          type="button"
+                          onClick={() => onDuplicate(item)}
+                          className="p-xs text-secondary hover:text-primary hover:bg-secondary-container/40 rounded-md transition-colors"
+                          aria-label={`Duplicar esquadria ${item.productName}`}
+                          title="Duplicar esquadria"
+                        >
+                          <span className="material-symbols-outlined text-[18px]">content_copy</span>
+                        </button>
                         <button
                           type="button"
                           onClick={() => onEdit(item)}

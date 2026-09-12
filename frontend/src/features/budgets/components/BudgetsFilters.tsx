@@ -3,11 +3,11 @@ import type { BudgetStatus } from '../types';
 import { BUDGET_STATUS_OPTIONS } from '../types';
 
 interface BudgetsFiltersProps {
-  activeStatus: BudgetStatus | '';
-  searchTerm: string;
-  statusCounts?: Record<BudgetStatus | '', number>;
-  onStatusChange: (status: BudgetStatus | '') => void;
-  onSearchChange: (search: string) => void;
+  readonly activeStatus: BudgetStatus | '';
+  readonly searchTerm: string;
+  readonly statusCounts?: Record<BudgetStatus | '', number>;
+  readonly onStatusChange: (status: BudgetStatus | '') => void;
+  readonly onSearchChange: (search: string) => void;
 }
 
 export function BudgetsFilters({
@@ -21,6 +21,10 @@ export function BudgetsFilters({
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    if (localSearch === searchTerm) {
+      return;
+    }
+
     if (debounceRef.current) {
       clearTimeout(debounceRef.current);
     }
@@ -34,7 +38,7 @@ export function BudgetsFilters({
         clearTimeout(debounceRef.current);
       }
     };
-  }, [localSearch, onSearchChange]);
+  }, [localSearch, searchTerm, onSearchChange]);
 
   useEffect(() => {
     setLocalSearch(searchTerm);

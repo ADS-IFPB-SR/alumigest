@@ -1,21 +1,22 @@
 import React from 'react';
 
 interface Column<T> {
-  header: string;
-  accessor: keyof T | ((row: T) => React.ReactNode);
-  exportValue?: (
+  readonly header: string;
+  readonly accessor: keyof T | ((row: T) => React.ReactNode);
+  readonly exportValue?: (
     row: T
   ) => string | number | boolean | null | undefined;
-  align?: 'left' | 'center' | 'right';
-  className?: string;
+  readonly align?: 'left' | 'center' | 'right';
+  readonly className?: string;
 }
 
 interface TableProps<T> {
-  columns: Column<T>[];
-  data: T[];
+  readonly columns: readonly Column<T>[];
+  readonly data: readonly T[];
 
-  onEdit?: (row: T) => void;
-  onViewDetails?: (row: T) => void;
+  readonly onEdit?: (row: T) => void;
+  readonly onViewDetails?: (row: T) => void;
+  readonly onDelete?: (row: T) => void;
 
   /**
    * Define o data-cy da linha.
@@ -23,7 +24,7 @@ interface TableProps<T> {
    * rowTestId={() => 'glass-row'}
    * rowTestId={() => 'profile-row'}
    */
-  rowTestId?: (row: T) => string | undefined;
+  readonly rowTestId?: (row: T) => string | undefined;
 
   /**
    * Define atributos adicionais para a linha.
@@ -34,7 +35,7 @@ interface TableProps<T> {
    *   'data-glass-name': row.name
    * })}
    */
-  rowTestAttributes?: (
+  readonly rowTestAttributes?: (
     row: T
   ) => Record<string, string | undefined>;
 }
@@ -46,6 +47,7 @@ export function Table<
   data,
   onEdit,
   onViewDetails,
+  onDelete,
   rowTestId,
   rowTestAttributes,
 }: TableProps<T>) {
@@ -68,7 +70,7 @@ export function Table<
 
             return value !== null &&
               value !== undefined
-              ? String(value).replace(/;/g, ',')
+              ? String(value).replaceAll(';', ',')
               : '';
           }
 
@@ -77,7 +79,7 @@ export function Table<
 
             return value !== null &&
               value !== undefined
-              ? String(value).replace(/;/g, ',')
+              ? String(value).replaceAll(';', ',')
               : '';
           }
 
@@ -106,14 +108,14 @@ export function Table<
 
     link.setAttribute(
       'download',
-      `exportacao_${new Date().getTime()}.csv`
+      `exportacao_${Date.now()}.csv`
     );
 
     document.body.appendChild(link);
 
     link.click();
 
-    document.body.removeChild(link);
+    link.remove();
 
     URL.revokeObjectURL(url);
   };
@@ -150,14 +152,14 @@ export function Table<
       {/* =====================================================
           Tabela
           ===================================================== */}
-      <div className="overflow-x-auto flex-1 w-full relative">
+      <div className="overflow-x-auto overflow-y-auto flex-1 w-full relative">
 
         <table className="table-zebra w-full text-left border-collapse min-w-[500px]">
 
           {/* =================================================
               Cabeçalho
               ================================================= */}
-          <thead className="sticky top-0 z-10">
+          <thead className="sticky top-0 z-20 shadow-xs">
             <tr className="bg-surface-container-low border-b border-outline-variant">
 
               {columns.map((column) => (
@@ -171,13 +173,14 @@ export function Table<
                     text-xs sm:text-sm
                     text-${column.align || 'left'}
                     ${column.className || ''}
+                    bg-surface-container-low
                   `}
                 >
                   {column.header}
                 </th>
               ))}
 
-              {(onEdit || onViewDetails) && (
+              {(onEdit || onViewDetails || onDelete) && (
                 <th
                   className="
                     p-xs sm:p-sm lg:p-md
@@ -186,13 +189,13 @@ export function Table<
                     text-primary
                     text-xs sm:text-sm
                     text-center
-                    w-20 sm:w-24
-                    sticky right-0
+                    w-28 min-w-[104px]
+                    sticky right-0 top-0
                     bg-surface-container-low
                     border-l
                     border-outline-variant
                     shadow-[-4px_0px_8px_rgba(0,0,0,0.06)]
-                    z-20
+                    z-30
                   "
                 >
                   Ações
@@ -216,7 +219,7 @@ export function Table<
                   key={row.id}
                   data-cy={rowTestId?.(row)}
                   {...testAttributes}
-                  className="border-b border-outline-variant/40 hover:bg-surface-container-high transition-colors"
+                  className="border-b border-outline-variant/40 hover:bg-surface-container-high transition-colors group"
                 >
 
                   {/* =========================================
@@ -243,7 +246,7 @@ export function Table<
                   {/* =========================================
                       Ações
                       ========================================= */}
-                  {(onEdit || onViewDetails) && (
+                  {(onEdit || onViewDetails || onDelete) && (
                     <td
                       className="
                         p-xs sm:p-sm lg:p-md
@@ -252,7 +255,7 @@ export function Table<
                         border-outline-variant/40
                         shadow-[-4px_0px_8px_rgba(0,0,0,0.06)]
                         z-10
-                        bg-inherit
+                        bg-surface-container-lowest group-hover:bg-surface-container-high
                       "
                     >
                       <div className="flex items-center justify-center gap-xs sm:gap-sm">
@@ -287,6 +290,23 @@ export function Table<
                           >
                             <span className="material-symbols-outlined text-[18px] sm:text-[20px]">
                               open_in_new
+                            </span>
+                          </button>
+                        )}
+
+                        {/* Excluir */}
+                        {onDelete && (
+                          <button
+                            type="button"
+                            data-cy="table-delete-button"
+                            onClick={() =>
+                              onDelete(row)
+                            }
+                            className="p-xs sm:p-sm text-secondary hover:text-error hover:bg-error-container/40 rounded-md transition-colors"
+                            title="Excluir Registro"
+                          >
+                            <span className="material-symbols-outlined text-[18px] sm:text-[20px]">
+                              delete
                             </span>
                           </button>
                         )}

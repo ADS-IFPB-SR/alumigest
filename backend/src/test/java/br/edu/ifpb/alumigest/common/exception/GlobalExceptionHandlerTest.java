@@ -1,7 +1,7 @@
 package br.edu.ifpb.alumigest.common.exception;
 
-import br.edu.ifpb.alumigest.catalog.controller.ProductCategoryController;
-import br.edu.ifpb.alumigest.catalog.dto.ProductCategoryRequestDTO;
+import br.edu.ifpb.alumigest.catalog.controller.ProductController;
+import br.edu.ifpb.alumigest.catalog.dto.ProductRequestDTO;
 import br.edu.ifpb.alumigest.common.dto.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
@@ -10,11 +10,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
-
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -100,7 +97,7 @@ class GlobalExceptionHandlerTest {
                 new org.springframework.validation.BeanPropertyBindingResult(new Object(), "testObject");
         bindingResult.addError(new FieldError("testObject", "name", "O nome é obrigatório"));
 
-        java.lang.reflect.Method method = ProductCategoryController.class.getMethod("create", ProductCategoryRequestDTO.class);
+        java.lang.reflect.Method method = ProductController.class.getMethod("createProduct", ProductRequestDTO.class);
         org.springframework.core.MethodParameter parameter = new org.springframework.core.MethodParameter(method, 0);
 
         MethodArgumentNotValidException ex = new MethodArgumentNotValidException(parameter, bindingResult);

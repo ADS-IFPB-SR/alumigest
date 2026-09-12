@@ -1,7 +1,21 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import type { AxiosError } from 'axios';
 import { catalogApi } from '../services/catalogApi';
 import type { GlassDTO, ProfileDTO, HardwareDTO, FilmDTO, ProductRequest } from '../types';
 import toast from 'react-hot-toast';
+
+interface ApiErrorResponse {
+  message?: string;
+  status?: number;
+}
+
+function extractErrorMessage(error: unknown, fallback: string): string {
+  if (error && typeof error === 'object' && 'response' in error) {
+    const axiosErr = error as AxiosError<ApiErrorResponse>;
+    return axiosErr.response?.data?.message || fallback;
+  }
+  return fallback;
+}
 
 // --- Glasses ---
 export const useGlasses = () => {
@@ -19,10 +33,9 @@ export const useCreateGlass = () => {
       toast.success('Vidro cadastrado com sucesso!');
       queryClient.invalidateQueries({ queryKey: ['glasses'] });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Erro ao cadastrar vidro:', error);
-      const message = error?.response?.data?.message || 'Erro ao cadastrar vidro.';
-      toast.error(message);
+      toast.error(extractErrorMessage(error, 'Erro ao cadastrar vidro.'));
     },
   });
 };
@@ -35,10 +48,9 @@ export const useUpdateGlass = () => {
       toast.success('Vidro atualizado com sucesso!');
       queryClient.invalidateQueries({ queryKey: ['glasses'] });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Erro ao atualizar vidro:', error);
-      const message = error?.response?.data?.message || 'Erro ao atualizar vidro.';
-      toast.error(message);
+      toast.error(extractErrorMessage(error, 'Erro ao atualizar vidro.'));
     },
   });
 };
@@ -59,10 +71,9 @@ export const useCreateProfile = () => {
       toast.success('Perfil cadastrado com sucesso!');
       queryClient.invalidateQueries({ queryKey: ['profiles'] });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Erro ao cadastrar perfil:', error);
-      const message = error?.response?.data?.message || 'Erro ao cadastrar perfil.';
-      toast.error(message);
+      toast.error(extractErrorMessage(error, 'Erro ao cadastrar perfil.'));
     },
   });
 };
@@ -75,10 +86,9 @@ export const useUpdateProfile = () => {
       toast.success('Perfil atualizado com sucesso!');
       queryClient.invalidateQueries({ queryKey: ['profiles'] });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Erro ao atualizar perfil:', error);
-      const message = error?.response?.data?.message || 'Erro ao atualizar perfil.';
-      toast.error(message);
+      toast.error(extractErrorMessage(error, 'Erro ao atualizar perfil.'));
     },
   });
 };
@@ -99,10 +109,9 @@ export const useCreateHardware = () => {
       toast.success('Ferragem cadastrada com sucesso!');
       queryClient.invalidateQueries({ queryKey: ['hardwares'] });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Erro ao cadastrar ferragem:', error);
-      const message = error?.response?.data?.message || 'Erro ao cadastrar ferragem.';
-      toast.error(message);
+      toast.error(extractErrorMessage(error, 'Erro ao cadastrar ferragem.'));
     },
   });
 };
@@ -115,10 +124,9 @@ export const useUpdateHardware = () => {
       toast.success('Ferragem atualizada com sucesso!');
       queryClient.invalidateQueries({ queryKey: ['hardwares'] });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Erro ao atualizar ferragem:', error);
-      const message = error?.response?.data?.message || 'Erro ao atualizar ferragem.';
-      toast.error(message);
+      toast.error(extractErrorMessage(error, 'Erro ao atualizar ferragem.'));
     },
   });
 };
@@ -139,10 +147,9 @@ export const useCreateFilm = () => {
       toast.success('Película cadastrada com sucesso!');
       queryClient.invalidateQueries({ queryKey: ['films'] });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Erro ao cadastrar película:', error);
-      const message = error?.response?.data?.message || 'Erro ao cadastrar película.';
-      toast.error(message);
+      toast.error(extractErrorMessage(error, 'Erro ao cadastrar película.'));
     },
   });
 };
@@ -155,34 +162,9 @@ export const useUpdateFilm = () => {
       toast.success('Película atualizada com sucesso!');
       queryClient.invalidateQueries({ queryKey: ['films'] });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Erro ao atualizar película:', error);
-      const message = error?.response?.data?.message || 'Erro ao atualizar película.';
-      toast.error(message);
-    },
-  });
-};
-
-// --- Product Categories ---
-export const useProductCategories = () => {
-  return useQuery({
-    queryKey: ['productCategories'],
-    queryFn: catalogApi.getProductCategories,
-  });
-};
-
-export const useCreateProductCategory = () => {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (data: { name: string; description?: string }) => catalogApi.createProductCategory(data),
-    onSuccess: () => {
-      toast.success('Categoria cadastrada com sucesso!');
-      queryClient.invalidateQueries({ queryKey: ['productCategories'] });
-    },
-    onError: (error: any) => {
-      console.error('Erro ao cadastrar categoria:', error);
-      const message = error?.response?.data?.message || 'Erro ao cadastrar categoria.';
-      toast.error(message);
+      toast.error(extractErrorMessage(error, 'Erro ao atualizar película.'));
     },
   });
 };
@@ -219,10 +201,9 @@ export const useCreateProduct = () => {
       toast.success('Produto cadastrado com sucesso!');
       queryClient.invalidateQueries({ queryKey: ['products'] });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Erro ao cadastrar produto:', error);
-      const message = error?.response?.data?.message || 'Erro ao cadastrar produto.';
-      toast.error(message);
+      toast.error(extractErrorMessage(error, 'Erro ao cadastrar produto.'));
     },
   });
 };
@@ -235,10 +216,9 @@ export const useUpdateProduct = () => {
       toast.success('Produto atualizado com sucesso!');
       queryClient.invalidateQueries({ queryKey: ['products'] });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Erro ao atualizar produto:', error);
-      const message = error?.response?.data?.message || 'Erro ao atualizar produto.';
-      toast.error(message);
+      toast.error(extractErrorMessage(error, 'Erro ao atualizar produto.'));
     },
   });
 };
@@ -251,10 +231,18 @@ export const useInactivateProduct = () => {
       toast.success('Produto inativado com sucesso!');
       queryClient.invalidateQueries({ queryKey: ['products'] });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Erro ao inativar produto:', error);
       toast.error('Erro ao inativar produto.');
     },
+  });
+};
+// --- Material Families ---
+export const useMaterialFamilies = (groupCode?: string) => {
+  return useQuery({
+    queryKey: ['material-families', groupCode],
+    queryFn: () => catalogApi.getMaterialFamilies(groupCode),
+    staleTime: 1000 * 60 * 5, // 5 minutos de cache
   });
 };
 

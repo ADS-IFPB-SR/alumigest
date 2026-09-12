@@ -1,157 +1,81 @@
-import { useState } from 'react';
-import type { ProductCategory } from '../../types';
-import { useCreateProductCategory } from '../../hooks/useCatalog';
-import { Modal } from '../../../../components/ui/Modal';
-import { Button } from '../../../../components/ui/Button';
+import type { DoorTemplateType } from '../../types/templates';
+import { DOOR_TEMPLATE_GROUPS, DOOR_TEMPLATE_LABELS } from '../../types/templates';
 
 interface ProductGeneralInfoProps {
-  name: string;
-  setName: (val: string) => void;
-  categoryId: string;
-  setCategoryId: (val: string) => void;
-  categories: ProductCategory[] | undefined;
+  readonly name: string;
+  readonly setName: (val: string) => void;
+  readonly templateType: DoorTemplateType | null;
 }
 
 export function ProductGeneralInfo({
   name,
   setName,
-  categoryId,
-  setCategoryId,
-  categories
+  templateType,
 }: ProductGeneralInfoProps) {
-  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
-  const [newCategoryName, setNewCategoryName] = useState('');
-  const [newCategoryDesc, setNewCategoryDesc] = useState('');
-
-  const { mutate: createCategory, isPending: isCreatingCategory } = useCreateProductCategory();
-
-  const handleCreateCategory = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newCategoryName.trim()) return;
-
-    createCategory(
-      { name: newCategoryName.trim(), description: newCategoryDesc.trim() || undefined },
-      {
-        onSuccess: (newCat) => {
-          if (newCat?.id) {
-            setCategoryId(newCat.id);
-          }
-          setNewCategoryName('');
-          setNewCategoryDesc('');
-          setIsCategoryModalOpen(false);
-        },
-      }
-    );
-  };
+  // Localiza o grupo ao qual o template atual pertence
+  const currentGroup = templateType
+    ? DOOR_TEMPLATE_GROUPS.find((g) => g.types.includes(templateType))
+    : null;
 
   return (
-    <section className="bg-surface-container-lowest border border-outline-variant rounded-lg p-lg shadow-sm">
-      <div className="flex items-center justify-between pb-xs mb-md border-b border-outline-variant">
-        <h3 className="font-title-sm text-title-sm text-on-surface flex items-center gap-sm">
-          <span className="material-symbols-outlined text-[20px] text-primary">info</span>
-          Informações Gerais
-        </h3>
+    <section className="bg-surface-container-lowest border border-outline-variant/80 rounded-xl p-5 shadow-xs transition-shadow hover:shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 mb-4 border-b border-outline-variant/60">
+        <div className="flex items-center gap-2">
+          <span className="w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center">
+            1
+          </span>
+          <h3 className="font-title-sm text-base font-semibold text-on-surface flex items-center gap-2">
+            Identificação da Esquadria
+          </h3>
+        </div>
+
+        {/* Categoria derivada apresentada como badge moderno */}
+        {currentGroup ? (
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/8 border border-primary/20 text-xs font-medium text-primary self-start sm:self-auto">
+            <span className="material-symbols-outlined text-[16px]">{currentGroup.icon}</span>
+            <span>{currentGroup.label}</span>
+            {templateType && (
+              <span className="text-on-surface-variant font-normal">
+                • {DOOR_TEMPLATE_LABELS[templateType]}
+              </span>
+            )}
+          </div>
+        ) : (
+          <span className="text-xs text-on-surface-variant/60 italic self-start sm:self-auto">
+            Categoria definida ao selecionar o modelo abaixo
+          </span>
+        )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-md">
-        {/* Nome do Produto */}
-        <div>
-          <label htmlFor="product-name" className="block font-label-md text-label-md font-medium text-on-surface mb-xs">
-            Nome do Produto *
-          </label>
-          <input 
+      <div>
+        <label
+          htmlFor="product-name"
+          className="block text-xs font-semibold text-on-surface uppercase tracking-wider mb-1.5"
+        >
+          Nome Comercial da Esquadria <span className="text-error">*</span>
+        </label>
+        <div className="relative flex items-center">
+          <span className="material-symbols-outlined absolute left-3 text-[18px] text-on-surface-variant/60 pointer-events-none">
+            edit_note
+          </span>
+          <input
             id="product-name"
             type="text"
-            className="w-full px-sm py-sm bg-surface-container-lowest border border-outline rounded-sm font-body-sm text-body-sm text-on-surface focus:border-primary focus:border-2 focus:outline-none transition-all"
-            placeholder="Ex: Janela Basculante Padrão, Frente de Gaveta..."
+            maxLength={120}
+            className="w-full pl-9 pr-14 py-2.5 bg-surface-container-lowest border border-outline/70 rounded-lg text-sm text-on-surface font-medium focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all placeholder:text-on-surface-variant/40 hover:border-outline"
+            placeholder="Ex: Porta de Correr 2 Folhas Prime, Janela Basculante Premium..."
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
+          <span className="absolute right-3 text-[11px] font-data-mono text-on-surface-variant/60 pointer-events-none">
+            {name.length}/120
+          </span>
         </div>
-        
-        {/* Categoria */}
-        <div>
-          <div className="flex items-center justify-between mb-xs">
-            <label htmlFor="product-category" className="block font-label-md text-label-md font-medium text-on-surface">
-              Categoria *
-            </label>
-            <button
-              type="button"
-              onClick={() => setIsCategoryModalOpen(true)}
-              className="text-primary hover:text-primary-container text-xs font-semibold flex items-center gap-[2px] transition-colors cursor-pointer"
-            >
-              <span className="material-symbols-outlined text-[16px]">add</span>
-              Nova Categoria
-            </button>
-          </div>
-          <select 
-            id="product-category"
-            className="w-full px-sm py-sm bg-surface-container-lowest border border-outline rounded-sm font-body-sm text-body-sm text-on-surface focus:border-primary focus:border-2 focus:outline-none transition-all"
-            value={categoryId}
-            onChange={(e) => setCategoryId(e.target.value)}
-          >
-            <option value="">Selecionar categoria...</option>
-            {categories?.map(cat => (
-              <option key={cat.id} value={cat.id}>{cat.name}</option>
-            ))}
-          </select>
-        </div>
+        <p className="text-[11px] text-on-surface-variant/70 mt-1.5">
+          Este nome será exibido nos orçamentos, pedidos de venda e relatórios de produção. Máximo de 120 caracteres.
+        </p>
       </div>
-
-      {/* Modal de Criação de Categoria */}
-      <Modal
-        isOpen={isCategoryModalOpen}
-        onClose={() => setIsCategoryModalOpen(false)}
-        title="Nova Categoria de Produto"
-        footer={
-          <div className="flex items-center justify-end gap-sm w-full">
-            <Button
-              variant="outline"
-              type="button"
-              onClick={() => setIsCategoryModalOpen(false)}
-            >
-              Cancelar
-            </Button>
-            <Button
-              variant="primary"
-              type="button"
-              onClick={handleCreateCategory}
-              disabled={isCreatingCategory || !newCategoryName.trim()}
-            >
-              {isCreatingCategory ? 'Salvando...' : 'Criar Categoria'}
-            </Button>
-          </div>
-        }
-      >
-        <form onSubmit={handleCreateCategory} className="flex flex-col gap-md">
-          <div>
-            <label htmlFor="modal-cat-name" className="block font-label-md text-label-md font-medium text-on-surface mb-xs">
-              Nome da Categoria *
-            </label>
-            <input
-              id="modal-cat-name"
-              type="text"
-              className="w-full px-sm py-sm bg-surface-container-lowest border border-outline rounded-sm font-body-sm text-body-sm text-on-surface focus:border-primary focus:border-2 focus:outline-none transition-all"
-              placeholder="Ex: Gavetas, Fachadas, Divisórias..."
-              value={newCategoryName}
-              onChange={(e) => setNewCategoryName(e.target.value)}
-            />
-          </div>
-
-          <div>
-            <label htmlFor="modal-cat-desc" className="block font-label-md text-label-md font-medium text-on-surface mb-xs">
-              Descrição (opcional)
-            </label>
-            <textarea
-              id="modal-cat-desc"
-              className="w-full bg-surface-container-lowest border border-outline rounded-sm p-sm font-body-sm text-body-sm text-on-surface focus:border-primary focus:border-2 focus:outline-none transition-all resize-none h-20"
-              placeholder="Ex: Frentes de gavetas em perfis de alumínio e vidro..."
-              value={newCategoryDesc}
-              onChange={(e) => setNewCategoryDesc(e.target.value)}
-            />
-          </div>
-        </form>
-      </Modal>
     </section>
   );
 }
+

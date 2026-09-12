@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../../../components/ui/Button';
 import { BudgetsFilters } from './BudgetsFilters';
@@ -31,35 +31,73 @@ export function BudgetsView() {
   const { data: budgetsData, isLoading, isError, refetch } = useBudgets(filters);
   const { data: statusCounts } = useBudgetStatusCounts();
 
-  const handleStatusChange = (newStatus: BudgetStatus | '') => {
+  const handleStatusChange = useCallback((newStatus: BudgetStatus | '') => {
     setStatus(newStatus);
     setPage(0);
-  };
+  }, []);
 
-  const handleSearchChange = (newSearch: string) => {
-    setSearch(newSearch);
+  const handleSearchChange = useCallback((newSearch: string) => {
+    setSearch((prevSearch) => {
+      if (prevSearch !== newSearch) {
+        setPage(0);
+        return newSearch;
+      }
+      return prevSearch;
+    });
+  }, []);
+
+  const handleSort = useCallback((field: string) => {
+    setSortField((prevField) => {
+      if (prevField === field) {
+        setSortDirection((prevDir) => (prevDir === 'asc' ? 'desc' : 'asc'));
+      } else {
+        setSortDirection('asc');
+        return field;
+      }
+      return prevField;
+    });
     setPage(0);
-  };
+  }, []);
 
-  const handleSort = (field: string) => {
-    if (sortField === field) {
-      setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
-    } else {
-      setSortField(field);
-      setSortDirection('asc');
-    }
-    setPage(0);
-  };
-
-  const handleCreate = () => {
+  const handleCreate = useCallback(() => {
     navigate('/orcamentos/novo');
-  };
+  }, [navigate]);
 
-  const budgets = budgetsData?.content || [];
-  const totalElements = budgetsData?.totalElements ?? budgetsData?.page?.totalElements ?? 0;
-  const totalPages = budgetsData?.totalPages ?? budgetsData?.page?.totalPages ?? 1;
+  const budgets = budgetsData?.content ?? [];
+  const totalElements = budgetsData?.totalElements ?? 0;
+  const totalPages = budgetsData?.totalPages ?? 1;
 
   const isFiltering = Boolean(status || search);
+
+  const renderContent = () => {
+    if (isLoading) {
+      return <BudgetsLoadingSkeleton />;
+    }
+    if (isError) {
+      return <BudgetsEmptyState type="error" onRetry={() => refetch()} />;
+    }
+    if (budgets.length === 0) {
+      const emptyType = isFiltering ? 'no-results' : 'no-data';
+      return <BudgetsEmptyState type={emptyType} />;
+    }
+    return (
+      <>
+        <BudgetsTable
+          data={budgets}
+          sortField={sortField}
+          sortDirection={sortDirection}
+          onSort={handleSort}
+        />
+        <BudgetsPagination
+          currentPage={page}
+          totalPages={totalPages}
+          totalElements={totalElements}
+          pageSize={pageSize}
+          onPageChange={setPage}
+        />
+      </>
+    );
+  };
 
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden">
@@ -103,29 +141,7 @@ export function BudgetsView() {
       </div>
 
       <div className="flex-1 overflow-hidden flex flex-col bg-surface-container-lowest border border-outline-variant rounded-lg shadow-xs">
-        {isLoading ? (
-          <BudgetsLoadingSkeleton />
-        ) : isError ? (
-          <BudgetsEmptyState type="error" onRetry={() => refetch()} />
-        ) : budgets.length === 0 ? (
-          <BudgetsEmptyState type={isFiltering ? 'no-results' : 'no-data'} />
-        ) : (
-          <>
-            <BudgetsTable
-              data={budgets}
-              sortField={sortField}
-              sortDirection={sortDirection}
-              onSort={handleSort}
-            />
-            <BudgetsPagination
-              currentPage={page}
-              totalPages={totalPages}
-              totalElements={totalElements}
-              pageSize={pageSize}
-              onPageChange={setPage}
-            />
-          </>
-        )}
+        {renderContent()}
       </div>
     </div>
   );

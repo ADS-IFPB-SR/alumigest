@@ -2,6 +2,11 @@ import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 
+function getModalSaveLabel(isPending: boolean, isEditing: boolean): string {
+  if (isPending) return 'Salvando...';
+  return isEditing ? 'Atualizar' : 'Salvar';
+}
+
 import { Modal } from '../../../components/ui/Modal';
 import { Input } from '../../../components/ui/Input';
 import { Button } from '../../../components/ui/Button';
@@ -29,10 +34,12 @@ import {
   type ProfileFormValues,
 } from '../schemas/catalogSchemas';
 
+import { FamilyAutocompleteInput } from './FamilyAutocompleteInput';
+
 interface Props {
-  isOpen: boolean;
-  onClose: () => void;
-  initialData?: any;
+  readonly isOpen: boolean;
+  readonly onClose: () => void;
+  readonly initialData?: any;
 }
 
 export function ProfileFormModal({
@@ -71,15 +78,19 @@ export function ProfileFormModal({
       description: '',
       ncmCode: '',
       colorFinish: 'INCOLOR',
+      familyCode: '',
       weight: '',
       length: '3',
       costPrice: '',
       salePrice: '',
       active: true,
+      isHandle: false,
     },
   });
 
   const activeValue = watch('active');
+  const familyCodeValue = watch('familyCode');
+  const isHandleValue = watch('isHandle');
 
   useEffect(() => {
     if (!isOpen) {
@@ -103,6 +114,9 @@ export function ProfileFormModal({
         colorFinish:
           initialData.colorFinish || 'INCOLOR',
 
+        familyCode:
+          initialData.familyCode || '',
+
         weight:
           formatWeightInput(
             initialData.weight?.toFixed(3) || ''
@@ -123,6 +137,9 @@ export function ProfileFormModal({
 
         active:
           initialData.active ?? true,
+
+        isHandle:
+          initialData.isHandle ?? false,
       });
 
       return;
@@ -134,11 +151,13 @@ export function ProfileFormModal({
       description: '',
       ncmCode: '',
       colorFinish: 'INCOLOR',
+      familyCode: '',
       weight: '',
       length: '3',
       costPrice: '',
       salePrice: '',
       active: true,
+      isHandle: false,
     });
   }, [isOpen, initialData, reset]);
 
@@ -147,6 +166,7 @@ export function ProfileFormModal({
       commercialReference: data.skuCode,
       commercialLine: data.commercialLine,
       name: data.description,
+      familyCode: data.familyCode?.trim() ? data.familyCode.trim() : undefined,
       standardLengthM: Number(data.length),
       weight: parseWeightString(data.weight),
       unitMeasure: 'BARRA_6M' as const,
@@ -157,6 +177,7 @@ export function ProfileFormModal({
       costPrice: parseCurrencyString(data.costPrice),
       salePrice: parseCurrencyString(data.salePrice),
       active: data.active,
+      isHandle: data.isHandle,
     };
 
     if (isEditing) {
@@ -212,11 +233,7 @@ export function ProfileFormModal({
             onClick={handleSubmit(onSubmit)}
             disabled={isPending}
           >
-            {isPending
-              ? 'Salvando...'
-              : isEditing
-                ? 'Atualizar'
-                : 'Salvar'}
+            {getModalSaveLabel(isPending, isEditing)}
           </Button>
         </>
       }
@@ -299,6 +316,22 @@ export function ProfileFormModal({
               },
             })}
             error={errors.colorFinish?.message}
+          />
+        </div>
+
+        {/* Família do Material (Agrupamento de Cores) */}
+        <div
+          data-cy="profile-form-family-code-field"
+          className="col-span-1 md:col-span-2"
+        >
+          <FamilyAutocompleteInput
+            data-cy="profile-form-family-code"
+            label="Família do Perfil (Opcional - Linha/Troca de Cor)"
+            placeholder="Ex: FAM-PERFIL-SUPREMA"
+            groupCode="ALUMINIO"
+            value={familyCodeValue ?? ''}
+            onChange={(val) => setValue('familyCode', val, { shouldValidate: true })}
+            error={errors.familyCode?.message}
           />
         </div>
 
@@ -402,6 +435,25 @@ export function ProfileFormModal({
             />
           </div>
 
+        </div>
+
+        {/* É Puxador? */}
+        <div className="col-span-1 md:col-span-2 mt-xs p-3 rounded-lg border border-border bg-background-light flex items-center justify-between">
+          <div>
+            <label className="font-medium text-sm text-foreground flex items-center gap-2 cursor-pointer" htmlFor="profile-is-handle">
+              <span>Este perfil é um puxador?</span>
+            </label>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Habilite se este perfil de alumínio for utilizado como puxador integrado nas esquadrias.
+            </p>
+          </div>
+          <input
+            id="profile-is-handle"
+            type="checkbox"
+            checked={Boolean(isHandleValue)}
+            onChange={(e) => setValue('isHandle', e.target.checked)}
+            className="h-4 w-4 rounded border-border text-primary focus:ring-primary cursor-pointer"
+          />
         </div>
 
         {/* Status */}

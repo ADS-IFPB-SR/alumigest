@@ -4,6 +4,8 @@ export { BudgetsFilters } from './components/BudgetsFilters';
 export { BudgetsPagination } from './components/BudgetsPagination';
 export { BudgetsEmptyState, BudgetsLoadingSkeleton } from './components/BudgetsEmptyState';
 export { StatusBadge } from './components/StatusBadge';
+export { BudgetStatusPipeline } from './components/BudgetStatusPipeline';
+export { BUDGET_STATUS_THEMES, getBudgetStatusTheme, type BudgetStatusTheme } from './utils/statusTheme';
 export { SeparateSaleForm } from './components/SeparateSaleForm';
 export { useBudgets, useBudgetStatusCounts } from './hooks/useBudgets';
 export { useCreateSeparateSale } from './hooks/useSeparateSale';

@@ -8,6 +8,9 @@ import org.springframework.stereotype.Component;
 @Component
 public class GlassQuantityCalculator implements MaterialQuantityCalculator {
 
+    // Regra RN-V03: Mínimo 0.25m2 por unidade
+    private static final BigDecimal MIN_AREA = new BigDecimal("0.25");
+
     @Override
     public CategoryType getCategoryType() {
         return CategoryType.GLASS;
@@ -17,13 +20,16 @@ public class GlassQuantityCalculator implements MaterialQuantityCalculator {
     public BigDecimal calculate(TemplateType templateType, int widthMm, int heightMm, int quantity,
             BigDecimal requestedMaterialQty) {
 
+        // Se o usuário informou manualmente uma metragem válida de vidro, respeita o valor informado
+        if (requestedMaterialQty != null && requestedMaterialQty.compareTo(BigDecimal.ZERO) > 0) {
+            return requestedMaterialQty;
+        }
+
         BigDecimal widthM = BigDecimal.valueOf(widthMm).divide(BigDecimal.valueOf(1000), 4, RoundingMode.HALF_UP);
         BigDecimal heightM = BigDecimal.valueOf(heightMm).divide(BigDecimal.valueOf(1000), 4, RoundingMode.HALF_UP);
 
         BigDecimal areaPerItem = widthM.multiply(heightM);
 
-        // Regra RN-V03: Mínimo 0.25m2 por unidade
-        BigDecimal MIN_AREA = new BigDecimal("0.25");
         if (areaPerItem.compareTo(MIN_AREA) < 0) {
             areaPerItem = MIN_AREA;
         }

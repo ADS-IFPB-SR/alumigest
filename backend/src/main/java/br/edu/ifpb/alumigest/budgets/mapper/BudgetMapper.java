@@ -19,7 +19,6 @@ public interface BudgetMapper {
     @Mapping(target = "discountValue", ignore = true)
     @Mapping(target = "total", ignore = true)
     @Mapping(target = "status", ignore = true)
-    @Mapping(target = "validUntil", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "client.id", source = "clientId")

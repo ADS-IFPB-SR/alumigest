@@ -1,14 +1,13 @@
 package br.edu.ifpb.alumigest.budgets.domain;
 
-import br.edu.ifpb.alumigest.catalog.domain.Material;
 import br.edu.ifpb.alumigest.catalog.domain.MaterialCategoryType;
-import br.edu.ifpb.alumigest.catalog.domain.Product;
 import br.edu.ifpb.alumigest.clients.domain.Client;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -32,7 +31,7 @@ class BudgetTest {
     @DisplayName("Deve manter validUntil customizado no onCreate")
     void onCreate_WithCustomValidUntil_ShouldPreserveCustomDate() {
         Budget budget = new Budget();
-        OffsetDateTime customValidUntil = OffsetDateTime.now().plusDays(30);
+        OffsetDateTime customValidUntil = OffsetDateTime.now(ZoneOffset.UTC).plusDays(30);
         budget.setValidUntil(customValidUntil);
 
         budget.onCreate();
@@ -42,15 +41,15 @@ class BudgetTest {
 
     @Test
     @DisplayName("Deve atualizar updatedAt no onUpdate")
-    void onUpdate_ShouldRefreshUpdatedAt() throws InterruptedException {
+    void onUpdate_ShouldRefreshUpdatedAt() {
         Budget budget = new Budget();
         budget.onCreate();
         OffsetDateTime initialUpdatedAt = budget.getUpdatedAt();
 
-        Thread.sleep(10);
         budget.onUpdate();
 
-        assertTrue(budget.getUpdatedAt().isAfter(initialUpdatedAt) || budget.getUpdatedAt().isEqual(initialUpdatedAt));
+        assertNotNull(budget.getUpdatedAt());
+        assertFalse(budget.getUpdatedAt().isBefore(initialUpdatedAt));
     }
 
     @Test

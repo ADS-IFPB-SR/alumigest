@@ -92,7 +92,7 @@ export function SeparateSaleForm() {
           }`}
         >
           <span className="material-symbols-outlined text-[18px]">window</span>
-          Venda de Vidro
+          <span>Venda de Vidro</span>
         </button>
         <button
           type="button"
@@ -104,7 +104,7 @@ export function SeparateSaleForm() {
           }`}
         >
           <span className="material-symbols-outlined text-[18px]">view_column</span>
-          Venda de Alumínio
+          <span>Venda de Alumínio</span>
         </button>
       </div>
 

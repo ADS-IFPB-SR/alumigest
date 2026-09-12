@@ -11,10 +11,9 @@ import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.Objects;
 import java.util.UUID;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 /**
  * Entidade universal que representa insumos e matérias-primas no catálogo.
  * Suporta vidros (2mm, 4mm, comuns, temperados), perfis de alumínio (linhas Rometal/Alternativa em 3m/6m),
@@ -73,6 +72,10 @@ public class Material {
     @Column(name = "color_finish", length = 50)
     private String colorFinish;
 
+    @Size(max = 50, message = "Código de família deve ter no máximo 50 caracteres")
+    @Column(name = "family_code", length = 50)
+    private String familyCode;
+
     @PositiveOrZero(message = "Comprimento padrão deve ser maior ou igual a zero")
     @Column(name = "standard_length_m", precision = 6, scale = 2)
     private BigDecimal standardLengthM;
@@ -89,6 +92,9 @@ public class Material {
     @Column(name = "attributes_json")
     private String attributesJson;
 
+    @Column(name = "is_handle", nullable = false)
+    private boolean isHandle = false;
+
     @Column(name = "is_active", nullable = false)
     private boolean isActive = true;
 
@@ -99,11 +105,12 @@ public class Material {
     private OffsetDateTime updatedAt;
 
     public Material() {
+        // Default constructor required by JPA
     }
 
     @PrePersist
     protected void onCreate() {
-        OffsetDateTime now = OffsetDateTime.now();
+        OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
         if (this.createdAt == null) {
             this.createdAt = now;
         }
@@ -114,7 +121,7 @@ public class Material {
 
     @PreUpdate
     protected void onUpdate() {
-        this.updatedAt = OffsetDateTime.now();
+        this.updatedAt = OffsetDateTime.now(ZoneOffset.UTC);
     }
 
     public UUID getId() {
@@ -237,6 +244,14 @@ public class Material {
         this.attributesJson = attributesJson;
     }
 
+    public boolean isHandle() {
+        return isHandle;
+    }
+
+    public void setHandle(boolean handle) {
+        isHandle = handle;
+    }
+
     public boolean isActive() {
         return isActive;
     }
@@ -251,6 +266,14 @@ public class Material {
 
     public void setCreatedAt(OffsetDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public String getFamilyCode() {
+        return familyCode;
+    }
+
+    public void setFamilyCode(String familyCode) {
+        this.familyCode = familyCode;
     }
 
     public OffsetDateTime getUpdatedAt() {
