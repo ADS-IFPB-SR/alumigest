@@ -94,8 +94,28 @@ function renderDoubleLeafSwingDoor(
     <>
       <rect x={fw} y={fw} width={halfW} height={innerH} fill={theme.glassFill} stroke={theme.glassStroke} strokeWidth={1} />
       <rect x={fw + halfW} y={fw} width={halfW} height={innerH} fill={theme.glassFill} stroke={theme.glassStroke} strokeWidth={1} />
+
+      {/* Caixilhos externos do marco */}
       <line x1={fw} y1={fw} x2={fw} y2={svgH - fw} stroke={theme.frameStroke} strokeWidth={3} />
       <line x1={svgW - fw} y1={fw} x2={svgW - fw} y2={svgH - fw} stroke={theme.frameStroke} strokeWidth={3} />
+      <line x1={fw} y1={fw} x2={svgW - fw} y2={fw} stroke={theme.frameStroke} strokeWidth={2} />
+      <line x1={fw} y1={svgH - fw} x2={svgW - fw} y2={svgH - fw} stroke={theme.frameStroke} strokeWidth={2} />
+
+      {/* Montante central / Barra do meio de encontro das duas folhas */}
+      <rect
+        x={fw + halfW - 2}
+        y={fw}
+        width={4}
+        height={innerH}
+        fill={theme.frameStroke}
+        stroke={theme.frameStroke}
+        strokeWidth={1}
+        opacity={0.95}
+      />
+
+      <text x={fw + halfW / 2} y={svgH / 2} textAnchor="middle" fontSize={11} fontFamily="JetBrains Mono, monospace" fill={theme.frameStroke} opacity={0.4}>FOLHA 1</text>
+      <text x={fw + halfW + halfW / 2} y={svgH / 2} textAnchor="middle" fontSize={11} fontFamily="JetBrains Mono, monospace" fill={theme.frameStroke} opacity={0.4}>FOLHA 2</text>
+
       <SwingArc x={fw} y={svgH - fw} radius={halfW} startAngle={-90} endAngle={0} />
       <SwingArc x={svgW - fw} y={svgH - fw} radius={halfW} startAngle={-90} endAngle={-180} />
       <HandleElement handleConfig={handleConfig} svgH={svgH} frameW={fw} posX={fw + halfW - fw} heightMm={heightMm} widthMm={widthMm} leafW={halfW} leafX={fw} />
@@ -103,19 +123,36 @@ function renderDoubleLeafSwingDoor(
       <HandleElement handleConfig={handleConfig} svgH={svgH} frameW={fw} posX={fw + halfW + 2} mirrored heightMm={heightMm} widthMm={widthMm} leafW={halfW} leafX={fw + halfW} />
       <HandlePieceDimension svgH={svgH} frameW={fw} posX={fw + halfW + 2} mirrored handleConfig={handleConfig} heightMm={heightMm} widthMm={widthMm} leafW={halfW} leafX={fw + halfW} />
       {drillingConfig.holeCount > 0 && (
-        <DrillingHoles
-          svgH={svgH}
-          svgW={svgW}
-          frameW={fw}
-          count={drillingConfig.holeCount}
-          divisionType={drillingConfig.divisionType}
-          drillingPosition={drillingConfig.drillingPosition || 'LATERAL'}
-          customDistancesMm={drillingConfig.customDistancesMm}
-          widthMm={widthMm}
-          heightMm={heightMm}
-          posX={fw + fw / 2}
-          mirrored
-        />
+        <>
+          {/* Furação da Folha 1 (Esquerda) */}
+          <DrillingHoles
+            svgH={svgH}
+            svgW={svgW}
+            frameW={fw}
+            count={drillingConfig.holeCount}
+            divisionType={drillingConfig.divisionType}
+            drillingPosition={drillingConfig.drillingPosition || 'LATERAL'}
+            customDistancesMm={drillingConfig.customDistancesMm}
+            widthMm={widthMm}
+            heightMm={heightMm}
+            posX={fw + fw / 2}
+            mirrored
+          />
+          {/* Furação da Folha 2 (Direita) */}
+          <DrillingHoles
+            svgH={svgH}
+            svgW={svgW}
+            frameW={fw}
+            count={drillingConfig.holeCount}
+            divisionType={drillingConfig.divisionType}
+            drillingPosition={drillingConfig.drillingPosition || 'LATERAL'}
+            customDistancesMm={drillingConfig.customDistancesMm}
+            widthMm={widthMm}
+            heightMm={heightMm}
+            posX={svgW - fw - fw / 2}
+            mirrored={false}
+          />
+        </>
       )}
       <HorizontalDimension x1={fw} x2={fw + halfW} y={fw} label={`F1: ${leafMm}mm`} offsetDir="above" offsetDist={8} />
       <HorizontalDimension x1={fw + halfW} x2={svgW - fw} y={fw} label={`F2: ${leafMm}mm`} offsetDir="above" offsetDist={8} />

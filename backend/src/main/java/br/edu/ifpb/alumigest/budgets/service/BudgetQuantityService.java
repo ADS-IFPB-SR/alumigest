@@ -56,7 +56,12 @@ public class BudgetQuantityService {
         item.setProduct(productEntity);
         item.setProductName(productEntity.getName());
 
-        TemplateType template = resolveTemplateType(item.getTemplateType());
+        String rawTemplate = item.getTemplateType();
+        if ((rawTemplate == null || rawTemplate.isBlank()) && productEntity.getTemplateType() != null) {
+            rawTemplate = productEntity.getTemplateType().name();
+            item.setTemplateType(rawTemplate);
+        }
+        TemplateType template = resolveTemplateType(rawTemplate);
         if (item.getOptions() != null) {
             for (BudgetItemOption option : item.getOptions()) {
                 processItemOption(item, option, template);
@@ -111,7 +116,7 @@ public class BudgetQuantityService {
             suggested = computeSuggestedQuantity(calcCategory, template, w, h, qty);
             physicalMin = switch (calcCategory) {
                 case GLASS, FILM -> totalPhysicalArea;
-                case PROFILE -> totalPerimeter;
+                case PROFILE -> (suggested != null && suggested.compareTo(BigDecimal.ZERO) > 0) ? suggested : totalPerimeter;
                 default -> BigDecimal.valueOf(qty);
             };
         }
@@ -151,7 +156,7 @@ public class BudgetQuantityService {
                     manualQty, physicalMin);
         }
         if (category == CategoryType.PROFILE) {
-            return String.format("A metragem de perfil inserida (%.2f m) é inferior ao perímetro mínimo do vão (%.2f m). Risco de barra insuficiente!",
+            return String.format("A metragem de perfil inserida (%.2f m) é inferior ao consumo físico necessário da esquadria (%.2f m). Risco de barra insuficiente!",
                     manualQty, physicalMin);
         }
         return String.format("A quantidade informada (%.2f) é inferior ao mínimo físico necessário (%.2f).",

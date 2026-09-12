@@ -15,6 +15,7 @@ import type {
   MaterialSelection,
   CategoryType,
   WindowTemplate,
+  BudgetItemCalculationRequest,
 } from '../../../types';
 import type { Product, GlassDTO, ProfileDTO, HardwareDTO, FilmDTO } from '../../../../catalog/types';
 import {
@@ -25,6 +26,7 @@ import {
   useFilms,
 } from '../../../../catalog/hooks/useCatalog';
 import { calcItemSubtotal } from '../../../utils/calculations';
+import { budgetsApi } from '../../../services/budgetsApi';
 import {
   getDefaultSvgTemplateForCatalogType,
   mapCatalogAluminumColor,
@@ -77,12 +79,30 @@ interface CatalogMaterialLookup {
   categoryType: CategoryType;
 }
 
-function computeRequirementMeasure(catType: CategoryType, areaM2: number, perimeterM: number): { qty: number; unit: string } {
+function estimateProfileLinearMeters(templateType: string | undefined, w: number, h: number): number {
+  const widthM = (w || 0) / 1000;
+  const heightM = (h || 0) / 1000;
+  const t = (templateType || '').toUpperCase();
+  if (t === 'SWING_DOOR_2F' || t === 'SWING_2_LEAF' || t === 'SLIDING_DOOR_2F' || t === 'SLIDING_2_LEAF') {
+    // 2 Folhas: 2 Larguras + 4 Alturas (Ex: 1600x2150 => 2*1.6 + 4*2.15 = 3.20 + 8.60 = 11.80m)
+    return parseFloat((2 * widthM + 4 * heightM).toFixed(2));
+  }
+  if (t === 'SLIDING_DOOR_3F' || t === 'SLIDING_3_LEAF') {
+    return parseFloat((2 * widthM + 6 * heightM).toFixed(2));
+  }
+  if (t === 'SLIDING_DOOR_4F' || t === 'SLIDING_4_LEAF') {
+    return parseFloat((2 * widthM + 8 * heightM).toFixed(2));
+  }
+  // 1 Folha ou padrão
+  return parseFloat(((2 * ((w || 0) + (h || 0))) / 1000).toFixed(2));
+}
+
+function computeRequirementMeasure(catType: CategoryType, areaM2: number, profileMeters: number): { qty: number; unit: string } {
   if (catType === 'GLASS' || catType === 'FILM') {
     return { qty: areaM2, unit: 'm²' };
   }
   if (catType === 'PROFILE') {
-    return { qty: perimeterM, unit: 'm' };
+    return { qty: profileMeters, unit: 'm' };
   }
   return { qty: 1, unit: 'un' };
 }
@@ -93,12 +113,13 @@ function buildDefaultSelectionsForTemplate(
   h: number,
 ): MaterialSelection[] {
   const areaM2 = parseFloat(((w / 1000) * (h / 1000)).toFixed(2));
-  const perimeterM = parseFloat(((2 * (w + h)) / 1000).toFixed(2));
+  const tType = targetTemplate.templateType || targetTemplate.catalogTemplateType || undefined;
+  const profileM = estimateProfileLinearMeters(tType, w, h);
 
   if (targetTemplate.categoryRequirements && targetTemplate.categoryRequirements.length > 0) {
     return targetTemplate.categoryRequirements.map((req, idx) => {
       const catType: CategoryType = typeof req === 'string' ? (req as CategoryType) : (req.categoryType as CategoryType);
-      const { qty, unit } = computeRequirementMeasure(catType, areaM2, perimeterM);
+      const { qty, unit } = computeRequirementMeasure(catType, areaM2, profileM);
 
       return {
         requirementId: `req-${targetTemplate.id}-${catType}-${idx}`,
@@ -110,6 +131,8 @@ function buildDefaultSelectionsForTemplate(
         unitMeasure: unit,
         unitPrice: 0,
         quantity: qty,
+        suggestedQuantity: qty,
+        physicalMinimumQuantity: qty,
         totalPrice: 0,
       };
     });
@@ -126,6 +149,8 @@ function buildDefaultSelectionsForTemplate(
       unitMeasure: 'm²',
       unitPrice: 0,
       quantity: areaM2,
+      suggestedQuantity: areaM2,
+      physicalMinimumQuantity: areaM2,
       totalPrice: 0,
     },
     {
@@ -137,7 +162,9 @@ function buildDefaultSelectionsForTemplate(
       materialName: '',
       unitMeasure: 'm',
       unitPrice: 0,
-      quantity: perimeterM,
+      quantity: profileM,
+      suggestedQuantity: profileM,
+      physicalMinimumQuantity: profileM,
       totalPrice: 0,
     },
     {
@@ -150,6 +177,8 @@ function buildDefaultSelectionsForTemplate(
       unitMeasure: 'un',
       unitPrice: 0,
       quantity: 1,
+      suggestedQuantity: 1,
+      physicalMinimumQuantity: 1,
       totalPrice: 0,
     },
   ];
@@ -512,6 +541,89 @@ export function useWindowBuilderState({
     setErrors({});
   }, [isOpen, editingItem, templates, findCatalogMaterial, selectedProductId]);
 
+  const materialSelectionsRef = useRef(state.materialSelections);
+  materialSelectionsRef.current = state.materialSelections;
+
+  const selectionsKey = useMemo(() => {
+    return state.materialSelections
+      .map((s) => `${s.requirementId}:${s.materialId}:${s.quantity}:${s.isManualOverride}`)
+      .join('|');
+  }, [state.materialSelections]);
+
+  // Sincronização reativa com o motor de cálculo backend (/api/orcamentos/items/preview-calculation)
+  useEffect(() => {
+    if (!isOpen) return;
+    const w = typeof state.widthMm === 'number' ? state.widthMm : 0;
+    const h = typeof state.heightMm === 'number' ? state.heightMm : 0;
+    const qty = typeof state.quantity === 'number' && state.quantity > 0 ? state.quantity : 1;
+    if (w <= 0 || h <= 0) return;
+
+    const selections = materialSelectionsRef.current;
+    if (!selections || selections.length === 0) return;
+
+    const timer = setTimeout(async () => {
+      try {
+        const payload: BudgetItemCalculationRequest = {
+          templateType: svgTemplate || 'SLIDING_DOOR_2F',
+          widthMm: w,
+          heightMm: h,
+          quantity: qty,
+          options: selections.map((s) => ({
+            materialId: s.materialId,
+            categoryType: s.categoryType,
+            manualQuantity: s.isManualOverride ? s.quantity : undefined,
+          })),
+        };
+
+        const res = await budgetsApi.previewItemCalculation(payload);
+        if (!res || !res.options) return;
+
+        setState((prev) => {
+          const updatedSelections = prev.materialSelections.map((sel, idx) => {
+            const optRes =
+              (sel.materialId ? res.options.find((o) => o.materialId === sel.materialId) : null) ??
+              res.options[idx];
+            if (!optRes) return sel;
+
+            const suggested = optRes.suggestedQuantity;
+            const physMin = optRes.physicalMinimumQuantity;
+            const isBelow = optRes.isBelowPhysicalMinimum;
+            const warning = optRes.warningMessage;
+
+            const isPuxadorOrHardware = isHandleOrLockMaterial(sel);
+
+            const currentQty =
+              (sel.isManualOverride || isPuxadorOrHardware) && sel.quantity !== undefined
+                ? sel.quantity
+                : suggested;
+            const unitPrice = sel.unitPrice ?? 0;
+            const totalPrice =
+              currentQty !== undefined ? parseFloat((currentQty * unitPrice).toFixed(2)) : undefined;
+
+            return {
+              ...sel,
+              suggestedQuantity: suggested,
+              physicalMinimumQuantity: physMin,
+              quantity: currentQty,
+              totalPrice,
+              isBelowPhysicalMinimum: isBelow,
+              warningMessage: warning,
+            };
+          });
+
+          return {
+            ...prev,
+            materialSelections: updatedSelections,
+          };
+        });
+      } catch (err) {
+        console.error('Erro ao sincronizar cálculo de materiais com o backend:', err);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [isOpen, state.widthMm, state.heightMm, state.quantity, svgTemplate, selectionsKey]);
+
   const handleMaterialChange = (requirementId: string, materialId: string) => {
     const selIndex = state.materialSelections.findIndex((s) => s.requirementId === requirementId);
     if (selIndex === -1) return;
@@ -585,8 +697,8 @@ export function useWindowBuilderState({
         const w = typeof prev.widthMm === 'number' ? prev.widthMm : DEFAULT_WIDTH;
         const h = typeof prev.heightMm === 'number' ? prev.heightMm : DEFAULT_HEIGHT;
         const areaM2 = parseFloat(((w / 1000) * (h / 1000)).toFixed(2));
-        const perimeterM = parseFloat(((2 * (w + h)) / 1000).toFixed(2));
-        const computed = computeRequirementMeasure(sel.categoryType, areaM2, perimeterM);
+        const profileM = estimateProfileLinearMeters(svgTemplate, w, h);
+        const computed = computeRequirementMeasure(sel.categoryType, areaM2, profileM);
         nextQuantity = computed.qty;
       }
 
@@ -640,6 +752,7 @@ export function useWindowBuilderState({
         return {
           ...s,
           quantity: qty,
+          isManualOverride: true,
           totalPrice: qty !== undefined ? parseFloat((qty * s.unitPrice).toFixed(2)) : undefined,
         };
       }),
