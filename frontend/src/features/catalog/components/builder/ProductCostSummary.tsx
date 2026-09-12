@@ -202,7 +202,7 @@ function CadPreviewOptions({ templateConfig }: CadPreviewOptionsProps) {
             <span className="material-symbols-outlined text-[13px]">circle</span>
             {drillCfg.holeCount} Furos
             <span className="text-secondary font-normal">
-              ({DRILLING_POSITION_LABELS[drillCfg.drillingPosition] || 'Lateral'})
+              ({(drillCfg.drillingPosition && DRILLING_POSITION_LABELS[drillCfg.drillingPosition]) || 'Lateral'})
             </span>
           </span>
         ) : null}

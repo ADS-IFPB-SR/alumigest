@@ -91,8 +91,8 @@ export const CustomerQuickCreateModal: React.FC<CustomerQuickCreateModalProps> =
     return true;
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const handleSubmit = (e?: React.SyntheticEvent) => {
+    e?.preventDefault();
     if (!validate()) return;
     onSubmit({
       ...form,
