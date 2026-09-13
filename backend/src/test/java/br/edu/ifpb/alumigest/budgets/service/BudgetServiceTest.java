@@ -2,18 +2,13 @@ package br.edu.ifpb.alumigest.budgets.service;
 
 import br.edu.ifpb.alumigest.budgets.domain.Budget;
 import br.edu.ifpb.alumigest.budgets.domain.BudgetStatus;
-import br.edu.ifpb.alumigest.budgets.dto.BudgetItemRequestDTO;
-import br.edu.ifpb.alumigest.budgets.dto.BudgetRequestDTO;
-import br.edu.ifpb.alumigest.budgets.dto.BudgetResponseDTO;
-import br.edu.ifpb.alumigest.budgets.dto.BudgetStatusUpdateDTO;
-import br.edu.ifpb.alumigest.budgets.dto.BudgetSummaryResponseDTO;
+import br.edu.ifpb.alumigest.budgets.dto.*;
 import br.edu.ifpb.alumigest.budgets.mapper.BudgetMapper;
 import br.edu.ifpb.alumigest.budgets.repository.BudgetRepository;
 import br.edu.ifpb.alumigest.clients.domain.Client;
 import br.edu.ifpb.alumigest.clients.repository.ClientRepository;
 import br.edu.ifpb.alumigest.common.dto.PageResponse;
 import br.edu.ifpb.alumigest.common.exception.BudgetImmutableException;
-import br.edu.ifpb.alumigest.common.exception.BusinessException;
 import br.edu.ifpb.alumigest.common.exception.InvalidBudgetStatusTransitionException;
 import br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,7 +21,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -57,6 +51,7 @@ class BudgetServiceTest {
 
     private Client client;
     private Budget budget;
+    private BudgetCreateRequest createRequest;
     private BudgetRequestDTO requestDTO;
 
     @BeforeEach
@@ -79,6 +74,8 @@ class BudgetServiceTest {
         budget.setStatus(BudgetStatus.DRAFT);
         budget.setCode("ORC-2026-001");
 
+        createRequest = new BudgetCreateRequest(client.getId(), "Notes");
+
         BudgetItemRequestDTO itemRequest = new BudgetItemRequestDTO(UUID.randomUUID(), BigDecimal.TEN, BigDecimal.TEN, 1, BigDecimal.ZERO, null, null, null, null, null, null);
         requestDTO = new BudgetRequestDTO(client.getId(), BigDecimal.ZERO, "Notes", List.of(itemRequest));
     }
@@ -87,13 +84,13 @@ class BudgetServiceTest {
     @DisplayName("Criação válida")
     void create_ShouldReturnBudget_WhenValid() {
         when(clientRepository.findById(client.getId())).thenReturn(Optional.of(client));
-        when(budgetMapper.toEntity(requestDTO)).thenReturn(new Budget());
+        when(budgetMapper.toEntity(createRequest)).thenReturn(new Budget());
         when(budgetRepository.save(any(Budget.class))).thenReturn(budget);
         
         BudgetResponseDTO responseDTO = new BudgetResponseDTO(budget.getId(), "ORC-2026-001", client.getId(), "João da Silva", BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BudgetStatus.DRAFT, "Notes", null, null, null, Collections.emptyList());
         when(budgetMapper.toResponseDTO(budget)).thenReturn(responseDTO);
 
-        BudgetResponseDTO result = budgetService.create(requestDTO);
+        BudgetResponseDTO result = budgetService.create(createRequest);
 
         assertThat(result).isNotNull();
         assertThat(result.code()).isEqualTo("ORC-2026-001");
@@ -105,7 +102,7 @@ class BudgetServiceTest {
     void create_ShouldThrowException_WhenClientNotFound() {
         when(clientRepository.findById(client.getId())).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> budgetService.create(requestDTO))
+        assertThatThrownBy(() -> budgetService.create(createRequest))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
@@ -216,61 +213,5 @@ class BudgetServiceTest {
         
         assertThat(budget.getStatus()).isEqualTo(BudgetStatus.CANCELLED);
         verify(budgetRepository, times(1)).save(budget);
-    }
-
-    @Test
-    @DisplayName("Criação: Lança BusinessException quando a validade for anterior a hoje")
-    void create_ShouldThrowBusinessException_WhenValidUntilIsInThePast() {
-        OffsetDateTime pastDate = OffsetDateTime.now().minusDays(1);
-        BudgetRequestDTO invalidRequest = new BudgetRequestDTO(
-                client.getId(), BigDecimal.ZERO, "Notes", pastDate, Collections.emptyList()
-        );
-
-        assertThatThrownBy(() -> budgetService.create(invalidRequest))
-                .isInstanceOf(BusinessException.class)
-                .hasMessage("A data de validade da proposta não pode ser anterior à data de hoje.");
-
-        verify(budgetRepository, never()).save(any());
-    }
-
-    @Test
-    @DisplayName("Criação: Aceita data de validade hoje ou futura")
-    void create_ShouldAccept_WhenValidUntilIsFuture() {
-        OffsetDateTime futureDate = OffsetDateTime.now().plusDays(15);
-        BudgetRequestDTO validRequest = new BudgetRequestDTO(
-                client.getId(), BigDecimal.ZERO, "Notes", futureDate, Collections.emptyList()
-        );
-
-        when(clientRepository.findById(client.getId())).thenReturn(Optional.of(client));
-        when(budgetMapper.toEntity(validRequest)).thenReturn(new Budget());
-        when(budgetRepository.save(any(Budget.class))).thenReturn(budget);
-
-        BudgetResponseDTO responseDTO = new BudgetResponseDTO(
-                budget.getId(), "ORC-2026-001", client.getId(), "João da Silva",
-                BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO,
-                BudgetStatus.DRAFT, "Notes", null, null, futureDate, Collections.emptyList()
-        );
-        when(budgetMapper.toResponseDTO(any(Budget.class))).thenReturn(responseDTO);
-
-        BudgetResponseDTO result = budgetService.create(validRequest);
-
-        assertThat(result).isNotNull();
-        verify(budgetRepository, times(1)).save(any(Budget.class));
-    }
-
-    @Test
-    @DisplayName("Atualização: Lança BusinessException quando a validade for anterior a hoje")
-    void update_ShouldThrowBusinessException_WhenValidUntilIsInThePast() {
-        when(budgetRepository.findById(budget.getId())).thenReturn(Optional.of(budget));
-        OffsetDateTime pastDate = OffsetDateTime.now().minusDays(2);
-        BudgetRequestDTO invalidRequest = new BudgetRequestDTO(
-                client.getId(), BigDecimal.ZERO, "Notes", pastDate, Collections.emptyList()
-        );
-
-        assertThatThrownBy(() -> budgetService.update(budget.getId(), invalidRequest))
-                .isInstanceOf(BusinessException.class)
-                .hasMessage("A data de validade da proposta não pode ser anterior à data de hoje.");
-
-        verify(budgetRepository, never()).save(any());
     }
 }

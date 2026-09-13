@@ -22,6 +22,18 @@ public interface BudgetMapper {
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "client.id", source = "clientId")
+    @Mapping(target = "notes", source = "observacoes")
+    Budget toEntity(BudgetCreateRequest request);
+
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "code", ignore = true)
+    @Mapping(target = "subtotal", ignore = true)
+    @Mapping(target = "discountValue", ignore = true)
+    @Mapping(target = "total", ignore = true)
+    @Mapping(target = "status", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "client.id", source = "clientId")
     Budget toEntity(BudgetRequestDTO requestDTO);
 
     @Mapping(target = "id", ignore = true)
