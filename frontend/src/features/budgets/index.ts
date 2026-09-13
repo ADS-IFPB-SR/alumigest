@@ -10,4 +10,5 @@ export { SeparateSaleForm } from './components/SeparateSaleForm';
 export { useBudgets, useBudgetStatusCounts } from './hooks/useBudgets';
 export { useCreateSeparateSale } from './hooks/useSeparateSale';
 export { budgetsApi } from './services/budgetsApi';
+export { discountSchema, createDiscountSchema, type DiscountFormValues } from './schemas/discountSchema';
 export * from './types';
