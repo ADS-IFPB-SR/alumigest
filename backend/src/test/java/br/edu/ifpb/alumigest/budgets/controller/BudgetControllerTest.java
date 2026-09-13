@@ -84,7 +84,8 @@ class BudgetControllerTest {
     @DisplayName("Deve listar orçamentos com paginação")
     void findAll_ShouldReturn200() throws Exception {
         UUID id = UUID.randomUUID();
-        BudgetSummaryResponseDTO summary = new BudgetSummaryResponseDTO(id, "ORC-2026-001", "João da Silva", BigDecimal.ZERO, BudgetStatus.DRAFT, null, null);
+        BudgetSummaryResponseDTO summary = new BudgetSummaryResponseDTO(
+                id, "ORC-2026-001", "João da Silva", 2, BigDecimal.valueOf(1500.00), BudgetStatus.DRAFT, null, null, false);
         PageResponse<BudgetSummaryResponseDTO> pageResponse = new PageResponse<>(List.of(summary), 0, 20, 1, 1, true, true);
 
         when(budgetService.findAll(eq("busca"), eq(BudgetStatus.DRAFT), any(Pageable.class))).thenReturn(pageResponse);
@@ -95,7 +96,11 @@ class BudgetControllerTest {
                 .param("page", "0")
                 .param("size", "20"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[0].id").value(id.toString()));
+                .andExpect(jsonPath("$.content[0].id").value(id.toString()))
+                .andExpect(jsonPath("$.content[0].totalItems").value(2))
+                .andExpect(jsonPath("$.content[0].itemCount").value(2))
+                .andExpect(jsonPath("$.content[0].expired").value(false))
+                .andExpect(jsonPath("$.content[0].isExpired").value(false));
     }
 
     @Test

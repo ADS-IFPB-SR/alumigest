@@ -60,6 +60,8 @@ public interface BudgetMapper {
     BudgetResponseDTO toResponseDTO(Budget budget);
 
     @Mapping(target = "clientName", source = "client.fullName")
+    @Mapping(target = "totalItems", expression = "java(budget.getItems() != null ? budget.getItems().size() : 0)")
+    @Mapping(target = "expired", expression = "java(budget.isExpired())")
     BudgetSummaryResponseDTO toSummaryResponseDTO(Budget budget);
 
     @Mapping(target = "productId", source = "product.id")

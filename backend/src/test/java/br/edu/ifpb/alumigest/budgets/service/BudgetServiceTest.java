@@ -137,7 +137,8 @@ class BudgetServiceTest {
         Page<Budget> page = new PageImpl<>(List.of(budget));
         when(budgetRepository.searchBudgets("busca", BudgetStatus.DRAFT, pageable)).thenReturn(page);
         
-        BudgetSummaryResponseDTO summaryDTO = new BudgetSummaryResponseDTO(budget.getId(), "ORC-2026-001", "João da Silva", BigDecimal.ZERO, BudgetStatus.DRAFT, null, null);
+        BudgetSummaryResponseDTO summaryDTO = new BudgetSummaryResponseDTO(
+                budget.getId(), "ORC-2026-001", "João da Silva", 0, BigDecimal.ZERO, BudgetStatus.DRAFT, null, null, false);
         when(budgetMapper.toSummaryResponseDTO(budget)).thenReturn(summaryDTO);
 
         PageResponse<BudgetSummaryResponseDTO> result = budgetService.findAll("busca", BudgetStatus.DRAFT, pageable);

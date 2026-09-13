@@ -206,4 +206,23 @@ public class Budget {
     public void setItems(List<BudgetItem> items) {
         this.items = items;
     }
+
+    /**
+     * Verifica se o orçamento está expirado.
+     * Considera expirado quando o status for EXPIRED ou quando estiver em DRAFT/SENT
+     * e a data de validade for anterior ao momento atual (UTC).
+     *
+     * @return true se expirado, false caso contrário
+     */
+    public boolean isExpired() {
+        if (this.status == BudgetStatus.EXPIRED) {
+            return true;
+        }
+        if ((this.status == BudgetStatus.DRAFT || this.status == BudgetStatus.SENT)
+                && this.validUntil != null) {
+            return OffsetDateTime.now(ZoneOffset.UTC).isAfter(this.validUntil);
+        }
+        return false;
+    }
 }
+
