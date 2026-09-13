@@ -38,7 +38,27 @@ export type BudgetStatus =
   | 'SENT'
   | 'APPROVED'
   | 'REJECTED'
-  | 'CANCELLED';
+  | 'CANCELLED'
+  | 'EXPIRED';
+
+// ============================================================
+// TIPOS E MODELOS COMERCIAIS (US-09)
+// ============================================================
+export type DiscountType = 'PERCENTUAL' | 'VALOR_FIXO';
+
+export type PaymentCondition =
+  | 'A_VISTA_PIX'
+  | 'ENTRADA_50_SALDO_ENTREGA'
+  | 'CARTAO_12X'
+  | 'A_COMBINAR';
+
+export interface DiscountRequest {
+  discountType: DiscountType;
+  value: number;
+  paymentCondition: PaymentCondition;
+  paymentNotes?: string;
+  validUntil?: string;
+}
 
 // ============================================================
 // CONFIGURAÇÕES DE PUXADOR E FURAÇÃO
@@ -306,6 +326,10 @@ export interface BudgetSummary {
   discountValue: number;
   total: number;
   itemCount: number;
+  paymentCondition?: PaymentCondition;
+  paymentConditionLabel?: string;
+  paymentNotes?: string;
+  isExpired?: boolean;
 }
 
 export interface BudgetPageResponse {
@@ -432,6 +456,7 @@ export const STATUS_LABELS: Record<BudgetStatus, string> = {
   APPROVED: 'Aprovado',
   REJECTED: 'Rejeitado',
   CANCELLED: 'Cancelado',
+  EXPIRED: 'Expirado',
 };
 
 export const BUDGET_STATUS_OPTIONS: { value: BudgetStatus | ''; label: string }[] = [
@@ -441,6 +466,7 @@ export const BUDGET_STATUS_OPTIONS: { value: BudgetStatus | ''; label: string }[
   { value: 'APPROVED', label: 'Aprovados' },
   { value: 'REJECTED', label: 'Rejeitados' },
   { value: 'CANCELLED', label: 'Cancelados' },
+  { value: 'EXPIRED', label: 'Expirados' },
 ];
 
 export const BUDGET_STATUS_CONFIG: Record<
@@ -452,5 +478,32 @@ export const BUDGET_STATUS_CONFIG: Record<
   APPROVED: { label: 'Aprovado', icon: 'check_circle', key: 'APPROVED' },
   REJECTED: { label: 'Rejeitado', icon: 'cancel', key: 'REJECTED' },
   CANCELLED: { label: 'Cancelado', icon: 'block', key: 'CANCELLED' },
+  EXPIRED: { label: 'Expirado', icon: 'history', key: 'EXPIRED' },
 };
 
+// ============================================================
+// CONSTANTES DE UI — CONDIÇÕES COMERCIAIS E DESCONTOS (US-09)
+// ============================================================
+export const DISCOUNT_TYPE_LABELS: Record<DiscountType, string> = {
+  PERCENTUAL: 'Percentual (%)',
+  VALOR_FIXO: 'Valor Fixo (R$)',
+};
+
+export const DISCOUNT_TYPE_OPTIONS: { value: DiscountType; label: string }[] = [
+  { value: 'PERCENTUAL', label: 'Percentual (%)' },
+  { value: 'VALOR_FIXO', label: 'Valor Fixo (R$)' },
+];
+
+export const PAYMENT_CONDITION_LABELS: Record<PaymentCondition, string> = {
+  A_VISTA_PIX: 'À Vista (PIX / Dinheiro)',
+  ENTRADA_50_SALDO_ENTREGA: '50% Entrada + 50% na Entrega',
+  CARTAO_12X: 'Cartão de Crédito até 12x',
+  A_COMBINAR: 'A Combinar',
+};
+
+export const PAYMENT_CONDITION_OPTIONS: { value: PaymentCondition; label: string }[] = [
+  { value: 'A_VISTA_PIX', label: 'À Vista (PIX / Dinheiro)' },
+  { value: 'ENTRADA_50_SALDO_ENTREGA', label: '50% Entrada + 50% na Entrega' },
+  { value: 'CARTAO_12X', label: 'Cartão de Crédito até 12x' },
+  { value: 'A_COMBINAR', label: 'A Combinar' },
+];

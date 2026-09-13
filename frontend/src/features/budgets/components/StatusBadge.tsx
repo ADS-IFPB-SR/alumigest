@@ -7,6 +7,7 @@ interface StatusBadgeProps {
   readonly className?: string;
 }
 
+
 export function StatusBadge({ status, showIcon = true, className = '' }: StatusBadgeProps) {
   const theme = getBudgetStatusTheme(status);
 

@@ -77,6 +77,16 @@ export const BUDGET_STATUS_THEMES: Record<BudgetStatus, BudgetStatusTheme> = {
     stepperUpcoming: '',
     menuAction: 'text-[#334155] dark:text-slate-300 hover:bg-[#e2e8f0]/60 dark:hover:bg-slate-800',
   },
+  EXPIRED: {
+    key: 'EXPIRED',
+    label: 'Expirado',
+    icon: 'history',
+    badge: 'bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800',
+    stepperActive: 'bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800 shadow-2xs font-bold',
+    stepperCompleted: '',
+    stepperUpcoming: '',
+    menuAction: 'text-amber-700 dark:text-amber-300 hover:bg-amber-50/50 dark:hover:bg-amber-950/40',
+  },
 };
 
 /**
