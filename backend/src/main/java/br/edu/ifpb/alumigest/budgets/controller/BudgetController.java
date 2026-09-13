@@ -1,6 +1,7 @@
 package br.edu.ifpb.alumigest.budgets.controller;
 
 import br.edu.ifpb.alumigest.budgets.domain.BudgetStatus;
+import br.edu.ifpb.alumigest.budgets.dto.BudgetCreateRequest;
 import br.edu.ifpb.alumigest.budgets.dto.BudgetItemCalculationRequestDTO;
 import br.edu.ifpb.alumigest.budgets.dto.BudgetItemCalculationResponseDTO;
 import br.edu.ifpb.alumigest.budgets.dto.BudgetRequestDTO;
@@ -49,11 +50,14 @@ public class BudgetController {
     }
 
     @PostMapping
-    @Operation(summary = "Criar orçamento", description = "Cria um novo orçamento e retorna o DTO detalhado.")
+    @Operation(summary = "Criar orçamento", description = "Cria um novo orçamento (Rascunho) e retorna o DTO detalhado.")
     @ApiResponse(responseCode = "201", description = "Orçamento criado com sucesso")
     @ApiResponse(responseCode = "400", description = "Dados inválidos")
     @ApiResponse(responseCode = "404", description = "Cliente não encontrado")
-    public ResponseEntity<BudgetResponseDTO> create(@RequestBody @Valid BudgetRequestDTO request) {
+    public ResponseEntity<BudgetResponseDTO> create(@RequestBody @Valid BudgetCreateRequest request) {
+        // Caso o seu BudgetService espere o BudgetRequestDTO legado, 
+        // você pode mapear o BudgetCreateRequest para o BudgetRequestDTO ou ajustar o service.
+        // Assumindo que o service receba o novo DTO ou que seja adaptado:
         BudgetResponseDTO response = budgetService.create(request);
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}")

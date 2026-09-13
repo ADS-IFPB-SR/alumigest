@@ -4,6 +4,7 @@ import br.edu.ifpb.alumigest.budgets.domain.Budget;
 import br.edu.ifpb.alumigest.budgets.domain.BudgetItem;
 import br.edu.ifpb.alumigest.budgets.domain.BudgetItemOption;
 import br.edu.ifpb.alumigest.budgets.domain.BudgetStatus;
+import br.edu.ifpb.alumigest.budgets.dto.BudgetCreateRequest;
 import br.edu.ifpb.alumigest.budgets.dto.BudgetRequestDTO;
 import br.edu.ifpb.alumigest.budgets.dto.BudgetResponseDTO;
 import br.edu.ifpb.alumigest.budgets.dto.BudgetStatusUpdateDTO;
@@ -47,31 +48,14 @@ public class BudgetService {
     }
 
     @Transactional
-    public BudgetResponseDTO create(BudgetRequestDTO requestDTO) {
-        validateValidUntil(requestDTO.validUntil());
-
+    public BudgetResponseDTO create(BudgetCreateRequest requestDTO) {
         Client client = clientRepository.findById(requestDTO.clientId())
                 .orElseThrow(() -> new ResourceNotFoundException("Cliente", requestDTO.clientId().toString()));
 
         Budget budget = budgetMapper.toEntity(requestDTO);
         budget.setClient(client);
-
         budget.setCode(generateBudgetCode());
-
-        // Vincula referências bidirecionais (Budget -> Items -> Options)
-        if (budget.getItems() != null) {
-            for (BudgetItem item : budget.getItems()) {
-                item.setBudget(budget);
-                if (item.getOptions() != null) {
-                    for (BudgetItemOption option : item.getOptions()) {
-                        option.setBudgetItem(item);
-                    }
-                }
-            }
-        }
-
-        budgetQuantityService.calculateQuantities(budget);
-        budgetPricingService.calculatePricing(budget);
+        budget.setStatus(BudgetStatus.DRAFT);
 
         budget = budgetRepository.save(budget);
         return budgetMapper.toResponseDTO(budget);
