@@ -16,6 +16,7 @@ import type {
   CategoryType,
   WindowTemplate,
   BudgetItemCalculationRequest,
+  BudgetItemCalculationOptionResult,
 } from '../../../types';
 import type { Product, GlassDTO, ProfileDTO, HardwareDTO, FilmDTO } from '../../../../catalog/types';
 import {
@@ -87,16 +88,16 @@ function estimateProfileLinearMeters(templateType: string | undefined, w: number
   const t = (templateType || '').toUpperCase();
   if (t === 'SWING_DOOR_2F' || t === 'SWING_2_LEAF' || t === 'SLIDING_DOOR_2F' || t === 'SLIDING_2_LEAF') {
     // 2 Folhas: 2 Larguras + 4 Alturas (Ex: 1600x2150 => 2*1.6 + 4*2.15 = 3.20 + 8.60 = 11.80m)
-    return parseFloat((2 * widthM + 4 * heightM).toFixed(2));
+    return Number.parseFloat((2 * widthM + 4 * heightM).toFixed(2));
   }
   if (t === 'SLIDING_DOOR_3F' || t === 'SLIDING_3_LEAF') {
-    return parseFloat((2 * widthM + 6 * heightM).toFixed(2));
+    return Number.parseFloat((2 * widthM + 6 * heightM).toFixed(2));
   }
   if (t === 'SLIDING_DOOR_4F' || t === 'SLIDING_4_LEAF') {
-    return parseFloat((2 * widthM + 8 * heightM).toFixed(2));
+    return Number.parseFloat((2 * widthM + 8 * heightM).toFixed(2));
   }
   // 1 Folha ou padrão
-  return parseFloat(((2 * ((w || 0) + (h || 0))) / 1000).toFixed(2));
+  return Number.parseFloat(((2 * ((w || 0) + (h || 0))) / 1000).toFixed(2));
 }
 
 function computeRequirementMeasure(catType: CategoryType, areaM2: number, profileMeters: number): { qty: number; unit: string } {
@@ -421,6 +422,111 @@ function getMissingRequiredMaterialLabels(selections: MaterialSelection[]): stri
     .map((r) => r.label);
 }
 
+function syncSelectionWithPreviewOption(
+  sel: MaterialSelection,
+  idx: number,
+  options: BudgetItemCalculationOptionResult[],
+): MaterialSelection {
+  const optRes =
+    (sel.materialId ? options.find((o) => o.materialId === sel.materialId) : null) ??
+    options[idx];
+  if (!optRes) return sel;
+
+  const suggested = optRes.suggestedQuantity;
+  const physMin = optRes.physicalMinimumQuantity;
+  const isBelow = optRes.isBelowPhysicalMinimum;
+  const warning = optRes.warningMessage;
+
+  const isPuxadorOrHardware = isHandleOrLockMaterial(sel);
+
+  const currentQty =
+    (sel.isManualOverride || isPuxadorOrHardware) && sel.quantity !== undefined
+      ? sel.quantity
+      : suggested;
+  const unitPrice = sel.unitPrice ?? 0;
+  const totalPrice =
+    currentQty !== undefined ? Number.parseFloat((currentQty * unitPrice).toFixed(2)) : undefined;
+
+  return {
+    ...sel,
+    suggestedQuantity: suggested,
+    physicalMinimumQuantity: physMin,
+    quantity: currentQty,
+    totalPrice,
+    isBelowPhysicalMinimum: isBelow,
+    warningMessage: warning,
+  };
+}
+
+function checkIsHandleMaterial(mat: CatalogMaterialLookup | null | undefined): boolean {
+  if (!mat) return false;
+  if ((mat as any).isHandle) return true;
+  const name = mat.name.toLowerCase();
+  return (
+    name.includes('puxador') ||
+    name.includes('concha') ||
+    name.includes('fecho') ||
+    name.includes('maçaneta') ||
+    name.includes('macaneta')
+  );
+}
+
+function deriveNextHandleConfig(
+  mat: CatalogMaterialLookup | null,
+  categoryType: CategoryType,
+  isHandleMat: boolean,
+  currentHandleConfig: HandleConfig,
+): HandleConfig {
+  if (!isHandleMat || !mat) {
+    return currentHandleConfig;
+  }
+  const nextHandleType = deriveHandleTypeFromMaterial(
+    { name: mat.name, categoryType, isHandle: (mat as any)?.isHandle },
+    currentHandleConfig.handleType,
+  );
+  const isProfile = nextHandleType === 'PROFILE_HANDLE';
+  const isProfileOrBar = isProfile || nextHandleType === 'BAR_TUBULAR';
+
+  return {
+    ...currentHandleConfig,
+    handleType: nextHandleType,
+    side: currentHandleConfig.side ?? 'ONE_SIDE',
+    coverage: isProfile ? currentHandleConfig.coverage ?? 'FULL' : undefined,
+    pieceLengthCm: isProfile ? currentHandleConfig.pieceLengthCm ?? 40 : undefined,
+    orientation: currentHandleConfig.orientation ?? (isProfileOrBar ? 'VERTICAL' : undefined),
+  };
+}
+
+function calculateTransitionQuantity(
+  sel: MaterialSelection,
+  nextUnit: string,
+  widthMm: number | string | undefined,
+  heightMm: number | string | undefined,
+  svgTemplate: string | undefined,
+): number | undefined {
+  const isNewUnitPiece = nextUnit === 'un' || nextUnit === 'UN' || nextUnit === 'par' || nextUnit === 'PAR';
+  const isOldUnitPiece = sel.unitMeasure === 'un' || sel.unitMeasure === 'UN' || sel.unitMeasure === 'par' || sel.unitMeasure === 'PAR';
+
+  if (isNewUnitPiece && !isOldUnitPiece) {
+    return 1;
+  }
+  if (!isNewUnitPiece && isOldUnitPiece) {
+    const w = typeof widthMm === 'number' ? widthMm : DEFAULT_WIDTH;
+    const h = typeof heightMm === 'number' ? heightMm : DEFAULT_HEIGHT;
+    const areaM2 = Number.parseFloat(((w / 1000) * (h / 1000)).toFixed(2));
+    const profileM = estimateProfileLinearMeters(svgTemplate, w, h);
+    const computed = computeRequirementMeasure(sel.categoryType, areaM2, profileM);
+    return computed.qty;
+  }
+  return sel.quantity;
+}
+
+function resolveSelectionLabel(isHandleMat: boolean, categoryType: CategoryType, currentLabel: string): string {
+  if (!isHandleMat) return currentLabel;
+  if (categoryType === 'PROFILE') return 'Perfil Puxador';
+  return 'Puxador / Ferragem';
+}
+
 interface UseWindowBuilderStateProps {
   readonly isOpen: boolean;
   readonly selectedProductId?: string | null;
@@ -591,46 +697,14 @@ export function useWindowBuilderState({
         };
 
         const res = await budgetsApi.previewItemCalculation(payload);
-        if (!res || !res.options) return;
+        if (!res?.options) return;
 
-        setState((prev) => {
-          const updatedSelections = prev.materialSelections.map((sel, idx) => {
-            const optRes =
-              (sel.materialId ? res.options.find((o) => o.materialId === sel.materialId) : null) ??
-              res.options[idx];
-            if (!optRes) return sel;
-
-            const suggested = optRes.suggestedQuantity;
-            const physMin = optRes.physicalMinimumQuantity;
-            const isBelow = optRes.isBelowPhysicalMinimum;
-            const warning = optRes.warningMessage;
-
-            const isPuxadorOrHardware = isHandleOrLockMaterial(sel);
-
-            const currentQty =
-              (sel.isManualOverride || isPuxadorOrHardware) && sel.quantity !== undefined
-                ? sel.quantity
-                : suggested;
-            const unitPrice = sel.unitPrice ?? 0;
-            const totalPrice =
-              currentQty !== undefined ? parseFloat((currentQty * unitPrice).toFixed(2)) : undefined;
-
-            return {
-              ...sel,
-              suggestedQuantity: suggested,
-              physicalMinimumQuantity: physMin,
-              quantity: currentQty,
-              totalPrice,
-              isBelowPhysicalMinimum: isBelow,
-              warningMessage: warning,
-            };
-          });
-
-          return {
-            ...prev,
-            materialSelections: updatedSelections,
-          };
-        });
+        setState((prev) => ({
+          ...prev,
+          materialSelections: prev.materialSelections.map((sel, idx) =>
+            syncSelectionWithPreviewOption(sel, idx, res.options)
+          ),
+        }));
       } catch (err) {
         console.error('Erro ao sincronizar cálculo de materiais com o backend:', err);
       }
@@ -673,49 +747,11 @@ export function useWindowBuilderState({
       const nextGlass = sel.categoryType === 'GLASS' && mat
         ? deriveGlassFinishFromMaterial(mat, prev.glassFinish)
         : prev.glassFinish;
-      const isHandleMat = Boolean(
-        (mat as any)?.isHandle ??
-        (mat?.name && (
-          mat.name.toLowerCase().includes('puxador') ||
-          mat.name.toLowerCase().includes('concha') ||
-          mat.name.toLowerCase().includes('fecho') ||
-          mat.name.toLowerCase().includes('maçaneta') ||
-          mat.name.toLowerCase().includes('macaneta')
-        ))
-      );
-
-      const nextHandleType = isHandleMat && mat
-        ? deriveHandleTypeFromMaterial({ name: mat.name, categoryType: sel.categoryType, isHandle: (mat as any)?.isHandle }, prev.handleConfig.handleType)
-        : prev.handleConfig.handleType;
-
-      const isProfile = nextHandleType === 'PROFILE_HANDLE';
-      const isProfileOrBar = isProfile || nextHandleType === 'BAR_TUBULAR';
-      const nextHandleConfig: HandleConfig = isHandleMat
-        ? {
-            ...prev.handleConfig,
-            handleType: nextHandleType,
-            side: prev.handleConfig.side ?? 'ONE_SIDE',
-            coverage: isProfile ? prev.handleConfig.coverage ?? 'FULL' : undefined,
-            pieceLengthCm: isProfile ? prev.handleConfig.pieceLengthCm ?? 40 : undefined,
-            orientation: prev.handleConfig.orientation ?? (isProfileOrBar ? 'VERTICAL' : undefined),
-          }
-        : prev.handleConfig;
+      const isHandleMat = checkIsHandleMaterial(mat);
+      const nextHandleConfig = deriveNextHandleConfig(mat, sel.categoryType, isHandleMat, prev.handleConfig);
 
       const nextUnit = mat?.unit ?? sel.unitMeasure;
-      const isNewUnitPiece = nextUnit === 'un' || nextUnit === 'UN' || nextUnit === 'par' || nextUnit === 'PAR';
-      const isOldUnitPiece = sel.unitMeasure === 'un' || sel.unitMeasure === 'UN' || sel.unitMeasure === 'par' || sel.unitMeasure === 'PAR';
-
-      let nextQuantity = sel.quantity;
-      if (isNewUnitPiece && !isOldUnitPiece) {
-        nextQuantity = 1;
-      } else if (!isNewUnitPiece && isOldUnitPiece) {
-        const w = typeof prev.widthMm === 'number' ? prev.widthMm : DEFAULT_WIDTH;
-        const h = typeof prev.heightMm === 'number' ? prev.heightMm : DEFAULT_HEIGHT;
-        const areaM2 = parseFloat(((w / 1000) * (h / 1000)).toFixed(2));
-        const profileM = estimateProfileLinearMeters(svgTemplate, w, h);
-        const computed = computeRequirementMeasure(sel.categoryType, areaM2, profileM);
-        nextQuantity = computed.qty;
-      }
+      const nextQuantity = calculateTransitionQuantity(sel, nextUnit, prev.widthMm, prev.heightMm, svgTemplate);
 
       const updated = prev.materialSelections.map((s) =>
         s.requirementId === requirementId
@@ -723,9 +759,7 @@ export function useWindowBuilderState({
               ...s,
               materialId,
               materialName: mat?.name ?? '',
-              label: isHandleMat
-                ? (sel.categoryType === 'PROFILE' ? 'Perfil Puxador' : 'Puxador / Ferragem')
-                : s.label,
+              label: resolveSelectionLabel(isHandleMat, sel.categoryType, s.label),
               unitMeasure: nextUnit,
               unitPrice,
               quantity: nextQuantity,
@@ -1184,7 +1218,7 @@ export function useWindowBuilderState({
     );
   }, [state.materialSelections, state.quantity, state.widthMm, state.heightMm, state.laborCost]);
 
-  const validateStep = (step: 1 | 2 | 3 | 4): boolean => {
+  const validateStep = (step: BuilderStep): boolean => {
     if (step === 1) {
       const newErrors = validateStep1Dimensions(state.widthMm, state.heightMm, state.quantity);
       if (Object.keys(newErrors).length > 0) {
@@ -1209,21 +1243,21 @@ export function useWindowBuilderState({
   const handleNextStep = () => {
     if (validateStep(currentStep)) {
       if (currentStep < 4) {
-        setCurrentStep((prev) => (prev + 1) as 1 | 2 | 3 | 4);
+        setCurrentStep((prev) => (prev + 1) as BuilderStep);
       }
     }
   };
 
   const handlePrevStep = () => {
     if (currentStep > 1) {
-      setCurrentStep((prev) => (prev - 1) as 1 | 2 | 3 | 4);
+      setCurrentStep((prev) => (prev - 1) as BuilderStep);
     }
   };
 
-  const handleGoToStep = (targetStep: 1 | 2 | 3 | 4) => {
+  const handleGoToStep = (targetStep: BuilderStep) => {
     if (targetStep > currentStep) {
       for (let s = currentStep; s < targetStep; s++) {
-        if (!validateStep(s as 1 | 2 | 3 | 4)) return;
+        if (!validateStep(s as BuilderStep)) return;
       }
     }
     setCurrentStep(targetStep);

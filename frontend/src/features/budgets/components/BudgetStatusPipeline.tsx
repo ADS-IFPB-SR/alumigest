@@ -3,9 +3,9 @@ import type { BudgetStatus } from '../types';
 import { BUDGET_STATUS_THEMES, getBudgetStatusTheme } from '../utils/statusTheme';
 
 interface BudgetStatusPipelineProps {
-  status: BudgetStatus;
-  onChange: (newStatus: BudgetStatus) => void;
-  disabled?: boolean;
+  readonly status: BudgetStatus;
+  readonly onChange: (newStatus: BudgetStatus) => void;
+  readonly disabled?: boolean;
 }
 
 const PIPELINE_STEPS: BudgetStatus[] = ['DRAFT', 'SENT', 'APPROVED'];

@@ -52,25 +52,35 @@ export const DrillingConfigSection: React.FC<DrillingConfigSectionProps> = ({
       onHoleCountChange(0);
       return;
     }
-    const parsed = parseInt(trimmed, 10);
-    if (!isNaN(parsed) && parsed >= 0) {
+    const parsed = Number.parseInt(trimmed, 10);
+    if (!Number.isNaN(parsed) && parsed >= 0) {
       // Clamp para segurança da UI e renderização do SVG
       const clamped = Math.min(20, Math.max(0, parsed));
       onHoleCountChange(clamped);
     }
   };
 
+  const holeCountLabel = (() => {
+    if (drillingConfig.holeCount === 0) return 'Sem furação';
+    const unit = drillingConfig.holeCount === 1 ? 'furo' : 'furos';
+    return `${drillingConfig.holeCount} ${unit}`;
+  })();
+
+  const divisionHelpText = (() => {
+    if (drillingConfig.holeCount === 0) return 'Defina a quantidade para habilitar a distribuição.';
+    if (drillingConfig.divisionType === 'EQUAL') return 'Espaçamento automático pela altura.';
+    return 'Informe a cota individual de cada furo.';
+  })();
+
   return (
     <div className="bg-surface-container-lowest border border-outline-variant rounded-lg p-md shadow-xs flex flex-col gap-sm">
       <div className="flex items-center justify-between pb-xs border-b border-outline-variant">
         <h3 className="text-sm font-label font-bold text-on-surface uppercase tracking-wider flex items-center gap-xs">
           <span className="material-symbols-outlined text-[18px] text-primary">adjust</span>
-          Furação no Alumínio
+          {' '}Furação no Alumínio
         </h3>
         <span className="text-xs font-data-mono text-on-surface-variant bg-surface-container px-2 py-0.5 rounded border border-outline-variant/50">
-          {drillingConfig.holeCount === 0
-            ? 'Sem furação'
-            : `${drillingConfig.holeCount} ${drillingConfig.holeCount === 1 ? 'furo' : 'furos'}`}
+          {holeCountLabel}
         </span>
       </div>
 
@@ -158,11 +168,7 @@ export const DrillingConfigSection: React.FC<DrillingConfigSectionProps> = ({
             <option value="CUSTOM_DISTANCE">Com medida (Distâncias)</option>
           </select>
           <span className="text-[11px] text-on-surface-variant font-data-mono block mt-1.5">
-            {drillingConfig.holeCount === 0
-              ? 'Defina a quantidade para habilitar a distribuição.'
-              : drillingConfig.divisionType === 'EQUAL'
-              ? 'Espaçamento automático pela altura.'
-              : 'Informe a cota individual de cada furo.'}
+            {divisionHelpText}
           </span>
         </div>
       </div>

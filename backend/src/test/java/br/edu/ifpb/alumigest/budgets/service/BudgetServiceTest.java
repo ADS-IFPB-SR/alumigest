@@ -268,7 +268,8 @@ class BudgetServiceTest {
                 client.getId(), BigDecimal.ZERO, "Notes", pastDate, Collections.emptyList()
         );
 
-        assertThatThrownBy(() -> budgetService.update(budget.getId(), invalidRequest))
+        UUID budgetId = budget.getId();
+        assertThatThrownBy(() -> budgetService.update(budgetId, invalidRequest))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("A data de validade da proposta não pode ser anterior à data de hoje.");
 

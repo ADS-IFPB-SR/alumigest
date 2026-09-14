@@ -73,8 +73,8 @@ export function syncHandleMaterialSelections(
       (targetRequirementId && s.requirementId === targetRequirementId) ||
       s.requirementId === 'req-handle' ||
       s.requirementId.startsWith('handle-mat-') ||
-      Boolean(s.materialName && s.materialName.toLowerCase().includes('puxador')) ||
-      Boolean(s.label && s.label.toLowerCase().includes('puxador')) ||
+      Boolean(s.materialName?.toLowerCase().includes('puxador')) ||
+      Boolean(s.label?.toLowerCase().includes('puxador')) ||
       isHandleOrLockMaterial(s)
   );
 
@@ -82,7 +82,7 @@ export function syncHandleMaterialSelections(
     const isTarget = targetRequirementId ? sel.requirementId === targetRequirementId : false;
     const isPuxador =
       isTarget ||
-      (activeHandleMat && sel.requirementId === activeHandleMat.requirementId) ||
+      sel.requirementId === activeHandleMat?.requirementId ||
       isHandleOrLockMaterial(sel);
 
     if (!isPuxador) return sel;
@@ -103,10 +103,10 @@ export function syncHandleMaterialSelections(
     let newQty: number;
     if (isMeter) {
       if (newHandleConfig.coverage === 'PIECE' && newHandleConfig.pieceLengthCm) {
-        newQty = parseFloat(((newHandleConfig.pieceLengthCm / 100) * sideMult * movingLeaves).toFixed(2));
+        newQty = Number.parseFloat(((newHandleConfig.pieceLengthCm / 100) * sideMult * movingLeaves).toFixed(2));
       } else {
         const h = typeof heightMm === 'number' && heightMm > 0 ? heightMm : DEFAULT_HEIGHT;
-        newQty = parseFloat(((h / 1000) * sideMult * movingLeaves).toFixed(2));
+        newQty = Number.parseFloat(((h / 1000) * sideMult * movingLeaves).toFixed(2));
       }
     } else if (isPar) {
       // 1 PAR já é composto pelas 2 pegadas (frente e verso) para 1 folha móvel.
@@ -121,7 +121,7 @@ export function syncHandleMaterialSelections(
     return {
       ...sel,
       quantity: newQty,
-      totalPrice: parseFloat((newQty * unitPrice).toFixed(2)),
+      totalPrice: Number.parseFloat((newQty * unitPrice).toFixed(2)),
       isManualOverride: true,
     };
   });
@@ -132,6 +132,84 @@ export interface UseMaterialSyncProps {
   profiles: ProfileDTO[];
   hardwares: HardwareDTO[];
   films: FilmDTO[];
+}
+
+interface RequirementMaterialResult {
+  mat?: { id: string; name: string; price: number; unit: string; familyCode?: string };
+  qty: number;
+}
+
+function resolveGlassMaterial(glassColor: string | undefined, glasses: GlassDTO[], areaM2: number): RequirementMaterialResult | null {
+  const matched = glassColor ? glasses.find((g) => g.colorFinish?.toLowerCase() === glassColor.toLowerCase()) : null;
+  const chosen = matched ?? glasses[0];
+  if (!chosen) return null;
+  return {
+    mat: { id: chosen.id, name: chosen.name, price: chosen.salePrice ?? chosen.pricePerSqm ?? 0, unit: 'm²', familyCode: chosen.familyCode },
+    qty: areaM2,
+  };
+}
+
+function resolveProfileMaterial(alumColor: string | undefined, profiles: ProfileDTO[]): RequirementMaterialResult | null {
+  const matched = alumColor ? profiles.find((p) => p.colorFinish?.toLowerCase() === alumColor.toLowerCase()) : null;
+  const chosen = matched ?? profiles[0];
+  if (!chosen) return null;
+  return {
+    mat: { id: chosen.id, name: chosen.name, price: chosen.salePrice ?? 0, unit: chosen.unitMeasure ?? 'm', familyCode: chosen.familyCode },
+    qty: 2,
+  };
+}
+
+function resolveHardwareMaterial(hardwares: HardwareDTO[]): RequirementMaterialResult | null {
+  const chosen = hardwares[0];
+  if (!chosen) return null;
+  return {
+    mat: { id: chosen.id, name: chosen.name, price: chosen.salePrice ?? 0, unit: chosen.unitMeasure ?? 'un', familyCode: chosen.familyCode },
+    qty: 1,
+  };
+}
+
+function resolveFilmMaterial(films: FilmDTO[], areaM2: number): RequirementMaterialResult | null {
+  const chosen = films[0];
+  if (!chosen) return null;
+  return {
+    mat: { id: chosen.id, name: chosen.name, price: chosen.salePrice ?? 0, unit: 'm²', familyCode: chosen.familyCode },
+    qty: areaM2,
+  };
+}
+
+function resolveRequirementMaterial(
+  catType: CategoryType,
+  areaM2: number,
+  glassColor?: string,
+  alumColor?: string,
+  catalog?: {
+    glasses: GlassDTO[];
+    profiles: ProfileDTO[];
+    hardwares: HardwareDTO[];
+    films: FilmDTO[];
+  }
+): RequirementMaterialResult {
+  if (catType === 'GLASS') {
+    const res = resolveGlassMaterial(glassColor, catalog?.glasses ?? [], areaM2);
+    if (res) return res;
+  } else if (catType === 'PROFILE') {
+    const res = resolveProfileMaterial(alumColor, catalog?.profiles ?? []);
+    if (res) return res;
+  } else if (catType === 'HARDWARE') {
+    const res = resolveHardwareMaterial(catalog?.hardwares ?? []);
+    if (res) return res;
+  } else if (catType === 'FILM') {
+    const res = resolveFilmMaterial(catalog?.films ?? [], areaM2);
+    if (res) return res;
+  }
+
+  return { qty: 1 };
+}
+
+function getDefaultUnitMeasure(catType: CategoryType): string {
+  if (catType === 'GLASS' || catType === 'FILM') return 'm²';
+  if (catType === 'PROFILE') return 'm';
+  return 'un';
 }
 
 export function useMaterialSync({
@@ -213,69 +291,37 @@ export function useMaterialSync({
             unitMeasure: mat?.unit ?? 'un',
             unitPrice: price,
             quantity: qty,
-            totalPrice: qty !== undefined ? parseFloat((qty * price).toFixed(2)) : undefined,
+            totalPrice: qty !== undefined ? Number.parseFloat((qty * price).toFixed(2)) : undefined,
           };
         });
       }
 
       if (targetTemplate.categoryRequirements && targetTemplate.categoryRequirements.length > 0) {
-        const areaM2 = parseFloat(((w / 1000) * (h / 1000)).toFixed(2));
-        const selections: MaterialSelection[] = [];
+        const areaM2 = Number.parseFloat(((w / 1000) * (h / 1000)).toFixed(2));
+        const catalog = { glasses, profiles, hardwares, films };
 
-        targetTemplate.categoryRequirements.forEach((req, idx) => {
+        return targetTemplate.categoryRequirements.map((req, idx) => {
           const catType: CategoryType = typeof req === 'string' ? (req as CategoryType) : (req.categoryType as CategoryType);
-          let mat: { id: string; name: string; price: number; unit: string; familyCode?: string } | undefined;
-          let qty = 1;
+          const { mat, qty } = resolveRequirementMaterial(catType, areaM2, glassColor, alumColor, catalog);
 
-          if (catType === 'GLASS') {
-            const matched = glassColor ? glasses.find((g) => g.colorFinish?.toLowerCase() === glassColor.toLowerCase()) : null;
-            const chosen = matched ?? glasses[0];
-            if (chosen) {
-              mat = { id: chosen.id, name: chosen.name, price: chosen.salePrice ?? chosen.pricePerSqm ?? 0, unit: 'm²', familyCode: chosen.familyCode };
-              qty = areaM2;
-            }
-          } else if (catType === 'PROFILE') {
-            const matched = alumColor ? profiles.find((p) => p.colorFinish?.toLowerCase() === alumColor.toLowerCase()) : null;
-            const chosen = matched ?? profiles[0];
-            if (chosen) {
-              mat = { id: chosen.id, name: chosen.name, price: chosen.salePrice ?? 0, unit: chosen.unitMeasure ?? 'm', familyCode: chosen.familyCode };
-              qty = 2;
-            }
-
-          } else if (catType === 'HARDWARE') {
-            const chosen = hardwares[0];
-            if (chosen) {
-              mat = { id: chosen.id, name: chosen.name, price: chosen.salePrice ?? 0, unit: chosen.unitMeasure ?? 'un', familyCode: chosen.familyCode };
-              qty = 1;
-            }
-          } else if (catType === 'FILM') {
-            const chosen = films[0];
-            if (chosen) {
-              mat = { id: chosen.id, name: chosen.name, price: chosen.salePrice ?? 0, unit: 'm²', familyCode: chosen.familyCode };
-              qty = areaM2;
-            }
-          }
-
-          selections.push({
+          return {
             requirementId: `req-${targetTemplate.id}-${catType}-${idx}`,
             categoryType: catType,
             label: CATEGORY_LABELS[catType] ?? catType,
             isOptional: false,
             materialId: mat?.id ?? '',
             materialName: mat?.name ?? '',
-            unitMeasure: mat?.unit ?? (catType === 'GLASS' || catType === 'FILM' ? 'm²' : catType === 'PROFILE' ? 'm' : 'un'),
+            unitMeasure: mat?.unit ?? getDefaultUnitMeasure(catType),
             unitPrice: mat?.price ?? 0,
             quantity: qty,
-            totalPrice: mat ? parseFloat((qty * mat.price).toFixed(2)) : 0,
+            totalPrice: mat ? Number.parseFloat((qty * mat.price).toFixed(2)) : 0,
             familyCode: mat?.familyCode,
-          });
+          };
         });
-
-        return selections;
       }
 
       const fallbackSelections: MaterialSelection[] = [];
-      const areaM2 = parseFloat(((w / 1000) * (h / 1000)).toFixed(2));
+      const areaM2 = Number.parseFloat(((w / 1000) * (h / 1000)).toFixed(2));
       if (glasses.length > 0) {
         fallbackSelections.push({
           requirementId: 'default-glass-1',
@@ -287,7 +333,7 @@ export function useMaterialSync({
           unitMeasure: 'm²',
           unitPrice: glasses[0].salePrice ?? glasses[0].pricePerSqm ?? 0,
           quantity: areaM2,
-          totalPrice: parseFloat((areaM2 * (glasses[0].salePrice ?? glasses[0].pricePerSqm ?? 0)).toFixed(2)),
+          totalPrice: Number.parseFloat((areaM2 * (glasses[0].salePrice ?? glasses[0].pricePerSqm ?? 0)).toFixed(2)),
           familyCode: glasses[0].familyCode,
         });
       }
@@ -302,7 +348,7 @@ export function useMaterialSync({
           unitMeasure: profiles[0].unitMeasure ?? 'm',
           unitPrice: profiles[0].salePrice ?? 0,
           quantity: 2,
-          totalPrice: parseFloat((2 * (profiles[0].salePrice ?? 0)).toFixed(2)),
+          totalPrice: Number.parseFloat((2 * (profiles[0].salePrice ?? 0)).toFixed(2)),
           familyCode: profiles[0].familyCode,
         });
       }
@@ -317,7 +363,7 @@ export function useMaterialSync({
           unitMeasure: hardwares[0].unitMeasure ?? 'un',
           unitPrice: hardwares[0].salePrice ?? 0,
           quantity: 1,
-          totalPrice: parseFloat((1 * (hardwares[0].salePrice ?? 0)).toFixed(2)),
+          totalPrice: Number.parseFloat((1 * (hardwares[0].salePrice ?? 0)).toFixed(2)),
           familyCode: hardwares[0].familyCode,
         });
       }

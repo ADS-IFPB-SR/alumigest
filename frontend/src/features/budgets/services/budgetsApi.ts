@@ -27,12 +27,17 @@ function parseJsonConfig<T>(raw: unknown, fallback: T): T {
   return fallback;
 }
 
+function formatValidUntil(val?: string): string | undefined {
+  if (!val) return undefined;
+  return val.includes('T') ? val : `${val}T23:59:59Z`;
+}
+
 function toBackendBudgetPayload(data: CreateBudgetPayload) {
   return {
     clientId: data.customerId,
     discountPercent: data.discountPercent,
     notes: data.notes,
-    validUntil: data.validUntil ? (data.validUntil.includes('T') ? data.validUntil : `${data.validUntil}T23:59:59Z`) : undefined,
+    validUntil: formatValidUntil(data.validUntil),
     items: data.items.map((item) => ({
       productId: item.productId,
       widthMm: item.width,

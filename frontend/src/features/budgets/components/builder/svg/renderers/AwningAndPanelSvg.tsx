@@ -5,13 +5,19 @@ import { HorizontalDimension } from '../SvgDimensions';
 import { DrillingHoles } from '../SvgDrillingHoles';
 import { HandleElement, HandlePieceDimension } from '../SvgHandleElement';
 
-export function renderAwningWindow1F(
-  svgW: number, svgH: number, inverted: boolean,
-  handleConfig: HandleConfig, drillingConfig: DrillingConfig,
-  heightMm: number,
-  theme: SvgTheme,
-  widthMm?: number,
-) {
+export interface AwningWindow1FRenderProps {
+  readonly svgW: number;
+  readonly svgH: number;
+  readonly inverted: boolean;
+  readonly handleConfig: HandleConfig;
+  readonly drillingConfig: DrillingConfig;
+  readonly heightMm: number;
+  readonly theme: SvgTheme;
+  readonly widthMm?: number;
+}
+
+export function renderAwningWindow1F(props: AwningWindow1FRenderProps) {
+  const { svgW, svgH, inverted, handleConfig, drillingConfig, heightMm, theme, widthMm } = props;
   const fw = FRAME_W;
   const innerW = svgW - fw * 2;
   const innerH = svgH - fw * 2;

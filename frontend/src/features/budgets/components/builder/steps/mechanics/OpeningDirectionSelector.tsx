@@ -28,7 +28,7 @@ export const OpeningDirectionSelector: React.FC<OpeningDirectionSelectorProps> =
     <div className="flex flex-col gap-xs pb-xs border-b border-outline-variant/50">
       <div className="text-xs sm:text-sm font-label font-semibold text-on-surface flex items-center gap-xs mb-1">
         <span className="material-symbols-outlined text-[16px] text-primary">swap_horiz</span>
-        Sentido de Abertura da Folha
+        {' '}Sentido de Abertura da Folha
       </div>
       <div className="grid grid-cols-2 gap-xs">
         {supportedDirections.map((dir) => {

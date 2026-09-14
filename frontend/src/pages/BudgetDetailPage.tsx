@@ -448,7 +448,7 @@ export function BudgetDetailPage() {
                 <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-md shadow-xs flex flex-col gap-sm">
                   <h3 className="font-label font-bold text-xs uppercase tracking-wider text-on-surface-variant pb-xs border-b border-outline-variant flex items-center gap-1">
                     <span className="material-symbols-outlined text-[16px] text-primary">description</span>
-                    Observações e Termos Comerciais
+                    {' '}Observações e Termos Comerciais
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-md text-xs font-body">
                     {budget.notes && (
@@ -476,7 +476,7 @@ export function BudgetDetailPage() {
                 <div className="flex items-center justify-between pb-xs border-b border-outline-variant">
                   <span className="text-xs font-label font-bold text-on-surface uppercase tracking-wider flex items-center gap-1">
                     <span className="material-symbols-outlined text-[16px] text-primary">person</span>
-                    Cliente
+                    {' '}Cliente
                   </span>
                   {budget.customer?.id && (
                     <Link
@@ -547,7 +547,7 @@ export function BudgetDetailPage() {
                 <div className="flex items-center justify-between pb-xs border-b border-outline-variant">
                   <h3 className="text-xs font-label font-bold text-on-surface uppercase tracking-wider flex items-center gap-1">
                     <span className="material-symbols-outlined text-[16px] text-primary">receipt_long</span>
-                    Resumo Financeiro
+                    {' '}Resumo Financeiro
                   </h3>
                   <span className="text-[10px] font-data-mono text-secondary px-1.5 py-0.5 rounded bg-surface-container">
                     BRL (R$)
