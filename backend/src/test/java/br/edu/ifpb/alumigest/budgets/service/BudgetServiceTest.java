@@ -1,8 +1,6 @@
 package br.edu.ifpb.alumigest.budgets.service;
 
-import br.edu.ifpb.alumigest.budgets.domain.Budget;
-import br.edu.ifpb.alumigest.budgets.domain.BudgetStatus;
-import br.edu.ifpb.alumigest.budgets.domain.PaymentCondition; // NOVO IMPORT
+import br.edu.ifpb.alumigest.budgets.domain.*;
 import br.edu.ifpb.alumigest.budgets.dto.*;
 import br.edu.ifpb.alumigest.budgets.mapper.BudgetMapper;
 import br.edu.ifpb.alumigest.budgets.repository.BudgetRepository;
@@ -10,6 +8,7 @@ import br.edu.ifpb.alumigest.clients.domain.Client;
 import br.edu.ifpb.alumigest.clients.repository.ClientRepository;
 import br.edu.ifpb.alumigest.common.dto.PageResponse;
 import br.edu.ifpb.alumigest.common.exception.BudgetImmutableException;
+import br.edu.ifpb.alumigest.common.exception.BusinessException;
 import br.edu.ifpb.alumigest.common.exception.InvalidBudgetStatusTransitionException;
 import br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
@@ -48,6 +47,9 @@ class BudgetServiceTest {
     @Mock
     private BudgetPricingService budgetPricingService;
 
+    @Mock
+    private BudgetCodeGenerator budgetCodeGenerator;
+
     private BudgetService budgetService;
 
     private Client client;
@@ -64,7 +66,14 @@ class BudgetServiceTest {
                 // No-op for BudgetServiceTest
             }
         };
-        budgetService = new BudgetService(budgetRepository, clientRepository, budgetMapper, budgetQuantityService, budgetPricingService);
+        budgetService = new BudgetService(
+                budgetRepository,
+                clientRepository,
+                budgetMapper,
+                budgetQuantityService,
+                budgetPricingService,
+                budgetCodeGenerator
+        );
 
         client = new Client();
         client.setId(UUID.randomUUID());
@@ -87,12 +96,12 @@ class BudgetServiceTest {
         when(clientRepository.findById(client.getId())).thenReturn(Optional.of(client));
         when(budgetMapper.toEntity(createRequest)).thenReturn(new Budget());
         when(budgetRepository.save(any(Budget.class))).thenReturn(budget);
-        
+
         BudgetResponseDTO responseDTO = new BudgetResponseDTO(
-                budget.getId(), "ORC-2026-001", client.getId(), "João da Silva", 
-                BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, 
-                PaymentCondition.A_VISTA_PIX, "À Vista (PIX / Dinheiro)", null, 
-                BudgetStatus.DRAFT, "Rascunho", "Notes", 
+                budget.getId(), "ORC-2026-001", client.getId(), "João da Silva",
+                BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO,
+                PaymentCondition.A_VISTA_PIX, "À Vista (PIX / Dinheiro)", null,
+                BudgetStatus.DRAFT, "Rascunho", "Notes",
                 null, null, null, false, Collections.emptyList()
         );
         when(budgetMapper.toResponseDTO(budget)).thenReturn(responseDTO);
@@ -117,12 +126,12 @@ class BudgetServiceTest {
     @DisplayName("Consulta: Orçamento encontrado")
     void findById_ShouldReturnBudget_WhenExists() {
         when(budgetRepository.findById(budget.getId())).thenReturn(Optional.of(budget));
-        
+
         BudgetResponseDTO responseDTO = new BudgetResponseDTO(
-                budget.getId(), "ORC-2026-001", client.getId(), "João da Silva", 
-                BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, 
-                PaymentCondition.A_VISTA_PIX, "À Vista (PIX / Dinheiro)", null, 
-                BudgetStatus.DRAFT, "Rascunho", "Notes", 
+                budget.getId(), "ORC-2026-001", client.getId(), "João da Silva",
+                BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO,
+                PaymentCondition.A_VISTA_PIX, "À Vista (PIX / Dinheiro)", null,
+                BudgetStatus.DRAFT, "Rascunho", "Notes",
                 null, null, null, false, Collections.emptyList()
         );
         when(budgetMapper.toResponseDTO(budget)).thenReturn(responseDTO);
@@ -149,7 +158,7 @@ class BudgetServiceTest {
         Pageable pageable = PageRequest.of(0, 10);
         Page<Budget> page = new PageImpl<>(List.of(budget));
         when(budgetRepository.searchBudgets("busca", BudgetStatus.DRAFT, pageable)).thenReturn(page);
-        
+
         BudgetSummaryResponseDTO summaryDTO = new BudgetSummaryResponseDTO(
                 budget.getId(), "ORC-2026-001", "João da Silva", 0, BigDecimal.ZERO, BudgetStatus.DRAFT, null, null, false);
         when(budgetMapper.toSummaryResponseDTO(budget)).thenReturn(summaryDTO);
@@ -166,17 +175,17 @@ class BudgetServiceTest {
     void update_ShouldUpdate_WhenDraft() {
         when(budgetRepository.findById(budget.getId())).thenReturn(Optional.of(budget));
         when(clientRepository.findById(client.getId())).thenReturn(Optional.of(client));
-        
+
         Budget updatedData = new Budget();
         updatedData.setDiscountPercent(BigDecimal.TEN);
         when(budgetMapper.toEntity(requestDTO)).thenReturn(updatedData);
         when(budgetRepository.save(budget)).thenReturn(budget);
-        
-       BudgetResponseDTO responseDTO = new BudgetResponseDTO(
-                budget.getId(), "ORC-2026-001", client.getId(), "João da Silva", 
-                BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, 
-                PaymentCondition.A_VISTA_PIX, "À Vista (PIX / Dinheiro)", null, 
-                BudgetStatus.DRAFT, "Rascunho", "Notes", 
+
+        BudgetResponseDTO responseDTO = new BudgetResponseDTO(
+                budget.getId(), "ORC-2026-001", client.getId(), "João da Silva",
+                BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO,
+                PaymentCondition.A_VISTA_PIX, "À Vista (PIX / Dinheiro)", null,
+                BudgetStatus.DRAFT, "Rascunho", "Notes",
                 null, null, null, false, Collections.emptyList()
         );
         when(budgetMapper.toResponseDTO(budget)).thenReturn(responseDTO);
@@ -202,11 +211,11 @@ class BudgetServiceTest {
     @DisplayName("Alteração de status: Transição válida")
     void updateStatus_ShouldUpdateStatus_WhenTransitionIsValid() {
         when(budgetRepository.findById(budget.getId())).thenReturn(Optional.of(budget));
-        
+
         BudgetStatusUpdateDTO statusDto = new BudgetStatusUpdateDTO(BudgetStatus.SENT);
-        
+
         budgetService.updateStatus(budget.getId(), statusDto);
-        
+
         assertThat(budget.getStatus()).isEqualTo(BudgetStatus.SENT);
         verify(budgetRepository, times(1)).save(budget);
     }
@@ -217,9 +226,9 @@ class BudgetServiceTest {
         budget.setStatus(BudgetStatus.APPROVED);
         UUID budgetId = budget.getId();
         when(budgetRepository.findById(budgetId)).thenReturn(Optional.of(budget));
-        
+
         BudgetStatusUpdateDTO statusDto = new BudgetStatusUpdateDTO(BudgetStatus.DRAFT);
-        
+
         assertThatThrownBy(() -> budgetService.updateStatus(budgetId, statusDto))
                 .isInstanceOf(InvalidBudgetStatusTransitionException.class);
     }
@@ -228,10 +237,145 @@ class BudgetServiceTest {
     @DisplayName("Cancelamento: Operação válida")
     void delete_ShouldCancelBudget_WhenValid() {
         when(budgetRepository.findById(budget.getId())).thenReturn(Optional.of(budget));
-        
+
         budgetService.delete(budget.getId());
-        
+
         assertThat(budget.getStatus()).isEqualTo(BudgetStatus.CANCELLED);
         verify(budgetRepository, times(1)).save(budget);
+    }
+
+    @Test
+    @DisplayName("Recalcular: Deve invocar serviços de cálculo e salvar orçamento")
+    void recalculate_ShouldInvokeServices_WhenDraft() {
+        when(budgetRepository.findById(budget.getId())).thenReturn(Optional.of(budget));
+        when(budgetRepository.save(budget)).thenReturn(budget);
+
+        BudgetResponseDTO responseDTO = new BudgetResponseDTO(
+                budget.getId(), "ORC-2026-001", client.getId(), "João da Silva",
+                BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO,
+                PaymentCondition.A_VISTA_PIX, "À Vista", null,
+                BudgetStatus.DRAFT, "Rascunho", "Notes",
+                null, null, null, false, Collections.emptyList()
+        );
+        when(budgetMapper.toResponseDTO(budget)).thenReturn(responseDTO);
+
+        budgetService.recalculate(budget.getId());
+
+        verify(budgetPricingService, times(1)).calculatePricing(budget);
+        verify(budgetRepository, times(1)).save(budget);
+    }
+
+    @Test
+    @DisplayName("Aplicar Desconto: Percentual válido deve calcular valor corretamente")
+    void aplicarDesconto_ShouldApplyPercentual_WhenValid() {
+        budget.setSubtotal(new BigDecimal("1000.00"));
+        budget.addItem(new BudgetItem()); // Garante que a lista não está vazia
+
+        when(budgetRepository.findById(budget.getId())).thenReturn(Optional.of(budget));
+        when(budgetRepository.save(budget)).thenReturn(budget);
+
+        DiscountRequest request = new DiscountRequest(
+                DiscountType.PERCENTUAL,
+                new BigDecimal("15.00"),
+                PaymentCondition.A_VISTA_PIX,
+                "Pagamento à vista",
+                null
+        );
+
+        budgetService.aplicarDesconto(budget.getId(), request);
+
+        assertThat(budget.getDiscountPercent()).isEqualTo(new BigDecimal("15.00"));
+        assertThat(budget.getDiscountValue()).isEqualTo(new BigDecimal("150.00"));
+        assertThat(budget.getTotal()).isEqualTo(new BigDecimal("850.00"));
+        assertThat(budget.getPaymentCondition()).isEqualTo(PaymentCondition.A_VISTA_PIX);
+        verify(budgetRepository, times(1)).save(budget);
+    }
+
+    @Test
+    @DisplayName("Aplicar Desconto: Valor fixo válido deve calcular percentual corretamente")
+    void aplicarDesconto_ShouldApplyFixedValue_WhenValid() {
+        budget.setSubtotal(new BigDecimal("2000.00"));
+        budget.addItem(new BudgetItem());
+
+        when(budgetRepository.findById(budget.getId())).thenReturn(Optional.of(budget));
+        when(budgetRepository.save(budget)).thenReturn(budget);
+
+        DiscountRequest request = new DiscountRequest(
+                DiscountType.VALOR_FIXO,
+                new BigDecimal("500.00"),
+                PaymentCondition.A_VISTA_PIX, // <-- Alterado para uma constante válida
+                "Parcelado",
+                null
+        );
+
+        budgetService.aplicarDesconto(budget.getId(), request);
+
+        assertThat(budget.getDiscountValue()).isEqualTo(new BigDecimal("500.00"));
+        assertThat(budget.getDiscountPercent()).isEqualTo(new BigDecimal("25.00"));
+        assertThat(budget.getTotal()).isEqualTo(new BigDecimal("1500.00"));
+        verify(budgetRepository, times(1)).save(budget);
+    }
+
+    @Test
+    @DisplayName("Aplicar Desconto: Rejeitar desconto percentual acima de 100%")
+    void aplicarDesconto_ShouldThrowException_WhenPercentExceeds100() {
+        budget.setSubtotal(new BigDecimal("1000.00"));
+        budget.addItem(new BudgetItem());
+
+        when(budgetRepository.findById(budget.getId())).thenReturn(Optional.of(budget));
+
+        DiscountRequest request = new DiscountRequest(
+                DiscountType.PERCENTUAL,
+                new BigDecimal("105.00"),
+                PaymentCondition.A_VISTA_PIX,
+                "",
+                null
+        );
+
+        assertThatThrownBy(() -> budgetService.aplicarDesconto(budget.getId(), request))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("não pode ser superior a 100%");
+    }
+
+    @Test
+    @DisplayName("Aplicar Desconto: Rejeitar valor fixo superior ao subtotal")
+    void aplicarDesconto_ShouldThrowException_WhenFixedValueExceedsSubtotal() {
+        budget.setSubtotal(new BigDecimal("1000.00"));
+        budget.addItem(new BudgetItem());
+
+        when(budgetRepository.findById(budget.getId())).thenReturn(Optional.of(budget));
+
+        DiscountRequest request = new DiscountRequest(
+                DiscountType.VALOR_FIXO,
+                new BigDecimal("1200.00"),
+                PaymentCondition.A_VISTA_PIX,
+                "",
+                null
+        );
+
+        assertThatThrownBy(() -> budgetService.aplicarDesconto(budget.getId(), request))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("não pode ser superior ao subtotal");
+    }
+
+    @Test
+    @DisplayName("Aplicar Desconto: Rejeitar orçamento sem itens ou subtotal zerado")
+    void aplicarDesconto_ShouldThrowException_WhenBudgetIsEmpty() {
+        budget.setSubtotal(BigDecimal.ZERO);
+        // Não adicionamos itens na lista
+
+        when(budgetRepository.findById(budget.getId())).thenReturn(Optional.of(budget));
+
+        DiscountRequest request = new DiscountRequest(
+                DiscountType.PERCENTUAL,
+                new BigDecimal("10.00"),
+                PaymentCondition.A_VISTA_PIX,
+                "",
+                null
+        );
+
+        assertThatThrownBy(() -> budgetService.aplicarDesconto(budget.getId(), request))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("O orçamento deve possuir itens e subtotal maior que zero");
     }
 }
