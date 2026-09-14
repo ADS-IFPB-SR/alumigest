@@ -89,13 +89,26 @@ export const BudgetItemsTable: React.FC<BudgetItemsTableProps> = ({
                           Modelo: {item.templateType ? (TEMPLATE_TYPE_INFO[item.templateType as keyof typeof TEMPLATE_TYPE_INFO]?.label || item.templateType) : 'Básico'}
                           {openDir && <span className="ml-xs text-secondary">· {formatOpeningDirectionArrow(openDir)}</span>}
                         </span>
+                        {(item.templateConfig?.aluminumColor || item.templateConfig?.glassFinish) && (
+                          <span className="text-[11px] text-secondary font-body">
+                            {[
+                              item.templateConfig?.aluminumColor ? `Cor: ${item.templateConfig.aluminumColor}` : null,
+                              item.templateConfig?.glassFinish ? `Vidro: ${item.templateConfig.glassFinish}` : null,
+                            ].filter(Boolean).join(' · ')}
+                          </span>
+                        )}
+                        {item.notes && (
+                          <span className="text-[11px] text-secondary italic truncate max-w-xs">
+                            Obs: {item.notes}
+                          </span>
+                        )}
                       </div>
                     </td>
 
                     {/* Medidas (L × A mm) */}
                     <td className="px-sm py-sm text-center">
                       <span className="font-data-mono text-xs text-on-surface whitespace-nowrap">
-                        {item.widthMm}×{item.heightMm}
+                        {item.widthMm ?? item.width}×{item.heightMm ?? item.height}
                       </span>
                       <br />
                       <span className="text-[10px] text-on-surface-variant">mm</span>

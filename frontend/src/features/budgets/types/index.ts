@@ -244,6 +244,8 @@ export interface BudgetItem {
   drillingConfig: DrillingConfig;
   widthMm: number;
   heightMm: number;
+  width?: number;
+  height?: number;
   quantity: number;
   laborCost: number;
   options: BudgetItemOption[];
