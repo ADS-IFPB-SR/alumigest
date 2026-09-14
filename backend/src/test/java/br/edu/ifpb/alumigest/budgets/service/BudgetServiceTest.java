@@ -378,4 +378,31 @@ class BudgetServiceTest {
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("O orçamento deve possuir itens e subtotal maior que zero");
     }
+
+    @Test
+    @DisplayName("Alteração de status: Transição SENT para EXPIRED deve ser válida")
+    void updateStatus_ShouldAllowTransition_WhenSentToExpired() {
+        budget.setStatus(BudgetStatus.SENT);
+        when(budgetRepository.findById(budget.getId())).thenReturn(Optional.of(budget));
+
+        BudgetStatusUpdateDTO statusDto = new BudgetStatusUpdateDTO(BudgetStatus.EXPIRED);
+        budgetService.updateStatus(budget.getId(), statusDto);
+
+        assertThat(budget.getStatus()).isEqualTo(BudgetStatus.EXPIRED);
+        verify(budgetRepository, times(1)).save(budget);
+    }
+
+    @Test
+    @DisplayName("Alteração de status: EXPIRED é estado final e não permite transição")
+    void updateStatus_ShouldThrowException_WhenCurrentStateIsExpired() {
+        budget.setStatus(BudgetStatus.EXPIRED);
+        UUID budgetId = budget.getId();
+        when(budgetRepository.findById(budgetId)).thenReturn(Optional.of(budget));
+
+        // Tentando voltar um orçamento expirado para rascunho (Ilegal)
+        BudgetStatusUpdateDTO statusDto = new BudgetStatusUpdateDTO(BudgetStatus.DRAFT);
+
+        assertThatThrownBy(() -> budgetService.updateStatus(budgetId, statusDto))
+                .isInstanceOf(InvalidBudgetStatusTransitionException.class);
+    }
 }
