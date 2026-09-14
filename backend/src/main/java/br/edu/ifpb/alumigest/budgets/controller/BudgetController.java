@@ -8,6 +8,7 @@ import br.edu.ifpb.alumigest.budgets.dto.BudgetRequestDTO;
 import br.edu.ifpb.alumigest.budgets.dto.BudgetResponseDTO;
 import br.edu.ifpb.alumigest.budgets.dto.BudgetStatusUpdateDTO;
 import br.edu.ifpb.alumigest.budgets.dto.BudgetSummaryResponseDTO;
+import br.edu.ifpb.alumigest.budgets.dto.StatusChangeRequest;
 import br.edu.ifpb.alumigest.budgets.service.BudgetQuantityService;
 import br.edu.ifpb.alumigest.budgets.service.BudgetService;
 import br.edu.ifpb.alumigest.common.dto.PageResponse;
@@ -37,7 +38,7 @@ import java.net.URI;
 import java.util.UUID;
 
 @RestController
-@RequestMapping({"/api/orcamentos", "/api/v1/budgets"})
+@RequestMapping({"/api/orcamentos", "/api/v1/budgets", "/api/budgets"})
 @Tag(name = "Orçamentos", description = "Endpoints para gerenciamento de orçamentos")
 public class BudgetController {
 
@@ -111,9 +112,9 @@ public class BudgetController {
     @ApiResponse(responseCode = "422", description = "Transição inválida")
     public ResponseEntity<Void> updateStatus(
             @PathVariable UUID id,
-            @RequestBody @Valid BudgetStatusUpdateDTO statusDto) {
+            @RequestBody @Valid StatusChangeRequest request) {
 
-        budgetService.updateStatus(id, statusDto);
+        budgetService.updateStatus(id, request);
         return ResponseEntity.ok().build();
     }
 

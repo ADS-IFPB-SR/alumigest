@@ -208,8 +208,21 @@ class BudgetServiceTest {
     }
 
     @Test
-    @DisplayName("Alteração de status: Transição válida")
+    @DisplayName("Alteração de status: Transição válida com StatusChangeRequest")
     void updateStatus_ShouldUpdateStatus_WhenTransitionIsValid() {
+        when(budgetRepository.findById(budget.getId())).thenReturn(Optional.of(budget));
+        
+        StatusChangeRequest request = new StatusChangeRequest(BudgetStatus.SENT);
+        
+        budgetService.updateStatus(budget.getId(), request);
+        
+        assertThat(budget.getStatus()).isEqualTo(BudgetStatus.SENT);
+        verify(budgetRepository, times(1)).save(budget);
+    }
+
+    @Test
+    @DisplayName("Alteração de status: Transição válida via BudgetStatusUpdateDTO (compatibilidade)")
+    void updateStatus_ShouldUpdateStatus_WhenUsingBudgetStatusUpdateDTO() {
         when(budgetRepository.findById(budget.getId())).thenReturn(Optional.of(budget));
 
         BudgetStatusUpdateDTO statusDto = new BudgetStatusUpdateDTO(BudgetStatus.SENT);
@@ -221,15 +234,15 @@ class BudgetServiceTest {
     }
 
     @Test
-    @DisplayName("Alteração de status: Transição inválida")
+    @DisplayName("Alteração de status: Transição inválida com StatusChangeRequest")
     void updateStatus_ShouldThrowException_WhenTransitionIsInvalid() {
         budget.setStatus(BudgetStatus.APPROVED);
         UUID budgetId = budget.getId();
         when(budgetRepository.findById(budgetId)).thenReturn(Optional.of(budget));
-
-        BudgetStatusUpdateDTO statusDto = new BudgetStatusUpdateDTO(BudgetStatus.DRAFT);
-
-        assertThatThrownBy(() -> budgetService.updateStatus(budgetId, statusDto))
+        
+        StatusChangeRequest request = new StatusChangeRequest(BudgetStatus.DRAFT);
+        
+        assertThatThrownBy(() -> budgetService.updateStatus(budgetId, request))
                 .isInstanceOf(InvalidBudgetStatusTransitionException.class);
     }
 
