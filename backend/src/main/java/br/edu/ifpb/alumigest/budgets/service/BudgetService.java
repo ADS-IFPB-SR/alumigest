@@ -6,12 +6,7 @@ import br.edu.ifpb.alumigest.budgets.domain.BudgetItemOption;
 import br.edu.ifpb.alumigest.budgets.domain.BudgetStatus;
 import br.edu.ifpb.alumigest.budgets.domain.DiscountType;
 import br.edu.ifpb.alumigest.budgets.domain.PaymentCondition;
-import br.edu.ifpb.alumigest.budgets.dto.BudgetCreateRequest;
-import br.edu.ifpb.alumigest.budgets.dto.BudgetRequestDTO;
-import br.edu.ifpb.alumigest.budgets.dto.BudgetResponseDTO;
-import br.edu.ifpb.alumigest.budgets.dto.BudgetStatusUpdateDTO;
-import br.edu.ifpb.alumigest.budgets.dto.BudgetSummaryResponseDTO;
-import br.edu.ifpb.alumigest.budgets.dto.DiscountRequest;
+import br.edu.ifpb.alumigest.budgets.dto.*;
 import br.edu.ifpb.alumigest.budgets.mapper.BudgetMapper;
 import br.edu.ifpb.alumigest.budgets.repository.BudgetRepository;
 import br.edu.ifpb.alumigest.clients.domain.Client;
@@ -256,6 +251,28 @@ public class BudgetService {
             throw new InvalidBudgetStatusTransitionException(current, target);
         }
     }
+
+
+
+    @Transactional
+    public BudgetItemResponseDTO adicionarItem(UUID budgetId, BudgetItemRequestDTO request) {
+        Budget budget = getBudgetOrThrow(budgetId);
+        validateBudgetIsDraft(budget);
+        BudgetItem item = budgetMapper.toEntity(request);
+        if (item.getOptions() != null) {
+            for (BudgetItemOption option : item.getOptions()) {
+                option.setBudgetItem(item);
+            }
+        }
+        budget.addItem(item);
+        budgetQuantityService.calculateQuantities(budget);
+        budgetPricingService.calculatePricing(budget);
+        budget = budgetRepository.save(budget);
+        BudgetItem savedItem = budget.getItems().get(budget.getItems().size() - 1);
+
+        return budgetMapper.toResponseDTO(savedItem);
+    }
+
 
 
 }
