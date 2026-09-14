@@ -8,7 +8,7 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
 
-@Mapper(componentModel = MappingConstants.ComponentModel.SPRING, imports = {java.time.OffsetDateTime.class})
+@Mapper(componentModel = MappingConstants.ComponentModel.SPRING)
 public interface BudgetMapper {
 
     // --- Request para Entidade ---
@@ -66,12 +66,12 @@ public interface BudgetMapper {
     @Mapping(target = "clientName", source = "client.fullName")
     @Mapping(target = "paymentConditionLabel", expression = "java(budget.getPaymentCondition() != null ? budget.getPaymentCondition().getDescricao() : null)")
     @Mapping(target = "statusLabel", expression = "java(budget.getStatus() != null ? budget.getStatus().getDescricao() : null)")
-    @Mapping(target = "expired", expression = "java(budget.getValidUntil() != null && budget.getValidUntil().isBefore(OffsetDateTime.now()))")
+    @Mapping(target = "expired", expression = "java(budget.isExpired())")
     BudgetResponseDTO toResponseDTO(Budget budget);
 
     @Mapping(target = "clientName", source = "client.fullName")
     @Mapping(target = "totalItems", expression = "java(budget.getItems() != null ? budget.getItems().size() : 0)")
-    @Mapping(target = "expired", expression = "java(budget.getValidUntil() != null && budget.getValidUntil().isBefore(OffsetDateTime.now()))")
+    @Mapping(target = "expired", expression = "java(budget.isExpired())")
     BudgetSummaryResponseDTO toSummaryResponseDTO(Budget budget);
 
     @Mapping(target = "productId", source = "product.id")
