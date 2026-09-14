@@ -1,6 +1,7 @@
 package br.edu.ifpb.alumigest.budgets.controller;
 
 import br.edu.ifpb.alumigest.budgets.domain.BudgetStatus;
+import br.edu.ifpb.alumigest.budgets.domain.PaymentCondition; // NOVO IMPORT
 import br.edu.ifpb.alumigest.budgets.dto.BudgetItemCalculationRequestDTO;
 import br.edu.ifpb.alumigest.budgets.dto.BudgetItemCalculationResponseDTO;
 import br.edu.ifpb.alumigest.budgets.dto.BudgetItemRequestDTO;
@@ -68,7 +69,14 @@ class BudgetControllerTest {
         UUID id = UUID.randomUUID();
         BudgetItemRequestDTO itemRequest = new BudgetItemRequestDTO(UUID.randomUUID(), BigDecimal.TEN, BigDecimal.TEN, 1, BigDecimal.ZERO, null, null, null, null, null, null);
         BudgetRequestDTO request = new BudgetRequestDTO(UUID.randomUUID(), BigDecimal.ZERO, "Notes", List.of(itemRequest));
-        BudgetResponseDTO response = new BudgetResponseDTO(id, "ORC-2026-001", UUID.randomUUID(), "João da Silva", BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BudgetStatus.DRAFT, "Notes", null, null, null, null);
+        
+        BudgetResponseDTO response = new BudgetResponseDTO(
+                id, "ORC-2026-001", UUID.randomUUID(), "João da Silva", 
+                BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, 
+                PaymentCondition.A_VISTA_PIX, "À Vista (PIX / Dinheiro)", null, 
+                BudgetStatus.DRAFT, "Rascunho", "Notes", 
+                null, null, null, false, Collections.emptyList()
+        );
 
         when(budgetService.create(any())).thenReturn(response);
 
@@ -107,7 +115,13 @@ class BudgetControllerTest {
     @DisplayName("Deve retornar 200 ao buscar por ID existente")
     void findById_ShouldReturn200() throws Exception {
         UUID id = UUID.randomUUID();
-        BudgetResponseDTO response = new BudgetResponseDTO(id, "ORC-2026-001", UUID.randomUUID(), "João da Silva", BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BudgetStatus.DRAFT, "Notes", null, null, null, Collections.emptyList());
+        BudgetResponseDTO response = new BudgetResponseDTO(
+                id, "ORC-2026-001", UUID.randomUUID(), "João da Silva", 
+                BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, 
+                PaymentCondition.A_VISTA_PIX, "À Vista (PIX / Dinheiro)", null, 
+                BudgetStatus.DRAFT, "Rascunho", "Notes", 
+                null, null, null, false, Collections.emptyList()
+        );
 
         when(budgetService.findById(id)).thenReturn(response);
 
@@ -133,7 +147,14 @@ class BudgetControllerTest {
         UUID id = UUID.randomUUID();
         BudgetItemRequestDTO itemRequest = new BudgetItemRequestDTO(UUID.randomUUID(), BigDecimal.TEN, BigDecimal.TEN, 1, BigDecimal.ZERO, null, null, null, null, null, null);
         BudgetRequestDTO request = new BudgetRequestDTO(UUID.randomUUID(), BigDecimal.ZERO, "Notes", List.of(itemRequest));
-        BudgetResponseDTO response = new BudgetResponseDTO(id, "ORC-2026-001", UUID.randomUUID(), "João da Silva", BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BudgetStatus.DRAFT, "Notes", null, null, null, null);
+        
+        BudgetResponseDTO response = new BudgetResponseDTO(
+                id, "ORC-2026-001", UUID.randomUUID(), "João da Silva", 
+                BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, 
+                PaymentCondition.A_VISTA_PIX, "À Vista (PIX / Dinheiro)", null, 
+                BudgetStatus.DRAFT, "Rascunho", "Notes", 
+                null, null, null, false, Collections.emptyList()
+        );
 
         when(budgetService.update(eq(id), any())).thenReturn(response);
 

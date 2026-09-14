@@ -2,6 +2,7 @@ package br.edu.ifpb.alumigest.budgets.service;
 
 import br.edu.ifpb.alumigest.budgets.domain.Budget;
 import br.edu.ifpb.alumigest.budgets.domain.BudgetStatus;
+import br.edu.ifpb.alumigest.budgets.domain.PaymentCondition; // NOVO IMPORT
 import br.edu.ifpb.alumigest.budgets.dto.*;
 import br.edu.ifpb.alumigest.budgets.mapper.BudgetMapper;
 import br.edu.ifpb.alumigest.budgets.repository.BudgetRepository;
@@ -87,7 +88,13 @@ class BudgetServiceTest {
         when(budgetMapper.toEntity(createRequest)).thenReturn(new Budget());
         when(budgetRepository.save(any(Budget.class))).thenReturn(budget);
         
-        BudgetResponseDTO responseDTO = new BudgetResponseDTO(budget.getId(), "ORC-2026-001", client.getId(), "João da Silva", BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BudgetStatus.DRAFT, "Notes", null, null, null, Collections.emptyList());
+        BudgetResponseDTO responseDTO = new BudgetResponseDTO(
+                budget.getId(), "ORC-2026-001", client.getId(), "João da Silva", 
+                BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, 
+                PaymentCondition.A_VISTA_PIX, "À Vista (PIX / Dinheiro)", null, 
+                BudgetStatus.DRAFT, "Rascunho", "Notes", 
+                null, null, null, false, Collections.emptyList()
+        );
         when(budgetMapper.toResponseDTO(budget)).thenReturn(responseDTO);
 
         BudgetResponseDTO result = budgetService.create(createRequest);
@@ -111,7 +118,13 @@ class BudgetServiceTest {
     void findById_ShouldReturnBudget_WhenExists() {
         when(budgetRepository.findById(budget.getId())).thenReturn(Optional.of(budget));
         
-        BudgetResponseDTO responseDTO = new BudgetResponseDTO(budget.getId(), "ORC-2026-001", client.getId(), "João da Silva", BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BudgetStatus.DRAFT, "Notes", null, null, null, Collections.emptyList());
+        BudgetResponseDTO responseDTO = new BudgetResponseDTO(
+                budget.getId(), "ORC-2026-001", client.getId(), "João da Silva", 
+                BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, 
+                PaymentCondition.A_VISTA_PIX, "À Vista (PIX / Dinheiro)", null, 
+                BudgetStatus.DRAFT, "Rascunho", "Notes", 
+                null, null, null, false, Collections.emptyList()
+        );
         when(budgetMapper.toResponseDTO(budget)).thenReturn(responseDTO);
 
         BudgetResponseDTO result = budgetService.findById(budget.getId());
@@ -159,7 +172,13 @@ class BudgetServiceTest {
         when(budgetMapper.toEntity(requestDTO)).thenReturn(updatedData);
         when(budgetRepository.save(budget)).thenReturn(budget);
         
-        BudgetResponseDTO responseDTO = new BudgetResponseDTO(budget.getId(), "ORC-2026-001", client.getId(), "João da Silva", BigDecimal.ZERO, BigDecimal.TEN, BigDecimal.ZERO, BigDecimal.ZERO, BudgetStatus.DRAFT, "Notes", null, null, null, Collections.emptyList());
+       BudgetResponseDTO responseDTO = new BudgetResponseDTO(
+                budget.getId(), "ORC-2026-001", client.getId(), "João da Silva", 
+                BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, 
+                PaymentCondition.A_VISTA_PIX, "À Vista (PIX / Dinheiro)", null, 
+                BudgetStatus.DRAFT, "Rascunho", "Notes", 
+                null, null, null, false, Collections.emptyList()
+        );
         when(budgetMapper.toResponseDTO(budget)).thenReturn(responseDTO);
 
         BudgetResponseDTO result = budgetService.update(budget.getId(), requestDTO);
