@@ -9,6 +9,7 @@ vi.mock('react-hot-toast', () => ({
     success: vi.fn(),
     error: vi.fn(),
   },
+  Toaster: () => null,
 }));
 
 // Mock de dados de teste usando vi.hoisted para evitar erro de hoisting no vi.mock
