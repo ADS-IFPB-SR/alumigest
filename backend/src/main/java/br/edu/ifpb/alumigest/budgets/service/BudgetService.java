@@ -4,11 +4,14 @@ import br.edu.ifpb.alumigest.budgets.domain.Budget;
 import br.edu.ifpb.alumigest.budgets.domain.BudgetItem;
 import br.edu.ifpb.alumigest.budgets.domain.BudgetItemOption;
 import br.edu.ifpb.alumigest.budgets.domain.BudgetStatus;
+import br.edu.ifpb.alumigest.budgets.domain.DiscountType;
+import br.edu.ifpb.alumigest.budgets.domain.PaymentCondition;
 import br.edu.ifpb.alumigest.budgets.dto.BudgetCreateRequest;
 import br.edu.ifpb.alumigest.budgets.dto.BudgetRequestDTO;
 import br.edu.ifpb.alumigest.budgets.dto.BudgetResponseDTO;
 import br.edu.ifpb.alumigest.budgets.dto.BudgetStatusUpdateDTO;
 import br.edu.ifpb.alumigest.budgets.dto.BudgetSummaryResponseDTO;
+import br.edu.ifpb.alumigest.budgets.dto.DiscountRequest;
 import br.edu.ifpb.alumigest.budgets.mapper.BudgetMapper;
 import br.edu.ifpb.alumigest.budgets.repository.BudgetRepository;
 import br.edu.ifpb.alumigest.clients.domain.Client;
@@ -23,6 +26,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.Year;
@@ -133,6 +138,67 @@ public class BudgetService {
         budgetPricingService.calculatePricing(budget);
         
         budgetRepository.save(budget);
+        return budgetMapper.toResponseDTO(budget);
+    }
+
+    /**
+     * Aplica desconto comercial (% ou R$) e condicoes comerciais ao orcamento.
+     * Realiza calculo bidirecional de equivalencia e validacoes rigorosas de limites.
+     *
+     * @param budgetId ID do orcamento a ter o desconto aplicado
+     * @param request Dados do desconto e condicoes comerciais
+     * @return DTO com orcamento e valores atualizados
+     */
+    @Transactional
+    public BudgetResponseDTO aplicarDesconto(UUID budgetId, DiscountRequest request) {
+        Budget budget = getBudgetOrThrow(budgetId);
+        validateBudgetIsDraft(budget);
+
+        BigDecimal subtotal = budget.getSubtotal();
+        if (budget.getItems() == null || budget.getItems().isEmpty()
+                || subtotal == null || subtotal.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new BusinessException(
+                    "O orçamento deve possuir itens e subtotal maior que zero para aplicar descontos e condições comerciais."
+            );
+        }
+
+        BigDecimal valor = request.valor();
+        BigDecimal discountPercent;
+        BigDecimal discountValue;
+
+        if (request.tipoDesconto() == DiscountType.PERCENTUAL) {
+            if (valor.compareTo(BigDecimal.valueOf(100)) > 0) {
+                throw new BusinessException("O desconto percentual não pode ser superior a 100%.");
+            }
+            discountPercent = valor.setScale(2, RoundingMode.HALF_EVEN);
+            discountValue = subtotal.multiply(valor)
+                    .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_EVEN);
+        } else {
+            if (valor.compareTo(subtotal) > 0) {
+                throw new BusinessException(
+                        "O valor do desconto fixo (R$ " + valor + ") não pode ser superior ao subtotal do orçamento (R$ " + subtotal + ")."
+                );
+            }
+            discountValue = valor.setScale(2, RoundingMode.HALF_EVEN);
+            discountPercent = valor.multiply(BigDecimal.valueOf(100))
+                    .divide(subtotal, 2, RoundingMode.HALF_EVEN);
+        }
+
+        BigDecimal total = subtotal.subtract(discountValue);
+
+        budget.setDiscountPercent(discountPercent);
+        budget.setDiscountValue(discountValue);
+        budget.setTotal(total);
+        budget.setPaymentCondition(request.condicaoPagamento());
+        budget.setPaymentNotes(request.observacoesPagamento());
+
+        if (request.dataValidade() != null) {
+            OffsetDateTime validUntil = request.dataValidade().atTime(23, 59, 59).atOffset(ZoneOffset.UTC);
+            validateValidUntil(validUntil);
+            budget.setValidUntil(validUntil);
+        }
+
+        budget = budgetRepository.save(budget);
         return budgetMapper.toResponseDTO(budget);
     }
 
