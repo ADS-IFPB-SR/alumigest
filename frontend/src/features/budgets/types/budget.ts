@@ -23,7 +23,7 @@ export type PaymentCondition =
   | 'CARTAO_12X'
   | 'A_COMBINAR';
 
-export type CategoryType = 'GLASS' | 'PROFILE' | 'HARDWARE' | 'FILM' | 'ROLLERS';
+export type CategoryType = 'GLASS' | 'PROFILE' | 'HARDWARE' | 'FILM';
 
 export type DoorTemplateType =
   | 'SLIDING_DOOR_1F'
@@ -108,16 +108,18 @@ export interface BudgetItemOption {
 
 export interface BudgetItem {
   id?: string;
-  tempId?: string;
+  tempId: string;
   budgetId?: string;
   productId: string;
   productName: string;
-  templateType?: string;
-  templateConfig?: TemplateConfig | string;
-  handleConfig?: HandleConfig | string;
-  drillingConfig?: DrillingConfig | string;
+  templateType: string;
+  templateConfig: TemplateConfig;
+  handleConfig: HandleConfig;
+  drillingConfig: DrillingConfig;
   widthMm: number;
   heightMm: number;
+  width?: number;
+  height?: number;
   quantity: number;
   laborCost: number;
   subtotal: number;
