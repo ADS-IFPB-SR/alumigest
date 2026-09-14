@@ -248,6 +248,7 @@ export interface BudgetItem {
   laborCost: number;
   options: BudgetItemOption[];
   subtotal: number;
+  unitPrice?: number;
   notes?: string;
 }
 
