@@ -68,7 +68,7 @@ export const HandleConfigSection: React.FC<HandleConfigSectionProps> = ({
         <div className="flex items-center justify-between min-w-0">
           <label htmlFor="select-handle-material" className="text-xs font-label font-bold text-on-surface flex items-center gap-1.5 truncate">
             <span className="material-symbols-outlined text-[18px] text-primary shrink-0">inventory_2</span>
-            Insumo do Puxador (Estoque / Orçamento)
+            {' '}Insumo do Puxador (Estoque / Orçamento)
           </label>
           {handleMaterial && (
             <span className={`text-[10px] font-label font-bold px-2 py-0.5 rounded-full shrink-0 ${
@@ -137,7 +137,7 @@ export const HandleConfigSection: React.FC<HandleConfigSectionProps> = ({
       <div className="flex items-center justify-between pt-xs border-t border-outline-variant/40">
         <div className="text-xs sm:text-sm font-label font-semibold text-on-surface flex items-center gap-xs">
           <span className="material-symbols-outlined text-[16px] text-primary">hardware</span>
-          Formato no Desenho Técnico (Gabarito CAD)
+          {' '}Formato no Desenho Técnico (Gabarito CAD)
         </div>
         {handleMaterial?.categoryType === 'PROFILE' && (
           <span className="text-[11px] font-label font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/50 px-2 py-0.5 rounded">
@@ -176,6 +176,13 @@ export const HandleConfigSection: React.FC<HandleConfigSectionProps> = ({
             }
           }
 
+          let cardStyle = 'bg-surface border-outline-variant hover:bg-surface-container hover:border-primary/50 cursor-pointer';
+          if (!isAllowed) {
+            cardStyle = 'opacity-35 cursor-not-allowed bg-surface-container/40 border-dashed border-outline-variant/60';
+          } else if (isSelected) {
+            cardStyle = 'bg-primary/10 border-primary shadow-xs ring-1 ring-primary/40 cursor-pointer';
+          }
+
           return (
             <button
               key={item.type}
@@ -184,13 +191,7 @@ export const HandleConfigSection: React.FC<HandleConfigSectionProps> = ({
               onClick={() => isAllowed && onHandleTypeChange(item.type)}
               aria-pressed={isSelected}
               title={!isAllowed ? restrictionNotice : undefined}
-              className={`p-2.5 rounded-lg border text-left flex flex-col gap-1 transition-all ${
-                !isAllowed
-                  ? 'opacity-35 cursor-not-allowed bg-surface-container/40 border-dashed border-outline-variant/60'
-                  : isSelected
-                  ? 'bg-primary/10 border-primary shadow-xs ring-1 ring-primary/40 cursor-pointer'
-                  : 'bg-surface border-outline-variant hover:bg-surface-container hover:border-primary/50 cursor-pointer'
-              }`}
+              className={`p-2.5 rounded-lg border text-left flex flex-col gap-1 transition-all ${cardStyle}`}
             >
               <div className="flex items-center justify-between">
                 <span className={`material-symbols-outlined text-[20px] ${isSelected ? 'text-primary' : 'text-secondary'}`}>
@@ -225,11 +226,14 @@ export const HandleConfigSection: React.FC<HandleConfigSectionProps> = ({
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-xs">
                 {allowedHandlePositions.map((pos) => {
                   const isSelected = (handleConfig.position ?? allowedHandlePositions[0]) === pos;
-                  const icon =
-                    pos === 'BOTTOM' ? 'vertical_align_bottom' :
-                    pos === 'TOP' ? 'vertical_align_top' :
-                    pos === 'LEFT' ? 'dock_to_left' :
-                    pos === 'RIGHT' ? 'dock_to_right' : 'filter_center_focus';
+                  const positionIcons: Record<string, string> = {
+                    BOTTOM: 'vertical_align_bottom',
+                    TOP: 'vertical_align_top',
+                    LEFT: 'dock_to_left',
+                    RIGHT: 'dock_to_right',
+                    CENTER: 'filter_center_focus',
+                  };
+                  const icon = positionIcons[pos] ?? 'filter_center_focus';
 
                   return (
                     <button

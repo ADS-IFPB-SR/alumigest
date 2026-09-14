@@ -26,7 +26,11 @@ export const Step4Summary: React.FC<Step4SummaryProps> = ({
     : (HANDLE_TYPE_LABELS[handleType] ?? handleType);
 
   const holeCount = state.drillingConfig?.holeCount ?? 0;
-  const drillingLabel = holeCount === 0 ? 'Sem furos' : holeCount === 1 ? '1 furo' : `${holeCount} furos`;
+  const drillingLabel = (() => {
+    if (holeCount === 0) return 'Sem furos';
+    if (holeCount === 1) return '1 furo';
+    return `${holeCount} furos`;
+  })();
 
   return (
     <div className="flex flex-col gap-md animate-fadeIn">

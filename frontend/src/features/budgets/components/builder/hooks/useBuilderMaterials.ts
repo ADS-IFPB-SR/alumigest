@@ -3,6 +3,7 @@ import type {
   MaterialSelection,
   CategoryType,
   HandleConfig,
+  HandleType,
   DoorTemplateType,
   BudgetItemCalculationRequest,
 } from '../../../types';
@@ -13,6 +14,112 @@ import {
   isHandleOrLockMaterial,
   syncHandleMaterialSelections,
 } from './useMaterialSync';
+
+function getDefaultUnitMeasure(catType: CategoryType): string {
+  if (catType === 'GLASS' || catType === 'FILM') return 'm²';
+  if (catType === 'PROFILE') return 'm';
+  return 'un';
+}
+
+function calculateUpdatedMaterialQty(
+  isHandleMat: boolean,
+  oldUnit: string,
+  newUnit: string,
+  currentQty: number,
+  handleConfig: HandleConfig,
+  heightMm?: number | ''
+): number {
+  const oldIsMeter = oldUnit === 'M' || oldUnit === 'METRO' || oldUnit === 'METROS';
+  const newIsMeter = newUnit === 'M' || newUnit === 'METRO' || newUnit === 'METROS';
+  const newIsPar = newUnit === 'PAR' || newUnit === 'PAIR' || newUnit === 'PARES';
+
+  if (isHandleMat) {
+    const isBothSides = handleConfig.side === 'BOTH_SIDES';
+    const sideMult = isBothSides ? 2 : 1;
+    if (newIsMeter) {
+      if (handleConfig.coverage === 'PIECE' && handleConfig.pieceLengthCm) {
+        return Number.parseFloat(((handleConfig.pieceLengthCm / 100) * sideMult).toFixed(2));
+      }
+      const h = typeof heightMm === 'number' && heightMm > 0 ? heightMm : DEFAULT_HEIGHT;
+      return Number.parseFloat(((h / 1000) * sideMult).toFixed(2));
+    }
+    if (newIsPar) {
+      return isBothSides ? 1 : 0.5;
+    }
+    return isBothSides ? 2 : 1;
+  }
+
+  if (oldIsMeter !== newIsMeter) {
+    if (newIsMeter) {
+      const h = typeof heightMm === 'number' && heightMm > 0 ? heightMm : DEFAULT_HEIGHT;
+      return Number.parseFloat((h / 1000).toFixed(2));
+    }
+    return 1;
+  }
+
+  return currentQty;
+}
+
+function validateMaterialQuantity(
+  valStr: string | undefined,
+  unitMeasure?: string,
+  physicalMin?: number,
+  categoryType?: CategoryType
+): { qty?: number; isBelow: boolean; warning?: string } {
+  const u = String(unitMeasure || '').toUpperCase().trim();
+  const isIntegerUnit =
+    u === 'UN' || u === 'UNIDADE' || u === 'PC' || u === 'PEÇA' || u === 'PECA' || u === 'CJ';
+  let qty: number | undefined;
+
+  if (valStr !== undefined && valStr !== '') {
+    const num = Number.parseFloat(String(valStr).replace(',', '.'));
+    if (!Number.isNaN(num) && num >= 0) {
+      qty = isIntegerUnit ? Math.floor(num) : num;
+    }
+  }
+
+  const isBelow =
+    qty !== undefined &&
+    physicalMin !== undefined &&
+    physicalMin > 0 &&
+    qty < physicalMin;
+
+  let warning: string | undefined;
+  if (isBelow) {
+    if (categoryType === 'GLASS') {
+      warning = `A quantidade (${qty} m²) é inferior à área física da esquadria (${physicalMin} m²). Risco de corte insuficiente!`;
+    } else if (categoryType === 'PROFILE') {
+      warning = `A metragem (${qty} m) é inferior ao perímetro mínimo (${physicalMin} m). Risco de barra insuficiente!`;
+    } else {
+      warning = `Quantidade informada (${qty}) é inferior ao mínimo físico (${physicalMin}).`;
+    }
+  }
+
+  return { qty, isBelow, warning };
+}
+
+function resolveHandleNextType(
+  catType: CategoryType,
+  currentType: HandleType,
+  matName: string
+): HandleType {
+  if (catType === 'PROFILE') {
+    return currentType !== 'PROFILE_HANDLE' && currentType !== 'NONE'
+      ? 'PROFILE_HANDLE'
+      : currentType;
+  }
+  if (currentType === 'PROFILE_HANDLE') {
+    const lower = matName.toLowerCase();
+    if (lower.includes('fecho') || lower.includes('concha')) {
+      return 'SHELL_LOCK';
+    }
+    if (lower.includes('maçaneta') || lower.includes('macaneta')) {
+      return 'LEVER_HANDLE';
+    }
+    return 'BAR_TUBULAR';
+  }
+  return currentType;
+}
 
 /**
  * Propriedades para o hook useBuilderMaterials.
@@ -97,7 +204,7 @@ export function useBuilderMaterials({
         };
 
         const res = await budgetsApi.previewItemCalculation(payload);
-        if (!res || !res.options) return;
+        if (!res?.options) return;
 
         setMaterialSelections((prev) => {
           return prev.map((sel, idx) => {
@@ -116,7 +223,7 @@ export function useBuilderMaterials({
                 ? sel.quantity
                 : suggested;
             const totalPrice =
-              currentQty !== undefined ? parseFloat((currentQty * sel.unitPrice).toFixed(2)) : undefined;
+              currentQty !== undefined ? Number.parseFloat((currentQty * sel.unitPrice).toFixed(2)) : undefined;
 
             return {
               ...sel,
@@ -172,7 +279,7 @@ export function useBuilderMaterials({
         onColorChange?.(undefined, mat.colorFinish || mat.name);
       }
 
-      const isHandleMat = handleMaterial && handleMaterial.requirementId === requirementId;
+      const isHandleMat = handleMaterial?.requirementId === requirementId;
 
       setMaterialSelections((prev) => {
         return prev.map((s) => {
@@ -180,35 +287,14 @@ export function useBuilderMaterials({
 
           const oldUnit = String(s.unitMeasure || '').toUpperCase().trim();
           const newUnit = String(mat?.unit ?? s.unitMeasure ?? '').toUpperCase().trim();
-          const oldIsMeter = oldUnit === 'M' || oldUnit === 'METRO' || oldUnit === 'METROS';
-          const newIsMeter = newUnit === 'M' || newUnit === 'METRO' || newUnit === 'METROS';
-          const newIsPar = newUnit === 'PAR' || newUnit === 'PAIR' || newUnit === 'PARES';
-
-          let newQty = s.quantity ?? 1;
-
-          if (isHandleMat) {
-            const isBothSides = handleConfig.side === 'BOTH_SIDES';
-            const sideMult = isBothSides ? 2 : 1;
-            if (newIsMeter) {
-              if (handleConfig.coverage === 'PIECE' && handleConfig.pieceLengthCm) {
-                newQty = parseFloat(((handleConfig.pieceLengthCm / 100) * sideMult).toFixed(2));
-              } else {
-                const h = typeof heightMm === 'number' && heightMm > 0 ? heightMm : DEFAULT_HEIGHT;
-                newQty = parseFloat(((h / 1000) * sideMult).toFixed(2));
-              }
-            } else if (newIsPar) {
-              newQty = isBothSides ? 1 : 0.5;
-            } else {
-              newQty = isBothSides ? 2 : 1;
-            }
-          } else if (oldIsMeter !== newIsMeter) {
-            if (newIsMeter) {
-              const h = typeof heightMm === 'number' && heightMm > 0 ? heightMm : DEFAULT_HEIGHT;
-              newQty = parseFloat((h / 1000).toFixed(2));
-            } else {
-              newQty = 1;
-            }
-          }
+          const newQty = calculateUpdatedMaterialQty(
+            isHandleMat,
+            oldUnit,
+            newUnit,
+            s.quantity ?? 1,
+            handleConfig,
+            heightMm
+          );
 
           return {
             ...s,
@@ -219,7 +305,7 @@ export function useBuilderMaterials({
             unitPrice,
             quantity: newQty,
             familyCode: mat?.familyCode,
-            totalPrice: parseFloat((newQty * unitPrice).toFixed(2)),
+            totalPrice: Number.parseFloat((newQty * unitPrice).toFixed(2)),
             isManualOverride: true,
           };
         });
@@ -234,41 +320,17 @@ export function useBuilderMaterials({
         prev.map((s) => {
           if (s.requirementId !== requirementId) return s;
 
-          const u = String(s.unitMeasure || '').toUpperCase().trim();
-          const isIntegerUnit =
-            u === 'UN' || u === 'UNIDADE' || u === 'PC' || u === 'PEÇA' || u === 'PECA' || u === 'CJ';
-          let qty: number | undefined = undefined;
-
-          if (valStr !== undefined && valStr !== '') {
-            const num = parseFloat(String(valStr).replace(',', '.'));
-            if (!isNaN(num) && num >= 0) {
-              qty = isIntegerUnit ? Math.floor(num) : num;
-            }
-          }
-
-          const isBelow =
-            qty !== undefined &&
-            s.physicalMinimumQuantity !== undefined &&
-            s.physicalMinimumQuantity > 0 &&
-            qty < s.physicalMinimumQuantity;
-
-          let warning = s.warningMessage;
-          if (isBelow) {
-            if (s.categoryType === 'GLASS') {
-              warning = `A quantidade (${qty} m²) é inferior à área física da esquadria (${s.physicalMinimumQuantity} m²). Risco de corte insuficiente!`;
-            } else if (s.categoryType === 'PROFILE') {
-              warning = `A metragem (${qty} m) é inferior ao perímetro mínimo (${s.physicalMinimumQuantity} m). Risco de barra insuficiente!`;
-            } else {
-              warning = `Quantidade informada (${qty}) é inferior ao mínimo físico (${s.physicalMinimumQuantity}).`;
-            }
-          } else {
-            warning = undefined;
-          }
+          const { qty, isBelow, warning } = validateMaterialQuantity(
+            valStr,
+            s.unitMeasure,
+            s.physicalMinimumQuantity,
+            s.categoryType
+          );
 
           return {
             ...s,
             quantity: qty,
-            totalPrice: qty !== undefined ? parseFloat((qty * s.unitPrice).toFixed(2)) : undefined,
+            totalPrice: qty !== undefined ? Number.parseFloat((qty * s.unitPrice).toFixed(2)) : undefined,
             isManualOverride: true,
             isBelowPhysicalMinimum: isBelow,
             warningMessage: warning,
@@ -298,7 +360,7 @@ export function useBuilderMaterials({
         isOptional: true,
         materialId: defaultMat?.id ?? '',
         materialName: defaultMat?.name ?? '',
-        unitMeasure: defaultMat?.unit ?? (catType === 'GLASS' || catType === 'FILM' ? 'm²' : catType === 'PROFILE' ? 'm' : 'un'),
+        unitMeasure: defaultMat?.unit ?? getDefaultUnitMeasure(catType),
         unitPrice: defaultMat?.price ?? 0,
         quantity: 1,
         totalPrice: defaultMat?.price ?? 0,
@@ -318,7 +380,7 @@ export function useBuilderMaterials({
       if (!materialId) {
         setMaterialSelections((prev) =>
           prev.map((sel) => {
-            const isH = handleMaterial && sel.requirementId === handleMaterial.requirementId;
+            const isH = handleMaterial?.requirementId === sel.requirementId;
             if (!isH) return sel;
             return {
               ...sel,
@@ -342,23 +404,7 @@ export function useBuilderMaterials({
       const unitMeasure = hw ? hw.unitMeasure ?? 'un' : prof?.unitMeasure ?? 'm';
       const familyCode = hw?.familyCode ?? prof?.familyCode;
 
-      let nextType = handleConfig.handleType;
-      if (catType === 'PROFILE') {
-        if (nextType !== 'PROFILE_HANDLE' && nextType !== 'NONE') {
-          nextType = 'PROFILE_HANDLE';
-        }
-      } else {
-        if (nextType === 'PROFILE_HANDLE') {
-          const lower = matName.toLowerCase();
-          if (lower.includes('fecho') || lower.includes('concha')) {
-            nextType = 'SHELL_LOCK';
-          } else if (lower.includes('maçaneta') || lower.includes('macaneta')) {
-            nextType = 'LEVER_HANDLE';
-          } else {
-            nextType = 'BAR_TUBULAR';
-          }
-        }
-      }
+      const nextType = resolveHandleNextType(catType, handleConfig.handleType, matName);
 
       const isProfile = nextType === 'PROFILE_HANDLE';
       const newHandleConfig: HandleConfig = {

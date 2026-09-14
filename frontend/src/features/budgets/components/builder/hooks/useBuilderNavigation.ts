@@ -21,6 +21,32 @@ export interface UseBuilderNavigationProps {
  * - Step 4: Resumo executivo e aprovação.
  * - Validações de transição de etapa e prevenção de avanço com dados inconsistentes.
  */
+function validateStep1(
+  widthMm: number | '',
+  heightMm: number | '',
+  quantity: number | ''
+): Record<string, string> {
+  const errors: Record<string, string> = {};
+  const w = typeof widthMm === 'number' ? widthMm : 0;
+  const h = typeof heightMm === 'number' ? heightMm : 0;
+  const qty = typeof quantity === 'number' ? quantity : 0;
+
+  if (!w || w <= 0) errors.widthMm = 'Largura obrigatória';
+  if (!h || h <= 0) errors.heightMm = 'Altura obrigatória';
+  if (!qty || qty < 1) errors.quantity = 'Quantidade inválida';
+
+  return errors;
+}
+
+function validateStep2(materialSelections: MaterialSelection[]): boolean {
+  const missingReqs = materialSelections.filter((sel) => !sel.isOptional && !sel.materialId);
+  if (missingReqs.length > 0) {
+    toast.error(`Selecione os materiais obrigatórios: ${missingReqs.map((r) => r.label).join(', ')}`);
+    return false;
+  }
+  return true;
+}
+
 export function useBuilderNavigation({
   template,
   widthMm,
@@ -34,17 +60,8 @@ export function useBuilderNavigation({
 
   const validateStep = useCallback(
     (step: 1 | 2 | 3 | 4): boolean => {
-      const newErrors: Record<string, string> = {};
-
       if (step === 1) {
-        const w = typeof widthMm === 'number' ? widthMm : 0;
-        const h = typeof heightMm === 'number' ? heightMm : 0;
-        const qty = typeof quantity === 'number' ? quantity : 0;
-
-        if (!w || w <= 0) newErrors.widthMm = 'Largura obrigatória';
-        if (!h || h <= 0) newErrors.heightMm = 'Altura obrigatória';
-        if (!qty || qty < 1) newErrors.quantity = 'Quantidade inválida';
-
+        const newErrors = validateStep1(widthMm, heightMm, quantity);
         if (Object.keys(newErrors).length > 0) {
           setErrors(newErrors);
           toast.error('Informe as medidas e quantidade da esquadria.');
@@ -52,15 +69,8 @@ export function useBuilderNavigation({
         }
       }
 
-      if (step === 2) {
-        const missingReqs = materialSelections.filter(
-          (sel) => !sel.isOptional && !sel.materialId,
-        );
-
-        if (missingReqs.length > 0) {
-          toast.error(`Selecione os materiais obrigatórios: ${missingReqs.map((r) => r.label).join(', ')}`);
-          return false;
-        }
+      if (step === 2 && !validateStep2(materialSelections)) {
+        return false;
       }
 
       setErrors({});

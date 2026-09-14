@@ -277,6 +277,54 @@ const BarTubularHorizontal: React.FC<HorizontalHandleProps> = ({ barX, barY, bar
 };
 
 /** Puxador renderizado na folha móvel com suporte a 1 Lado ou 2 Lados (Ambos os Lados) e orientação Horizontal ou Vertical */
+function computeHorizontalBarBounds(
+  vPos: string | undefined,
+  handleConfig: HandleConfig,
+  frameW: number,
+  svgH: number,
+  effectiveLeafW: number,
+  effectiveLeafX: number,
+  heightMm: number,
+  widthMm?: number
+): { barX: number; barY: number; barW: number; barH: number } {
+  const barH = 5;
+  const innerH = svgH - frameW * 2;
+
+  let barW: number;
+  if (handleConfig.coverage === 'FULL') {
+    barW = Math.max(effectiveLeafW - 16, 20);
+  } else if (handleConfig.coverage === 'PIECE' && handleConfig.pieceLengthCm) {
+    const pieceLengthMm = handleConfig.pieceLengthCm * 10;
+    const leafWidthMm = (widthMm && widthMm > 0)
+      ? Math.max(widthMm * (effectiveLeafW / Math.max(effectiveLeafW, 100)), 100)
+      : Math.max(heightMm || 2100, 100);
+    const ratio = Math.min(Math.max(pieceLengthMm / leafWidthMm, 0.08), 0.95);
+    barW = ratio * effectiveLeafW;
+  } else {
+    barW = Math.min(Math.max(effectiveLeafW * 0.35, 25), 60);
+  }
+
+  let barX: number;
+  if (vPos === 'LEFT') {
+    barX = effectiveLeafX + 8;
+  } else if (vPos === 'RIGHT') {
+    barX = effectiveLeafX + effectiveLeafW - barW - 8;
+  } else {
+    barX = effectiveLeafX + (effectiveLeafW - barW) / 2;
+  }
+
+  let barY: number;
+  if (vPos === 'TOP') {
+    barY = frameW + 12;
+  } else if (vPos === 'BOTTOM') {
+    barY = svgH - frameW - barH - 12;
+  } else {
+    barY = frameW + (innerH - barH) / 2;
+  }
+
+  return { barX, barY, barW, barH };
+}
+
 export const HandleElement: React.FC<HandleElementProps> = ({
   handleConfig,
   svgH,
@@ -299,41 +347,18 @@ export const HandleElement: React.FC<HandleElementProps> = ({
     ((vPos === 'TOP' || vPos === 'BOTTOM') && handleConfig.orientation !== 'VERTICAL');
 
   if (isHorizontal) {
-    const barH = 5;
     const effectiveLeafW = leafW ?? Math.min(svgH * 0.5, 120);
-    const effectiveLeafX = leafX !== undefined ? leafX : posX - effectiveLeafW / 2;
-
-    let barW: number;
-    if (handleConfig.coverage === 'FULL') {
-      barW = Math.max(effectiveLeafW - 16, 20);
-    } else if (handleConfig.coverage === 'PIECE' && handleConfig.pieceLengthCm) {
-      const pieceLengthMm = handleConfig.pieceLengthCm * 10;
-      const leafWidthMm = (widthMm && widthMm > 0)
-        ? Math.max(widthMm * (effectiveLeafW / Math.max(effectiveLeafW, 100)), 100)
-        : Math.max(heightMm || 2100, 100);
-      const ratio = Math.min(Math.max(pieceLengthMm / leafWidthMm, 0.08), 0.95);
-      barW = ratio * effectiveLeafW;
-    } else {
-      barW = Math.min(Math.max(effectiveLeafW * 0.35, 25), 60);
-    }
-
-    let barX: number;
-    if (vPos === 'LEFT') {
-      barX = effectiveLeafX + 8;
-    } else if (vPos === 'RIGHT') {
-      barX = effectiveLeafX + effectiveLeafW - barW - 8;
-    } else {
-      barX = effectiveLeafX + (effectiveLeafW - barW) / 2;
-    }
-
-    let barY: number;
-    if (vPos === 'TOP') {
-      barY = frameW + 12;
-    } else if (vPos === 'BOTTOM') {
-      barY = svgH - frameW - barH - 12;
-    } else {
-      barY = frameW + (innerH - barH) / 2;
-    }
+    const effectiveLeafX = leafX ?? (posX - effectiveLeafW / 2);
+    const { barX, barY, barW, barH } = computeHorizontalBarBounds(
+      vPos,
+      handleConfig,
+      frameW,
+      svgH,
+      effectiveLeafW,
+      effectiveLeafX,
+      heightMm,
+      widthMm
+    );
 
     const horizProps: HorizontalHandleProps = {
       barX,
@@ -388,6 +413,49 @@ export interface HandlePieceDimensionProps {
   readonly mirrored?: boolean;
 }
 
+function computeHorizontalDimensionBounds(
+  vPos: string | undefined,
+  handleConfig: HandleConfig,
+  frameW: number,
+  svgH: number,
+  effectiveLeafW: number,
+  effectiveLeafX: number,
+  heightMm: number,
+  widthMm?: number
+): { barX: number; barY: number; barW: number; cotaY: number } {
+  const barH = 5;
+  const innerH = svgH - frameW * 2;
+  const pieceLengthMm = (handleConfig.pieceLengthCm ?? 0) * 10;
+
+  const leafWidthMm = (widthMm && widthMm > 0)
+    ? Math.max(widthMm * (effectiveLeafW / Math.max(effectiveLeafW, 100)), 100)
+    : Math.max(heightMm || 2100, 100);
+  const ratio = Math.min(Math.max(pieceLengthMm / leafWidthMm, 0.08), 0.95);
+  const barW = ratio * effectiveLeafW;
+
+  let barX: number;
+  if (vPos === 'LEFT') {
+    barX = effectiveLeafX + 8;
+  } else if (vPos === 'RIGHT') {
+    barX = effectiveLeafX + effectiveLeafW - barW - 8;
+  } else {
+    barX = effectiveLeafX + (effectiveLeafW - barW) / 2;
+  }
+
+  let barY: number;
+  if (vPos === 'TOP') {
+    barY = frameW + 12;
+  } else if (vPos === 'BOTTOM') {
+    barY = svgH - frameW - barH - 12;
+  } else {
+    barY = frameW + (innerH - barH) / 2;
+  }
+
+  const cotaY = vPos === 'TOP' ? barY + barH + 12 : barY - 10;
+
+  return { barX, barY, barW, cotaY };
+}
+
 /** Cota de puxador PIECE com medida em mm (suporte a Horizontal e Vertical) */
 export const HandlePieceDimension: React.FC<HandlePieceDimensionProps> = ({
   svgH,
@@ -416,35 +484,18 @@ export const HandlePieceDimension: React.FC<HandlePieceDimensionProps> = ({
     ((vPos === 'TOP' || vPos === 'BOTTOM') && handleConfig.orientation !== 'VERTICAL');
 
   if (isHorizontal) {
-    const barH = 5;
     const effectiveLeafW = leafW ?? Math.min(svgH * 0.5, 120);
-    const effectiveLeafX = leafX !== undefined ? leafX : posX - effectiveLeafW / 2;
-
-    const leafWidthMm = (widthMm && widthMm > 0)
-      ? Math.max(widthMm * (effectiveLeafW / Math.max(effectiveLeafW, 100)), 100)
-      : Math.max(heightMm || 2100, 100);
-    const ratio = Math.min(Math.max(pieceLengthMm / leafWidthMm, 0.08), 0.95);
-    const barW = ratio * effectiveLeafW;
-
-    let barX: number;
-    if (vPos === 'LEFT') {
-      barX = effectiveLeafX + 8;
-    } else if (vPos === 'RIGHT') {
-      barX = effectiveLeafX + effectiveLeafW - barW - 8;
-    } else {
-      barX = effectiveLeafX + (effectiveLeafW - barW) / 2;
-    }
-
-    let barY: number;
-    if (vPos === 'TOP') {
-      barY = frameW + 12;
-    } else if (vPos === 'BOTTOM') {
-      barY = svgH - frameW - barH - 12;
-    } else {
-      barY = frameW + (innerH - barH) / 2;
-    }
-
-    const cotaY = vPos === 'TOP' ? barY + barH + 12 : barY - 10;
+    const effectiveLeafX = leafX ?? (posX - effectiveLeafW / 2);
+    const { barX, barY, barW, cotaY } = computeHorizontalDimensionBounds(
+      vPos,
+      handleConfig,
+      frameW,
+      svgH,
+      effectiveLeafW,
+      effectiveLeafX,
+      heightMm,
+      widthMm
+    );
 
     return (
       <g opacity={0.85}>

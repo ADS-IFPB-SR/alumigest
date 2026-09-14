@@ -38,6 +38,58 @@ const CATEGORY_ICONS: Record<string, string> = {
   FILM: 'layers',
 };
 
+function processOptionEntry(
+  opt: BudgetItemOption,
+  itemMultiplier: number,
+  map: Map<string, MaterialConsumptionItem>
+): void {
+  if (!opt.materialId && !opt.materialName) return;
+  const key = opt.materialId || opt.materialName;
+  const optQty = opt.totalPrice !== undefined ? (opt.quantity ?? 1) : (opt.quantity ?? 1) * itemMultiplier;
+  const optUnitPrice = opt.unitPrice ?? 0;
+  const optTotalCost = opt.totalPrice ?? (optQty * optUnitPrice);
+
+  const existing = map.get(key);
+  if (existing) {
+    existing.totalQuantity += optQty;
+    existing.totalCost += optTotalCost;
+    existing.occurrenceCount += 1;
+  } else {
+    map.set(key, {
+      key,
+      materialId: opt.materialId || key,
+      materialName: opt.materialName || 'Insumo não identificado',
+      categoryType: opt.categoryType || 'HARDWARE',
+      unitMeasure: opt.unitMeasure || 'un',
+      totalQuantity: optQty,
+      unitPrice: optUnitPrice,
+      totalCost: optTotalCost,
+      occurrenceCount: 1,
+    });
+  }
+}
+
+function aggregateConsumptionItems(
+  items: Array<{ quantity: number; options?: BudgetItemOption[] }>
+): MaterialConsumptionItem[] {
+  const map = new Map<string, MaterialConsumptionItem>();
+
+  for (const item of items) {
+    const itemMultiplier = item.quantity || 1;
+    const opts = item.options || [];
+    for (const opt of opts) {
+      processOptionEntry(opt, itemMultiplier, map);
+    }
+  }
+
+  return Array.from(map.values()).sort((a, b) => {
+    if (a.categoryType !== b.categoryType) {
+      return a.categoryType.localeCompare(b.categoryType);
+    }
+    return b.totalCost - a.totalCost;
+  });
+}
+
 /**
  * Mini componente elegante para consolidação do consumo total de materiais de um orçamento.
  * Agrupa por materialId/materialName calculando consumo físico total (multiplicado pela quantidade de esquadrias)
@@ -47,48 +99,7 @@ export const BudgetMaterialsSummary: React.FC<BudgetMaterialsSummaryProps> = ({
   items,
   className = '',
 }) => {
-  const aggregatedMaterials = useMemo(() => {
-    const map = new Map<string, MaterialConsumptionItem>();
-
-    for (const item of items) {
-      const itemMultiplier = item.quantity || 1;
-      const opts = item.options || [];
-
-      for (const opt of opts) {
-        if (!opt.materialId && !opt.materialName) continue;
-        const key = opt.materialId || opt.materialName;
-        const optQty = opt.totalPrice !== undefined ? (opt.quantity ?? 1) : (opt.quantity ?? 1) * itemMultiplier;
-        const optUnitPrice = opt.unitPrice ?? 0;
-        const optTotalCost = opt.totalPrice !== undefined ? opt.totalPrice : optQty * optUnitPrice;
-
-        const existing = map.get(key);
-        if (existing) {
-          existing.totalQuantity += optQty;
-          existing.totalCost += optTotalCost;
-          existing.occurrenceCount += 1;
-        } else {
-          map.set(key, {
-            key,
-            materialId: opt.materialId || key,
-            materialName: opt.materialName || 'Insumo não identificado',
-            categoryType: opt.categoryType || 'HARDWARE',
-            unitMeasure: opt.unitMeasure || 'un',
-            totalQuantity: optQty,
-            unitPrice: optUnitPrice,
-            totalCost: optTotalCost,
-            occurrenceCount: 1,
-          });
-        }
-      }
-    }
-
-    return Array.from(map.values()).sort((a, b) => {
-      if (a.categoryType !== b.categoryType) {
-        return a.categoryType.localeCompare(b.categoryType);
-      }
-      return b.totalCost - a.totalCost;
-    });
-  }, [items]);
+  const aggregatedMaterials = useMemo(() => aggregateConsumptionItems(items), [items]);
 
   const categoriesGrouped = useMemo(() => {
     const groups: Record<string, MaterialConsumptionItem[]> = {};
