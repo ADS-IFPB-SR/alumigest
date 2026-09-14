@@ -80,21 +80,27 @@ export const BUDGET_STATUS_THEMES: Record<BudgetStatus, BudgetStatusTheme> = {
   EXPIRED: {
     key: 'EXPIRED',
     label: 'Expirado',
-    icon: 'history',
-    badge: 'bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800',
-    stepperActive: 'bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800 shadow-2xs font-bold',
+    icon: 'warning',
+    badge: 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/50 dark:text-rose-300 dark:border-rose-800',
+    stepperActive: 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/50 dark:text-rose-300 dark:border-rose-800 shadow-2xs font-bold',
     stepperCompleted: '',
     stepperUpcoming: '',
-    menuAction: 'text-amber-700 dark:text-amber-300 hover:bg-amber-50/50 dark:hover:bg-amber-950/40',
+    menuAction: 'text-rose-700 dark:text-rose-300 hover:bg-rose-50/50 dark:hover:bg-rose-950/40',
   },
 };
 
 /**
  * Obtém a configuração de tema e estilo de um status de orçamento de forma segura com fallback para DRAFT.
  */
-export function getBudgetStatusTheme(status?: BudgetStatus | null): BudgetStatusTheme {
-  if (!status || !(status in BUDGET_STATUS_THEMES)) {
+export function getBudgetStatusTheme(status?: BudgetStatus | string | null): BudgetStatusTheme {
+  if (!status) {
     return BUDGET_STATUS_THEMES.DRAFT;
   }
-  return BUDGET_STATUS_THEMES[status];
+
+  const normalizedKey = status.toUpperCase() as BudgetStatus;
+  if (normalizedKey in BUDGET_STATUS_THEMES) {
+    return BUDGET_STATUS_THEMES[normalizedKey];
+  }
+
+  return BUDGET_STATUS_THEMES.DRAFT;
 }
