@@ -1,4 +1,4 @@
-import { SeparateSaleForm } from '../features/budgets/components/SeparateSaleForm.tsx';
+import { SeparateSaleForm } from '../features/budgets';
 
 export function SeparateSalePage() {
   return (
