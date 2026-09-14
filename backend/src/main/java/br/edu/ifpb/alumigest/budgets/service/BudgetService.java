@@ -43,13 +43,16 @@ public class BudgetService {
 
     private final BudgetQuantityService budgetQuantityService;
     private final BudgetPricingService budgetPricingService;
+    private final BudgetCodeGenerator budgetCodeGenerator;
 
-    public BudgetService(BudgetRepository budgetRepository, ClientRepository clientRepository, BudgetMapper budgetMapper, BudgetQuantityService budgetQuantityService, BudgetPricingService budgetPricingService) {
+    public BudgetService(BudgetRepository budgetRepository, ClientRepository clientRepository, BudgetMapper budgetMapper, BudgetQuantityService budgetQuantityService, BudgetPricingService budgetPricingService, BudgetCodeGenerator budgetCodeGenerator)
+    {
         this.budgetRepository = budgetRepository;
         this.clientRepository = clientRepository;
         this.budgetMapper = budgetMapper;
         this.budgetQuantityService = budgetQuantityService;
         this.budgetPricingService = budgetPricingService;
+        this.budgetCodeGenerator = budgetCodeGenerator;
     }
 
     @Transactional
@@ -59,7 +62,9 @@ public class BudgetService {
 
         Budget budget = budgetMapper.toEntity(requestDTO);
         budget.setClient(client);
-        budget.setCode(generateBudgetCode());
+
+        budget.setCode(budgetCodeGenerator.generateNextCode());
+
         budget.setStatus(BudgetStatus.DRAFT);
 
         budget = budgetRepository.save(budget);
@@ -252,17 +257,5 @@ public class BudgetService {
         }
     }
 
-    private String generateBudgetCode() {
-        int currentYear = Year.now(ZoneOffset.UTC).getValue();
-        String prefix = String.format("ORC-%d-", currentYear);
 
-        return budgetRepository.findTopByCodeStartingWithOrderByCodeDesc(prefix)
-                .map(lastBudget -> {
-                    String lastCode = lastBudget.getCode();
-
-                    int lastNumber = Integer.parseInt(lastCode.substring(prefix.length()));
-                    return String.format("%s%03d", prefix, lastNumber + 1);
-                })
-                .orElse(prefix + "001");
-    }
 }
