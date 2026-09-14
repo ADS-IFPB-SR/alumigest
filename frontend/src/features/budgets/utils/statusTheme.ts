@@ -93,12 +93,12 @@ export const BUDGET_STATUS_THEMES: Record<BudgetStatus, BudgetStatusTheme> = {
  * Obtém a configuração de tema e estilo de um status de orçamento de forma segura com fallback para DRAFT.
  */
 export function getBudgetStatusTheme(status?: BudgetStatus | string | null): BudgetStatusTheme {
-  if (!status) {
+  if (!status || typeof status !== 'string') {
     return BUDGET_STATUS_THEMES.DRAFT;
   }
 
   const normalizedKey = status.toUpperCase() as BudgetStatus;
-  if (normalizedKey in BUDGET_STATUS_THEMES) {
+  if (Object.prototype.hasOwnProperty.call(BUDGET_STATUS_THEMES, normalizedKey)) {
     return BUDGET_STATUS_THEMES[normalizedKey];
   }
 
