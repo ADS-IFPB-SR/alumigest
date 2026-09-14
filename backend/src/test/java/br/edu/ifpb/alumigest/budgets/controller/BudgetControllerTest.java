@@ -9,6 +9,7 @@ import br.edu.ifpb.alumigest.budgets.dto.BudgetRequestDTO;
 import br.edu.ifpb.alumigest.budgets.dto.BudgetResponseDTO;
 import br.edu.ifpb.alumigest.budgets.dto.BudgetStatusUpdateDTO;
 import br.edu.ifpb.alumigest.budgets.dto.BudgetSummaryResponseDTO;
+import br.edu.ifpb.alumigest.budgets.dto.StatusChangeRequest;
 import br.edu.ifpb.alumigest.budgets.service.BudgetQuantityService;
 import br.edu.ifpb.alumigest.budgets.service.BudgetService;
 import br.edu.ifpb.alumigest.common.dto.PageResponse;
@@ -182,10 +183,10 @@ class BudgetControllerTest {
     }
 
     @Test
-    @DisplayName("Deve retornar 200 ao atualizar status válido")
+    @DisplayName("Deve retornar 200 ao atualizar status válido com StatusChangeRequest")
     void updateStatus_ShouldReturn200() throws Exception {
         UUID id = UUID.randomUUID();
-        BudgetStatusUpdateDTO request = new BudgetStatusUpdateDTO(BudgetStatus.SENT);
+        StatusChangeRequest request = new StatusChangeRequest(BudgetStatus.SENT);
 
         mockMvc.perform(patch("/api/orcamentos/{id}/status", id)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -194,13 +195,47 @@ class BudgetControllerTest {
     }
 
     @Test
+    @DisplayName("Deve retornar 200 ao atualizar status via rota /api/budgets/{id}/status")
+    void updateStatus_ViaBudgetsRoute_ShouldReturn200() throws Exception {
+        UUID id = UUID.randomUUID();
+        StatusChangeRequest request = new StatusChangeRequest(BudgetStatus.SENT);
+
+        mockMvc.perform(patch("/api/budgets/{id}/status", id)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("Deve retornar 200 ao atualizar status via payload com alias legado 'status'")
+    void updateStatus_WithLegacyAlias_ShouldReturn200() throws Exception {
+        UUID id = UUID.randomUUID();
+
+        mockMvc.perform(patch("/api/orcamentos/{id}/status", id)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"status\":\"SENT\"}"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("Deve retornar 400 ao enviar status nulo")
+    void updateStatus_ShouldReturn400_WhenStatusIsNull() throws Exception {
+        UUID id = UUID.randomUUID();
+
+        mockMvc.perform(patch("/api/orcamentos/{id}/status", id)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"novoStatus\":null}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     @DisplayName("Deve retornar 422 ao atualizar status inválido")
     void updateStatus_ShouldReturn422() throws Exception {
         UUID id = UUID.randomUUID();
-        BudgetStatusUpdateDTO request = new BudgetStatusUpdateDTO(BudgetStatus.APPROVED);
+        StatusChangeRequest request = new StatusChangeRequest(BudgetStatus.APPROVED);
 
         doThrow(new InvalidBudgetStatusTransitionException(BudgetStatus.DRAFT, BudgetStatus.APPROVED))
-                .when(budgetService).updateStatus(eq(id), any());
+                .when(budgetService).updateStatus(eq(id), any(StatusChangeRequest.class));
 
         mockMvc.perform(patch("/api/orcamentos/{id}/status", id)
                 .contentType(MediaType.APPLICATION_JSON)

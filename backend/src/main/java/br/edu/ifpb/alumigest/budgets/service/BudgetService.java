@@ -6,7 +6,13 @@ import br.edu.ifpb.alumigest.budgets.domain.BudgetItemOption;
 import br.edu.ifpb.alumigest.budgets.domain.BudgetStatus;
 import br.edu.ifpb.alumigest.budgets.domain.DiscountType;
 import br.edu.ifpb.alumigest.budgets.domain.PaymentCondition;
-import br.edu.ifpb.alumigest.budgets.dto.*;
+import br.edu.ifpb.alumigest.budgets.dto.BudgetCreateRequest;
+import br.edu.ifpb.alumigest.budgets.dto.BudgetRequestDTO;
+import br.edu.ifpb.alumigest.budgets.dto.BudgetResponseDTO;
+import br.edu.ifpb.alumigest.budgets.dto.BudgetStatusUpdateDTO;
+import br.edu.ifpb.alumigest.budgets.dto.BudgetSummaryResponseDTO;
+import br.edu.ifpb.alumigest.budgets.dto.DiscountRequest;
+import br.edu.ifpb.alumigest.budgets.dto.StatusChangeRequest;
 import br.edu.ifpb.alumigest.budgets.mapper.BudgetMapper;
 import br.edu.ifpb.alumigest.budgets.repository.BudgetRepository;
 import br.edu.ifpb.alumigest.clients.domain.Client;
@@ -27,6 +33,7 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.Year;
 import java.time.ZoneOffset;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -120,13 +127,22 @@ public class BudgetService {
     }
 
     @Transactional
-    public void updateStatus(UUID id, BudgetStatusUpdateDTO statusDto) {
+    public void updateStatus(UUID id, StatusChangeRequest request) {
+        Objects.requireNonNull(request, "Request de alteração de status não pode ser nulo");
+        Objects.requireNonNull(request.novoStatus(), "O novo status é obrigatório para alteração");
+
         Budget budget = getBudgetOrThrow(id);
 
-        validateStatusTransition(budget.getStatus(), statusDto.status());
+        validateStatusTransition(budget.getStatus(), request.novoStatus());
 
-        budget.setStatus(statusDto.status());
+        budget.setStatus(request.novoStatus());
         budgetRepository.save(budget);
+    }
+
+    @Transactional
+    public void updateStatus(UUID id, BudgetStatusUpdateDTO statusDto) {
+        Objects.requireNonNull(statusDto, "BudgetStatusUpdateDTO não pode ser nulo");
+        updateStatus(id, statusDto.toStatusChangeRequest());
     }
 
     @Transactional
