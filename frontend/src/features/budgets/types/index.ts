@@ -508,3 +508,20 @@ export const PAYMENT_CONDITION_OPTIONS: { value: PaymentCondition; label: string
   { value: 'CARTAO_12X', label: 'Cartão de Crédito até 12x' },
   { value: 'A_COMBINAR', label: 'A Combinar' },
 ];
+
+// ============================================================
+// CONTRATOS E DTOs US-09 (Re-exportados de ./budget)
+// ============================================================
+export type {
+  Budget,
+  BudgetCreateRequest,
+  BudgetItemCreateRequest,
+  StatusChangeRequest,
+  BudgetStatusUpdateDTO,
+  BudgetItemOptionRequestDTO,
+  BudgetItemRequestDTO,
+  BudgetRequestDTO,
+} from './budget';
+
+export { calculateBudgetNetTotal } from './budget';
+
