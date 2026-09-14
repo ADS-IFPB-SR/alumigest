@@ -21,33 +21,37 @@ function getDefaultUnitMeasure(catType: CategoryType): string {
   return 'un';
 }
 
-function calculateUpdatedMaterialQty(
-  isHandleMat: boolean,
+function calculateHandleUpdatedQty(
+  newUnit: string,
+  handleConfig: HandleConfig,
+  heightMm?: number | ''
+): number {
+  const isBothSides = handleConfig.side === 'BOTH_SIDES';
+  const sideMult = isBothSides ? 2 : 1;
+  const newIsMeter = newUnit === 'M' || newUnit === 'METRO' || newUnit === 'METROS';
+  const newIsPar = newUnit === 'PAR' || newUnit === 'PAIR' || newUnit === 'PARES';
+
+  if (newIsMeter) {
+    if (handleConfig.coverage === 'PIECE' && handleConfig.pieceLengthCm) {
+      return Number.parseFloat(((handleConfig.pieceLengthCm / 100) * sideMult).toFixed(2));
+    }
+    const h = typeof heightMm === 'number' && heightMm > 0 ? heightMm : DEFAULT_HEIGHT;
+    return Number.parseFloat(((h / 1000) * sideMult).toFixed(2));
+  }
+  if (newIsPar) {
+    return isBothSides ? 1 : 0.5;
+  }
+  return isBothSides ? 2 : 1;
+}
+
+function calculateStandardUpdatedQty(
   oldUnit: string,
   newUnit: string,
   currentQty: number,
-  handleConfig: HandleConfig,
   heightMm?: number | ''
 ): number {
   const oldIsMeter = oldUnit === 'M' || oldUnit === 'METRO' || oldUnit === 'METROS';
   const newIsMeter = newUnit === 'M' || newUnit === 'METRO' || newUnit === 'METROS';
-  const newIsPar = newUnit === 'PAR' || newUnit === 'PAIR' || newUnit === 'PARES';
-
-  if (isHandleMat) {
-    const isBothSides = handleConfig.side === 'BOTH_SIDES';
-    const sideMult = isBothSides ? 2 : 1;
-    if (newIsMeter) {
-      if (handleConfig.coverage === 'PIECE' && handleConfig.pieceLengthCm) {
-        return Number.parseFloat(((handleConfig.pieceLengthCm / 100) * sideMult).toFixed(2));
-      }
-      const h = typeof heightMm === 'number' && heightMm > 0 ? heightMm : DEFAULT_HEIGHT;
-      return Number.parseFloat(((h / 1000) * sideMult).toFixed(2));
-    }
-    if (newIsPar) {
-      return isBothSides ? 1 : 0.5;
-    }
-    return isBothSides ? 2 : 1;
-  }
 
   if (oldIsMeter !== newIsMeter) {
     if (newIsMeter) {
@@ -58,6 +62,20 @@ function calculateUpdatedMaterialQty(
   }
 
   return currentQty;
+}
+
+function calculateUpdatedMaterialQty(
+  isHandleMat: boolean,
+  oldUnit: string,
+  newUnit: string,
+  currentQty: number,
+  handleConfig: HandleConfig,
+  heightMm?: number | ''
+): number {
+  if (isHandleMat) {
+    return calculateHandleUpdatedQty(newUnit, handleConfig, heightMm);
+  }
+  return calculateStandardUpdatedQty(oldUnit, newUnit, currentQty, heightMm);
 }
 
 function validateMaterialQuantity(
@@ -423,7 +441,7 @@ export function useBuilderMaterials({
         let targetReqId = handleMaterial?.requirementId;
         let found = false;
         const updated = prev.map((sel) => {
-          const isH = handleMaterial && sel.requirementId === handleMaterial.requirementId;
+          const isH = sel.requirementId === handleMaterial?.requirementId;
           if (isH) {
             found = true;
             return {

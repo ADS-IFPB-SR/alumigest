@@ -356,7 +356,7 @@ export const HandleConfigSection: React.FC<HandleConfigSectionProps> = ({
                   min={10}
                   max={300}
                   value={handleConfig.pieceLengthCm ?? 40}
-                  onChange={(e) => onHandlePieceLengthChange(parseInt(e.target.value, 10) || 40)}
+                  onChange={(e) => onHandlePieceLengthChange(Number.parseInt(e.target.value, 10) || 40)}
                   aria-label="Comprimento do Puxador em centímetros"
                   className="w-full text-sm py-2 px-2.5 bg-surface border border-outline-variant rounded font-data-mono text-on-surface focus:border-primary focus:outline-none transition-colors"
                 />

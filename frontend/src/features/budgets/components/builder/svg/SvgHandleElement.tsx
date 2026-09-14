@@ -276,17 +276,28 @@ const BarTubularHorizontal: React.FC<HorizontalHandleProps> = ({ barX, barY, bar
   );
 };
 
+interface HorizontalBoundsParams {
+  vPos: string | undefined;
+  handleConfig: HandleConfig;
+  frameW: number;
+  svgH: number;
+  effectiveLeafW: number;
+  effectiveLeafX: number;
+  heightMm: number;
+  widthMm?: number;
+}
+
 /** Puxador renderizado na folha móvel com suporte a 1 Lado ou 2 Lados (Ambos os Lados) e orientação Horizontal ou Vertical */
-function computeHorizontalBarBounds(
-  vPos: string | undefined,
-  handleConfig: HandleConfig,
-  frameW: number,
-  svgH: number,
-  effectiveLeafW: number,
-  effectiveLeafX: number,
-  heightMm: number,
-  widthMm?: number
-): { barX: number; barY: number; barW: number; barH: number } {
+function computeHorizontalBarBounds({
+  vPos,
+  handleConfig,
+  frameW,
+  svgH,
+  effectiveLeafW,
+  effectiveLeafX,
+  heightMm,
+  widthMm,
+}: HorizontalBoundsParams): { barX: number; barY: number; barW: number; barH: number } {
   const barH = 5;
   const innerH = svgH - frameW * 2;
 
@@ -349,7 +360,7 @@ export const HandleElement: React.FC<HandleElementProps> = ({
   if (isHorizontal) {
     const effectiveLeafW = leafW ?? Math.min(svgH * 0.5, 120);
     const effectiveLeafX = leafX ?? (posX - effectiveLeafW / 2);
-    const { barX, barY, barW, barH } = computeHorizontalBarBounds(
+    const { barX, barY, barW, barH } = computeHorizontalBarBounds({
       vPos,
       handleConfig,
       frameW,
@@ -357,8 +368,8 @@ export const HandleElement: React.FC<HandleElementProps> = ({
       effectiveLeafW,
       effectiveLeafX,
       heightMm,
-      widthMm
-    );
+      widthMm,
+    });
 
     const horizProps: HorizontalHandleProps = {
       barX,
@@ -413,16 +424,16 @@ export interface HandlePieceDimensionProps {
   readonly mirrored?: boolean;
 }
 
-function computeHorizontalDimensionBounds(
-  vPos: string | undefined,
-  handleConfig: HandleConfig,
-  frameW: number,
-  svgH: number,
-  effectiveLeafW: number,
-  effectiveLeafX: number,
-  heightMm: number,
-  widthMm?: number
-): { barX: number; barY: number; barW: number; cotaY: number } {
+function computeHorizontalDimensionBounds({
+  vPos,
+  handleConfig,
+  frameW,
+  svgH,
+  effectiveLeafW,
+  effectiveLeafX,
+  heightMm,
+  widthMm,
+}: HorizontalBoundsParams): { barX: number; barY: number; barW: number; cotaY: number } {
   const barH = 5;
   const innerH = svgH - frameW * 2;
   const pieceLengthMm = (handleConfig.pieceLengthCm ?? 0) * 10;
@@ -486,7 +497,7 @@ export const HandlePieceDimension: React.FC<HandlePieceDimensionProps> = ({
   if (isHorizontal) {
     const effectiveLeafW = leafW ?? Math.min(svgH * 0.5, 120);
     const effectiveLeafX = leafX ?? (posX - effectiveLeafW / 2);
-    const { barX, barY, barW, cotaY } = computeHorizontalDimensionBounds(
+    const { barX, barY, barW, cotaY } = computeHorizontalDimensionBounds({
       vPos,
       handleConfig,
       frameW,
@@ -494,8 +505,8 @@ export const HandlePieceDimension: React.FC<HandlePieceDimensionProps> = ({
       effectiveLeafW,
       effectiveLeafX,
       heightMm,
-      widthMm
-    );
+      widthMm,
+    });
 
     return (
       <g opacity={0.85}>

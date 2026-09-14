@@ -82,7 +82,7 @@ export function syncHandleMaterialSelections(
     const isTarget = targetRequirementId ? sel.requirementId === targetRequirementId : false;
     const isPuxador =
       isTarget ||
-      (activeHandleMat && sel.requirementId === activeHandleMat.requirementId) ||
+      sel.requirementId === activeHandleMat?.requirementId ||
       isHandleOrLockMaterial(sel);
 
     if (!isPuxador) return sel;
@@ -121,7 +121,7 @@ export function syncHandleMaterialSelections(
     return {
       ...sel,
       quantity: newQty,
-      totalPrice: parseFloat((newQty * unitPrice).toFixed(2)),
+      totalPrice: Number.parseFloat((newQty * unitPrice).toFixed(2)),
       isManualOverride: true,
     };
   });
@@ -139,6 +139,44 @@ interface RequirementMaterialResult {
   qty: number;
 }
 
+function resolveGlassMaterial(glassColor: string | undefined, glasses: GlassDTO[], areaM2: number): RequirementMaterialResult | null {
+  const matched = glassColor ? glasses.find((g) => g.colorFinish?.toLowerCase() === glassColor.toLowerCase()) : null;
+  const chosen = matched ?? glasses[0];
+  if (!chosen) return null;
+  return {
+    mat: { id: chosen.id, name: chosen.name, price: chosen.salePrice ?? chosen.pricePerSqm ?? 0, unit: 'm²', familyCode: chosen.familyCode },
+    qty: areaM2,
+  };
+}
+
+function resolveProfileMaterial(alumColor: string | undefined, profiles: ProfileDTO[]): RequirementMaterialResult | null {
+  const matched = alumColor ? profiles.find((p) => p.colorFinish?.toLowerCase() === alumColor.toLowerCase()) : null;
+  const chosen = matched ?? profiles[0];
+  if (!chosen) return null;
+  return {
+    mat: { id: chosen.id, name: chosen.name, price: chosen.salePrice ?? 0, unit: chosen.unitMeasure ?? 'm', familyCode: chosen.familyCode },
+    qty: 2,
+  };
+}
+
+function resolveHardwareMaterial(hardwares: HardwareDTO[]): RequirementMaterialResult | null {
+  const chosen = hardwares[0];
+  if (!chosen) return null;
+  return {
+    mat: { id: chosen.id, name: chosen.name, price: chosen.salePrice ?? 0, unit: chosen.unitMeasure ?? 'un', familyCode: chosen.familyCode },
+    qty: 1,
+  };
+}
+
+function resolveFilmMaterial(films: FilmDTO[], areaM2: number): RequirementMaterialResult | null {
+  const chosen = films[0];
+  if (!chosen) return null;
+  return {
+    mat: { id: chosen.id, name: chosen.name, price: chosen.salePrice ?? 0, unit: 'm²', familyCode: chosen.familyCode },
+    qty: areaM2,
+  };
+}
+
 function resolveRequirementMaterial(
   catType: CategoryType,
   areaM2: number,
@@ -151,45 +189,18 @@ function resolveRequirementMaterial(
     films: FilmDTO[];
   }
 ): RequirementMaterialResult {
-  const glasses = catalog?.glasses ?? [];
-  const profiles = catalog?.profiles ?? [];
-  const hardwares = catalog?.hardwares ?? [];
-  const films = catalog?.films ?? [];
-
   if (catType === 'GLASS') {
-    const matched = glassColor ? glasses.find((g) => g.colorFinish?.toLowerCase() === glassColor.toLowerCase()) : null;
-    const chosen = matched ?? glasses[0];
-    if (chosen) {
-      return {
-        mat: { id: chosen.id, name: chosen.name, price: chosen.salePrice ?? chosen.pricePerSqm ?? 0, unit: 'm²', familyCode: chosen.familyCode },
-        qty: areaM2,
-      };
-    }
+    const res = resolveGlassMaterial(glassColor, catalog?.glasses ?? [], areaM2);
+    if (res) return res;
   } else if (catType === 'PROFILE') {
-    const matched = alumColor ? profiles.find((p) => p.colorFinish?.toLowerCase() === alumColor.toLowerCase()) : null;
-    const chosen = matched ?? profiles[0];
-    if (chosen) {
-      return {
-        mat: { id: chosen.id, name: chosen.name, price: chosen.salePrice ?? 0, unit: chosen.unitMeasure ?? 'm', familyCode: chosen.familyCode },
-        qty: 2,
-      };
-    }
+    const res = resolveProfileMaterial(alumColor, catalog?.profiles ?? []);
+    if (res) return res;
   } else if (catType === 'HARDWARE') {
-    const chosen = hardwares[0];
-    if (chosen) {
-      return {
-        mat: { id: chosen.id, name: chosen.name, price: chosen.salePrice ?? 0, unit: chosen.unitMeasure ?? 'un', familyCode: chosen.familyCode },
-        qty: 1,
-      };
-    }
+    const res = resolveHardwareMaterial(catalog?.hardwares ?? []);
+    if (res) return res;
   } else if (catType === 'FILM') {
-    const chosen = films[0];
-    if (chosen) {
-      return {
-        mat: { id: chosen.id, name: chosen.name, price: chosen.salePrice ?? 0, unit: 'm²', familyCode: chosen.familyCode },
-        qty: areaM2,
-      };
-    }
+    const res = resolveFilmMaterial(catalog?.films ?? [], areaM2);
+    if (res) return res;
   }
 
   return { qty: 1 };

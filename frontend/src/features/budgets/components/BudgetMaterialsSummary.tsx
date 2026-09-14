@@ -6,7 +6,7 @@ export interface MaterialConsumptionItem {
   key: string;
   materialId: string;
   materialName: string;
-  categoryType: CategoryType | string;
+  categoryType: CategoryType;
   unitMeasure: string;
   totalQuantity: number;
   unitPrice: number;

@@ -5,7 +5,7 @@ export const budgetItemSchema = z.object({
   quantity: z.number().min(1, 'A quantidade deve ser maior que zero.'),
   widthMm: z.number().min(1, 'Largura inválida.').optional(),
   heightMm: z.number().min(1, 'Altura inválida.').optional(),
-}).passthrough();
+}).loose();
 
 export const budgetFormSchema = z.object({
   customerId: z.string().min(1, 'Selecione um cliente para o orçamento.'),

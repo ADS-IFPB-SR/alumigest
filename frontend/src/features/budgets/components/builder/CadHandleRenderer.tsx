@@ -30,7 +30,6 @@ export interface CadHandleRendererProps {
     frameFill: string;
     frameStroke: string;
   };
-  readonly mirrored?: boolean;
 }
 
 interface CadHorizontalHandleProps {

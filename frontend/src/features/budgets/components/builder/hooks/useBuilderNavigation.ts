@@ -47,6 +47,8 @@ function validateStep2(materialSelections: MaterialSelection[]): boolean {
   return true;
 }
 
+export type BuilderNavStep = 1 | 2 | 3 | 4;
+
 export function useBuilderNavigation({
   template,
   widthMm,
@@ -54,12 +56,12 @@ export function useBuilderNavigation({
   quantity,
   materialSelections,
 }: UseBuilderNavigationProps) {
-  const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4>(1);
+  const [currentStep, setCurrentStep] = useState<BuilderNavStep>(1);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isMobileCadExpanded, setIsMobileCadExpanded] = useState(false);
 
   const validateStep = useCallback(
-    (step: 1 | 2 | 3 | 4): boolean => {
+    (step: BuilderNavStep): boolean => {
       if (step === 1) {
         const newErrors = validateStep1(widthMm, heightMm, quantity);
         if (Object.keys(newErrors).length > 0) {
@@ -82,22 +84,22 @@ export function useBuilderNavigation({
   const handleNextStep = useCallback(() => {
     if (validateStep(currentStep)) {
       if (currentStep < 4) {
-        setCurrentStep((prev) => (prev + 1) as 1 | 2 | 3 | 4);
+        setCurrentStep((prev) => (prev + 1) as BuilderNavStep);
       }
     }
   }, [currentStep, validateStep]);
 
   const handlePrevStep = useCallback(() => {
     if (currentStep > 1) {
-      setCurrentStep((prev) => (prev - 1) as 1 | 2 | 3 | 4);
+      setCurrentStep((prev) => (prev - 1) as BuilderNavStep);
     }
   }, [currentStep]);
 
   const handleGoToStep = useCallback(
-    (targetStep: 1 | 2 | 3 | 4) => {
+    (targetStep: BuilderNavStep) => {
       if (targetStep > currentStep) {
         for (let s = currentStep; s < targetStep; s++) {
-          if (!validateStep(s as 1 | 2 | 3 | 4)) return;
+          if (!validateStep(s as BuilderNavStep)) return;
         }
       }
       setCurrentStep(targetStep);
