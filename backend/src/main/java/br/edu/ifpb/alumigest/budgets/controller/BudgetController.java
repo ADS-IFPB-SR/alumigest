@@ -70,14 +70,14 @@ public class BudgetController {
     @GetMapping
     @Operation(summary = "Listar orçamentos", description = "Lista orçamentos de forma paginada com suporte a busca textual por código/cliente e filtro de status.")
     @ApiResponse(responseCode = "200", description = "Lista paginada de orçamentos")
-    public ResponseEntity<PageResponse<BudgetSummaryResponseDTO>> findAll(
+    public ResponseEntity<PageResponse<BudgetSummaryResponseDTO>> listar(
             @Parameter(description = "Termo para busca textual (código ou nome do cliente)")
             @RequestParam(required = false) String busca,
             @Parameter(description = "Filtro por status do orçamento")
             @RequestParam(required = false) BudgetStatus status,
             @ParameterObject @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
 
-        PageResponse<BudgetSummaryResponseDTO> response = budgetService.findAll(busca, status, pageable);
+        PageResponse<BudgetSummaryResponseDTO> response = budgetService.listar(busca, status, pageable);
         return ResponseEntity.ok(response);
     }
 
