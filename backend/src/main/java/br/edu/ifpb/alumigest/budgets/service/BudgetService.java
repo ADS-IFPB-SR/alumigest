@@ -145,6 +145,21 @@ public class BudgetService {
         budgetRepository.save(budget);
     }
 
+
+public BudgetResponseDTO alterarStatus(UUID id, StatusChangeRequest request) {
+        Objects.requireNonNull(request, "Request de alteração de status não pode ser nulo");
+        Objects.requireNonNull(request.novoStatus(), "O novo status é obrigatório para alteração");
+
+        Budget budget = getBudgetOrThrow(id);
+
+        validateStatusTransition(budget.getStatus(), request.novoStatus());
+
+        budget.setStatus(request.novoStatus());
+        budget = budgetRepository.save(budget);
+        
+        return budgetMapper.toResponseDTO(budget);
+    }
+
     @Transactional
     public void updateStatus(UUID id, BudgetStatusUpdateDTO statusDto) {
         Objects.requireNonNull(statusDto, "BudgetStatusUpdateDTO não pode ser nulo");
@@ -261,18 +276,18 @@ public class BudgetService {
     }
 
     private void validateStatusTransition(BudgetStatus current, BudgetStatus target) {
-        if (current == target) return;
+        if (current == target) return; 
 
+        // Restaurado o target CANCELLED para garantir o funcionamento do delete()
         boolean isValid = switch (current) {
             case DRAFT -> target == BudgetStatus.SENT || target == BudgetStatus.CANCELLED;
-            case SENT -> target == BudgetStatus.APPROVED || target == BudgetStatus.REJECTED || target == BudgetStatus.CANCELLED || target == BudgetStatus.EXPIRED;
-            case APPROVED, REJECTED, CANCELLED, EXPIRED -> false;
+            case SENT -> target == BudgetStatus.APPROVED || target == BudgetStatus.REJECTED || target == BudgetStatus.EXPIRED || target == BudgetStatus.CANCELLED;
+            case APPROVED, REJECTED, EXPIRED, CANCELLED -> false;
         };
 
         if (!isValid) {
             throw new InvalidBudgetStatusTransitionException(current, target);
         }
     }
-
 
 }
