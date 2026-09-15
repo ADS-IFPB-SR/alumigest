@@ -53,11 +53,16 @@ export type PaymentCondition =
   | 'A_COMBINAR';
 
 export interface DiscountRequest {
-  discountType: DiscountType;
-  value: number;
-  paymentCondition: PaymentCondition;
+  discountType?: DiscountType;
+  tipoDesconto?: DiscountType;
+  value?: number;
+  valor?: number;
+  paymentCondition?: PaymentCondition;
+  condicaoPagamento?: PaymentCondition;
   paymentNotes?: string;
+  observacoesPagamento?: string;
   validUntil?: string;
+  dataValidade?: string;
 }
 
 // ============================================================
@@ -372,6 +377,31 @@ export interface BudgetDetail extends BudgetSummary {
     options: BudgetItemOption[];
     subtotal: number;
     notes?: string;
+  }[];
+}
+
+export type Budget = BudgetDetail;
+
+export interface BudgetItemCreateRequest {
+  productId: string;
+  widthMm?: number;
+  width?: number;
+  heightMm?: number;
+  height?: number;
+  quantity: number;
+  laborCost?: number;
+  templateType?: string;
+  templateConfig?: TemplateConfig | string;
+  handleConfig?: HandleConfig | string;
+  drillingConfig?: DrillingConfig | string;
+  notes?: string;
+  options?: {
+    materialId: string;
+    quantity?: number;
+    categoryType: string | CategoryType;
+    unitPrice?: number;
+    materialName?: string;
+    unitMeasure?: string;
   }[];
 }
 
