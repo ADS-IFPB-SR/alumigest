@@ -5,7 +5,6 @@ import type {
   BudgetSummary, 
   BudgetStatus,
   BudgetDetail,
-  Budget,
   CreateBudgetPayload,
   WindowTemplate,
   BudgetItemCalculationRequest,
@@ -325,7 +324,7 @@ export const budgetsApi = {
     return response.data;
   },
 
-  applyDiscount: async (id: string, data: DiscountRequest): Promise<Budget> => {
+  applyDiscount: async (id: string, data: DiscountRequest): Promise<BudgetDetail> => {
     const payload = toBackendDiscountPayload(data);
     const response = await api.put<any>(`/api/budgets/${id}/discount`, payload, {
       baseURL: '',
