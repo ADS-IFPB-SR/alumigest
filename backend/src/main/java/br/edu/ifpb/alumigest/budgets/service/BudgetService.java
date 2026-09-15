@@ -67,7 +67,13 @@ public class BudgetService {
 
         budget.setCode(budgetCodeGenerator.generateNextCode());
 
+        // Status inicial obrigatório: novos orçamentos sempre começam como rascunho
         budget.setStatus(BudgetStatus.DRAFT);
+
+        // Validade padrão: 15 dias corridos a partir da criação, se não informada
+        if (budget.getValidUntil() == null) {
+            budget.setValidUntil(OffsetDateTime.now(ZoneOffset.UTC).plusDays(15));
+        }
 
         budget = budgetRepository.save(budget);
         return budgetMapper.toResponseDTO(budget);
