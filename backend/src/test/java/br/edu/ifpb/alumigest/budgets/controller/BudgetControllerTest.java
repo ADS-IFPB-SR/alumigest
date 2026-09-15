@@ -97,7 +97,8 @@ class BudgetControllerTest {
                 id, "ORC-2026-001", "João da Silva", 2, BigDecimal.valueOf(1500.00), BudgetStatus.DRAFT, null, null, false);
         PageResponse<BudgetSummaryResponseDTO> pageResponse = new PageResponse<>(List.of(summary), 0, 20, 1, 1, true, true);
 
-        when(budgetService.listar(any(), any(), any())).thenReturn(pageResponseMock);
+        when(budgetService.listar(eq("busca"), eq(BudgetStatus.DRAFT), any(Pageable.class))).thenReturn(pageResponse);
+
         mockMvc.perform(get("/api/orcamentos")
                 .param("busca", "busca")
                 .param("status", "DRAFT")
