@@ -149,15 +149,36 @@ export interface BudgetCreateRequest {
  */
 export interface BudgetItemCreateRequest {
   productId: string;
-  descricao: string;
-  larguraMm: number;
-  alturaMm: number;
-  quantidade: number;
+  descricao?: string;
+  larguraMm?: number;
+  widthMm?: number;
+  width?: number;
+  alturaMm?: number;
+  heightMm?: number;
+  height?: number;
+  quantidade?: number;
+  quantity?: number;
   corAluminio?: string;
   tipoVidro?: string;
   orientacaoAbertura?: string;
   ferragens?: string;
-  valorUnitario: number;
+  valorUnitario?: number;
+  laborCost?: number;
+  templateType?: string;
+  templateConfig?: TemplateConfig | string;
+  handleConfig?: HandleConfig | string;
+  drillingConfig?: DrillingConfig | string;
+  notes?: string;
+  options?: {
+    id?: string;
+    materialId: string;
+    quantity?: number;
+    categoryType: string | CategoryType;
+    unitPrice?: number;
+    totalPrice?: number;
+    materialName?: string;
+    unitMeasure?: string;
+  }[];
 }
 
 /**
