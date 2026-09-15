@@ -1,12 +1,17 @@
 import React from 'react';
 import type { BudgetItem } from '../types';
-import { TEMPLATE_TYPE_INFO } from '../types';
+import { TEMPLATE_TYPE_INFO, OPENING_DIRECTION_LABELS } from '../types';
 import { formatBRL } from '../utils/calculations';
 
-function formatOpeningDirectionArrow(openDir?: string): string {
-  if (openDir === 'LEFT_TO_RIGHT') return '→';
-  if (openDir === 'RIGHT_TO_LEFT') return '←';
-  return openDir ?? '';
+function formatOpeningDirection(openDir?: string): string {
+  if (!openDir) return '';
+  const label = OPENING_DIRECTION_LABELS[openDir as keyof typeof OPENING_DIRECTION_LABELS] || openDir;
+  if (openDir === 'LEFT_TO_RIGHT') return `→ ${label}`;
+  if (openDir === 'RIGHT_TO_LEFT') return `← ${label}`;
+  if (openDir === 'CENTER_TO_SIDES') return `↔ ${label}`;
+  if (openDir === 'OUTSIDE') return `↗ ${label}`;
+  if (openDir === 'INSIDE') return `↙ ${label}`;
+  return label;
 }
 
 interface BudgetItemsTableProps {
@@ -87,15 +92,28 @@ export const BudgetItemsTable: React.FC<BudgetItemsTableProps> = ({
                         </span>
                         <span className="text-xs text-on-surface-variant font-body">
                           Modelo: {item.templateType ? (TEMPLATE_TYPE_INFO[item.templateType as keyof typeof TEMPLATE_TYPE_INFO]?.label || item.templateType) : 'Básico'}
-                          {openDir && <span className="ml-xs text-secondary">· {formatOpeningDirectionArrow(openDir)}</span>}
+                          {openDir && <span className="ml-xs text-secondary">· {formatOpeningDirection(openDir)}</span>}
                         </span>
+                        {(item.templateConfig?.aluminumColor || item.templateConfig?.glassFinish) && (
+                          <span className="text-[11px] text-secondary font-body">
+                            {[
+                              item.templateConfig?.aluminumColor ? `Cor: ${item.templateConfig.aluminumColor}` : null,
+                              item.templateConfig?.glassFinish ? `Vidro: ${item.templateConfig.glassFinish}` : null,
+                            ].filter(Boolean).join(' · ')}
+                          </span>
+                        )}
+                        {item.notes && (
+                          <span className="text-[11px] text-secondary italic truncate max-w-xs">
+                            Obs: {item.notes}
+                          </span>
+                        )}
                       </div>
                     </td>
 
                     {/* Medidas (L × A mm) */}
                     <td className="px-sm py-sm text-center">
                       <span className="font-data-mono text-xs text-on-surface whitespace-nowrap">
-                        {item.widthMm}×{item.heightMm}
+                        {item.widthMm ?? item.width}×{item.heightMm ?? item.height}
                       </span>
                       <br />
                       <span className="text-[10px] text-on-surface-variant">mm</span>
