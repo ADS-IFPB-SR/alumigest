@@ -269,4 +269,26 @@ public class BudgetService {
     }
 
 
+
+    @Transactional
+    public BudgetItemResponseDTO adicionarItem(UUID budgetId, BudgetItemRequestDTO request) {
+        Budget budget = getBudgetOrThrow(budgetId);
+        validateBudgetIsDraft(budget);
+        BudgetItem item = budgetMapper.toEntity(request);
+        if (item.getOptions() != null) {
+            for (BudgetItemOption option : item.getOptions()) {
+                option.setBudgetItem(item);
+            }
+        }
+        budget.addItem(item);
+        budgetQuantityService.calculateQuantities(budget);
+        budgetPricingService.calculatePricing(budget);
+        budget = budgetRepository.save(budget);
+        BudgetItem savedItem = budget.getItems().get(budget.getItems().size() - 1);
+
+        return budgetMapper.toResponseDTO(savedItem);
+    }
+
+
+
 }
