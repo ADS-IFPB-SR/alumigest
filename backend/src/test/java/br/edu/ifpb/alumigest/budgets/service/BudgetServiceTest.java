@@ -114,6 +114,44 @@ class BudgetServiceTest {
     }
 
     @Test
+    @DisplayName("Criação: Status inicial deve ser DRAFT")
+    void create_ShouldSetStatusDraft_OnNewBudget() {
+        when(clientRepository.findById(client.getId())).thenReturn(Optional.of(client));
+        Budget mappedBudget = new Budget();
+        mappedBudget.setStatus(BudgetStatus.SENT);
+        when(budgetMapper.toEntity(createRequest)).thenReturn(mappedBudget);
+        when(budgetRepository.save(any(Budget.class))).thenReturn(budget);
+        when(budgetMapper.toResponseDTO(budget)).thenReturn(null);
+
+        org.mockito.ArgumentCaptor<Budget> captor = org.mockito.ArgumentCaptor.forClass(Budget.class);
+
+        budgetService.create(createRequest);
+
+        verify(budgetRepository).save(captor.capture());
+        assertThat(captor.getValue().getStatus()).isEqualTo(BudgetStatus.DRAFT);
+    }
+
+    @Test
+    @DisplayName("Criação: Deve atribuir validade padrão de 15 dias quando não informada")
+    void create_ShouldSetDefaultValidUntil_WhenNotProvided() {
+        when(clientRepository.findById(client.getId())).thenReturn(Optional.of(client));
+        when(budgetMapper.toEntity(createRequest)).thenReturn(new Budget()); // validUntil = null
+        when(budgetRepository.save(any(Budget.class))).thenReturn(budget);
+        when(budgetMapper.toResponseDTO(budget)).thenReturn(null);
+
+        org.mockito.ArgumentCaptor<Budget> captor = org.mockito.ArgumentCaptor.forClass(Budget.class);
+        java.time.OffsetDateTime before = java.time.OffsetDateTime.now(java.time.ZoneOffset.UTC).plusDays(15).minusSeconds(5);
+
+        budgetService.create(createRequest);
+
+        verify(budgetRepository).save(captor.capture());
+        java.time.OffsetDateTime validUntil = captor.getValue().getValidUntil();
+        assertThat(validUntil).isNotNull();
+        assertThat(validUntil).isAfterOrEqualTo(before);
+        assertThat(validUntil).isBeforeOrEqualTo(before.plusSeconds(10));
+    }
+
+    @Test
     @DisplayName("Criação: Cliente inexistente")
     void create_ShouldThrowException_WhenClientNotFound() {
         when(clientRepository.findById(client.getId())).thenReturn(Optional.empty());
