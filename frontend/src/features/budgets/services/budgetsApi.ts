@@ -169,7 +169,8 @@ export const budgetsApi = {
           discountPercent: Number(b.discountPercent ?? 0),
           discountValue: Number(b.discountValue ?? 0),
           total: Number(b.total ?? 0),
-          itemCount: Number(b.itemCount ?? 1),
+          itemCount: Number(b.itemCount ?? b.totalItems ?? 1),
+          isExpired: Boolean(b.isExpired ?? b.expired),
         }));
 
         const totalElements = Number(response.data.totalElements ?? mappedContent.length);
