@@ -9,6 +9,9 @@ import type {
   WindowTemplate,
   BudgetItemCalculationRequest,
   BudgetItemCalculationResponse,
+  DiscountRequest,
+  BudgetItem,
+  BudgetItemCreateRequest,
 } from '../types';
 import type { PageResponse } from '../../catalog/types';
 
@@ -112,6 +115,80 @@ function mapBackendToBudgetDetail(res: any): BudgetDetail {
   };
 }
 
+function toBackendDiscountPayload(data: DiscountRequest) {
+  const tipoDesconto = data.tipoDesconto ?? data.discountType;
+  const valor = data.valor ?? data.value ?? 0;
+  const condicaoPagamento = data.condicaoPagamento ?? data.paymentCondition;
+  const observacoesPagamento = data.observacoesPagamento ?? data.paymentNotes;
+  const rawDate = data.dataValidade ?? data.validUntil;
+  const dataValidade = rawDate ? (rawDate.includes('T') ? rawDate.split('T')[0] : rawDate) : undefined;
+
+  return {
+    tipoDesconto,
+    valor,
+    condicaoPagamento,
+    observacoesPagamento,
+    dataValidade,
+  };
+}
+
+function toBackendBudgetItemPayload(item: BudgetItemCreateRequest) {
+  return {
+    productId: item.productId,
+    widthMm: item.widthMm ?? item.width ?? 0,
+    heightMm: item.heightMm ?? item.height ?? 0,
+    quantity: item.quantity,
+    laborCost: item.laborCost ?? 0,
+    templateType: item.templateType,
+    templateConfig: typeof item.templateConfig === 'object' && item.templateConfig !== null 
+      ? JSON.stringify(item.templateConfig) 
+      : item.templateConfig,
+    handleConfig: typeof item.handleConfig === 'object' && item.handleConfig !== null 
+      ? JSON.stringify(item.handleConfig) 
+      : item.handleConfig,
+    drillingConfig: typeof item.drillingConfig === 'object' && item.drillingConfig !== null 
+      ? JSON.stringify(item.drillingConfig) 
+      : item.drillingConfig,
+    notes: item.notes,
+    options: (item.options ?? []).map((opt) => ({
+      materialId: opt.materialId,
+      quantity: opt.quantity,
+      categoryType: opt.categoryType,
+    })),
+  };
+}
+
+function mapBackendToBudgetItem(res: any): BudgetItem {
+  return {
+    tempId: res.id ? String(res.id) : String(Date.now()),
+    productId: res.productId,
+    productName: res.productName || '',
+    templateType: res.templateType || '',
+    templateConfig: parseJsonConfig(res.templateConfig, {} as any),
+    handleConfig: parseJsonConfig(res.handleConfig, { handleType: 'PUXADOR_H', position: 'VERTICAL', heightMm: 1000 } as any),
+    drillingConfig: parseJsonConfig(res.drillingConfig, { holeCount: 0, diameterMm: 0, distanceMm: 0 } as any),
+    widthMm: Number(res.widthMm ?? res.width ?? 0),
+    heightMm: Number(res.heightMm ?? res.height ?? 0),
+    quantity: Number(res.quantity ?? 1),
+    laborCost: Number(res.laborCost ?? 0),
+    subtotal: Number(res.subtotal ?? 0),
+    unitPrice: res.unitPrice !== undefined ? Number(res.unitPrice) : undefined,
+    notes: res.notes,
+    options: Array.isArray(res.options)
+      ? res.options.map((opt: any) => ({
+          id: opt.id,
+          materialId: opt.materialId,
+          materialName: opt.materialName || '',
+          categoryType: opt.categoryType,
+          unitMeasure: opt.unitMeasure || '',
+          quantity: Number(opt.quantity ?? 0),
+          unitPrice: Number(opt.unitPrice ?? 0),
+          totalPrice: Number(opt.totalPrice ?? (Number(opt.quantity ?? 0) * Number(opt.unitPrice ?? 0))),
+        }))
+      : [],
+  };
+}
+
 export const budgetsApi = {
   // ============================================================
   // TEMPLATES DE ESQUADRIAS
@@ -169,7 +246,8 @@ export const budgetsApi = {
           discountPercent: Number(b.discountPercent ?? 0),
           discountValue: Number(b.discountValue ?? 0),
           total: Number(b.total ?? 0),
-          itemCount: Number(b.itemCount ?? 1),
+          itemCount: Number(b.itemCount ?? b.totalItems ?? 0),
+          isExpired: Boolean(b.isExpired ?? b.expired),
         }));
 
         const totalElements = Number(response.data.totalElements ?? mappedContent.length);
@@ -245,6 +323,22 @@ export const budgetsApi = {
       baseURL: '',
     });
     return response.data;
+  },
+
+  applyDiscount: async (id: string, data: DiscountRequest): Promise<BudgetDetail> => {
+    const payload = toBackendDiscountPayload(data);
+    const response = await api.put<any>(`/api/budgets/${id}/discount`, payload, {
+      baseURL: '',
+    });
+    return mapBackendToBudgetDetail(response.data);
+  },
+
+  addBudgetItem: async (id: string, item: BudgetItemCreateRequest): Promise<BudgetItem> => {
+    const backendPayload = toBackendBudgetItemPayload(item);
+    const response = await api.post<any>(`/api/budgets/${id}/items`, backendPayload, {
+      baseURL: '',
+    });
+    return mapBackendToBudgetItem(response.data);
   },
 };
 
