@@ -83,8 +83,8 @@ export const BudgetEditor: React.FC = () => {
       const loadedLaborCost = (existingBudget.items ?? []).reduce((sum, item) => sum + (item.laborCost || 0), 0);
 
       setForm({
-        customerId: existingBudget.customer?.id ?? existingBudget.customerId ?? '',
-        customerName: existingBudget.customer?.name ?? existingBudget.customerName ?? '',
+        customerId: existingBudget.customer?.id ?? (existingBudget as any).clientId ?? existingBudget.customerId ?? '',
+        customerName: existingBudget.customer?.name ?? (existingBudget as any).clientName ?? existingBudget.customerName ?? '',
         customerDocument: existingBudget.customer?.document ?? '',
         customerPhone: existingBudget.customer?.phone ?? '',
         customerAddress: existingBudget.customer?.address ?? '',
