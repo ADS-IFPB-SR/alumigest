@@ -117,7 +117,9 @@ class BudgetServiceTest {
     @DisplayName("Criação: Status inicial deve ser DRAFT")
     void create_ShouldSetStatusDraft_OnNewBudget() {
         when(clientRepository.findById(client.getId())).thenReturn(Optional.of(client));
-        when(budgetMapper.toEntity(createRequest)).thenReturn(new Budget());
+        Budget mappedBudget = new Budget();
+        mappedBudget.setStatus(BudgetStatus.SENT);
+        when(budgetMapper.toEntity(createRequest)).thenReturn(mappedBudget);
         when(budgetRepository.save(any(Budget.class))).thenReturn(budget);
         when(budgetMapper.toResponseDTO(budget)).thenReturn(null);
 
