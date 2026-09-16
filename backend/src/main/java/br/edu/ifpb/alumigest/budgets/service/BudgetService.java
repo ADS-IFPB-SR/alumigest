@@ -93,6 +93,16 @@ public class BudgetService {
         return PageResponse.of(page);
     }
 
+    @Transactional(readOnly = true)
+    public PageResponse<BudgetSummaryResponseDTO> listar(String busca, BudgetStatus status, Pageable pageable) {
+        String query = (busca != null && !busca.isBlank()) ? busca.trim() : null;
+        
+        Page<BudgetSummaryResponseDTO> page = budgetRepository.searchBudgets(query, status, pageable)
+                .map(budgetMapper::toSummaryResponseDTO);
+                
+        return PageResponse.of(page);
+    }
+
     @Transactional
     public BudgetResponseDTO update(UUID id, BudgetRequestDTO requestDTO) {
         Budget existingBudget = getBudgetOrThrow(id);
