@@ -19,6 +19,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.mockito.ArgumentCaptor;
 
 import java.math.BigDecimal;
 import java.util.Collections;
@@ -191,11 +193,11 @@ class BudgetServiceTest {
     }
 
     @Test
-    @DisplayName("Listagem com filtros")
-    void findAll_ShouldReturnPageResponse() {
+    @DisplayName("Listagem com filtros: deve aplicar ordenação padrão createdAt DESC quando unsorted")
+    void findAll_ShouldApplyDefaultSort_WhenPageableIsUnsorted() {
         Pageable pageable = PageRequest.of(0, 10);
         Page<Budget> page = new PageImpl<>(List.of(budget));
-        when(budgetRepository.searchBudgets("busca", BudgetStatus.DRAFT, pageable)).thenReturn(page);
+        when(budgetRepository.searchBudgets(eq("busca"), eq(BudgetStatus.DRAFT), any(Pageable.class))).thenReturn(page);
 
         BudgetSummaryResponseDTO summaryDTO = new BudgetSummaryResponseDTO(
                 budget.getId(), "ORC-2026-001", "João da Silva", 0, BigDecimal.ZERO, BudgetStatus.DRAFT, null, null, false);
@@ -206,6 +208,107 @@ class BudgetServiceTest {
         assertThat(result).isNotNull();
         assertThat(result.content()).hasSize(1);
         assertThat(result.content().get(0).code()).isEqualTo("ORC-2026-001");
+
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+        verify(budgetRepository).searchBudgets(eq("busca"), eq(BudgetStatus.DRAFT), pageableCaptor.capture());
+        Pageable capturedPageable = pageableCaptor.getValue();
+        assertThat(capturedPageable.getPageNumber()).isZero();
+        assertThat(capturedPageable.getPageSize()).isEqualTo(10);
+        assertThat(capturedPageable.getSort().getOrderFor("createdAt")).isNotNull();
+        assertThat(capturedPageable.getSort().getOrderFor("createdAt").getDirection()).isEqualTo(Sort.Direction.DESC);
+    }
+
+    @Test
+    @DisplayName("Listagem com filtros: deve aplicar paginação e ordenação padrão quando pageable for nulo")
+    void findAll_ShouldUseDefaultPaginationAndSort_WhenPageableIsNull() {
+        Page<Budget> page = new PageImpl<>(List.of(budget));
+        when(budgetRepository.searchBudgets(eq(null), eq(BudgetStatus.APPROVED), any(Pageable.class))).thenReturn(page);
+
+        BudgetSummaryResponseDTO summaryDTO = new BudgetSummaryResponseDTO(
+                budget.getId(), "ORC-2026-001", "João da Silva", 0, BigDecimal.ZERO, BudgetStatus.APPROVED, null, null, false);
+        when(budgetMapper.toSummaryResponseDTO(budget)).thenReturn(summaryDTO);
+
+        PageResponse<BudgetSummaryResponseDTO> result = budgetService.findAll(null, BudgetStatus.APPROVED, null);
+
+        assertThat(result).isNotNull();
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+        verify(budgetRepository).searchBudgets(isNull(), eq(BudgetStatus.APPROVED), pageableCaptor.capture());
+        Pageable captured = pageableCaptor.getValue();
+        assertThat(captured.getPageNumber()).isZero();
+        assertThat(captured.getPageSize()).isEqualTo(20);
+        assertThat(captured.getSort().getOrderFor("createdAt")).isNotNull();
+        assertThat(captured.getSort().getOrderFor("createdAt").getDirection()).isEqualTo(Sort.Direction.DESC);
+    }
+
+    @Test
+    @DisplayName("Listagem com filtros: deve preservar ordenação personalizada quando fornecida")
+    void findAll_ShouldPreserveCustomSort_WhenPageableIsSorted() {
+        Pageable pageable = PageRequest.of(1, 15, Sort.by("code").ascending());
+        Page<Budget> page = new PageImpl<>(List.of(budget));
+        when(budgetRepository.searchBudgets(eq("ORC"), isNull(), any(Pageable.class))).thenReturn(page);
+
+        BudgetSummaryResponseDTO summaryDTO = new BudgetSummaryResponseDTO(
+                budget.getId(), "ORC-2026-001", "João da Silva", 0, BigDecimal.ZERO, BudgetStatus.DRAFT, null, null, false);
+        when(budgetMapper.toSummaryResponseDTO(budget)).thenReturn(summaryDTO);
+
+        PageResponse<BudgetSummaryResponseDTO> result = budgetService.findAll("ORC", null, pageable);
+
+        assertThat(result).isNotNull();
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+        verify(budgetRepository).searchBudgets(eq("ORC"), isNull(), pageableCaptor.capture());
+        Pageable captured = pageableCaptor.getValue();
+        assertThat(captured.getPageNumber()).isEqualTo(1);
+        assertThat(captured.getPageSize()).isEqualTo(15);
+        assertThat(captured.getSort().getOrderFor("code")).isNotNull();
+        assertThat(captured.getSort().getOrderFor("code").getDirection()).isEqualTo(Sort.Direction.ASC);
+    }
+
+    @Test
+    @DisplayName("Listagem com filtros: busca em branco ou vazia deve ser convertida para nulo")
+    void findAll_ShouldTreatBlankSearchAsNull() {
+        Page<Budget> page = new PageImpl<>(List.of(budget));
+        when(budgetRepository.searchBudgets(isNull(), isNull(), any(Pageable.class))).thenReturn(page);
+
+        BudgetSummaryResponseDTO summaryDTO = new BudgetSummaryResponseDTO(
+                budget.getId(), "ORC-2026-001", "João da Silva", 0, BigDecimal.ZERO, BudgetStatus.DRAFT, null, null, false);
+        when(budgetMapper.toSummaryResponseDTO(budget)).thenReturn(summaryDTO);
+
+        budgetService.findAll("   ", null, PageRequest.of(0, 10));
+
+        verify(budgetRepository).searchBudgets(isNull(), isNull(), any(Pageable.class));
+    }
+
+    @Test
+    @DisplayName("Listagem com filtros: termo de busca deve ser trimado")
+    void findAll_ShouldTrimSearchTerm() {
+        Page<Budget> page = new PageImpl<>(List.of(budget));
+        when(budgetRepository.searchBudgets(eq("termo"), isNull(), any(Pageable.class))).thenReturn(page);
+
+        BudgetSummaryResponseDTO summaryDTO = new BudgetSummaryResponseDTO(
+                budget.getId(), "ORC-2026-001", "João da Silva", 0, BigDecimal.ZERO, BudgetStatus.DRAFT, null, null, false);
+        when(budgetMapper.toSummaryResponseDTO(budget)).thenReturn(summaryDTO);
+
+        budgetService.findAll("  termo  ", null, PageRequest.of(0, 10));
+
+        verify(budgetRepository).searchBudgets(eq("termo"), isNull(), any(Pageable.class));
+    }
+
+    @Test
+    @DisplayName("Listagem: listar() deve delegar para findAll()")
+    void listar_ShouldDelegateToFindAll() {
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<Budget> page = new PageImpl<>(List.of(budget));
+        when(budgetRepository.searchBudgets(eq("busca"), eq(BudgetStatus.DRAFT), any(Pageable.class))).thenReturn(page);
+
+        BudgetSummaryResponseDTO summaryDTO = new BudgetSummaryResponseDTO(
+                budget.getId(), "ORC-2026-001", "João da Silva", 0, BigDecimal.ZERO, BudgetStatus.DRAFT, null, null, false);
+        when(budgetMapper.toSummaryResponseDTO(budget)).thenReturn(summaryDTO);
+
+        PageResponse<BudgetSummaryResponseDTO> result = budgetService.listar("busca", BudgetStatus.DRAFT, pageable);
+
+        assertThat(result).isNotNull();
+        assertThat(result.content()).hasSize(1);
+        verify(budgetRepository).searchBudgets(eq("busca"), eq(BudgetStatus.DRAFT), any(Pageable.class));
     }
 
     @Test
