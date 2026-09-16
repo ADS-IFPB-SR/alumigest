@@ -25,7 +25,9 @@ import br.edu.ifpb.alumigest.common.exception.BusinessException;
 import br.edu.ifpb.alumigest.common.exception.InvalidBudgetStatusTransitionException;
 import br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -90,19 +92,26 @@ public class BudgetService {
     @Transactional(readOnly = true)
     public PageResponse<BudgetSummaryResponseDTO> findAll(String busca, BudgetStatus status, Pageable pageable) {
         String query = (busca != null && !busca.isBlank()) ? busca.trim() : null;
-        Page<BudgetSummaryResponseDTO> page = budgetRepository.searchBudgets(query, status, pageable)
+
+        Pageable effectivePageable = pageable;
+        if (effectivePageable == null) {
+            effectivePageable = PageRequest.of(0, 20, Sort.by(Sort.Direction.DESC, "createdAt"));
+        } else if (effectivePageable.getSort().isUnsorted()) {
+            effectivePageable = PageRequest.of(
+                    effectivePageable.getPageNumber(),
+                    effectivePageable.getPageSize(),
+                    Sort.by(Sort.Direction.DESC, "createdAt")
+            );
+        }
+
+        Page<BudgetSummaryResponseDTO> page = budgetRepository.searchBudgets(query, status, effectivePageable)
                 .map(budgetMapper::toSummaryResponseDTO);
         return PageResponse.of(page);
     }
 
     @Transactional(readOnly = true)
     public PageResponse<BudgetSummaryResponseDTO> listar(String busca, BudgetStatus status, Pageable pageable) {
-        String query = (busca != null && !busca.isBlank()) ? busca.trim() : null;
-        
-        Page<BudgetSummaryResponseDTO> page = budgetRepository.searchBudgets(query, status, pageable)
-                .map(budgetMapper::toSummaryResponseDTO);
-                
-        return PageResponse.of(page);
+        return findAll(busca, status, pageable);
     }
 
     @Transactional
