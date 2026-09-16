@@ -456,4 +456,112 @@ class BudgetServiceTest {
         assertThatThrownBy(() -> budgetService.updateStatus(budgetId, statusDto))
                 .isInstanceOf(InvalidBudgetStatusTransitionException.class);
     }
+
+    @Test
+    @DisplayName("Adicionar Item: Sucesso com orçamento DRAFT, recálculo e persistência")
+    void adicionarItem_ShouldAddItemAndRecalculate_WhenBudgetIsDraft() {
+        UUID budgetId = budget.getId();
+        budget.setStatus(BudgetStatus.DRAFT);
+        when(budgetRepository.findById(budgetId)).thenReturn(Optional.of(budget));
+
+        BudgetItem item = new BudgetItem();
+        item.setWidthMm(new BigDecimal("1200.00"));
+        item.setHeightMm(new BigDecimal("2100.00"));
+        item.setQuantity(1);
+        item.setLaborCost(new BigDecimal("150.00"));
+
+        BudgetItemOption option = new BudgetItemOption();
+        item.setOptions(new java.util.ArrayList<>(List.of(option)));
+
+        BudgetItemRequestDTO itemRequest = new BudgetItemRequestDTO(
+                UUID.randomUUID(),
+                new BigDecimal("1200.00"),
+                new BigDecimal("2100.00"),
+                1,
+                new BigDecimal("150.00"),
+                "SLIDING_DOOR_2F",
+                "{}",
+                "{}",
+                "{}",
+                "Nota item",
+                null
+        );
+
+        when(budgetMapper.toEntity(itemRequest)).thenReturn(item);
+
+        BudgetItemResponseDTO expectedResponse = new BudgetItemResponseDTO(
+                UUID.randomUUID(),
+                itemRequest.productId(),
+                "Janela de Correr",
+                "SLIDING_DOOR_2F",
+                "{}",
+                "{}",
+                "{}",
+                new BigDecimal("1200.00"),
+                new BigDecimal("2100.00"),
+                1,
+                new BigDecimal("150.00"),
+                new BigDecimal("600.00"),
+                "Nota item",
+                Collections.emptyList()
+        );
+        when(budgetMapper.toResponseDTO(item)).thenReturn(expectedResponse);
+
+        BudgetItemResponseDTO response = budgetService.adicionarItem(budgetId, itemRequest);
+
+        assertThat(response).isNotNull();
+        assertThat(response.id()).isEqualTo(expectedResponse.id());
+        assertThat(budget.getItems()).contains(item);
+        assertThat(option.getBudgetItem()).isEqualTo(item);
+        assertThat(item.getBudget()).isEqualTo(budget);
+
+        verify(budgetPricingService, times(1)).calculatePricing(budget);
+        verify(budgetRepository, times(1)).save(budget);
+    }
+
+    @Test
+    @DisplayName("Adicionar Item: Bloquear quando orçamento não estiver em status DRAFT")
+    void adicionarItem_ShouldThrowException_WhenBudgetIsNotDraft() {
+        UUID budgetId = budget.getId();
+        budget.setStatus(BudgetStatus.SENT);
+        when(budgetRepository.findById(budgetId)).thenReturn(Optional.of(budget));
+
+        BudgetItemRequestDTO itemRequest = new BudgetItemRequestDTO(
+                UUID.randomUUID(),
+                new BigDecimal("1200.00"),
+                new BigDecimal("2100.00"),
+                1,
+                new BigDecimal("150.00"),
+                null, null, null, null, null, null
+        );
+
+        assertThatThrownBy(() -> budgetService.adicionarItem(budgetId, itemRequest))
+                .isInstanceOf(BudgetImmutableException.class)
+                .hasMessageContaining("Orçamento não pode ser alterado pois já se encontra no status: SENT");
+
+        verify(budgetRepository, never()).save(any());
+        verify(budgetMapper, never()).toEntity(any(BudgetItemRequestDTO.class));
+    }
+
+    @Test
+    @DisplayName("Adicionar Item: Falha quando orçamento não for encontrado")
+    void adicionarItem_ShouldThrowException_WhenBudgetNotFound() {
+        UUID nonExistentId = UUID.randomUUID();
+        when(budgetRepository.findById(nonExistentId)).thenReturn(Optional.empty());
+
+        BudgetItemRequestDTO itemRequest = new BudgetItemRequestDTO(
+                UUID.randomUUID(),
+                new BigDecimal("1200.00"),
+                new BigDecimal("2100.00"),
+                1,
+                new BigDecimal("150.00"),
+                null, null, null, null, null, null
+        );
+
+        assertThatThrownBy(() -> budgetService.adicionarItem(nonExistentId, itemRequest))
+                .isInstanceOf(ResourceNotFoundException.class);
+
+        verify(budgetRepository, never()).save(any());
+        verify(budgetMapper, never()).toEntity(any(BudgetItemRequestDTO.class));
+    }
 }

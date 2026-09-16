@@ -7,6 +7,8 @@ import br.edu.ifpb.alumigest.budgets.domain.BudgetStatus;
 import br.edu.ifpb.alumigest.budgets.domain.DiscountType;
 import br.edu.ifpb.alumigest.budgets.domain.PaymentCondition;
 import br.edu.ifpb.alumigest.budgets.dto.BudgetCreateRequest;
+import br.edu.ifpb.alumigest.budgets.dto.BudgetItemRequestDTO;
+import br.edu.ifpb.alumigest.budgets.dto.BudgetItemResponseDTO;
 import br.edu.ifpb.alumigest.budgets.dto.BudgetRequestDTO;
 import br.edu.ifpb.alumigest.budgets.dto.BudgetResponseDTO;
 import br.edu.ifpb.alumigest.budgets.dto.BudgetStatusUpdateDTO;
@@ -300,4 +302,31 @@ public BudgetResponseDTO alterarStatus(UUID id, StatusChangeRequest request) {
         }
     }
 
+    /**
+     * Adiciona incrementalmente um item a um orçamento existente no status DRAFT,
+     * acionando o recálculo automático de insumos, preços, subtotal e total.
+     *
+     * @param budgetId ID do orçamento
+     * @param request Dados do item a ser adicionado
+     * @return DTO com os dados do item persistido
+     */
+    @Transactional
+    public BudgetItemResponseDTO adicionarItem(UUID budgetId, BudgetItemRequestDTO request) {
+        Budget budget = getBudgetOrThrow(budgetId);
+        validateBudgetIsDraft(budget);
+
+        BudgetItem item = budgetMapper.toEntity(request);
+        if (item.getOptions() != null) {
+            for (BudgetItemOption option : item.getOptions()) {
+                option.setBudgetItem(item);
+            }
+        }
+        budget.addItem(item);
+
+        budgetQuantityService.calculateQuantities(budget);
+        budgetPricingService.calculatePricing(budget);
+        budgetRepository.save(budget);
+
+        return budgetMapper.toResponseDTO(item);
+    }
 }
