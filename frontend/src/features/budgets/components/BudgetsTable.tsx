@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import type { BudgetSummary } from '../types';
+import type { BudgetSummary, BudgetStatus } from '../types';
 import { StatusBadge } from './StatusBadge';
 
 interface BudgetsTableProps {
@@ -133,56 +133,80 @@ export function BudgetsTable({ data, sortField, sortDirection, onSort }: Budgets
             <th className="p-xs sm:p-sm lg:p-md font-label-bold text-label-bold text-primary text-xs sm:text-sm text-center">
               Status
             </th>
+            <th className="p-xs sm:p-sm lg:p-md font-label-bold text-label-bold text-primary text-xs sm:text-sm text-center">
+              Ações
+            </th>
           </tr>
         </thead>
         <tbody className="font-body text-xs sm:text-sm">
-          {data.map((budget) => (
-            <tr
-              key={budget.id}
-              onClick={() => handleRowClick(budget)}
-              className="border-b border-outline-variant/40 hover:bg-surface-container-high transition-colors cursor-pointer group/row"
-            >
-              <td className="p-xs sm:p-sm lg:p-md">
-                <span className="font-data-mono text-data-mono text-primary font-semibold text-xs">
-                  {budget.code}
-                </span>
-              </td>
+          {data.map((budget) => {
+            const effectiveStatus: BudgetStatus = budget.isExpired ? 'EXPIRED' : budget.status;
 
-              <td className="p-xs sm:p-sm lg:p-md">
-                <span className="text-on-surface font-medium">
-                  {budget.customerName || budget.customer?.name || '-'}
-                </span>
-              </td>
+            return (
+              <tr
+                key={budget.id}
+                onClick={() => handleRowClick(budget)}
+                className="border-b border-outline-variant/40 hover:bg-surface-container-high transition-colors cursor-pointer group/row"
+              >
+                <td className="p-xs sm:p-sm lg:p-md">
+                  <span className="font-data-mono text-data-mono text-primary font-semibold text-xs">
+                    {budget.code}
+                  </span>
+                </td>
 
-              <td className="p-xs sm:p-sm lg:p-md">
-                <span className="font-data-mono text-data-mono text-secondary text-xs">
-                  {formatDate(budget.createdAt)}
-                </span>
-              </td>
+                <td className="p-xs sm:p-sm lg:p-md">
+                  <span className="text-on-surface font-medium">
+                    {budget.customerName || budget.customer?.name || '-'}
+                  </span>
+                </td>
 
-              <td className="p-xs sm:p-sm lg:p-md">
-                <span className="font-data-mono text-data-mono text-secondary text-xs">
-                  {formatDate(budget.validUntil)}
-                </span>
-              </td>
+                <td className="p-xs sm:p-sm lg:p-md">
+                  <span className="font-data-mono text-data-mono text-secondary text-xs">
+                    {formatDate(budget.createdAt)}
+                  </span>
+                </td>
 
-              <td className="p-xs sm:p-sm lg:p-md text-center">
-                <span className="font-data-mono text-data-mono text-secondary">
-                  {budget.itemCount}
-                </span>
-              </td>
+                <td className="p-xs sm:p-sm lg:p-md">
+                  <span className="font-data-mono text-data-mono text-secondary text-xs">
+                    {formatDate(budget.validUntil)}
+                  </span>
+                </td>
 
-              <td className="p-xs sm:p-sm lg:p-md text-right">
-                <span className="font-data-mono text-data-mono text-primary font-bold">
-                  {formatCurrency(budget.total)}
-                </span>
-              </td>
+                <td className="p-xs sm:p-sm lg:p-md text-center">
+                  <span className="font-data-mono text-data-mono text-secondary">
+                    {budget.itemCount}
+                  </span>
+                </td>
 
-              <td className="p-xs sm:p-sm lg:p-md text-center">
-                <StatusBadge status={budget.status} />
-              </td>
-            </tr>
-          ))}
+                <td className="p-xs sm:p-sm lg:p-md text-right">
+                  <span className="font-data-mono text-data-mono text-primary font-bold">
+                    {formatCurrency(budget.total)}
+                  </span>
+                </td>
+
+                <td className="p-xs sm:p-sm lg:p-md text-center">
+                  <StatusBadge status={effectiveStatus} />
+                </td>
+
+                <td className="p-xs sm:p-sm lg:p-md text-center">
+                  <div className="flex items-center justify-center gap-xs">
+                    <button
+                      type="button"
+                      aria-label={`Ver detalhes do orçamento ${budget.code}`}
+                      title="Ver detalhes"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRowClick(budget);
+                      }}
+                      className="p-xs text-secondary hover:text-primary hover:bg-surface-container rounded-md transition-colors cursor-pointer inline-flex items-center justify-center"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">visibility</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>

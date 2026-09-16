@@ -235,8 +235,8 @@ function buildEditingItemState(
     state: {
       template,
       templateType: (editingItem.templateType as DoorTemplateType) || undefined,
-      widthMm: editingItem.widthMm,
-      heightMm: editingItem.heightMm,
+      widthMm: editingItem.widthMm ?? editingItem.width ?? DEFAULT_WIDTH,
+      heightMm: editingItem.heightMm ?? editingItem.height ?? DEFAULT_HEIGHT,
       quantity: editingItem.quantity,
       openingDirection: editingItem.templateConfig?.openingDirection ?? 'LEFT_TO_RIGHT',
       handleConfig: editingItem.handleConfig ?? {
@@ -542,15 +542,17 @@ export function useWindowBuilderState({
       return;
     }
 
-    if (editingItem) {
-      const { state: editState, holeInputs } = buildEditingItemState(editingItem, templates, findCatalogMaterial);
-      setHoleDistanceInputs(holeInputs);
-      setState(editState);
-    } else if (!hasInitializedRef.current && templates.length > 0) {
+    if (!hasInitializedRef.current && templates.length > 0) {
       hasInitializedRef.current = true;
-      const { state: initState, holeInputs } = buildDefaultInitState(templates, selectedProductId);
-      setHoleDistanceInputs(holeInputs);
-      setState(initState);
+      if (editingItem) {
+        const { state: editState, holeInputs } = buildEditingItemState(editingItem, templates, findCatalogMaterial);
+        setHoleDistanceInputs(holeInputs);
+        setState(editState);
+      } else {
+        const { state: initState, holeInputs } = buildDefaultInitState(templates, selectedProductId);
+        setHoleDistanceInputs(holeInputs);
+        setState(initState);
+      }
     }
 
     setErrors({});
@@ -1282,6 +1284,8 @@ export function useWindowBuilderState({
       drillingConfig: state.drillingConfig,
       widthMm: w,
       heightMm: h,
+      width: w,
+      height: h,
       quantity: qty,
       laborCost: state.laborCost ?? 0,
       options: state.materialSelections
@@ -1296,6 +1300,7 @@ export function useWindowBuilderState({
           totalPrice: s.totalPrice,
         })),
       subtotal: itemSubtotalEstimate,
+      unitPrice: qty > 0 ? Number.parseFloat((itemSubtotalEstimate / qty).toFixed(2)) : itemSubtotalEstimate,
       notes: state.notes,
     };
 

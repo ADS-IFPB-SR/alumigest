@@ -7,7 +7,7 @@ export { StatusBadge } from './components/StatusBadge';
 export { BudgetStatusPipeline } from './components/BudgetStatusPipeline';
 export { BUDGET_STATUS_THEMES, getBudgetStatusTheme, type BudgetStatusTheme } from './utils/statusTheme';
 export { SeparateSaleForm } from './components/SeparateSaleForm';
-export { useBudgets, useBudgetStatusCounts } from './hooks/useBudgets';
+export { useBudgets, useBudgetStatusCounts, useApplyDiscount } from './hooks/useBudgets';
 export { useCreateSeparateSale } from './hooks/useSeparateSale';
 export { budgetsApi } from './services/budgetsApi';
 export { discountSchema, createDiscountSchema, type DiscountFormValues } from './schemas/discountSchema';

@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { budgetsApi } from '../services/budgetsApi';
-import type { BudgetFilters, CreateBudgetPayload, BudgetStatus } from '../types';
+import type { BudgetFilters, CreateBudgetPayload, BudgetStatus, DiscountRequest } from '../types';
 import toast from 'react-hot-toast';
 
 // ============================================================
@@ -107,6 +107,25 @@ export const useUpdateBudgetStatus = () => {
       console.error('Erro ao atualizar status do orçamento:', error);
       const err = error as { response?: { data?: { message?: string } } };
       const message = err?.response?.data?.message || 'Erro ao atualizar status.';
+      toast.error(message);
+    },
+  });
+};
+
+export const useApplyDiscount = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: DiscountRequest }) =>
+      budgetsApi.applyDiscount(id, data),
+    onSuccess: (_, { id }) => {
+      toast.success('Condições comerciais aplicadas com sucesso!');
+      queryClient.invalidateQueries({ queryKey: ['budgets'] });
+      queryClient.invalidateQueries({ queryKey: ['budget', id] });
+    },
+    onError: (error: unknown) => {
+      console.error('Erro ao aplicar desconto e condições comerciais:', error);
+      const err = error as { response?: { data?: { message?: string } } };
+      const message = err?.response?.data?.message || 'Erro ao aplicar desconto e condições comerciais.';
       toast.error(message);
     },
   });
