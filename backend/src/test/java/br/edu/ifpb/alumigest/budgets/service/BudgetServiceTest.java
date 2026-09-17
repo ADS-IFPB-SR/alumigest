@@ -438,11 +438,11 @@ class BudgetServiceTest {
 
         budgetService.aplicarDesconto(budget.getId(), request);
 
-        assertThat(budget.getDiscountPercent()).isEqualTo(new BigDecimal("15.00")); 
-        assertThat(budget.getDiscountValue()).isEqualTo(new BigDecimal("150.00")); 
+        assertThat(budget.getDiscountPercent()).isEqualTo(new BigDecimal("15.00"));
+        assertThat(budget.getDiscountValue()).isEqualTo(new BigDecimal("150.00"));
         assertThat(budget.getTotal()).isEqualTo(new BigDecimal("850.00"));
         assertThat(budget.getPaymentCondition()).isEqualTo(PaymentCondition.A_VISTA_PIX);
-        assertThat(budget.getPaymentNotes()).isEqualTo("Pagamento à vista"); // Nova
+        assertThat(budget.getPaymentNotes()).isEqualTo("Pagamento à vista");
         verify(budgetRepository, times(1)).save(budget);
     }
 
