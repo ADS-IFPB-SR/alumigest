@@ -1,28 +1,22 @@
 import React from 'react';
 import { formatBRL } from '../utils/calculations';
-
-// Opções padronizadas de pagamento
-const PAYMENT_OPTIONS = [
-  { value: 'CASH', label: 'À Vista (PIX / Dinheiro)' },
-  { value: 'HALF_HALF', label: '50% Entrada + 50% na Entrega' },
-  { value: 'CREDIT_CARD', label: 'Cartão de Crédito até 12x' },
-  { value: 'CUSTOM', label: 'A Combinar' }
-] as const;
+import { PAYMENT_CONDITION_OPTIONS, type DiscountType } from '../types';
 
 interface BudgetCommercialConditionsProps {
   readonly laborCost: number;
   readonly onLaborCostChange: (value: number) => void;
   
   // --- DESCONTO ---
-  readonly discountType: 'PERCENTAGE' | 'FIXED';
-  readonly onDiscountTypeChange: (type: 'PERCENTAGE' | 'FIXED') => void;
-  readonly discountInput: number;
+  readonly discountType?: DiscountType | 'PERCENTAGE' | 'FIXED';
+  readonly onDiscountTypeChange?: (type: DiscountType) => void;
+  readonly discountInput?: number;
+  readonly discountPercent?: number;
   readonly onDiscountChange: (value: number) => void;
   
   // --- PAGAMENTO ---
-  readonly paymentCondition: string;
-  readonly onPaymentConditionChange: (value: string) => void;
-  readonly commercialConditions: string; // Usado para observações textuais de pagamento
+  readonly paymentCondition?: string;
+  readonly onPaymentConditionChange?: (value: string) => void;
+  readonly commercialConditions: string;
   readonly onCommercialConditionsChange: (value: string) => void;
   
   readonly notes: string;
@@ -32,7 +26,11 @@ interface BudgetCommercialConditionsProps {
   
   /** Subtotal bruto — exibido como referência ao lado do campo de desconto */
   readonly subtotal: number;
-  readonly errors?: { readonly discount?: string; readonly validUntil?: string };
+  readonly errors?: {
+    readonly discount?: string;
+    readonly discountPercent?: string;
+    readonly validUntil?: string;
+  };
 }
 
 const DEFAULT_ERRORS: Record<string, string> = {};
@@ -43,8 +41,9 @@ export const BudgetCommercialConditions: React.FC<BudgetCommercialConditionsProp
   discountType,
   onDiscountTypeChange,
   discountInput,
+  discountPercent,
   onDiscountChange,
-  paymentCondition,
+  paymentCondition = '',
   onPaymentConditionChange,
   notes,
   onNotesChange,
@@ -55,6 +54,12 @@ export const BudgetCommercialConditions: React.FC<BudgetCommercialConditionsProp
   subtotal,
   errors = DEFAULT_ERRORS,
 }) => {
+  const isPercent = discountType
+    ? discountType === 'PERCENTUAL' || (discountType as string) === 'PERCENTAGE'
+    : true;
+
+  const currentDiscountInput = discountInput !== undefined ? discountInput : (discountPercent ?? 0);
+
   const handleValidityPreset = (days: number) => {
     const d = new Date();
     d.setDate(d.getDate() + days);
@@ -82,19 +87,18 @@ export const BudgetCommercialConditions: React.FC<BudgetCommercialConditionsProp
     }
     const val = Number.parseFloat(cleaned);
     
-    // Validação de limite baseada no tipo
     if (Number.isNaN(val) || val < 0) return;
-    if (discountType === 'PERCENTAGE' && val > 100) return;
+    if (isPercent && val > 100) return;
     
     onDiscountChange(val);
   };
 
-  // Cálculo financeiro real do desconto
-  const discountAmount = discountType === 'PERCENTAGE' 
-    ? subtotal > 0 ? (subtotal * discountInput) / 100 : 0
-    : discountInput;
+  const discountAmount = isPercent 
+    ? subtotal > 0 ? (subtotal * currentDiscountInput) / 100 : 0
+    : currentDiscountInput;
 
   const isDiscountExceeding = discountAmount > subtotal;
+  const discountError = errors?.discount ?? errors?.discountPercent;
 
   return (
     <div className="bg-surface-container-lowest border border-outline-variant rounded-lg p-md shadow-sm flex flex-col gap-md">
@@ -148,11 +152,11 @@ export const BudgetCommercialConditions: React.FC<BudgetCommercialConditionsProp
               <button
                 type="button"
                 onClick={() => {
-                  onDiscountTypeChange('PERCENTAGE');
-                  onDiscountChange(0); // Reseta o valor ao trocar o tipo
+                  onDiscountTypeChange?.('PERCENTUAL');
+                  onDiscountChange(0);
                 }}
                 className={`px-2 py-0.5 text-[11px] font-label transition-colors ${
-                  discountType === 'PERCENTAGE' 
+                  isPercent 
                     ? 'bg-primary text-on-primary' 
                     : 'text-on-surface-variant hover:bg-surface-container-high'
                 }`}
@@ -162,11 +166,11 @@ export const BudgetCommercialConditions: React.FC<BudgetCommercialConditionsProp
               <button
                 type="button"
                 onClick={() => {
-                  onDiscountTypeChange('FIXED');
+                  onDiscountTypeChange?.('VALOR_FIXO');
                   onDiscountChange(0);
                 }}
                 className={`px-2 py-0.5 text-[11px] font-label transition-colors ${
-                  discountType === 'FIXED' 
+                  !isPercent 
                     ? 'bg-primary text-on-primary' 
                     : 'text-on-surface-variant hover:bg-surface-container-high'
                 }`}
@@ -178,24 +182,25 @@ export const BudgetCommercialConditions: React.FC<BudgetCommercialConditionsProp
 
           <div className="flex items-center gap-sm flex-wrap">
             <div className="relative flex-1 min-w-[100px]">
-              {discountType === 'FIXED' && (
+              {!isPercent && (
                 <span className="absolute left-sm top-1/2 -translate-y-1/2 text-xs font-data-mono text-on-surface-variant pointer-events-none">
                   R$
                 </span>
               )}
               <input
                 id="budget-discount"
+                aria-label="Desconto"
                 type="text"
                 inputMode="decimal"
-                value={discountInput === 0 ? '' : discountInput}
+                value={currentDiscountInput === 0 ? '' : currentDiscountInput}
                 onChange={(e) => handleDiscountChange(e.target.value)}
-                className={`w-full ${discountType === 'FIXED' ? 'pl-[2rem]' : 'px-sm'} pr-[1.5rem] py-xs bg-surface-container-lowest border rounded-sm font-data-mono text-data-mono text-on-surface focus:border-primary focus:outline-none transition-all ${
-                  errors.discount || isDiscountExceeding ? 'border-error' : 'border-outline-variant'
+                className={`w-full ${!isPercent ? 'pl-[2rem]' : 'px-sm'} pr-[1.5rem] py-xs bg-surface-container-lowest border rounded-sm font-data-mono text-data-mono text-on-surface focus:border-primary focus:outline-none transition-all ${
+                  discountError || isDiscountExceeding ? 'border-error' : 'border-outline-variant'
                 }`}
                 placeholder="0"
-                aria-describedby={errors.discount || isDiscountExceeding ? 'discount-error' : undefined}
+                aria-describedby={discountError || isDiscountExceeding ? 'discount-error' : undefined}
               />
-              {discountType === 'PERCENTAGE' && (
+              {isPercent && (
                 <span className="absolute right-xs top-1/2 -translate-y-1/2 text-xs text-on-surface-variant pointer-events-none">
                   %
                 </span>
@@ -210,9 +215,9 @@ export const BudgetCommercialConditions: React.FC<BudgetCommercialConditionsProp
             )}
           </div>
           
-          {(errors.discount || isDiscountExceeding) && (
+          {(discountError || isDiscountExceeding) && (
             <p id="discount-error" className="text-error text-xs mt-xs font-body">
-              {isDiscountExceeding ? 'Desconto maior que o subtotal!' : errors.discount}
+              {isDiscountExceeding ? 'Desconto maior que o subtotal!' : discountError}
             </p>
           )}
         </div>
@@ -228,11 +233,11 @@ export const BudgetCommercialConditions: React.FC<BudgetCommercialConditionsProp
           <select
             id="budget-payment-condition"
             value={paymentCondition}
-            onChange={(e) => onPaymentConditionChange(e.target.value)}
-            className="w-full px-sm py-xs bg-surface-container-lowest border border-outline-variant rounded-sm font-body text-sm text-on-surface focus:border-primary focus:outline-none transition-all appearance-none"
+            onChange={(e) => onPaymentConditionChange?.(e.target.value)}
+            className="w-full px-sm py-xs bg-surface-container-lowest border border-outline-variant rounded-sm font-body text-sm text-on-surface focus:border-primary focus:outline-none transition-all"
           >
-            <option value="" disabled>Selecione uma opção...</option>
-            {PAYMENT_OPTIONS.map((opt) => (
+            <option value="">Selecione uma opção...</option>
+            {PAYMENT_CONDITION_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>
                 {opt.label}
               </option>
@@ -251,14 +256,15 @@ export const BudgetCommercialConditions: React.FC<BudgetCommercialConditionsProp
             </label>
             <div className="flex items-center gap-1">
               <span className="text-[11px] text-secondary font-label">Atalhos:</span>
-              {[7, 15, 30].map(days => (
+              {[7, 15, 30].map((days) => (
                 <button
                   key={days}
                   type="button"
+                  aria-label={`${days} dias`}
                   onClick={() => handleValidityPreset(days)}
                   className="px-2 py-0.5 rounded text-[11px] font-label font-medium bg-surface-container hover:bg-surface-container-high text-on-surface-variant border border-outline-variant/60 transition-colors"
                 >
-                  {days}d
+                  +{days} dias
                 </button>
               ))}
             </div>
@@ -291,10 +297,11 @@ export const BudgetCommercialConditions: React.FC<BudgetCommercialConditionsProp
           htmlFor="budget-commercial-conditions"
           className="block text-xs font-label font-semibold text-on-surface-variant mb-xs uppercase tracking-wider"
         >
-          Detalhes do Pagamento
+          Condições Comerciais
         </label>
         <textarea
           id="budget-commercial-conditions"
+          aria-label="Condições Comerciais"
           value={commercialConditions}
           onChange={(e) => onCommercialConditionsChange(e.target.value)}
           rows={2}

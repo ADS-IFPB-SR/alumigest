@@ -134,13 +134,10 @@ export interface BudgetFormState {
   customerAddress: string;
   items: BudgetItem[];
   laborCost: number;
-  
-  // --- NOVOS CAMPOS AQUI ---
-  discountType: 'PERCENTAGE' | 'FIXED';
+  discountPercent: number;
+  discountType: DiscountType;
   discountInput: number;
-  paymentCondition: string;
-  // -------------------------
-
+  paymentCondition: PaymentCondition | string;
   notes: string;
   commercialConditions: string;
   validUntil?: string;
@@ -207,13 +204,10 @@ export interface BudgetDetail extends BudgetSummary {
 
 export interface CreateBudgetPayload {
   customerId: string;
-  
-  // --- NOVOS CAMPOS AQUI ---
-  discountType: 'PERCENTAGE' | 'FIXED';
-  discountInput: number;
-  paymentCondition?: string;
-  // -------------------------
-  
+  discountPercent?: number;
+  discountType?: DiscountType | 'PERCENTAGE' | 'FIXED';
+  discountInput?: number;
+  paymentCondition?: PaymentCondition | string;
   notes?: string;
   commercialConditions?: string;
   validUntil?: string;

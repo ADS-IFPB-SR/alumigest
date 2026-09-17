@@ -8,21 +8,29 @@ export const budgetItemSchema = z.object({
   heightMm: z.number().min(1, 'Altura inválida.').optional(),
 }).passthrough();
 
-// ─── 2. Enums Alinhados com os Componentes React ─────────────────────────────
-export const DiscountTypeEnum = z.enum(['PERCENTAGE', 'FIXED'] as const, {
+// ─── 2. Enums Alinhados com os Contratos e Componentes ─────────────────────────────
+export const DiscountTypeEnum = z.enum([
+  'PERCENTUAL',
+  'VALOR_FIXO',
+  'PERCENTAGE',
+  'FIXED',
+] as const, {
   message: 'Selecione um tipo de desconto válido.',
 });
 
 export const PaymentConditionEnum = z.enum([
+  'A_VISTA_PIX',
+  'ENTRADA_50_SALDO_ENTREGA',
+  'CARTAO_12X',
+  'A_COMBINAR',
   'CASH',
   'HALF_HALF',
   'CREDIT_CARD',
   'CUSTOM',
-  '' // Permitimos vazio inicialmente para o Select mostrar o placeholder
+  '',
 ] as const, {
   message: 'Selecione uma condição de pagamento válida.',
 });
-
 
 // ─── 3. Schema Completo do Formulário (Dinâmico) ─────────────────────────────
 /**
@@ -36,14 +44,15 @@ export function createBudgetFormSchema(subtotal: number = 0) {
     laborCost: z.coerce.number().min(0, 'Custo de mão de obra não pode ser negativo.'),
     
     // Condições Comerciais & Descontos
-    discountType: DiscountTypeEnum,
+    discountType: DiscountTypeEnum.optional().default('PERCENTUAL'),
     discountInput: z.coerce
       .number({ message: 'Informe um valor numérico para o desconto.' })
-      .min(0, 'O valor do desconto não pode ser negativo.'),
+      .min(0, 'O valor do desconto não pode ser negativo.')
+      .optional()
+      .default(0),
+    discountPercent: z.coerce.number().min(0).max(100).optional(),
       
-    paymentCondition: PaymentConditionEnum.refine((val) => val !== '', {
-      message: 'Selecione uma condição de pagamento válida.',
-    }),
+    paymentCondition: z.string().optional().or(z.literal('')),
     
     commercialConditions: z.string()
       .max(500, 'Os detalhes do pagamento não podem exceder 500 caracteres.')
@@ -65,8 +74,11 @@ export function createBudgetFormSchema(subtotal: number = 0) {
   })
   // Validações Interdependentes (Super Refine)
   .superRefine((data, ctx) => {
+    const isPercent = data.discountType === 'PERCENTUAL' || data.discountType === 'PERCENTAGE';
+    const discountVal = data.discountInput ?? 0;
+
     // Regra 1: Desconto Percentual não passa de 100%
-    if (data.discountType === 'PERCENTAGE' && data.discountInput > 100) {
+    if (isPercent && discountVal > 100) {
       ctx.addIssue({
         code: 'custom',
         path: ['discountInput'],
@@ -74,8 +86,8 @@ export function createBudgetFormSchema(subtotal: number = 0) {
       });
     } 
     // Regra 2: Desconto Fixo não passa do Subtotal
-    else if (data.discountType === 'FIXED') {
-      if (subtotal > 0 && data.discountInput > subtotal) {
+    else if (!isPercent) {
+      if (subtotal > 0 && discountVal > subtotal) {
         ctx.addIssue({
           code: 'custom',
           path: ['discountInput'],
