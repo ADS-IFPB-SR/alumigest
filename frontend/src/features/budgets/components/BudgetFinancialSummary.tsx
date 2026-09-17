@@ -1,7 +1,7 @@
 import React from 'react';
 import { formatBRL } from '../utils/calculations';
 import { Button } from '../../../components/ui/Button';
-import { PAYMENT_CONDITION_LABELS, type PaymentCondition } from '../types';
+import { PAYMENT_CONDITION_LABELS, type PaymentCondition, type DiscountType } from '../types';
 
 export interface BudgetFinancialSummaryProps {
   /** Número de itens — usado no label "N item(s)" */
@@ -12,10 +12,16 @@ export interface BudgetFinancialSummaryProps {
   readonly laborCost?: number;
   /** Subtotal bruto = itemsSubtotal + laborCost */
   readonly subtotal: number;
-  /** Percentual de desconto (0-100) */
-  readonly discountPercent: number;
-  /** Valor calculado do desconto = subtotal × discountPercent / 100 */
+  
+  /** Percentual de desconto (legado/retrocompatível) */
+  readonly discountPercent?: number;
+  /** Tipo de desconto selecionado na negociação */
+  readonly discountType?: DiscountType | 'PERCENTAGE' | 'FIXED';
+  /** O valor bruto digitado no input (ex: 10 para 10% ou 500 para R$ 500) */
+  readonly discountInput?: number;
+  /** Valor calculado do desconto financeiro = o que realmente vai ser subtraído (R$) */
   readonly discountValue: number;
+  
   /** Total líquido = subtotal - discountValue */
   readonly total: number;
   /** Condição de pagamento selecionada (código/enum) */
@@ -53,6 +59,8 @@ export const BudgetFinancialSummary: React.FC<BudgetFinancialSummaryProps> = ({
   laborCost = 0,
   subtotal,
   discountPercent,
+  discountType,
+  discountInput,
   discountValue,
   total,
   paymentCondition,
@@ -62,7 +70,11 @@ export const BudgetFinancialSummary: React.FC<BudgetFinancialSummaryProps> = ({
   isSaving = false,
   canSave = true,
 }) => {
-  const hasDiscount = discountValue > 0 || discountPercent > 0;
+  const isPercent = discountType
+    ? discountType === 'PERCENTUAL' || discountType === 'PERCENTAGE'
+    : true;
+  const percentDisplay = discountInput ?? discountPercent ?? 0;
+  const hasDiscount = discountValue > 0 || percentDisplay > 0;
 
   // Resolução do rótulo informativo da condição de pagamento
   const resolvedPaymentCondition =
@@ -127,10 +139,10 @@ export const BudgetFinancialSummary: React.FC<BudgetFinancialSummaryProps> = ({
             <div className="flex justify-between items-center">
               <span className="text-sm font-medium text-success flex items-center gap-1 font-body">
                 <span className="material-symbols-outlined text-[16px]">sell</span>
-                Desconto ({discountPercent}%)
+                Desconto {isPercent ? `(${percentDisplay}%)` : '(Fixo)'}
               </span>
               <span className="font-data-mono text-sm text-success font-bold">
-                − {formatBRL(discountValue)} ({discountPercent}%)
+                − {formatBRL(discountValue)} {isPercent ? `(${percentDisplay}%)` : ''}
               </span>
             </div>
             <div className="self-end inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-success/10 border border-success/20 text-success text-[11px] font-semibold tracking-wide">

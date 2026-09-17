@@ -19,28 +19,30 @@ import { budgetFormSchema } from '../schemas/budgetSchema';
 import toast from 'react-hot-toast';
 
 // ─── Estado inicial ────────────────────────────────────────────────────────
+// NOTA: Talvez você precise atualizar o 'BudgetFormState' no seu arquivo '../types'
+// para incluir: discountType, discountInput e paymentCondition.
 const createInitialFormState = (): BudgetFormState => {
   const defaultValid = new Date();
   defaultValid.setDate(defaultValid.getDate() + 15);
   return {
-    customerId:           '',
-    customerName:         '',
-    customerDocument:     '',
-    customerPhone:        '',
-    customerAddress:      '',
-    items:                [],
-    laborCost:            0,
-    discountPercent:      0,
-    notes:                '',
+    customerId: '',
+    customerName: '',
+    customerDocument: '',
+    customerPhone: '',
+    customerAddress: '',
+    items: [],
+    laborCost: 0,
+    discountPercent: 0,
+    discountType: 'PERCENTUAL',
+    discountInput: 0,
+    paymentCondition: '',
+    notes: '',
     commercialConditions: '',
-    validUntil:           defaultValid.toISOString().split('T')[0],
+    validUntil: defaultValid.toISOString().split('T')[0],
   };
 };
 
 // ─── Componente ─────────────────────────────────────────────────────────────
-/**
- * Editor de orçamento em tela única (suporta criação e edição).
- */
 export const BudgetEditor: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
@@ -81,6 +83,9 @@ export const BudgetEditor: React.FC = () => {
       }));
 
       const loadedLaborCost = (existingBudget.items ?? []).reduce((sum, item) => sum + (item.laborCost || 0), 0);
+      const existingDiscountType = (existingBudget as any).discountType ?? 'PERCENTUAL';
+      const existingDiscountInput = (existingBudget as any).discountInput ?? existingBudget.discountPercent ?? 0;
+      const existingDiscountPercent = existingBudget.discountPercent ?? (existingDiscountType === 'PERCENTUAL' ? existingDiscountInput : 0);
 
       setForm({
         customerId: existingBudget.customer?.id ?? (existingBudget as any).clientId ?? existingBudget.customerId ?? '',
@@ -90,7 +95,10 @@ export const BudgetEditor: React.FC = () => {
         customerAddress: existingBudget.customer?.address ?? '',
         items: loadedItems,
         laborCost: loadedLaborCost,
-        discountPercent: existingBudget.discountPercent,
+        discountPercent: existingDiscountPercent,
+        discountType: existingDiscountType,
+        discountInput: existingDiscountInput,
+        paymentCondition: (existingBudget as any).paymentCondition || '',
         notes: existingBudget.notes ?? '',
         commercialConditions: existingBudget.commercialConditions ?? '',
         validUntil: existingBudget.validUntil ? existingBudget.validUntil.split('T')[0] : '',
@@ -100,25 +108,32 @@ export const BudgetEditor: React.FC = () => {
 
   // ─── Cálculos financeiros — derivados do estado, sem fonte alternativa ──
   const itemsSubtotal = useMemo(
-    () => form.items.reduce((acc, item) => acc + item.subtotal, 0),
+    () => form.items.reduce((acc: number, item: BudgetItem) => acc + item.subtotal, 0),
     [form.items],
   );
+  
   const subtotal = useMemo(
     () => itemsSubtotal + (form.laborCost || 0),
     [itemsSubtotal, form.laborCost],
   );
-  const discountValue = useMemo(
-    () => (subtotal * form.discountPercent) / 100,
-    [subtotal, form.discountPercent],
-  );
-  const total = subtotal - discountValue;
+  
+  const discountValue = useMemo(() => {
+    const isPercent = form.discountType === 'PERCENTUAL' || (form.discountType as string) === 'PERCENTAGE';
+    if (isPercent) {
+      return subtotal > 0 ? (subtotal * form.discountInput) / 100 : 0;
+    }
+    return form.discountInput || 0;
+  }, [subtotal, form.discountType, form.discountInput]);
+
+  const isDiscountExceeding = discountValue > subtotal;
+  const total = Math.max(0, subtotal - discountValue);
 
   // ─── Controle de habilitação do submit ────────────────────────────────────
   const canSave =
     Boolean(form.customerId) &&
     form.items.length > 0 &&
-    form.discountPercent >= 0 &&
-    form.discountPercent <= 100 &&
+    form.discountInput >= 0 &&
+    !isDiscountExceeding && // Impede salvar se o desconto for abusivo
     !isPending;
 
   // ─── Handlers de Cliente ──────────────────────────────────────────────────
@@ -126,11 +141,11 @@ export const BudgetEditor: React.FC = () => {
     if (!customer.id) {
       setForm((prev) => ({
         ...prev,
-        customerId:       '',
-        customerName:     '',
+        customerId: '',
+        customerName: '',
         customerDocument: '',
-        customerPhone:    '',
-        customerAddress:  '',
+        customerPhone: '',
+        customerAddress: '',
       }));
       return;
     }
@@ -144,11 +159,11 @@ export const BudgetEditor: React.FC = () => {
 
     setForm((prev) => ({
       ...prev,
-      customerId:       customer.id,
-      customerName:     customer.nomeCompleto,
-      customerDocument: customer.cpfCnpj   ?? '',
-      customerPhone:    customer.telefone   ?? '',
-      customerAddress:  addressParts.join(', '),
+      customerId: customer.id,
+      customerName: customer.nomeCompleto,
+      customerDocument: customer.cpfCnpj ?? '',
+      customerPhone: customer.telefone ?? '',
+      customerAddress: addressParts.join(', '),
     }));
     setFormErrors((prev) => {
       const next = { ...prev };
@@ -165,7 +180,7 @@ export const BudgetEditor: React.FC = () => {
     }
     setEditingItem(null);
     setSelectedProductId(null);
-    setIsProductPickerOpen(true); // Abre o Product Picker em vez do Builder!
+    setIsProductPickerOpen(true);
   };
 
   const handleEditItem = (item: BudgetItem) => {
@@ -198,7 +213,7 @@ export const BudgetEditor: React.FC = () => {
     setForm((prev) => {
       const existingIdx = prev.items.findIndex((i) => i.tempId === item.tempId);
       if (existingIdx >= 0) {
-        const updated       = [...prev.items];
+        const updated = [...prev.items];
         updated[existingIdx] = item;
         return { ...prev, items: updated };
       }
@@ -242,26 +257,33 @@ export const BudgetEditor: React.FC = () => {
     if (!validate()) return;
 
     const laborPerItem = form.items.length > 0 && form.laborCost > 0 ? form.laborCost / form.items.length : 0;
+    const isPercent = form.discountType === 'PERCENTUAL' || (form.discountType as string) === 'PERCENTAGE';
+    const effectiveDiscountPercent = isPercent
+      ? form.discountInput
+      : (subtotal > 0 ? (form.discountInput / subtotal) * 100 : 0);
 
     const payload: CreateBudgetPayload = {
-      customerId:           form.customerId,
-      discountPercent:      form.discountPercent,
-      notes:                form.notes               || undefined,
+      customerId: form.customerId,
+      discountPercent: effectiveDiscountPercent,
+      discountType: form.discountType,
+      discountInput: form.discountInput,
+      paymentCondition: form.paymentCondition || undefined,
+      notes: form.notes || undefined,
       commercialConditions: form.commercialConditions || undefined,
-      validUntil:           form.validUntil          || undefined,
-      items: form.items.map((item) => ({
-        productId:      item.productId,
-        templateType:   item.templateType,
+      validUntil: form.validUntil || undefined,
+      items: form.items.map((item: BudgetItem) => ({
+        productId: item.productId,
+        templateType: item.templateType,
         templateConfig: item.templateConfig,
-        handleConfig:   item.handleConfig,
+        handleConfig: item.handleConfig,
         drillingConfig: item.drillingConfig,
-        width:          item.widthMm,
-        height:         item.heightMm,
-        quantity:       item.quantity,
-        laborCost:      laborPerItem,
+        width: item.widthMm,
+        height: item.heightMm,
+        quantity: item.quantity,
+        laborCost: laborPerItem,
         options: item.options.map((opt) => ({
           materialId: opt.materialId,
-          quantity:   opt.quantity,
+          quantity: opt.quantity,
           categoryType: opt.categoryType,
         })),
         notes: item.notes,
@@ -486,10 +508,22 @@ export const BudgetEditor: React.FC = () => {
               <BudgetCommercialConditions
                 laborCost={form.laborCost}
                 onLaborCostChange={(val) => setForm((p) => ({ ...p, laborCost: val }))}
+                discountType={form.discountType}
+                onDiscountTypeChange={(val) => setForm((p) => ({ ...p, discountType: val }))}
+                discountInput={form.discountInput}
                 discountPercent={form.discountPercent}
                 onDiscountChange={(val) =>
-                  setForm((p) => ({ ...p, discountPercent: val }))
+                  setForm((p) => {
+                    const isPercent = p.discountType === 'PERCENTUAL' || (p.discountType as string) === 'PERCENTAGE';
+                    return {
+                      ...p,
+                      discountInput: val,
+                      discountPercent: isPercent ? val : p.discountPercent,
+                    };
+                  })
                 }
+                paymentCondition={form.paymentCondition}
+                onPaymentConditionChange={(val) => setForm((p) => ({ ...p, paymentCondition: val }))}
                 notes={form.notes}
                 onNotesChange={(val) => setForm((p) => ({ ...p, notes: val }))}
                 commercialConditions={form.commercialConditions}
@@ -501,7 +535,7 @@ export const BudgetEditor: React.FC = () => {
                   setForm((p) => ({ ...p, validUntil: val }))
                 }
                 subtotal={subtotal}
-                errors={{ discountPercent: formErrors.discountPercent, validUntil: formErrors.validUntil }}
+                errors={{ discount: formErrors.discount, validUntil: formErrors.validUntil }}
               />
 
               {/* Coluna direita: valores derivados + salvar (sticky) */}
@@ -512,6 +546,8 @@ export const BudgetEditor: React.FC = () => {
                   laborCost={form.laborCost}
                   subtotal={subtotal}
                   discountPercent={form.discountPercent}
+                  discountType={form.discountType}
+                  discountInput={form.discountInput}
                   discountValue={discountValue}
                   total={total}
                   commercialConditions={form.commercialConditions}

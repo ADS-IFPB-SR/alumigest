@@ -1,14 +1,7 @@
 package br.edu.ifpb.alumigest.budgets.controller;
 
 import br.edu.ifpb.alumigest.budgets.domain.BudgetStatus;
-import br.edu.ifpb.alumigest.budgets.dto.BudgetCreateRequest;
-import br.edu.ifpb.alumigest.budgets.dto.BudgetItemCalculationRequestDTO;
-import br.edu.ifpb.alumigest.budgets.dto.BudgetItemCalculationResponseDTO;
-import br.edu.ifpb.alumigest.budgets.dto.BudgetRequestDTO;
-import br.edu.ifpb.alumigest.budgets.dto.BudgetResponseDTO;
-import br.edu.ifpb.alumigest.budgets.dto.BudgetStatusUpdateDTO;
-import br.edu.ifpb.alumigest.budgets.dto.BudgetSummaryResponseDTO;
-import br.edu.ifpb.alumigest.budgets.dto.StatusChangeRequest;
+import br.edu.ifpb.alumigest.budgets.dto.*;
 import br.edu.ifpb.alumigest.budgets.service.BudgetQuantityService;
 import br.edu.ifpb.alumigest.budgets.service.BudgetService;
 import br.edu.ifpb.alumigest.common.dto.PageResponse;
@@ -17,6 +10,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.apache.coyote.Response;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -117,6 +111,39 @@ public class BudgetController {
         budgetService.updateStatus(id, request);
         return ResponseEntity.ok().build();
     }
+
+    @PutMapping({"/{id}/discount", "/{id}/desconto"})
+    @Operation(summary = "Aplicar desconto e condições comerciais",
+               description = "Aplica desconto (percentual ou fixo), condição de pagamento e prazo de validade a um orçamento DRAFT.")
+    @ApiResponse(responseCode = "200", description = "Desconto e condições comerciais aplicados com sucesso")
+    @ApiResponse(responseCode = "400", description = "Dados do descontto ou regras de negócio inválidas")
+    @ApiResponse(responseCode = "404", description = "Orçamento não encontrado")
+    @ApiResponse(responseCode = "422", description = "Orçamento imutável ou regra comercial violada")
+    public ResponseEntity<BudgetResponseDTO> aplicarDesconto(
+            @Parameter(description = "ID do orçamento") @PathVariable UUID id,
+            @RequestBody @Valid DiscountRequest request) {
+        BudgetResponseDTO response = budgetService.aplicarDesconto(id, request);
+        return ResponseEntity.ok(response);
+    }
+    @PostMapping({"/{id}/items", "/{id}/itens"})
+    @Operation(summary = "Adicionar item ao orçamento",
+               description = "Adiciona incrementalmente um item avulso ao orçamento DRAFT e recalcula valores.")
+    @ApiResponse(responseCode = "201", description = "Item adicionado com sucesso")
+    @ApiResponse(responseCode = "400", description = "Dados do item inválidos")
+    @ApiResponse(responseCode = "404", description = "Orçamento não econtrado")
+    @ApiResponse(responseCode = "422", description = "Orçamento imutável")
+    public ResponseEntity<BudgetItemResponseDTO> adicionarItem(
+            @Parameter(description = "ID do orçamento") @PathVariable UUID id,
+            @RequestBody @Valid BudgetItemRequestDTO request) {
+
+        BudgetItemResponseDTO response = budgetService.adicionarItem(id, request);
+        URI location = ServletUriComponentsBuilder.fromCurrentRequest()
+                .path("/{itemid}")
+                .buildAndExpand(response.id())
+                .toUri();
+        return ResponseEntity.created(location).body(response);
+    }
+
 
     @PostMapping("/{id}/recalcular")
     @Operation(summary = "Forçar recálculo", description = "Força o recálculo de quantidades e preços de um orçamento DRAFT.")

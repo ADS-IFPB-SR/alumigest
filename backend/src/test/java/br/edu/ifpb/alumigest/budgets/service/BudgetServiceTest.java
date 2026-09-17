@@ -442,6 +442,7 @@ class BudgetServiceTest {
         assertThat(budget.getDiscountValue()).isEqualTo(new BigDecimal("150.00"));
         assertThat(budget.getTotal()).isEqualTo(new BigDecimal("850.00"));
         assertThat(budget.getPaymentCondition()).isEqualTo(PaymentCondition.A_VISTA_PIX);
+        assertThat(budget.getPaymentNotes()).isEqualTo("Pagamento à vista");
         verify(budgetRepository, times(1)).save(budget);
     }
 
@@ -457,7 +458,7 @@ class BudgetServiceTest {
         DiscountRequest request = new DiscountRequest(
                 DiscountType.VALOR_FIXO,
                 new BigDecimal("500.00"),
-                PaymentCondition.A_VISTA_PIX, // <-- Alterado para uma constante válida
+                PaymentCondition.A_VISTA_PIX,
                 "Parcelado",
                 null
         );
@@ -467,6 +468,8 @@ class BudgetServiceTest {
         assertThat(budget.getDiscountValue()).isEqualTo(new BigDecimal("500.00"));
         assertThat(budget.getDiscountPercent()).isEqualTo(new BigDecimal("25.00"));
         assertThat(budget.getTotal()).isEqualTo(new BigDecimal("1500.00"));
+        assertThat(budget.getPaymentCondition()).isEqualTo(PaymentCondition.A_VISTA_PIX);
+        assertThat(budget.getPaymentNotes()).isEqualTo("Parcelado");
         verify(budgetRepository, times(1)).save(budget);
     }
 
