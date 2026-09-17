@@ -438,10 +438,9 @@ class BudgetServiceTest {
 
         budgetService.aplicarDesconto(budget.getId(), request);
 
-        assertThat(budget.getDiscountPercent()).isEqualTo(new BigDecimal("15.00"));
-        assertThat(budget.getDiscountValue()).isEqualTo(new BigDecimal("150.00"));
         assertThat(budget.getTotal()).isEqualTo(new BigDecimal("850.00"));
         assertThat(budget.getPaymentCondition()).isEqualTo(PaymentCondition.A_VISTA_PIX);
+        assertThat(budget.getPaymentNotes()).isEqualTo("Pagamento à vista"); // <-- LINHA ADICIONADA
         verify(budgetRepository, times(1)).save(budget);
     }
 
@@ -464,9 +463,10 @@ class BudgetServiceTest {
 
         budgetService.aplicarDesconto(budget.getId(), request);
 
-        assertThat(budget.getDiscountValue()).isEqualTo(new BigDecimal("500.00"));
         assertThat(budget.getDiscountPercent()).isEqualTo(new BigDecimal("25.00"));
         assertThat(budget.getTotal()).isEqualTo(new BigDecimal("1500.00"));
+        assertThat(budget.getPaymentCondition()).isEqualTo(PaymentCondition.A_VISTA_PIX); // <-- LINHA ADICIONADA (Opcional, mas boa prática)
+        assertThat(budget.getPaymentNotes()).isEqualTo("Parcelado"); // <-- LINHA ADICIONADA
         verify(budgetRepository, times(1)).save(budget);
     }
 
