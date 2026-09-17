@@ -2,6 +2,8 @@ import React from 'react';
 import { formatBRL } from '../utils/calculations';
 import { Button } from '../../../components/ui/Button';
 
+import type { DiscountType } from '../types';
+
 interface BudgetFinancialSummaryProps {
   /** Número de itens — usado no label "N item(s)" */
   readonly itemCount: number;
@@ -11,10 +13,16 @@ interface BudgetFinancialSummaryProps {
   readonly laborCost?: number;
   /** Subtotal bruto = itemsSubtotal + laborCost */
   readonly subtotal: number;
-  /** Percentual de desconto (0-100) */
-  readonly discountPercent: number;
-  /** Valor calculado do desconto = subtotal × discountPercent / 100 */
+  
+  /** Percentual de desconto (legado/retrocompatível) */
+  readonly discountPercent?: number;
+  /** Tipo de desconto selecionado na negociação */
+  readonly discountType?: DiscountType | 'PERCENTAGE' | 'FIXED';
+  /** O valor bruto digitado no input (ex: 10 para 10% ou 500 para R$ 500) */
+  readonly discountInput?: number;
+  /** Valor calculado do desconto financeiro = o que realmente vai ser subtraído (R$) */
   readonly discountValue: number;
+  
   /** Total líquido = subtotal - discountValue */
   readonly total: number;
   /** Callback de submissão */
@@ -44,12 +52,19 @@ export const BudgetFinancialSummary: React.FC<BudgetFinancialSummaryProps> = ({
   laborCost = 0,
   subtotal,
   discountPercent,
+  discountType,
+  discountInput,
   discountValue,
   total,
   onSave,
   isSaving,
   canSave,
 }) => {
+  const isPercent = discountType
+    ? discountType === 'PERCENTUAL' || discountType === 'PERCENTAGE'
+    : true;
+  const percentDisplay = discountInput ?? discountPercent ?? 0;
+
   return (
     <div className="bg-surface-container-lowest border border-outline-variant rounded-lg overflow-hidden shadow-sm">
       {/* Header */}
@@ -93,10 +108,10 @@ export const BudgetFinancialSummary: React.FC<BudgetFinancialSummaryProps> = ({
         )}
 
         {/* Desconto */}
-        {discountPercent > 0 && (
+        {discountValue > 0 && (
           <div className="flex justify-between items-center py-xs border-b border-outline-variant border-dashed">
             <span className="text-sm text-on-surface-variant font-body">
-              Desconto ({discountPercent}%)
+              Desconto {isPercent ? `(${percentDisplay}%)` : '(Fixo)'}
             </span>
             <span className="font-data-mono text-sm text-error font-semibold">
               − {formatBRL(discountValue)}

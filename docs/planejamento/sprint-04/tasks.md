@@ -27,11 +27,11 @@
 | **US-09.17** | #187 | Alinhar record BudgetSummaryResponseDTO para exibição na listagem | Italo Jefferson | ✅ Concluído |
 | **US-09.18** | #188 | Alinhar record BudgetItemResponse com dados técnicos da esquadria | José Guylherme | ✅ Concluído |
 | **US-09.19** | #189 | Estender mapper MapStruct BudgetMapper com novos campos e labels | Maylson Rodrigues | ✅ Concluído |
-| **US-09.20** | #190 | Estender BudgetService.create() com validade padrão e condições iniciais | | ⏳ Pendente |
+| **US-09.20** | #190 | Estender BudgetService.create() com validade padrão e condições iniciais | Guilherme Kauã | ✅ Concluído |
 | **US-09.21** | #191 | Implementar método adicionarItem() incremental no BudgetService | | ⏳ Pendente |
 | **US-09.22** | #192 | Implementar método aplicarDesconto() com cálculo bidirecional e limites | Italo Jefferson | ✅ Concluído |
 | **US-09.23** | #193 | Alinhar máquina de estados e validações no alterarStatus() do BudgetService | Maylson Rodrigues | ✅ Concluído |
-| **US-09.24** | #194 | Alinhar listagem paginada no BudgetService com filtros e ordenação | | ⏳ Pendente |
+| **US-09.24** | #194 | Alinhar listagem paginada no BudgetService com filtros e ordenação | Herbert Carvalho | ✅ Concluído |
 | **US-09.25** | #195 | Estender BudgetController com endpoints de desconto e adição de itens avulsos | | ⏳ Pendente |
 | **US-09.27** | #197 | Criar testes de integração dos novos endpoints do BudgetController | | ⏳ Pendente |
 | **US-09.28** | #198 | Estender tipos TypeScript com modelos de desconto e pagamento | Italo Jefferson | ✅ Concluído |

@@ -135,6 +135,9 @@ export interface BudgetFormState {
   items: BudgetItem[];
   laborCost: number;
   discountPercent: number;
+  discountType: DiscountType;
+  discountInput: number;
+  paymentCondition: PaymentCondition | string;
   notes: string;
   commercialConditions: string;
   validUntil?: string;
@@ -201,7 +204,10 @@ export interface BudgetDetail extends BudgetSummary {
 
 export interface CreateBudgetPayload {
   customerId: string;
-  discountPercent: number;
+  discountPercent?: number;
+  discountType?: DiscountType | 'PERCENTAGE' | 'FIXED';
+  discountInput?: number;
+  paymentCondition?: PaymentCondition | string;
   notes?: string;
   commercialConditions?: string;
   validUntil?: string;
