@@ -11,10 +11,16 @@ interface BudgetFinancialSummaryProps {
   readonly laborCost?: number;
   /** Subtotal bruto = itemsSubtotal + laborCost */
   readonly subtotal: number;
-  /** Percentual de desconto (0-100) */
-  readonly discountPercent: number;
-  /** Valor calculado do desconto = subtotal × discountPercent / 100 */
+  
+  // --- NOVAS PROPS DE DESCONTO ---
+  /** Tipo de desconto selecionado na negociação */
+  readonly discountType: 'PERCENTAGE' | 'FIXED';
+  /** O valor bruto digitado no input (ex: 10 para 10% ou 500 para R$ 500) */
+  readonly discountInput: number;
+  /** Valor calculado do desconto financeiro = o que realmente vai ser subtraído (R$) */
   readonly discountValue: number;
+  // -------------------------------
+  
   /** Total líquido = subtotal - discountValue */
   readonly total: number;
   /** Callback de submissão */
@@ -43,7 +49,8 @@ export const BudgetFinancialSummary: React.FC<BudgetFinancialSummaryProps> = ({
   itemsSubtotal,
   laborCost = 0,
   subtotal,
-  discountPercent,
+  discountType,
+  discountInput,
   discountValue,
   total,
   onSave,
@@ -93,10 +100,10 @@ export const BudgetFinancialSummary: React.FC<BudgetFinancialSummaryProps> = ({
         )}
 
         {/* Desconto */}
-        {discountPercent > 0 && (
+        {discountValue > 0 && (
           <div className="flex justify-between items-center py-xs border-b border-outline-variant border-dashed">
             <span className="text-sm text-on-surface-variant font-body">
-              Desconto ({discountPercent}%)
+              Desconto {discountType === 'PERCENTAGE' ? `(${discountInput}%)` : '(Fixo)'}
             </span>
             <span className="font-data-mono text-sm text-error font-semibold">
               − {formatBRL(discountValue)}
