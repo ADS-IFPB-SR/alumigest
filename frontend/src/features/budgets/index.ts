@@ -11,4 +11,6 @@ export { useBudgets, useBudgetStatusCounts, useApplyDiscount } from './hooks/use
 export { useCreateSeparateSale } from './hooks/useSeparateSale';
 export { budgetsApi } from './services/budgetsApi';
 export { discountSchema, createDiscountSchema, type DiscountFormValues } from './schemas/discountSchema';
+export { BudgetFinancialSummary, type BudgetFinancialSummaryProps } from './components/BudgetFinancialSummary';
+export { BudgetSummaryCard, type BudgetSummaryCardProps } from './components/BudgetSummaryCard';
 export * from './types';

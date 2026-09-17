@@ -7,13 +7,16 @@ import {
 } from '../../../features/budgets/schemas/discountSchema';
 
 describe('discountSchema (Validação Zod de Descontos e Condições Comerciais)', () => {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const formatLocalDate = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
-  const tomorrowStr = tomorrow.toISOString().split('T')[0];
+  const tomorrowStr = formatLocalDate(tomorrow);
 
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
-  const yesterdayStr = yesterday.toISOString().split('T')[0];
+  const yesterdayStr = formatLocalDate(yesterday);
 
   describe('Validação de Desconto Percentual', () => {
     it('deve aceitar desconto percentual entre 0% e 100%', () => {
