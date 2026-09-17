@@ -6,15 +6,7 @@ import br.edu.ifpb.alumigest.budgets.domain.BudgetItemOption;
 import br.edu.ifpb.alumigest.budgets.domain.BudgetStatus;
 import br.edu.ifpb.alumigest.budgets.domain.DiscountType;
 import br.edu.ifpb.alumigest.budgets.domain.PaymentCondition;
-import br.edu.ifpb.alumigest.budgets.dto.BudgetCreateRequest;
-import br.edu.ifpb.alumigest.budgets.dto.BudgetItemRequestDTO;
-import br.edu.ifpb.alumigest.budgets.dto.BudgetItemResponseDTO;
-import br.edu.ifpb.alumigest.budgets.dto.BudgetRequestDTO;
-import br.edu.ifpb.alumigest.budgets.dto.BudgetResponseDTO;
-import br.edu.ifpb.alumigest.budgets.dto.BudgetStatusUpdateDTO;
-import br.edu.ifpb.alumigest.budgets.dto.BudgetSummaryResponseDTO;
-import br.edu.ifpb.alumigest.budgets.dto.DiscountRequest;
-import br.edu.ifpb.alumigest.budgets.dto.StatusChangeRequest;
+import br.edu.ifpb.alumigest.budgets.dto.*;
 import br.edu.ifpb.alumigest.budgets.mapper.BudgetMapper;
 import br.edu.ifpb.alumigest.budgets.repository.BudgetRepository;
 import br.edu.ifpb.alumigest.clients.domain.Client;
@@ -337,5 +329,30 @@ public BudgetResponseDTO alterarStatus(UUID id, StatusChangeRequest request) {
         budgetRepository.save(budget);
 
         return budgetMapper.toResponseDTO(item);
+    }
+
+    /**
+     * Overload que adapta BudgetItemCreateRequest para BudgetItemRequestDTO e insere o item.
+     *
+     * @param budgetId ID do orçamento
+     * @param request Dados do item a ser adicionado
+     * @return DTO com os dados do item persistido
+     */
+    @Transactional
+    public BudgetItemResponseDTO adicionarItem (UUID budgetId, BudgetItemCreateRequest request){
+        BudgetItemRequestDTO dto = new BudgetItemRequestDTO(
+                request.productId(),
+                request.larguraMm(),
+                request.alturaMm(),
+                request.quantidade(),
+                request.valorUnitario(),
+                null,
+                null,
+                request.ferragens(),
+                null,
+                request.descricao(),
+                null
+        );
+        return adicionarItem(budgetId, dto);
     }
 }
