@@ -82,30 +82,4 @@ class StatusChangeRequestTest {
         assertThat(request.novoStatus()).isEqualTo(BudgetStatus.CANCELLED);
         assertThat(request.status()).isEqualTo(BudgetStatus.CANCELLED);
     }
-
-    @Test
-    @DisplayName("Deve interoperar corretamente com BudgetStatusUpdateDTO")
-    void deveInteroperarComBudgetStatusUpdateDTO() {
-        BudgetStatusUpdateDTO dto = new BudgetStatusUpdateDTO(BudgetStatus.SENT);
-        assertThat(dto.novoStatus()).isEqualTo(BudgetStatus.SENT);
-        assertThat(dto.status()).isEqualTo(BudgetStatus.SENT);
-
-        StatusChangeRequest requestFromDto = StatusChangeRequest.from(dto);
-        assertThat(requestFromDto).isNotNull();
-        assertThat(requestFromDto.novoStatus()).isEqualTo(BudgetStatus.SENT);
-
-        StatusChangeRequest converted = dto.toStatusChangeRequest();
-        assertThat(converted.novoStatus()).isEqualTo(BudgetStatus.SENT);
-    }
-
-    @Test
-    @DisplayName("Deve validar @NotNull em BudgetStatusUpdateDTO com mensagem alinhada")
-    void deveValidarBudgetStatusUpdateDTOComMensagemAlinhada() {
-        BudgetStatusUpdateDTO dto = new BudgetStatusUpdateDTO(null);
-        var violations = validator.validate(dto);
-        assertThat(violations)
-                .hasSize(1)
-                .extracting("message")
-                .containsExactly("Novo status é obrigatório");
-    }
 }

@@ -137,7 +137,7 @@ export interface BudgetFormState {
   discountPercent: number;
   discountType: DiscountType;
   discountInput: number;
-  paymentCondition: PaymentCondition | string;
+  paymentCondition: PaymentCondition;
   notes: string;
   commercialConditions: string;
   validUntil?: string;
@@ -207,7 +207,7 @@ export interface CreateBudgetPayload {
   discountPercent?: number;
   discountType?: DiscountType | 'PERCENTAGE' | 'FIXED';
   discountInput?: number;
-  paymentCondition?: PaymentCondition | string;
+  paymentCondition?: PaymentCondition;
   notes?: string;
   commercialConditions?: string;
   validUntil?: string;

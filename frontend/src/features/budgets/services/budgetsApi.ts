@@ -126,7 +126,10 @@ function toBackendDiscountPayload(data: DiscountRequest) {
   const condicaoPagamento = data.condicaoPagamento ?? data.paymentCondition;
   const observacoesPagamento = data.observacoesPagamento ?? data.paymentNotes;
   const rawDate = data.dataValidade ?? data.validUntil;
-  const dataValidade = rawDate ? (rawDate.includes('T') ? rawDate.split('T')[0] : rawDate) : undefined;
+  let dataValidade: string | undefined;
+  if (rawDate) {
+    dataValidade = rawDate.includes('T') ? rawDate.split('T')[0] : rawDate;
+  }
 
   return {
     tipoDesconto,

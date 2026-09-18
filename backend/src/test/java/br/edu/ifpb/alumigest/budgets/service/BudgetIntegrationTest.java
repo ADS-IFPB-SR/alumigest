@@ -44,9 +44,6 @@ class BudgetIntegrationTest {
     private br.edu.ifpb.alumigest.catalog.repository.ProductRepository productRepository;
 
     private Client savedClient;
-    private br.edu.ifpb.alumigest.catalog.domain.Product savedProduct;
-    private Material savedGlass;
-    private Material savedProfile;
 
     @BeforeEach
     void setUp() {
@@ -60,7 +57,7 @@ class BudgetIntegrationTest {
         br.edu.ifpb.alumigest.catalog.domain.Product product = new br.edu.ifpb.alumigest.catalog.domain.Product();
         product.setName("Janela Correr 2 Folhas");
         product.setTemplateType(br.edu.ifpb.alumigest.catalog.domain.DoorTemplateType.SLIDING_DOOR_2F);
-        savedProduct = productRepository.save(product);
+        productRepository.save(product);
 
         MaterialGroup glassGroup = new MaterialGroup();
         glassGroup.setCode("GRP-VID");
@@ -73,7 +70,7 @@ class BudgetIntegrationTest {
         glass.setGroup(glassGroup);
         glass.setUnitMeasure(UnitMeasure.M2);
         glass.setSalePrice(new BigDecimal("200.00"));
-        savedGlass = materialRepository.save(glass);
+        materialRepository.save(glass);
 
         MaterialGroup profileGroup = new MaterialGroup();
         profileGroup.setCode("GRP-PERF");
@@ -86,7 +83,7 @@ class BudgetIntegrationTest {
         profile.setGroup(profileGroup);
         profile.setUnitMeasure(UnitMeasure.METRO);
         profile.setSalePrice(new BigDecimal("50.00"));
-        savedProfile = materialRepository.save(profile);
+        materialRepository.save(profile);
     }
 
     @Test

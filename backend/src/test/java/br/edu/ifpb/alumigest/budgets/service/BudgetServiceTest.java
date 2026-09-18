@@ -148,9 +148,10 @@ class BudgetServiceTest {
 
         verify(budgetRepository).save(captor.capture());
         java.time.OffsetDateTime validUntil = captor.getValue().getValidUntil();
-        assertThat(validUntil).isNotNull();
-        assertThat(validUntil).isAfterOrEqualTo(before);
-        assertThat(validUntil).isBeforeOrEqualTo(before.plusSeconds(10));
+        assertThat(validUntil)
+                .isNotNull()
+                .isAfterOrEqualTo(before)
+                .isBeforeOrEqualTo(before.plusSeconds(10));
     }
 
     @Test
@@ -362,19 +363,6 @@ class BudgetServiceTest {
     }
 
     @Test
-    @DisplayName("Alteração de status: Transição válida via BudgetStatusUpdateDTO (compatibilidade)")
-    void updateStatus_ShouldUpdateStatus_WhenUsingBudgetStatusUpdateDTO() {
-        when(budgetRepository.findById(budget.getId())).thenReturn(Optional.of(budget));
-
-        BudgetStatusUpdateDTO statusDto = new BudgetStatusUpdateDTO(BudgetStatus.SENT);
-
-        budgetService.updateStatus(budget.getId(), statusDto);
-
-        assertThat(budget.getStatus()).isEqualTo(BudgetStatus.SENT);
-        verify(budgetRepository, times(1)).save(budget);
-    }
-
-    @Test
     @DisplayName("Alteração de status: Transição inválida com StatusChangeRequest")
     void updateStatus_ShouldThrowException_WhenTransitionIsInvalid() {
         budget.setStatus(BudgetStatus.APPROVED);
@@ -489,7 +477,8 @@ class BudgetServiceTest {
                 null
         );
 
-        assertThatThrownBy(() -> budgetService.aplicarDesconto(budget.getId(), request))
+        UUID budgetId1 = budget.getId();
+        assertThatThrownBy(() -> budgetService.aplicarDesconto(budgetId1, request))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("não pode ser superior a 100%");
     }
@@ -510,7 +499,8 @@ class BudgetServiceTest {
                 null
         );
 
-        assertThatThrownBy(() -> budgetService.aplicarDesconto(budget.getId(), request))
+        UUID budgetId = budget.getId();
+        assertThatThrownBy(() -> budgetService.aplicarDesconto(budgetId, request))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("não pode ser superior ao subtotal");
     }
@@ -531,7 +521,8 @@ class BudgetServiceTest {
                 null
         );
 
-        assertThatThrownBy(() -> budgetService.aplicarDesconto(budget.getId(), request))
+        UUID budgetId = budget.getId();
+        assertThatThrownBy(() -> budgetService.aplicarDesconto(budgetId, request))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("O orçamento deve possuir itens e subtotal maior que zero");
     }
@@ -540,10 +531,11 @@ class BudgetServiceTest {
     @DisplayName("Alteração de status: Transição SENT para EXPIRED deve ser válida")
     void updateStatus_ShouldAllowTransition_WhenSentToExpired() {
         budget.setStatus(BudgetStatus.SENT);
-        when(budgetRepository.findById(budget.getId())).thenReturn(Optional.of(budget));
+        UUID budgetId = budget.getId();
+        when(budgetRepository.findById(budgetId)).thenReturn(Optional.of(budget));
 
-        BudgetStatusUpdateDTO statusDto = new BudgetStatusUpdateDTO(BudgetStatus.EXPIRED);
-        budgetService.updateStatus(budget.getId(), statusDto);
+        StatusChangeRequest statusRequest = new StatusChangeRequest(BudgetStatus.EXPIRED);
+        budgetService.updateStatus(budgetId, statusRequest);
 
         assertThat(budget.getStatus()).isEqualTo(BudgetStatus.EXPIRED);
         verify(budgetRepository, times(1)).save(budget);
@@ -557,9 +549,9 @@ class BudgetServiceTest {
         when(budgetRepository.findById(budgetId)).thenReturn(Optional.of(budget));
 
         // Tentando voltar um orçamento expirado para rascunho (Ilegal)
-        BudgetStatusUpdateDTO statusDto = new BudgetStatusUpdateDTO(BudgetStatus.DRAFT);
+        StatusChangeRequest statusRequest = new StatusChangeRequest(BudgetStatus.DRAFT);
 
-        assertThatThrownBy(() -> budgetService.updateStatus(budgetId, statusDto))
+        assertThatThrownBy(() -> budgetService.updateStatus(budgetId, statusRequest))
                 .isInstanceOf(InvalidBudgetStatusTransitionException.class);
     }
 

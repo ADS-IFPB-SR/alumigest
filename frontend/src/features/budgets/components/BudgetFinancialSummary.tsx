@@ -25,7 +25,7 @@ export interface BudgetFinancialSummaryProps {
   /** Total líquido = subtotal - discountValue */
   readonly total: number;
   /** Condição de pagamento selecionada (código/enum) */
-  readonly paymentCondition?: PaymentCondition | string;
+  readonly paymentCondition?: PaymentCondition;
   /** Rótulo customizado da condição de pagamento */
   readonly paymentConditionLabel?: string;
   /** Texto livre de condições comerciais (fallback se paymentCondition não for informado) */

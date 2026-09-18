@@ -173,7 +173,7 @@ export interface BudgetItemCreateRequest {
     id?: string;
     materialId: string;
     quantity?: number;
-    categoryType: string | CategoryType;
+    categoryType: CategoryType;
     unitPrice?: number;
     totalPrice?: number;
     materialName?: string;

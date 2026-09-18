@@ -35,8 +35,24 @@ interface BudgetCommercialConditionsProps {
 
 const DEFAULT_ERRORS: Record<string, string> = {};
 
+function parseNumericInput(str: string): number | null {
+  const cleaned = str.replace(',', '.').replace(/[^0-9.]/g, '');
+  if (cleaned === '' || cleaned === '.') {
+    return 0;
+  }
+  const val = Number.parseFloat(cleaned);
+  return Number.isNaN(val) || val < 0 ? null : val;
+}
+
+function computeDiscountAmount(isPercent: boolean, subtotal: number, discountInput: number): number {
+  if (!isPercent) {
+    return discountInput;
+  }
+  return subtotal > 0 ? (subtotal * discountInput) / 100 : 0;
+}
+
 export const BudgetCommercialConditions: React.FC<BudgetCommercialConditionsProps> = ({
-  laborCost,
+  laborCost = 0,
   onLaborCostChange,
   discountType,
   onDiscountTypeChange,
@@ -58,7 +74,7 @@ export const BudgetCommercialConditions: React.FC<BudgetCommercialConditionsProp
     ? discountType === 'PERCENTUAL' || (discountType as string) === 'PERCENTAGE'
     : true;
 
-  const currentDiscountInput = discountInput !== undefined ? discountInput : (discountPercent ?? 0);
+  const currentDiscountInput = discountInput ?? (discountPercent ?? 0);
 
   const handleValidityPreset = (days: number) => {
     const d = new Date();
@@ -68,34 +84,21 @@ export const BudgetCommercialConditions: React.FC<BudgetCommercialConditionsProp
   };
 
   const handleLaborCostChange = (str: string) => {
-    const cleaned = str.replace(',', '.').replace(/[^0-9.]/g, '');
-    if (cleaned === '' || cleaned === '.') {
-      onLaborCostChange(0);
-      return;
-    }
-    const val = Number.parseFloat(cleaned);
-    if (!Number.isNaN(val) && val >= 0) {
+    const val = parseNumericInput(str);
+    if (val !== null) {
       onLaborCostChange(val);
     }
   };
 
   const handleDiscountChange = (str: string) => {
-    const cleaned = str.replace(',', '.').replace(/[^0-9.]/g, '');
-    if (cleaned === '' || cleaned === '.') {
-      onDiscountChange(0);
-      return;
-    }
-    const val = Number.parseFloat(cleaned);
-    
-    if (Number.isNaN(val) || val < 0) return;
+    const val = parseNumericInput(str);
+    if (val === null) return;
     if (isPercent && val > 100) return;
     
     onDiscountChange(val);
   };
 
-  const discountAmount = isPercent 
-    ? subtotal > 0 ? (subtotal * currentDiscountInput) / 100 : 0
-    : currentDiscountInput;
+  const discountAmount = computeDiscountAmount(isPercent, subtotal, currentDiscountInput);
 
   const isDiscountExceeding = discountAmount > subtotal;
   const discountError = errors?.discount ?? errors?.discountPercent;

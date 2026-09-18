@@ -3,7 +3,7 @@ import type { BudgetStatus } from '../types';
 import { getBudgetStatusTheme } from '../utils/statusTheme';
 
 interface StatusBadgeProps {
-  status: BudgetStatus | string;
+  status: BudgetStatus;
   className?: string;
   showIcon?: boolean;
 }

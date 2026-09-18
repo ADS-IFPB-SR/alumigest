@@ -18,8 +18,4 @@ public record StatusChangeRequest(
     public BudgetStatus status() {
         return novoStatus;
     }
-
-    public static StatusChangeRequest from(BudgetStatusUpdateDTO dto) {
-        return dto != null ? new StatusChangeRequest(dto.novoStatus()) : null;
-    }
 }

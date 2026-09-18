@@ -156,13 +156,18 @@ describe('[US-09.28] Interfaces TypeScript e Contratos de Orçamentos (budget.ts
         paymentCondition: 'A_VISTA_PIX',
       };
 
-      const tipoDesconto: DiscountType = 'PERCENTUAL';
-      const condicao: PaymentCondition = 'A_VISTA_PIX';
+      const validDiscountTypes: DiscountType[] = ['PERCENTUAL', 'VALOR_FIXO'];
+      const validPaymentConditions: PaymentCondition[] = [
+        'A_VISTA_PIX',
+        'ENTRADA_50_SALDO_ENTREGA',
+        'CARTAO_12X',
+        'A_COMBINAR',
+      ];
 
       expect(summary.code).toBe('ORC-2026-0002');
       expect(summary.valorLiquido).toBe(1140.0);
-      expect(tipoDesconto).toBe('PERCENTUAL');
-      expect(condicao).toBe('A_VISTA_PIX');
+      expect(validDiscountTypes).toContain('PERCENTUAL');
+      expect(validPaymentConditions).toContain(summary.paymentCondition);
     });
   });
 

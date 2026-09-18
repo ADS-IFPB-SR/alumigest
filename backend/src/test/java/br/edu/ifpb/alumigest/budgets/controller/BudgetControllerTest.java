@@ -10,7 +10,6 @@ import br.edu.ifpb.alumigest.budgets.dto.BudgetItemCalculationResponseDTO;
 import br.edu.ifpb.alumigest.budgets.dto.BudgetItemRequestDTO;
 import br.edu.ifpb.alumigest.budgets.dto.BudgetRequestDTO;
 import br.edu.ifpb.alumigest.budgets.dto.BudgetResponseDTO;
-import br.edu.ifpb.alumigest.budgets.dto.BudgetStatusUpdateDTO;
 import br.edu.ifpb.alumigest.budgets.dto.BudgetSummaryResponseDTO;
 import br.edu.ifpb.alumigest.budgets.dto.StatusChangeRequest;
 import br.edu.ifpb.alumigest.budgets.service.BudgetQuantityService;

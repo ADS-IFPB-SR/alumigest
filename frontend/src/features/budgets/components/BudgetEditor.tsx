@@ -258,9 +258,10 @@ export const BudgetEditor: React.FC = () => {
 
     const laborPerItem = form.items.length > 0 && form.laborCost > 0 ? form.laborCost / form.items.length : 0;
     const isPercent = form.discountType === 'PERCENTUAL' || (form.discountType as string) === 'PERCENTAGE';
-    const effectiveDiscountPercent = isPercent
-      ? form.discountInput
-      : (subtotal > 0 ? (form.discountInput / subtotal) * 100 : 0);
+    let effectiveDiscountPercent = form.discountInput;
+    if (!isPercent) {
+      effectiveDiscountPercent = subtotal > 0 ? (form.discountInput / subtotal) * 100 : 0;
+    }
 
     const payload: CreateBudgetPayload = {
       customerId: form.customerId,

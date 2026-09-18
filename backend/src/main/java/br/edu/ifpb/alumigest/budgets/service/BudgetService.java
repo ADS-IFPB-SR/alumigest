@@ -5,7 +5,6 @@ import br.edu.ifpb.alumigest.budgets.domain.BudgetItem;
 import br.edu.ifpb.alumigest.budgets.domain.BudgetItemOption;
 import br.edu.ifpb.alumigest.budgets.domain.BudgetStatus;
 import br.edu.ifpb.alumigest.budgets.domain.DiscountType;
-import br.edu.ifpb.alumigest.budgets.domain.PaymentCondition;
 import br.edu.ifpb.alumigest.budgets.dto.*;
 import br.edu.ifpb.alumigest.budgets.mapper.BudgetMapper;
 import br.edu.ifpb.alumigest.budgets.repository.BudgetRepository;
@@ -27,7 +26,6 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
-import java.time.Year;
 import java.time.ZoneOffset;
 import java.util.Objects;
 import java.util.UUID;
@@ -83,6 +81,15 @@ public class BudgetService {
 
     @Transactional(readOnly = true)
     public PageResponse<BudgetSummaryResponseDTO> findAll(String busca, BudgetStatus status, Pageable pageable) {
+        return buscarOrcamentos(busca, status, pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<BudgetSummaryResponseDTO> listar(String busca, BudgetStatus status, Pageable pageable) {
+        return buscarOrcamentos(busca, status, pageable);
+    }
+
+    private PageResponse<BudgetSummaryResponseDTO> buscarOrcamentos(String busca, BudgetStatus status, Pageable pageable) {
         String query = (busca != null && !busca.isBlank()) ? busca.trim() : null;
 
         Pageable effectivePageable = pageable;
@@ -99,11 +106,6 @@ public class BudgetService {
         Page<BudgetSummaryResponseDTO> page = budgetRepository.searchBudgets(query, status, effectivePageable)
                 .map(budgetMapper::toSummaryResponseDTO);
         return PageResponse.of(page);
-    }
-
-    @Transactional(readOnly = true)
-    public PageResponse<BudgetSummaryResponseDTO> listar(String busca, BudgetStatus status, Pageable pageable) {
-        return findAll(busca, status, pageable);
     }
 
     @Transactional
@@ -171,12 +173,6 @@ public BudgetResponseDTO alterarStatus(UUID id, StatusChangeRequest request) {
         budget = budgetRepository.save(budget);
         
         return budgetMapper.toResponseDTO(budget);
-    }
-
-    @Transactional
-    public void updateStatus(UUID id, BudgetStatusUpdateDTO statusDto) {
-        Objects.requireNonNull(statusDto, "BudgetStatusUpdateDTO não pode ser nulo");
-        updateStatus(id, statusDto.toStatusChangeRequest());
     }
 
     @Transactional
@@ -313,6 +309,35 @@ public BudgetResponseDTO alterarStatus(UUID id, StatusChangeRequest request) {
      */
     @Transactional
     public BudgetItemResponseDTO adicionarItem(UUID budgetId, BudgetItemRequestDTO request) {
+        return executarAdicaoItem(budgetId, request);
+    }
+
+    /**
+     * Overload que adapta BudgetItemCreateRequest para BudgetItemRequestDTO e insere o item.
+     *
+     * @param budgetId ID do orçamento
+     * @param request Dados do item a ser adicionado
+     * @return DTO com os dados do item persistido
+     */
+    @Transactional
+    public BudgetItemResponseDTO adicionarItem(UUID budgetId, BudgetItemCreateRequest request) {
+        BudgetItemRequestDTO dto = new BudgetItemRequestDTO(
+                request.productId(),
+                request.larguraMm(),
+                request.alturaMm(),
+                request.quantidade(),
+                request.valorUnitario(),
+                null,
+                null,
+                request.ferragens(),
+                null,
+                request.descricao(),
+                null
+        );
+        return executarAdicaoItem(budgetId, dto);
+    }
+
+    private BudgetItemResponseDTO executarAdicaoItem(UUID budgetId, BudgetItemRequestDTO request) {
         Budget budget = getBudgetOrThrow(budgetId);
         validateBudgetIsDraft(budget);
 
@@ -329,30 +354,5 @@ public BudgetResponseDTO alterarStatus(UUID id, StatusChangeRequest request) {
         budgetRepository.save(budget);
 
         return budgetMapper.toResponseDTO(item);
-    }
-
-    /**
-     * Overload que adapta BudgetItemCreateRequest para BudgetItemRequestDTO e insere o item.
-     *
-     * @param budgetId ID do orçamento
-     * @param request Dados do item a ser adicionado
-     * @return DTO com os dados do item persistido
-     */
-    @Transactional
-    public BudgetItemResponseDTO adicionarItem (UUID budgetId, BudgetItemCreateRequest request){
-        BudgetItemRequestDTO dto = new BudgetItemRequestDTO(
-                request.productId(),
-                request.larguraMm(),
-                request.alturaMm(),
-                request.quantidade(),
-                request.valorUnitario(),
-                null,
-                null,
-                request.ferragens(),
-                null,
-                request.descricao(),
-                null
-        );
-        return adicionarItem(budgetId, dto);
     }
 }

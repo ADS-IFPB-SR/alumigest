@@ -116,7 +116,7 @@ describe('BudgetsTable', () => {
 
     // Orçamento 2 (DRAFT com isExpired: true) e Orçamento 3 (EXPIRED) devem renderizar "Expirado"
     const expiredBadges = screen.getAllByText('Expirado');
-    expect(expiredBadges.length).toBe(2);
+    expect(expiredBadges).toHaveLength(2);
   });
 
   it('deve disparar ordenação ao clicar no cabeçalho ordenável', () => {

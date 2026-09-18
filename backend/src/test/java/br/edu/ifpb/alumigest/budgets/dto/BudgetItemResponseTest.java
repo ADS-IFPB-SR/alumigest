@@ -107,7 +107,7 @@ class BudgetItemResponseTest {
         );
 
         assertThat(item1).isEqualTo(item2);
-        assertThat(item1.hashCode()).isEqualTo(item2.hashCode());
+        assertThat(item1).hasSameHashCodeAs(item2);
         assertThat(item1.toString()).contains("Esquadria");
     }
 }

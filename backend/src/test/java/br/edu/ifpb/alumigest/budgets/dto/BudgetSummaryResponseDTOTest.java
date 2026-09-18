@@ -56,14 +56,15 @@ class BudgetSummaryResponseDTOTest {
 
             String json = objectMapper.writeValueAsString(dto);
 
-            assertThat(json).contains("\"code\":\"ORC-2026-001\"");
-            assertThat(json).contains("\"clientName\":\"Cliente Exemplo\"");
-            assertThat(json).contains("\"totalItems\":3");
-            assertThat(json).contains("\"itemCount\":3");
-            assertThat(json).contains("\"total\":2500.5");
-            assertThat(json).contains("\"status\":\"DRAFT\"");
-            assertThat(json).contains("\"expired\":false");
-            assertThat(json).contains("\"isExpired\":false");
+            assertThat(json)
+                    .contains("\"code\":\"ORC-2026-001\"")
+                    .contains("\"clientName\":\"Cliente Exemplo\"")
+                    .contains("\"totalItems\":3")
+                    .contains("\"itemCount\":3")
+                    .contains("\"total\":2500.5")
+                    .contains("\"status\":\"DRAFT\"")
+                    .contains("\"expired\":false")
+                    .contains("\"isExpired\":false");
         }
     }
 
@@ -216,8 +217,8 @@ class BudgetSummaryResponseDTOTest {
             BudgetSummaryResponseDTO result = budgetMapper.toSummaryResponseDTO(budget);
 
             assertThat(result).isNotNull();
-            assertThat(result.totalItems()).isEqualTo(0);
-            assertThat(result.getItemCount()).isEqualTo(0);
+            assertThat(result.totalItems()).isZero();
+            assertThat(result.getItemCount()).isZero();
             assertThat(result.expired()).isFalse();
             assertThat(result.getIsExpired()).isFalse();
         }
