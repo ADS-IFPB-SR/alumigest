@@ -10,6 +10,7 @@ Este diretório centraliza a documentação de planejamento, especificações de
 - [Constituição do Projeto](constitution.md) — Princípios fundamentais de arquitetura, qualidade e regras invioláveis de engenharia.
 - [Tabela De-Para de User Stories](de-para-user-stories.md) — Mapeamento oficial entre a numeração antiga (PO / branches) e a numeração atualizada.
 - [Matriz Mestre de Estimativas (Story Points)](estimativa-backlog-geral.md) — Estimativas sugeridas em Fibonacci (1, 2, 3, 5, 8, 13) e campos para consenso da equipe.
+- [Guia Geral de Estimativa de Horas](guia-estimativa-horas.md) — Padrão oficial de dimensionamento e estimativa de esforço em horas para tarefas do projeto.
 
 ---
 

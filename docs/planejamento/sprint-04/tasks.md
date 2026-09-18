@@ -6,7 +6,8 @@
 
 ## 📦 US-09: Aplicar Descontos e Condições Comerciais no Orçamento
 
-> **Descrição**: Permitir a criação de orçamentos, aplicação de descontos percentuais ou fixos com autonomia do vendedor, definição de taxas adicionais (instalação/frete), condições de pagamento padronizadas e recálculo de totais em tempo real.
+> **Descrição**: Permitir a criação de orçamentos, aplicação de descontos percentuais ou fixos com autonomia do vendedor, definição de taxas adicionais (instalação/frete), condições de pagamento padronizadas e recálculo de totais em tempo real.  
+> ⏱️ **Estimativas em Horas**: [Consulte o guia e detalhamento de horas da US-09 (45.0h)](guia-estimativas-horas-us09.md).
 
 | ID | Tarefa | Status |
 |---|---|:---:|
