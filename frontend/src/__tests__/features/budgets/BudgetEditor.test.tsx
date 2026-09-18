@@ -233,4 +233,26 @@ describe('BudgetEditor — [US-09.33] Alinhamento com Seleção de Cliente e Not
 
     expect(screen.getByTestId('product-picker-modal')).toBeInTheDocument();
   });
+
+  it('deve refletir a condição de pagamento selecionada no resumo financeiro em tempo real', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<BudgetEditor />);
+
+    const summaryCard = screen.getByTestId('budget-financial-summary');
+    // Estado inicial: fallback informativo padrão
+    expect(summaryCard).toHaveTextContent('A combinar no fechamento');
+
+    // Seleciona a condição de pagamento no formulário
+    const paymentSelect = screen.getByLabelText(/Condição de Pagamento/i);
+    await user.selectOptions(paymentSelect, 'A_VISTA_PIX');
+
+    // Verifica se o resumo financeiro exibiu o rótulo mapeado
+    expect(summaryCard).toHaveTextContent('À Vista (PIX / Dinheiro)');
+    expect(summaryCard).not.toHaveTextContent('A combinar no fechamento');
+
+    // Altera para outra opção e confirma atualização imediata
+    await user.selectOptions(paymentSelect, 'CARTAO_12X');
+    expect(summaryCard).toHaveTextContent('Cartão de Crédito até 12x');
+  });
 });
+
