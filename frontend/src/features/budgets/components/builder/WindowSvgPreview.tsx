@@ -54,9 +54,27 @@ const SVG_RENDERERS: Record<DoorTemplateType, SvgTemplateRenderer> = {
   SWING_DOOR_1F: (ctx) => renderSwingDoor(1, ctx),
   SWING_DOOR_2F: (ctx) => renderSwingDoor(2, ctx),
   AWNING_WINDOW_1F: (ctx) =>
-    renderAwningWindow1F(ctx.svgW, ctx.svgH, false, ctx.handleConfig, ctx.drillingConfig, ctx.heightMm, ctx.theme, ctx.widthMm),
+    renderAwningWindow1F({
+      svgW: ctx.svgW,
+      svgH: ctx.svgH,
+      inverted: false,
+      handleConfig: ctx.handleConfig,
+      drillingConfig: ctx.drillingConfig,
+      heightMm: ctx.heightMm,
+      theme: ctx.theme,
+      widthMm: ctx.widthMm,
+    }),
   AWNING_WINDOW_1F_INV: (ctx) =>
-    renderAwningWindow1F(ctx.svgW, ctx.svgH, true, ctx.handleConfig, ctx.drillingConfig, ctx.heightMm, ctx.theme, ctx.widthMm),
+    renderAwningWindow1F({
+      svgW: ctx.svgW,
+      svgH: ctx.svgH,
+      inverted: true,
+      handleConfig: ctx.handleConfig,
+      drillingConfig: ctx.drillingConfig,
+      heightMm: ctx.heightMm,
+      theme: ctx.theme,
+      widthMm: ctx.widthMm,
+    }),
   FRONT_DRAWER: (ctx) =>
     renderDrawerFront(ctx.svgW, ctx.svgH, ctx.handleConfig, ctx.drillingConfig, ctx.widthMm, ctx.heightMm, ctx.theme),
   FIXED_PANEL: (ctx) =>

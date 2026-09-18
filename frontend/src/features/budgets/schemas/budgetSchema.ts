@@ -6,7 +6,7 @@ export const budgetItemSchema = z.object({
   quantity: z.number().min(1, 'A quantidade deve ser maior que zero.'),
   widthMm: z.number().min(1, 'Largura inválida.').optional(),
   heightMm: z.number().min(1, 'Altura inválida.').optional(),
-}).passthrough();
+}).loose();
 
 // ─── 2. Enums Alinhados com os Contratos e Componentes ─────────────────────────────
 export const DiscountTypeEnum = z.enum([

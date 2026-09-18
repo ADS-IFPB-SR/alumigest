@@ -101,8 +101,8 @@ export function useDrillingBuilder({ heightMm }: UseDrillingBuilderProps) {
       return next;
     });
 
-    const parsed = parseInt(val, 10);
-    if (!isNaN(parsed) && parsed >= 0) {
+    const parsed = Number.parseInt(val, 10);
+    if (!Number.isNaN(parsed) && parsed >= 0) {
       setDrillingConfig((prev) => {
         const nextDists = [...(prev.customDistancesMm ?? [])];
         nextDists[index] = parsed;

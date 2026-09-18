@@ -191,7 +191,7 @@ export const BudgetEditor: React.FC = () => {
   const handleDuplicateItem = (item: BudgetItem) => {
     const duplicatedItem: BudgetItem = {
       ...item,
-      tempId: `item-dup-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      tempId: `item-dup-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`,
       productName: `${item.productName} (Cópia)`,
       options: item.options.map((opt) => ({ ...opt })),
     };

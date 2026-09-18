@@ -56,14 +56,14 @@ export function useBuilderCatalog() {
   const dynamicAluminumColors = useMemo(() => {
     const fromCatalog = profiles
       .map((p) => p.colorFinish)
-      .filter((c): c is string => Boolean(c && c.trim()));
+      .filter((c): c is string => Boolean(c?.trim()));
     return Array.from(new Set([...BASE_ALUMINUM_COLORS, ...fromCatalog]));
   }, [profiles]);
 
   const dynamicGlassFinishes = useMemo(() => {
     const fromCatalog = glasses
       .map((g) => g.colorFinish)
-      .filter((c): c is string => Boolean(c && c.trim()));
+      .filter((c): c is string => Boolean(c?.trim()));
     return Array.from(new Set([...BASE_GLASS_FINISHES, ...fromCatalog]));
   }, [glasses]);
 
