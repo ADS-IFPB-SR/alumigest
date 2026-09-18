@@ -161,7 +161,8 @@ public class BudgetService {
     }
 
 
-public BudgetResponseDTO alterarStatus(UUID id, StatusChangeRequest request) {
+    @Transactional
+    public BudgetResponseDTO alterarStatus(UUID id, StatusChangeRequest request) {
         Objects.requireNonNull(request, "Request de alteração de status não pode ser nulo");
         Objects.requireNonNull(request.novoStatus(), "O novo status é obrigatório para alteração");
 

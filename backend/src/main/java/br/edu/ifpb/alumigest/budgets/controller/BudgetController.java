@@ -115,7 +115,7 @@ public class BudgetController {
     @Operation(summary = "Aplicar desconto e condições comerciais",
                description = "Aplica desconto (percentual ou fixo), condição de pagamento e prazo de validade a um orçamento DRAFT.")
     @ApiResponse(responseCode = "200", description = "Desconto e condições comerciais aplicados com sucesso")
-    @ApiResponse(responseCode = "400", description = "Dados do descontto ou regras de negócio inválidas")
+    @ApiResponse(responseCode = "400", description = "Dados do desconto ou regras de negócio inválidas")
     @ApiResponse(responseCode = "404", description = "Orçamento não encontrado")
     @ApiResponse(responseCode = "422", description = "Orçamento imutável ou regra comercial violada")
     public ResponseEntity<BudgetResponseDTO> aplicarDesconto(
@@ -129,7 +129,7 @@ public class BudgetController {
                description = "Adiciona incrementalmente um item avulso ao orçamento DRAFT e recalcula valores.")
     @ApiResponse(responseCode = "201", description = "Item adicionado com sucesso")
     @ApiResponse(responseCode = "400", description = "Dados do item inválidos")
-    @ApiResponse(responseCode = "404", description = "Orçamento não econtrado")
+    @ApiResponse(responseCode = "404", description = "Orçamento não encontrado")
     @ApiResponse(responseCode = "422", description = "Orçamento imutável")
     public ResponseEntity<BudgetItemResponseDTO> adicionarItem(
             @Parameter(description = "ID do orçamento") @PathVariable UUID id,
