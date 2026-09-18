@@ -550,6 +550,7 @@ export const BudgetEditor: React.FC = () => {
                   discountInput={form.discountInput}
                   discountValue={discountValue}
                   total={total}
+                  paymentCondition={form.paymentCondition}
                   commercialConditions={form.commercialConditions}
                   onSave={handleSave}
                   isSaving={isPending}
