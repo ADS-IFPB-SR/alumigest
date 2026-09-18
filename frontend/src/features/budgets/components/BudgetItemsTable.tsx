@@ -1,12 +1,17 @@
 import React from 'react';
 import type { BudgetItem } from '../types';
-import { TEMPLATE_TYPE_INFO } from '../types';
+import { TEMPLATE_TYPE_INFO, OPENING_DIRECTION_LABELS } from '../types';
 import { formatBRL } from '../utils/calculations';
 
-function formatOpeningDirectionArrow(openDir?: string): string {
-  if (openDir === 'LEFT_TO_RIGHT') return '→';
-  if (openDir === 'RIGHT_TO_LEFT') return '←';
-  return openDir ?? '';
+function formatOpeningDirection(openDir?: string): string {
+  if (!openDir) return '';
+  const label = OPENING_DIRECTION_LABELS[openDir as keyof typeof OPENING_DIRECTION_LABELS] || openDir;
+  if (openDir === 'LEFT_TO_RIGHT') return `→ ${label}`;
+  if (openDir === 'RIGHT_TO_LEFT') return `← ${label}`;
+  if (openDir === 'CENTER_TO_SIDES') return `↔ ${label}`;
+  if (openDir === 'OUTSIDE') return `↗ ${label}`;
+  if (openDir === 'INSIDE') return `↙ ${label}`;
+  return label;
 }
 
 interface BudgetItemsTableProps {
@@ -51,14 +56,15 @@ export const BudgetItemsTable: React.FC<BudgetItemsTableProps> = ({
 
         {/* Table */}
         <div className="overflow-x-auto">
-          <table className="w-full text-sm border-collapse min-w-[600px]">
+          <table className="w-full text-sm border-collapse min-w-[700px]">
             <thead className="bg-surface-container-low sticky top-0 z-10">
               <tr>
                 <th className="text-left px-md py-sm font-label font-semibold text-on-surface-variant text-xs">#</th>
-                <th className="text-left px-md py-sm font-label font-semibold text-on-surface-variant text-xs">Esquadria</th>
-                <th className="text-center px-sm py-sm font-label font-semibold text-on-surface-variant text-xs">Medida</th>
+                <th className="text-left px-md py-sm font-label font-semibold text-on-surface-variant text-xs">Descrição / Template</th>
+                <th className="text-center px-sm py-sm font-label font-semibold text-on-surface-variant text-xs">Medidas (L × A mm)</th>
                 <th className="text-center px-sm py-sm font-label font-semibold text-on-surface-variant text-xs">Qtd</th>
-                <th className="text-left px-sm py-sm font-label font-semibold text-on-surface-variant text-xs hidden md:table-cell">Materiais</th>
+                <th className="text-left px-sm py-sm font-label font-semibold text-on-surface-variant text-xs hidden lg:table-cell">Materiais</th>
+                <th className="text-right px-sm py-sm font-label font-semibold text-on-surface-variant text-xs">Valor Unitário</th>
                 <th className="text-right px-md py-sm font-label font-semibold text-on-surface-variant text-xs">Subtotal</th>
                 <th className="text-center px-sm py-sm font-label font-semibold text-on-surface-variant text-xs w-20 sticky right-0 bg-surface-container-low shadow-[-4px_0px_8px_rgba(0,0,0,0.05)]">
                   Ações
@@ -69,6 +75,7 @@ export const BudgetItemsTable: React.FC<BudgetItemsTableProps> = ({
               {items.map((item, idx) => {
                 const mainMaterial = item.options.find((o) => o.categoryType === 'GLASS') ?? item.options[0];
                 const openDir = item.templateConfig?.openingDirection;
+                const unitPrice = item.unitPrice ?? (item.quantity > 0 ? item.subtotal / item.quantity : item.subtotal);
                 return (
                   <tr
                     key={item.tempId}
@@ -77,7 +84,7 @@ export const BudgetItemsTable: React.FC<BudgetItemsTableProps> = ({
                     {/* # */}
                     <td className="px-md py-sm text-on-surface-variant text-xs font-data-mono">{idx + 1}</td>
 
-                    {/* Esquadria */}
+                    {/* Descrição / Template */}
                     <td className="px-md py-sm" aria-label={`Esquadria: ${item.productName}`}>
                       <div className="flex flex-col gap-xs">
                         <span className="font-label font-semibold text-on-surface text-sm leading-tight">
@@ -85,15 +92,28 @@ export const BudgetItemsTable: React.FC<BudgetItemsTableProps> = ({
                         </span>
                         <span className="text-xs text-on-surface-variant font-body">
                           Modelo: {item.templateType ? (TEMPLATE_TYPE_INFO[item.templateType as keyof typeof TEMPLATE_TYPE_INFO]?.label || item.templateType) : 'Básico'}
-                          {openDir && <span className="ml-xs text-secondary">· {formatOpeningDirectionArrow(openDir)}</span>}
+                          {openDir && <span className="ml-xs text-secondary">· {formatOpeningDirection(openDir)}</span>}
                         </span>
+                        {(item.templateConfig?.aluminumColor || item.templateConfig?.glassFinish) && (
+                          <span className="text-[11px] text-secondary font-body">
+                            {[
+                              item.templateConfig?.aluminumColor ? `Cor: ${item.templateConfig.aluminumColor}` : null,
+                              item.templateConfig?.glassFinish ? `Vidro: ${item.templateConfig.glassFinish}` : null,
+                            ].filter(Boolean).join(' · ')}
+                          </span>
+                        )}
+                        {item.notes && (
+                          <span className="text-[11px] text-secondary italic truncate max-w-xs">
+                            Obs: {item.notes}
+                          </span>
+                        )}
                       </div>
                     </td>
 
-                    {/* Medida */}
+                    {/* Medidas (L × A mm) */}
                     <td className="px-sm py-sm text-center">
                       <span className="font-data-mono text-xs text-on-surface whitespace-nowrap">
-                        {item.widthMm}×{item.heightMm}
+                        {item.widthMm ?? item.width}×{item.heightMm ?? item.height}
                       </span>
                       <br />
                       <span className="text-[10px] text-on-surface-variant">mm</span>
@@ -106,7 +126,7 @@ export const BudgetItemsTable: React.FC<BudgetItemsTableProps> = ({
                     </td>
 
                     {/* Materiais (desktop only) */}
-                    <td className="px-sm py-sm hidden md:table-cell">
+                    <td className="px-sm py-sm hidden lg:table-cell">
                       <div className="flex flex-col gap-xs">
                         {mainMaterial && (
                           <span className="text-xs text-on-surface truncate max-w-[180px]">
@@ -122,6 +142,13 @@ export const BudgetItemsTable: React.FC<BudgetItemsTableProps> = ({
                           <span className="text-[10px] text-on-surface-variant italic">Sem materiais</span>
                         )}
                       </div>
+                    </td>
+
+                    {/* Valor Unitário */}
+                    <td className="px-sm py-sm text-right">
+                      <span className="font-data-mono text-xs text-on-surface whitespace-nowrap">
+                        {formatBRL(unitPrice)}
+                      </span>
                     </td>
 
                     {/* Subtotal */}

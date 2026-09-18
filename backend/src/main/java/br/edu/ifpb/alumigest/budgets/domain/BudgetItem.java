@@ -69,6 +69,11 @@ public class BudgetItem {
         option.setBudgetItem(this);
     }
 
+    public void removeOption(BudgetItemOption option) {
+        options.remove(option);
+        option.setBudgetItem(null);
+    }
+
     public UUID getId() {
         return id;
     }

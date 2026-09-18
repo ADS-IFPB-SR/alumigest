@@ -1,30 +1,42 @@
-export type DoorTemplateType =
-  | 'SLIDING_DOOR_1F'
-  | 'SLIDING_DOOR_2F'
-  | 'SLIDING_DOOR_3F'
-  | 'SLIDING_DOOR_4F'
-  | 'SWING_DOOR_1F'
-  | 'SWING_DOOR_2F'
-  | 'AWNING_WINDOW_1F'
-  | 'AWNING_WINDOW_1F_INV'
-  | 'FRONT_DRAWER'
-  | 'FIXED_PANEL';
+/**
+ * Módulo de Tipos para a feature de Orçamentos (Budgets).
+ * Centraliza os contratos da US-09 / US-46 e tipos visuais do Builder/CAD.
+ */
 
-export type OpeningDirection =
-  | 'LEFT_TO_RIGHT'
-  | 'RIGHT_TO_LEFT'
-  | 'CENTER_TO_SIDES'
-  | 'OUTSIDE'
-  | 'INSIDE';
+import type {
+  HandlePosition,
+  HandleType,
+  HandleSide,
+  HandleCoverage,
+  DivisionType,
+  OpeningDirection,
+  BudgetStatus,
+  DiscountType,
+  PaymentCondition,
+  CategoryType,
+  DoorTemplateType,
+  TemplateConfig,
+  HandleConfig,
+  DrillingConfig,
+  BudgetItemOption,
+  BudgetItem,
+  BudgetSummary,
+} from './budget';
 
-export type HandleType = 'BAR_TUBULAR' | 'PROFILE_HANDLE' | 'SHELL_LOCK' | 'LEVER_HANDLE' | 'NONE';
-export type HandlePosition = 'LEFT' | 'RIGHT' | 'TOP' | 'BOTTOM' | 'CENTER';
-export type HandleOrientation = 'HORIZONTAL' | 'VERTICAL';
-export type HandleSide = 'ONE_SIDE' | 'BOTH_SIDES';
-export type HandleCoverage = 'FULL' | 'PIECE';
-export type DivisionType = 'EQUAL' | 'CUSTOM_DISTANCE';
-export type CategoryType = 'GLASS' | 'PROFILE' | 'HARDWARE' | 'FILM';
+import type {
+  TemplateOptionSchema,
+  DrillingConfig as CatalogDrillingConfig,
+  SlidingMode,
+} from '../../catalog/types/templates';
 
+// ============================================================
+// RE-EXPORTAÇÃO CENTRAL DE CONTRATOS E DTOs (budget.ts)
+// ============================================================
+export * from './budget';
+
+// ============================================================
+// LABELS E MAPEAMENTOS VISUAIS DE MECÂNICA
+// ============================================================
 export const HANDLE_POSITION_LABELS: Record<HandlePosition, string> = {
   LEFT: 'Lateral Esquerda (Em pé)',
   RIGHT: 'Lateral Direita (Em pé)',
@@ -32,38 +44,6 @@ export const HANDLE_POSITION_LABELS: Record<HandlePosition, string> = {
   BOTTOM: 'Inferior (Deitado na base)',
   CENTER: 'Centro',
 };
-
-export type BudgetStatus =
-  | 'DRAFT'
-  | 'SENT'
-  | 'APPROVED'
-  | 'REJECTED'
-  | 'CANCELLED';
-
-// ============================================================
-// CONFIGURAÇÕES DE PUXADOR E FURAÇÃO
-// ============================================================
-export interface HandleConfig {
-  handleType: HandleType;
-  position?: HandlePosition;
-  orientation?: HandleOrientation;
-  side?: HandleSide;
-  coverage?: HandleCoverage;
-  pieceLengthCm?: number;
-  handlePosition?: HandlePosition;
-  handleLengthMm?: number;
-}
-
-export type DrillingPosition = 'SUPERIOR' | 'LATERAL' | 'FRONTAL';
-
-export interface DrillingConfig {
-  holeCount: number;
-  divisionType?: DivisionType;
-  drillingPosition?: DrillingPosition;
-  customDistancesMm?: number[];
-  customPositionsMm?: number[];
-  drillingMode?: string;
-}
 
 // ============================================================
 // REQUISITO DE CATEGORIA — Vínculo do Template
@@ -76,26 +56,8 @@ export interface CategoryRequirement {
 }
 
 // ============================================================
-// CONFIGURAÇÃO DE TEMPLATE (TemplateConfig)
+// CONFIGURAÇÃO DO TEMPLATE NO CATÁLOGO
 // ============================================================
-export interface TemplateConfig {
-  templateType: string;
-  aluminumColor?: string;
-  glassFinish?: string;
-  openingDirection?: OpeningDirection;
-  handleType?: HandleType;
-  handleConfig?: HandleConfig;
-  drillingConfig?: DrillingConfig;
-  isSlatted?: boolean;
-  hasFixedPanel?: boolean;
-}
-
-import type {
-  TemplateOptionSchema,
-  DrillingConfig as CatalogDrillingConfig,
-  SlidingMode,
-} from '../../catalog/types/templates';
-
 export interface WindowTemplateConfig {
   templateType?: string;
   profileMm?: number;
@@ -112,9 +74,6 @@ export interface WindowTemplateConfig {
   hasFixedPanel?: boolean;
 }
 
-// ============================================================
-// PRODUTO / TEMPLATE DE ESQUADRIA
-// ============================================================
 export interface WindowTemplate {
   id: string;
   name: string;
@@ -130,37 +89,8 @@ export interface WindowTemplate {
 }
 
 // ============================================================
-// ESTADO INTERNO DO BUILDER
+// ESTADO INTERNO DO BUILDER E FORMULÁRIO DO EDITOR
 // ============================================================
-export interface BudgetItemCalculationOptionRequest {
-  materialId?: string;
-  categoryType: string;
-  manualQuantity?: number;
-}
-
-export interface BudgetItemCalculationRequest {
-  templateType?: string;
-  widthMm: number;
-  heightMm: number;
-  quantity: number;
-  options: BudgetItemCalculationOptionRequest[];
-}
-
-export interface BudgetItemCalculationOptionResult {
-  materialId: string;
-  categoryType: string;
-  suggestedQuantity: number;
-  physicalMinimumQuantity: number;
-  isBelowPhysicalMinimum: boolean;
-  warningMessage?: string;
-}
-
-export interface BudgetItemCalculationResponse {
-  physicalAreaM2: number;
-  physicalPerimeterM: number;
-  options: BudgetItemCalculationOptionResult[];
-}
-
 export interface MaterialSelection {
   requirementId: string;
   categoryType: CategoryType;
@@ -170,11 +100,7 @@ export interface MaterialSelection {
   materialName: string;
   unitMeasure: string;
   unitPrice: number;
-  /**
-   * Quantidade de insumo calculada ou informada pelo usuário.
-   */
   quantity?: number;
-  /** Subtotal estimado */
   totalPrice?: number;
   suggestedQuantity?: number;
   physicalMinimumQuantity?: number;
@@ -200,37 +126,6 @@ export interface BuilderState {
   materialSelections: MaterialSelection[];
 }
 
-// ============================================================
-// ITEM DO ORÃ‡AMENTO â€” estrutura persistida e enviada Ã  API
-// ============================================================
-export interface BudgetItemOption {
-  id?: string;
-  materialId: string;
-  materialName: string;
-  categoryType: CategoryType;
-  unitMeasure: string;
-  quantity?: number;
-  unitPrice: number;
-  totalPrice?: number;
-}
-
-export interface BudgetItem {
-  tempId: string;
-  productId: string;
-  productName: string;
-  templateType: string;
-  templateConfig: TemplateConfig;
-  handleConfig: HandleConfig;
-  drillingConfig: DrillingConfig;
-  widthMm: number;
-  heightMm: number;
-  quantity: number;
-  laborCost: number;
-  options: BudgetItemOption[];
-  subtotal: number;
-  notes?: string;
-}
-
 export interface BudgetFormState {
   customerId: string;
   customerName: string;
@@ -240,13 +135,16 @@ export interface BudgetFormState {
   items: BudgetItem[];
   laborCost: number;
   discountPercent: number;
+  discountType: DiscountType;
+  discountInput: number;
+  paymentCondition: PaymentCondition | '';
   notes: string;
   commercialConditions: string;
   validUntil?: string;
 }
 
 // ============================================================
-// CLIENTE VIRTUAL
+// CLIENTE DO FORMULÁRIO RÁPIDO
 // ============================================================
 export interface Customer {
   id: string;
@@ -281,53 +179,7 @@ export interface CustomerRequest {
 }
 
 // ============================================================
-// RESPOSTAS E DTOs DA API (DEVELOP)
-// ============================================================
-export interface BudgetCustomer {
-  id?: string;
-  name: string;
-  phone?: string;
-  email?: string;
-  document?: string;
-  address?: string;
-}
-
-export interface BudgetSummary {
-  id: string;
-  code: string;
-  customerId?: string;
-  customerName: string;
-  customer?: BudgetCustomer;
-  status: BudgetStatus;
-  createdAt: string;
-  validUntil: string;
-  subtotal: number;
-  discountPercent: number;
-  discountValue: number;
-  total: number;
-  itemCount: number;
-}
-
-export interface BudgetPageResponse {
-  content: BudgetSummary[];
-  page: number;
-  size: number;
-  totalElements: number;
-  totalPages: number;
-  isFirst?: boolean;
-  isLast?: boolean;
-}
-
-export interface BudgetFilters {
-  page: number;
-  size: number;
-  status?: BudgetStatus | '';
-  search?: string;
-  sort?: string;
-}
-
-// ============================================================
-// PAYLOADS DE CRIAÃ‡ÃƒO E DETALHE (MIX DEVELOP/MY)
+// DETALHE DO ORÇAMENTO E PAYLOAD DE CRIAÇÃO
 // ============================================================
 export interface BudgetDetail extends BudgetSummary {
   notes?: string;
@@ -352,7 +204,10 @@ export interface BudgetDetail extends BudgetSummary {
 
 export interface CreateBudgetPayload {
   customerId: string;
-  discountPercent: number;
+  discountPercent?: number;
+  discountType?: DiscountType | 'PERCENTAGE' | 'FIXED';
+  discountInput?: number;
+  paymentCondition?: PaymentCondition;
   notes?: string;
   commercialConditions?: string;
   validUntil?: string;
@@ -372,7 +227,7 @@ export interface CreateBudgetPayload {
 }
 
 // ============================================================
-// CONSTANTES UI
+// CONSTANTES DE UI — TIPOS DE ESQUADRIA E MECÂNICA
 // ============================================================
 export interface TemplateTypeInfo {
   type: DoorTemplateType;
@@ -432,6 +287,7 @@ export const STATUS_LABELS: Record<BudgetStatus, string> = {
   APPROVED: 'Aprovado',
   REJECTED: 'Rejeitado',
   CANCELLED: 'Cancelado',
+  EXPIRED: 'Expirado',
 };
 
 export const BUDGET_STATUS_OPTIONS: { value: BudgetStatus | ''; label: string }[] = [
@@ -441,6 +297,7 @@ export const BUDGET_STATUS_OPTIONS: { value: BudgetStatus | ''; label: string }[
   { value: 'APPROVED', label: 'Aprovados' },
   { value: 'REJECTED', label: 'Rejeitados' },
   { value: 'CANCELLED', label: 'Cancelados' },
+  { value: 'EXPIRED', label: 'Expirados' },
 ];
 
 export const BUDGET_STATUS_CONFIG: Record<
@@ -452,5 +309,32 @@ export const BUDGET_STATUS_CONFIG: Record<
   APPROVED: { label: 'Aprovado', icon: 'check_circle', key: 'APPROVED' },
   REJECTED: { label: 'Rejeitado', icon: 'cancel', key: 'REJECTED' },
   CANCELLED: { label: 'Cancelado', icon: 'block', key: 'CANCELLED' },
+  EXPIRED: { label: 'Expirado', icon: 'history', key: 'EXPIRED' },
 };
 
+// ============================================================
+// CONSTANTES DE UI — CONDIÇÕES COMERCIAIS E DESCONTOS (US-09)
+// ============================================================
+export const DISCOUNT_TYPE_LABELS: Record<DiscountType, string> = {
+  PERCENTUAL: 'Percentual (%)',
+  VALOR_FIXO: 'Valor Fixo (R$)',
+};
+
+export const DISCOUNT_TYPE_OPTIONS: { value: DiscountType; label: string }[] = [
+  { value: 'PERCENTUAL', label: 'Percentual (%)' },
+  { value: 'VALOR_FIXO', label: 'Valor Fixo (R$)' },
+];
+
+export const PAYMENT_CONDITION_LABELS: Record<PaymentCondition, string> = {
+  A_VISTA_PIX: 'À Vista (PIX / Dinheiro)',
+  ENTRADA_50_SALDO_ENTREGA: '50% Entrada + 50% na Entrega',
+  CARTAO_12X: 'Cartão de Crédito até 12x',
+  A_COMBINAR: 'A Combinar',
+};
+
+export const PAYMENT_CONDITION_OPTIONS: { value: PaymentCondition; label: string }[] = [
+  { value: 'A_VISTA_PIX', label: 'À Vista (PIX / Dinheiro)' },
+  { value: 'ENTRADA_50_SALDO_ENTREGA', label: '50% Entrada + 50% na Entrega' },
+  { value: 'CARTAO_12X', label: 'Cartão de Crédito até 12x' },
+  { value: 'A_COMBINAR', label: 'A Combinar' },
+];

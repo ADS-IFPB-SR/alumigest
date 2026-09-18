@@ -123,4 +123,23 @@ class BudgetTest {
         assertEquals(BudgetStatus.SENT, budget.getStatus());
         assertEquals("Entrega em 15 dias úteis", budget.getNotes());
     }
+
+    @Test
+    @DisplayName("Deve gerenciar condição de pagamento e notas comerciais na entidade Budget (US-09.7)")
+    void commercialConditions_GettersAndSetters() {
+        Budget budget = new Budget();
+
+        assertNull(budget.getPaymentCondition());
+        assertNull(budget.getPaymentNotes());
+
+        budget.setPaymentCondition(PaymentCondition.ENTRADA_50_SALDO_ENTREGA);
+        budget.setPaymentNotes("50% sinal na assinatura e 50% na conclusão da instalação.");
+
+        assertEquals(PaymentCondition.ENTRADA_50_SALDO_ENTREGA, budget.getPaymentCondition());
+        assertEquals("50% Entrada + 50% na Entrega", budget.getPaymentCondition().getDescricao());
+        assertEquals("50% sinal na assinatura e 50% na conclusão da instalação.", budget.getPaymentNotes());
+
+        budget.setPaymentCondition(PaymentCondition.CARTAO_12X);
+        assertEquals(PaymentCondition.CARTAO_12X, budget.getPaymentCondition());
+    }
 }

@@ -50,7 +50,7 @@ describe('BudgetItemsTable', () => {
     expect(screen.getByText('Nenhuma esquadria adicionada')).toBeInTheDocument();
   });
 
-  it('deve renderizar a tabela com os itens cadastrados e suas medidas', () => {
+  it('deve renderizar a tabela com os itens cadastrados, medidas e todas as colunas da especificação US-09.35', () => {
     renderWithProviders(
       <BudgetItemsTable
         items={sampleItems}
@@ -63,6 +63,42 @@ describe('BudgetItemsTable', () => {
     expect(screen.getByText('Itens do Orçamento')).toBeInTheDocument();
     expect(screen.getByText('1 item')).toBeInTheDocument();
     expect(screen.getByText('1600×2100')).toBeInTheDocument();
+
+    // Colunas especificadas na US-09.35
+    expect(screen.getByText('Descrição / Template')).toBeInTheDocument();
+    expect(screen.getByText('Medidas (L × A mm)')).toBeInTheDocument();
+    expect(screen.getByText('Qtd')).toBeInTheDocument();
+    expect(screen.getByText('Valor Unitário')).toBeInTheDocument();
+    expect(screen.getByText('Subtotal')).toBeInTheDocument();
+    expect(screen.getByText('Ações')).toBeInTheDocument();
+
+    // Formatação em Real (R$)
+    // Valor unitário calculado: 1800 / 2 = 900,00
+    expect(screen.getByText(/R\$\s*900,00/)).toBeInTheDocument();
+    // Subtotal: 1800,00
+    expect(screen.getByText(/R\$\s*1\.800,00/)).toBeInTheDocument();
+  });
+
+  it('deve exibir o valor unitário customizado quando unitPrice for informado explicitamente', () => {
+    const itemWithCustomUnitPrice: BudgetItem[] = [
+      {
+        ...sampleItems[0],
+        unitPrice: 850,
+        subtotal: 1700,
+      },
+    ];
+
+    renderWithProviders(
+      <BudgetItemsTable
+        items={itemWithCustomUnitPrice}
+        onEdit={vi.fn()}
+        onDuplicate={vi.fn()}
+        onDelete={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText(/R\$\s*850,00/)).toBeInTheDocument();
+    expect(screen.getByText(/R\$\s*1\.700,00/)).toBeInTheDocument();
   });
 
   it('deve disparar onEdit ao clicar no botão de editar', async () => {

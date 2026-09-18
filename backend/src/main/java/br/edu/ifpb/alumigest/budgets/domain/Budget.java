@@ -43,6 +43,13 @@ public class Budget {
     @Column(columnDefinition = "TEXT")
     private String notes;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_condition", length = 50)
+    private PaymentCondition paymentCondition;
+
+    @Column(name = "payment_notes", columnDefinition = "TEXT")
+    private String paymentNotes;
+
     @Column(name = "valid_until", nullable = false)
     private OffsetDateTime validUntil;
 
@@ -152,6 +159,22 @@ public class Budget {
         this.notes = notes;
     }
 
+    public PaymentCondition getPaymentCondition() {
+        return paymentCondition;
+    }
+
+    public void setPaymentCondition(PaymentCondition paymentCondition) {
+        this.paymentCondition = paymentCondition;
+    }
+
+    public String getPaymentNotes() {
+        return paymentNotes;
+    }
+
+    public void setPaymentNotes(String paymentNotes) {
+        this.paymentNotes = paymentNotes;
+    }
+
     public OffsetDateTime getValidUntil() {
         return validUntil;
     }
@@ -183,4 +206,23 @@ public class Budget {
     public void setItems(List<BudgetItem> items) {
         this.items = items;
     }
+
+    /**
+     * Verifica se o orçamento está expirado.
+     * Considera expirado quando o status for EXPIRED ou quando estiver em DRAFT/SENT
+     * e a data de validade for anterior ao momento atual (UTC).
+     *
+     * @return true se expirado, false caso contrário
+     */
+    public boolean isExpired() {
+        if (this.status == BudgetStatus.EXPIRED) {
+            return true;
+        }
+        if ((this.status == BudgetStatus.DRAFT || this.status == BudgetStatus.SENT)
+                && this.validUntil != null) {
+            return OffsetDateTime.now(ZoneOffset.UTC).isAfter(this.validUntil);
+        }
+        return false;
+    }
 }
+

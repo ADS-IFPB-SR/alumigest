@@ -1,13 +1,17 @@
 package br.edu.ifpb.alumigest.budgets.controller;
 
 import br.edu.ifpb.alumigest.budgets.domain.BudgetStatus;
+import br.edu.ifpb.alumigest.budgets.domain.PaymentCondition; // NOVO IMPORT
+import br.edu.ifpb.alumigest.budgets.domain.DiscountType;
+import br.edu.ifpb.alumigest.budgets.dto.BudgetItemResponseDTO;
+import br.edu.ifpb.alumigest.budgets.dto.DiscountRequest;
 import br.edu.ifpb.alumigest.budgets.dto.BudgetItemCalculationRequestDTO;
 import br.edu.ifpb.alumigest.budgets.dto.BudgetItemCalculationResponseDTO;
 import br.edu.ifpb.alumigest.budgets.dto.BudgetItemRequestDTO;
 import br.edu.ifpb.alumigest.budgets.dto.BudgetRequestDTO;
 import br.edu.ifpb.alumigest.budgets.dto.BudgetResponseDTO;
-import br.edu.ifpb.alumigest.budgets.dto.BudgetStatusUpdateDTO;
 import br.edu.ifpb.alumigest.budgets.dto.BudgetSummaryResponseDTO;
+import br.edu.ifpb.alumigest.budgets.dto.StatusChangeRequest;
 import br.edu.ifpb.alumigest.budgets.service.BudgetQuantityService;
 import br.edu.ifpb.alumigest.budgets.service.BudgetService;
 import br.edu.ifpb.alumigest.common.dto.PageResponse;
@@ -33,6 +37,7 @@ import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import java.time.LocalDate;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -56,6 +61,7 @@ class BudgetControllerTest {
 
     @BeforeEach
     void setUp() {
+        objectMapper.findAndRegisterModules();
         mockMvc = MockMvcBuilders.standaloneSetup(budgetController)
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .setCustomArgumentResolvers(new PageableHandlerMethodArgumentResolver())
@@ -68,7 +74,14 @@ class BudgetControllerTest {
         UUID id = UUID.randomUUID();
         BudgetItemRequestDTO itemRequest = new BudgetItemRequestDTO(UUID.randomUUID(), BigDecimal.TEN, BigDecimal.TEN, 1, BigDecimal.ZERO, null, null, null, null, null, null);
         BudgetRequestDTO request = new BudgetRequestDTO(UUID.randomUUID(), BigDecimal.ZERO, "Notes", List.of(itemRequest));
-        BudgetResponseDTO response = new BudgetResponseDTO(id, "ORC-2026-001", UUID.randomUUID(), "João da Silva", BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BudgetStatus.DRAFT, "Notes", null, null, null, null);
+        
+        BudgetResponseDTO response = new BudgetResponseDTO(
+                id, "ORC-2026-001", UUID.randomUUID(), "João da Silva", 
+                BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, 
+                PaymentCondition.A_VISTA_PIX, "À Vista (PIX / Dinheiro)", null, 
+                BudgetStatus.DRAFT, "Rascunho", "Notes", 
+                null, null, null, false, Collections.emptyList()
+        );
 
         when(budgetService.create(any())).thenReturn(response);
 
@@ -84,10 +97,11 @@ class BudgetControllerTest {
     @DisplayName("Deve listar orçamentos com paginação")
     void findAll_ShouldReturn200() throws Exception {
         UUID id = UUID.randomUUID();
-        BudgetSummaryResponseDTO summary = new BudgetSummaryResponseDTO(id, "ORC-2026-001", "João da Silva", BigDecimal.ZERO, BudgetStatus.DRAFT, null, null);
+        BudgetSummaryResponseDTO summary = new BudgetSummaryResponseDTO(
+                id, "ORC-2026-001", "João da Silva", 2, BigDecimal.valueOf(1500.00), BudgetStatus.DRAFT, null, null, false);
         PageResponse<BudgetSummaryResponseDTO> pageResponse = new PageResponse<>(List.of(summary), 0, 20, 1, 1, true, true);
 
-        when(budgetService.findAll(eq("busca"), eq(BudgetStatus.DRAFT), any(Pageable.class))).thenReturn(pageResponse);
+        when(budgetService.listar(eq("busca"), eq(BudgetStatus.DRAFT), any(Pageable.class))).thenReturn(pageResponse);
 
         mockMvc.perform(get("/api/orcamentos")
                 .param("busca", "busca")
@@ -95,14 +109,24 @@ class BudgetControllerTest {
                 .param("page", "0")
                 .param("size", "20"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[0].id").value(id.toString()));
+                .andExpect(jsonPath("$.content[0].id").value(id.toString()))
+                .andExpect(jsonPath("$.content[0].totalItems").value(2))
+                .andExpect(jsonPath("$.content[0].itemCount").value(2))
+                .andExpect(jsonPath("$.content[0].expired").value(false))
+                .andExpect(jsonPath("$.content[0].isExpired").value(false));
     }
 
     @Test
     @DisplayName("Deve retornar 200 ao buscar por ID existente")
     void findById_ShouldReturn200() throws Exception {
         UUID id = UUID.randomUUID();
-        BudgetResponseDTO response = new BudgetResponseDTO(id, "ORC-2026-001", UUID.randomUUID(), "João da Silva", BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BudgetStatus.DRAFT, "Notes", null, null, null, Collections.emptyList());
+        BudgetResponseDTO response = new BudgetResponseDTO(
+                id, "ORC-2026-001", UUID.randomUUID(), "João da Silva", 
+                BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, 
+                PaymentCondition.A_VISTA_PIX, "À Vista (PIX / Dinheiro)", null, 
+                BudgetStatus.DRAFT, "Rascunho", "Notes", 
+                null, null, null, false, Collections.emptyList()
+        );
 
         when(budgetService.findById(id)).thenReturn(response);
 
@@ -128,7 +152,14 @@ class BudgetControllerTest {
         UUID id = UUID.randomUUID();
         BudgetItemRequestDTO itemRequest = new BudgetItemRequestDTO(UUID.randomUUID(), BigDecimal.TEN, BigDecimal.TEN, 1, BigDecimal.ZERO, null, null, null, null, null, null);
         BudgetRequestDTO request = new BudgetRequestDTO(UUID.randomUUID(), BigDecimal.ZERO, "Notes", List.of(itemRequest));
-        BudgetResponseDTO response = new BudgetResponseDTO(id, "ORC-2026-001", UUID.randomUUID(), "João da Silva", BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BudgetStatus.DRAFT, "Notes", null, null, null, null);
+        
+        BudgetResponseDTO response = new BudgetResponseDTO(
+                id, "ORC-2026-001", UUID.randomUUID(), "João da Silva", 
+                BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, 
+                PaymentCondition.A_VISTA_PIX, "À Vista (PIX / Dinheiro)", null, 
+                BudgetStatus.DRAFT, "Rascunho", "Notes", 
+                null, null, null, false, Collections.emptyList()
+        );
 
         when(budgetService.update(eq(id), any())).thenReturn(response);
 
@@ -156,10 +187,10 @@ class BudgetControllerTest {
     }
 
     @Test
-    @DisplayName("Deve retornar 200 ao atualizar status válido")
+    @DisplayName("Deve retornar 200 ao atualizar status válido com StatusChangeRequest")
     void updateStatus_ShouldReturn200() throws Exception {
         UUID id = UUID.randomUUID();
-        BudgetStatusUpdateDTO request = new BudgetStatusUpdateDTO(BudgetStatus.SENT);
+        StatusChangeRequest request = new StatusChangeRequest(BudgetStatus.SENT);
 
         mockMvc.perform(patch("/api/orcamentos/{id}/status", id)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -168,13 +199,47 @@ class BudgetControllerTest {
     }
 
     @Test
+    @DisplayName("Deve retornar 200 ao atualizar status via rota /api/budgets/{id}/status")
+    void updateStatus_ViaBudgetsRoute_ShouldReturn200() throws Exception {
+        UUID id = UUID.randomUUID();
+        StatusChangeRequest request = new StatusChangeRequest(BudgetStatus.SENT);
+
+        mockMvc.perform(patch("/api/budgets/{id}/status", id)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("Deve retornar 200 ao atualizar status via payload com alias legado 'status'")
+    void updateStatus_WithLegacyAlias_ShouldReturn200() throws Exception {
+        UUID id = UUID.randomUUID();
+
+        mockMvc.perform(patch("/api/orcamentos/{id}/status", id)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"status\":\"SENT\"}"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("Deve retornar 400 ao enviar status nulo")
+    void updateStatus_ShouldReturn400_WhenStatusIsNull() throws Exception {
+        UUID id = UUID.randomUUID();
+
+        mockMvc.perform(patch("/api/orcamentos/{id}/status", id)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"novoStatus\":null}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     @DisplayName("Deve retornar 422 ao atualizar status inválido")
     void updateStatus_ShouldReturn422() throws Exception {
         UUID id = UUID.randomUUID();
-        BudgetStatusUpdateDTO request = new BudgetStatusUpdateDTO(BudgetStatus.APPROVED);
+        StatusChangeRequest request = new StatusChangeRequest(BudgetStatus.APPROVED);
 
         doThrow(new InvalidBudgetStatusTransitionException(BudgetStatus.DRAFT, BudgetStatus.APPROVED))
-                .when(budgetService).updateStatus(eq(id), any());
+                .when(budgetService).updateStatus(eq(id), any(StatusChangeRequest.class));
 
         mockMvc.perform(patch("/api/orcamentos/{id}/status", id)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -211,5 +276,326 @@ class BudgetControllerTest {
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.physicalAreaM2").value(4.20));
+    }
+    // ============================================================
+    // Testes de Aplicação de Desconto (PUT /{id}/discount e /{id}/desconto)
+    // ============================================================
+
+    @Test
+    @DisplayName("Deve retornar 200 ao aplicar desconto com sucesso")
+    void aplicarDesconto_ShouldReturn200() throws Exception {
+        UUID id = UUID.randomUUID();
+        DiscountRequest request = new DiscountRequest(
+                DiscountType.PERCENTUAL,
+                new BigDecimal("10.00"),
+                PaymentCondition.A_VISTA_PIX,
+                "Desconto especial cliente VIP",
+                LocalDate.now().plusDays(10)
+        );
+
+        BudgetResponseDTO response = new BudgetResponseDTO(
+                id, "ORC-2026-001", UUID.randomUUID(), "João da Silva",
+                new BigDecimal("1000.00"), new BigDecimal("10.00"), new BigDecimal("100.00"), new BigDecimal("900.00"),
+                PaymentCondition.A_VISTA_PIX, "À Vista (PIX / Dinheiro)", "Desconto especial cliente VIP",
+                BudgetStatus.DRAFT, "Rascunho", "Notes",
+                null, null, null, false, Collections.emptyList()
+        );
+
+        when(budgetService.aplicarDesconto(eq(id), any(DiscountRequest.class))).thenReturn(response);
+
+        mockMvc.perform(put("/api/budgets/{id}/discount", id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(id.toString()))
+                .andExpect(jsonPath("$.discountPercent").value(10.00))
+                .andExpect(jsonPath("$.discountValue").value(100.00))
+                .andExpect(jsonPath("$.total").value(900.00));
+    }
+
+    @Test
+    @DisplayName("Deve retornar 200 ao aplicar desconto via rota legada /api/orcamentos/{id}/desconto")
+    void aplicarDesconto_ViaLegacyAlias_ShouldReturn200() throws Exception {
+        UUID id = UUID.randomUUID();
+        DiscountRequest request = new DiscountRequest(
+                DiscountType.VALOR_FIXO,
+                new BigDecimal("50.00"),
+                PaymentCondition.A_VISTA_PIX,
+                null,
+                null
+        );
+
+        BudgetResponseDTO response = new BudgetResponseDTO(
+                id, "ORC-2026-001", UUID.randomUUID(), "João da Silva",
+                new BigDecimal("500.00"), new BigDecimal("10.00"), new BigDecimal("50.00"), new BigDecimal("450.00"),
+                PaymentCondition.A_VISTA_PIX, "À Vista (PIX / Dinheiro)", null,
+                BudgetStatus.DRAFT, "Rascunho", null,
+                null, null, null, false, Collections.emptyList()
+        );
+
+        when(budgetService.aplicarDesconto(eq(id), any(DiscountRequest.class))).thenReturn(response);
+
+        mockMvc.perform(put("/api/orcamentos/{id}/desconto", id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(id.toString()))
+                .andExpect(jsonPath("$.total").value(450.00));
+    }
+
+    @Test
+    @DisplayName("Deve retornar 400 ao aplicar desconto com payload inválido")
+    void aplicarDesconto_ShouldReturn400_WhenPayloadInvalid() throws Exception {
+        UUID id = UUID.randomUUID();
+
+        // Envia payload com campos obrigatórios nulos (tipoDesconto nulo, valor negativo)
+        mockMvc.perform(put("/api/budgets/{id}/discount", id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"tipoDesconto\":null, \"valor\":-10, \"condicaoPagamento\":null}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("Deve retornar 404 ao aplicar desconto quando orçamento não existir")
+    void aplicarDesconto_ShouldReturn404_WhenBudgetNotFound() throws Exception {
+        UUID id = UUID.randomUUID();
+        DiscountRequest request = new DiscountRequest(
+                DiscountType.PERCENTUAL,
+                BigDecimal.TEN,
+                PaymentCondition.A_VISTA_PIX,
+                null,
+                null
+        );
+
+        when(budgetService.aplicarDesconto(eq(id), any(DiscountRequest.class)))
+                .thenThrow(new ResourceNotFoundException("Budget", id.toString()));
+
+        mockMvc.perform(put("/api/budgets/{id}/discount", id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404));
+    }
+
+    @Test
+    @DisplayName("Deve retornar 422 ao aplicar desconto quando orçamento for imutável")
+    void aplicarDesconto_ShouldReturn422_WhenBudgetImmutable() throws Exception {
+        UUID id = UUID.randomUUID();
+        DiscountRequest request = new DiscountRequest(
+                DiscountType.PERCENTUAL,
+                BigDecimal.TEN,
+                PaymentCondition.A_VISTA_PIX,
+                null,
+                null
+        );
+
+        when(budgetService.aplicarDesconto(eq(id), any(DiscountRequest.class)))
+                .thenThrow(new BudgetImmutableException("Orçamento imutável"));
+
+        mockMvc.perform(put("/api/budgets/{id}/discount", id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.status").value(422));
+    }
+
+    // ============================================================
+    // Testes de Adição de Item (POST /{id}/items e /{id}/itens)
+    // ============================================================
+
+    @Test
+    @DisplayName("Deve retornar 201 ao adicionar item com sucesso")
+    void adicionarItem_ShouldReturn201() throws Exception {
+        UUID budgetId = UUID.randomUUID();
+        UUID itemId = UUID.randomUUID();
+        UUID productId = UUID.randomUUID();
+
+        BudgetItemRequestDTO request = new BudgetItemRequestDTO(
+                productId,
+                new BigDecimal("1200.00"),
+                new BigDecimal("2100.00"),
+                2,
+                new BigDecimal("150.00"),
+                "SLIDING_DOOR_2F",
+                null, null, null,
+                "Observação do item",
+                null
+        );
+
+        BudgetItemResponseDTO response = new BudgetItemResponseDTO(
+                itemId,
+                productId,
+                "Janela de Correr 2 Folhas",
+                "SLIDING_DOOR_2F",
+                null, null, null,
+                new BigDecimal("1200.00"),
+                new BigDecimal("2100.00"),
+                2,
+                new BigDecimal("150.00"),
+                new BigDecimal("600.00"),
+                "Observação do item",
+                Collections.emptyList()
+        );
+
+        when(budgetService.adicionarItem(eq(budgetId), any(BudgetItemRequestDTO.class))).thenReturn(response);
+
+        mockMvc.perform(post("/api/budgets/{id}/items", budgetId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(header().exists("Location"))
+                .andExpect(jsonPath("$.id").value(itemId.toString()))
+                .andExpect(jsonPath("$.productName").value("Janela de Correr 2 Folhas"))
+                .andExpect(jsonPath("$.quantity").value(2));
+    }
+
+    @Test
+    @DisplayName("Deve retornar 201 ao adicionar item via rota legada /api/orcamentos/{id}/itens")
+    void adicionarItem_ViaLegacyAlias_ShouldReturn201() throws Exception {
+        UUID budgetId = UUID.randomUUID();
+        UUID itemId = UUID.randomUUID();
+        UUID productId = UUID.randomUUID();
+
+        BudgetItemRequestDTO request = new BudgetItemRequestDTO(
+                productId,
+                new BigDecimal("1000.00"),
+                new BigDecimal("1500.00"),
+                1,
+                BigDecimal.ZERO,
+                null, null, null, null, null, null
+        );
+
+        BudgetItemResponseDTO response = new BudgetItemResponseDTO(
+                itemId,
+                productId,
+                "Item Teste",
+                null, null, null, null,
+                new BigDecimal("1000.00"),
+                new BigDecimal("1500.00"),
+                1,
+                BigDecimal.ZERO,
+                new BigDecimal("300.00"),
+                null,
+                Collections.emptyList()
+        );
+
+        when(budgetService.adicionarItem(eq(budgetId), any(BudgetItemRequestDTO.class))).thenReturn(response);
+
+        mockMvc.perform(post("/api/orcamentos/{id}/itens", budgetId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(header().exists("Location"))
+                .andExpect(jsonPath("$.id").value(itemId.toString()));
+    }
+
+    @Test
+    @DisplayName("Deve retornar 201 ao adicionar item usando aliases em português (BudgetItemCreateRequest)")
+    void adicionarItem_WithPortugueseAliases_ShouldReturn201() throws Exception {
+        UUID budgetId = UUID.randomUUID();
+        UUID itemId = UUID.randomUUID();
+        UUID productId = UUID.randomUUID();
+
+        String payloadJson = String.format("""
+                {
+                    "productId": "%s",
+                    "descricao": "Porta Pivotante",
+                    "larguraMm": 1000.00,
+                    "alturaMm": 2200.00,
+                    "quantidade": 1,
+                    "valorUnitario": 200.00,
+                    "ferragens": "Puxador Inox"
+                }
+                """, productId);
+
+        BudgetItemResponseDTO response = new BudgetItemResponseDTO(
+                itemId,
+                productId,
+                "Porta Pivotante",
+                null, null, "Puxador Inox", null,
+                new BigDecimal("1000.00"),
+                new BigDecimal("2200.00"),
+                1,
+                new BigDecimal("200.00"),
+                new BigDecimal("800.00"),
+                "Porta Pivotante",
+                Collections.emptyList()
+        );
+
+        when(budgetService.adicionarItem(eq(budgetId), any(BudgetItemRequestDTO.class))).thenReturn(response);
+
+        mockMvc.perform(post("/api/budgets/{id}/items", budgetId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payloadJson))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(itemId.toString()))
+                .andExpect(jsonPath("$.productName").value("Porta Pivotante"));
+    }
+
+    @Test
+    @DisplayName("Deve retornar 400 ao adicionar item com dados inválidos")
+    void adicionarItem_ShouldReturn400_WhenPayloadInvalid() throws Exception {
+        UUID budgetId = UUID.randomUUID();
+
+        // Envia payload sem productId e com dimensões negativas e quantidade zero
+        String invalidJson = """
+                {
+                    "productId": null,
+                    "widthMm": -10,
+                    "heightMm": 0,
+                    "quantity": 0
+                }
+                """;
+
+        mockMvc.perform(post("/api/budgets/{id}/items", budgetId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(invalidJson))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("Deve retornar 404 ao adicionar item em orçamento inexistente")
+    void adicionarItem_ShouldReturn404_WhenBudgetNotFound() throws Exception {
+        UUID budgetId = UUID.randomUUID();
+        BudgetItemRequestDTO request = new BudgetItemRequestDTO(
+                UUID.randomUUID(),
+                new BigDecimal("1000.00"),
+                new BigDecimal("1000.00"),
+                1,
+                BigDecimal.ZERO,
+                null, null, null, null, null, null
+        );
+
+        when(budgetService.adicionarItem(eq(budgetId), any(BudgetItemRequestDTO.class)))
+                .thenThrow(new ResourceNotFoundException("Budget", budgetId.toString()));
+
+        mockMvc.perform(post("/api/budgets/{id}/items", budgetId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404));
+    }
+
+    @Test
+    @DisplayName("Deve retornar 422 ao adicionar item em orçamento não DRAFT")
+    void adicionarItem_ShouldReturn422_WhenBudgetImmutable() throws Exception {
+        UUID budgetId = UUID.randomUUID();
+        BudgetItemRequestDTO request = new BudgetItemRequestDTO(
+                UUID.randomUUID(),
+                new BigDecimal("1000.00"),
+                new BigDecimal("1000.00"),
+                1,
+                BigDecimal.ZERO,
+                null, null, null, null, null, null
+        );
+
+        when(budgetService.adicionarItem(eq(budgetId), any(BudgetItemRequestDTO.class)))
+                .thenThrow(new BudgetImmutableException("Orçamento não pode ser alterado pois não está em DRAFT"));
+
+        mockMvc.perform(post("/api/budgets/{id}/items", budgetId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.status").value(422));
     }
 }

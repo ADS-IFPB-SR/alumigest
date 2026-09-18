@@ -4,10 +4,8 @@ import br.edu.ifpb.alumigest.budgets.domain.Budget;
 import br.edu.ifpb.alumigest.budgets.domain.BudgetItem;
 import br.edu.ifpb.alumigest.budgets.domain.BudgetItemOption;
 import br.edu.ifpb.alumigest.budgets.domain.BudgetStatus;
-import br.edu.ifpb.alumigest.budgets.dto.BudgetRequestDTO;
-import br.edu.ifpb.alumigest.budgets.dto.BudgetResponseDTO;
-import br.edu.ifpb.alumigest.budgets.dto.BudgetStatusUpdateDTO;
-import br.edu.ifpb.alumigest.budgets.dto.BudgetSummaryResponseDTO;
+import br.edu.ifpb.alumigest.budgets.domain.DiscountType;
+import br.edu.ifpb.alumigest.budgets.dto.*;
 import br.edu.ifpb.alumigest.budgets.mapper.BudgetMapper;
 import br.edu.ifpb.alumigest.budgets.repository.BudgetRepository;
 import br.edu.ifpb.alumigest.clients.domain.Client;
@@ -18,14 +16,18 @@ import br.edu.ifpb.alumigest.common.exception.BusinessException;
 import br.edu.ifpb.alumigest.common.exception.InvalidBudgetStatusTransitionException;
 import br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
-import java.time.Year;
 import java.time.ZoneOffset;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -37,41 +39,35 @@ public class BudgetService {
 
     private final BudgetQuantityService budgetQuantityService;
     private final BudgetPricingService budgetPricingService;
+    private final BudgetCodeGenerator budgetCodeGenerator;
 
-    public BudgetService(BudgetRepository budgetRepository, ClientRepository clientRepository, BudgetMapper budgetMapper, BudgetQuantityService budgetQuantityService, BudgetPricingService budgetPricingService) {
+    public BudgetService(BudgetRepository budgetRepository, ClientRepository clientRepository, BudgetMapper budgetMapper, BudgetQuantityService budgetQuantityService, BudgetPricingService budgetPricingService, BudgetCodeGenerator budgetCodeGenerator)
+    {
         this.budgetRepository = budgetRepository;
         this.clientRepository = clientRepository;
         this.budgetMapper = budgetMapper;
         this.budgetQuantityService = budgetQuantityService;
         this.budgetPricingService = budgetPricingService;
+        this.budgetCodeGenerator = budgetCodeGenerator;
     }
 
     @Transactional
-    public BudgetResponseDTO create(BudgetRequestDTO requestDTO) {
-        validateValidUntil(requestDTO.validUntil());
-
+    public BudgetResponseDTO create(BudgetCreateRequest requestDTO) {
         Client client = clientRepository.findById(requestDTO.clientId())
                 .orElseThrow(() -> new ResourceNotFoundException("Cliente", requestDTO.clientId().toString()));
 
         Budget budget = budgetMapper.toEntity(requestDTO);
         budget.setClient(client);
 
-        budget.setCode(generateBudgetCode());
+        budget.setCode(budgetCodeGenerator.generateNextCode());
 
-        // Vincula referências bidirecionais (Budget -> Items -> Options)
-        if (budget.getItems() != null) {
-            for (BudgetItem item : budget.getItems()) {
-                item.setBudget(budget);
-                if (item.getOptions() != null) {
-                    for (BudgetItemOption option : item.getOptions()) {
-                        option.setBudgetItem(item);
-                    }
-                }
-            }
+        // Status inicial obrigatório: novos orçamentos sempre começam como rascunho
+        budget.setStatus(BudgetStatus.DRAFT);
+
+        // Validade padrão: 15 dias corridos a partir da criação, se não informada
+        if (budget.getValidUntil() == null) {
+            budget.setValidUntil(OffsetDateTime.now(ZoneOffset.UTC).plusDays(15));
         }
-
-        budgetQuantityService.calculateQuantities(budget);
-        budgetPricingService.calculatePricing(budget);
 
         budget = budgetRepository.save(budget);
         return budgetMapper.toResponseDTO(budget);
@@ -85,8 +81,29 @@ public class BudgetService {
 
     @Transactional(readOnly = true)
     public PageResponse<BudgetSummaryResponseDTO> findAll(String busca, BudgetStatus status, Pageable pageable) {
+        return buscarOrcamentos(busca, status, pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<BudgetSummaryResponseDTO> listar(String busca, BudgetStatus status, Pageable pageable) {
+        return buscarOrcamentos(busca, status, pageable);
+    }
+
+    private PageResponse<BudgetSummaryResponseDTO> buscarOrcamentos(String busca, BudgetStatus status, Pageable pageable) {
         String query = (busca != null && !busca.isBlank()) ? busca.trim() : null;
-        Page<BudgetSummaryResponseDTO> page = budgetRepository.searchBudgets(query, status, pageable)
+
+        Pageable effectivePageable = pageable;
+        if (effectivePageable == null) {
+            effectivePageable = PageRequest.of(0, 20, Sort.by(Sort.Direction.DESC, "createdAt"));
+        } else if (effectivePageable.getSort().isUnsorted()) {
+            effectivePageable = PageRequest.of(
+                    effectivePageable.getPageNumber(),
+                    effectivePageable.getPageSize(),
+                    Sort.by(Sort.Direction.DESC, "createdAt")
+            );
+        }
+
+        Page<BudgetSummaryResponseDTO> page = budgetRepository.searchBudgets(query, status, effectivePageable)
                 .map(budgetMapper::toSummaryResponseDTO);
         return PageResponse.of(page);
     }
@@ -131,13 +148,32 @@ public class BudgetService {
     }
 
     @Transactional
-    public void updateStatus(UUID id, BudgetStatusUpdateDTO statusDto) {
+    public void updateStatus(UUID id, StatusChangeRequest request) {
+        Objects.requireNonNull(request, "Request de alteração de status não pode ser nulo");
+        Objects.requireNonNull(request.novoStatus(), "O novo status é obrigatório para alteração");
+
         Budget budget = getBudgetOrThrow(id);
 
-        validateStatusTransition(budget.getStatus(), statusDto.status());
+        validateStatusTransition(budget.getStatus(), request.novoStatus());
 
-        budget.setStatus(statusDto.status());
+        budget.setStatus(request.novoStatus());
         budgetRepository.save(budget);
+    }
+
+
+    @Transactional
+    public BudgetResponseDTO alterarStatus(UUID id, StatusChangeRequest request) {
+        Objects.requireNonNull(request, "Request de alteração de status não pode ser nulo");
+        Objects.requireNonNull(request.novoStatus(), "O novo status é obrigatório para alteração");
+
+        Budget budget = getBudgetOrThrow(id);
+
+        validateStatusTransition(budget.getStatus(), request.novoStatus());
+
+        budget.setStatus(request.novoStatus());
+        budget = budgetRepository.save(budget);
+        
+        return budgetMapper.toResponseDTO(budget);
     }
 
     @Transactional
@@ -149,6 +185,67 @@ public class BudgetService {
         budgetPricingService.calculatePricing(budget);
         
         budgetRepository.save(budget);
+        return budgetMapper.toResponseDTO(budget);
+    }
+
+    /**
+     * Aplica desconto comercial (% ou R$) e condicoes comerciais ao orcamento.
+     * Realiza calculo bidirecional de equivalencia e validacoes rigorosas de limites.
+     *
+     * @param budgetId ID do orcamento a ter o desconto aplicado
+     * @param request Dados do desconto e condicoes comerciais
+     * @return DTO com orcamento e valores atualizados
+     */
+    @Transactional
+    public BudgetResponseDTO aplicarDesconto(UUID budgetId, DiscountRequest request) {
+        Budget budget = getBudgetOrThrow(budgetId);
+        validateBudgetIsDraft(budget);
+
+        BigDecimal subtotal = budget.getSubtotal();
+        if (budget.getItems() == null || budget.getItems().isEmpty()
+                || subtotal == null || subtotal.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new BusinessException(
+                    "O orçamento deve possuir itens e subtotal maior que zero para aplicar descontos e condições comerciais."
+            );
+        }
+
+        BigDecimal valor = request.valor();
+        BigDecimal discountPercent;
+        BigDecimal discountValue;
+
+        if (request.tipoDesconto() == DiscountType.PERCENTUAL) {
+            if (valor.compareTo(BigDecimal.valueOf(100)) > 0) {
+                throw new BusinessException("O desconto percentual não pode ser superior a 100%.");
+            }
+            discountPercent = valor.setScale(2, RoundingMode.HALF_EVEN);
+            discountValue = subtotal.multiply(valor)
+                    .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_EVEN);
+        } else {
+            if (valor.compareTo(subtotal) > 0) {
+                throw new BusinessException(
+                        "O valor do desconto fixo (R$ " + valor + ") não pode ser superior ao subtotal do orçamento (R$ " + subtotal + ")."
+                );
+            }
+            discountValue = valor.setScale(2, RoundingMode.HALF_EVEN);
+            discountPercent = valor.multiply(BigDecimal.valueOf(100))
+                    .divide(subtotal, 2, RoundingMode.HALF_EVEN);
+        }
+
+        BigDecimal total = subtotal.subtract(discountValue);
+
+        budget.setDiscountPercent(discountPercent);
+        budget.setDiscountValue(discountValue);
+        budget.setTotal(total);
+        budget.setPaymentCondition(request.condicaoPagamento());
+        budget.setPaymentNotes(request.observacoesPagamento());
+
+        if (request.dataValidade() != null) {
+            OffsetDateTime validUntil = request.dataValidade().atTime(23, 59, 59).atOffset(ZoneOffset.UTC);
+            validateValidUntil(validUntil);
+            budget.setValidUntil(validUntil);
+        }
+
+        budget = budgetRepository.save(budget);
         return budgetMapper.toResponseDTO(budget);
     }
 
@@ -189,12 +286,13 @@ public class BudgetService {
     }
 
     private void validateStatusTransition(BudgetStatus current, BudgetStatus target) {
-        if (current == target) return;
+        if (current == target) return; 
 
+        // Restaurado o target CANCELLED para garantir o funcionamento do delete()
         boolean isValid = switch (current) {
             case DRAFT -> target == BudgetStatus.SENT || target == BudgetStatus.CANCELLED;
-            case SENT -> target == BudgetStatus.APPROVED || target == BudgetStatus.REJECTED || target == BudgetStatus.CANCELLED;
-            case APPROVED, REJECTED, CANCELLED -> false;
+            case SENT -> target == BudgetStatus.APPROVED || target == BudgetStatus.REJECTED || target == BudgetStatus.EXPIRED || target == BudgetStatus.CANCELLED;
+            case APPROVED, REJECTED, EXPIRED, CANCELLED -> false;
         };
 
         if (!isValid) {
@@ -202,17 +300,60 @@ public class BudgetService {
         }
     }
 
-    private String generateBudgetCode() {
-        int currentYear = Year.now(ZoneOffset.UTC).getValue();
-        String prefix = String.format("ORC-%d-", currentYear);
+    /**
+     * Adiciona incrementalmente um item a um orçamento existente no status DRAFT,
+     * acionando o recálculo automático de insumos, preços, subtotal e total.
+     *
+     * @param budgetId ID do orçamento
+     * @param request Dados do item a ser adicionado
+     * @return DTO com os dados do item persistido
+     */
+    @Transactional
+    public BudgetItemResponseDTO adicionarItem(UUID budgetId, BudgetItemRequestDTO request) {
+        return executarAdicaoItem(budgetId, request);
+    }
 
-        return budgetRepository.findTopByCodeStartingWithOrderByCodeDesc(prefix)
-                .map(lastBudget -> {
-                    String lastCode = lastBudget.getCode();
+    /**
+     * Overload que adapta BudgetItemCreateRequest para BudgetItemRequestDTO e insere o item.
+     *
+     * @param budgetId ID do orçamento
+     * @param request Dados do item a ser adicionado
+     * @return DTO com os dados do item persistido
+     */
+    @Transactional
+    public BudgetItemResponseDTO adicionarItem(UUID budgetId, BudgetItemCreateRequest request) {
+        BudgetItemRequestDTO dto = new BudgetItemRequestDTO(
+                request.productId(),
+                request.larguraMm(),
+                request.alturaMm(),
+                request.quantidade(),
+                request.valorUnitario(),
+                null,
+                null,
+                request.ferragens(),
+                null,
+                request.descricao(),
+                null
+        );
+        return executarAdicaoItem(budgetId, dto);
+    }
 
-                    int lastNumber = Integer.parseInt(lastCode.substring(prefix.length()));
-                    return String.format("%s%03d", prefix, lastNumber + 1);
-                })
-                .orElse(prefix + "001");
+    private BudgetItemResponseDTO executarAdicaoItem(UUID budgetId, BudgetItemRequestDTO request) {
+        Budget budget = getBudgetOrThrow(budgetId);
+        validateBudgetIsDraft(budget);
+
+        BudgetItem item = budgetMapper.toEntity(request);
+        if (item.getOptions() != null) {
+            for (BudgetItemOption option : item.getOptions()) {
+                option.setBudgetItem(item);
+            }
+        }
+        budget.addItem(item);
+
+        budgetQuantityService.calculateQuantities(budget);
+        budgetPricingService.calculatePricing(budget);
+        budgetRepository.save(budget);
+
+        return budgetMapper.toResponseDTO(item);
     }
 }
