@@ -137,7 +137,7 @@ export interface BudgetFormState {
   discountPercent: number;
   discountType: DiscountType;
   discountInput: number;
-  paymentCondition: PaymentCondition;
+  paymentCondition: PaymentCondition | '';
   notes: string;
   commercialConditions: string;
   validUntil?: string;

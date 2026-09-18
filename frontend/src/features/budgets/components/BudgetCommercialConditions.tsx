@@ -1,6 +1,6 @@
 import React from 'react';
 import { formatBRL } from '../utils/calculations';
-import { PAYMENT_CONDITION_OPTIONS, type DiscountType } from '../types';
+import { PAYMENT_CONDITION_OPTIONS, type DiscountType, type PaymentCondition } from '../types';
 
 interface BudgetCommercialConditionsProps {
   readonly laborCost: number;
@@ -14,8 +14,8 @@ interface BudgetCommercialConditionsProps {
   readonly onDiscountChange: (value: number) => void;
   
   // --- PAGAMENTO ---
-  readonly paymentCondition?: string;
-  readonly onPaymentConditionChange?: (value: string) => void;
+  readonly paymentCondition?: PaymentCondition | '';
+  readonly onPaymentConditionChange?: (value: PaymentCondition | '') => void;
   readonly commercialConditions: string;
   readonly onCommercialConditionsChange: (value: string) => void;
   
@@ -236,7 +236,7 @@ export const BudgetCommercialConditions: React.FC<BudgetCommercialConditionsProp
           <select
             id="budget-payment-condition"
             value={paymentCondition}
-            onChange={(e) => onPaymentConditionChange?.(e.target.value)}
+            onChange={(e) => onPaymentConditionChange?.(e.target.value as PaymentCondition | '')}
             className="w-full px-sm py-xs bg-surface-container-lowest border border-outline-variant rounded-sm font-body text-sm text-on-surface focus:border-primary focus:outline-none transition-all"
           >
             <option value="">Selecione uma opção...</option>
