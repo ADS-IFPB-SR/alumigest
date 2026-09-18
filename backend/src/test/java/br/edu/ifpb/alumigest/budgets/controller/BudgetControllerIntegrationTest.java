@@ -168,7 +168,7 @@ class BudgetControllerIntegrationTest {
         @DisplayName("Deve aplicar desconto percentual válido e retornar 200 OK com valores recalculados")
         void shouldApplyPercentDiscountSuccessfully() throws Exception {
             Budget budget = createDraftBudgetWithItem();
-            LocalDate futureDate = LocalDate.now().plusDays(20);
+            LocalDate futureDate = LocalDate.now(ZoneOffset.UTC).plusDays(20);
 
             DiscountRequest request = new DiscountRequest(
                     DiscountType.PERCENTUAL,
@@ -210,7 +210,7 @@ class BudgetControllerIntegrationTest {
                     null
             );
 
-            mockMvc.perform(put("/api/orcamentos/{id}/desconto", budget.getId())
+            mockMvc.perform(put("/api/budgets/{id}/discount", budget.getId())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isOk())
@@ -322,14 +322,16 @@ class BudgetControllerIntegrationTest {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(invalidJson))
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.validationErrors", notNullValue()));
+                    .andExpect(jsonPath("$.validationErrors", notNullValue()))
+                    .andExpect(jsonPath("$.validationErrors[*].field", hasItem("valor")))
+                    .andExpect(jsonPath("$.validationErrors[*].message", hasItem("Valor do desconto não pode ser negativo")));
         }
 
         @Test
         @DisplayName("Deve retornar 400 Bad Request quando dataValidade for no passado")
         void shouldReturn400WhenValidUntilIsInThePast() throws Exception {
             Budget budget = createDraftBudgetWithItem();
-            LocalDate pastDate = LocalDate.now().minusDays(2);
+            LocalDate pastDate = LocalDate.now(ZoneOffset.UTC).minusDays(2);
 
             DiscountRequest request = new DiscountRequest(
                     DiscountType.PERCENTUAL,
@@ -401,11 +403,14 @@ class BudgetControllerIntegrationTest {
                     .andExpect(header().exists("Location"))
                     .andExpect(jsonPath("$.productId").value(savedProduct.getId().toString()))
                     .andExpect(jsonPath("$.quantity").value(2))
+                    .andExpect(jsonPath("$.subtotal").value(80.00))
                     .andExpect(jsonPath("$.notes").value("Porta adicional de teste"));
 
-            // Confirma que o item foi inserido no orçamento
+            // Confirma que o item foi inserido no orçamento e valores financeiros recalculados
             Budget updated = budgetRepository.findById(budget.getId()).orElseThrow();
             assertThat(updated.getItems()).hasSize(initialItemsCount + 1);
+            assertThat(updated.getSubtotal()).isEqualByComparingTo("180.00");
+            assertThat(updated.getTotal()).isEqualByComparingTo("180.00");
         }
 
         @Test
@@ -489,8 +494,12 @@ class BudgetControllerIntegrationTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.id").value(budget.getId().toString()))
                     .andExpect(jsonPath("$.status").value("DRAFT"))
-                    .andExpect(jsonPath("$.subtotal").exists())
-                    .andExpect(jsonPath("$.total").exists());
+                    .andExpect(jsonPath("$.subtotal").value(100.00))
+                    .andExpect(jsonPath("$.total").value(100.00));
+
+            Budget updated = budgetRepository.findById(budget.getId()).orElseThrow();
+            assertThat(updated.getSubtotal()).isEqualByComparingTo("100.00");
+            assertThat(updated.getTotal()).isEqualByComparingTo("100.00");
         }
 
         @Test
