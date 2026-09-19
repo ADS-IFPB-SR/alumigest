@@ -3,7 +3,6 @@ package br.edu.ifpb.alumigest.budgets.service;
 import br.edu.ifpb.alumigest.budgets.config.CompanyProperties;
 import br.edu.ifpb.alumigest.budgets.domain.Budget;
 import br.edu.ifpb.alumigest.budgets.domain.BudgetItem;
-import br.edu.ifpb.alumigest.budgets.domain.BudgetItemOption;
 import br.edu.ifpb.alumigest.clients.domain.Client;
 import com.lowagie.text.*;
 import com.lowagie.text.pdf.PdfPCell;
@@ -116,7 +115,8 @@ public class BudgetPdfService {
         emissao.setAlignment(Element.ALIGN_RIGHT);
         cellMetadados.addElement(emissao);
 
-        Paragraph status = new Paragraph("Status: " + budget.getStatus().name(), FONTE_NORMAL);
+        String statusTraduzido = budget.getStatus() != null ? budget.getStatus().getDescricao() : "Não informado";
+        Paragraph status = new Paragraph("Status: " + statusTraduzido, FONTE_NORMAL);
         status.setAlignment(Element.ALIGN_RIGHT);
         cellMetadados.addElement(status);
 
@@ -156,8 +156,8 @@ public class BudgetPdfService {
 
         PdfPCell cardCell = new PdfPCell();
         cardCell.setBackgroundColor(COR_FUNDO_CLARO);
-        cardCell.setBorder(Rectangle.NO_BORDER); // Remove borda quadrada
-        cardCell.setCellEvent(new BordaArredondada()); // Adiciona borda arredondada
+        cardCell.setBorder(Rectangle.NO_BORDER);
+        cardCell.setCellEvent(new BordaArredondada());
         cardCell.setPadding(15f);
 
         Font fonteLabel = FontFactory.getFont(FontFactory.HELVETICA, 8, new Color(105, 110, 120));
@@ -241,6 +241,10 @@ public class BudgetPdfService {
                     }
                 }
 
+                if (item.getLaborCost() != null && item.getLaborCost().compareTo(BigDecimal.ZERO) > 0) {
+                    phraseDescricao.add(new Chunk("Mão de Obra: " + formatarMoeda(item.getLaborCost()) + "\n", fonteDescricaoSecundaria));
+                }
+
                 if (item.getHandleConfig() != null && !item.getHandleConfig().trim().isEmpty()) {
                     phraseDescricao.add(new Chunk("\n", fonteDescricaoSecundaria));
 
@@ -250,12 +254,26 @@ public class BudgetPdfService {
                     phraseDescricao.add(new Chunk("\n"));
                 }
 
-                PdfPCell cellDesc = new PdfPCell(phraseDescricao);
+                PdfPTable innerDescTable = new PdfPTable(2);
+                innerDescTable.setWidthPercentage(100);
+                innerDescTable.setWidths(new float[]{1f, 4f});
+
+                PdfPCell cellImagePlaceholder = new PdfPCell();
+                cellImagePlaceholder.setBorder(Rectangle.NO_BORDER);
+
+                PdfPCell cellTextDesc = new PdfPCell(phraseDescricao);
+                cellTextDesc.setBorder(Rectangle.NO_BORDER);
+                cellTextDesc.setPaddingLeft(5f);
+
+                innerDescTable.addCell(cellImagePlaceholder);
+                innerDescTable.addCell(cellTextDesc);
+
+                PdfPCell cellDesc = new PdfPCell(innerDescTable);
                 cellDesc.setPadding(10f);
+                cellDesc.setPaddingLeft(0f);
                 estilizarCelulaTabelaClean(cellDesc);
                 table.addCell(cellDesc);
 
-                // Utilizando a formatação 1,00
                 PdfPCell cellQtd = new PdfPCell(new Phrase(formatarQuantidade(item.getQuantity()), FONTE_NORMAL));
                 cellQtd.setHorizontalAlignment(Element.ALIGN_CENTER);
                 cellQtd.setVerticalAlignment(Element.ALIGN_MIDDLE);
@@ -266,14 +284,12 @@ public class BudgetPdfService {
                 BigDecimal qtd = (item.getQuantity() != null && item.getQuantity() > 0) ? BigDecimal.valueOf(item.getQuantity()) : BigDecimal.ONE;
                 BigDecimal valorUnitario = subtotal.divide(qtd, 2, RoundingMode.HALF_UP);
 
-                // Utilizando formatarNumero em vez de formatarMoeda
                 PdfPCell cellVUnit = new PdfPCell(new Phrase(formatarNumero(valorUnitario), FONTE_NORMAL));
                 cellVUnit.setHorizontalAlignment(Element.ALIGN_RIGHT);
                 cellVUnit.setVerticalAlignment(Element.ALIGN_MIDDLE);
                 estilizarCelulaTabelaClean(cellVUnit);
                 table.addCell(cellVUnit);
 
-                // Utilizando formatarNumero em vez de formatarMoeda
                 PdfPCell cellTotal = new PdfPCell(new Phrase(formatarNumero(subtotal), FONTE_NORMAL));
                 cellTotal.setHorizontalAlignment(Element.ALIGN_RIGHT);
                 cellTotal.setVerticalAlignment(Element.ALIGN_MIDDLE);
@@ -309,7 +325,18 @@ public class BudgetPdfService {
 
         adicionarLinhaTotal(table, "Subtotal de Produtos", formatarMoeda(budget.getSubtotal()), fonteLabel, fonteValor, COR_FUNDO_CLARO, false);
 
-        // Removemos o IF para exibir o desconto independentemente do valor
+        // TODO: Substituir BigDecimal.ZERO pelo método real do budget quando os campos forem criados na entidade Budget.
+        BigDecimal valorFrete = BigDecimal.ZERO;
+        BigDecimal valorInstalacao = BigDecimal.ZERO;
+
+        if (valorFrete.compareTo(BigDecimal.ZERO) > 0) {
+            adicionarLinhaTotal(table, "Frete", formatarMoeda(valorFrete), fonteLabel, fonteValor, COR_FUNDO_CLARO, false);
+        }
+
+        if (valorInstalacao.compareTo(BigDecimal.ZERO) > 0) {
+            adicionarLinhaTotal(table, "Taxa de Instalação", formatarMoeda(valorInstalacao), fonteLabel, fonteValor, COR_FUNDO_CLARO, false);
+        }
+
         BigDecimal descontoValor = budget.getDiscountValue() != null ? budget.getDiscountValue() : BigDecimal.ZERO;
         String textoDesconto = descontoValor.compareTo(BigDecimal.ZERO) > 0
                 ? "- " + formatarMoeda(descontoValor)
@@ -417,7 +444,6 @@ public class BudgetPdfService {
         return resultado.isEmpty() ? "Não informado" : resultado;
     }
 
-    // --- Classe auxiliar para desenhar bordas arredondadas ---
     class BordaArredondada implements com.lowagie.text.pdf.PdfPCellEvent {
         public void cellLayout(PdfPCell cell, Rectangle position, com.lowagie.text.pdf.PdfContentByte[] canvases) {
             com.lowagie.text.pdf.PdfContentByte canvas = canvases[com.lowagie.text.pdf.PdfPTable.LINECANVAS];

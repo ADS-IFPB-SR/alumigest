@@ -6,7 +6,7 @@ import br.edu.ifpb.alumigest.budgets.domain.BudgetItem;
 import br.edu.ifpb.alumigest.budgets.domain.BudgetItemOption;
 import br.edu.ifpb.alumigest.budgets.domain.BudgetStatus;
 import br.edu.ifpb.alumigest.budgets.domain.PaymentCondition;
-import br.edu.ifpb.alumigest.catalog.domain.MaterialCategoryType; // <-- Import adicionado
+import br.edu.ifpb.alumigest.catalog.domain.MaterialCategoryType;
 import br.edu.ifpb.alumigest.clients.domain.Client;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -39,7 +39,7 @@ class BudgetPdfServiceTest {
     }
 
     @Test
-    @DisplayName("Deve gerar PDF com item preenchido com opções de materiais e tag de puxador")
+    @DisplayName("Deve gerar PDF com item preenchido com opções de materiais, tag de puxador e mão de obra")
     void deveGerarPdfComItemCompleto() {
         Budget budget = criarBudgetMock(true);
         byte[] pdfBytes = budgetPdfService.gerarPdfComercial(budget);
@@ -49,7 +49,7 @@ class BudgetPdfServiceTest {
     }
 
     @Test
-    @DisplayName("Deve gerar PDF com item mínimo (sem opções e sem puxador) para garantir segurança contra nulos")
+    @DisplayName("Deve gerar PDF com item mínimo (sem opções, puxador ou mão de obra) para garantir segurança contra nulos")
     void deveGerarPdfComItemSemOpcoes() {
         Budget budget = criarBudgetMock(false);
         byte[] pdfBytes = budgetPdfService.gerarPdfComercial(budget);
@@ -110,19 +110,25 @@ class BudgetPdfServiceTest {
             List<BudgetItemOption> options = new ArrayList<>();
 
             BudgetItemOption opt1 = new BudgetItemOption();
-            opt1.setCategoryType(MaterialCategoryType.PROFILE); // Ajuste o Enum se o nome for diferente (ex: PERFIL)
+            opt1.setCategoryType(MaterialCategoryType.PROFILE);
             opt1.setMaterialName("060");
             opt1.setSelectedColor("Fosco");
             options.add(opt1);
 
             BudgetItemOption opt2 = new BudgetItemOption();
-            opt2.setCategoryType(MaterialCategoryType.GLASS); // Ajuste o Enum se o nome for diferente (ex: VIDRO)
+            opt2.setCategoryType(MaterialCategoryType.GLASS);
             opt2.setMaterialName("Espelho");
             opt2.setSelectedColor("");
             options.add(opt2);
 
             item.setOptions(options);
             item.setHandleConfig("Puxador Pedaço");
+
+            // Adiciona o valor de mão de obra para testar a renderização na descrição
+            item.setLaborCost(new BigDecimal("150.00"));
+        } else {
+            // Garante que o item mínimo vai com zero de mão de obra
+            item.setLaborCost(BigDecimal.ZERO);
         }
 
         budget.setItems(List.of(item));
