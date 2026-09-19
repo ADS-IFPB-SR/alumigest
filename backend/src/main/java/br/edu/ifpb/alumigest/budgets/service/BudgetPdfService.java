@@ -222,7 +222,6 @@ public class BudgetPdfService {
             for (BudgetItem item : budget.getItems()) {
 
                 Phrase phraseDescricao = new Phrase();
-
                 phraseDescricao.add(new Chunk(obterDadoSeguro(item.getProductName()) + "\n", FONTE_NORMAL));
 
                 BigDecimal wCm = item.getWidthMm() != null ? item.getWidthMm().divide(BigDecimal.TEN, 1, RoundingMode.HALF_UP) : BigDecimal.ZERO;
@@ -231,7 +230,7 @@ public class BudgetPdfService {
 
                 if (item.getOptions() != null && !item.getOptions().isEmpty()) {
                     for (var option : item.getOptions()) {
-                        String categoria = option.getCategoryType() != null ? option.getCategoryType().toString() : "Item";
+                        String categoria = option.getCategoryType() != null ? traduzirCategoria(option.getCategoryType().toString()) : "Item";
                         String material = option.getMaterialName() != null ? option.getMaterialName() : "";
                         String cor = (option.getSelectedColor() != null && !option.getSelectedColor().trim().isEmpty())
                                 ? " " + option.getSelectedColor() : "";
@@ -247,7 +246,6 @@ public class BudgetPdfService {
 
                 if (item.getHandleConfig() != null && !item.getHandleConfig().trim().isEmpty()) {
                     phraseDescricao.add(new Chunk("\n", fonteDescricaoSecundaria));
-
                     Chunk tag = new Chunk(" " + item.getHandleConfig().trim() + " ", FontFactory.getFont(FontFactory.HELVETICA_BOLD, 7, new Color(80, 85, 90)));
                     tag.setBackground(new Color(230, 235, 240));
                     phraseDescricao.add(tag);
@@ -425,7 +423,6 @@ public class BudgetPdfService {
 
         if (client.getStreet() != null && !client.getStreet().trim().isEmpty()) {
             endereco.append(client.getStreet());
-
             if (client.getNumber() != null && !client.getNumber().trim().isEmpty()) {
                 endereco.append(", ").append(client.getNumber());
             }
@@ -442,6 +439,18 @@ public class BudgetPdfService {
 
         String resultado = endereco.toString().trim();
         return resultado.isEmpty() ? "Não informado" : resultado;
+    }
+
+    private String traduzirCategoria(String categoria) {
+        if (categoria == null) return "Item";
+        switch (categoria.toUpperCase()) {
+            case "PROFILE": return "Perfil";
+            case "GLASS": return "Vidro";
+            case "HARDWARE": return "Ferragem";
+            case "FILM": return "Película";
+            default:
+                return categoria.substring(0, 1).toUpperCase() + categoria.substring(1).toLowerCase();
+        }
     }
 
     class BordaArredondada implements com.lowagie.text.pdf.PdfPCellEvent {
