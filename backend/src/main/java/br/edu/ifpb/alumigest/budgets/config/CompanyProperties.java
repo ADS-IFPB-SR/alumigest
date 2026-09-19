@@ -1,17 +1,30 @@
 package br.edu.ifpb.alumigest.budgets.config;
 
+import jakarta.validation.constraints.NotBlank;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
+import org.springframework.validation.annotation.Validated;
 
 @Component
+@Validated
 @ConfigurationProperties(prefix = "empresa")
 public class CompanyProperties {
 
+    @NotBlank(message = "A Razão Social da empresa é obrigatória")
     private String razaoSocial;
+
+    @NotBlank(message = "O CNPJ da empresa é obrigatório")
     private String cnpj;
+
     private String inscricaoEstadual;
+
+    @NotBlank(message = "O telefone da empresa é obrigatório")
     private String telefone;
+
+    @NotBlank(message = "O endereço da empresa é obrigatório")
     private String endereco;
+
+    @NotBlank(message = "A cidade e UF da empresa são obrigatórios")
     private String cidadeUf;
 
     public String getRazaoSocial() { return razaoSocial; }

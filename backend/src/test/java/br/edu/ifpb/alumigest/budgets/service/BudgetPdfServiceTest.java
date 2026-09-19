@@ -26,7 +26,6 @@ class BudgetPdfServiceTest {
 
     @BeforeEach
     void setUp() {
-        // Em testes unitários, simulamos o application.yml injetando os dados manualmente
         CompanyProperties mockProps = new CompanyProperties();
         mockProps.setRazaoSocial("Alumiportas LTDA");
         mockProps.setCnpj("00.000.000/0000-00");
@@ -59,6 +58,34 @@ class BudgetPdfServiceTest {
     }
 
     @Test
+    @DisplayName("Deve lançar IllegalStateException ao tentar gerar PDF de orçamento cancelado")
+    void naoDeveGerarPdfParaOrcamentoCancelado() {
+        Budget budget = criarBudgetMock(false);
+        budget.setStatus(BudgetStatus.CANCELLED);
+
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
+            budgetPdfService.gerarPdfComercial(budget);
+        });
+
+        assertEquals("Não é possível gerar o PDF de um orçamento cancelado.", exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("Deve gerar PDF sem falhar mesmo com dados faltantes (cliente null, validade null, itens null)")
+    void deveGerarPdfComDadosFaltantesSemLancarExcecao() {
+        Budget budget = new Budget();
+        budget.setId(UUID.randomUUID());
+        budget.setCode("001");
+        budget.setStatus(BudgetStatus.DRAFT);
+
+        byte[] pdfBytes = budgetPdfService.gerarPdfComercial(budget);
+
+        assertNotNull(pdfBytes);
+        assertTrue(pdfBytes.length > 0);
+    }
+
+    @Test
+    @org.junit.jupiter.api.Disabled("Teste manual — não executar em CI")
     @DisplayName("Gera o arquivo PDF fisicamente para visualização")
     void gerarPdfFisico() throws java.io.IOException {
         Budget budget = criarBudgetMock(true);
@@ -100,8 +127,8 @@ class BudgetPdfServiceTest {
         BudgetItem item = new BudgetItem();
         item.setId(UUID.randomUUID());
         item.setProductName("Porta de Giro Simples");
-        item.setWidthMm(new BigDecimal("906")); // 906mm -> 90.6cm
-        item.setHeightMm(new BigDecimal("541")); // 541mm -> 54.1cm
+        item.setWidthMm(new BigDecimal("906"));
+        item.setHeightMm(new BigDecimal("541"));
         item.setQuantity(1);
         item.setSubtotal(new BigDecimal("639.00"));
         item.setBudget(budget);
@@ -124,10 +151,8 @@ class BudgetPdfServiceTest {
             item.setOptions(options);
             item.setHandleConfig("Puxador Pedaço");
 
-            // Adiciona o valor de mão de obra para testar a renderização na descrição
             item.setLaborCost(new BigDecimal("150.00"));
         } else {
-            // Garante que o item mínimo vai com zero de mão de obra
             item.setLaborCost(BigDecimal.ZERO);
         }
 

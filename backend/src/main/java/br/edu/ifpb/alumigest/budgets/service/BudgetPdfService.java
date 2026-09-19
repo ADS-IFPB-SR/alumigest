@@ -27,9 +27,9 @@ public class BudgetPdfService {
     private static final Font FONTE_NORMAL = FontFactory.getFont(FontFactory.HELVETICA, 10);
     private static final Font FONTE_PEQUENA = FontFactory.getFont(FontFactory.HELVETICA, 8);
 
-    private static final Color COR_CABECALHO_TABELA = new Color(20, 30, 50); // Azul escuro
-    private static final Color COR_FUNDO_CLARO = new Color(247, 249, 252); // Fundo cinza/azul claro
-    private static final Color COR_BORDA_CLARA = new Color(225, 230, 235); // Borda sutil
+    private static final Color COR_CABECALHO_TABELA = new Color(20, 30, 50);
+    private static final Color COR_FUNDO_CLARO = new Color(247, 249, 252);
+    private static final Color COR_BORDA_CLARA = new Color(225, 230, 235);
 
     private final CompanyProperties companyProps;
 
@@ -38,14 +38,18 @@ public class BudgetPdfService {
     }
 
     public byte[] gerarPdfComercial(Budget budget) {
-        Document document = new Document(PageSize.A4, 36, 36, 36, 36);
+        if (budget.getStatus() != null && budget.getStatus().name().equals("CANCELLED")) {
+            throw new IllegalStateException("Não é possível gerar o PDF de um orçamento cancelado.");
+        }
 
-        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+        Document document = new Document(PageSize.A4, 36, 36, 36, 36);
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+
+        try {
             PdfWriter.getInstance(document, outputStream);
             document.open();
 
             adicionarCabecalho(document, budget);
-
             adicionarDadosCliente(document, budget);
             document.add(new Paragraph(" "));
 
@@ -53,14 +57,16 @@ public class BudgetPdfService {
             document.add(new Paragraph(" "));
 
             adicionarFechamentoFinanceiro(document, budget);
-
             adicionarRodapeEAssinaturas(document, budget);
 
-            document.close();
             return outputStream.toByteArray();
 
         } catch (Exception e) {
             throw new RuntimeException("Erro ao gerar PDF do orçamento: " + e.getMessage(), e);
+        } finally {
+            if (document.isOpen()) {
+                document.close();
+            }
         }
     }
 
@@ -68,7 +74,6 @@ public class BudgetPdfService {
         PdfPTable table = new PdfPTable(2);
         table.setWidthPercentage(100);
 
-        // --- LINHA 1 (Topo) ---
         PdfPCell cellLogo = new PdfPCell();
         cellLogo.setBorder(Rectangle.NO_BORDER);
         try {
@@ -93,7 +98,6 @@ public class BudgetPdfService {
         cellTitulo.addElement(titulo);
         table.addCell(cellTitulo);
 
-        // --- LINHA 2 (Base) ---
         Font fonteDadosEmpresa = FontFactory.getFont(FontFactory.HELVETICA, 9, new Color(105, 110, 120));
         float respiroSuperior = 8f;
 
@@ -143,11 +147,7 @@ public class BudgetPdfService {
     }
 
     private String formatarQuantidade(Integer qtd) {
-        if (qtd == null) return "0,00";
-        NumberFormat format = NumberFormat.getNumberInstance(new Locale("pt", "BR"));
-        format.setMinimumFractionDigits(2);
-        format.setMaximumFractionDigits(2);
-        return format.format(qtd);
+        return qtd == null ? "0" : String.valueOf(qtd);
     }
 
     private void adicionarDadosCliente(Document document, Budget budget) throws DocumentException {
@@ -230,7 +230,7 @@ public class BudgetPdfService {
 
                 if (item.getOptions() != null && !item.getOptions().isEmpty()) {
                     for (var option : item.getOptions()) {
-                        String categoria = option.getCategoryType() != null ? traduzirCategoria(option.getCategoryType().toString()) : "Item";
+                        String categoria = option.getCategoryType() != null ? traduzirCategoria(option.getCategoryType().name()) : "Item";
                         String material = option.getMaterialName() != null ? option.getMaterialName() : "";
                         String cor = (option.getSelectedColor() != null && !option.getSelectedColor().trim().isEmpty())
                                 ? " " + option.getSelectedColor() : "";
@@ -323,7 +323,6 @@ public class BudgetPdfService {
 
         adicionarLinhaTotal(table, "Subtotal de Produtos", formatarMoeda(budget.getSubtotal()), fonteLabel, fonteValor, COR_FUNDO_CLARO, false);
 
-        // TODO: Substituir BigDecimal.ZERO pelo método real do budget quando os campos forem criados na entidade Budget.
         BigDecimal valorFrete = BigDecimal.ZERO;
         BigDecimal valorInstalacao = BigDecimal.ZERO;
 
@@ -453,7 +452,7 @@ public class BudgetPdfService {
         }
     }
 
-    class BordaArredondada implements com.lowagie.text.pdf.PdfPCellEvent {
+    static class BordaArredondada implements com.lowagie.text.pdf.PdfPCellEvent {
         public void cellLayout(PdfPCell cell, Rectangle position, com.lowagie.text.pdf.PdfContentByte[] canvases) {
             com.lowagie.text.pdf.PdfContentByte canvas = canvases[com.lowagie.text.pdf.PdfPTable.LINECANVAS];
             canvas.roundRectangle(position.getLeft(), position.getBottom(), position.getWidth(), position.getHeight(), 6f);

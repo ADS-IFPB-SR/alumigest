@@ -46,9 +46,9 @@ springdoc:
     tags-sorter: alpha
 
 empresa:
-  razao-social: "Alumiportas LTDA"
-  cnpj: "00.000.000/0000-00"
-  inscricao-estadual: "00000000"
-  telefone: "(87) 0000-0000"
-  endereco: "Av. Principal, 1000 - Centro"
-  cidade-uf: "Cidade - UF"
+  razao-social: ${EMPRESA_RAZAO_SOCIAL:Alumiportas LTDA}
+  cnpj: ${EMPRESA_CNPJ:}
+  inscricao-estadual: ${EMPRESA_IE:}
+  telefone: ${EMPRESA_TELEFONE:}
+  endereco: ${EMPRESA_ENDERECO:}
+  cidade-uf: ${EMPRESA_CIDADE_UF:}
