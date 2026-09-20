@@ -97,6 +97,16 @@ class BudgetPdfServiceTest {
         System.out.println("PDF gerado com sucesso em: " + path.toAbsolutePath());
     }
 
+    @Test
+    @DisplayName("Deve gerar PDF com múltiplos itens e paginação automática sem lançar exceção")
+    void deveGerarPdfComMultiplosItensEPaginacao() {
+        Budget budget = criarBudgetComMuitosItens();
+        byte[] pdfBytes = budgetPdfService.gerarPdfComercial(budget);
+
+        assertNotNull(pdfBytes);
+        assertTrue(pdfBytes.length > 0);
+    }
+
     // --- Helper para montar os dados ---
 
     private Budget criarBudgetMock(boolean itemCompleto) {
@@ -157,6 +167,49 @@ class BudgetPdfServiceTest {
         }
 
         budget.setItems(List.of(item));
+        return budget;
+    }
+
+    private Budget criarBudgetComMuitosItens() {
+        Client client = Client.builder()
+                .id(UUID.randomUUID())
+                .fullName("Cliente Multi-Itens LTDA")
+                .documentNumber("999.888.777-66")
+                .phone("(83) 99999-0000")
+                .street("Av. Industrial")
+                .number("100")
+                .neighborhood("Distrito")
+                .city("Campina Grande")
+                .state("PB")
+                .build();
+
+        Budget budget = new Budget();
+        budget.setId(UUID.randomUUID());
+        budget.setCode("9999");
+        budget.setClient(client);
+        budget.setStatus(BudgetStatus.DRAFT);
+        budget.setPaymentCondition(PaymentCondition.ENTRADA_50_SALDO_ENTREGA);
+        budget.setSubtotal(new BigDecimal("15000.00"));
+        budget.setDiscountValue(new BigDecimal("500.00"));
+        budget.setTotal(new BigDecimal("14500.00"));
+        budget.setCreatedAt(OffsetDateTime.now());
+        budget.setValidUntil(OffsetDateTime.now().plusDays(30));
+
+        List<BudgetItem> itens = new ArrayList<>();
+        for (int i = 1; i <= 20; i++) {
+            BudgetItem item = new BudgetItem();
+            item.setId(UUID.randomUUID());
+            item.setProductName("Porta de Giro Simples - Item " + i);
+            item.setWidthMm(new BigDecimal("900"));
+            item.setHeightMm(new BigDecimal("2100"));
+            item.setQuantity(1);
+            item.setSubtotal(new BigDecimal("750.00"));
+            item.setLaborCost(new BigDecimal("100.00"));
+            item.setBudget(budget);
+            itens.add(item);
+        }
+
+        budget.setItems(itens);
         return budget;
     }
 }

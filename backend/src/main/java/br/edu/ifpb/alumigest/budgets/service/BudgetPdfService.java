@@ -3,6 +3,7 @@ package br.edu.ifpb.alumigest.budgets.service;
 import br.edu.ifpb.alumigest.budgets.config.CompanyProperties;
 import br.edu.ifpb.alumigest.budgets.domain.Budget;
 import br.edu.ifpb.alumigest.budgets.domain.BudgetItem;
+import br.edu.ifpb.alumigest.budgets.service.pdf.BudgetPdfPageEvent;
 import br.edu.ifpb.alumigest.clients.domain.Client;
 import com.lowagie.text.*;
 import com.lowagie.text.pdf.PdfPCell;
@@ -42,11 +43,15 @@ public class BudgetPdfService {
             throw new IllegalStateException("Não é possível gerar o PDF de um orçamento cancelado.");
         }
 
-        Document document = new Document(PageSize.A4, 36, 36, 36, 36);
+        Document document = new Document(PageSize.A4, 36, 36, 54, 54);
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
         try {
-            PdfWriter.getInstance(document, outputStream);
+            PdfWriter writer = PdfWriter.getInstance(document, outputStream);
+            String nomeCliente = budget.getClient() != null ? budget.getClient().getFullName() : "";
+            BudgetPdfPageEvent pageEvent = new BudgetPdfPageEvent(
+                    budget.getCode(), nomeCliente, companyProps.getRazaoSocial());
+            writer.setPageEvent(pageEvent);
             document.open();
 
             adicionarCabecalho(document, budget);
@@ -200,6 +205,7 @@ public class BudgetPdfService {
         PdfPTable table = new PdfPTable(4);
         table.setWidthPercentage(100);
         table.setWidths(new float[]{5f, 1f, 2f, 2f});
+        table.setHeaderRows(1);
 
         String[] cabecalhos = {"PRODUTO / DESCRIÇÃO TÉCNICA", "QTD", "V. UNIT (R$)", "TOTAL (R$)"};
         for (int i = 0; i < cabecalhos.length; i++) {
