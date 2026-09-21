@@ -3,49 +3,101 @@ package br.edu.ifpb.alumigest.budgets.service;
 import br.edu.ifpb.alumigest.budgets.config.CompanyProperties;
 import br.edu.ifpb.alumigest.budgets.domain.Budget;
 import br.edu.ifpb.alumigest.budgets.domain.BudgetItem;
+import br.edu.ifpb.alumigest.budgets.domain.BudgetItemOption;
+import br.edu.ifpb.alumigest.budgets.domain.BudgetStatus;
+import br.edu.ifpb.alumigest.catalog.domain.HandleType;
+import br.edu.ifpb.alumigest.catalog.domain.MaterialCategoryType;
 import br.edu.ifpb.alumigest.clients.domain.Client;
-import com.lowagie.text.*;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.lowagie.text.Chunk;
+import com.lowagie.text.Document;
+import com.lowagie.text.DocumentException;
+import com.lowagie.text.Element;
+import com.lowagie.text.Font;
+import com.lowagie.text.FontFactory;
+import com.lowagie.text.Image;
+import com.lowagie.text.PageSize;
+import com.lowagie.text.Paragraph;
+import com.lowagie.text.Phrase;
+import com.lowagie.text.Rectangle;
+import com.lowagie.text.pdf.PdfContentByte;
 import com.lowagie.text.pdf.PdfPCell;
+import com.lowagie.text.pdf.PdfPCellEvent;
 import com.lowagie.text.pdf.PdfPTable;
 import com.lowagie.text.pdf.PdfWriter;
+import com.lowagie.text.pdf.draw.LineSeparator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.awt.Color;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.net.URL;
 import java.text.NumberFormat;
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 
+/**
+ * Serviço responsável pela geração do documento oficial de orçamento em formato PDF (A4),
+ * estritamente alinhado ao protótipo comercial e aos critérios da US-10.1.
+ */
 @Service
 public class BudgetPdfService {
+
+    private static final Logger log = LoggerFactory.getLogger(BudgetPdfService.class);
+
+    private static final Locale PT_BR = Locale.of("pt", "BR");
 
     private static final Font FONTE_TITULO = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 14);
     private static final Font FONTE_NEGRITO = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10);
     private static final Font FONTE_NORMAL = FontFactory.getFont(FontFactory.HELVETICA, 10);
     private static final Font FONTE_PEQUENA = FontFactory.getFont(FontFactory.HELVETICA, 8);
+    private static final Font FONTE_DADOS_EMPRESA = FontFactory.getFont(FontFactory.HELVETICA, 9, new Color(105, 110, 120));
+    private static final Font FONTE_LABEL_CARD = FontFactory.getFont(FontFactory.HELVETICA, 8, new Color(105, 110, 120));
+    private static final Font FONTE_TITULO_CARD = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 8, new Color(105, 110, 120));
+    private static final Font FONTE_DESCRICAO_SECUNDARIA = FontFactory.getFont(FontFactory.HELVETICA, 9, new Color(105, 110, 120));
+    private static final Font FONTE_CABECALHO_TABELA = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 9, Color.WHITE);
+    private static final Font FONTE_TOTAL_LABEL = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 11, Color.WHITE);
+    private static final Font FONTE_TAG_PUXADOR = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 7, new Color(80, 85, 90));
 
     private static final Color COR_CABECALHO_TABELA = new Color(20, 30, 50);
     private static final Color COR_FUNDO_CLARO = new Color(247, 249, 252);
     private static final Color COR_BORDA_CLARA = new Color(225, 230, 235);
+    private static final Color COR_TAG_FUNDO = new Color(230, 235, 240);
 
     private final CompanyProperties companyProps;
+    private final ObjectMapper objectMapper;
 
     public BudgetPdfService(CompanyProperties companyProps) {
         this.companyProps = companyProps;
+        this.objectMapper = new ObjectMapper();
     }
 
+    /**
+     * Gera o PDF comercial A4 do orçamento informado.
+     *
+     * @param budget entidade do orçamento com itens e cliente carregados
+     * @return array de bytes contendo o arquivo PDF completo e válido
+     */
     public byte[] gerarPdfComercial(Budget budget) {
-        if (budget.getStatus() != null && budget.getStatus().name().equals("CANCELLED")) {
+        Objects.requireNonNull(budget, "O orçamento não pode ser nulo para geração do PDF.");
+
+        if (budget.getStatus() == BudgetStatus.CANCELLED) {
             throw new IllegalStateException("Não é possível gerar o PDF de um orçamento cancelado.");
         }
 
-        Document document = new Document(PageSize.A4, 36, 36, 36, 36);
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+             Document document = new Document(PageSize.A4, 36, 36, 36, 36)) {
 
-        try {
             PdfWriter.getInstance(document, outputStream);
             document.open();
 
@@ -59,14 +111,17 @@ public class BudgetPdfService {
             adicionarFechamentoFinanceiro(document, budget);
             adicionarRodapeEAssinaturas(document, budget);
 
+            // document.close() precisa ser chamado antes de toByteArray() para garantir
+            // a escrita da tabela de referências (xref), trailer e %%EOF pelo OpenPDF.
+            document.close();
             return outputStream.toByteArray();
 
-        } catch (Exception e) {
+        } catch (DocumentException e) {
+            log.error("Erro ao estruturar documento PDF para o orçamento {}: {}", budget.getCode(), e.getMessage(), e);
             throw new RuntimeException("Erro ao gerar PDF do orçamento: " + e.getMessage(), e);
-        } finally {
-            if (document.isOpen()) {
-                document.close();
-            }
+        } catch (IOException e) {
+            log.error("Erro de I/O na geração do PDF para o orçamento {}: {}", budget.getCode(), e.getMessage(), e);
+            throw new RuntimeException("Erro de I/O ao gerar PDF do orçamento: " + e.getMessage(), e);
         }
     }
 
@@ -76,11 +131,18 @@ public class BudgetPdfService {
 
         PdfPCell cellLogo = new PdfPCell();
         cellLogo.setBorder(Rectangle.NO_BORDER);
-        try {
-            Image logo = Image.getInstance(getClass().getResource("/static/logo-alumiportas.png"));
-            logo.scaleToFit(120, 50);
-            cellLogo.addElement(logo);
-        } catch (Exception e) {
+
+        URL logoUrl = getClass().getResource("/static/logo-alumiportas.png");
+        if (logoUrl != null) {
+            try {
+                Image logo = Image.getInstance(logoUrl);
+                logo.scaleToFit(120, 50);
+                cellLogo.addElement(logo);
+            } catch (Exception e) {
+                log.warn("Falha ao carregar arquivo de logo ({}), utilizando razão social como fallback", e.getMessage());
+                cellLogo.addElement(new Paragraph(companyProps.getRazaoSocial(), FONTE_TITULO));
+            }
+        } else {
             cellLogo.addElement(new Paragraph(companyProps.getRazaoSocial(), FONTE_TITULO));
         }
         table.addCell(cellLogo);
@@ -98,17 +160,20 @@ public class BudgetPdfService {
         cellTitulo.addElement(titulo);
         table.addCell(cellTitulo);
 
-        Font fonteDadosEmpresa = FontFactory.getFont(FontFactory.HELVETICA, 9, new Color(105, 110, 120));
         float respiroSuperior = 8f;
 
         PdfPCell cellDadosEmpresa = new PdfPCell();
         cellDadosEmpresa.setBorder(Rectangle.NO_BORDER);
         cellDadosEmpresa.setPaddingTop(respiroSuperior);
 
-        cellDadosEmpresa.addElement(new Phrase("CNPJ: " + companyProps.getCnpj() + " - IE: " + companyProps.getInscricaoEstadual() + "\n", fonteDadosEmpresa));
-        cellDadosEmpresa.addElement(new Phrase(companyProps.getEndereco() + "\n", fonteDadosEmpresa));
-        cellDadosEmpresa.addElement(new Phrase(companyProps.getCidadeUf() + "\n", fonteDadosEmpresa));
-        cellDadosEmpresa.addElement(new Phrase("Fone: " + companyProps.getTelefone() + "\n", fonteDadosEmpresa));
+        String cnpjIe = "CNPJ: " + companyProps.getCnpj();
+        if (companyProps.getInscricaoEstadual() != null && !companyProps.getInscricaoEstadual().isBlank()) {
+            cnpjIe += " - IE: " + companyProps.getInscricaoEstadual();
+        }
+        cellDadosEmpresa.addElement(new Phrase(cnpjIe + "\n", FONTE_DADOS_EMPRESA));
+        cellDadosEmpresa.addElement(new Phrase(companyProps.getEndereco() + "\n", FONTE_DADOS_EMPRESA));
+        cellDadosEmpresa.addElement(new Phrase(companyProps.getCidadeUf() + "\n", FONTE_DADOS_EMPRESA));
+        cellDadosEmpresa.addElement(new Phrase("Fone: " + companyProps.getTelefone() + "\n", FONTE_DADOS_EMPRESA));
         table.addCell(cellDadosEmpresa);
 
         PdfPCell cellMetadados = new PdfPCell();
@@ -134,20 +199,8 @@ public class BudgetPdfService {
         Paragraph divisoria = new Paragraph();
         divisoria.setSpacingBefore(12f);
         divisoria.setSpacingAfter(15f);
-        divisoria.add(new Chunk(new com.lowagie.text.pdf.draw.LineSeparator(0.8f, 100f, Color.GRAY, Element.ALIGN_CENTER, 0f)));
+        divisoria.add(new Chunk(new LineSeparator(0.8f, 100f, Color.GRAY, Element.ALIGN_CENTER, 0f)));
         document.add(divisoria);
-    }
-
-    private String formatarNumero(BigDecimal valor) {
-        if (valor == null) return "0,00";
-        NumberFormat format = NumberFormat.getNumberInstance(new Locale("pt", "BR"));
-        format.setMinimumFractionDigits(2);
-        format.setMaximumFractionDigits(2);
-        return format.format(valor);
-    }
-
-    private String formatarQuantidade(Integer qtd) {
-        return qtd == null ? "0" : String.valueOf(qtd);
     }
 
     private void adicionarDadosCliente(Document document, Budget budget) throws DocumentException {
@@ -160,34 +213,32 @@ public class BudgetPdfService {
         cardCell.setCellEvent(new BordaArredondada());
         cardCell.setPadding(15f);
 
-        Font fonteLabel = FontFactory.getFont(FontFactory.HELVETICA, 8, new Color(105, 110, 120));
-        Font fonteTituloCard = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 8, new Color(105, 110, 120));
-
-        Paragraph tituloCard = new Paragraph("DADOS DO CLIENTE", fonteTituloCard);
+        Paragraph tituloCard = new Paragraph("DADOS DO CLIENTE", FONTE_TITULO_CARD);
         tituloCard.setSpacingAfter(10f);
         cardCell.addElement(tituloCard);
 
         PdfPTable innerTable = new PdfPTable(2);
         innerTable.setWidthPercentage(100);
 
-        String nome = obterDadoSeguro(budget.getClient() != null ? budget.getClient().getFullName() : null);
-        String documento = obterDadoSeguro(budget.getClient() != null ? budget.getClient().getDocumentNumber() : null);
-        String contato = obterDadoSeguro(budget.getClient() != null ? budget.getClient().getPhone() : null);
-        String endereco = formatarEnderecoCompleto(budget.getClient());
+        Client client = budget.getClient();
+        String nome = obterDadoSeguro(client != null ? client.getFullName() : null);
+        String documento = obterDadoSeguro(client != null ? client.getDocumentNumber() : null);
+        String contato = formatarContato(client);
+        String endereco = formatarEnderecoCompleto(client);
 
         PdfPCell cellEsq = new PdfPCell();
         cellEsq.setBorder(Rectangle.NO_BORDER);
-        cellEsq.addElement(new Phrase("NOME / RAZÃO SOCIAL\n", fonteLabel));
+        cellEsq.addElement(new Phrase("NOME / RAZÃO SOCIAL\n", FONTE_LABEL_CARD));
         cellEsq.addElement(new Phrase(nome + "\n\n", FONTE_NEGRITO));
-        cellEsq.addElement(new Phrase("ENDEREÇO\n", fonteLabel));
+        cellEsq.addElement(new Phrase("ENDEREÇO\n", FONTE_LABEL_CARD));
         cellEsq.addElement(new Phrase(endereco, FONTE_NORMAL));
         innerTable.addCell(cellEsq);
 
         PdfPCell cellDir = new PdfPCell();
         cellDir.setBorder(Rectangle.NO_BORDER);
-        cellDir.addElement(new Phrase("DOCUMENTO (CPF/CNPJ)\n", fonteLabel));
+        cellDir.addElement(new Phrase("DOCUMENTO (CPF/CNPJ)\n", FONTE_LABEL_CARD));
         cellDir.addElement(new Phrase(documento + "\n\n", FONTE_NEGRITO));
-        cellDir.addElement(new Phrase("CONTATO\n", fonteLabel));
+        cellDir.addElement(new Phrase("CONTATO\n", FONTE_LABEL_CARD));
         cellDir.addElement(new Phrase(contato, FONTE_NORMAL));
         innerTable.addCell(cellDir);
 
@@ -200,10 +251,11 @@ public class BudgetPdfService {
         PdfPTable table = new PdfPTable(4);
         table.setWidthPercentage(100);
         table.setWidths(new float[]{5f, 1f, 2f, 2f});
+        table.setHeaderRows(1);
 
         String[] cabecalhos = {"PRODUTO / DESCRIÇÃO TÉCNICA", "QTD", "V. UNIT (R$)", "TOTAL (R$)"};
         for (int i = 0; i < cabecalhos.length; i++) {
-            PdfPCell header = new PdfPCell(new Phrase(cabecalhos[i], FontFactory.getFont(FontFactory.HELVETICA_BOLD, 9, Color.WHITE)));
+            PdfPCell header = new PdfPCell(new Phrase(cabecalhos[i], FONTE_CABECALHO_TABELA));
             header.setBackgroundColor(COR_CABECALHO_TABELA);
             header.setBorder(Rectangle.NO_BORDER);
             header.setPadding(8f);
@@ -216,8 +268,6 @@ public class BudgetPdfService {
             table.addCell(header);
         }
 
-        Font fonteDescricaoSecundaria = FontFactory.getFont(FontFactory.HELVETICA, 9, new Color(105, 110, 120));
-
         if (budget.getItems() != null) {
             for (BudgetItem item : budget.getItems()) {
 
@@ -226,49 +276,32 @@ public class BudgetPdfService {
 
                 BigDecimal wCm = item.getWidthMm() != null ? item.getWidthMm().divide(BigDecimal.TEN, 1, RoundingMode.HALF_UP) : BigDecimal.ZERO;
                 BigDecimal hCm = item.getHeightMm() != null ? item.getHeightMm().divide(BigDecimal.TEN, 1, RoundingMode.HALF_UP) : BigDecimal.ZERO;
-                phraseDescricao.add(new Chunk("L=" + wCm + "cm x A=" + hCm + "cm\n", fonteDescricaoSecundaria));
+                phraseDescricao.add(new Chunk("L=" + formatarNumero(wCm) + "cm x A=" + formatarNumero(hCm) + "cm\n", FONTE_DESCRICAO_SECUNDARIA));
 
                 if (item.getOptions() != null && !item.getOptions().isEmpty()) {
-                    for (var option : item.getOptions()) {
-                        String categoria = option.getCategoryType() != null ? traduzirCategoria(option.getCategoryType().name()) : "Item";
+                    for (BudgetItemOption option : item.getOptions()) {
+                        String categoria = traduzirCategoria(option.getCategoryType());
                         String material = option.getMaterialName() != null ? option.getMaterialName() : "";
                         String cor = (option.getSelectedColor() != null && !option.getSelectedColor().trim().isEmpty())
-                                ? " " + option.getSelectedColor() : "";
+                                ? " " + option.getSelectedColor().trim() : "";
 
                         String textoOpcao = categoria + ": " + material + cor;
-                        phraseDescricao.add(new Chunk(textoOpcao + "\n", fonteDescricaoSecundaria));
+                        phraseDescricao.add(new Chunk(textoOpcao + "\n", FONTE_DESCRICAO_SECUNDARIA));
                     }
                 }
 
-                if (item.getLaborCost() != null && item.getLaborCost().compareTo(BigDecimal.ZERO) > 0) {
-                    phraseDescricao.add(new Chunk("Mão de Obra: " + formatarMoeda(item.getLaborCost()) + "\n", fonteDescricaoSecundaria));
-                }
-
-                if (item.getHandleConfig() != null && !item.getHandleConfig().trim().isEmpty()) {
-                    phraseDescricao.add(new Chunk("\n", fonteDescricaoSecundaria));
-                    Chunk tag = new Chunk(" " + item.getHandleConfig().trim() + " ", FontFactory.getFont(FontFactory.HELVETICA_BOLD, 7, new Color(80, 85, 90)));
-                    tag.setBackground(new Color(230, 235, 240));
+                // Tag de Puxador com tratamento inteligente de JSON
+                String descricaoPuxador = extrairDescricaoPuxador(item.getHandleConfig());
+                if (descricaoPuxador != null && !descricaoPuxador.isBlank()) {
+                    phraseDescricao.add(new Chunk("\n", FONTE_DESCRICAO_SECUNDARIA));
+                    Chunk tag = new Chunk(" " + descricaoPuxador + " ", FONTE_TAG_PUXADOR);
+                    tag.setBackground(COR_TAG_FUNDO);
                     phraseDescricao.add(tag);
                     phraseDescricao.add(new Chunk("\n"));
                 }
 
-                PdfPTable innerDescTable = new PdfPTable(2);
-                innerDescTable.setWidthPercentage(100);
-                innerDescTable.setWidths(new float[]{1f, 4f});
-
-                PdfPCell cellImagePlaceholder = new PdfPCell();
-                cellImagePlaceholder.setBorder(Rectangle.NO_BORDER);
-
-                PdfPCell cellTextDesc = new PdfPCell(phraseDescricao);
-                cellTextDesc.setBorder(Rectangle.NO_BORDER);
-                cellTextDesc.setPaddingLeft(5f);
-
-                innerDescTable.addCell(cellImagePlaceholder);
-                innerDescTable.addCell(cellTextDesc);
-
-                PdfPCell cellDesc = new PdfPCell(innerDescTable);
+                PdfPCell cellDesc = new PdfPCell(phraseDescricao);
                 cellDesc.setPadding(10f);
-                cellDesc.setPaddingLeft(0f);
                 estilizarCelulaTabelaClean(cellDesc);
                 table.addCell(cellDesc);
 
@@ -316,33 +349,40 @@ public class BudgetPdfService {
 
         PdfPTable table = new PdfPTable(2);
         table.setWidthPercentage(100);
-        table.setWidths(new float[]{5f, 5f});
+        table.setWidths(new float[]{5.5f, 4.5f});
 
         Font fonteLabel = FontFactory.getFont(FontFactory.HELVETICA, 9, new Color(105, 110, 120));
         Font fonteValor = FontFactory.getFont(FontFactory.HELVETICA, 9, Color.BLACK);
 
-        adicionarLinhaTotal(table, "Subtotal de Produtos", formatarMoeda(budget.getSubtotal()), fonteLabel, fonteValor, COR_FUNDO_CLARO, false);
-
-        BigDecimal valorFrete = BigDecimal.ZERO;
-        BigDecimal valorInstalacao = BigDecimal.ZERO;
-
-        if (valorFrete.compareTo(BigDecimal.ZERO) > 0) {
-            adicionarLinhaTotal(table, "Frete", formatarMoeda(valorFrete), fonteLabel, fonteValor, COR_FUNDO_CLARO, false);
+        // Separação da Mão de Obra Total vs Subtotal de Materiais
+        BigDecimal totalMaoDeObra = BigDecimal.ZERO;
+        if (budget.getItems() != null) {
+            for (BudgetItem item : budget.getItems()) {
+                if (item.getLaborCost() != null) {
+                    totalMaoDeObra = totalMaoDeObra.add(item.getLaborCost());
+                }
+            }
         }
 
-        if (valorInstalacao.compareTo(BigDecimal.ZERO) > 0) {
-            adicionarLinhaTotal(table, "Taxa de Instalação", formatarMoeda(valorInstalacao), fonteLabel, fonteValor, COR_FUNDO_CLARO, false);
+        BigDecimal subtotalGeral = budget.getSubtotal() != null ? budget.getSubtotal() : BigDecimal.ZERO;
+        BigDecimal subtotalMateriais = subtotalGeral.subtract(totalMaoDeObra);
+        if (subtotalMateriais.compareTo(BigDecimal.ZERO) < 0) {
+            subtotalMateriais = BigDecimal.ZERO;
+        }
+
+        if (totalMaoDeObra.compareTo(BigDecimal.ZERO) > 0) {
+            adicionarLinhaTotal(table, "Subtotal de Produtos", formatarMoeda(subtotalMateriais), fonteLabel, fonteValor, COR_FUNDO_CLARO, false);
+            adicionarLinhaTotal(table, "Mão de Obra", formatarMoeda(totalMaoDeObra), fonteLabel, fonteValor, COR_FUNDO_CLARO, false);
+        } else {
+            adicionarLinhaTotal(table, "Subtotal de Produtos", formatarMoeda(subtotalGeral), fonteLabel, fonteValor, COR_FUNDO_CLARO, false);
         }
 
         BigDecimal descontoValor = budget.getDiscountValue() != null ? budget.getDiscountValue() : BigDecimal.ZERO;
-        String textoDesconto = descontoValor.compareTo(BigDecimal.ZERO) > 0
-                ? "- " + formatarMoeda(descontoValor)
-                : formatarMoeda(descontoValor);
+        if (descontoValor.compareTo(BigDecimal.ZERO) > 0) {
+            adicionarLinhaTotal(table, "Desconto", "- " + formatarMoeda(descontoValor), fonteLabel, fonteValor, COR_FUNDO_CLARO, false);
+        }
 
-        adicionarLinhaTotal(table, "Desconto", textoDesconto, fonteLabel, fonteValor, COR_FUNDO_CLARO, false);
-
-        Font fonteTotal = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 11, Color.WHITE);
-        adicionarLinhaTotal(table, "TOTAL A PAGAR", formatarMoeda(budget.getTotal()), fonteTotal, fonteTotal, COR_CABECALHO_TABELA, true);
+        adicionarLinhaTotal(table, "TOTAL A PAGAR", formatarMoeda(budget.getTotal()), FONTE_TOTAL_LABEL, FONTE_TOTAL_LABEL, COR_CABECALHO_TABELA, true);
 
         cardCell.addElement(table);
         cardContainer.addCell(cardCell);
@@ -375,22 +415,28 @@ public class BudgetPdfService {
     }
 
     private void adicionarRodapeEAssinaturas(Document document, Budget budget) throws DocumentException {
-        document.add(new Paragraph("\n\n\n"));
+        document.add(new Paragraph("\n\n"));
 
         PdfPTable table = new PdfPTable(1);
-        table.setWidthPercentage(60);
+        table.setWidthPercentage(50);
         table.setHorizontalAlignment(Element.ALIGN_CENTER);
 
-        PdfPCell cellLinha = new PdfPCell(new Phrase("____________________________________________________"));
-        cellLinha.setBorder(Rectangle.NO_BORDER);
-        cellLinha.setHorizontalAlignment(Element.ALIGN_CENTER);
-        table.addCell(cellLinha);
-
-        PdfPCell cellAssinatura = new PdfPCell(new Phrase("Assinatura do Cliente\nConfirmo a aprovação das medidas e especificações acima.", FONTE_PEQUENA));
-        cellAssinatura.setBorder(Rectangle.NO_BORDER);
+        PdfPCell cellAssinatura = new PdfPCell();
+        cellAssinatura.setBorder(Rectangle.TOP);
+        cellAssinatura.setBorderColor(COR_CABECALHO_TABELA);
+        cellAssinatura.setBorderWidthTop(1f);
+        cellAssinatura.setPaddingTop(8f);
         cellAssinatura.setHorizontalAlignment(Element.ALIGN_CENTER);
-        table.addCell(cellAssinatura);
 
+        Paragraph assNome = new Paragraph("Assinatura do Cliente", FONTE_NEGRITO);
+        assNome.setAlignment(Element.ALIGN_CENTER);
+        cellAssinatura.addElement(assNome);
+
+        Paragraph assDesc = new Paragraph("Confirmo a aprovação das medidas e especificações acima.", FONTE_PEQUENA);
+        assDesc.setAlignment(Element.ALIGN_CENTER);
+        cellAssinatura.addElement(assDesc);
+
+        table.addCell(cellAssinatura);
         document.add(table);
 
         document.add(new Paragraph("\nINFORMAÇÕES COMPLEMENTARES:", FONTE_NEGRITO));
@@ -399,15 +445,47 @@ public class BudgetPdfService {
         }
         document.add(new Paragraph("- Valores expressos em Reais (R$).", FONTE_PEQUENA));
         document.add(new Paragraph("- Por se tratar de produto feito sob medida, não aceitamos devoluções após o início da produção.", FONTE_PEQUENA));
+
+        // Termo de validade dinâmico
+        if (budget.getValidUntil() != null) {
+            long diasValidade = 15;
+            if (budget.getCreatedAt() != null) {
+                diasValidade = Duration.between(budget.getCreatedAt(), budget.getValidUntil()).toDays();
+                if (diasValidade <= 0) {
+                    diasValidade = 15;
+                }
+            }
+            document.add(new Paragraph("- Orçamento válido até " + formatarData(budget.getValidUntil())
+                    + " (" + diasValidade + " dias a partir da emissão).", FONTE_PEQUENA));
+        } else {
+            document.add(new Paragraph("- Orçamento válido por 15 dias a partir da data de emissão.", FONTE_PEQUENA));
+        }
+
+        // Observações adicionais do orçamento (notes)
+        if (budget.getNotes() != null && !budget.getNotes().isBlank()) {
+            document.add(new Paragraph("- Observações: " + budget.getNotes().trim(), FONTE_PEQUENA));
+        }
     }
 
     private String formatarMoeda(BigDecimal valor) {
         if (valor == null) return "R$ 0,00";
-        return NumberFormat.getCurrencyInstance(new Locale("pt", "BR")).format(valor);
+        return NumberFormat.getCurrencyInstance(PT_BR).format(valor);
+    }
+
+    private String formatarNumero(BigDecimal valor) {
+        if (valor == null) return "0,00";
+        NumberFormat format = NumberFormat.getNumberInstance(PT_BR);
+        format.setMinimumFractionDigits(2);
+        format.setMaximumFractionDigits(2);
+        return format.format(valor);
+    }
+
+    private String formatarQuantidade(Integer qtd) {
+        return qtd == null ? "0" : String.valueOf(qtd);
     }
 
     private String formatarData(OffsetDateTime data) {
-        if (data == null) return "";
+        if (data == null) return "Não informada";
         return data.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
     }
 
@@ -415,46 +493,108 @@ public class BudgetPdfService {
         return (dado != null && !dado.trim().isEmpty()) ? dado : "Não informado";
     }
 
+    private String formatarContato(Client client) {
+        if (client == null) return "Não informado";
+        List<String> contatos = new ArrayList<>();
+        if (client.getEmail() != null && !client.getEmail().isBlank()) {
+            contatos.add(client.getEmail().trim());
+        }
+        if (client.getPhone() != null && !client.getPhone().isBlank()) {
+            contatos.add(client.getPhone().trim());
+        }
+        return contatos.isEmpty() ? "Não informado" : String.join(" | ", contatos);
+    }
+
     private String formatarEnderecoCompleto(Client client) {
         if (client == null) return "Não informado";
 
-        StringBuilder endereco = new StringBuilder();
+        List<String> partes = new ArrayList<>();
 
-        if (client.getStreet() != null && !client.getStreet().trim().isEmpty()) {
-            endereco.append(client.getStreet());
-            if (client.getNumber() != null && !client.getNumber().trim().isEmpty()) {
-                endereco.append(", ").append(client.getNumber());
+        StringBuilder logradouro = new StringBuilder();
+        if (client.getStreet() != null && !client.getStreet().isBlank()) {
+            logradouro.append(client.getStreet().trim());
+            if (client.getNumber() != null && !client.getNumber().isBlank()) {
+                logradouro.append(", ").append(client.getNumber().trim());
             }
-            if (client.getNeighborhood() != null && !client.getNeighborhood().trim().isEmpty()) {
-                endereco.append(" - ").append(client.getNeighborhood());
-            }
-            if (client.getCity() != null && !client.getCity().trim().isEmpty()) {
-                endereco.append(", ").append(client.getCity());
-                if (client.getState() != null && !client.getState().trim().isEmpty()) {
-                    endereco.append("/").append(client.getState());
-                }
-            }
+            partes.add(logradouro.toString());
         }
 
-        String resultado = endereco.toString().trim();
-        return resultado.isEmpty() ? "Não informado" : resultado;
+        if (client.getNeighborhood() != null && !client.getNeighborhood().isBlank()) {
+            partes.add(client.getNeighborhood().trim());
+        }
+
+        if (client.getCity() != null && !client.getCity().isBlank()) {
+            String cidadeEstado = client.getCity().trim();
+            if (client.getState() != null && !client.getState().isBlank()) {
+                cidadeEstado += "/" + client.getState().trim();
+            }
+            partes.add(cidadeEstado);
+        }
+
+        return partes.isEmpty() ? "Não informado" : String.join(" - ", partes);
     }
 
-    private String traduzirCategoria(String categoria) {
+    private String traduzirCategoria(MaterialCategoryType categoria) {
         if (categoria == null) return "Item";
-        switch (categoria.toUpperCase()) {
-            case "PROFILE": return "Perfil";
-            case "GLASS": return "Vidro";
-            case "HARDWARE": return "Ferragem";
-            case "FILM": return "Película";
-            default:
-                return categoria.substring(0, 1).toUpperCase() + categoria.substring(1).toLowerCase();
-        }
+        return switch (categoria) {
+            case PROFILE -> "Perfil";
+            case GLASS -> "Vidro";
+            case HARDWARE -> "Ferragem";
+            case ROLLERS -> "Roldanas";
+            case FILM -> "Película";
+        };
     }
 
-    static class BordaArredondada implements com.lowagie.text.pdf.PdfPCellEvent {
-        public void cellLayout(PdfPCell cell, Rectangle position, com.lowagie.text.pdf.PdfContentByte[] canvases) {
-            com.lowagie.text.pdf.PdfContentByte canvas = canvases[com.lowagie.text.pdf.PdfPTable.LINECANVAS];
+    private String extrairDescricaoPuxador(String handleConfigRaw) {
+        if (handleConfigRaw == null || handleConfigRaw.isBlank()) {
+            return null;
+        }
+
+        String raw = handleConfigRaw.trim();
+        if (raw.startsWith("{")) {
+            try {
+                JsonNode node = objectMapper.readTree(raw);
+                JsonNode typeNode = node.get("handleType");
+                if (typeNode == null || typeNode.isNull()) {
+                    typeNode = node.get("type");
+                }
+                if (typeNode != null && !typeNode.isNull()) {
+                    String tipoStr = typeNode.asText();
+                    try {
+                        HandleType handleType = HandleType.valueOf(tipoStr);
+                        return traduzirTipoPuxador(handleType);
+                    } catch (IllegalArgumentException e) {
+                        return tipoStr;
+                    }
+                }
+            } catch (Exception e) {
+                log.debug("Não foi possível parsear handleConfig como JSON: {}", e.getMessage());
+            }
+            return null;
+        }
+
+        if ("NONE".equalsIgnoreCase(raw)) {
+            return null;
+        }
+        return raw;
+    }
+
+    private String traduzirTipoPuxador(HandleType handleType) {
+        if (handleType == null || handleType == HandleType.NONE) {
+            return null;
+        }
+        return switch (handleType) {
+            case BAR_TUBULAR -> "Barra Tubular";
+            case SHELL_LOCK -> "Fecho Concha";
+            case LEVER_HANDLE -> "Alavanca";
+            case NONE -> null;
+        };
+    }
+
+    private static class BordaArredondada implements PdfPCellEvent {
+        @Override
+        public void cellLayout(PdfPCell cell, Rectangle position, PdfContentByte[] canvases) {
+            PdfContentByte canvas = canvases[PdfPTable.LINECANVAS];
             canvas.roundRectangle(position.getLeft(), position.getBottom(), position.getWidth(), position.getHeight(), 6f);
             canvas.setColorStroke(COR_BORDA_CLARA);
             canvas.setLineWidth(1f);

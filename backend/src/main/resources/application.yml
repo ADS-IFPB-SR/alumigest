@@ -46,7 +46,7 @@ springdoc:
     tags-sorter: alpha
 
 empresa:
-  razao-social: ${EMPRESA_RAZAO_SOCIAL:Alumiportas LTDA}
+  razao-social: ${EMPRESA_RAZAO_SOCIAL:}
   cnpj: ${EMPRESA_CNPJ:}
   inscricao-estadual: ${EMPRESA_IE:}
   telefone: ${EMPRESA_TELEFONE:}
