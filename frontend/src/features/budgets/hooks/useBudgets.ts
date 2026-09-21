@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { budgetsApi } from '../services/budgetsApi';
+import { budgetsApi, downloadPdfComercial, obterResumoWhatsApp } from '../services/budgetsApi';
 import type { BudgetFilters, CreateBudgetPayload, BudgetStatus, DiscountRequest } from '../types';
 import toast from 'react-hot-toast';
 
@@ -130,3 +130,41 @@ export const useApplyDiscount = () => {
     },
   });
 };
+
+// ============================================================
+// PDF COMERCIAL & RESUMO WHATSAPP (US-10.10)
+// ============================================================
+
+/**
+ * Hook para disparar o download do PDF comercial do orçamento.
+ * Exibe toast de erro ao usuário em caso de falha na requisição.
+ */
+export const useDownloadPdfComercial = () => {
+  return useMutation({
+    mutationFn: ({ id, codigo }: { id: string; codigo: string }) =>
+      downloadPdfComercial(id, codigo),
+    onError: (error: unknown) => {
+      console.error('Erro ao baixar PDF comercial:', error);
+      const err = error as { response?: { data?: { message?: string } } };
+      const message = err?.response?.data?.message || 'Erro ao baixar o PDF. Tente novamente.';
+      toast.error(message);
+    },
+  });
+};
+
+/**
+ * Hook para obter o texto de resumo formatado para WhatsApp.
+ * Exibe toast de erro ao usuário em caso de falha na requisição.
+ */
+export const useObterResumoWhatsApp = () => {
+  return useMutation({
+    mutationFn: (id: string) => obterResumoWhatsApp(id),
+    onError: (error: unknown) => {
+      console.error('Erro ao obter resumo para WhatsApp:', error);
+      const err = error as { response?: { data?: { message?: string } } };
+      const message = err?.response?.data?.message || 'Erro ao obter resumo para WhatsApp. Tente novamente.';
+      toast.error(message);
+    },
+  });
+};
+

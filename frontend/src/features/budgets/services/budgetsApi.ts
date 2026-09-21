@@ -350,3 +350,45 @@ export const budgetsApi = {
   },
 };
 
+// ============================================================
+// PDF COMERCIAL & RESUMO WHATSAPP (US-10.10)
+// ============================================================
+
+/**
+ * Dispara o download do PDF comercial do orçamento no navegador.
+ * O objeto URL é revogado após o clique para evitar vazamento de memória.
+ *
+ * @param id     - ID numérico do orçamento
+ * @param codigo - Código do orçamento, usado como nome do arquivo (.pdf)
+ */
+export const downloadPdfComercial = async (id: string, codigo: string): Promise<void> => {
+  const response = await api.get(`/api/budgets/${id}/pdf/comercial`, {
+    baseURL: '',
+    responseType: 'blob',
+  });
+
+  const blob = new Blob([response.data as BlobPart], { type: 'application/pdf' });
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `${codigo}-comercial.pdf`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  window.URL.revokeObjectURL(url);
+};
+
+/**
+ * Retorna o texto de resumo formatado para envio via WhatsApp.
+ *
+ * @param id - ID do orçamento
+ * @returns  Texto plano com o resumo do orçamento
+ */
+export const obterResumoWhatsApp = async (id: string): Promise<string> => {
+  const response = await api.get<string>(`/api/budgets/${id}/resumo-whatsapp`, {
+    baseURL: '',
+    responseType: 'text',
+  });
+  return response.data;
+};
+

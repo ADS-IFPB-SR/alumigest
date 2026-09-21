@@ -22,8 +22,12 @@ api.interceptors.request.use((config) => {
 // Interceptor para extrair o campo "data" do ApiResponse do backend quando aplicável
 api.interceptors.response.use(
   (response) => {
-    // Preserva Blobs, ArrayBuffers e respostas binárias sem tentar desenvelopar
-    if (response.data instanceof Blob || response.config.responseType === 'blob') {
+    // Preserva Blobs, ArrayBuffers e respostas texto puro sem tentar desenvelopar
+    if (
+      response.data instanceof Blob ||
+      response.config.responseType === 'blob' ||
+      response.config.responseType === 'text'
+    ) {
       return response;
     }
     if (
