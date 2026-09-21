@@ -4,7 +4,16 @@ on:
   push:
     branches: [ "main", "master", "develop" ]
   pull_request:
-    branches: [ "main", "master", "develop" ]
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
 
 jobs:
   # ==========================================
@@ -46,6 +55,16 @@ jobs:
         run: |
           cd backend
           ./mvnw clean verify
+
+      - name: Upload Backend Test & Coverage Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: artifacts-backend
+          path: |
+            backend/target/surefire-reports/TEST-*.xml
+            backend/target/site/jacoco/jacoco.csv
+          retention-days: 2
 
       # ---- SonarQube Analysis ----
       - name: SonarQube Analysis (Backend)
@@ -103,6 +122,16 @@ jobs:
           cd frontend
           npm run test:coverage
 
+      - name: Upload Frontend Test & Coverage Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: artifacts-frontend
+          path: |
+            frontend/coverage/coverage-summary.json
+            frontend/coverage/vitest-report.xml
+          retention-days: 2
+
       - name: Build Frontend
         run: |
           cd frontend
@@ -117,6 +146,47 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
+  # ==========================================
+  # PULL REQUEST REPORT (STICKY COMMENT)
+  # ==========================================
+  ci-report:
+    name: Post CI Report to PR
+    runs-on: ubuntu-latest
+    needs: [backend-ci, frontend-ci]
+    if: always() && github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download Backend Artifacts
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: artifacts-backend
+          path: artifacts-backend
+
+      - name: Download Frontend Artifacts
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: artifacts-frontend
+          path: artifacts-frontend
+
+      - name: Generate and Post PR Comment
+        uses: actions/github-script@v7
+        env:
+          BACKEND_STATUS: ${{ needs.backend-ci.result }}
+          FRONTEND_STATUS: ${{ needs.frontend-ci.result }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        with:
+          script: |
+            const generateReport = require('./.github/scripts/generate-ci-report.cjs');
+            await generateReport({ github, context, core });
 
   # ==========================================
   # DEPLOY DEVELOP (COOLIFY)
