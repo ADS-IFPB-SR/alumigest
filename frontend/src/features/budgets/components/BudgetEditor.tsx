@@ -19,8 +19,6 @@ import { budgetFormSchema } from '../schemas/budgetSchema';
 import toast from 'react-hot-toast';
 
 // ─── Estado inicial ────────────────────────────────────────────────────────
-// NOTA: Talvez você precise atualizar o 'BudgetFormState' no seu arquivo '../types'
-// para incluir: discountType, discountInput e paymentCondition.
 const createInitialFormState = (): BudgetFormState => {
   const defaultValid = new Date();
   defaultValid.setDate(defaultValid.getDate() + 15);
@@ -73,16 +71,18 @@ export const BudgetEditor: React.FC = () => {
         templateConfig: item.templateConfig,
         handleConfig: item.handleConfig,
         drillingConfig: item.drillingConfig,
-        widthMm: item.width,
-        heightMm: item.height,
-        quantity: item.quantity,
-        laborCost: item.laborCost,
+        widthMm: Number(item.widthMm ?? item.width ?? 0),
+        heightMm: Number(item.heightMm ?? item.height ?? 0),
+        width: Number(item.width ?? item.widthMm ?? 0),
+        height: Number(item.height ?? item.heightMm ?? 0),
+        quantity: Number(item.quantity ?? 1),
+        laborCost: Number(item.laborCost ?? 0),
         options: item.options ?? [],
-        subtotal: item.subtotal,
+        subtotal: Number(item.subtotal ?? 0),
         notes: item.notes,
       }));
 
-      const loadedLaborCost = (existingBudget.items ?? []).reduce((sum, item) => sum + (item.laborCost || 0), 0);
+      const loadedLaborCost = (existingBudget.items ?? []).reduce((sum, item) => sum + Number(item.laborCost || 0), 0);
       const existingDiscountType = (existingBudget as any).discountType ?? 'PERCENTUAL';
       const existingDiscountInput = (existingBudget as any).discountInput ?? existingBudget.discountPercent ?? 0;
       const existingDiscountPercent = existingBudget.discountPercent ?? (existingDiscountType === 'PERCENTUAL' ? existingDiscountInput : 0);
@@ -94,10 +94,10 @@ export const BudgetEditor: React.FC = () => {
         customerPhone: existingBudget.customer?.phone ?? '',
         customerAddress: existingBudget.customer?.address ?? '',
         items: loadedItems,
-        laborCost: loadedLaborCost,
-        discountPercent: existingDiscountPercent,
+        laborCost: Number(loadedLaborCost),
+        discountPercent: Number(existingDiscountPercent),
         discountType: existingDiscountType,
-        discountInput: existingDiscountInput,
+        discountInput: Number(existingDiscountInput),
         paymentCondition: (existingBudget as any).paymentCondition || '',
         notes: existingBudget.notes ?? '',
         commercialConditions: existingBudget.commercialConditions ?? '',
@@ -108,21 +108,21 @@ export const BudgetEditor: React.FC = () => {
 
   // ─── Cálculos financeiros — derivados do estado, sem fonte alternativa ──
   const itemsSubtotal = useMemo(
-    () => form.items.reduce((acc: number, item: BudgetItem) => acc + item.subtotal, 0),
+    () => form.items.reduce((acc: number, item: BudgetItem) => acc + Number(item.subtotal || 0), 0),
     [form.items],
   );
   
   const subtotal = useMemo(
-    () => itemsSubtotal + (form.laborCost || 0),
+    () => itemsSubtotal + Number(form.laborCost || 0),
     [itemsSubtotal, form.laborCost],
   );
   
   const discountValue = useMemo(() => {
     const isPercent = form.discountType === 'PERCENTUAL' || (form.discountType as string) === 'PERCENTAGE';
     if (isPercent) {
-      return subtotal > 0 ? (subtotal * form.discountInput) / 100 : 0;
+      return subtotal > 0 ? (subtotal * Number(form.discountInput || 0)) / 100 : 0;
     }
-    return form.discountInput || 0;
+    return Number(form.discountInput || 0);
   }, [subtotal, form.discountType, form.discountInput]);
 
   const isDiscountExceeding = discountValue > subtotal;
@@ -132,8 +132,8 @@ export const BudgetEditor: React.FC = () => {
   const canSave =
     Boolean(form.customerId) &&
     form.items.length > 0 &&
-    form.discountInput >= 0 &&
-    !isDiscountExceeding && // Impede salvar se o desconto for abusivo
+    Number(form.discountInput) >= 0 &&
+    !isDiscountExceeding && 
     !isPending;
 
   // ─── Handlers de Cliente ──────────────────────────────────────────────────
@@ -256,18 +256,18 @@ export const BudgetEditor: React.FC = () => {
     if (isPending) return;
     if (!validate()) return;
 
-    const laborPerItem = form.items.length > 0 && form.laborCost > 0 ? form.laborCost / form.items.length : 0;
+    const laborPerItem = form.items.length > 0 && Number(form.laborCost) > 0 ? Number(form.laborCost) / form.items.length : 0;
     const isPercent = form.discountType === 'PERCENTUAL' || (form.discountType as string) === 'PERCENTAGE';
-    let effectiveDiscountPercent = form.discountInput;
+    let effectiveDiscountPercent = Number(form.discountInput);
     if (!isPercent) {
-      effectiveDiscountPercent = subtotal > 0 ? (form.discountInput / subtotal) * 100 : 0;
+      effectiveDiscountPercent = subtotal > 0 ? (Number(form.discountInput) / subtotal) * 100 : 0;
     }
 
     const payload: CreateBudgetPayload = {
       customerId: form.customerId,
       discountPercent: effectiveDiscountPercent,
       discountType: form.discountType,
-      discountInput: form.discountInput,
+      discountInput: Number(form.discountInput),
       paymentCondition: form.paymentCondition || undefined,
       notes: form.notes || undefined,
       commercialConditions: form.commercialConditions || undefined,
@@ -275,16 +275,22 @@ export const BudgetEditor: React.FC = () => {
       items: form.items.map((item: BudgetItem) => ({
         productId: item.productId,
         templateType: item.templateType,
-        templateConfig: item.templateConfig,
-        handleConfig: item.handleConfig,
-        drillingConfig: item.drillingConfig,
-        width: item.widthMm,
-        height: item.heightMm,
-        quantity: item.quantity,
-        laborCost: laborPerItem,
+        templateConfig: typeof item.templateConfig === 'string' 
+          ? JSON.parse(item.templateConfig || '{}') 
+          : item.templateConfig,
+        handleConfig: typeof item.handleConfig === 'string' 
+          ? JSON.parse(item.handleConfig || '{}') 
+          : item.handleConfig,
+        drillingConfig: typeof item.drillingConfig === 'string' 
+          ? JSON.parse(item.drillingConfig || '{}') 
+          : item.drillingConfig ?? item.drillingConfig,
+        width: Number(item.widthMm ?? (item as any).larguraMm ?? item.width ?? 0),
+        height: Number(item.heightMm ?? (item as any).alturaMm ?? item.height ?? 0),
+        quantity: Number(item.quantity ?? 1),
+        laborCost: Number(laborPerItem),
         options: item.options.map((opt) => ({
           materialId: opt.materialId,
-          quantity: opt.quantity,
+          quantity: Number(opt.quantity ?? 0),
           categoryType: opt.categoryType,
         })),
         notes: item.notes,
@@ -336,7 +342,6 @@ export const BudgetEditor: React.FC = () => {
           </p>
         </div>
 
-        {/* Contador de esquadrias */}
         {form.items.length > 0 && (
           <div className="hidden md:flex items-center gap-xs text-sm bg-surface-container-low px-sm py-xs rounded-md border border-outline-variant">
             <span className="material-symbols-outlined text-[16px] text-secondary">window</span>
@@ -359,9 +364,7 @@ export const BudgetEditor: React.FC = () => {
       <main className="flex-1 overflow-y-auto p-md lg:p-lg">
         <div className="max-w-[1200px] mx-auto flex flex-col gap-lg pb-xl">
 
-          {/* ════════════════════════════════════════════════════════════════
-              1. CLIENTE
-             ════════════════════════════════════════════════════════════════ */}
+          {/* 1. CLIENTE */}
           <section aria-labelledby="heading-cliente">
             <div className="flex items-center gap-xs mb-sm">
               <span className="material-symbols-outlined text-primary text-[20px]">person</span>
@@ -377,8 +380,8 @@ export const BudgetEditor: React.FC = () => {
               selectedCustomer={
                 form.customerId
                   ? {
-                      id:       form.customerId,
-                      name:     form.customerName,
+                      id:     form.customerId,
+                      name:    form.customerName,
                       document: form.customerDocument,
                       phone:    form.customerPhone,
                       address:  form.customerAddress,
@@ -390,9 +393,7 @@ export const BudgetEditor: React.FC = () => {
             />
           </section>
 
-          {/* ════════════════════════════════════════════════════════════════
-              2. ESQUADRIAS
-             ════════════════════════════════════════════════════════════════ */}
+          {/* 2. ESQUADRIAS */}
           <section aria-labelledby="heading-esquadrias">
             <div className="flex items-center justify-between gap-sm mb-sm flex-wrap">
               <div className="flex items-center gap-xs">
@@ -422,25 +423,18 @@ export const BudgetEditor: React.FC = () => {
                   onClick={handleOpenBuilder}
                   disabled={!form.customerId}
                   id="btn-add-window"
-                  title={
-                    !form.customerId
-                      ? 'Selecione um cliente para adicionar esquadrias'
-                      : undefined
-                  }
                 >
                   Adicionar Esquadria
                 </Button>
               </div>
             </div>
 
-            {/* Mensagem contextual mobile */}
             {!form.customerId && (
               <p className="text-xs text-on-surface-variant font-body mb-sm sm:hidden">
                 Selecione um cliente para adicionar esquadrias.
               </p>
             )}
 
-            {/* Erro de validação */}
             {formErrors.items && (
               <p
                 className="text-error text-xs mb-sm font-body font-semibold flex items-center gap-xs"
@@ -451,7 +445,6 @@ export const BudgetEditor: React.FC = () => {
               </p>
             )}
 
-            {/* Lista de itens ou empty state */}
             {form.items.length > 0 ? (
               <div className="flex flex-col gap-md">
                 <BudgetItemsTable
@@ -489,9 +482,7 @@ export const BudgetEditor: React.FC = () => {
             )}
           </section>
 
-          {/* ════════════════════════════════════════════════════════════════
-              3. CONDIÇÕES COMERCIAIS + RESUMO FINANCEIRO
-             ════════════════════════════════════════════════════════════════ */}
+          {/* 3. CONDIÇÕES COMERCIAIS + RESUMO FINANCEIRO */}
           <section aria-labelledby="heading-finalização">
             <div className="flex items-center gap-xs mb-sm">
               <span className="material-symbols-outlined text-primary text-[20px]">receipt_long</span>
@@ -504,11 +495,9 @@ export const BudgetEditor: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_380px] gap-lg items-start">
-
-              {/* Coluna esquerda: campos editáveis */}
               <BudgetCommercialConditions
                 laborCost={form.laborCost}
-                onLaborCostChange={(val) => setForm((p) => ({ ...p, laborCost: val }))}
+                onLaborCostChange={(val) => setForm((p) => ({ ...p, laborCost: Number(val) }))}
                 discountType={form.discountType}
                 onDiscountTypeChange={(val) => setForm((p) => ({ ...p, discountType: val }))}
                 discountInput={form.discountInput}
@@ -518,8 +507,8 @@ export const BudgetEditor: React.FC = () => {
                     const isPercent = p.discountType === 'PERCENTUAL' || (p.discountType as string) === 'PERCENTAGE';
                     return {
                       ...p,
-                      discountInput: val,
-                      discountPercent: isPercent ? val : p.discountPercent,
+                      discountInput: Number(val),
+                      discountPercent: isPercent ? Number(val) : p.discountPercent,
                     };
                   })
                 }
@@ -539,7 +528,6 @@ export const BudgetEditor: React.FC = () => {
                 errors={{ discount: formErrors.discount, validUntil: formErrors.validUntil }}
               />
 
-              {/* Coluna direita: valores derivados + salvar (sticky) */}
               <div className="lg:sticky lg:top-4 lg:self-start">
                 <BudgetFinancialSummary
                   itemCount={form.items.length}
@@ -564,7 +552,6 @@ export const BudgetEditor: React.FC = () => {
         </div>
       </main>
 
-      {/* ── ProductPickerModal ──────────────────────────────────────────────── */}
       <ProductPickerModal
         isOpen={isProductPickerOpen}
         onClose={() => setIsProductPickerOpen(false)}
@@ -575,7 +562,6 @@ export const BudgetEditor: React.FC = () => {
         }}
       />
 
-      {/* ── WindowBuilderModal ──────────────────────────────────────────────── */}
       <WindowBuilderModal
         isOpen={isBuilderOpen}
         selectedProductId={selectedProductId}

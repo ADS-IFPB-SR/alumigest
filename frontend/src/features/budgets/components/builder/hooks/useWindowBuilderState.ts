@@ -87,7 +87,6 @@ function estimateProfileLinearMeters(templateType: string | undefined, w: number
   const heightM = (h || 0) / 1000;
   const t = (templateType || '').toUpperCase();
   if (t === 'SWING_DOOR_2F' || t === 'SWING_2_LEAF' || t === 'SLIDING_DOOR_2F' || t === 'SLIDING_2_LEAF') {
-    // 2 Folhas: 2 Larguras + 4 Alturas (Ex: 1600x2150 => 2*1.6 + 4*2.15 = 3.20 + 8.60 = 11.80m)
     return Number.parseFloat((2 * widthM + 4 * heightM).toFixed(2));
   }
   if (t === 'SLIDING_DOOR_3F' || t === 'SLIDING_3_LEAF') {
@@ -96,7 +95,6 @@ function estimateProfileLinearMeters(templateType: string | undefined, w: number
   if (t === 'SLIDING_DOOR_4F' || t === 'SLIDING_4_LEAF') {
     return Number.parseFloat((2 * widthM + 8 * heightM).toFixed(2));
   }
-  // 1 Folha ou padrão
   return Number.parseFloat(((2 * ((w || 0) + (h || 0))) / 1000).toFixed(2));
 }
 
@@ -213,12 +211,17 @@ function buildEditingItemSelections(
 }
 
 function computeEditingDrillDistances(editingItem: BudgetItem): number[] {
-  const editCount = editingItem.drillingConfig?.holeCount ?? 2;
-  const editH = editingItem.heightMm ?? 2100;
+  const drillingCfg = typeof editingItem.drillingConfig === 'string'
+    ? JSON.parse(editingItem.drillingConfig || '{}')
+    : (editingItem.drillingConfig ?? {});
+
+  const editCount = drillingCfg?.holeCount ?? 2;
+  const editH = Number(editingItem.heightMm ?? editingItem.height ?? 2100);
   const step = Math.round(editH / (editCount + 1));
   const fallbackDists = Array.from({ length: editCount }, (_, i) => step * (i + 1));
-  if (editingItem.drillingConfig?.customDistancesMm?.length === editCount) {
-    return editingItem.drillingConfig.customDistancesMm;
+
+  if (Array.isArray(drillingCfg?.customDistancesMm) && drillingCfg.customDistancesMm.length === editCount) {
+    return drillingCfg.customDistancesMm;
   }
   return fallbackDists;
 }
@@ -232,28 +235,53 @@ function buildEditingItemState(
   const selections = buildEditingItemSelections(editingItem, findCatalogMaterial);
   const dists = computeEditingDrillDistances(editingItem);
 
-  return {
-    state: {
-      template,
-      templateType: (editingItem.templateType as DoorTemplateType) || undefined,
-      widthMm: editingItem.widthMm ?? editingItem.width ?? DEFAULT_WIDTH,
-      heightMm: editingItem.heightMm ?? editingItem.height ?? DEFAULT_HEIGHT,
-      quantity: editingItem.quantity,
-      openingDirection: editingItem.templateConfig?.openingDirection ?? 'LEFT_TO_RIGHT',
-      handleConfig: editingItem.handleConfig ?? {
+  // Normalização segura para configs e campos decimais que podem vir do backend
+  const tConfig = typeof editingItem?.templateConfig === 'string'
+    ? JSON.parse(editingItem.templateConfig || '{}')
+    : (editingItem?.templateConfig ?? {});
+
+  const hConfig = typeof editingItem?.handleConfig === 'string'
+    ? JSON.parse(editingItem.handleConfig || '{}')
+    : (editingItem?.handleConfig ?? {
         handleType: 'BAR_TUBULAR',
         side: 'ONE_SIDE',
         coverage: 'FULL',
         pieceLengthCm: 40,
-      },
-      drillingConfig: editingItem.drillingConfig ?? {
+      });
+
+  const dConfig = typeof editingItem?.drillingConfig === 'string'
+    ? JSON.parse(editingItem.drillingConfig || '{}')
+    : (editingItem?.drillingConfig ?? {
         holeCount: 2,
         divisionType: 'EQUAL',
         customDistancesMm: dists,
-      },
-      aluminumColor: editingItem.templateConfig?.aluminumColor ?? 'Alumínio Fosco / Anodizado',
-      glassFinish: editingItem.templateConfig?.glassFinish ?? 'Fumê / Cinza',
-      laborCost: editingItem.laborCost ?? 0,
+      });
+
+  const parsedWidth = editingItem.widthMm !== undefined && editingItem.widthMm !== '' 
+    ? Number(editingItem.widthMm) 
+    : (editingItem.width ?? DEFAULT_WIDTH);
+
+  const parsedHeight = editingItem.heightMm !== undefined && editingItem.heightMm !== '' 
+    ? Number(editingItem.heightMm) 
+    : (editingItem.height ?? DEFAULT_HEIGHT);
+
+  const parsedLaborCost = editingItem.laborCost !== undefined && editingItem.laborCost !== ''
+    ? Number(editingItem.laborCost)
+    : 0;
+
+  return {
+    state: {
+      template,
+      templateType: (editingItem.templateType as DoorTemplateType) || undefined,
+      widthMm: parsedWidth,
+      heightMm: parsedHeight,
+      quantity: Number(editingItem.quantity ?? 1),
+      openingDirection: tConfig?.openingDirection ?? 'LEFT_TO_RIGHT',
+      handleConfig: hConfig,
+      drillingConfig: dConfig,
+      aluminumColor: tConfig?.aluminumColor ?? 'Alumínio Fosco / Anodizado',
+      glassFinish: tConfig?.glassFinish ?? 'Fumê / Cinza',
+      laborCost: parsedLaborCost,
       notes: editingItem.notes ?? '',
       materialSelections: selections,
     },

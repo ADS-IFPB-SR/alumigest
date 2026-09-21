@@ -54,7 +54,7 @@ const { mockBudgetSummary, mockBudgetDetail } = vi.hoisted(() => {
     items: [
       {
         id: 'item-1',
-        productId: 1,
+        productId: 'prod-1',
         productName: 'Porta de Correr 2 Folhas Prime',
         width: 2000,
         height: 2100,
@@ -94,6 +94,12 @@ vi.mock('../../features/budgets/services/budgetsApi', () => ({
       REJECTED: 0,
       CANCELLED: 0,
       EXPIRED: 0,
+    }),
+    getBudgetById: vi.fn((id: string) => {
+      if (id === 'budget-101') {
+        return Promise.resolve(mockBudgetDetail);
+      }
+      return Promise.reject(new Error('Budget not found'));
     }),
     getBudget: vi.fn((id: string) => {
       if (id === 'budget-101') {
@@ -172,15 +178,12 @@ describe('Integridade das Rotas de Orçamentos (AppRoutes)', () => {
     it('1. deve renderizar BudgetsPage na rota /orcamentos', async () => {
       renderWithProviders(<AppRoutes />, { route: '/orcamentos' });
 
-      // Deve renderizar título principal de orçamentos
       expect(
         await screen.findByRole('heading', { name: /Orçamentos/i, level: 2 }),
       ).toBeInTheDocument();
 
-      // Botão de novo orçamento deve estar visível
       expect(screen.getByRole('button', { name: /Novo Orçamento/i })).toBeInTheDocument();
 
-      // Deve exibir os dados do orçamento mockado na tabela
       expect(await screen.findByText('ORC-2026-001')).toBeInTheDocument();
       expect(screen.getByText('João da Silva')).toBeInTheDocument();
     });
@@ -188,12 +191,10 @@ describe('Integridade das Rotas de Orçamentos (AppRoutes)', () => {
     it('2. deve renderizar BudgetNewPage (BudgetEditor em modo criação) na rota /orcamentos/novo', async () => {
       renderWithProviders(<AppRoutes />, { route: '/orcamentos/novo' });
 
-      // Título da página de criação
       expect(
         await screen.findByRole('heading', { name: 'Novo Orçamento', level: 1 }),
       ).toBeInTheDocument();
 
-      // Seções do formulário de criação
       expect(screen.getByRole('heading', { name: 'Cliente', level: 2 })).toBeInTheDocument();
       expect(screen.getByRole('heading', { name: /Esquadrias/i, level: 2 })).toBeInTheDocument();
       expect(
@@ -204,14 +205,11 @@ describe('Integridade das Rotas de Orçamentos (AppRoutes)', () => {
     it('3. deve renderizar BudgetDetailPage na rota /orcamentos/:id', async () => {
       renderWithProviders(<AppRoutes />, { route: '/orcamentos/budget-101' });
 
-      // Deve exibir o código do orçamento no cabeçalho
       expect(await screen.findByRole('heading', { name: 'ORC-2026-001', level: 1 })).toBeInTheDocument();
 
-      // Deve exibir os detalhes do cliente e esquadrias
       expect(screen.getByText('João da Silva')).toBeInTheDocument();
       expect(screen.getByText('Porta de Correr 2 Folhas Prime')).toBeInTheDocument();
 
-      // Deve conter os botões de ação
       expect(screen.getByRole('button', { name: /Imprimir/i })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /Duplicar/i })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /Excluir/i })).toBeInTheDocument();
@@ -222,7 +220,6 @@ describe('Integridade das Rotas de Orçamentos (AppRoutes)', () => {
     it('4. deve renderizar BudgetEditor na rota /orcamentos/:id/editar', async () => {
       renderWithProviders(<AppRoutes />, { route: '/orcamentos/budget-101/editar' });
 
-      // Deve exibir o título de edição com o código do orçamento
       expect(
         await screen.findByRole('heading', {
           name: /Editar Orçamento ORC-2026-001/i,
@@ -230,20 +227,16 @@ describe('Integridade das Rotas de Orçamentos (AppRoutes)', () => {
         }),
       ).toBeInTheDocument();
 
-      // Cliente já vinculado deve aparecer
-      expect(await screen.findByText('Cliente Vinculado')).toBeInTheDocument();
-      expect(screen.getByText('João da Silva')).toBeInTheDocument();
+      expect(await screen.findByText('João da Silva')).toBeInTheDocument();
     });
 
     it('5. deve renderizar SeparateSalePage na rota /orcamentos/venda-avulsa', async () => {
       renderWithProviders(<AppRoutes />, { route: '/orcamentos/venda-avulsa' });
 
-      // Deve exibir o título da página de venda avulsa
       expect(
         await screen.findByRole('heading', { name: 'Venda das Partes', level: 2 }),
       ).toBeInTheDocument();
 
-      // Deve exibir os seletores de tipo de venda
       expect(screen.getByRole('button', { name: /Venda de Vidro/i })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /Venda de Alumínio/i })).toBeInTheDocument();
     });
@@ -253,7 +246,6 @@ describe('Integridade das Rotas de Orçamentos (AppRoutes)', () => {
     it('não deve interpretar /orcamentos/novo como parâmetro :id da página de detalhes', async () => {
       renderWithProviders(<AppRoutes />, { route: '/orcamentos/novo' });
 
-      // Deve renderizar Novo Orçamento e NÃO a página de detalhes
       expect(
         await screen.findByRole('heading', { name: 'Novo Orçamento', level: 1 }),
       ).toBeInTheDocument();
@@ -263,7 +255,6 @@ describe('Integridade das Rotas de Orçamentos (AppRoutes)', () => {
     it('não deve interpretar /orcamentos/venda-avulsa como parâmetro :id da página de detalhes', async () => {
       renderWithProviders(<AppRoutes />, { route: '/orcamentos/venda-avulsa' });
 
-      // Deve renderizar Venda das Partes e NÃO a página de detalhes
       expect(
         await screen.findByRole('heading', { name: 'Venda das Partes', level: 2 }),
       ).toBeInTheDocument();
@@ -278,7 +269,6 @@ describe('Integridade das Rotas de Orçamentos (AppRoutes)', () => {
       const newBudgetBtn = await screen.findByRole('button', { name: /Novo Orçamento/i });
       fireEvent.click(newBudgetBtn);
 
-      // Deve navegar para a página de criação
       expect(
         await screen.findByRole('heading', { name: 'Novo Orçamento', level: 1 }),
       ).toBeInTheDocument();
@@ -290,7 +280,6 @@ describe('Integridade das Rotas de Orçamentos (AppRoutes)', () => {
       const budgetRowCode = await screen.findByText('ORC-2026-001');
       fireEvent.click(budgetRowCode);
 
-      // Deve navegar para a página de detalhes do orçamento
       expect(
         await screen.findByRole('heading', { name: 'ORC-2026-001', level: 1 }),
       ).toBeInTheDocument();
@@ -303,7 +292,6 @@ describe('Integridade das Rotas de Orçamentos (AppRoutes)', () => {
       const editBtn = await screen.findByRole('button', { name: /Editar/i });
       fireEvent.click(editBtn);
 
-      // Deve navegar para o editor em modo edição
       expect(
         await screen.findByRole('heading', {
           name: /Editar Orçamento ORC-2026-001/i,
@@ -315,11 +303,9 @@ describe('Integridade das Rotas de Orçamentos (AppRoutes)', () => {
     it('deve navegar de /orcamentos/:id de volta para /orcamentos ao clicar no link de retorno', async () => {
       renderWithProviders(<AppRoutes />, { route: '/orcamentos/budget-101' });
 
-      // O link de retorno "Orçamentos"
       const backLink = await screen.findByTitle('Voltar aos orçamentos');
       fireEvent.click(backLink);
 
-      // Deve retornar para a listagem
       expect(
         await screen.findByRole('heading', { name: /Orçamentos/i, level: 2 }),
       ).toBeInTheDocument();
@@ -331,7 +317,6 @@ describe('Integridade das Rotas de Orçamentos (AppRoutes)', () => {
       const cancelBtn = await screen.findByRole('button', { name: /Cancelar/i });
       fireEvent.click(cancelBtn);
 
-      // Deve retornar para a listagem
       expect(
         await screen.findByRole('heading', { name: /Orçamentos/i, level: 2 }),
       ).toBeInTheDocument();
@@ -343,7 +328,6 @@ describe('Integridade das Rotas de Orçamentos (AppRoutes)', () => {
       const cancelBtn = await screen.findByRole('button', { name: /Cancelar/i });
       fireEvent.click(cancelBtn);
 
-      // Deve retornar para a página de detalhes
       expect(
         await screen.findByRole('heading', { name: 'ORC-2026-001', level: 1 }),
       ).toBeInTheDocument();

@@ -1,5 +1,5 @@
 import React from 'react';
-import type { BudgetItem } from '../types';
+import type { BudgetItem, TemplateConfig } from '../types';
 import { TEMPLATE_TYPE_INFO, OPENING_DIRECTION_LABELS } from '../types';
 import { formatBRL } from '../utils/calculations';
 
@@ -74,11 +74,25 @@ export const BudgetItemsTable: React.FC<BudgetItemsTableProps> = ({
             <tbody className="divide-y divide-outline-variant/40">
               {items.map((item, idx) => {
                 const mainMaterial = item.options.find((o) => o.categoryType === 'GLASS') ?? item.options[0];
-                const openDir = item.templateConfig?.openingDirection;
-                const unitPrice = item.unitPrice ?? (item.quantity > 0 ? item.subtotal / item.quantity : item.subtotal);
+                
+                // Parse seguro do templateConfig para aceitar tanto string JSON quanto objeto
+                const parsedConfig: TemplateConfig = typeof item.templateConfig === 'string'
+                  ? JSON.parse(item.templateConfig || '{}')
+                  : (item.templateConfig ?? {});
+
+                const openDir = parsedConfig?.openingDirection;
+                const quantity = Number(item.quantity ?? 1);
+                const subtotalNum = Number(item.subtotal ?? 0);
+                const unitPrice = item.unitPrice !== undefined 
+                  ? Number(item.unitPrice) 
+                  : (quantity > 0 ? subtotalNum / quantity : subtotalNum);
+
+                const widthDisplay = item.widthMm ?? item.width ?? 0;
+                const heightDisplay = item.heightMm ?? item.height ?? 0;
+
                 return (
                   <tr
-                    key={item.tempId}
+                    key={item.tempId ?? `item-${idx}`}
                     className="hover:bg-surface-container-high transition-colors group"
                   >
                     {/* # */}
@@ -94,11 +108,11 @@ export const BudgetItemsTable: React.FC<BudgetItemsTableProps> = ({
                           Modelo: {item.templateType ? (TEMPLATE_TYPE_INFO[item.templateType as keyof typeof TEMPLATE_TYPE_INFO]?.label || item.templateType) : 'Básico'}
                           {openDir && <span className="ml-xs text-secondary">· {formatOpeningDirection(openDir)}</span>}
                         </span>
-                        {(item.templateConfig?.aluminumColor || item.templateConfig?.glassFinish) && (
+                        {(parsedConfig?.aluminumColor || parsedConfig?.glassFinish) && (
                           <span className="text-[11px] text-secondary font-body">
                             {[
-                              item.templateConfig?.aluminumColor ? `Cor: ${item.templateConfig.aluminumColor}` : null,
-                              item.templateConfig?.glassFinish ? `Vidro: ${item.templateConfig.glassFinish}` : null,
+                              parsedConfig?.aluminumColor ? `Cor: ${parsedConfig.aluminumColor}` : null,
+                              parsedConfig?.glassFinish ? `Vidro: ${parsedConfig.glassFinish}` : null,
                             ].filter(Boolean).join(' · ')}
                           </span>
                         )}
@@ -113,7 +127,7 @@ export const BudgetItemsTable: React.FC<BudgetItemsTableProps> = ({
                     {/* Medidas (L × A mm) */}
                     <td className="px-sm py-sm text-center">
                       <span className="font-data-mono text-xs text-on-surface whitespace-nowrap">
-                        {item.widthMm ?? item.width}×{item.heightMm ?? item.height}
+                        {widthDisplay}×{heightDisplay}
                       </span>
                       <br />
                       <span className="text-[10px] text-on-surface-variant">mm</span>
@@ -121,7 +135,7 @@ export const BudgetItemsTable: React.FC<BudgetItemsTableProps> = ({
 
                     {/* Quantidade */}
                     <td className="px-sm py-sm text-center">
-                      <span className="font-data-mono text-on-surface text-sm font-semibold">{item.quantity}</span>
+                      <span className="font-data-mono text-on-surface text-sm font-semibold">{quantity}</span>
                       <span className="text-xs text-on-surface-variant ml-xs">un</span>
                     </td>
 
@@ -154,7 +168,7 @@ export const BudgetItemsTable: React.FC<BudgetItemsTableProps> = ({
                     {/* Subtotal */}
                     <td className="px-md py-sm text-right">
                       <span className="font-data-mono font-bold text-primary text-sm whitespace-nowrap">
-                        {formatBRL(item.subtotal)}
+                        {formatBRL(subtotalNum)}
                       </span>
                     </td>
 
@@ -207,7 +221,7 @@ export const BudgetItemsTable: React.FC<BudgetItemsTableProps> = ({
               <h4 className="font-headline font-bold text-on-surface text-base">Excluir esquadria?</h4>
             </div>
             <p className="text-sm text-on-surface-variant font-body">
-              Tem certeza que deseja remover <strong>{itemToDelete.productName}</strong> ({itemToDelete.widthMm}×{itemToDelete.heightMm} mm) do orçamento?
+              Tem certeza que deseja remover <strong>{itemToDelete.productName}</strong> ({itemToDelete.widthMm ?? itemToDelete.width}×{itemToDelete.heightMm ?? itemToDelete.height} mm) do orçamento?
             </p>
             <div className="flex justify-end gap-sm mt-xs">
               <button
@@ -220,7 +234,9 @@ export const BudgetItemsTable: React.FC<BudgetItemsTableProps> = ({
               <button
                 type="button"
                 onClick={() => {
-                  onDelete(itemToDelete.tempId);
+                  if (itemToDelete.tempId) {
+                    onDelete(itemToDelete.tempId);
+                  }
                   setItemToDelete(null);
                 }}
                 className="px-md py-xs rounded-md bg-error text-on-error text-sm font-label font-bold hover:opacity-90 transition-opacity"

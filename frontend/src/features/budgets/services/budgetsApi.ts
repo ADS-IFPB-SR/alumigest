@@ -4,7 +4,7 @@ import type {
   BudgetPageResponse, 
   BudgetSummary, 
   BudgetStatus,
-  BudgetDetail,
+  Budget as BudgetDetail,
   CreateBudgetPayload,
   WindowTemplate,
   BudgetItemCalculationRequest,
@@ -14,8 +14,6 @@ import type {
   BudgetItemCreateRequest,
 } from '../types';
 import type { PageResponse } from '../../catalog/types';
-
-
 
 function parseJsonConfig<T>(raw: unknown, fallback: T): T {
   if (!raw) return fallback;
@@ -67,52 +65,76 @@ function toBackendBudgetPayload(data: CreateBudgetPayload) {
   };
 }
 
-function mapBackendToBudgetDetail(res: any): BudgetDetail {
+function mapBackendToBudgetDetail(rawRes: any): BudgetDetail {
+  // Desembrulha caso a resposta venha no formato ApiResponse { data: { ... } } ou wrapper de Spring
+  const res = rawRes?.data ?? rawRes;
+  
+  // Mapeamento tolerante para dados do cliente (com parênteses protegidos para evitar erros de precedência)
+  const clientData = res.customer ?? res.cliente ?? res.client ?? {};
+  const clientId = res.clientId ?? res.customerId ?? clientData.id;
+  const clientName = res.clientName ?? res.customerName ?? (clientData.name ?? clientData.nome ?? 'Cliente não identificado');
+
+  // Deteta se os itens vierem em 'items', 'itens' ou 'esquadrias'
+  const rawItems = res.items ?? res.itens ?? res.esquadrias ?? [];
+
   return {
     id: res.id,
-    code: res.code,
-    customerId: res.clientId,
-    customerName: res.clientName,
+    code: res.code ?? res.codigo,
+    clientId: clientId,
+    customerId: clientId,
+    clientName: clientName,
+    customerName: clientName,
     customer: {
-      id: res.clientId,
-      name: res.clientName,
+      id: clientId,
+      name: clientName,
+      phone: res.clientPhone ?? res.telefoneCliente ?? (clientData.phone ?? clientData.telefone),
+      email: res.clientEmail ?? res.emailCliente ?? (clientData.email),
+      document: res.clientDocument ?? (clientData.document ?? clientData.cpfCnpj),
+      address: res.clientAddress ?? (clientData.address ?? clientData.endereco),
     },
-    status: res.status,
-    createdAt: res.createdAt,
-    validUntil: res.validUntil,
-    subtotal: Number(res.subtotal ?? 0),
-    discountPercent: Number(res.discountPercent ?? 0),
-    discountValue: Number(res.discountValue ?? 0),
-    total: Number(res.total ?? 0),
-    notes: res.notes,
-    itemCount: Array.isArray(res.items) ? res.items.length : 0,
-    items: Array.isArray(res.items)
-      ? res.items.map((item: any) => ({
+    status: res.status ?? 'DRAFT',
+    createdAt: res.createdAt ?? res.dataCriacao ?? new Date().toISOString(),
+    validUntil: res.validUntil ?? res.dataValidade ?? '',
+    subtotal: Number(res.subtotal ?? res.valorSubtotal ?? 0),
+    discountPercent: Number(res.discountPercent ?? res.percentualDesconto ?? 0),
+    discountValue: Number(res.discountValue ?? res.valorDesconto ?? 0),
+    total: Number(res.total ?? res.valorTotal ?? res.valorLiquido ?? 0),
+    valorLiquido: Number(res.valorLiquido ?? res.total ?? res.valorTotal ?? 0),
+    commercialConditions: res.commercialConditions ?? res.condicoesComerciais ?? res.paymentCondition,
+    notes: res.notes ?? res.observacoes,
+    itemCount: Array.isArray(rawItems) ? rawItems.length : 0,
+    totalItems: Array.isArray(rawItems) ? rawItems.length : 0,
+    items: Array.isArray(rawItems)
+      ? rawItems.map((item: any) => ({
           id: item.id,
-          productId: item.productId,
-          productName: item.productName,
-          templateType: item.templateType,
-          templateConfig: parseJsonConfig(item.templateConfig, {} as any),
-          handleConfig: parseJsonConfig(item.handleConfig, { handleType: 'PUXADOR_H', position: 'VERTICAL', heightMm: 1000 } as any),
-          drillingConfig: parseJsonConfig(item.drillingConfig, { holeCount: 0, diameterMm: 0, distanceMm: 0 } as any),
-          width: Number(item.widthMm ?? item.width ?? 0),
-          height: Number(item.heightMm ?? item.height ?? 0),
-          quantity: Number(item.quantity ?? 1),
-          laborCost: Number(item.laborCost ?? 0),
-          subtotal: Number(item.subtotal ?? 0),
-          notes: item.notes,
-          options: Array.isArray(item.options)
-            ? item.options.map((opt: any) => ({
+          tempId: item.id ? String(item.id) : String(Date.now()),
+          productId: item.productId ?? item.produtoId,
+          productName: item.productName ?? item.nomeProduto ?? (item.descricao || ''),
+          templateType: item.templateType ?? item.tipoTemplate,
+          templateConfig: parseJsonConfig(item.templateConfig ?? item.configuracaoTemplate, {} as any),
+          handleConfig: parseJsonConfig(item.handleConfig ?? item.configuracaoPuxador, { handleType: 'PUXADOR_H', position: 'VERTICAL', heightMm: 1000 } as any),
+          drillingConfig: parseJsonConfig(item.drillingConfig ?? item.configuracaoFuracao, { holeCount: 0, diameterMm: 0, distanceMm: 0 } as any),
+          widthMm: Number(item.widthMm ?? item.larguraMm ?? item.width ?? 0),
+          heightMm: Number(item.heightMm ?? item.alturaMm ?? item.height ?? 0),
+          width: Number(item.widthMm ?? item.larguraMm ?? item.width ?? 0),
+          height: Number(item.heightMm ?? item.alturaMm ?? item.height ?? 0),
+          quantity: Number(item.quantity ?? item.quantidade ?? 1),
+          laborCost: Number(item.laborCost ?? item.custoMaoDeObra ?? 0),
+          subtotal: Number(item.subtotal ?? item.valorTotal ?? 0),
+          unitPrice: item.unitPrice !== undefined ? Number(item.unitPrice) : (item.valorUnitario !== undefined ? Number(item.valorUnitario) : undefined),
+          notes: item.notes ?? item.observacoes,
+          options: Array.isArray(item.options ?? item.opcoes ?? item.materiais)
+            ? (item.options ?? item.opcoes ?? item.materiais).map((opt: any) => ({
                 id: opt.id,
-                materialId: opt.materialId,
-                materialName: opt.materialName,
-                unitMeasure: opt.unitMeasure,
-                categoryType: opt.categoryType,
+                materialId: opt.materialId ?? opt.idMaterial,
+                materialName: opt.materialName ?? opt.nomeMaterial ?? (opt.descricao || ''),
+                unitMeasure: opt.unitMeasure ?? opt.unidadeMedida ?? '',
+                categoryType: opt.categoryType ?? opt.tipoCategoria,
                 selectedType: opt.selectedType,
-                selectedColor: opt.selectedColor,
-                quantity: Number(opt.quantity ?? 0),
-                unitPrice: Number(opt.unitPrice ?? 0),
-                totalPrice: Number(opt.totalPrice ?? 0),
+                selectedColor: opt.selectedColor ?? opt.corSelecionada,
+                quantity: Number(opt.quantity ?? opt.quantidade ?? 0),
+                unitPrice: Number(opt.unitPrice ?? opt.precoUnitario ?? 0),
+                totalPrice: Number(opt.totalPrice ?? opt.precoTotal ?? (Number(opt.quantity ?? opt.quantidade ?? 0) * Number(opt.unitPrice ?? opt.precoUnitario ?? 0))),
               }))
             : [],
         }))
@@ -347,6 +369,11 @@ export const budgetsApi = {
       baseURL: '',
     });
     return mapBackendToBudgetItem(response.data);
+  },
+
+  getBudgetById: async (id: string) => {
+    const response = await api.get(`http://localhost:8081/api/orcamentos/${id}`);
+    return response.data?.data ?? response.data;
   },
 };
 

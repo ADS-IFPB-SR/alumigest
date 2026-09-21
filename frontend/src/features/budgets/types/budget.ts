@@ -106,23 +106,28 @@ export interface BudgetItemOption {
   totalPrice?: number;
 }
 
+/**
+ * Alinhado diretamente ao BudgetItemResponseDTO do backend Java:
+ * - widthMm, heightMm, laborCost, subtotal (BigDecimal -> number | string)
+ * - templateConfig, handleConfig, drillingConfig (String JSON ou Objeto)
+ */
 export interface BudgetItem {
   id?: string;
-  tempId: string;
+  tempId?: string;
   budgetId?: string;
   productId: string;
   productName: string;
   templateType: string;
-  templateConfig: TemplateConfig;
-  handleConfig: HandleConfig;
-  drillingConfig: DrillingConfig;
-  widthMm: number;
-  heightMm: number;
+  templateConfig: TemplateConfig | string;
+  handleConfig: HandleConfig | string;
+  drillingConfig: DrillingConfig | string;
+  widthMm?: number | string;
+  heightMm?: number | string;  
   width?: number;
   height?: number;
   quantity: number;
-  laborCost: number;
-  subtotal: number;
+  laborCost: number | string;
+  subtotal: number | string;
   unitPrice?: number;
   notes?: string;
   options: BudgetItemOption[];
@@ -303,6 +308,7 @@ export interface Budget {
   discountValue: number;
   total: number;
   valorLiquido?: number;
+  commercialConditions?: string;
   paymentCondition?: PaymentCondition;
   paymentConditionLabel?: string;
   paymentNotes?: string;
@@ -343,7 +349,7 @@ export interface BudgetFilters {
 
 export interface BudgetItemCalculationOptionRequest {
   materialId?: string;
-  categoryType: string;
+  categoryType: CategoryType;
   manualQuantity?: number;
 }
 
@@ -357,7 +363,7 @@ export interface BudgetItemCalculationRequest {
 
 export interface BudgetItemCalculationOptionResult {
   materialId: string;
-  categoryType: string;
+  categoryType: CategoryType;
   suggestedQuantity: number;
   physicalMinimumQuantity: number;
   isBelowPhysicalMinimum: boolean;
