@@ -44,3 +44,11 @@ springdoc:
     path: /swagger-ui.html
     operations-sorter: method
     tags-sorter: alpha
+
+empresa:
+  razao-social: ${EMPRESA_RAZAO_SOCIAL:}
+  cnpj: ${EMPRESA_CNPJ:}
+  inscricao-estadual: ${EMPRESA_IE:}
+  telefone: ${EMPRESA_TELEFONE:}
+  endereco: ${EMPRESA_ENDERECO:}
+  cidade-uf: ${EMPRESA_CIDADE_UF:}
