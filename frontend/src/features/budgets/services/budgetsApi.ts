@@ -15,8 +15,6 @@ import type {
 } from '../types';
 import type { PageResponse } from '../../catalog/types';
 
-
-
 function parseJsonConfig<T>(raw: unknown, fallback: T): T {
   if (!raw) return fallback;
   if (typeof raw === 'object') return raw as T;
@@ -149,15 +147,9 @@ function toBackendBudgetItemPayload(item: BudgetItemCreateRequest) {
     quantity: item.quantity,
     laborCost: item.laborCost ?? 0,
     templateType: item.templateType,
-    templateConfig: typeof item.templateConfig === 'object' && item.templateConfig !== null 
-      ? JSON.stringify(item.templateConfig) 
-      : item.templateConfig,
-    handleConfig: typeof item.handleConfig === 'object' && item.handleConfig !== null 
-      ? JSON.stringify(item.handleConfig) 
-      : item.handleConfig,
-    drillingConfig: typeof item.drillingConfig === 'object' && item.drillingConfig !== null 
-      ? JSON.stringify(item.drillingConfig) 
-      : item.drillingConfig,
+    templateConfig: stringifyConfig(item.templateConfig),
+    handleConfig: stringifyConfig(item.handleConfig),
+    drillingConfig: stringifyConfig(item.drillingConfig),
     notes: item.notes,
     options: (item.options ?? []).map((opt) => ({
       materialId: opt.materialId,
@@ -276,7 +268,6 @@ export const budgetsApi = {
       }
       throw new Error('Formato de resposta inválido da API');
     } catch (error) {
-      console.error('Erro ao buscar orçamentos', error);
       throw error;
     }
   },
@@ -349,5 +340,33 @@ export const budgetsApi = {
     });
     return mapBackendToBudgetItem(response.data);
   },
-};
 
+  // ============================================================
+  // ORÇAMENTOS - DOWNLOAD PDF E ACTIONS
+  // ============================================================
+
+  downloadCommercialPdf: async (id: string, code: string): Promise<void> => {
+    const response = await api.get<Blob>(`/api/orcamentos/${id}/pdf/comercial`, {
+      baseURL: '',
+      responseType: 'blob',
+    });
+    
+    const blob = new Blob([response.data], { type: 'application/pdf' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `Orcamento_${code}.pdf`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  },
+
+  getWhatsAppSummary: async (id: string): Promise<string> => {
+    const response = await api.get<string>(`/api/orcamentos/${id}/resumo-whatsapp`, {
+      baseURL: '',
+      responseType: 'text',
+    });
+    return response.data;
+  },
+};

@@ -1,17 +1,18 @@
 import { useState, useEffect } from 'react';
 import { Link, useParams, useLocation, useNavigate } from 'react-router-dom';
-import { useBudget, useDeleteBudget, useUpdateBudgetStatus, useCreateBudget } from '../features/budgets/hooks/useBudgets';
+import { useBudget, useDeleteBudget, useUpdateBudgetStatus } from '../features/budgets/hooks/useBudgets';
 import { Button } from '../components/ui/Button';
 import {
   TEMPLATE_TYPE_INFO,
   type BudgetStatus,
   type DoorTemplateType,
-  type CreateBudgetPayload,
 } from '../features/budgets/types';
 import { formatBRL } from '../features/budgets/utils/calculations';
 import { WindowSvgPreview } from '../features/budgets/components/builder/WindowSvgPreview';
 import { BudgetMaterialsSummary } from '../features/budgets/components/BudgetMaterialsSummary';
 import { BudgetStatusPipeline } from '../features/budgets/components/BudgetStatusPipeline';
+import { BudgetFinancialSummaryCard } from '../features/budgets/components/BudgetFinancialSummaryCard';
+import { BudgetDetailActions } from '../features/budgets/components/BudgetDetailActions';
 
 export function BudgetDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -21,20 +22,10 @@ export function BudgetDetailPage() {
   const { data: budget, isLoading, isError } = useBudget(id);
   const { mutate: deleteBudget, isPending: isDeleting } = useDeleteBudget();
   const { mutate: updateStatus, isPending: isUpdatingStatus } = useUpdateBudgetStatus();
-  const { mutate: createBudget, isPending: isDuplicating } = useCreateBudget();
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
   
-  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
-  const [isCopyingWhatsApp, setIsCopyingWhatsApp] = useState(false);
-
-  useEffect(() => {
-    if (budget) {
-      console.log('📦 Objeto Budget recebido do backend:', budget);
-    }
-  }, [budget]);
-
   const toggleItemExpanded = (itemId: string) => {
     setExpandedItems((prev) => ({
       ...prev,
@@ -66,76 +57,7 @@ export function BudgetDetailPage() {
     updateStatus({ id: budget.id, status: newStatus });
   };
 
-  const handleDuplicateBudget = () => {
-    if (!budget || isDuplicating) return;
-
-    const payload: CreateBudgetPayload = {
-      customerId: budget.customer?.id ?? budget.customerId ?? '',
-      discountPercent: budget.discountPercent ?? 0,
-      notes: budget.notes,
-      commercialConditions: (budget as any).paymentNotes ?? (budget as any).commercialConditions,
-      validUntil: budget.validUntil,
-      items: (budget.items ?? []).map((item) => ({
-        productId: item.productId,
-        templateType: item.templateType,
-        templateConfig: item.templateConfig,
-        handleConfig: item.handleConfig,
-        drillingConfig: item.drillingConfig,
-        width: item.width,
-        height: item.height,
-        quantity: item.quantity,
-        laborCost: item.laborCost,
-        options: (item.options ?? []).map((opt) => ({
-          materialId: opt.materialId,
-          quantity: opt.quantity,
-          categoryType: opt.categoryType,
-        })),
-        notes: item.notes,
-      })),
-    };
-
-    createBudget(payload, {
-      onSuccess: (newBudget) => {
-        if (newBudget?.id) {
-          navigate(`/orcamentos/${newBudget.id}`, { state: { justCreated: true } });
-        } else {
-          navigate('/orcamentos');
-        }
-      },
-    });
-  };
-
-  const handleDownloadPdfComercial = async () => {
-    if (!budget || isDownloadingPdf) return;
-    try {
-      setIsDownloadingPdf(true);
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      alert(`PDF Comercial do orçamento ${budget.code} gerado com sucesso!`);
-    } catch (error) {
-      console.error('Erro ao baixar PDF:', error);
-    } finally {
-      setIsDownloadingPdf(false);
-    }
-  };
-
-  const handleCopyWhatsApp = async () => {
-    if (!budget || isCopyingWhatsApp) return;
-    try {
-      setIsCopyingWhatsApp(true);
-      const text = `Olá! Segue o resumo do orçamento *${budget.code}* no valor total de *${formatBRL(budget.total)}*.`;
-      await navigator.clipboard.writeText(text);
-      alert('Resumo copiado para a área de transferência!');
-    } catch (error) {
-      console.error('Erro ao copiar para WhatsApp:', error);
-    } finally {
-      setIsCopyingWhatsApp(false);
-    }
-  };
-
-  const handleEmitirViaTecnica = () => {
-    if (!budget) return;
-    navigate(`/orcamentos/${budget.id}/pdf-tecnico`);
-  };
+  
 
   if (isLoading) {
     return (
@@ -163,8 +85,8 @@ export function BudgetDetailPage() {
 
   const subtotal = budget.subtotal ?? 0;
   const discountValue = budget.discountValue ?? 0;
-  const freightCost = (budget as any).freightCost ?? 0;
-  const installationCost = (budget as any).installationCost ?? (budget as any).installationFee ?? 0;
+  const freightCost = budget.freightCost ?? 0;
+  const installationCost = budget.installationCost ?? 0;
   
   const totalLaborCost = (budget.items ?? []).reduce((sum, item) => {
     return sum + ((item.laborCost ?? 0) * (item.quantity ?? 1));
@@ -172,16 +94,15 @@ export function BudgetDetailPage() {
 
   const total = budget.total ?? 0;
   const hasDiscount = discountValue > 0;
-  const isPercentDiscount = budget.discountPercent && budget.discountPercent > 0;
+  const isPercentDiscount = Boolean(budget.discountPercent && budget.discountPercent > 0);
 
-  const commercialConditions = (budget as any).paymentNotes ?? (budget as any).commercialConditions ?? null;
-  const paymentMethod = (budget as any).paymentConditionLabel ?? (budget as any).paymentCondition ?? (budget as any).paymentMethod ?? null;
-
+  const commercialConditions = budget.paymentNotes ?? budget.commercialConditions ?? null;
+  const paymentMethod = budget.paymentConditionLabel ?? budget.paymentCondition ?? null;
+  
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-surface">
       {/* ── Topbar / Header Executivo ──────────────────────────────────── */}
       <header className="border-b border-outline-variant bg-surface-container-lowest/80 backdrop-blur-md px-md lg:px-xl py-sm flex flex-col gap-3 shrink-0 shadow-2xs">
-        
         <div className="flex items-center gap-sm flex-wrap w-full">
           <Link
             to="/orcamentos"
@@ -207,94 +128,13 @@ export function BudgetDetailPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-xs sm:gap-sm flex-wrap shrink-0 w-full pb-1">
-          <button
-            type="button"
-            onClick={handleDownloadPdfComercial}
-            disabled={isDownloadingPdf}
-            className="p-2 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-lg border border-outline-variant/60 transition-colors flex items-center gap-1.5 text-xs font-label font-medium disabled:opacity-50 cursor-pointer shrink-0"
-            title="Emitir PDF Comercial"
-          >
-            <span className="material-symbols-outlined text-[18px]">
-              {isDownloadingPdf ? 'progress_activity' : 'picture_as_pdf'}
-            </span>
-            <span className="whitespace-nowrap">
-              {isDownloadingPdf ? 'Gerando PDF...' : 'PDF Comercial'}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={handleCopyWhatsApp}
-            disabled={isCopyingWhatsApp}
-            className="p-2 text-on-surface-variant hover:text-emerald-600 hover:bg-surface-container rounded-lg border border-outline-variant/60 transition-colors flex items-center gap-1.5 text-xs font-label font-medium disabled:opacity-50 cursor-pointer shrink-0"
-            title="Copiar resumo para WhatsApp"
-          >
-            <span className="material-symbols-outlined text-[18px]">
-              {isCopyingWhatsApp ? 'progress_activity' : 'share'}
-            </span>
-            <span className="whitespace-nowrap">
-              {isCopyingWhatsApp ? 'Copiando...' : 'Copiar para WhatsApp'}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={handleEmitirViaTecnica}
-            className="p-2 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-lg border border-outline-variant/60 transition-colors flex items-center gap-1.5 text-xs font-label font-medium cursor-pointer shrink-0"
-            title="Emitir Via Técnica (Oficina)"
-          >
-            <span className="material-symbols-outlined text-[18px]">engineering</span>
-            <span className="whitespace-nowrap">Via Técnica</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => window.print()}
-            className="p-2 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-lg border border-outline-variant/60 transition-colors flex items-center gap-1.5 text-xs font-label font-medium cursor-pointer shrink-0"
-            title="Imprimir proposta"
-          >
-            <span className="material-symbols-outlined text-[18px]">print</span>
-            <span className="whitespace-nowrap">Imprimir</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={handleDuplicateBudget}
-            disabled={isDuplicating}
-            className="p-2 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-lg border border-outline-variant/60 transition-colors flex items-center gap-1.5 text-xs font-label font-medium disabled:opacity-50 cursor-pointer shrink-0"
-            title="Duplicar este orçamento como uma nova proposta"
-          >
-            <span className="material-symbols-outlined text-[18px]">
-              {isDuplicating ? 'progress_activity' : 'content_copy'}
-            </span>
-            <span className="whitespace-nowrap">
-              {isDuplicating ? 'Duplicando...' : 'Duplicar'}
-            </span>
-          </button>
-
-          <Button
-            variant="outline"
-            icon="delete"
-            onClick={() => setShowDeleteModal(true)}
-            className="text-error border-error/30 hover:bg-error/10 hover:border-error text-xs py-1.5 px-2.5 shrink-0"
-            title="Excluir este orçamento"
-          >
-            <span className="whitespace-nowrap">Excluir</span>
-          </Button>
-
-          <Link to={`/orcamentos/${budget.id}/editar`} className="shrink-0">
-            <Button variant="outline" icon="edit" className="text-xs py-1.5 px-3 whitespace-nowrap">
-              Editar
-            </Button>
-          </Link>
-
-          <Link to="/orcamentos/novo" className="shrink-0">
-            <Button variant="primary" icon="add" className="text-xs py-1.5 px-3 whitespace-nowrap">
-              Novo
-            </Button>
-          </Link>
-        </div>
+        {/* ── Barra de Ações Superior Isolada ────────────────────────────── */}
+        <BudgetDetailActions
+          budgetId={budget.id}
+          budgetCode={budget.code}
+          total={total}
+          onDeleteClick={() => setShowDeleteModal(true)}
+        />
       </header>
 
       {/* ── Conteúdo Principal ───────────────────────────────────────────── */}
@@ -607,117 +447,25 @@ export function BudgetDetailPage() {
                 </div>
               </div>
 
-              {/* ── CARD DE FECHAMENTO FINANCEIRO ────────────────────────── */}
-              <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-md shadow-xs flex flex-col gap-sm">
-                <div className="flex items-center justify-between pb-xs border-b border-outline-variant">
-                  <h3 className="text-xs font-label font-bold text-on-surface uppercase tracking-wider flex items-center gap-1">
-                    <span className="material-symbols-outlined text-[16px] text-primary">receipt_long</span>
-                    {' '}Fechamento Financeiro
-                  </h3>
-                  <span className="text-[10px] font-data-mono text-secondary px-1.5 py-0.5 rounded bg-surface-container">
-                    BRL (R$)
-                  </span>
-                </div>
-
-                <div className="flex flex-col gap-xs pt-xs">
-                  {/* Valor Bruto */}
-                  <div className="flex justify-between items-center text-xs py-1 border-b border-outline-variant/40 border-dashed">
-                    <span className="text-on-surface-variant font-body">Valor Bruto dos Itens:</span>
-                    <span className="font-data-mono text-on-surface font-semibold">{formatBRL(subtotal)}</span>
-                  </div>
-
-                  {/* Mão de Obra */}
-                  {totalLaborCost > 0 && (
-                    <div className="flex justify-between items-center text-xs py-1 border-b border-outline-variant/40 border-dashed">
-                      <span className="text-on-surface-variant font-body">Mão de Obra:</span>
-                      <span className="font-data-mono text-on-surface font-semibold">+ {formatBRL(totalLaborCost)}</span>
-                    </div>
-                  )}
-
-                  {/* Taxa de Frete */}
-                  {freightCost > 0 && (
-                    <div className="flex justify-between items-center text-xs py-1 border-b border-outline-variant/40 border-dashed">
-                      <span className="text-on-surface-variant font-body">Taxa de Frete:</span>
-                      <span className="font-data-mono text-on-surface">+ {formatBRL(freightCost)}</span>
-                    </div>
-                  )}
-
-                  {/* Taxa de Instalação */}
-                  {installationCost > 0 && (
-                    <div className="flex justify-between items-center text-xs py-1 border-b border-outline-variant/40 border-dashed">
-                      <span className="text-on-surface-variant font-body">Taxa de Instalação:</span>
-                      <span className="font-data-mono text-on-surface">+ {formatBRL(installationCost)}</span>
-                    </div>
-                  )}
-
-                  {/* Desconto com Badge de Identificação (% ou R$) */}
-                  {hasDiscount && (
-                    <div className="flex justify-between items-center text-xs py-1 border-b border-outline-variant/40 border-dashed">
-                      <span className="text-on-surface-variant font-body flex items-center gap-1.5">
-                        <span>Desconto</span>
-                        <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-error/10 border border-error/20 text-error font-extrabold tracking-wide">
-                          {isPercentDiscount ? `${budget.discountPercent}%` : 'R$'}
-                        </span>
-                      </span>
-                      <span className="font-data-mono text-error font-bold">− {formatBRL(discountValue)}</span>
-                    </div>
-                  )}
-
-                  {/* Valor Líquido em Destaque */}
-                  <div className="bg-surface-container-low rounded-lg p-sm border border-outline-variant/60 flex flex-col gap-0.5 mt-xs shadow-inner">
-                    <span className="text-[11px] font-label font-bold text-on-surface-variant uppercase tracking-wider">
-                      Valor Líquido a Pagar
-                    </span>
-                    <span className="font-data-mono font-extrabold text-primary text-2xl sm:text-3xl leading-tight">
-                      {formatBRL(total)}
-                    </span>
-                  </div>
-
-                  {/* Condição de Pagamento */}
-                  {(budget.paymentCondition || budget.paymentConditionLabel || paymentMethod) ? (
-                    <div className="mt-2 pt-2 border-t border-outline-variant/50 flex flex-col gap-1">
-                      <span className="text-[10px] font-label font-bold text-on-surface uppercase flex items-center gap-1">
-                        <span className="material-symbols-outlined text-[14px] text-primary">credit_card</span>
-                        Condição de Pagamento
-                      </span>
-                      <p className="text-[11px] font-body text-primary font-bold bg-surface-container px-2 py-1.5 rounded-md border border-outline-variant/50">
-                        {budget.paymentConditionLabel ?? paymentMethod}
-                      </p>
-                    </div>
-                  ) : null}
-
-                  {/* Notas / Condições Comerciais */}
-                  {(budget.paymentNotes || commercialConditions) ? (
-                    <div className="mt-1">
-                      <span className="text-[10px] font-label font-bold text-on-surface uppercase flex items-center gap-1 mb-1">
-                        <span className="material-symbols-outlined text-[14px] text-primary">payments</span>
-                        Notas Comerciais
-                      </span>
-                      <p className="text-[11px] font-body text-on-surface-variant bg-surface-container px-2 py-1.5 rounded-md border border-outline-variant/50 whitespace-pre-line leading-relaxed">
-                        {budget.paymentNotes ?? commercialConditions}
-                      </p>
-                    </div>
-                  ) : null}
-
-                  {/* Informações de Validade */}
-                  <div className="flex flex-col gap-1 pt-2 text-[11px] font-body text-on-surface-variant border-t border-outline-variant mt-2">
-                    <div className="flex items-center justify-between">
-                      <span>Criado em:</span>
-                      <strong className="font-data-mono text-on-surface">
-                        {new Date(budget.createdAt).toLocaleDateString('pt-BR')}
-                      </strong>
-                    </div>
-                    {budget.validUntil && (
-                      <div className="flex items-center justify-between">
-                        <span>Validade da proposta:</span>
-                        <strong className="font-data-mono text-on-surface">
-                          {new Date(budget.validUntil).toLocaleDateString('pt-BR')}
-                        </strong>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
+              {/* ── CARD DE FECHAMENTO FINANCEIRO ISOLADO ────────────────── */}
+              <BudgetFinancialSummaryCard
+                subtotal={subtotal}
+                totalLaborCost={totalLaborCost}
+                freightCost={freightCost}
+                installationCost={installationCost}
+                hasDiscount={hasDiscount}
+                isPercentDiscount={isPercentDiscount}
+                discountPercent={budget.discountPercent}
+                discountValue={discountValue}
+                total={total}
+                paymentCondition={budget.paymentCondition}
+                paymentConditionLabel={budget.paymentConditionLabel}
+                paymentMethod={paymentMethod}
+                paymentNotes={budget.paymentNotes}
+                commercialConditions={commercialConditions}
+                createdAt={budget.createdAt}
+                validUntil={budget.validUntil}
+              />
 
             </div>
 
