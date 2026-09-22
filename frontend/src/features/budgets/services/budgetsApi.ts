@@ -208,68 +208,64 @@ export const budgetsApi = {
   // ORÇAMENTOS - LISTAGEM
   // ============================================================
   getBudgets: async (filters: BudgetFilters): Promise<BudgetPageResponse> => {
-    try {
-      const params: Record<string, string | number> = {
-        page: filters.page,
-        size: filters.size,
-      };
+    const params: Record<string, string | number> = {
+      page: filters.page,
+      size: filters.size,
+    };
 
-      if (filters.status) {
-        params.status = filters.status;
-      }
-
-      if (filters.search) {
-        params.busca = filters.search;
-      }
-
-      if (filters.sort) {
-        params.sort = filters.sort;
-      }
-
-      const response = await api.get<any>('/api/orcamentos', {
-        baseURL: '',
-        params,
-      });
-      if (response.data && Array.isArray(response.data.content)) {
-        const mappedContent: BudgetSummary[] = response.data.content.map((b: any) => ({
-          id: b.id,
-          code: b.code,
-          customerId: b.clientId,
-          customerName: b.clientName,
-          customer: {
-            id: b.clientId,
-            name: b.clientName,
-          },
-          status: b.status,
-          createdAt: b.createdAt,
-          validUntil: b.validUntil,
-          subtotal: Number(b.subtotal ?? b.total ?? 0),
-          discountPercent: Number(b.discountPercent ?? 0),
-          discountValue: Number(b.discountValue ?? 0),
-          total: Number(b.total ?? 0),
-          itemCount: Number(b.itemCount ?? b.totalItems ?? 0),
-          isExpired: Boolean(b.isExpired ?? b.expired),
-        }));
-
-        const totalElements = Number(response.data.totalElements ?? mappedContent.length);
-        const totalPages = Number(response.data.totalPages ?? Math.max(1, Math.ceil(totalElements / filters.size)));
-        const pageNumber = Number(response.data.page ?? filters.page);
-        const pageSize = Number(response.data.size ?? filters.size);
-
-        return {
-          content: mappedContent,
-          page: pageNumber,
-          size: pageSize,
-          totalElements,
-          totalPages,
-          isFirst: pageNumber === 0,
-          isLast: pageNumber >= totalPages - 1,
-        };
-      }
-      throw new Error('Formato de resposta inválido da API');
-    } catch (error) {
-      throw error;
+    if (filters.status) {
+      params.status = filters.status;
     }
+
+    if (filters.search) {
+      params.busca = filters.search;
+    }
+
+    if (filters.sort) {
+      params.sort = filters.sort;
+    }
+
+    const response = await api.get<any>('/api/orcamentos', {
+      baseURL: '',
+      params,
+    });
+    if (response.data && Array.isArray(response.data.content)) {
+      const mappedContent: BudgetSummary[] = response.data.content.map((b: any) => ({
+        id: b.id,
+        code: b.code,
+        customerId: b.clientId,
+        customerName: b.clientName,
+        customer: {
+          id: b.clientId,
+          name: b.clientName,
+        },
+        status: b.status,
+        createdAt: b.createdAt,
+        validUntil: b.validUntil,
+        subtotal: Number(b.subtotal ?? b.total ?? 0),
+        discountPercent: Number(b.discountPercent ?? 0),
+        discountValue: Number(b.discountValue ?? 0),
+        total: Number(b.total ?? 0),
+        itemCount: Number(b.itemCount ?? b.totalItems ?? 0),
+        isExpired: Boolean(b.isExpired ?? b.expired),
+      }));
+
+      const totalElements = Number(response.data.totalElements ?? mappedContent.length);
+      const totalPages = Number(response.data.totalPages ?? Math.max(1, Math.ceil(totalElements / filters.size)));
+      const pageNumber = Number(response.data.page ?? filters.page);
+      const pageSize = Number(response.data.size ?? filters.size);
+
+      return {
+        content: mappedContent,
+        page: pageNumber,
+        size: pageSize,
+        totalElements,
+        totalPages,
+        isFirst: pageNumber === 0,
+        isLast: pageNumber >= totalPages - 1,
+      };
+    }
+    throw new Error('Formato de resposta inválido da API');
   },
 
   getStatusCounts: async (): Promise<Record<BudgetStatus | '', number>> => {
