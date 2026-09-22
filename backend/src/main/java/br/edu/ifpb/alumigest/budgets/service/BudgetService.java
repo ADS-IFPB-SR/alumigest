@@ -284,7 +284,8 @@ public BudgetResponseDTO create(BudgetCreateRequest requestDTO) {
         budgetRepository.save(budget);
     }
 
-    private Budget getBudgetOrThrow(UUID id) {
+    @Transactional(readOnly = true)
+    public Budget getBudgetOrThrow(UUID id) {
         return budgetRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Orçamento", id.toString()));
     }

@@ -4,6 +4,10 @@ import br.edu.ifpb.alumigest.budgets.domain.BudgetStatus;
 import br.edu.ifpb.alumigest.budgets.dto.*;
 import br.edu.ifpb.alumigest.budgets.service.BudgetQuantityService;
 import br.edu.ifpb.alumigest.budgets.service.BudgetService;
+import br.edu.ifpb.alumigest.budgets.domain.Budget;
+import br.edu.ifpb.alumigest.budgets.service.BudgetPdfService;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import br.edu.ifpb.alumigest.common.dto.PageResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -37,10 +41,12 @@ public class BudgetController {
 
     private final BudgetService budgetService;
     private final BudgetQuantityService budgetQuantityService;
+    private final BudgetPdfService budgetPdfService;
 
-    public BudgetController(BudgetService budgetService, BudgetQuantityService budgetQuantityService) {
+    public BudgetController(BudgetService budgetService, BudgetQuantityService budgetQuantityService, BudgetPdfService budgetPdfService) {
         this.budgetService = budgetService;
         this.budgetQuantityService = budgetQuantityService;
+        this.budgetPdfService = budgetPdfService;
     }
 
     @PostMapping
@@ -141,6 +147,30 @@ public class BudgetController {
                 .buildAndExpand(response.id())
                 .toUri();
         return ResponseEntity.created(location).body(response);
+    }
+
+    @GetMapping({"/{id}/pdf/comercial", "/{id}/pdf"})
+    @Operation(
+            summary = "Exportar PDF comercial do orçamento",
+            description = "Gera e exporta a proposta comercial oficial em formato PDF A4 para download."
+    )
+    @ApiResponse(responseCode = "200", description = "PDF gerado com sucesso (binário)")
+    @ApiResponse(responseCode = "404", description = "Orçamento não encontrado")
+    public ResponseEntity<byte[]> gerarPdfComercial(
+            @Parameter(description = "ID do orçamento") @PathVariable UUID id) {
+        Budget budget = budgetService.getBudgetOrThrow(id);
+        byte[] pdfBytes = budgetPdfService.gerarPdfComercial(budget);
+
+        String code = (budget.getCode() != null && !budget.getCode().isBlank())
+                ? budget.getCode()
+                : "orcamento";
+        String filename = code + "-comercial.pdf";
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .contentLength(pdfBytes.length)
+                .body(pdfBytes);
     }
 
 
