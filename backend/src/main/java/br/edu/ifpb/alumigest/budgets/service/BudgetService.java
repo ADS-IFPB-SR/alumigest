@@ -84,7 +84,7 @@ public BudgetResponseDTO create(BudgetCreateRequest requestDTO) {
                 item.getOptions().clear();
 
                 for (BudgetItemOption option : optionsCopy) {
-                    item.addOption(option);
+                    item.addOption(option); // ou option.setBudgetItem(item);
                 }
             }
         }
@@ -299,7 +299,7 @@ public BudgetResponseDTO create(BudgetCreateRequest requestDTO) {
         if (budget.getItems() != null) {
             budget.getItems().forEach(item -> {
                 if (item.getOptions() != null) {
-                    org.hibernate.Hibernate.initialize(item.getOptions());
+                    item.getOptions().size();
                 }
             });
         }

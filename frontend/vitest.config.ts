@@ -7,7 +7,6 @@ export default defineConfig({
     globals: true,
     environment: 'happy-dom',
     setupFiles: ['./src/test/setup.ts'],
-    testTimeout: 15000,
     include: ['src/__tests__/**/*.{test,spec}.{ts,tsx}'],
     reporters: process.env.CI ? ['default', 'junit'] : ['default'],
     outputFile: {
