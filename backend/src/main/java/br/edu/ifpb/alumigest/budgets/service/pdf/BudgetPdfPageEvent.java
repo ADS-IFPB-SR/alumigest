@@ -13,7 +13,8 @@ import com.lowagie.text.pdf.PdfTemplate;
 import com.lowagie.text.pdf.PdfWriter;
 
 import java.awt.Color;
-import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 
 public class BudgetPdfPageEvent extends PdfPageEventHelper {
@@ -88,7 +89,7 @@ public class BudgetPdfPageEvent extends PdfPageEventHelper {
     private void adicionarRodapeComPaginacao(PdfContentByte canvas, PdfWriter writer,
                                               float margemEsq, float margemDir,
                                               float yRodape, float larguraPagina) {
-        String dataHoraGeracao = LocalDateTime.now()
+        String dataHoraGeracao = ZonedDateTime.now(ZoneId.of("America/Sao_Paulo"))
                 .format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
 
         ColumnText.showTextAligned(canvas, Element.ALIGN_LEFT,

@@ -64,6 +64,7 @@ public class BudgetPdfService {
             adicionarFechamentoFinanceiro(document, budget);
             adicionarRodapeEAssinaturas(document, budget);
 
+            document.close();
             return outputStream.toByteArray();
 
         } catch (Exception e) {

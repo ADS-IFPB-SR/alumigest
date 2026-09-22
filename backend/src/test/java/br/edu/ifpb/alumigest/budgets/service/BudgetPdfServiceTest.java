@@ -8,6 +8,7 @@ import br.edu.ifpb.alumigest.budgets.domain.BudgetStatus;
 import br.edu.ifpb.alumigest.budgets.domain.PaymentCondition;
 import br.edu.ifpb.alumigest.catalog.domain.MaterialCategoryType;
 import br.edu.ifpb.alumigest.clients.domain.Client;
+import com.lowagie.text.pdf.PdfReader;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -99,12 +100,14 @@ class BudgetPdfServiceTest {
 
     @Test
     @DisplayName("Deve gerar PDF com múltiplos itens e paginação automática sem lançar exceção")
-    void deveGerarPdfComMultiplosItensEPaginacao() {
+    void deveGerarPdfComMultiplosItensEPaginacao() throws Exception {
         Budget budget = criarBudgetComMuitosItens();
         byte[] pdfBytes = budgetPdfService.gerarPdfComercial(budget);
-
         assertNotNull(pdfBytes);
-        assertTrue(pdfBytes.length > 0);
+
+        PdfReader reader = new PdfReader(pdfBytes);
+        assertTrue(reader.getNumberOfPages() > 1, "O PDF com 20 itens deve conter mais de 1 página");
+        reader.close();
     }
 
     // --- Helper para montar os dados ---
