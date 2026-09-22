@@ -30,24 +30,34 @@ function parseJsonConfig<T>(raw: unknown, fallback: T): T {
   return fallback;
 }
 
-function formatValidUntil(val?: string): string | undefined {
+/*function formatValidUntil(val?: string): string | undefined {
   if (!val) return undefined;
   return val.includes('T') ? val : `${val}T23:59:59Z`;
 }
+*/
 
 function toBackendBudgetPayload(data: CreateBudgetPayload) {
   return {
     clientId: data.customerId,
     discountPercent: data.discountPercent,
+    discountType: data.discountType,
+    discountInput: data.discountInput,
+    paymentCondition: data.paymentCondition,
     notes: data.notes,
-    validUntil: formatValidUntil(data.validUntil),
-    items: data.items.map((item) => ({
+    commercialConditions: data.commercialConditions,
+    
+    // 👇 Garante que só envia validUntil se ele existir, evitando erro de parse no Java
+    validUntil: data.validUntil ? (data.validUntil.includes('T') ? data.validUntil : `${data.validUntil}T23:59:59Z`) : undefined,
+    
+    items: (data.items ?? []).map((item) => ({
       productId: item.productId,
       widthMm: item.width,
       heightMm: item.height,
       quantity: item.quantity,
       laborCost: item.laborCost ?? 0,
       templateType: item.templateType,
+      
+      // Converte objetos de configuração para string JSON se o backend esperar String/Text
       templateConfig: typeof item.templateConfig === 'object' && item.templateConfig !== null 
         ? JSON.stringify(item.templateConfig) 
         : item.templateConfig,
@@ -57,6 +67,7 @@ function toBackendBudgetPayload(data: CreateBudgetPayload) {
       drillingConfig: typeof item.drillingConfig === 'object' && item.drillingConfig !== null 
         ? JSON.stringify(item.drillingConfig) 
         : item.drillingConfig,
+        
       notes: item.notes,
       options: (item.options ?? []).map((opt) => ({
         materialId: opt.materialId,
@@ -76,6 +87,9 @@ function mapBackendToBudgetDetail(res: any): BudgetDetail {
     customer: {
       id: res.clientId,
       name: res.clientName,
+      phone: res.clientPhone,
+      email: res.clientEmail,
+      address: res.clientAddress,
     },
     status: res.status,
     createdAt: res.createdAt,
@@ -85,6 +99,9 @@ function mapBackendToBudgetDetail(res: any): BudgetDetail {
     discountValue: Number(res.discountValue ?? 0),
     total: Number(res.total ?? 0),
     notes: res.notes,
+    paymentCondition: res.paymentCondition,
+    paymentConditionLabel: res.paymentConditionLabel,
+    paymentNotes: res.paymentNotes,
     itemCount: Array.isArray(res.items) ? res.items.length : 0,
     items: Array.isArray(res.items)
       ? res.items.map((item: any) => ({

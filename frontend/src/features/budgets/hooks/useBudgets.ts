@@ -43,7 +43,11 @@ export const useBudget = (id: string | undefined) => {
 export const useCreateBudget = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: CreateBudgetPayload) => budgetsApi.createBudget(data),
+    mutationFn: (data: CreateBudgetPayload) => {
+      // 🔍 LOG CRUCIAL: Veja o que exatamente está sendo enviado para a API
+      console.log('🚀 Payload capturado no mutationFn:', JSON.stringify(data, null, 2));
+      return budgetsApi.createBudget(data);
+    },
     onSuccess: () => {
       toast.success('Orçamento criado com sucesso!');
       queryClient.invalidateQueries({ queryKey: ['budgets'] });
