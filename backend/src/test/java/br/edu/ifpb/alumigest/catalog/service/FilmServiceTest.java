@@ -11,6 +11,7 @@ import br.edu.ifpb.alumigest.catalog.repository.MaterialRepository;
 import br.edu.ifpb.alumigest.common.exception.BusinessException;
 import br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -120,6 +121,21 @@ class FilmServiceTest {
         FilmResponseDTO result = filmService.updateFilmPrice(filmId, updateRequest);
 
         assertEquals(new BigDecimal("85.50"), result.salePrice());
+        verify(materialRepository, times(1)).save(mockMaterial);
+    }
+
+    @Test
+    @DisplayName("[Técnica: Teste de Caminhos - active != null] Deve atualizar o status active quando fornecido")
+    void updateFilmPrice_ShouldUpdateActiveState_WhenActiveIsNotNull() {
+        FilmUpdatePriceDTO updateRequest = new FilmUpdatePriceDTO("Fumê G20", "REF-1", "Fumê", BigDecimal.ZERO, new BigDecimal("85.50"), "123", new BigDecimal("0.8"), new BigDecimal("100"), new BigDecimal("1520"), false);
+
+        when(materialRepository.findByIdAndGroupCode(filmId, "PELICULA")).thenReturn(Optional.of(mockMaterial));
+        when(materialRepository.save(any(Material.class))).thenReturn(mockMaterial);
+        when(filmMapper.toResponse(mockMaterial)).thenReturn(new FilmResponseDTO(filmId, "Fumê G20", "Fumê", BigDecimal.ZERO, new BigDecimal("85.50"), "m2", new BigDecimal("0.8"), new BigDecimal("100"), new BigDecimal("1520"), false, "REF-1", "123", "123"));
+
+        FilmResponseDTO result = filmService.updateFilmPrice(filmId, updateRequest);
+
+        assertFalse(mockMaterial.isActive());
         verify(materialRepository, times(1)).save(mockMaterial);
     }
 
