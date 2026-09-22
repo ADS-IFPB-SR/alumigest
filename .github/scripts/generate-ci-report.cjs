@@ -195,10 +195,93 @@ function parseVitestCoverage(searchDirs) {
   return null;
 }
 
+async function fetchSonarQualityGate(projectKey, sonarHostUrl, sonarToken) {
+  if (!sonarHostUrl || !sonarToken) return null;
+  try {
+    const authHeader = 'Basic ' + Buffer.from(sonarToken + ':').toString('base64');
+    const url = `${sonarHostUrl.replace(/\/+$/, '')}/api/qualitygates/project_status?projectKey=${encodeURIComponent(projectKey)}`;
+    const res = await fetch(url, {
+      headers: {
+        'Authorization': authHeader
+      }
+    });
+    if (!res.ok) {
+      console.warn(`SonarQube API respondeu com status ${res.status} para ${projectKey}`);
+      return null;
+    }
+    const data = await res.json();
+    return data.projectStatus || null;
+  } catch (err) {
+    console.error(`Erro ao consultar Quality Gate para ${projectKey}:`, err.message);
+    return null;
+  }
+}
+
+async function fetchSonarIssues(projectKey, sonarHostUrl, sonarToken, limit = 30) {
+  if (!sonarHostUrl || !sonarToken) return [];
+  try {
+    const authHeader = 'Basic ' + Buffer.from(sonarToken + ':').toString('base64');
+    const baseUrl = sonarHostUrl.replace(/\/+$/, '');
+
+    // 1. Tenta buscar issues do New Code Period
+    let url = `${baseUrl}/api/issues/search?componentKeys=${encodeURIComponent(projectKey)}&inNewCodePeriod=true&resolved=false&ps=${limit}&s=SEVERITY&asc=false`;
+    let res = await fetch(url, { headers: { 'Authorization': authHeader } });
+
+    if (!res.ok) {
+      // 2. Fallback para issues gerais em aberto
+      url = `${baseUrl}/api/issues/search?componentKeys=${encodeURIComponent(projectKey)}&resolved=false&ps=${limit}&s=SEVERITY&asc=false`;
+      res = await fetch(url, { headers: { 'Authorization': authHeader } });
+    }
+
+    if (!res.ok) {
+      console.warn(`SonarQube API issues respondeu com status ${res.status} para ${projectKey}`);
+      return [];
+    }
+
+    const data = await res.json();
+    return data.issues || [];
+  } catch (err) {
+    console.error(`Erro ao buscar issues do SonarQube para ${projectKey}:`, err.message);
+    return [];
+  }
+}
+
+function formatSeverityBadge(severity) {
+  switch (severity) {
+    case 'BLOCKER': return '⛔ Blocker';
+    case 'CRITICAL': return '🔴 Critical';
+    case 'MAJOR': return '🟠 Major';
+    case 'MINOR': return '🟡 Minor';
+    case 'INFO': return 'ℹ️ Info';
+    default: return severity || 'N/A';
+  }
+}
+
+function formatTypeBadge(type) {
+  switch (type) {
+    case 'BUG': return '🐛 Bug';
+    case 'VULNERABILITY': return '🛡️ Vulnerabilidade';
+    case 'CODE_SMELL': return '🧹 Code Smell';
+    case 'SECURITY_HOTSPOT': return '🔒 Hotspot';
+    default: return type || 'Issue';
+  }
+}
+
+function cleanComponentPath(component, projectKey) {
+  let clean = (component || '').replace(`${projectKey}:`, '');
+  if (projectKey.includes('frontend') && !clean.startsWith('frontend/')) {
+    clean = `frontend/${clean}`;
+  } else if (projectKey.includes('backend') && !clean.startsWith('backend/')) {
+    clean = `backend/${clean}`;
+  }
+  return clean;
+}
+
 module.exports = async function ({ github, context, core }) {
   const backendStatus = process.env.BACKEND_STATUS || 'unknown';
   const frontendStatus = process.env.FRONTEND_STATUS || 'unknown';
   const sonarHostUrl = process.env.SONAR_HOST_URL || '';
+  const sonarToken = process.env.SONAR_TOKEN || '';
   const commitSha = context.sha ? context.sha.substring(0, 7) : 'N/A';
   const runId = context.runId;
   const repoUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}`;
@@ -219,8 +302,22 @@ module.exports = async function ({ github, context, core }) {
   const frontendTests = parseVitestReport(frontendSearchDirs);
   const frontendCov = parseVitestCoverage(frontendSearchDirs);
 
+  const [backendQG, frontendQG, backendIssues, frontendIssues] = await Promise.all([
+    fetchSonarQualityGate('alumigest-backend', sonarHostUrl, sonarToken),
+    fetchSonarQualityGate('alumigest-frontend', sonarHostUrl, sonarToken),
+    fetchSonarIssues('alumigest-backend', sonarHostUrl, sonarToken, 30),
+    fetchSonarIssues('alumigest-frontend', sonarHostUrl, sonarToken, 30)
+  ]);
+
+  const backendQGFailed = backendQG && backendQG.status === 'ERROR';
+  const frontendQGFailed = frontendQG && frontendQG.status === 'ERROR';
+
   const allFailures = [...backendTests.failedTests, ...frontendTests.failedTests];
-  const overallSuccess = backendStatus === 'success' && frontendStatus === 'success' && allFailures.length === 0;
+  const overallSuccess = backendStatus === 'success' && 
+                         frontendStatus === 'success' && 
+                         allFailures.length === 0 &&
+                         !backendQGFailed &&
+                         !frontendQGFailed;
 
   const statusBadge = overallSuccess 
     ? '### 🟢 Pipeline Aprovada com Sucesso' 
@@ -255,7 +352,11 @@ module.exports = async function ({ github, context, core }) {
 
   if (sonarHostUrl) {
     const sonarBackendUrl = `${sonarHostUrl}/dashboard?id=alumigest-backend`;
-    markdown += `| | SonarQube | 🔍 Concluído | [Acessar Dashboard Backend](${sonarBackendUrl}) |\n`;
+    let qgStatus = '🔍 Concluído';
+    if (backendQG) {
+      qgStatus = backendQG.status === 'OK' ? '✅ Aprovado (OK)' : '❌ Reprovado (ERROR)';
+    }
+    markdown += `| | SonarQube Quality Gate | ${qgStatus} | [Acessar Dashboard Backend](${sonarBackendUrl}) |\n`;
   }
 
   // Frontend
@@ -278,7 +379,11 @@ module.exports = async function ({ github, context, core }) {
 
   if (sonarHostUrl) {
     const sonarFrontendUrl = `${sonarHostUrl}/dashboard?id=alumigest-frontend`;
-    markdown += `| | SonarQube | 🔍 Concluído | [Acessar Dashboard Frontend](${sonarFrontendUrl}) |\n`;
+    let qgStatus = '🔍 Concluído';
+    if (frontendQG) {
+      qgStatus = frontendQG.status === 'OK' ? '✅ Aprovado (OK)' : '❌ Reprovado (ERROR)';
+    }
+    markdown += `| | SonarQube Quality Gate | ${qgStatus} | [Acessar Dashboard Frontend](${sonarFrontendUrl}) |\n`;
   }
 
   if (allFailures.length > 0) {
@@ -291,6 +396,73 @@ module.exports = async function ({ github, context, core }) {
         markdown += `\`\`\`\n${f.details}\n\`\`\`\n`;
       }
       markdown += `</details>\n\n`;
+    }
+  }
+
+  const failedQGConditions = [];
+  if (backendQG && backendQG.conditions) {
+    for (const c of backendQG.conditions) {
+      if (c.status === 'ERROR') {
+        failedQGConditions.push({ component: 'Backend', ...c });
+      }
+    }
+  }
+  if (frontendQG && frontendQG.conditions) {
+    for (const c of frontendQG.conditions) {
+      if (c.status === 'ERROR') {
+        failedQGConditions.push({ component: 'Frontend', ...c });
+      }
+    }
+  }
+
+  const hasSonarIssues = (backendIssues && backendIssues.length > 0) || (frontendIssues && frontendIssues.length > 0);
+
+  if (failedQGConditions.length > 0 || hasSonarIssues) {
+    markdown += `\n### 🚨 Apontamentos do SonarQube & Quality Gate\n\n`;
+
+    if (failedQGConditions.length > 0) {
+      markdown += `#### ⚠️ Condições Reprovadas no Quality Gate\n\n`;
+      for (const c of failedQGConditions) {
+        const op = c.comparator === 'GT' ? '>' : (c.comparator === 'LT' ? '<' : c.comparator);
+        markdown += `- **[${c.component}]** Métrica: \`${c.metricKey}\` | Valor: **${c.actualValue}** (Limite: ${op} ${c.errorThreshold})\n`;
+      }
+      markdown += `\n`;
+    }
+
+    if (hasSonarIssues) {
+      markdown += `> 💡 **Guia Rápido de Correção:** Os apontamentos abaixo foram detectados no código novo deste PR. Clique no arquivo para abrir a linha diretamente no GitHub.\n\n`;
+
+      const renderIssueTable = (issues, compName, projKey) => {
+        if (!issues || issues.length === 0) return '';
+        let section = `#### ${compName === 'Backend' ? '☕' : '🖥️'} ${compName} (${issues.length} issue${issues.length > 1 ? 's' : ''})\n\n`;
+        section += `| Severidade | Tipo | Arquivo & Linha | Regra | Descrição do Problema |\n`;
+        section += `| :---: | :---: | :--- | :---: | :--- |\n`;
+
+        for (const issue of issues) {
+          const sev = formatSeverityBadge(issue.severity);
+          const type = formatTypeBadge(issue.type);
+          const fullPath = cleanComponentPath(issue.component, projKey);
+          const fileName = path.basename(fullPath);
+          const lineNum = issue.line || (issue.textRange ? issue.textRange.startLine : 1);
+
+          let fileLink = `\`${fileName}:${lineNum}\``;
+          if (repoUrl && commitSha && commitSha !== 'N/A') {
+            fileLink = `[\`${fileName}:${lineNum}\`](${repoUrl}/blob/${commitSha}/${fullPath}#L${lineNum})`;
+          }
+
+          const escapedMsg = (issue.message || '').replace(/\|/g, '\\|').replace(/\r?\n/g, ' ');
+          section += `| ${sev} | ${type} | ${fileLink} | \`${issue.rule}\` | ${escapedMsg} |\n`;
+        }
+        section += `\n`;
+        return section;
+      };
+
+      if (frontendIssues && frontendIssues.length > 0) {
+        markdown += renderIssueTable(frontendIssues, 'Frontend', 'alumigest-frontend');
+      }
+      if (backendIssues && backendIssues.length > 0) {
+        markdown += renderIssueTable(backendIssues, 'Backend', 'alumigest-backend');
+      }
     }
   }
 
