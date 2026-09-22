@@ -62,9 +62,11 @@ public record BudgetCreateRequest(
             @JsonProperty("validUntil") OffsetDateTime validUntil,
             @JsonProperty("items") @JsonAlias("itens") List<BudgetItemRequestDTO> items
     ) {
+        String effectiveNotes = (notes != null && !notes.isBlank()) ? notes : observacoes;
+        String effectiveObservacoes = (observacoes != null && !observacoes.isBlank()) ? observacoes : notes;
         this.clientId = clientId;
-        this.observacoes = observacoes;
-        this.notes = notes;
+        this.observacoes = effectiveObservacoes;
+        this.notes = effectiveNotes;
         this.discountPercent = discountPercent;
         this.discountType = discountType;
         this.discountInput = discountInput;

@@ -164,6 +164,57 @@ class BudgetServiceTest {
     }
 
     @Test
+    @DisplayName("Criação com itens: deve persistir itens com vínculo bidirecional e recalcular preços")
+    void create_ShouldPersistItemsAndRecalculatePricing_WhenItemsProvidedInRequest() {
+        when(clientRepository.findById(client.getId())).thenReturn(Optional.of(client));
+
+        BudgetItem item = new BudgetItem();
+        item.setId(UUID.randomUUID());
+        item.setQuantity(2);
+        item.setWidthMm(new BigDecimal("1000"));
+        item.setHeightMm(new BigDecimal("1000"));
+
+        BudgetItemOption option = new BudgetItemOption();
+        option.setId(UUID.randomUUID());
+        item.setOptions(new java.util.ArrayList<>(List.of(option)));
+
+        Budget mappedBudget = new Budget();
+        mappedBudget.setItems(new java.util.ArrayList<>(List.of(item)));
+
+        BudgetItemRequestDTO itemDto = new BudgetItemRequestDTO(
+                UUID.randomUUID(), new BigDecimal("1000"), new BigDecimal("1000"), 2,
+                BigDecimal.ZERO, null, null, null, null, null, null
+        );
+        BudgetCreateRequest requestWithItems = new BudgetCreateRequest(
+                client.getId(), "Notas", "Notas", null, null, null, null, null, null, List.of(itemDto)
+        );
+
+        when(budgetMapper.toEntity(requestWithItems)).thenReturn(mappedBudget);
+        when(budgetRepository.save(any(Budget.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        BudgetResponseDTO responseDTO = new BudgetResponseDTO(
+                budget.getId(), "ORC-2026-001", client.getId(), "João da Silva",
+                BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO,
+                PaymentCondition.A_VISTA_PIX, "À Vista (PIX / Dinheiro)", null,
+                BudgetStatus.DRAFT, "Rascunho", "Notas",
+                null, null, null, false, Collections.emptyList()
+        );
+        when(budgetMapper.toResponseDTO(any(Budget.class))).thenReturn(responseDTO);
+
+        BudgetResponseDTO result = budgetService.create(requestWithItems);
+
+        assertThat(result).isNotNull();
+        org.mockito.ArgumentCaptor<Budget> captor = org.mockito.ArgumentCaptor.forClass(Budget.class);
+        verify(budgetRepository).save(captor.capture());
+
+        Budget saved = captor.getValue();
+        assertThat(saved.getItems()).hasSize(1);
+        assertThat(saved.getItems().get(0).getBudget()).isEqualTo(saved);
+        assertThat(saved.getItems().get(0).getOptions().get(0).getBudgetItem()).isEqualTo(saved.getItems().get(0));
+        verify(budgetPricingService).calculatePricing(saved);
+    }
+
+    @Test
     @DisplayName("Consulta: Orçamento encontrado")
     void findById_ShouldReturnBudget_WhenExists() {
         when(budgetRepository.findById(budget.getId())).thenReturn(Optional.of(budget));
