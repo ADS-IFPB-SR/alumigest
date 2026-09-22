@@ -563,4 +563,34 @@ class BudgetControllerIntegrationTest {
                     .andExpect(jsonPath("$.status").value(404));
         }
     }
+
+    // =========================================================================
+    // 5. TESTES DO ENDPOINT GET /api/budgets/{id}/resumo-whatsapp [US-10.7]
+    // =========================================================================
+
+    @Nested
+    @DisplayName("GET /api/budgets/{id}/resumo-whatsapp — Resumo WhatsApp")
+    class WhatsAppSummaryEndpointTests {
+
+        @Test
+        @DisplayName("Deve retornar 200 OK e o texto do resumo quando o orçamento existir")
+        void shouldReturnWhatsAppSummarySuccessfully() throws Exception {
+            Budget budget = createDraftBudgetWithItem();
+
+            mockMvc.perform(get("/api/budgets/{id}/resumo-whatsapp", budget.getId()))
+                    .andExpect(status().isOk())
+                    .andExpect(header().string("Content-Type", MediaType.TEXT_PLAIN_VALUE + ";charset=UTF-8"))
+                    .andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_PLAIN));
+        }
+
+        @Test
+        @DisplayName("Deve retornar 404 Not Found quando o orçamento não existir para o WhatsApp")
+        void shouldReturn404WhenBudgetDoesNotExistForWhatsApp() throws Exception {
+            UUID nonExistentId = UUID.randomUUID();
+
+            mockMvc.perform(get("/api/budgets/{id}/resumo-whatsapp", nonExistentId))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.status").value(404));
+        }
+    }
 }
