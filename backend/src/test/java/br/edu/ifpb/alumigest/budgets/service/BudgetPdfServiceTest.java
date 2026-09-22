@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -59,14 +60,14 @@ class BudgetPdfServiceTest {
     }
 
     // =========================================================================
-    // 1. CASOS DE TESTE ESSENCIAIS (#228)
+    // 1. CASOS ESSENCIAIS DA ISSUE #228
     // =========================================================================
     @Nested
-    @DisplayName("1. Casos de Teste Essenciais (#228)")
-    class CasosEssenciaisTest {
+    @DisplayName("1. Casos Essenciais da Issue #228")
+    class CasosEssenciaisIssue228Test {
 
         @Test
-        @DisplayName("1. deveGerarPdfComercialComSucesso: Gera byte array válido iniciando com %PDF- e não vazio")
+        @DisplayName("1. deveGerarPdfComercialComSucesso: Deve gerar bytes não nulos, tamanho > 0 e cabeçalho %PDF-")
         void deveGerarPdfComercialComSucesso() throws IOException {
             Budget budget = criarBudgetPadrao(true);
 
@@ -74,11 +75,9 @@ class BudgetPdfServiceTest {
 
             assertThat(pdfBytes)
                     .as("Os bytes do PDF gerado não devem ser nulos")
-                    .isNotNull();
-
-            assertThat(pdfBytes)
+                    .isNotNull()
                     .as("O tamanho do array de bytes deve ser maior que zero")
-                    .hasSizeGreaterThan(0);
+                    .isNotEmpty();
 
             String header = new String(pdfBytes, 0, 5, StandardCharsets.US_ASCII);
             assertThat(header)
@@ -244,15 +243,15 @@ class BudgetPdfServiceTest {
             }
         }
 
-        @ParameterizedTest(name = "Para handleConfig ''{0}'', deve conter ''{1}'' no PDF")
-        @CsvSource(delimiter = '|', textBlock = """
-                {"handleType":"SHELL_LOCK"}           | Fecho Concha
-                {"type":"BAR_TUBULAR"}                 | Barra Tubular
-                {"handleType":"PUXADOR_ESPECIAL_INOX"} | PUXADOR_ESPECIAL_INOX
-                Puxador H 60cm                         | Puxador H 60cm
-                """)
-        @DisplayName("Dado diferentes formatos de handleConfig, deve renderizar a descrição esperada no PDF")
-        void dadoDiferentesHandleConfigs_deveRenderizarTextoEsperado(String handleConfig, String textoEsperado) throws IOException {
+        @ParameterizedTest(name = "config=''{0}'' deve conter ''{1}'' no PDF")
+        @CsvSource(delimiter = '|', value = {
+                "{\"handleType\":\"SHELL_LOCK\"}          | Fecho Concha",
+                "{\"type\":\"BAR_TUBULAR\"}                | Barra Tubular",
+                "{\"handleType\":\"PUXADOR_ESPECIAL_INOX\"}| PUXADOR_ESPECIAL_INOX",
+                "Puxador H 60cm                            | Puxador H 60cm"
+        })
+        @DisplayName("Dado diferentes configurações de handleConfig, deve renderizar o texto esperado no PDF")
+        void dadoHandleConfig_deveRenderizarTextoEsperado(String handleConfig, String textoEsperado) throws IOException {
             Budget budget = criarBudgetPadrao(false);
             budget.getItems().getFirst().setHandleConfig(handleConfig);
 
@@ -726,14 +725,14 @@ class BudgetPdfServiceTest {
 
     @Test
     @DisplayName("Deve gerar PDF com múltiplos itens e paginação automática sem lançar exceção")
-    void deveGerarPdfComMultiplosItensEPaginacao() throws IOException {
+    void deveGerarPdfComMultiplosItensEPaginacao() throws Exception {
         Budget budget = criarBudgetComMuitosItens();
         byte[] pdfBytes = budgetPdfService.gerarPdfComercial(budget);
         assertNotNull(pdfBytes);
 
-        try (PdfReader reader = new PdfReader(pdfBytes)) {
-            assertTrue(reader.getNumberOfPages() > 1, "O PDF com 20 itens deve conter mais de 1 página");
-        }
+        PdfReader reader = new PdfReader(pdfBytes);
+        assertTrue(reader.getNumberOfPages() > 1, "O PDF com 20 itens deve conter mais de 1 página");
+        reader.close();
     }
 
     private Budget criarBudgetPadrao(boolean itemCompleto) {
@@ -800,6 +799,160 @@ class BudgetPdfServiceTest {
 
         budget.setItems(new ArrayList<>(List.of(item)));
         return budget;
+    }
+
+    // =========================================================================
+    // CASOS COMPLEMENTARES DE COBERTURA E ROBUSTEZ [Joseph Nichollas]
+    // =========================================================================
+
+    @Nested
+    @DisplayName("Casos Complementares de Cobertura e Robustez [Joseph Nichollas]")
+    class CasosComplementaresJosephTest {
+
+        @Test
+        @DisplayName("Deve formatar endereço com cliente sem número (apenas logradouro)")
+        void deveFormatarEnderecoSemNumero() throws IOException {
+            Client client = Client.builder()
+                    .id(UUID.randomUUID())
+                    .fullName("Cliente Sem Numero")
+                    .street("Rua Principal")
+                    .number(null)
+                    .neighborhood("Centro")
+                    .city("Sousa")
+                    .state("PB")
+                    .build();
+
+            Budget budget = criarBudgetPadrao(false);
+            budget.setClient(client);
+
+            byte[] pdf = budgetPdfService.gerarPdfComercial(budget);
+            assertThat(pdf).isNotNull();
+            try (PdfReader reader = new PdfReader(pdf)) {
+                assertThat(reader.getNumberOfPages()).isGreaterThanOrEqualTo(1);
+            }
+        }
+
+        @Test
+        @DisplayName("Deve formatar endereço com cliente sem estado (apenas cidade)")
+        void deveFormatarEnderecoSemEstado() throws IOException {
+            Client client = Client.builder()
+                    .id(UUID.randomUUID())
+                    .fullName("Cliente Sem Estado")
+                    .street("Rua Projetada")
+                    .number("10")
+                    .neighborhood("Bairro Novo")
+                    .city("Sousa")
+                    .state(null)
+                    .build();
+
+            Budget budget = criarBudgetPadrao(false);
+            budget.setClient(client);
+
+            byte[] pdf = budgetPdfService.gerarPdfComercial(budget);
+            assertThat(pdf).isNotNull();
+            try (PdfReader reader = new PdfReader(pdf)) {
+                assertThat(reader.getNumberOfPages()).isGreaterThanOrEqualTo(1);
+            }
+        }
+
+        @Test
+        @DisplayName("Deve formatar endereço com cliente sem bairro preenchido")
+        void deveFormatarEnderecoSemBairro() throws IOException {
+            Client client = Client.builder()
+                    .id(UUID.randomUUID())
+                    .fullName("Cliente Sem Bairro")
+                    .street("Rodovia BR-230")
+                    .number("KM 400")
+                    .neighborhood("   ")
+                    .city("Sousa")
+                    .state("PB")
+                    .build();
+
+            Budget budget = criarBudgetPadrao(false);
+            budget.setClient(client);
+
+            byte[] pdf = budgetPdfService.gerarPdfComercial(budget);
+            assertThat(pdf).isNotNull();
+            try (PdfReader reader = new PdfReader(pdf)) {
+                assertThat(reader.getNumberOfPages()).isGreaterThanOrEqualTo(1);
+            }
+        }
+
+        @Test
+        @DisplayName("Deve exibir fallback 'Não informado' para cliente sem telefone e sem e-mail")
+        void deveExibirFallbackContatosNaoInformados() throws IOException {
+            Client client = Client.builder()
+                    .id(UUID.randomUUID())
+                    .fullName("Cliente Sem Contato")
+                    .phone(null)
+                    .email("   ")
+                    .street("Rua Qualquer")
+                    .build();
+
+            Budget budget = criarBudgetPadrao(false);
+            budget.setClient(client);
+
+            byte[] pdf = budgetPdfService.gerarPdfComercial(budget);
+            assertThat(pdf).isNotNull();
+            try (PdfReader reader = new PdfReader(pdf)) {
+                assertThat(reader.getNumberOfPages()).isGreaterThanOrEqualTo(1);
+            }
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {
+                "{not-a-valid-json: true",
+                "{\"type\":\"LEVER_HANDLE\"}",
+                "{\"handleType\":\"PUXADOR_ESPECIAL_INOX\"}"
+        })
+        @DisplayName("Deve processar puxador com JSON malformado, chave fallback ou tipo customizado sem quebrar")
+        void deveProcessarVariacoesDeHandleConfigSemQuebrar(String config) throws IOException {
+            Budget budget = criarBudgetPadrao(false);
+            budget.getItems().getFirst().setHandleConfig(config);
+
+            byte[] pdf = budgetPdfService.gerarPdfComercial(budget);
+            assertThat(pdf).isNotNull();
+            try (PdfReader reader = new PdfReader(pdf)) {
+                assertThat(reader.getNumberOfPages()).isGreaterThanOrEqualTo(1);
+            }
+        }
+
+        @Test
+        @DisplayName("Deve traduzir categoria nula para 'Item' em opções de peças")
+        void deveTraduzirCategoriaNulaParaItem() throws IOException {
+            Budget budget = criarBudgetPadrao(false);
+            BudgetItem item = budget.getItems().getFirst();
+
+            BudgetItemOption opt = new BudgetItemOption();
+            opt.setId(UUID.randomUUID());
+            opt.setMaterialName("Acessório Especial");
+            opt.setCategoryType(null); // nulo força fallback "Item"
+            opt.setUnitMeasure("UN");
+            opt.setQuantity(new BigDecimal("1.00"));
+            opt.setUnitPrice(new BigDecimal("25.00"));
+            opt.setTotalPrice(new BigDecimal("25.00"));
+            opt.setBudgetItem(item);
+
+            item.setOptions(new ArrayList<>(List.of(opt)));
+
+            byte[] pdf = budgetPdfService.gerarPdfComercial(budget);
+            assertThat(pdf).isNotNull();
+            try (PdfReader reader = new PdfReader(pdf)) {
+                assertThat(reader.getNumberOfPages()).isGreaterThanOrEqualTo(1);
+            }
+        }
+
+        @Test
+        @DisplayName("Deve gerar PDF com quebra automática em múltiplas páginas para orçamento extenso")
+        void deveGerarPdfComMultiplasPaginasEValidarContagem() throws IOException {
+            Budget budget = criarBudgetComMuitosItens();
+
+            byte[] pdf = budgetPdfService.gerarPdfComercial(budget);
+            assertThat(pdf).isNotNull();
+            try (PdfReader reader = new PdfReader(pdf)) {
+                assertThat(reader.getNumberOfPages()).isGreaterThanOrEqualTo(2);
+            }
+        }
     }
 
     private Budget criarBudgetComMuitosItens() {

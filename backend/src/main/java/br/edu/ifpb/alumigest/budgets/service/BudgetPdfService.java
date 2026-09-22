@@ -34,7 +34,6 @@ import org.springframework.stereotype.Service;
 
 import java.awt.Color;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URL;
@@ -74,6 +73,7 @@ public class BudgetPdfService {
     private static final Color COR_FUNDO_CLARO = new Color(247, 249, 252);
     private static final Color COR_BORDA_CLARA = new Color(225, 230, 235);
     private static final Color COR_TAG_FUNDO = new Color(230, 235, 240);
+
     private static final String NAO_INFORMADO = "Não informado";
 
     private final CompanyProperties companyProps;
@@ -252,7 +252,7 @@ public class BudgetPdfService {
         table.setWidths(new float[]{5f, 1f, 2f, 2f});
         table.setHeaderRows(1);
 
-        adicionarCabecalhosTabela(table);
+        adicionarCabecalhoItens(table);
 
         if (budget.getItems() != null) {
             for (BudgetItem item : budget.getItems()) {
@@ -262,7 +262,7 @@ public class BudgetPdfService {
         document.add(table);
     }
 
-    private void adicionarCabecalhosTabela(PdfPTable table) {
+    private void adicionarCabecalhoItens(PdfPTable table) {
         String[] cabecalhos = {"PRODUTO / DESCRIÇÃO TÉCNICA", "QTD", "V. UNIT (R$)", "TOTAL (R$)"};
         for (int i = 0; i < cabecalhos.length; i++) {
             PdfPCell header = new PdfPCell(new Phrase(cabecalhos[i], FONTE_CABECALHO_TABELA));
@@ -275,7 +275,8 @@ public class BudgetPdfService {
     }
 
     private void adicionarLinhaItem(PdfPTable table, BudgetItem item) {
-        PdfPCell cellDesc = new PdfPCell(criarDescricaoItem(item));
+        Phrase phraseDescricao = construirDescricaoItem(item);
+        PdfPCell cellDesc = new PdfPCell(phraseDescricao);
         cellDesc.setPadding(10f);
         estilizarCelulaTabelaClean(cellDesc);
         table.addCell(cellDesc);
@@ -303,33 +304,42 @@ public class BudgetPdfService {
         table.addCell(cellTotal);
     }
 
-    private Phrase criarDescricaoItem(BudgetItem item) {
-        Phrase phrase = new Phrase();
-        phrase.add(new Chunk(obterDadoSeguro(item.getProductName()) + "\n", FONTE_NORMAL));
+    private Phrase construirDescricaoItem(BudgetItem item) {
+        Phrase phraseDescricao = new Phrase();
+        phraseDescricao.add(new Chunk(obterDadoSeguro(item.getProductName()) + "\n", FONTE_NORMAL));
 
         BigDecimal wCm = item.getWidthMm() != null ? item.getWidthMm().divide(BigDecimal.TEN, 1, RoundingMode.HALF_UP) : BigDecimal.ZERO;
         BigDecimal hCm = item.getHeightMm() != null ? item.getHeightMm().divide(BigDecimal.TEN, 1, RoundingMode.HALF_UP) : BigDecimal.ZERO;
-        phrase.add(new Chunk("L=" + formatarNumero(wCm) + "cm x A=" + formatarNumero(hCm) + "cm\n", FONTE_DESCRICAO_SECUNDARIA));
+        phraseDescricao.add(new Chunk("L=" + formatarNumero(wCm) + "cm x A=" + formatarNumero(hCm) + "cm\n", FONTE_DESCRICAO_SECUNDARIA));
 
-        if (item.getOptions() != null) {
-            for (BudgetItemOption option : item.getOptions()) {
-                String categoria = traduzirCategoria(option.getCategoryType());
-                String material = option.getMaterialName() != null ? option.getMaterialName() : "";
-                String cor = (option.getSelectedColor() != null && !option.getSelectedColor().trim().isEmpty())
-                        ? " " + option.getSelectedColor().trim() : "";
-                phrase.add(new Chunk(categoria + ": " + material + cor + "\n", FONTE_DESCRICAO_SECUNDARIA));
-            }
+        adicionarOpcoesItem(phraseDescricao, item);
+        adicionarTagPuxador(phraseDescricao, item);
+
+        return phraseDescricao;
+    }
+
+    private void adicionarOpcoesItem(Phrase phraseDescricao, BudgetItem item) {
+        if (item.getOptions() == null || item.getOptions().isEmpty()) {
+            return;
         }
+        for (BudgetItemOption option : item.getOptions()) {
+            String categoria = traduzirCategoria(option.getCategoryType());
+            String material = option.getMaterialName() != null ? option.getMaterialName() : "";
+            String cor = (option.getSelectedColor() != null && !option.getSelectedColor().trim().isEmpty())
+                    ? " " + option.getSelectedColor().trim() : "";
+            phraseDescricao.add(new Chunk(categoria + ": " + material + cor + "\n", FONTE_DESCRICAO_SECUNDARIA));
+        }
+    }
 
+    private void adicionarTagPuxador(Phrase phraseDescricao, BudgetItem item) {
         String descricaoPuxador = extrairDescricaoPuxador(item.getHandleConfig());
         if (descricaoPuxador != null && !descricaoPuxador.isBlank()) {
-            phrase.add(new Chunk("\n", FONTE_DESCRICAO_SECUNDARIA));
+            phraseDescricao.add(new Chunk("\n", FONTE_DESCRICAO_SECUNDARIA));
             Chunk tag = new Chunk(" " + descricaoPuxador + " ", FONTE_TAG_PUXADOR);
             tag.setBackground(COR_TAG_FUNDO);
-            phrase.add(tag);
-            phrase.add(new Chunk("\n"));
+            phraseDescricao.add(tag);
+            phraseDescricao.add(new Chunk("\n"));
         }
-        return phrase;
     }
 
     private void estilizarCelulaTabelaClean(PdfPCell cell) {
@@ -560,7 +570,7 @@ public class BudgetPdfService {
                     typeNode = node.get("type");
                 }
                 if (typeNode != null && !typeNode.isNull()) {
-                    return resolverDescricaoPuxadorDeString(typeNode.asText());
+                    return resolverDescricaoTipoPuxador(typeNode.asText());
                 }
             } catch (Exception e) {
                 log.debug("Não foi possível parsear handleConfig como JSON: {}", e.getMessage());
@@ -574,7 +584,7 @@ public class BudgetPdfService {
         return raw;
     }
 
-    private String resolverDescricaoPuxadorDeString(String tipoStr) {
+    private String resolverDescricaoTipoPuxador(String tipoStr) {
         try {
             HandleType handleType = HandleType.valueOf(tipoStr);
             return traduzirTipoPuxador(handleType);
