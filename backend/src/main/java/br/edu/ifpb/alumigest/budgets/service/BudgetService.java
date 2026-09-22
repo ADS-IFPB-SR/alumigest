@@ -313,6 +313,32 @@ public BudgetResponseDTO create(BudgetCreateRequest requestDTO) {
         return new BudgetPdfDTO(bytes, filename);
     }
 
+    @Transactional(readOnly = true)
+    public BudgetPdfDTO gerarPdfTecnico(UUID id) {
+        Budget budget = budgetRepository.findByIdWithDetails(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Orçamento", id.toString()));
+
+        if (budget.getStatus() == BudgetStatus.CANCELLED) {
+            throw new BusinessException("Não é possível gerar o PDF técnico de um orçamento cancelado.");
+        }
+
+        if (budget.getItems() != null) {
+            budget.getItems().forEach(item -> {
+                if (item.getOptions() != null) {
+                    item.getOptions().size();
+                }
+            });
+        }
+
+        byte[] bytes = budgetPdfService.gerarPdfTecnico(budget);
+        String code = (budget.getCode() != null && !budget.getCode().isBlank())
+                ? budget.getCode()
+                : "orcamento";
+        String filename = code + "-tecnico.pdf";
+
+        return new BudgetPdfDTO(bytes, filename);
+    }
+
     private Budget getBudgetOrThrow(UUID id) {
         return budgetRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Orçamento", id.toString()));

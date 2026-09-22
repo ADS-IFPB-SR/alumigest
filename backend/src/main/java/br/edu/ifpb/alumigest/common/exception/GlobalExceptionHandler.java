@@ -114,6 +114,19 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(status).body(error);
     }
 
+    @ExceptionHandler(org.springframework.web.servlet.resource.NoResourceFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNoResourceFound(org.springframework.web.servlet.resource.NoResourceFoundException ex, HttpServletRequest request) {
+        log.warn("Recurso não encontrado na requisição {}: {}", request.getRequestURI(), ex.getMessage());
+        HttpStatus status = HttpStatus.NOT_FOUND;
+        ErrorResponse error = ErrorResponse.of(
+                status.value(),
+                status.getReasonPhrase(),
+                "Recurso não encontrado: A rota solicitada não existe.",
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(status).body(error);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneralException(Exception ex, HttpServletRequest request) {
         log.error("Exceção não tratada na requisição {}: ", request.getRequestURI(), ex);

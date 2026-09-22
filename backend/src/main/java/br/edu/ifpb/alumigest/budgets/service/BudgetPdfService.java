@@ -1,11 +1,13 @@
 package br.edu.ifpb.alumigest.budgets.service;
 
+import br.edu.ifpb.alumigest.budgets.calculator.TemplateType;
 import br.edu.ifpb.alumigest.budgets.config.CompanyProperties;
 import br.edu.ifpb.alumigest.budgets.domain.Budget;
 import br.edu.ifpb.alumigest.budgets.domain.BudgetItem;
 import br.edu.ifpb.alumigest.budgets.domain.BudgetItemOption;
 import br.edu.ifpb.alumigest.budgets.domain.BudgetStatus;
 import br.edu.ifpb.alumigest.budgets.service.pdf.BudgetPdfPageEvent;
+import br.edu.ifpb.alumigest.budgets.service.pdf.TechnicalPdfPageEvent;
 import br.edu.ifpb.alumigest.catalog.domain.HandleType;
 import br.edu.ifpb.alumigest.catalog.domain.MaterialCategoryType;
 import br.edu.ifpb.alumigest.clients.domain.Client;
@@ -74,6 +76,31 @@ public class BudgetPdfService {
     private static final Color COR_FUNDO_CLARO = new Color(247, 249, 252);
     private static final Color COR_BORDA_CLARA = new Color(225, 230, 235);
     private static final Color COR_TAG_FUNDO = new Color(230, 235, 240);
+
+    // ── Constantes da Ficha Técnica de Oficina (US-11.1) ─────────────────
+    private static final Color COR_TECNICA_HEADER_BG = new Color(15, 23, 42);       // #0f172a
+    private static final Color COR_TECNICA_BORDA = new Color(203, 213, 225);          // #cbd5e1
+    private static final Color COR_TECNICA_BG_CARD = new Color(248, 250, 252);        // #f8fafc
+    private static final Color COR_TECNICA_BG_ESQUEMA = new Color(250, 250, 250);     // #fafafa
+    private static final Color COR_TECNICA_TEXT_SEC = new Color(71, 85, 105);         // #475569
+    private static final Color COR_TECNICA_DANGER = new Color(220, 38, 38);           // #dc2626
+    private static final Color COR_TECNICA_BADGE_BG = new Color(241, 245, 249);       // #f1f5f9
+    private static final Color COR_TECNICA_BADGE_ALERT_BG = new Color(254, 242, 242); // #fef2f2
+
+    private static final Font FONTE_TECNICA_TITULO = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 15, COR_TECNICA_HEADER_BG);
+    private static final Font FONTE_TECNICA_SUBTITULO = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 9, COR_TECNICA_TEXT_SEC);
+    private static final Font FONTE_TECNICA_PEDIDO_NUM = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 15, COR_TECNICA_HEADER_BG);
+    private static final Font FONTE_TECNICA_DATA = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 9, COR_TECNICA_DANGER);
+    private static final Font FONTE_TECNICA_LABEL = FontFactory.getFont(FontFactory.HELVETICA, 7, COR_TECNICA_TEXT_SEC);
+    private static final Font FONTE_TECNICA_VALOR = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10, COR_TECNICA_HEADER_BG);
+    private static final Font FONTE_TECNICA_TH = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 8, Color.WHITE);
+    private static final Font FONTE_TECNICA_ITEM_NUM = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 13, COR_TECNICA_HEADER_BG);
+    private static final Font FONTE_TECNICA_ITEM_QTD = FontFactory.getFont(FontFactory.HELVETICA, 7, COR_TECNICA_TEXT_SEC);
+    private static final Font FONTE_TECNICA_BADGE = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 7, COR_TECNICA_HEADER_BG);
+    private static final Font FONTE_TECNICA_BADGE_ALERT = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 7, COR_TECNICA_DANGER);
+    private static final Font FONTE_TECNICA_DIMENSAO = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10.5f, COR_TECNICA_HEADER_BG);
+    private static final Font FONTE_TECNICA_TEXTO_SEC = FontFactory.getFont(FontFactory.HELVETICA, 7.5f, COR_TECNICA_TEXT_SEC);
+    private static final Font FONTE_TECNICA_CHECKBOX_LABEL = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 7, COR_TECNICA_TEXT_SEC);
 
     private final CompanyProperties companyProps;
     private final ObjectMapper objectMapper;
@@ -604,6 +631,586 @@ public class BudgetPdfService {
             canvas.setColorStroke(COR_BORDA_CLARA);
             canvas.setLineWidth(1f);
             canvas.stroke();
+        }
+    }
+
+    // ═════════════════════════════════════════════════════════════════════
+    // ── MÉTODOS DA FICHA TÉCNICA DE OFICINA (US-11.1) ────────────────────
+    // ═════════════════════════════════════════════════════════════════════
+
+    /**
+     * Gera o PDF da Ficha Técnica de Oficina (Ficha de Usinagem e Corte) A4 do orçamento informado,
+     * estritamente alinhado ao protótipo técnico e garantindo sigilo comercial absoluto (US-11.1).
+     *
+     * @param budget entidade do orçamento com itens e cliente carregados
+     * @return array de bytes contendo o arquivo PDF da via técnica
+     */
+    public byte[] gerarPdfTecnico(Budget budget) {
+        Objects.requireNonNull(budget, "O orçamento não pode ser nulo para geração do PDF técnico.");
+
+        if (budget.getStatus() == BudgetStatus.CANCELLED) {
+            throw new IllegalStateException("Não é possível gerar o PDF técnico de um orçamento cancelado.");
+        }
+
+        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+             Document document = new Document(PageSize.A4, 30, 30, 36, 45)) {
+
+            PdfWriter writer = PdfWriter.getInstance(document, outputStream);
+            String nomeCliente = budget.getClient() != null ? budget.getClient().getFullName() : "Não informado";
+            TechnicalPdfPageEvent pageEvent = new TechnicalPdfPageEvent(budget.getCode(), nomeCliente);
+            writer.setPageEvent(pageEvent);
+            document.open();
+
+            adicionarCabecalhoFabril(document, budget);
+            adicionarCardClienteProducao(document, budget);
+            adicionarTabelaProducao(document, budget);
+
+            document.close();
+            return outputStream.toByteArray();
+
+        } catch (DocumentException | IOException e) {
+            log.error("Erro ao estruturar documento PDF técnico para o orçamento {}: {}", budget.getCode(), e.getMessage(), e);
+            throw new RuntimeException("Erro ao gerar PDF técnico do orçamento: " + e.getMessage(), e);
+        }
+    }
+
+    private void adicionarCabecalhoFabril(Document document, Budget budget) throws DocumentException {
+        PdfPTable headerTable = new PdfPTable(2);
+        headerTable.setWidthPercentage(100);
+        headerTable.setWidths(new float[]{65f, 35f});
+        headerTable.setSpacingAfter(10f);
+
+        PdfPCell colEsq = new PdfPCell();
+        colEsq.setBorder(Rectangle.NO_BORDER);
+        colEsq.setPaddingBottom(6f);
+
+        Paragraph pTitulo = new Paragraph("FICHA DE USINAGEM E CORTE", FONTE_TECNICA_TITULO);
+        pTitulo.setLeading(16f);
+        colEsq.addElement(pTitulo);
+
+        Paragraph pSetor = new Paragraph("Setor: Fábrica / Vidraçaria", FONTE_TECNICA_SUBTITULO);
+        pSetor.setLeading(13f);
+        colEsq.addElement(pSetor);
+        headerTable.addCell(colEsq);
+
+        PdfPCell colDir = new PdfPCell();
+        colDir.setBorder(Rectangle.NO_BORDER);
+        colDir.setHorizontalAlignment(Element.ALIGN_RIGHT);
+        colDir.setPaddingBottom(6f);
+
+        Paragraph pLabelPedido = new Paragraph("PEDIDO", FONTE_TECNICA_LABEL);
+        pLabelPedido.setAlignment(Element.ALIGN_RIGHT);
+        pLabelPedido.setLeading(9f);
+        colDir.addElement(pLabelPedido);
+
+        String cod = budget.getCode() != null ? budget.getCode() : "0000";
+        Paragraph pCod = new Paragraph("#" + cod, FONTE_TECNICA_PEDIDO_NUM);
+        pCod.setAlignment(Element.ALIGN_RIGHT);
+        pCod.setLeading(16f);
+        colDir.addElement(pCod);
+
+        OffsetDateTime dataCriacao = budget.getCreatedAt() != null ? budget.getCreatedAt() : OffsetDateTime.now();
+        String dataStr = dataCriacao.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+        Paragraph pData = new Paragraph("DATA: " + dataStr, FONTE_TECNICA_DATA);
+        pData.setAlignment(Element.ALIGN_RIGHT);
+        pData.setLeading(11f);
+        colDir.addElement(pData);
+        headerTable.addCell(colDir);
+
+        document.add(headerTable);
+
+        LineSeparator sep = new LineSeparator(2f, 100f, COR_TECNICA_HEADER_BG, Element.ALIGN_CENTER, -2f);
+        document.add(sep);
+        document.add(new Paragraph(" ", FontFactory.getFont(FontFactory.HELVETICA, 4)));
+    }
+
+    private void adicionarCardClienteProducao(Document document, Budget budget) throws DocumentException {
+        PdfPTable card = new PdfPTable(3);
+        card.setWidthPercentage(100);
+        card.setWidths(new float[]{42f, 33f, 25f});
+        card.setSpacingBefore(2f);
+        card.setSpacingAfter(12f);
+
+        int totalPecas = budget.getItems() != null
+                ? budget.getItems().stream().mapToInt(BudgetItem::getQuantity).sum()
+                : 0;
+
+        String nomeCliente = (budget.getClient() != null && budget.getClient().getFullName() != null)
+                ? budget.getClient().getFullName().toUpperCase(PT_BR)
+                : "NÃO INFORMADO";
+
+        String contato = (budget.getClient() != null && budget.getClient().getPhone() != null && !budget.getClient().getPhone().isBlank())
+                ? budget.getClient().getPhone().trim()
+                : (budget.getClient() != null && budget.getClient().getEmail() != null ? budget.getClient().getEmail().trim() : "NÃO INFORMADO");
+
+        String volume = totalPecas == 1 ? "1 PEÇA" : totalPecas + " PEÇAS";
+
+        card.addCell(criarSubCelulaCardCliente("Cliente / Obra", nomeCliente, true));
+        card.addCell(criarSubCelulaCardCliente("Vendedor / Contato", contato, false));
+        card.addCell(criarSubCelulaCardCliente("Volume do Pedido", volume, true));
+
+        document.add(card);
+    }
+
+    private PdfPCell criarSubCelulaCardCliente(String label, String valor, boolean destaque) {
+        PdfPCell cell = new PdfPCell();
+        cell.setBackgroundColor(COR_TECNICA_BG_CARD);
+        cell.setBorderColor(COR_TECNICA_BORDA);
+        cell.setBorderWidth(1f);
+        cell.setPadding(6f);
+        cell.setPaddingLeft(8f);
+        cell.setPaddingRight(8f);
+        cell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+
+        Paragraph pLabel = new Paragraph(label.toUpperCase(PT_BR), FONTE_TECNICA_LABEL);
+        pLabel.setLeading(8f);
+        cell.addElement(pLabel);
+
+        Font fonteValor = destaque ? FONTE_TECNICA_VALOR : FontFactory.getFont(FontFactory.HELVETICA_BOLD, 9, COR_TECNICA_HEADER_BG);
+        Paragraph pValor = new Paragraph(valor, fonteValor);
+        pValor.setLeading(12f);
+        cell.addElement(pValor);
+
+        return cell;
+    }
+
+    private void adicionarTabelaProducao(Document document, Budget budget) throws DocumentException {
+        PdfPTable table = new PdfPTable(5);
+        table.setWidthPercentage(100);
+        // Proporções: Item (7%), Esquema (25%), Especificações (26%), Furação/Puxador (30%), Status (12%)
+        table.setWidths(new float[]{7f, 25f, 26f, 30f, 12f});
+        table.setHeaderRows(1);
+        table.setSpacingAfter(8f);
+
+        table.addCell(criarThProducao("Item", Element.ALIGN_CENTER));
+        table.addCell(criarThProducao("Esquema (Usinagem/Puxador)", Element.ALIGN_CENTER));
+        table.addCell(criarThProducao("Especificações Técnicas", Element.ALIGN_LEFT));
+        table.addCell(criarThProducao("Detalhamento Furação / Puxador", Element.ALIGN_LEFT));
+        table.addCell(criarThProducao("Status", Element.ALIGN_CENTER));
+
+        List<BudgetItem> items = budget.getItems() != null ? budget.getItems() : List.of();
+        int seq = 1;
+        for (BudgetItem item : items) {
+            table.addCell(criarCelulaItemSeq(seq, item));
+            table.addCell(criarCelulaEsquemaTecnico());
+            table.addCell(criarCelulaEspecificacoesTecnicas(item));
+            table.addCell(criarCelulaDetalhamentoFuracao(item));
+            table.addCell(criarCelulaStatusCheckboxes());
+            seq++;
+        }
+
+        document.add(table);
+    }
+
+    private PdfPCell criarThProducao(String titulo, int alinhamento) {
+        PdfPCell cell = new PdfPCell(new Phrase(titulo.toUpperCase(PT_BR), FONTE_TECNICA_TH));
+        cell.setBackgroundColor(COR_TECNICA_HEADER_BG);
+        cell.setBorderColor(COR_TECNICA_HEADER_BG);
+        cell.setPadding(6f);
+        cell.setHorizontalAlignment(alinhamento);
+        cell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        return cell;
+    }
+
+    private PdfPCell criarCelulaItemSeq(int seq, BudgetItem item) {
+        PdfPCell cell = new PdfPCell();
+        cell.setBorderColor(COR_TECNICA_BORDA);
+        cell.setPadding(6f);
+        cell.setHorizontalAlignment(Element.ALIGN_CENTER);
+        cell.setVerticalAlignment(Element.ALIGN_TOP);
+
+        Paragraph pNum = new Paragraph(String.format("%02d", seq), FONTE_TECNICA_ITEM_NUM);
+        pNum.setAlignment(Element.ALIGN_CENTER);
+        pNum.setLeading(14f);
+        cell.addElement(pNum);
+
+        int qtd = item.getQuantity() != null ? item.getQuantity() : 1;
+        String qtdStr = qtd > 1 ? "Qtd: " + qtd + " conj." : "Qtd: 1";
+        Paragraph pQtd = new Paragraph(qtdStr, FONTE_TECNICA_ITEM_QTD);
+        pQtd.setAlignment(Element.ALIGN_CENTER);
+        pQtd.setLeading(9f);
+        pQtd.setSpacingBefore(2f);
+        cell.addElement(pQtd);
+
+        return cell;
+    }
+
+    private PdfPCell criarCelulaEsquemaTecnico() {
+        PdfPCell cell = new PdfPCell();
+        cell.setBorderColor(COR_TECNICA_BORDA);
+        cell.setPadding(4f);
+        cell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        cell.setHorizontalAlignment(Element.ALIGN_CENTER);
+
+        PdfPTable container = new PdfPTable(1);
+        container.setWidthPercentage(100);
+
+        PdfPCell inner = new PdfPCell();
+        inner.setMinimumHeight(105f);
+        inner.setBackgroundColor(COR_TECNICA_BG_ESQUEMA);
+        inner.setBorder(Rectangle.NO_BORDER);
+        inner.setCellEvent(new BordaTracejada());
+        inner.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        inner.setHorizontalAlignment(Element.ALIGN_CENTER);
+        inner.setPadding(8f);
+
+        Paragraph p1 = new Paragraph("ESQUEMA TÉCNICO", FontFactory.getFont(FontFactory.HELVETICA_BOLD, 8, COR_TECNICA_TEXT_SEC));
+        p1.setAlignment(Element.ALIGN_CENTER);
+        inner.addElement(p1);
+
+        Paragraph p2 = new Paragraph("(Usinagem & Puxador)", FontFactory.getFont(FontFactory.HELVETICA, 7, new Color(100, 116, 139)));
+        p2.setAlignment(Element.ALIGN_CENTER);
+        inner.addElement(p2);
+
+        Paragraph p3 = new Paragraph("Área reservada para US-11.2", FontFactory.getFont(FontFactory.HELVETICA_OBLIQUE, 6, new Color(148, 163, 184)));
+        p3.setAlignment(Element.ALIGN_CENTER);
+        p3.setSpacingBefore(4f);
+        inner.addElement(p3);
+
+        container.addCell(inner);
+        cell.addElement(container);
+        return cell;
+    }
+
+    private PdfPCell criarCelulaEspecificacoesTecnicas(BudgetItem item) {
+        PdfPCell cell = new PdfPCell();
+        cell.setBorderColor(COR_TECNICA_BORDA);
+        cell.setPadding(6f);
+        cell.setVerticalAlignment(Element.ALIGN_TOP);
+
+        String badgeTipo = formatarTipoTemplate(item.getTemplateType());
+        cell.addElement(criarBadgePdf(badgeTipo, false));
+
+        BigDecimal wCm = item.getWidthMm() != null ? item.getWidthMm().divide(BigDecimal.TEN, 1, RoundingMode.HALF_UP) : BigDecimal.ZERO;
+        BigDecimal hCm = item.getHeightMm() != null ? item.getHeightMm().divide(BigDecimal.TEN, 1, RoundingMode.HALF_UP) : BigDecimal.ZERO;
+        String dimStr = String.format(PT_BR, "%.1f x %.1f cm", wCm.doubleValue(), hCm.doubleValue());
+
+        Paragraph pDim = new Paragraph(dimStr, FONTE_TECNICA_DIMENSAO);
+        pDim.setLeading(12f);
+        pDim.setSpacingBefore(3f);
+        pDim.setSpacingAfter(3f);
+        cell.addElement(pDim);
+
+        String perfil = extrairNomeMaterialPorCategoria(item, MaterialCategoryType.PROFILE);
+        Paragraph pPerfil = new Paragraph();
+        pPerfil.setLeading(9f);
+        pPerfil.add(new Chunk("Perfil: ", FontFactory.getFont(FontFactory.HELVETICA_BOLD, 7.5f, COR_TECNICA_HEADER_BG)));
+        pPerfil.add(new Chunk(perfil, FontFactory.getFont(FontFactory.HELVETICA, 7.5f, COR_TECNICA_TEXT_SEC)));
+        cell.addElement(pPerfil);
+
+        String vidro = extrairNomeMaterialPorCategoria(item, MaterialCategoryType.GLASS);
+        Paragraph pVidro = new Paragraph();
+        pVidro.setLeading(9f);
+        pVidro.add(new Chunk("Vidro: ", FontFactory.getFont(FontFactory.HELVETICA_BOLD, 7.5f, COR_TECNICA_HEADER_BG)));
+        pVidro.add(new Chunk(vidro, FontFactory.getFont(FontFactory.HELVETICA, 7.5f, COR_TECNICA_TEXT_SEC)));
+        cell.addElement(pVidro);
+
+        Paragraph pFolga = new Paragraph();
+        pFolga.setLeading(9f);
+        pFolga.add(new Chunk("Folga: ", FontFactory.getFont(FontFactory.HELVETICA_BOLD, 7.5f, COR_TECNICA_HEADER_BG)));
+        pFolga.add(new Chunk("Padrão", FontFactory.getFont(FontFactory.HELVETICA, 7.5f, COR_TECNICA_TEXT_SEC)));
+        cell.addElement(pFolga);
+
+        return cell;
+    }
+
+    private PdfPCell criarCelulaDetalhamentoFuracao(BudgetItem item) {
+        PdfPCell cell = new PdfPCell();
+        cell.setBorderColor(COR_TECNICA_BORDA);
+        cell.setPadding(6f);
+        cell.setVerticalAlignment(Element.ALIGN_TOP);
+
+        String tipoFuracao = extrairTipoFuracaoBadge(item.getTemplateType());
+        cell.addElement(criarBadgePdf("FURAÇÃO (" + tipoFuracao + ")", true));
+
+        List<String> linhasFuracao = gerarLinhasFuracao(item);
+        for (String linha : linhasFuracao) {
+            Paragraph p = new Paragraph("• " + linha, FONTE_TECNICA_TEXTO_SEC);
+            p.setLeading(9f);
+            cell.addElement(p);
+        }
+
+        Paragraph pEspaco = new Paragraph(" ", FontFactory.getFont(FontFactory.HELVETICA, 3));
+        pEspaco.setLeading(3f);
+        cell.addElement(pEspaco);
+
+        cell.addElement(criarBadgePdf("PUXADOR", false));
+
+        List<String> linhasPuxador = gerarLinhasPuxador(item);
+        for (String linha : linhasPuxador) {
+            Paragraph p = new Paragraph("• " + linha, FONTE_TECNICA_TEXTO_SEC);
+            p.setLeading(9f);
+            cell.addElement(p);
+        }
+
+        return cell;
+    }
+
+    private PdfPCell criarCelulaStatusCheckboxes() {
+        PdfPCell cell = new PdfPCell();
+        cell.setBorderColor(COR_TECNICA_BORDA);
+        cell.setPadding(4f);
+        cell.setVerticalAlignment(Element.ALIGN_TOP);
+        cell.setHorizontalAlignment(Element.ALIGN_CENTER);
+
+        PdfPTable tableChecks = new PdfPTable(1);
+        tableChecks.setWidthPercentage(90);
+
+        tableChecks.addCell(criarItemCheckbox("Alum."));
+        tableChecks.addCell(criarItemCheckbox("Vidro"));
+        tableChecks.addCell(criarItemCheckbox("Mont."));
+
+        cell.addElement(tableChecks);
+        return cell;
+    }
+
+    private PdfPCell criarItemCheckbox(String label) {
+        PdfPCell cell = new PdfPCell();
+        cell.setBorder(Rectangle.NO_BORDER);
+        cell.setHorizontalAlignment(Element.ALIGN_CENTER);
+        cell.setPaddingTop(3f);
+        cell.setPaddingBottom(3f);
+
+        PdfPTable boxTable = new PdfPTable(1);
+        boxTable.setTotalWidth(14f);
+        boxTable.setLockedWidth(true);
+        PdfPCell boxCell = new PdfPCell();
+        boxCell.setFixedHeight(14f);
+        boxCell.setBorder(Rectangle.NO_BORDER);
+        boxCell.setCellEvent(new CheckboxCellEvent());
+        boxTable.addCell(boxCell);
+
+        cell.addElement(boxTable);
+
+        Paragraph pLabel = new Paragraph(label, FONTE_TECNICA_CHECKBOX_LABEL);
+        pLabel.setAlignment(Element.ALIGN_CENTER);
+        pLabel.setLeading(8f);
+        pLabel.setSpacingBefore(1f);
+        cell.addElement(pLabel);
+
+        return cell;
+    }
+
+    private PdfPTable criarBadgePdf(String texto, boolean alert) {
+        PdfPTable table = new PdfPTable(1);
+        table.setHorizontalAlignment(Element.ALIGN_LEFT);
+        table.setSpacingAfter(3f);
+
+        PdfPCell cell = new PdfPCell();
+        cell.setBackgroundColor(alert ? COR_TECNICA_BADGE_ALERT_BG : COR_TECNICA_BADGE_BG);
+        cell.setBorderColor(alert ? new Color(252, 165, 165) : COR_TECNICA_BORDA);
+        cell.setBorderWidth(0.5f);
+        cell.setPadding(2f);
+        cell.setPaddingLeft(4f);
+        cell.setPaddingRight(4f);
+
+        Paragraph p = new Paragraph(texto, alert ? FONTE_TECNICA_BADGE_ALERT : FONTE_TECNICA_BADGE);
+        p.setLeading(8f);
+        cell.addElement(p);
+
+        table.addCell(cell);
+        return table;
+    }
+
+    private String formatarTipoTemplate(String templateType) {
+        if (templateType == null || templateType.isBlank()) {
+            return "TIPO: SOB MEDIDA";
+        }
+        String clean = templateType.trim().toUpperCase(Locale.ROOT);
+        if (clean.startsWith("TIPO:")) {
+            clean = clean.substring(5).trim();
+        }
+        return switch (clean) {
+            case "SWING_DOOR_1F", "SWING_1F", "SWING_1_LEAF", "SWING", "PIVOT_DOOR", "PIVOTING_DOOR", "GIRO", "PORTA_GIRO" -> "TIPO: GIRO";
+            case "SWING_DOOR_2F", "SWING_2F", "SWING_2_LEAF" -> "TIPO: GIRO (2 FOLHAS)";
+            case "SLIDING_DOOR_1F", "SLIDING_1F", "SLIDING_1_LEAF" -> "TIPO: CORRER (1 FOLHA)";
+            case "SLIDING_DOOR_2F", "SLIDING_2F", "SLIDING_2_LEAF", "SLIDING_WINDOW_2F" -> "TIPO: CORRER (2 FOLHAS)";
+            case "SLIDING_DOOR_3F", "SLIDING_3F", "SLIDING_3_LEAF" -> "TIPO: CORRER (3 FOLHAS)";
+            case "SLIDING_DOOR_4F", "SLIDING_4F", "SLIDING_4_LEAF", "SLIDING_WINDOW_4F" -> "TIPO: CORRER (4 FOLHAS)";
+            case "SLIDING_DOOR", "SLIDING", "CORRER", "PORTA_CORRER", "JANELA_CORRER" -> "TIPO: CORRER";
+            case "AWNING_WINDOW_1F", "MAX_AR_WINDOW_1_LEAF", "MAXIM_AR_WINDOW", "MAXIM_AR", "TILT_WINDOW", "TILT", "BASCULANTE" -> "TIPO: BASCULANTE";
+            case "AWNING_WINDOW_1F_INV", "MAX_AR_WINDOW_INVERSE_1_LEAF" -> "TIPO: BASCULANTE INVERTIDO";
+            case "FRONT_DRAWER", "DRAWER_FRONT", "DRAWER", "GAVETA", "FRENTE DE GAVETA" -> "TIPO: FRENTE DE GAVETA";
+            case "FIXED_PANEL", "FIXED_GLASS_FACADE", "FIXED", "FIXO" -> "TIPO: FIXO";
+            case "GLASS_BOX_FRONTAL" -> "TIPO: BOX FRONTAL";
+            case "GLASS_BOX_CORNER" -> "TIPO: BOX DE CANTO";
+            default -> {
+                TemplateType parsed = TemplateType.parse(clean);
+                if (parsed != null) {
+                    yield switch (parsed) {
+                        case SWING_1_LEAF -> "TIPO: GIRO";
+                        case SWING_2_LEAF -> "TIPO: GIRO (2 FOLHAS)";
+                        case SLIDING_1_LEAF -> "TIPO: CORRER (1 FOLHA)";
+                        case SLIDING_2_LEAF -> "TIPO: CORRER (2 FOLHAS)";
+                        case SLIDING_3_LEAF -> "TIPO: CORRER (3 FOLHAS)";
+                        case SLIDING_4_LEAF -> "TIPO: CORRER (4 FOLHAS)";
+                        case MAX_AR_WINDOW_1_LEAF -> "TIPO: BASCULANTE";
+                        case MAX_AR_WINDOW_INVERSE_1_LEAF -> "TIPO: BASCULANTE INVERTIDO";
+                        case DRAWER_FRONT -> "TIPO: FRENTE DE GAVETA";
+                        case FIXED_PANEL -> "TIPO: FIXO";
+                    };
+                }
+                yield "TIPO: " + clean.replace('_', ' ');
+            }
+        };
+    }
+
+    private String extrairTipoFuracaoBadge(String templateType) {
+        if (templateType == null || templateType.isBlank()) {
+            return "PADRÃO";
+        }
+        String clean = templateType.trim().toUpperCase(Locale.ROOT);
+        if (clean.startsWith("TIPO:")) {
+            clean = clean.substring(5).trim();
+        }
+        return switch (clean) {
+            case "SWING_DOOR_1F", "SWING_DOOR_2F", "SWING_1F", "SWING_2F", "SWING_1_LEAF", "SWING_2_LEAF",
+                 "SWING", "PIVOT_DOOR", "PIVOTING_DOOR", "GIRO", "PORTA_GIRO", "GIRO (2 FOLHAS)" -> "DOBRADIÇAS";
+            case "SLIDING_DOOR_1F", "SLIDING_DOOR_2F", "SLIDING_DOOR_3F", "SLIDING_DOOR_4F",
+                 "SLIDING_1F", "SLIDING_2F", "SLIDING_3F", "SLIDING_4F", "SLIDING_1_LEAF", "SLIDING_2_LEAF",
+                 "SLIDING_3_LEAF", "SLIDING_4_LEAF", "SLIDING_DOOR", "SLIDING", "CORRER", "PORTA_CORRER",
+                 "JANELA_CORRER", "SLIDING_WINDOW_2F", "SLIDING_WINDOW_4F", "GLASS_BOX_FRONTAL", "GLASS_BOX_CORNER",
+                 "CORRER (1 FOLHA)", "CORRER (2 FOLHAS)", "CORRER (3 FOLHAS)", "CORRER (4 FOLHAS)" -> "ROLDANAS";
+            case "AWNING_WINDOW_1F", "AWNING_WINDOW_1F_INV", "MAX_AR_WINDOW_1_LEAF", "MAX_AR_WINDOW_INVERSE_1_LEAF",
+                 "MAXIM_AR_WINDOW", "MAXIM_AR", "TILT_WINDOW", "TILT", "BASCULANTE", "BASCULANTE INVERTIDO" -> "DOBRADIÇA/PISTÃO";
+            case "FRONT_DRAWER", "DRAWER_FRONT", "DRAWER", "GAVETA", "FRENTE DE GAVETA" -> "FIXAÇÃO CAIXA";
+            case "FIXED_PANEL", "FIXED_GLASS_FACADE", "FIXED", "FIXO" -> "PADRÃO";
+            default -> {
+                TemplateType parsed = TemplateType.parse(clean);
+                if (parsed != null) {
+                    yield switch (parsed) {
+                        case SWING_1_LEAF, SWING_2_LEAF -> "DOBRADIÇAS";
+                        case SLIDING_1_LEAF, SLIDING_2_LEAF, SLIDING_3_LEAF, SLIDING_4_LEAF -> "ROLDANAS";
+                        case MAX_AR_WINDOW_1_LEAF, MAX_AR_WINDOW_INVERSE_1_LEAF -> "DOBRADIÇA/PISTÃO";
+                        case DRAWER_FRONT -> "FIXAÇÃO CAIXA";
+                        case FIXED_PANEL -> "PADRÃO";
+                    };
+                }
+                yield "PADRÃO";
+            }
+        };
+    }
+
+    private List<String> gerarLinhasFuracao(BudgetItem item) {
+        List<String> linhas = new ArrayList<>();
+        String raw = item.getDrillingConfig();
+        if (raw != null && !raw.isBlank() && !raw.equals("{}") && !raw.equalsIgnoreCase("NONE")) {
+            try {
+                JsonNode node = objectMapper.readTree(raw);
+                if (node.has("details") && !node.get("details").isNull()) {
+                    linhas.add(node.get("details").asText());
+                }
+                if (node.has("holesCount") && !node.get("holesCount").isNull()) {
+                    linhas.add(node.get("holesCount").asInt() + " furos previstos.");
+                }
+                if (node.has("position") && !node.get("position").isNull()) {
+                    linhas.add("Posição: " + node.get("position").asText());
+                }
+            } catch (Exception e) {
+                linhas.add(raw.trim());
+            }
+        }
+
+        if (linhas.isEmpty()) {
+            String t = item.getTemplateType() != null ? item.getTemplateType().toUpperCase(Locale.ROOT) : "";
+            if (t.contains("GIRO") || t.contains("PIVOT") || t.contains("SWING")) {
+                linhas.add("3 furos para dobradiças.");
+                linhas.add("Distância dividida por igual.");
+            } else if (t.contains("CORRER") || t.contains("SLIDING") || t.contains("BOX")) {
+                linhas.add("Furação superior padrão.");
+                linhas.add("2 roldanas por folha.");
+            } else if (t.contains("BASCULANTE") || t.contains("TILT") || t.contains("AWNING") || t.contains("MAX")) {
+                linhas.add("Furação na travessa superior.");
+                linhas.add("Distância conforme gabarito.");
+            } else if (t.contains("GAVETA") || t.contains("DRAWER")) {
+                linhas.add("Furação interna fixação MDF.");
+            } else {
+                linhas.add("Furação padrão de fábrica.");
+                linhas.add("Conforme gabarito do perfil.");
+            }
+        }
+        return linhas;
+    }
+
+    private List<String> gerarLinhasPuxador(BudgetItem item) {
+        List<String> linhas = new ArrayList<>();
+        String raw = item.getHandleConfig();
+        if (raw != null && !raw.isBlank() && !raw.equals("{}") && !raw.equalsIgnoreCase("NONE")) {
+            try {
+                JsonNode node = objectMapper.readTree(raw);
+                if (node.has("type") || node.has("handleType")) {
+                    String tipo = node.has("handleType") ? node.get("handleType").asText() : node.get("type").asText();
+                    linhas.add("Tipo: " + tipo);
+                }
+                if (node.has("format") && !node.get("format").isNull()) {
+                    linhas.add("Formato: " + node.get("format").asText());
+                }
+                if (node.has("position") && !node.get("position").isNull()) {
+                    linhas.add("Posição: " + node.get("position").asText());
+                }
+            } catch (Exception e) {
+                linhas.add("Configuração: " + raw.trim());
+            }
+        }
+
+        if (linhas.isEmpty()) {
+            String puxadorOpt = extrairNomeMaterialPorCategoria(item, MaterialCategoryType.HARDWARE);
+            if (puxadorOpt != null && !puxadorOpt.equalsIgnoreCase("Padrão") && !puxadorOpt.equalsIgnoreCase("Não informado")) {
+                linhas.add("Modelo: " + puxadorOpt);
+                linhas.add("Posição padrão centralizada.");
+            } else {
+                linhas.add("Formato: Padrão do modelo.");
+                linhas.add("Posição: Lado de abertura.");
+            }
+        }
+        return linhas;
+    }
+
+    private String extrairNomeMaterialPorCategoria(BudgetItem item, MaterialCategoryType categoria) {
+        if (item.getOptions() == null || item.getOptions().isEmpty()) {
+            return "Padrão";
+        }
+        return item.getOptions().stream()
+                .filter(opt -> opt.getCategoryType() == categoria)
+                .map(opt -> {
+                    if (opt.getSelectedColor() != null && !opt.getSelectedColor().isBlank()) {
+                        return opt.getMaterialName() + " " + opt.getSelectedColor().trim();
+                    }
+                    return opt.getMaterialName();
+                })
+                .filter(Objects::nonNull)
+                .findFirst()
+                .orElse("Padrão");
+    }
+
+    private static class BordaTracejada implements PdfPCellEvent {
+        @Override
+        public void cellLayout(PdfPCell cell, Rectangle position, PdfContentByte[] canvases) {
+            PdfContentByte canvas = canvases[PdfPTable.LINECANVAS];
+            canvas.saveState();
+            canvas.setLineDash(new float[]{3f, 3f}, 0f);
+            canvas.setColorStroke(COR_TECNICA_BORDA);
+            canvas.setLineWidth(1f);
+            canvas.roundRectangle(position.getLeft() + 2f, position.getBottom() + 2f,
+                    position.getWidth() - 4f, position.getHeight() - 4f, 4f);
+            canvas.stroke();
+            canvas.restoreState();
+        }
+    }
+
+    private static class CheckboxCellEvent implements PdfPCellEvent {
+        @Override
+        public void cellLayout(PdfPCell cell, Rectangle position, PdfContentByte[] canvases) {
+            PdfContentByte canvas = canvases[PdfPTable.LINECANVAS];
+            float tamanho = 14f;
+            float x = position.getLeft() + (position.getWidth() - tamanho) / 2f;
+            float y = position.getBottom() + (position.getHeight() - tamanho) / 2f;
+            canvas.saveState();
+            canvas.setColorStroke(COR_TECNICA_HEADER_BG);
+            canvas.setLineWidth(1.5f);
+            canvas.roundRectangle(x, y, tamanho, tamanho, 2f);
+            canvas.stroke();
+            canvas.restoreState();
         }
     }
 }

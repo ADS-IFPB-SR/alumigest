@@ -771,4 +771,58 @@ class BudgetServiceTest {
 
         assertThat(result.filename()).isEqualTo("orcamento-comercial.pdf");
     }
+
+    @Test
+    @DisplayName("gerarPdfTecnico: Sucesso quando orçamento existe e está válido")
+    void gerarPdfTecnico_DeveRetornarDtoComBytesENomeArquivo_QuandoOrcamentoExiste() {
+        byte[] expectedPdf = new byte[]{5, 6, 7, 8};
+        when(budgetRepository.findByIdWithDetails(budget.getId())).thenReturn(Optional.of(budget));
+        when(budgetPdfService.gerarPdfTecnico(budget)).thenReturn(expectedPdf);
+
+        BudgetPdfDTO result = budgetService.gerarPdfTecnico(budget.getId());
+
+        assertThat(result).isNotNull();
+        assertThat(result.bytes()).isEqualTo(expectedPdf);
+        assertThat(result.filename()).isEqualTo("ORC-2026-001-tecnico.pdf");
+        verify(budgetRepository).findByIdWithDetails(budget.getId());
+        verify(budgetPdfService).gerarPdfTecnico(budget);
+    }
+
+    @Test
+    @DisplayName("gerarPdfTecnico: Lança ResourceNotFoundException quando orçamento não existe")
+    void gerarPdfTecnico_DeveLancarResourceNotFoundException_QuandoOrcamentoNaoExiste() {
+        UUID nonExistentId = UUID.randomUUID();
+        when(budgetRepository.findByIdWithDetails(nonExistentId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> budgetService.gerarPdfTecnico(nonExistentId))
+                .isInstanceOf(ResourceNotFoundException.class);
+
+        verify(budgetPdfService, never()).gerarPdfTecnico(any());
+    }
+
+    @Test
+    @DisplayName("gerarPdfTecnico: Lança BusinessException quando orçamento estiver CANCELLED")
+    void gerarPdfTecnico_DeveLancarBusinessException_QuandoOrcamentoCancelado() {
+        budget.setStatus(BudgetStatus.CANCELLED);
+        when(budgetRepository.findByIdWithDetails(budget.getId())).thenReturn(Optional.of(budget));
+
+        assertThatThrownBy(() -> budgetService.gerarPdfTecnico(budget.getId()))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("Não é possível gerar o PDF técnico de um orçamento cancelado.");
+
+        verify(budgetPdfService, never()).gerarPdfTecnico(any());
+    }
+
+    @Test
+    @DisplayName("gerarPdfTecnico: Usa nome padrão 'orcamento-tecnico.pdf' quando código for nulo ou em branco")
+    void gerarPdfTecnico_DeveUsarNomePadrao_QuandoCodigoNuloOuVazio() {
+        budget.setCode("   ");
+        byte[] expectedPdf = new byte[]{4, 3, 2};
+        when(budgetRepository.findByIdWithDetails(budget.getId())).thenReturn(Optional.of(budget));
+        when(budgetPdfService.gerarPdfTecnico(budget)).thenReturn(expectedPdf);
+
+        BudgetPdfDTO result = budgetService.gerarPdfTecnico(budget.getId());
+
+        assertThat(result.filename()).isEqualTo("orcamento-tecnico.pdf");
+    }
 }

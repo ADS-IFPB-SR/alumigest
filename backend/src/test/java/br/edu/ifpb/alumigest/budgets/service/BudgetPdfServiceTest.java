@@ -21,6 +21,7 @@ import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
@@ -740,6 +741,256 @@ class BudgetPdfServiceTest {
                 try (PdfReader reader = new PdfReader(pdfBytes)) {
                     assertThat(reader.getNumberOfPages()).isEqualTo(1);
                 }
+            }
+        }
+    }
+
+    // =========================================================================
+    // 5. TESTES DA FICHA TÉCNICA E SIGILO COMERCIAL [US-11.1] (#283)
+    // =========================================================================
+    @Nested
+    @DisplayName("5. Ficha Técnica de Oficina e Sigilo Comercial [US-11.1]")
+    class FichaTecnicaOficinaTest {
+
+        @Test
+        @DisplayName("Deve gerar PDF técnico com sucesso contendo cabeçalho %PDF- e legibilidade básica")
+        void deveGerarPdfTecnicoComSucesso() throws IOException {
+            Budget budget = criarBudgetPadrao(true);
+
+            byte[] pdfBytes = budgetPdfService.gerarPdfTecnico(budget);
+
+            assertThat(pdfBytes).isNotNull().isNotEmpty();
+            String header = new String(Arrays.copyOfRange(pdfBytes, 0, 5), StandardCharsets.US_ASCII);
+            assertThat(header).isEqualTo("%PDF-");
+
+            try (PdfReader reader = new PdfReader(pdfBytes)) {
+                assertThat(reader.getNumberOfPages()).isPositive();
+            }
+        }
+
+        @Test
+        @DisplayName("Deve cumprir o Sigilo Comercial estrito: nenhuma menção a R$, Subtotal, Total ou Preços")
+        void deveCumprirSigiloComercialEstrito() throws IOException {
+            Budget budget = criarBudgetPadrao(true);
+
+            byte[] pdfBytes = budgetPdfService.gerarPdfTecnico(budget);
+
+            try (PdfReader reader = new PdfReader(pdfBytes)) {
+                String textContent = extrairStreamsDeTexto(reader);
+
+                // Asserção estrita de sigilo comercial
+                assertThat(textContent)
+                        .doesNotContain("R$")
+                        .doesNotContain("Subtotal")
+                        .doesNotContain("Valor Total")
+                        .doesNotContain("Desconto")
+                        .doesNotContain("Preço")
+                        .doesNotContain("975.62")
+                        .doesNotContain("639.00")
+                        .doesNotContain("150.00");
+            }
+        }
+
+        @Test
+        @DisplayName("Deve renderizar cabeçalho fabril e dados da ordem de produção")
+        void deveRenderizarCabecalhoFabril() throws IOException {
+            Budget budget = criarBudgetPadrao(true);
+
+            byte[] pdfBytes = budgetPdfService.gerarPdfTecnico(budget);
+
+            try (PdfReader reader = new PdfReader(pdfBytes)) {
+                String textContent = extrairStreamsDeTexto(reader);
+
+                assertThat(textContent)
+                        .contains("FICHA DE USINAGEM E CORTE")
+                        .contains("PEDIDO")
+                        .contains("ORC-1024");
+            }
+        }
+
+        @Test
+        @DisplayName("Deve exibir card do cliente com volume total de peças consolidado")
+        void deveExibirCardClienteComVolumeTotalPecas() throws IOException {
+            Budget budget = criarBudgetPadrao(true);
+
+            byte[] pdfBytes = budgetPdfService.gerarPdfTecnico(budget);
+
+            try (PdfReader reader = new PdfReader(pdfBytes)) {
+                String textContent = extrairStreamsDeTexto(reader);
+
+                assertThat(textContent)
+                        .contains("CLIENTE EXEMPLO S/A")
+                        .contains("(83) 99999-9999")
+                        .contains("VOLUME DO PEDIDO");
+            }
+        }
+
+        @Test
+        @DisplayName("Deve exibir especificações técnicas com dimensões nominais em cm e opções de materiais")
+        void deveExibirEspecificacoesTecnicas() throws IOException {
+            Budget budget = criarBudgetPadrao(true);
+
+            byte[] pdfBytes = budgetPdfService.gerarPdfTecnico(budget);
+
+            try (PdfReader reader = new PdfReader(pdfBytes)) {
+                String textContent = extrairStreamsDeTexto(reader);
+
+                // 906mm -> 90,6 cm x 541mm -> 54,1 cm
+                assertThat(textContent)
+                        .contains("90,6 x 54,1 cm")
+                        .contains("060")
+                        .contains("Fosco")
+                        .contains("Espelho")
+                        .contains("Puxador Peda");
+            }
+        }
+
+        @Test
+        @DisplayName("Deve traduzir tipologias e badges de furação para português conforme dicionário de modelos")
+        void deveTraduzirTipologiasEBadgesDeFuracaoParaPortugues() throws IOException {
+            Budget budget = criarBudgetPadrao(false);
+            List<BudgetItem> itens = new ArrayList<>();
+
+            BudgetItem itemGiro = new BudgetItem();
+            itemGiro.setId(UUID.randomUUID());
+            itemGiro.setProductName("Porta de Giro");
+            itemGiro.setTemplateType("SWING_DOOR_1F");
+            itemGiro.setWidthMm(new BigDecimal("900"));
+            itemGiro.setHeightMm(new BigDecimal("2100"));
+            itemGiro.setQuantity(1);
+            itemGiro.setBudget(budget);
+            itens.add(itemGiro);
+
+            BudgetItem itemCorrer2F = new BudgetItem();
+            itemCorrer2F.setId(UUID.randomUUID());
+            itemCorrer2F.setProductName("Porta de Correr 2F");
+            itemCorrer2F.setTemplateType("SLIDING_DOOR_2F");
+            itemCorrer2F.setWidthMm(new BigDecimal("1600"));
+            itemCorrer2F.setHeightMm(new BigDecimal("2150"));
+            itemCorrer2F.setQuantity(1);
+            itemCorrer2F.setBudget(budget);
+            itens.add(itemCorrer2F);
+
+            BudgetItem itemCorrer3F = new BudgetItem();
+            itemCorrer3F.setId(UUID.randomUUID());
+            itemCorrer3F.setProductName("Porta de Correr 3F");
+            itemCorrer3F.setTemplateType("SLIDING_DOOR_3F");
+            itemCorrer3F.setWidthMm(new BigDecimal("1800"));
+            itemCorrer3F.setHeightMm(new BigDecimal("2150"));
+            itemCorrer3F.setQuantity(1);
+            itemCorrer3F.setBudget(budget);
+            itens.add(itemCorrer3F);
+
+            BudgetItem itemGaveta = new BudgetItem();
+            itemGaveta.setId(UUID.randomUUID());
+            itemGaveta.setProductName("Frente de Gaveta");
+            itemGaveta.setTemplateType("FRONT_DRAWER");
+            itemGaveta.setWidthMm(new BigDecimal("600"));
+            itemGaveta.setHeightMm(new BigDecimal("200"));
+            itemGaveta.setQuantity(2);
+            itemGaveta.setBudget(budget);
+            itens.add(itemGaveta);
+
+            BudgetItem itemBasculante = new BudgetItem();
+            itemBasculante.setId(UUID.randomUUID());
+            itemBasculante.setProductName("Janela Basculante");
+            itemBasculante.setTemplateType("AWNING_WINDOW_1F");
+            itemBasculante.setWidthMm(new BigDecimal("600"));
+            itemBasculante.setHeightMm(new BigDecimal("600"));
+            itemBasculante.setQuantity(1);
+            itemBasculante.setBudget(budget);
+            itens.add(itemBasculante);
+
+            budget.setItems(itens);
+
+            byte[] pdfBytes = budgetPdfService.gerarPdfTecnico(budget);
+
+            try (PdfReader reader = new PdfReader(pdfBytes)) {
+                String textContent = extrairStreamsDeTexto(reader);
+
+                assertThat(textContent)
+                        .contains("TIPO: GIRO")
+                        .contains("TIPO: CORRER (2 FOLHAS)")
+                        .contains("TIPO: CORRER (3 FOLHAS)")
+                        .contains("TIPO: FRENTE DE GAVETA")
+                        .contains("TIPO: BASCULANTE")
+                        .contains("ROLDANAS")
+                        .contains("DOBRADIÇAS")
+                        .contains("FIXAÇÃO CAIXA")
+                        .contains("DOBRADIÇA/PISTÃO")
+                        .doesNotContain("TIPO: SLIDING DOOR 2F")
+                        .doesNotContain("TIPO: SLIDING DOOR 3F")
+                        .doesNotContain("TIPO: FRONT DRAWER")
+                        .doesNotContain("TIPO: SWING DOOR 1F");
+            }
+        }
+
+        @Test
+        @DisplayName("Deve conter moldura técnica para representação técnica e colunas de controle físico")
+        void deveConterMolduraTecnicaEColunasControle() throws IOException {
+            Budget budget = criarBudgetPadrao(true);
+
+            byte[] pdfBytes = budgetPdfService.gerarPdfTecnico(budget);
+
+            try (PdfReader reader = new PdfReader(pdfBytes)) {
+                String textContent = extrairStreamsDeTexto(reader);
+
+                assertThat(textContent)
+                        .contains("ESQUEMA")
+                        .contains("Usinagem & Puxador")
+                        .contains("US-11.2")
+                        .contains("Alum.")
+                        .contains("Vidro")
+                        .contains("Mont.");
+            }
+        }
+
+        @Test
+        @DisplayName("Deve lançar NullPointerException quando orçamento for nulo")
+        void deveLancarExcecaoQuandoOrcamentoNulo() {
+            assertThatThrownBy(() -> budgetPdfService.gerarPdfTecnico(null))
+                    .isInstanceOf(NullPointerException.class)
+                    .hasMessageContaining("O orçamento não pode ser nulo");
+        }
+
+        @Test
+        @DisplayName("Deve lançar IllegalStateException quando orçamento estiver cancelado")
+        void deveLancarExcecaoQuandoOrcamentoCancelado() {
+            Budget budget = criarBudgetPadrao(false);
+            budget.setStatus(BudgetStatus.CANCELLED);
+
+            assertThatThrownBy(() -> budgetPdfService.gerarPdfTecnico(budget))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("Não é possível gerar o PDF técnico de um orçamento cancelado");
+        }
+
+        @Test
+        @DisplayName("Deve gerar PDF técnico com múltiplos itens e paginação minimalista sem lançar exceção")
+        void deveGerarPdfTecnicoComMultiplosItensEPaginacao() throws Exception {
+            Budget budget = criarBudgetComMuitosItens();
+
+            byte[] pdfBytes = budgetPdfService.gerarPdfTecnico(budget);
+
+            assertThat(pdfBytes).isNotNull();
+            try (PdfReader reader = new PdfReader(pdfBytes)) {
+                assertThat(reader.getNumberOfPages()).isGreaterThan(1);
+            }
+        }
+
+        @Test
+        @DisplayName("Deve tratar cliente nulo ou sem cidade/telefone graciosamente")
+        void deveTratarClienteNuloGraciosamente() throws IOException {
+            Budget budget = criarBudgetPadrao(false);
+            budget.setClient(null);
+
+            byte[] pdfBytes = budgetPdfService.gerarPdfTecnico(budget);
+
+            assertThat(pdfBytes).isNotNull();
+            try (PdfReader reader = new PdfReader(pdfBytes)) {
+                String textContent = extrairStreamsDeTexto(reader);
+                assertThat(textContent)
+                        .contains("CLIENTE / OBRA")
+                        .contains("VOLUME DO PEDIDO");
             }
         }
     }
