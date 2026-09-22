@@ -1,4 +1,4 @@
-﻿# Feature Specification: Sprint 4 — Descontos Comerciais, Emissão de PDF (Comercial/Técnico) e Homologação R1
+# Feature Specification: Sprint 4 — Descontos Comerciais, Emissão de PDF (Comercial/Técnico) e Homologação R1
 
 **Feature Branch**: `001-orcamento-descontos-pdf`
 
@@ -43,11 +43,36 @@ Como vendedor ou cliente da Alumiportas, desejo emitir e baixar o orçamento em 
 
 **Independent Test**: Gerar o PDF comercial de um orçamento e validar cabeçalho, dados do cliente, tabela de itens, valores unitários e totais, descontos, condições de pagamento e texto para WhatsApp.
 
-**Acceptance Scenarios**:
+**Critérios de Aceitação (Dado / Quando / Então)**:
 
-1. **Given** um orçamento com itens calculados e desconto aplicado, **When** o usuário clica em "Emitir PDF Comercial", **Then** o sistema renderiza a pré-visualização do PDF em menos de 2 segundos com opção de download direto.
-2. **Given** o PDF comercial gerado, **When** o documento é inspecionado, **Then** ele exibe logotipo da Alumiportas, número do orçamento, datas de emissão e validade (15 dias), dados do cliente, itens com medidas (L x A), cor do alumínio, tipo de vidro, valor unitário, desconto, valor total e condição de pagamento.
-3. **Given** a página de visualização do orçamento, **When** o vendedor clica em "Copiar Resumo Comercial", **Then** o texto formatado para envio via WhatsApp é copiado para a área de transferência.
+- [ ] **1. Emissão e Download do PDF Comercial com Sucesso:**
+  - **Dado que** o vendedor ou cliente acessa um orçamento válido e calculado,
+  - **Quando** aciona a opção "Emitir PDF Comercial",
+  - **Então** o sistema gera o arquivo `application/pdf` em menos de 2 segundos com download direto do documento,
+  - **E** o documento exibe cabeçalho institucional com logotipo da Alumiportas, número do orçamento, datas de emissão e validade (15 dias corridos), dados do cliente, itens com medidas nominais (L x A mm), cor do alumínio, tipo de vidro, valor unitário, desconto, valor total e condição de pagamento.
+- [ ] **2. Paginação e Rodapé Padronizado para Múltiplas Páginas:**
+  - **Dado que** um orçamento possui uma listagem extensa de itens que ultrapassa uma página A4,
+  - **Quando** o PDF comercial é renderizado pelo motor OpenPDF,
+  - **Então** o sistema realiza a quebra automática de páginas de forma limpa,
+  - **E** todas as páginas incluem no rodapé a numeração "Página X de Y", a data de emissão e a repetição simplificada do cabeçalho.
+- [ ] **3. Cópia do Resumo Formatado para WhatsApp:**
+  - **Dado que** o vendedor está na página de visualização do orçamento (`BudgetDetailPage`),
+  - **Quando** clica no botão "Copiar Resumo Comercial",
+  - **Então** o texto formatado para WhatsApp com marcações de negrito (`*`) e emojis é copiado para a área de transferência (Clipboard API),
+  - **E** um alerta visual de confirmação (*toast* de sucesso) é exibido na interface.
+- [ ] **4. Tratamento de Dados Incompletos do Cliente:**
+  - **Dado que** um orçamento está vinculado a um cliente com dados cadastrais parciais (sem CPF/CNPJ ou endereço completo informado),
+  - **Quando** o PDF comercial for emitido,
+  - **Então** o documento é gerado normalmente sem erros de renderização,
+  - **E** os campos ausentes exibem o texto "Não informado", mantendo a simetria e estética do layout.
+- [ ] **5. Tratamento de Erro para Orçamento Inexistente:**
+  - **Dado que** é realizada uma requisição informando um identificador de orçamento não cadastrado,
+  - **Quando** o endpoint `GET /api/budgets/{id}/pdf/comercial` for invocado,
+  - **Então** o backend responde com HTTP 404 Not Found e mensagem amigável no formato estruturado `ErrorResponse`.
+- [ ] **6. Preservação de Sigilo na Via Comercial:**
+  - **Dado que** o documento emitido é a via comercial do orçamento,
+  - **Quando** o PDF for gerado,
+  - **Então** os valores monetários de venda são exibidos, mas quaisquer cálculos de custo interno de matéria-prima, fórmulas de usinagem e listas de corte permanecem estritamente omitidos (reservados à via técnica de oficina).
 
 ---
 
