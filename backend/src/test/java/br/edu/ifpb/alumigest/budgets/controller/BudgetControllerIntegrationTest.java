@@ -38,6 +38,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -510,6 +511,56 @@ class BudgetControllerIntegrationTest {
             mockMvc.perform(post("/api/budgets/{id}/recalcular", approvedBudget.getId())
                             .contentType(MediaType.APPLICATION_JSON))
                     .andExpect(status().isUnprocessableEntity());
+        }
+    }
+
+    // =========================================================================
+    // 4. TESTES DO ENDPOINT GET /api/budgets/{id}/pdf/comercial [US-10.6]
+    // =========================================================================
+
+    @Nested
+    @DisplayName("GET /api/budgets/{id}/pdf/comercial — Exportar PDF Comercial")
+    class ExportPdfComercialEndpointTests {
+
+        @Test
+        @DisplayName("Deve gerar PDF comercial com sucesso (200 OK) a partir do banco de dados real H2")
+        void shouldExportPdfComercialSuccessfully() throws Exception {
+            Budget budget = createDraftBudgetWithItem();
+
+            mockMvc.perform(get("/api/budgets/{id}/pdf/comercial", budget.getId()))
+                    .andExpect(status().isOk())
+                    .andExpect(header().string("Content-Type", "application/pdf"))
+                    .andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.containsString(budget.getCode() + "-comercial.pdf")))
+                    .andExpect(content().contentType(MediaType.APPLICATION_PDF))
+                    .andExpect(result -> {
+                        byte[] bytes = result.getResponse().getContentAsByteArray();
+                        org.junit.jupiter.api.Assertions.assertTrue(bytes.length > 0);
+                        String header = new String(bytes, 0, Math.min(bytes.length, 4));
+                        org.junit.jupiter.api.Assertions.assertEquals("%PDF", header);
+                    });
+        }
+
+        @Test
+        @DisplayName("Deve retornar 422 Unprocessable Entity quando tentar emitir PDF de orçamento CANCELLED")
+        void shouldReturn422WhenBudgetIsCancelled() throws Exception {
+            Budget budget = createDraftBudgetWithItem();
+            budget.setStatus(BudgetStatus.CANCELLED);
+            budgetRepository.save(budget);
+
+            mockMvc.perform(get("/api/budgets/{id}/pdf/comercial", budget.getId()))
+                    .andExpect(status().isUnprocessableEntity())
+                    .andExpect(jsonPath("$.status").value(422))
+                    .andExpect(jsonPath("$.message").value("Não é possível gerar o PDF de um orçamento cancelado."));
+        }
+
+        @Test
+        @DisplayName("Deve retornar 404 Not Found quando o orçamento não existir")
+        void shouldReturn404WhenBudgetDoesNotExist() throws Exception {
+            UUID nonExistentId = UUID.randomUUID();
+
+            mockMvc.perform(get("/api/budgets/{id}/pdf/comercial", nonExistentId))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.status").value(404));
         }
     }
 }

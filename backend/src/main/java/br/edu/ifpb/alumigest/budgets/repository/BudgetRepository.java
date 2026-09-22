@@ -26,6 +26,14 @@ public interface BudgetRepository extends JpaRepository<Budget, UUID> {
 
     @Query("""
         SELECT b FROM Budget b
+        JOIN FETCH b.client c
+        LEFT JOIN FETCH b.items i
+        WHERE b.id = :id
+    """)
+    Optional<Budget> findByIdWithDetails(@Param("id") UUID id);
+
+    @Query("""
+        SELECT b FROM Budget b
         LEFT JOIN b.client c
         WHERE (:status IS NULL OR b.status = :status)
           AND (CAST(:busca AS string) IS NULL OR :busca = ''

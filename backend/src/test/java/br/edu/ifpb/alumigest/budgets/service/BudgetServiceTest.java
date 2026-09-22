@@ -52,6 +52,9 @@ class BudgetServiceTest {
     @Mock
     private BudgetCodeGenerator budgetCodeGenerator;
 
+    @Mock
+    private BudgetPdfService budgetPdfService;
+
     private BudgetService budgetService;
 
     private Client client;
@@ -74,7 +77,8 @@ class BudgetServiceTest {
                 budgetMapper,
                 budgetQuantityService,
                 budgetPricingService,
-                budgetCodeGenerator
+                budgetCodeGenerator,
+                budgetPdfService
         );
 
         client = new Client();
@@ -712,5 +716,59 @@ class BudgetServiceTest {
 
         verify(budgetRepository, never()).save(any());
         verify(budgetMapper, never()).toEntity(any(BudgetItemRequestDTO.class));
+    }
+
+    @Test
+    @DisplayName("gerarPdfComercial: Sucesso quando orçamento existe e está válido")
+    void gerarPdfComercial_DeveRetornarDtoComBytesENomeArquivo_QuandoOrcamentoExiste() {
+        byte[] expectedPdf = new byte[]{1, 2, 3, 4};
+        when(budgetRepository.findByIdWithDetails(budget.getId())).thenReturn(Optional.of(budget));
+        when(budgetPdfService.gerarPdfComercial(budget)).thenReturn(expectedPdf);
+
+        BudgetPdfDTO result = budgetService.gerarPdfComercial(budget.getId());
+
+        assertThat(result).isNotNull();
+        assertThat(result.bytes()).isEqualTo(expectedPdf);
+        assertThat(result.filename()).isEqualTo("ORC-2026-001-comercial.pdf");
+        verify(budgetRepository).findByIdWithDetails(budget.getId());
+        verify(budgetPdfService).gerarPdfComercial(budget);
+    }
+
+    @Test
+    @DisplayName("gerarPdfComercial: Lança ResourceNotFoundException quando orçamento não existe")
+    void gerarPdfComercial_DeveLancarResourceNotFoundException_QuandoOrcamentoNaoExiste() {
+        UUID nonExistentId = UUID.randomUUID();
+        when(budgetRepository.findByIdWithDetails(nonExistentId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> budgetService.gerarPdfComercial(nonExistentId))
+                .isInstanceOf(ResourceNotFoundException.class);
+
+        verify(budgetPdfService, never()).gerarPdfComercial(any());
+    }
+
+    @Test
+    @DisplayName("gerarPdfComercial: Lança BusinessException quando orçamento estiver CANCELLED")
+    void gerarPdfComercial_DeveLancarBusinessException_QuandoOrcamentoCancelado() {
+        budget.setStatus(BudgetStatus.CANCELLED);
+        when(budgetRepository.findByIdWithDetails(budget.getId())).thenReturn(Optional.of(budget));
+
+        assertThatThrownBy(() -> budgetService.gerarPdfComercial(budget.getId()))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("Não é possível gerar o PDF de um orçamento cancelado.");
+
+        verify(budgetPdfService, never()).gerarPdfComercial(any());
+    }
+
+    @Test
+    @DisplayName("gerarPdfComercial: Usa nome padrão 'orcamento-comercial.pdf' quando código for nulo ou em branco")
+    void gerarPdfComercial_DeveUsarNomePadrao_QuandoCodigoNuloOuVazio() {
+        budget.setCode("   ");
+        byte[] expectedPdf = new byte[]{9, 8, 7};
+        when(budgetRepository.findByIdWithDetails(budget.getId())).thenReturn(Optional.of(budget));
+        when(budgetPdfService.gerarPdfComercial(budget)).thenReturn(expectedPdf);
+
+        BudgetPdfDTO result = budgetService.gerarPdfComercial(budget.getId());
+
+        assertThat(result.filename()).isEqualTo("orcamento-comercial.pdf");
     }
 }

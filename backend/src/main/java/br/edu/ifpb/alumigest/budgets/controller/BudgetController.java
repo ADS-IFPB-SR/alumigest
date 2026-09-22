@@ -4,6 +4,8 @@ import br.edu.ifpb.alumigest.budgets.domain.BudgetStatus;
 import br.edu.ifpb.alumigest.budgets.dto.*;
 import br.edu.ifpb.alumigest.budgets.service.BudgetQuantityService;
 import br.edu.ifpb.alumigest.budgets.service.BudgetService;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.MediaType;
 import br.edu.ifpb.alumigest.common.dto.PageResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -28,6 +30,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 @RestController
@@ -141,6 +144,29 @@ public class BudgetController {
                 .buildAndExpand(response.id())
                 .toUri();
         return ResponseEntity.created(location).body(response);
+    }
+
+    @GetMapping({"/{id}/pdf/comercial", "/{id}/pdf"})
+    @Operation(
+            summary = "Exportar PDF comercial do orçamento",
+            description = "Gera e exporta a proposta comercial oficial em formato PDF A4 para download."
+    )
+    @ApiResponse(responseCode = "200", description = "PDF gerado com sucesso (binário)")
+    @ApiResponse(responseCode = "404", description = "Orçamento não encontrado")
+    @ApiResponse(responseCode = "422", description = "Não é possível gerar o PDF de um orçamento cancelado")
+    public ResponseEntity<byte[]> gerarPdfComercial(
+            @Parameter(description = "ID do orçamento") @PathVariable UUID id) {
+        BudgetPdfDTO pdfDto = budgetService.gerarPdfComercial(id);
+
+        ContentDisposition contentDisposition = ContentDisposition.attachment()
+                .filename(pdfDto.filename(), StandardCharsets.UTF_8)
+                .build();
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .headers(headers -> headers.setContentDisposition(contentDisposition))
+                .contentLength(pdfDto.bytes().length)
+                .body(pdfDto.bytes());
     }
 
 
