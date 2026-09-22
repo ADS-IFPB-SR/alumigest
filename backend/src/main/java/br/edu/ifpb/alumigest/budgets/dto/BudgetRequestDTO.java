@@ -1,5 +1,7 @@
 package br.edu.ifpb.alumigest.budgets.dto;
 
+import br.edu.ifpb.alumigest.budgets.domain.PaymentCondition;
+import com.fasterxml.jackson.annotation.JsonAlias;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotEmpty;
@@ -22,9 +24,15 @@ public record BudgetRequestDTO(
 
         @NotEmpty(message = "O orçamento deve conter pelo menos um item")
         @Valid
-        List<BudgetItemRequestDTO> items
+        List<BudgetItemRequestDTO> items,
+
+        @JsonAlias("paymentCondition")
+        PaymentCondition paymentCondition,
+
+        @JsonAlias({"commercialConditions", "paymentNotes"})
+        String commercialConditions
 ) {
     public BudgetRequestDTO(UUID clientId, BigDecimal discountPercent, String notes, List<BudgetItemRequestDTO> items) {
-        this(clientId, discountPercent, notes, null, items);
+        this(clientId, discountPercent, notes, null, items, null, null);
     }
 }
