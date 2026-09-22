@@ -52,6 +52,9 @@ class BudgetServiceTest {
     @Mock
     private BudgetCodeGenerator budgetCodeGenerator;
 
+    @Mock
+    private BudgetPdfService budgetPdfService;
+
     private BudgetService budgetService;
 
     private Client client;
@@ -74,7 +77,8 @@ class BudgetServiceTest {
                 budgetMapper,
                 budgetQuantityService,
                 budgetPricingService,
-                budgetCodeGenerator
+                budgetCodeGenerator,
+                budgetPdfService
         );
 
         client = new Client();
@@ -161,6 +165,57 @@ class BudgetServiceTest {
 
         assertThatThrownBy(() -> budgetService.create(createRequest))
                 .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("Criação com itens: deve persistir itens com vínculo bidirecional e recalcular preços")
+    void create_ShouldPersistItemsAndRecalculatePricing_WhenItemsProvidedInRequest() {
+        when(clientRepository.findById(client.getId())).thenReturn(Optional.of(client));
+
+        BudgetItem item = new BudgetItem();
+        item.setId(UUID.randomUUID());
+        item.setQuantity(2);
+        item.setWidthMm(new BigDecimal("1000"));
+        item.setHeightMm(new BigDecimal("1000"));
+
+        BudgetItemOption option = new BudgetItemOption();
+        option.setId(UUID.randomUUID());
+        item.setOptions(new java.util.ArrayList<>(List.of(option)));
+
+        Budget mappedBudget = new Budget();
+        mappedBudget.setItems(new java.util.ArrayList<>(List.of(item)));
+
+        BudgetItemRequestDTO itemDto = new BudgetItemRequestDTO(
+                UUID.randomUUID(), new BigDecimal("1000"), new BigDecimal("1000"), 2,
+                BigDecimal.ZERO, null, null, null, null, null, null
+        );
+        BudgetCreateRequest requestWithItems = new BudgetCreateRequest(
+                client.getId(), "Notas", "Notas", null, null, null, null, null, null, List.of(itemDto)
+        );
+
+        when(budgetMapper.toEntity(requestWithItems)).thenReturn(mappedBudget);
+        when(budgetRepository.save(any(Budget.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        BudgetResponseDTO responseDTO = new BudgetResponseDTO(
+                budget.getId(), "ORC-2026-001", client.getId(), "João da Silva",
+                BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO,
+                PaymentCondition.A_VISTA_PIX, "À Vista (PIX / Dinheiro)", null,
+                BudgetStatus.DRAFT, "Rascunho", "Notas",
+                null, null, null, false, Collections.emptyList()
+        );
+        when(budgetMapper.toResponseDTO(any(Budget.class))).thenReturn(responseDTO);
+
+        BudgetResponseDTO result = budgetService.create(requestWithItems);
+
+        assertThat(result).isNotNull();
+        org.mockito.ArgumentCaptor<Budget> captor = org.mockito.ArgumentCaptor.forClass(Budget.class);
+        verify(budgetRepository).save(captor.capture());
+
+        Budget saved = captor.getValue();
+        assertThat(saved.getItems()).hasSize(1);
+        assertThat(saved.getItems().get(0).getBudget()).isEqualTo(saved);
+        assertThat(saved.getItems().get(0).getOptions().get(0).getBudgetItem()).isEqualTo(saved.getItems().get(0));
+        verify(budgetPricingService).calculatePricing(saved);
     }
 
     @Test
@@ -661,5 +716,59 @@ class BudgetServiceTest {
 
         verify(budgetRepository, never()).save(any());
         verify(budgetMapper, never()).toEntity(any(BudgetItemRequestDTO.class));
+    }
+
+    @Test
+    @DisplayName("gerarPdfComercial: Sucesso quando orçamento existe e está válido")
+    void gerarPdfComercial_DeveRetornarDtoComBytesENomeArquivo_QuandoOrcamentoExiste() {
+        byte[] expectedPdf = new byte[]{1, 2, 3, 4};
+        when(budgetRepository.findByIdWithDetails(budget.getId())).thenReturn(Optional.of(budget));
+        when(budgetPdfService.gerarPdfComercial(budget)).thenReturn(expectedPdf);
+
+        BudgetPdfDTO result = budgetService.gerarPdfComercial(budget.getId());
+
+        assertThat(result).isNotNull();
+        assertThat(result.bytes()).isEqualTo(expectedPdf);
+        assertThat(result.filename()).isEqualTo("ORC-2026-001-comercial.pdf");
+        verify(budgetRepository).findByIdWithDetails(budget.getId());
+        verify(budgetPdfService).gerarPdfComercial(budget);
+    }
+
+    @Test
+    @DisplayName("gerarPdfComercial: Lança ResourceNotFoundException quando orçamento não existe")
+    void gerarPdfComercial_DeveLancarResourceNotFoundException_QuandoOrcamentoNaoExiste() {
+        UUID nonExistentId = UUID.randomUUID();
+        when(budgetRepository.findByIdWithDetails(nonExistentId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> budgetService.gerarPdfComercial(nonExistentId))
+                .isInstanceOf(ResourceNotFoundException.class);
+
+        verify(budgetPdfService, never()).gerarPdfComercial(any());
+    }
+
+    @Test
+    @DisplayName("gerarPdfComercial: Lança BusinessException quando orçamento estiver CANCELLED")
+    void gerarPdfComercial_DeveLancarBusinessException_QuandoOrcamentoCancelado() {
+        budget.setStatus(BudgetStatus.CANCELLED);
+        when(budgetRepository.findByIdWithDetails(budget.getId())).thenReturn(Optional.of(budget));
+
+        assertThatThrownBy(() -> budgetService.gerarPdfComercial(budget.getId()))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("Não é possível gerar o PDF de um orçamento cancelado.");
+
+        verify(budgetPdfService, never()).gerarPdfComercial(any());
+    }
+
+    @Test
+    @DisplayName("gerarPdfComercial: Usa nome padrão 'orcamento-comercial.pdf' quando código for nulo ou em branco")
+    void gerarPdfComercial_DeveUsarNomePadrao_QuandoCodigoNuloOuVazio() {
+        budget.setCode("   ");
+        byte[] expectedPdf = new byte[]{9, 8, 7};
+        when(budgetRepository.findByIdWithDetails(budget.getId())).thenReturn(Optional.of(budget));
+        when(budgetPdfService.gerarPdfComercial(budget)).thenReturn(expectedPdf);
+
+        BudgetPdfDTO result = budgetService.gerarPdfComercial(budget.getId());
+
+        assertThat(result.filename()).isEqualTo("orcamento-comercial.pdf");
     }
 }
