@@ -35,7 +35,14 @@ function formatValidUntil(val?: string): string | undefined {
   return val.includes('T') ? val : `${val}T23:59:59Z`;
 }
 
-function toBackendBudgetPayload(data: CreateBudgetPayload) {
+function stringifyConfig(config: unknown): string | undefined {
+  if (typeof config === 'object' && config !== null) {
+    return JSON.stringify(config);
+  }
+  return typeof config === 'string' ? config : undefined;
+}
+
+function toBackendBudgetPayload(data: CreateBudgetPayload): any {
   return {
     clientId: data.customerId,
     discountPercent: data.discountPercent,
@@ -48,15 +55,9 @@ function toBackendBudgetPayload(data: CreateBudgetPayload) {
       quantity: item.quantity,
       laborCost: item.laborCost ?? 0,
       templateType: item.templateType,
-      templateConfig: typeof item.templateConfig === 'object' && item.templateConfig !== null 
-        ? JSON.stringify(item.templateConfig) 
-        : item.templateConfig,
-      handleConfig: typeof item.handleConfig === 'object' && item.handleConfig !== null 
-        ? JSON.stringify(item.handleConfig) 
-        : item.handleConfig,
-      drillingConfig: typeof item.drillingConfig === 'object' && item.drillingConfig !== null 
-        ? JSON.stringify(item.drillingConfig) 
-        : item.drillingConfig,
+      templateConfig: stringifyConfig(item.templateConfig),
+      handleConfig: stringifyConfig(item.handleConfig),
+      drillingConfig: stringifyConfig(item.drillingConfig),
       notes: item.notes,
       options: (item.options ?? []).map((opt) => ({
         materialId: opt.materialId,

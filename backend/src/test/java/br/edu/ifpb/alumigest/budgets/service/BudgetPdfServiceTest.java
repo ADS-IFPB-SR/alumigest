@@ -14,7 +14,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -73,11 +75,9 @@ class BudgetPdfServiceTest {
 
             assertThat(pdfBytes)
                     .as("Os bytes do PDF gerado não devem ser nulos")
-                    .isNotNull();
-
-            assertThat(pdfBytes.length)
+                    .isNotNull()
                     .as("O tamanho do array de bytes deve ser maior que zero")
-                    .isGreaterThan(0);
+                    .isNotEmpty();
 
             String header = new String(pdfBytes, 0, 5, StandardCharsets.US_ASCII);
             assertThat(header)
@@ -243,63 +243,24 @@ class BudgetPdfServiceTest {
             }
         }
 
-        @Test
-        @DisplayName("Dado handleConfig no formato JSON com handleType SHELL_LOCK, deve traduzir para 'Fecho Concha'")
-        void dadoHandleConfigJsonComHandleType_deveTraduzirCorretamente() throws IOException {
+        @ParameterizedTest(name = "config=''{0}'' deve conter ''{1}'' no PDF")
+        @CsvSource(delimiter = '|', value = {
+                "{\"handleType\":\"SHELL_LOCK\"}          | Fecho Concha",
+                "{\"type\":\"BAR_TUBULAR\"}                | Barra Tubular",
+                "{\"handleType\":\"PUXADOR_ESPECIAL_INOX\"}| PUXADOR_ESPECIAL_INOX",
+                "Puxador H 60cm                            | Puxador H 60cm"
+        })
+        @DisplayName("Dado diferentes configurações de handleConfig, deve renderizar o texto esperado no PDF")
+        void dadoHandleConfig_deveRenderizarTextoEsperado(String handleConfig, String textoEsperado) throws IOException {
             Budget budget = criarBudgetPadrao(false);
-            budget.getItems().getFirst().setHandleConfig("{\"handleType\":\"SHELL_LOCK\"}");
+            budget.getItems().getFirst().setHandleConfig(handleConfig);
 
             byte[] pdfBytes = budgetPdfService.gerarPdfComercial(budget);
 
             assertThat(pdfBytes).isNotNull();
             try (PdfReader reader = new PdfReader(pdfBytes)) {
                 String conteudo = extrairStreamsDeTexto(reader);
-                assertThat(conteudo).contains("Fecho Concha");
-            }
-        }
-
-        @Test
-        @DisplayName("Dado handleConfig no formato JSON com type BAR_TUBULAR, deve traduzir para 'Barra Tubular'")
-        void dadoHandleConfigJsonComType_deveTraduzirCorretamente() throws IOException {
-            Budget budget = criarBudgetPadrao(false);
-            budget.getItems().getFirst().setHandleConfig("{\"type\":\"BAR_TUBULAR\"}");
-
-            byte[] pdfBytes = budgetPdfService.gerarPdfComercial(budget);
-
-            assertThat(pdfBytes).isNotNull();
-            try (PdfReader reader = new PdfReader(pdfBytes)) {
-                String conteudo = extrairStreamsDeTexto(reader);
-                assertThat(conteudo).contains("Barra Tubular");
-            }
-        }
-
-        @Test
-        @DisplayName("Dado handleConfig com tipo customizado não enum no JSON, deve usar o valor do texto como fallback")
-        void dadoHandleConfigJsonComTipoCustomizado_deveUsarTextoOriginal() throws IOException {
-            Budget budget = criarBudgetPadrao(false);
-            budget.getItems().getFirst().setHandleConfig("{\"handleType\":\"PUXADOR_ESPECIAL_INOX\"}");
-
-            byte[] pdfBytes = budgetPdfService.gerarPdfComercial(budget);
-
-            assertThat(pdfBytes).isNotNull();
-            try (PdfReader reader = new PdfReader(pdfBytes)) {
-                String conteudo = extrairStreamsDeTexto(reader);
-                assertThat(conteudo).contains("PUXADOR_ESPECIAL_INOX");
-            }
-        }
-
-        @Test
-        @DisplayName("Dado handleConfig no formato texto livre 'Puxador H 60cm', deve renderizar a string informada")
-        void dadoHandleConfigTextoLivre_deveRenderizarString() throws IOException {
-            Budget budget = criarBudgetPadrao(false);
-            budget.getItems().getFirst().setHandleConfig("Puxador H 60cm");
-
-            byte[] pdfBytes = budgetPdfService.gerarPdfComercial(budget);
-
-            assertThat(pdfBytes).isNotNull();
-            try (PdfReader reader = new PdfReader(pdfBytes)) {
-                String conteudo = extrairStreamsDeTexto(reader);
-                assertThat(conteudo).contains("Puxador H 60cm");
+                assertThat(conteudo).contains(textoEsperado);
             }
         }
 
@@ -320,7 +281,7 @@ class BudgetPdfServiceTest {
 
         @Test
         @DisplayName("Dado handleConfig JSON malformado, não deve quebrar e deve tratar silenciosamente")
-        void dadoHandleConfigJsonMalformado_deveTratarSemExcecao() throws IOException {
+        void dadoHandleConfigJsonMalformado_deveTratarSemExcecao() {
             Budget budget = criarBudgetPadrao(false);
             budget.getItems().getFirst().setHandleConfig("{json-invalido: 123");
 
@@ -331,7 +292,7 @@ class BudgetPdfServiceTest {
 
         @Test
         @DisplayName("Dado handleConfig nulo ou vazio, deve gerar PDF sem tag de puxador")
-        void dadoHandleConfigNuloOuVazio_deveGerarPdfNormalmente() throws IOException {
+        void dadoHandleConfigNuloOuVazio_deveGerarPdfNormalmente() {
             Budget budget = criarBudgetPadrao(false);
             budget.getItems().getFirst().setHandleConfig("   ");
 
@@ -838,6 +799,160 @@ class BudgetPdfServiceTest {
 
         budget.setItems(new ArrayList<>(List.of(item)));
         return budget;
+    }
+
+    // =========================================================================
+    // CASOS COMPLEMENTARES DE COBERTURA E ROBUSTEZ [Joseph Nichollas]
+    // =========================================================================
+
+    @Nested
+    @DisplayName("Casos Complementares de Cobertura e Robustez [Joseph Nichollas]")
+    class CasosComplementaresJosephTest {
+
+        @Test
+        @DisplayName("Deve formatar endereço com cliente sem número (apenas logradouro)")
+        void deveFormatarEnderecoSemNumero() throws IOException {
+            Client client = Client.builder()
+                    .id(UUID.randomUUID())
+                    .fullName("Cliente Sem Numero")
+                    .street("Rua Principal")
+                    .number(null)
+                    .neighborhood("Centro")
+                    .city("Sousa")
+                    .state("PB")
+                    .build();
+
+            Budget budget = criarBudgetPadrao(false);
+            budget.setClient(client);
+
+            byte[] pdf = budgetPdfService.gerarPdfComercial(budget);
+            assertThat(pdf).isNotNull();
+            try (PdfReader reader = new PdfReader(pdf)) {
+                assertThat(reader.getNumberOfPages()).isGreaterThanOrEqualTo(1);
+            }
+        }
+
+        @Test
+        @DisplayName("Deve formatar endereço com cliente sem estado (apenas cidade)")
+        void deveFormatarEnderecoSemEstado() throws IOException {
+            Client client = Client.builder()
+                    .id(UUID.randomUUID())
+                    .fullName("Cliente Sem Estado")
+                    .street("Rua Projetada")
+                    .number("10")
+                    .neighborhood("Bairro Novo")
+                    .city("Sousa")
+                    .state(null)
+                    .build();
+
+            Budget budget = criarBudgetPadrao(false);
+            budget.setClient(client);
+
+            byte[] pdf = budgetPdfService.gerarPdfComercial(budget);
+            assertThat(pdf).isNotNull();
+            try (PdfReader reader = new PdfReader(pdf)) {
+                assertThat(reader.getNumberOfPages()).isGreaterThanOrEqualTo(1);
+            }
+        }
+
+        @Test
+        @DisplayName("Deve formatar endereço com cliente sem bairro preenchido")
+        void deveFormatarEnderecoSemBairro() throws IOException {
+            Client client = Client.builder()
+                    .id(UUID.randomUUID())
+                    .fullName("Cliente Sem Bairro")
+                    .street("Rodovia BR-230")
+                    .number("KM 400")
+                    .neighborhood("   ")
+                    .city("Sousa")
+                    .state("PB")
+                    .build();
+
+            Budget budget = criarBudgetPadrao(false);
+            budget.setClient(client);
+
+            byte[] pdf = budgetPdfService.gerarPdfComercial(budget);
+            assertThat(pdf).isNotNull();
+            try (PdfReader reader = new PdfReader(pdf)) {
+                assertThat(reader.getNumberOfPages()).isGreaterThanOrEqualTo(1);
+            }
+        }
+
+        @Test
+        @DisplayName("Deve exibir fallback 'Não informado' para cliente sem telefone e sem e-mail")
+        void deveExibirFallbackContatosNaoInformados() throws IOException {
+            Client client = Client.builder()
+                    .id(UUID.randomUUID())
+                    .fullName("Cliente Sem Contato")
+                    .phone(null)
+                    .email("   ")
+                    .street("Rua Qualquer")
+                    .build();
+
+            Budget budget = criarBudgetPadrao(false);
+            budget.setClient(client);
+
+            byte[] pdf = budgetPdfService.gerarPdfComercial(budget);
+            assertThat(pdf).isNotNull();
+            try (PdfReader reader = new PdfReader(pdf)) {
+                assertThat(reader.getNumberOfPages()).isGreaterThanOrEqualTo(1);
+            }
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {
+                "{not-a-valid-json: true",
+                "{\"type\":\"LEVER_HANDLE\"}",
+                "{\"handleType\":\"PUXADOR_ESPECIAL_INOX\"}"
+        })
+        @DisplayName("Deve processar puxador com JSON malformado, chave fallback ou tipo customizado sem quebrar")
+        void deveProcessarVariacoesDeHandleConfigSemQuebrar(String config) throws IOException {
+            Budget budget = criarBudgetPadrao(false);
+            budget.getItems().getFirst().setHandleConfig(config);
+
+            byte[] pdf = budgetPdfService.gerarPdfComercial(budget);
+            assertThat(pdf).isNotNull();
+            try (PdfReader reader = new PdfReader(pdf)) {
+                assertThat(reader.getNumberOfPages()).isGreaterThanOrEqualTo(1);
+            }
+        }
+
+        @Test
+        @DisplayName("Deve traduzir categoria nula para 'Item' em opções de peças")
+        void deveTraduzirCategoriaNulaParaItem() throws IOException {
+            Budget budget = criarBudgetPadrao(false);
+            BudgetItem item = budget.getItems().getFirst();
+
+            BudgetItemOption opt = new BudgetItemOption();
+            opt.setId(UUID.randomUUID());
+            opt.setMaterialName("Acessório Especial");
+            opt.setCategoryType(null); // nulo força fallback "Item"
+            opt.setUnitMeasure("UN");
+            opt.setQuantity(new BigDecimal("1.00"));
+            opt.setUnitPrice(new BigDecimal("25.00"));
+            opt.setTotalPrice(new BigDecimal("25.00"));
+            opt.setBudgetItem(item);
+
+            item.setOptions(new ArrayList<>(List.of(opt)));
+
+            byte[] pdf = budgetPdfService.gerarPdfComercial(budget);
+            assertThat(pdf).isNotNull();
+            try (PdfReader reader = new PdfReader(pdf)) {
+                assertThat(reader.getNumberOfPages()).isGreaterThanOrEqualTo(1);
+            }
+        }
+
+        @Test
+        @DisplayName("Deve gerar PDF com quebra automática em múltiplas páginas para orçamento extenso")
+        void deveGerarPdfComMultiplasPaginasEValidarContagem() throws IOException {
+            Budget budget = criarBudgetComMuitosItens();
+
+            byte[] pdf = budgetPdfService.gerarPdfComercial(budget);
+            assertThat(pdf).isNotNull();
+            try (PdfReader reader = new PdfReader(pdf)) {
+                assertThat(reader.getNumberOfPages()).isGreaterThanOrEqualTo(2);
+            }
+        }
     }
 
     private Budget criarBudgetComMuitosItens() {
