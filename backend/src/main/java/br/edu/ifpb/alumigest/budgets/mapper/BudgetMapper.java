@@ -21,13 +21,10 @@ public interface BudgetMapper {
     @Mapping(target = "status", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
-    @Mapping(target = "discountPercent", ignore = true)
-    @Mapping(target = "paymentCondition", ignore = true)
-    @Mapping(target = "paymentNotes", ignore = true)
-    @Mapping(target = "validUntil", ignore = true)
-    @Mapping(target = "items", ignore = true)
     @Mapping(target = "client.id", source = "clientId")
-    @Mapping(target = "notes", source = "observacoes")
+    @Mapping(target = "notes", source = "notes")
+    @Mapping(target = "paymentCondition", source = "paymentCondition")
+    @Mapping(target = "paymentNotes", source = "commercialConditions")
     Budget toEntity(BudgetCreateRequest request);
 
     @Mapping(target = "id", ignore = true)
@@ -38,9 +35,9 @@ public interface BudgetMapper {
     @Mapping(target = "status", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
-    @Mapping(target = "paymentCondition", ignore = true)
-    @Mapping(target = "paymentNotes", ignore = true)
     @Mapping(target = "client.id", source = "clientId")
+    @Mapping(target = "paymentCondition", source = "paymentCondition")
+    @Mapping(target = "paymentNotes", source = "commercialConditions")
     Budget toEntity(BudgetRequestDTO requestDTO);
 
     @Mapping(target = "id", ignore = true)
@@ -64,7 +61,15 @@ public interface BudgetMapper {
 
     @Mapping(target = "clientId", source = "client.id")
     @Mapping(target = "clientName", source = "client.fullName")
+    @Mapping(target = "clientPhone", source = "client.phone")
+    @Mapping(target = "clientEmail", source = "client.email")
+    @Mapping(target = "clientAddress", expression = "java(budget.getClient() != null ? budget.getClient().getStreet() : null)")
+    // Mapeamentos explícitos para os campos comerciais na ordem atual do ResponseDTO:
+    @Mapping(target = "paymentCondition", source = "paymentCondition")
     @Mapping(target = "paymentConditionLabel", expression = "java(budget.getPaymentCondition() != null ? budget.getPaymentCondition().getDescricao() : null)")
+    @Mapping(target = "paymentNotes", source = "paymentNotes")
+    @Mapping(target = "notes", source = "notes")
+    
     @Mapping(target = "statusLabel", expression = "java(budget.getStatus() != null ? budget.getStatus().getDescricao() : null)")
     @Mapping(target = "expired", expression = "java(budget.isExpired())")
     BudgetResponseDTO toResponseDTO(Budget budget);

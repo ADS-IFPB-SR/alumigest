@@ -52,26 +52,48 @@ public class BudgetService {
     }
 
     @Transactional
-    public BudgetResponseDTO create(BudgetCreateRequest requestDTO) {
-        Client client = clientRepository.findById(requestDTO.clientId())
-                .orElseThrow(() -> new ResourceNotFoundException("Cliente", requestDTO.clientId().toString()));
+public BudgetResponseDTO create(BudgetCreateRequest requestDTO) {
+    Client client = clientRepository.findById(requestDTO.clientId())
+            .orElseThrow(() -> new ResourceNotFoundException("Cliente", requestDTO.clientId().toString()));
 
-        Budget budget = budgetMapper.toEntity(requestDTO);
-        budget.setClient(client);
+    Budget budget = budgetMapper.toEntity(requestDTO);
+    budget.setClient(client);
 
-        budget.setCode(budgetCodeGenerator.generateNextCode());
+    budget.setCode(budgetCodeGenerator.generateNextCode());
 
-        // Status inicial obrigatório: novos orçamentos sempre começam como rascunho
-        budget.setStatus(BudgetStatus.DRAFT);
+    // Status inicial obrigatório: novos orçamentos sempre começam como rascunho
+    budget.setStatus(BudgetStatus.DRAFT);
 
-        // Validade padrão: 15 dias corridos a partir da criação, se não informada
-        if (budget.getValidUntil() == null) {
-            budget.setValidUntil(OffsetDateTime.now(ZoneOffset.UTC).plusDays(15));
-        }
-
-        budget = budgetRepository.save(budget);
-        return budgetMapper.toResponseDTO(budget);
+    // Validade padrão: 15 dias corridos a partir da criação, se não informada
+    if (budget.getValidUntil() == null) {
+        budget.setValidUntil(OffsetDateTime.now(ZoneOffset.UTC).plusDays(15));
     }
+
+    // Vínculo bidirecional obrigatório para o JPA salvar os itens na criação
+    if (budget.getItems() != null && !budget.getItems().isEmpty()) {
+        java.util.List<BudgetItem> itemsCopy = new java.util.ArrayList<>(budget.getItems());
+        budget.getItems().clear();
+
+        for (BudgetItem item : itemsCopy) {
+            budget.addItem(item);
+            
+            if (item.getOptions() != null && !item.getOptions().isEmpty()) {
+                java.util.List<BudgetItemOption> optionsCopy = new java.util.ArrayList<>(item.getOptions());
+                item.getOptions().clear();
+
+                for (BudgetItemOption option : optionsCopy) {
+                    item.addOption(option); // ou option.setBudgetItem(item);
+                }
+            }
+        }
+        
+        budgetQuantityService.calculateQuantities(budget);
+        budgetPricingService.calculatePricing(budget);
+    }
+
+    budget = budgetRepository.save(budget);
+    return budgetMapper.toResponseDTO(budget);
+}
 
     @Transactional(readOnly = true)
     public BudgetResponseDTO findById(UUID id) {
@@ -135,6 +157,10 @@ public class BudgetService {
         existingBudget.setClient(client);
         existingBudget.setDiscountPercent(updatedData.getDiscountPercent());
         existingBudget.setNotes(updatedData.getNotes());
+
+        existingBudget.setPaymentCondition(updatedData.getPaymentCondition());
+        existingBudget.setPaymentNotes(updatedData.getPaymentNotes());
+        
         if (updatedData.getValidUntil() != null) {
             existingBudget.setValidUntil(updatedData.getValidUntil());
         }
