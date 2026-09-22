@@ -92,13 +92,11 @@ describe('useCatalog Hooks', () => {
         wrapper: createWrapper(queryClient),
       });
 
-      await act(async () => {
-        try {
-          await result.current.mutateAsync({ name: 'Vidro Duplicado' } as any);
-        } catch {
-          // esperado
-        }
-      });
+      try {
+        await result.current.mutateAsync({ name: 'Vidro Duplicado' } as any);
+      } catch {
+        // esperado
+      }
 
       expect(toast.error).toHaveBeenCalledWith('Nome já existente');
     });
@@ -127,7 +125,7 @@ describe('useCatalog Hooks', () => {
       });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
-      expect(result.current.data?.content.length).toBe(1);
+      expect(result.current.data?.content).toHaveLength(1);
     });
 
     it('useCreateProfile deve cadastrar perfil', async () => {

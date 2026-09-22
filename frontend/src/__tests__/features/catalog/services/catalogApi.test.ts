@@ -125,7 +125,7 @@ describe('catalogApi Service', () => {
       vi.mocked(api.get).mockResolvedValueOnce({ data: [{ id: 'm-1', name: 'Material' }] });
       const result = await catalogApi.getMaterialsSummary();
       expect(api.get).toHaveBeenCalledWith('/catalog/materials?size=1000');
-      expect(result.length).toBe(1);
+      expect(result).toHaveLength(1);
     });
 
     it('getProducts deve chamar /catalog/products?size=100', async () => {

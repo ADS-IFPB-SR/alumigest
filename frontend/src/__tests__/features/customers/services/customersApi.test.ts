@@ -58,7 +58,7 @@ describe('customersApi Service', () => {
         baseURL: '',
         params: { page: 2, size: 10 },
       });
-      expect(result.content.length).toBe(1);
+      expect(result.content).toHaveLength(1);
       expect(result.page.totalPages).toBe(3);
     });
   });

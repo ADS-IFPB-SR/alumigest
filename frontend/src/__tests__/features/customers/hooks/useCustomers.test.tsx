@@ -111,13 +111,11 @@ describe('useCustomers Hooks', () => {
         wrapper: createWrapper(queryClient),
       });
 
-      await act(async () => {
-        try {
-          await result.current.mutateAsync({ nomeCompleto: 'Duplicado', personType: 'FISICA' });
-        } catch {
-          // esperado
-        }
-      });
+      try {
+        await result.current.mutateAsync({ nomeCompleto: 'Duplicado', personType: 'FISICA' });
+      } catch {
+        // esperado
+      }
 
       expect(toast.error).toHaveBeenCalledWith('Documento já cadastrado.');
     });

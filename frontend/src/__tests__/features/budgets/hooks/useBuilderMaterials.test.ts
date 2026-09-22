@@ -80,7 +80,7 @@ describe('useBuilderMaterials Hook', () => {
         result.current.handleAddMaterial('PROFILE');
       });
 
-      expect(result.current.materialSelections.length).toBe(1);
+      expect(result.current.materialSelections).toHaveLength(1);
       expect(result.current.materialSelections[0].materialId).toBe('p-1');
       expect(result.current.materialSelections[0].quantity).toBe(1);
       expect(result.current.materialSelections[0].unitPrice).toBe(45.0);
@@ -137,14 +137,14 @@ describe('useBuilderMaterials Hook', () => {
         result.current.handleAddMaterial('HARDWARE');
       });
 
-      expect(result.current.materialSelections.length).toBe(1);
+      expect(result.current.materialSelections).toHaveLength(1);
       const reqId = result.current.materialSelections[0].requirementId;
 
       act(() => {
         result.current.handleRemoveMaterial(reqId);
       });
 
-      expect(result.current.materialSelections.length).toBe(0);
+      expect(result.current.materialSelections).toHaveLength(0);
     });
 
     it('deve selecionar insumo de puxador via handleSelectHandleMaterial e sincronizar com handleConfig', () => {
@@ -169,7 +169,7 @@ describe('useBuilderMaterials Hook', () => {
         result.current.handleSelectHandleMaterial('h-1');
       });
 
-      expect(result.current.materialSelections.length).toBe(1);
+      expect(result.current.materialSelections).toHaveLength(1);
       expect(result.current.materialSelections[0].materialId).toBe('h-1');
       expect(result.current.handleMaterial).not.toBeNull();
     });
