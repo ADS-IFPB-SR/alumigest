@@ -13,6 +13,7 @@ import br.edu.ifpb.alumigest.common.exception.InvalidBudgetStatusTransitionExcep
 import br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.springframework.data.domain.Page;
@@ -52,6 +53,9 @@ class BudgetServiceTest {
     @Mock
     private BudgetCodeGenerator budgetCodeGenerator;
 
+    @Mock
+    private BudgetPdfService budgetPdfService;
+
     private BudgetService budgetService;
 
     private Client client;
@@ -74,7 +78,8 @@ class BudgetServiceTest {
                 budgetMapper,
                 budgetQuantityService,
                 budgetPricingService,
-                budgetCodeGenerator
+                budgetCodeGenerator,
+                budgetPdfService
         );
 
         client = new Client();
@@ -161,6 +166,57 @@ class BudgetServiceTest {
 
         assertThatThrownBy(() -> budgetService.create(createRequest))
                 .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("Criação com itens: deve persistir itens com vínculo bidirecional e recalcular preços")
+    void create_ShouldPersistItemsAndRecalculatePricing_WhenItemsProvidedInRequest() {
+        when(clientRepository.findById(client.getId())).thenReturn(Optional.of(client));
+
+        BudgetItem item = new BudgetItem();
+        item.setId(UUID.randomUUID());
+        item.setQuantity(2);
+        item.setWidthMm(new BigDecimal("1000"));
+        item.setHeightMm(new BigDecimal("1000"));
+
+        BudgetItemOption option = new BudgetItemOption();
+        option.setId(UUID.randomUUID());
+        item.setOptions(new java.util.ArrayList<>(List.of(option)));
+
+        Budget mappedBudget = new Budget();
+        mappedBudget.setItems(new java.util.ArrayList<>(List.of(item)));
+
+        BudgetItemRequestDTO itemDto = new BudgetItemRequestDTO(
+                UUID.randomUUID(), new BigDecimal("1000"), new BigDecimal("1000"), 2,
+                BigDecimal.ZERO, null, null, null, null, null, null
+        );
+        BudgetCreateRequest requestWithItems = new BudgetCreateRequest(
+                client.getId(), "Notas", "Notas", null, null, null, null, null, null, List.of(itemDto)
+        );
+
+        when(budgetMapper.toEntity(requestWithItems)).thenReturn(mappedBudget);
+        when(budgetRepository.save(any(Budget.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        BudgetResponseDTO responseDTO = new BudgetResponseDTO(
+                budget.getId(), "ORC-2026-001", client.getId(), "João da Silva",
+                BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO,
+                PaymentCondition.A_VISTA_PIX, "À Vista (PIX / Dinheiro)", null,
+                BudgetStatus.DRAFT, "Rascunho", "Notas",
+                null, null, null, false, Collections.emptyList()
+        );
+        when(budgetMapper.toResponseDTO(any(Budget.class))).thenReturn(responseDTO);
+
+        BudgetResponseDTO result = budgetService.create(requestWithItems);
+
+        assertThat(result).isNotNull();
+        org.mockito.ArgumentCaptor<Budget> captor = org.mockito.ArgumentCaptor.forClass(Budget.class);
+        verify(budgetRepository).save(captor.capture());
+
+        Budget saved = captor.getValue();
+        assertThat(saved.getItems()).hasSize(1);
+        assertThat(saved.getItems().get(0).getBudget()).isEqualTo(saved);
+        assertThat(saved.getItems().get(0).getOptions().get(0).getBudgetItem()).isEqualTo(saved.getItems().get(0));
+        verify(budgetPricingService).calculatePricing(saved);
     }
 
     @Test
@@ -661,5 +717,461 @@ class BudgetServiceTest {
 
         verify(budgetRepository, never()).save(any());
         verify(budgetMapper, never()).toEntity(any(BudgetItemRequestDTO.class));
+    }
+
+    @Test
+    @DisplayName("gerarPdfComercial: Sucesso quando orçamento existe e está válido")
+    void gerarPdfComercial_DeveRetornarDtoComBytesENomeArquivo_QuandoOrcamentoExiste() {
+        byte[] expectedPdf = new byte[]{1, 2, 3, 4};
+        when(budgetRepository.findByIdWithDetails(budget.getId())).thenReturn(Optional.of(budget));
+        when(budgetPdfService.gerarPdfComercial(budget)).thenReturn(expectedPdf);
+
+        BudgetPdfDTO result = budgetService.gerarPdfComercial(budget.getId());
+
+        assertThat(result).isNotNull();
+        assertThat(result.bytes()).isEqualTo(expectedPdf);
+        assertThat(result.filename()).isEqualTo("ORC-2026-001-comercial.pdf");
+        verify(budgetRepository).findByIdWithDetails(budget.getId());
+        verify(budgetPdfService).gerarPdfComercial(budget);
+    }
+
+    @Test
+    @DisplayName("gerarPdfComercial: Lança ResourceNotFoundException quando orçamento não existe")
+    void gerarPdfComercial_DeveLancarResourceNotFoundException_QuandoOrcamentoNaoExiste() {
+        UUID nonExistentId = UUID.randomUUID();
+        when(budgetRepository.findByIdWithDetails(nonExistentId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> budgetService.gerarPdfComercial(nonExistentId))
+                .isInstanceOf(ResourceNotFoundException.class);
+
+        verify(budgetPdfService, never()).gerarPdfComercial(any());
+    }
+
+    @Test
+    @DisplayName("gerarPdfComercial: Lança BusinessException quando orçamento estiver CANCELLED")
+    void gerarPdfComercial_DeveLancarBusinessException_QuandoOrcamentoCancelado() {
+        budget.setStatus(BudgetStatus.CANCELLED);
+        UUID budgetId = budget.getId();
+        when(budgetRepository.findByIdWithDetails(budgetId)).thenReturn(Optional.of(budget));
+
+        assertThatThrownBy(() -> budgetService.gerarPdfComercial(budgetId))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("Não é possível gerar o PDF de um orçamento cancelado.");
+
+        verify(budgetPdfService, never()).gerarPdfComercial(any());
+    }
+
+    @Test
+    @DisplayName("gerarPdfComercial: Usa nome padrão 'orcamento-comercial.pdf' quando código for nulo ou em branco")
+    void gerarPdfComercial_DeveUsarNomePadrao_QuandoCodigoNuloOuVazio() {
+        budget.setCode("   ");
+        byte[] expectedPdf = new byte[]{9, 8, 7};
+        when(budgetRepository.findByIdWithDetails(budget.getId())).thenReturn(Optional.of(budget));
+        when(budgetPdfService.gerarPdfComercial(budget)).thenReturn(expectedPdf);
+
+        BudgetPdfDTO result = budgetService.gerarPdfComercial(budget.getId());
+
+        assertThat(result.filename()).isEqualTo("orcamento-comercial.pdf");
+    }
+
+    // =========================================================================
+    // CASOS COMPLEMENTARES DE COBERTURA E REGRAS DE NEGÓCIO [Joseph Nichollas]
+    // =========================================================================
+
+    @Nested
+    @DisplayName("Casos Complementares de Cobertura e Regras de Negócio [Joseph Nichollas]")
+    class CasosComplementaresJosephTest {
+
+        @Test
+        @DisplayName("adicionarItem com BudgetItemCreateRequest: Sucesso e delegação correta")
+        void adicionarItem_ComBudgetItemCreateRequest_DeveDelegarComSucesso() {
+            UUID budgetId = budget.getId();
+            budget.setStatus(BudgetStatus.DRAFT);
+            when(budgetRepository.findById(budgetId)).thenReturn(Optional.of(budget));
+
+            BudgetItem item = new BudgetItem();
+            item.setWidthMm(new BigDecimal("1000.00"));
+            item.setHeightMm(new BigDecimal("2000.00"));
+            item.setQuantity(1);
+            item.setLaborCost(new BigDecimal("50.00"));
+            item.setOptions(new java.util.ArrayList<>());
+
+            when(budgetMapper.toEntity(any(BudgetItemRequestDTO.class))).thenReturn(item);
+
+            BudgetItemResponseDTO mockResponse = new BudgetItemResponseDTO(
+                    UUID.randomUUID(),
+                    UUID.randomUUID(),
+                    "Janela Teste",
+                    "SLIDING_DOOR_2F",
+                    null, null, null,
+                    new BigDecimal("1000.00"),
+                    new BigDecimal("2000.00"),
+                    1,
+                    new BigDecimal("50.00"),
+                    new BigDecimal("500.00"),
+                    "Notas",
+                    Collections.emptyList()
+            );
+            when(budgetMapper.toResponseDTO(any(BudgetItem.class))).thenReturn(mockResponse);
+
+            BudgetItemCreateRequest createReq = new BudgetItemCreateRequest(
+                    UUID.randomUUID(),
+                    "Janela Teste",
+                    new BigDecimal("1000.00"),
+                    new BigDecimal("2000.00"),
+                    1,
+                    "BRANCO",
+                    "INCOLOR_8MM",
+                    "CORRER",
+                    "PADRAO",
+                    new BigDecimal("500.00")
+            );
+
+            BudgetItemResponseDTO result = budgetService.adicionarItem(budgetId, createReq);
+
+            assertThat(result).isNotNull();
+            assertThat(result.productName()).isEqualTo("Janela Teste");
+            verify(budgetRepository).save(budget);
+        }
+
+        @Test
+        @DisplayName("adicionarItem com BudgetItemCreateRequest: Lança ResourceNotFoundException se orçamento não existe")
+        void adicionarItem_ComBudgetItemCreateRequest_DeveLancarExcecaoQuandoOrcamentoNaoExiste() {
+            UUID nonExistentId = UUID.randomUUID();
+            when(budgetRepository.findById(nonExistentId)).thenReturn(Optional.empty());
+
+            BudgetItemCreateRequest createReq = new BudgetItemCreateRequest(
+                    UUID.randomUUID(),
+                    "Janela Teste",
+                    new BigDecimal("1000.00"),
+                    new BigDecimal("2000.00"),
+                    1,
+                    null, null, null, null,
+                    BigDecimal.ZERO
+            );
+
+            assertThatThrownBy(() -> budgetService.adicionarItem(nonExistentId, createReq))
+                    .isInstanceOf(ResourceNotFoundException.class);
+        }
+
+        @Test
+        @DisplayName("alterarStatus: Sucesso e retorno de BudgetResponseDTO")
+        void alterarStatus_DeveRetornarBudgetResponseDTO() {
+            UUID budgetId = budget.getId();
+            budget.setStatus(BudgetStatus.DRAFT);
+            when(budgetRepository.findById(budgetId)).thenReturn(Optional.of(budget));
+            when(budgetRepository.save(budget)).thenReturn(budget);
+
+            BudgetResponseDTO expectedResponse = new BudgetResponseDTO(
+                    budgetId,
+                    budget.getCode(),
+                    client.getId(),
+                    client.getFullName(),
+                    null, null, null,
+                    BigDecimal.ZERO,
+                    BigDecimal.ZERO,
+                    BigDecimal.ZERO,
+                    BigDecimal.ZERO,
+                    null, null, null,
+                    BudgetStatus.SENT,
+                    null, null, null, null, null, false,
+                    Collections.emptyList()
+            );
+            when(budgetMapper.toResponseDTO(budget)).thenReturn(expectedResponse);
+
+            StatusChangeRequest request = new StatusChangeRequest(BudgetStatus.SENT);
+            BudgetResponseDTO response = budgetService.alterarStatus(budgetId, request);
+
+            assertThat(response).isNotNull();
+            assertThat(response.status()).isEqualTo(BudgetStatus.SENT);
+            verify(budgetRepository).save(budget);
+        }
+
+        @Test
+        @DisplayName("update: Rejeita data de validade retroativa lançando BusinessException")
+        void update_DeveLancarExcecaoQuandoDataValidadeRetroativa() {
+            UUID budgetId = budget.getId();
+            budget.setStatus(BudgetStatus.DRAFT);
+            when(budgetRepository.findById(budgetId)).thenReturn(Optional.of(budget));
+
+            BudgetRequestDTO request = new BudgetRequestDTO(
+                    client.getId(),
+                    BigDecimal.ZERO,
+                    "Notas",
+                    java.time.OffsetDateTime.now(java.time.ZoneOffset.UTC).minusDays(2),
+                    List.of(),
+                    null,
+                    null
+            );
+
+            assertThatThrownBy(() -> budgetService.update(budgetId, request))
+                    .isInstanceOf(BusinessException.class)
+                    .hasMessageContaining("A data de validade da proposta não pode ser anterior à data de hoje.");
+        }
+
+        @Test
+        @DisplayName("update: Lança ResourceNotFoundException quando cliente não for encontrado")
+        void update_DeveLancarExcecaoQuandoClienteNaoEncontrado() {
+            UUID budgetId = budget.getId();
+            UUID nonExistentClientId = UUID.randomUUID();
+            budget.setStatus(BudgetStatus.DRAFT);
+            when(budgetRepository.findById(budgetId)).thenReturn(Optional.of(budget));
+            when(clientRepository.findById(nonExistentClientId)).thenReturn(Optional.empty());
+
+            BudgetRequestDTO request = new BudgetRequestDTO(
+                    nonExistentClientId,
+                    BigDecimal.ZERO,
+                    "Notas",
+                    java.time.OffsetDateTime.now(java.time.ZoneOffset.UTC).plusDays(5),
+                    List.of(),
+                    null,
+                    null
+            );
+
+            assertThatThrownBy(() -> budgetService.update(budgetId, request))
+                    .isInstanceOf(ResourceNotFoundException.class)
+                    .hasMessageContaining("Cliente");
+        }
+
+        @Test
+        @DisplayName("updateStatus: Permite transição DRAFT -> CANCELLED")
+        void updateStatus_DevePermitirTransicaoDraftParaCancelled() {
+            UUID budgetId = budget.getId();
+            budget.setStatus(BudgetStatus.DRAFT);
+            when(budgetRepository.findById(budgetId)).thenReturn(Optional.of(budget));
+
+            StatusChangeRequest request = new StatusChangeRequest(BudgetStatus.CANCELLED);
+            budgetService.updateStatus(budgetId, request);
+
+            assertThat(budget.getStatus()).isEqualTo(BudgetStatus.CANCELLED);
+            verify(budgetRepository).save(budget);
+        }
+
+        @Test
+        @DisplayName("updateStatus: Permite transição SENT -> CANCELLED")
+        void updateStatus_DevePermitirTransicaoSentParaCancelled() {
+            UUID budgetId = budget.getId();
+            budget.setStatus(BudgetStatus.SENT);
+            when(budgetRepository.findById(budgetId)).thenReturn(Optional.of(budget));
+
+            StatusChangeRequest request = new StatusChangeRequest(BudgetStatus.CANCELLED);
+            budgetService.updateStatus(budgetId, request);
+
+            assertThat(budget.getStatus()).isEqualTo(BudgetStatus.CANCELLED);
+            verify(budgetRepository).save(budget);
+        }
+
+        @Test
+        @DisplayName("updateStatus: Bloqueia transições a partir de status terminais APPROVED, REJECTED e CANCELLED")
+        void updateStatus_DeveBloquearTransicoesDeStatusTerminais() {
+            UUID budgetId = budget.getId();
+            when(budgetRepository.findById(budgetId)).thenReturn(Optional.of(budget));
+
+            for (BudgetStatus terminal : List.of(BudgetStatus.APPROVED, BudgetStatus.REJECTED, BudgetStatus.CANCELLED)) {
+                budget.setStatus(terminal);
+                StatusChangeRequest request = new StatusChangeRequest(BudgetStatus.SENT);
+
+                assertThatThrownBy(() -> budgetService.updateStatus(budgetId, request))
+                        .isInstanceOf(InvalidBudgetStatusTransitionException.class);
+            }
+        }
+
+        @Test
+        @DisplayName("updateStatus: Permite transições válidas a partir de SENT (APPROVED, REJECTED, EXPIRED)")
+        void updateStatus_DevePermitirTransicoesValidasDeSent() {
+            UUID budgetId = budget.getId();
+            when(budgetRepository.findById(budgetId)).thenReturn(Optional.of(budget));
+
+            for (BudgetStatus target : List.of(BudgetStatus.APPROVED, BudgetStatus.REJECTED, BudgetStatus.EXPIRED)) {
+                budget.setStatus(BudgetStatus.SENT);
+                StatusChangeRequest request = new StatusChangeRequest(target);
+                budgetService.updateStatus(budgetId, request);
+                assertThat(budget.getStatus()).isEqualTo(target);
+            }
+        }
+
+        @Test
+        @DisplayName("recalculate: Lança BudgetImmutableException quando status não for DRAFT")
+        void recalculate_DeveLancarExcecaoQuandoStatusNaoForDraft() {
+            UUID budgetId = budget.getId();
+            budget.setStatus(BudgetStatus.SENT);
+            when(budgetRepository.findById(budgetId)).thenReturn(Optional.of(budget));
+
+            assertThatThrownBy(() -> budgetService.recalculate(budgetId))
+                    .isInstanceOf(BudgetImmutableException.class);
+        }
+
+        @Test
+        @DisplayName("delete: Lança InvalidBudgetStatusTransitionException se já aprovado")
+        void delete_DeveLancarExcecaoSeJaAprovado() {
+            UUID budgetId = budget.getId();
+            budget.setStatus(BudgetStatus.APPROVED);
+            when(budgetRepository.findById(budgetId)).thenReturn(Optional.of(budget));
+
+            assertThatThrownBy(() -> budgetService.delete(budgetId))
+                    .isInstanceOf(InvalidBudgetStatusTransitionException.class);
+        }
+
+        @Test
+        @DisplayName("gerarPdfComercial: Lança BusinessException se orçamento estiver CANCELLED")
+        void gerarPdfComercial_DeveLancarExcecaoSeOrcamentoCancelado() {
+            UUID budgetId = budget.getId();
+            budget.setStatus(BudgetStatus.CANCELLED);
+            when(budgetRepository.findByIdWithDetails(budgetId)).thenReturn(Optional.of(budget));
+
+            assertThatThrownBy(() -> budgetService.gerarPdfComercial(budgetId))
+                    .isInstanceOf(BusinessException.class)
+                    .hasMessageContaining("Não é possível gerar o PDF de um orçamento cancelado.");
+        }
+
+        @Test
+        @DisplayName("gerarPdfComercial: Sucesso com inicialização de opções e fallback de código")
+        void gerarPdfComercial_DeveGerarComFallbackDeCodigoEInicializacaoDeOpcoes() {
+            UUID budgetId = budget.getId();
+            budget.setStatus(BudgetStatus.DRAFT);
+            budget.setCode(null); // Testa fallback para "orcamento"
+
+            BudgetItem item = new BudgetItem();
+            BudgetItemOption opt = new BudgetItemOption();
+            item.setOptions(new java.util.ArrayList<>(List.of(opt)));
+            budget.setItems(new java.util.ArrayList<>(List.of(item)));
+
+            when(budgetRepository.findByIdWithDetails(budgetId)).thenReturn(Optional.of(budget));
+            when(budgetPdfService.gerarPdfComercial(budget)).thenReturn(new byte[]{1, 2, 3});
+
+            BudgetPdfDTO pdfDto = budgetService.gerarPdfComercial(budgetId);
+
+            assertThat(pdfDto).isNotNull();
+            assertThat(pdfDto.filename()).isEqualTo("orcamento-comercial.pdf");
+            assertThat(pdfDto.bytes()).containsExactly(1, 2, 3);
+        }
+
+        @Test
+        @DisplayName("findAll e listar: Sucesso com query, pageable nulo e pageable desordenado")
+        void buscarOrcamentos_CobreRamosDePaginacaoEOrdenacao() {
+            when(budgetRepository.searchBudgets(any(), any(), any()))
+                    .thenReturn(Page.empty());
+
+            // 1. Pageable nulo
+            PageResponse<BudgetSummaryResponseDTO> res1 = budgetService.findAll("busca", BudgetStatus.DRAFT, null);
+            assertThat(res1).isNotNull();
+
+            // 2. Pageable sem ordenação (unsorted)
+            PageResponse<BudgetSummaryResponseDTO> res2 = budgetService.listar("  ", null, PageRequest.of(0, 10));
+            assertThat(res2).isNotNull();
+        }
+
+        @Test
+        @DisplayName("updateStatus: Sem alteração de status (current == target) deve retornar sem erro")
+        void updateStatus_MesmoStatus_DeveRetornarSemErro() {
+            UUID budgetId = budget.getId();
+            budget.setStatus(BudgetStatus.DRAFT);
+            when(budgetRepository.findById(budgetId)).thenReturn(Optional.of(budget));
+
+            StatusChangeRequest reqMesmoStatus = new StatusChangeRequest(BudgetStatus.DRAFT);
+            budgetService.updateStatus(budgetId, reqMesmoStatus);
+
+            assertThat(budget.getStatus()).isEqualTo(BudgetStatus.DRAFT);
+        }
+
+        @Test
+        @DisplayName("aplicarDesconto: Sucesso com valor fixo e data de validade preenchida")
+        void aplicarDesconto_ComValorFixoEDataValidade_DeveAtualizarCampos() {
+            UUID budgetId = budget.getId();
+            budget.setStatus(BudgetStatus.DRAFT);
+            budget.setSubtotal(new BigDecimal("1000.00"));
+            budget.addItem(new BudgetItem());
+            when(budgetRepository.findById(budgetId)).thenReturn(Optional.of(budget));
+            when(budgetRepository.save(budget)).thenReturn(budget);
+
+            DiscountRequest reqFixo = new DiscountRequest(
+                    DiscountType.VALOR_FIXO,
+                    new BigDecimal("100.00"),
+                    PaymentCondition.A_VISTA_PIX,
+                    "Observação",
+                    java.time.LocalDate.now(java.time.ZoneOffset.UTC).plusDays(5)
+            );
+
+            budgetService.aplicarDesconto(budgetId, reqFixo);
+
+            assertThat(budget.getDiscountValue()).isEqualByComparingTo("100.00");
+            assertThat(budget.getTotal()).isEqualByComparingTo("900.00");
+            assertThat(budget.getValidUntil()).isNotNull();
+        }
+
+        @Test
+        @DisplayName("adicionarItem com opções: Vincula bidirecionalmente cada BudgetItemOption")
+        void adicionarItem_ComOpcoes_DeveVincularBidirecionalmente() {
+            UUID budgetId = budget.getId();
+            budget.setStatus(BudgetStatus.DRAFT);
+            when(budgetRepository.findById(budgetId)).thenReturn(Optional.of(budget));
+
+            BudgetItem item = new BudgetItem();
+            BudgetItemOption opt = new BudgetItemOption();
+            item.setOptions(new java.util.ArrayList<>(List.of(opt)));
+
+            when(budgetMapper.toEntity(any(BudgetItemRequestDTO.class))).thenReturn(item);
+
+            BudgetItemRequestDTO dto = new BudgetItemRequestDTO(
+                    UUID.randomUUID(),
+                    BigDecimal.TEN,
+                    BigDecimal.TEN,
+                    1,
+                    BigDecimal.ZERO,
+                    null, null, null, null, null, null
+            );
+
+            budgetService.adicionarItem(budgetId, dto);
+
+            assertThat(opt.getBudgetItem()).isEqualTo(item);
+            verify(budgetRepository).save(budget);
+        }
+
+        @Test
+        @DisplayName("create: Quando validUntil preenchido e itens possuem opções")
+        void create_ComValidadePreenchidaEOpcoes_DevePreservarValidadeEVincularOpcoes() {
+            Budget budgetComItensEOpcoes = new Budget();
+            budgetComItensEOpcoes.setValidUntil(java.time.OffsetDateTime.now(java.time.ZoneOffset.UTC).plusDays(30));
+            
+            BudgetItem item = new BudgetItem();
+            BudgetItemOption opt = new BudgetItemOption();
+            item.setOptions(new java.util.ArrayList<>(List.of(opt)));
+            budgetComItensEOpcoes.setItems(new java.util.ArrayList<>(List.of(item)));
+
+            when(clientRepository.findById(client.getId())).thenReturn(Optional.of(client));
+            when(budgetMapper.toEntity(any(BudgetCreateRequest.class))).thenReturn(budgetComItensEOpcoes);
+            when(budgetCodeGenerator.generateNextCode()).thenReturn("ORC-2026-999");
+            when(budgetRepository.save(budgetComItensEOpcoes)).thenReturn(budgetComItensEOpcoes);
+
+            BudgetCreateRequest req = new BudgetCreateRequest(client.getId(), "Notas");
+            budgetService.create(req);
+
+            assertThat(budgetComItensEOpcoes.getCode()).isEqualTo("ORC-2026-999");
+            assertThat(opt.getBudgetItem()).isEqualTo(item);
+        }
+
+        @Test
+        @DisplayName("update: Quando itens possuem opções e validUntil for nulo")
+        void update_ComItensEOpcoesEValidadeNula() {
+            UUID budgetId = budget.getId();
+            budget.setStatus(BudgetStatus.DRAFT);
+            when(budgetRepository.findById(budgetId)).thenReturn(Optional.of(budget));
+            when(clientRepository.findById(client.getId())).thenReturn(Optional.of(client));
+
+            Budget updatedData = new Budget();
+            BudgetItem item = new BudgetItem();
+            BudgetItemOption opt = new BudgetItemOption();
+            item.setOptions(new java.util.ArrayList<>(List.of(opt)));
+            updatedData.setItems(new java.util.ArrayList<>(List.of(item)));
+            updatedData.setValidUntil(null);
+
+            BudgetRequestDTO request = new BudgetRequestDTO(client.getId(), BigDecimal.ZERO, "Notas", null, List.of(), null, null);
+            when(budgetMapper.toEntity(request)).thenReturn(updatedData);
+            when(budgetRepository.save(budget)).thenReturn(budget);
+
+            budgetService.update(budgetId, request);
+
+            assertThat(opt.getBudgetItem()).isEqualTo(item);
+        }
     }
 }

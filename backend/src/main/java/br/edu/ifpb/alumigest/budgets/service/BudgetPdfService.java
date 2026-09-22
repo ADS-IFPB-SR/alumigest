@@ -5,6 +5,7 @@ import br.edu.ifpb.alumigest.budgets.domain.Budget;
 import br.edu.ifpb.alumigest.budgets.domain.BudgetItem;
 import br.edu.ifpb.alumigest.budgets.domain.BudgetItemOption;
 import br.edu.ifpb.alumigest.budgets.domain.BudgetStatus;
+import br.edu.ifpb.alumigest.budgets.service.pdf.BudgetPdfPageEvent;
 import br.edu.ifpb.alumigest.catalog.domain.HandleType;
 import br.edu.ifpb.alumigest.catalog.domain.MaterialCategoryType;
 import br.edu.ifpb.alumigest.clients.domain.Client;
@@ -33,7 +34,6 @@ import org.springframework.stereotype.Service;
 
 import java.awt.Color;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URL;
@@ -74,6 +74,8 @@ public class BudgetPdfService {
     private static final Color COR_BORDA_CLARA = new Color(225, 230, 235);
     private static final Color COR_TAG_FUNDO = new Color(230, 235, 240);
 
+    private static final String NAO_INFORMADO = "Não informado";
+
     private final CompanyProperties companyProps;
     private final ObjectMapper objectMapper;
 
@@ -95,10 +97,14 @@ public class BudgetPdfService {
             throw new IllegalStateException("Não é possível gerar o PDF de um orçamento cancelado.");
         }
 
-        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-             Document document = new Document(PageSize.A4, 36, 36, 36, 36)) {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        try (Document document = new Document(PageSize.A4, 36, 36, 54, 54)) {
 
-            PdfWriter.getInstance(document, outputStream);
+            PdfWriter writer = PdfWriter.getInstance(document, outputStream);
+            String nomeCliente = budget.getClient() != null ? budget.getClient().getFullName() : "";
+            BudgetPdfPageEvent pageEvent = new BudgetPdfPageEvent(
+                    budget.getCode(), nomeCliente, companyProps.getRazaoSocial());
+            writer.setPageEvent(pageEvent);
             document.open();
 
             adicionarCabecalho(document, budget);
@@ -111,18 +117,11 @@ public class BudgetPdfService {
             adicionarFechamentoFinanceiro(document, budget);
             adicionarRodapeEAssinaturas(document, budget);
 
-            // document.close() precisa ser chamado antes de toByteArray() para garantir
-            // a escrita da tabela de referências (xref), trailer e %%EOF pelo OpenPDF.
-            document.close();
-            return outputStream.toByteArray();
-
         } catch (DocumentException e) {
             log.error("Erro ao estruturar documento PDF para o orçamento {}: {}", budget.getCode(), e.getMessage(), e);
             throw new RuntimeException("Erro ao gerar PDF do orçamento: " + e.getMessage(), e);
-        } catch (IOException e) {
-            log.error("Erro de I/O na geração do PDF para o orçamento {}: {}", budget.getCode(), e.getMessage(), e);
-            throw new RuntimeException("Erro de I/O ao gerar PDF do orçamento: " + e.getMessage(), e);
         }
+        return outputStream.toByteArray();
     }
 
     private void adicionarCabecalho(Document document, Budget budget) throws DocumentException {
@@ -184,7 +183,7 @@ public class BudgetPdfService {
         emissao.setAlignment(Element.ALIGN_RIGHT);
         cellMetadados.addElement(emissao);
 
-        String statusTraduzido = budget.getStatus() != null ? budget.getStatus().getDescricao() : "Não informado";
+        String statusTraduzido = budget.getStatus() != null ? budget.getStatus().getDescricao() : NAO_INFORMADO;
         Paragraph status = new Paragraph("Status: " + statusTraduzido, FONTE_NORMAL);
         status.setAlignment(Element.ALIGN_RIGHT);
         cellMetadados.addElement(status);
@@ -253,82 +252,94 @@ public class BudgetPdfService {
         table.setWidths(new float[]{5f, 1f, 2f, 2f});
         table.setHeaderRows(1);
 
+        adicionarCabecalhoItens(table);
+
+        if (budget.getItems() != null) {
+            for (BudgetItem item : budget.getItems()) {
+                adicionarLinhaItem(table, item);
+            }
+        }
+        document.add(table);
+    }
+
+    private void adicionarCabecalhoItens(PdfPTable table) {
         String[] cabecalhos = {"PRODUTO / DESCRIÇÃO TÉCNICA", "QTD", "V. UNIT (R$)", "TOTAL (R$)"};
         for (int i = 0; i < cabecalhos.length; i++) {
             PdfPCell header = new PdfPCell(new Phrase(cabecalhos[i], FONTE_CABECALHO_TABELA));
             header.setBackgroundColor(COR_CABECALHO_TABELA);
             header.setBorder(Rectangle.NO_BORDER);
             header.setPadding(8f);
-
-            if (i == 0) {
-                header.setHorizontalAlignment(Element.ALIGN_LEFT);
-            } else {
-                header.setHorizontalAlignment(Element.ALIGN_CENTER);
-            }
+            header.setHorizontalAlignment(i == 0 ? Element.ALIGN_LEFT : Element.ALIGN_CENTER);
             table.addCell(header);
         }
+    }
 
-        if (budget.getItems() != null) {
-            for (BudgetItem item : budget.getItems()) {
+    private void adicionarLinhaItem(PdfPTable table, BudgetItem item) {
+        Phrase phraseDescricao = construirDescricaoItem(item);
+        PdfPCell cellDesc = new PdfPCell(phraseDescricao);
+        cellDesc.setPadding(10f);
+        estilizarCelulaTabelaClean(cellDesc);
+        table.addCell(cellDesc);
 
-                Phrase phraseDescricao = new Phrase();
-                phraseDescricao.add(new Chunk(obterDadoSeguro(item.getProductName()) + "\n", FONTE_NORMAL));
+        PdfPCell cellQtd = new PdfPCell(new Phrase(formatarQuantidade(item.getQuantity()), FONTE_NORMAL));
+        cellQtd.setHorizontalAlignment(Element.ALIGN_CENTER);
+        cellQtd.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        estilizarCelulaTabelaClean(cellQtd);
+        table.addCell(cellQtd);
 
-                BigDecimal wCm = item.getWidthMm() != null ? item.getWidthMm().divide(BigDecimal.TEN, 1, RoundingMode.HALF_UP) : BigDecimal.ZERO;
-                BigDecimal hCm = item.getHeightMm() != null ? item.getHeightMm().divide(BigDecimal.TEN, 1, RoundingMode.HALF_UP) : BigDecimal.ZERO;
-                phraseDescricao.add(new Chunk("L=" + formatarNumero(wCm) + "cm x A=" + formatarNumero(hCm) + "cm\n", FONTE_DESCRICAO_SECUNDARIA));
+        BigDecimal subtotal = item.getSubtotal() != null ? item.getSubtotal() : BigDecimal.ZERO;
+        BigDecimal qtd = (item.getQuantity() != null && item.getQuantity() > 0) ? BigDecimal.valueOf(item.getQuantity()) : BigDecimal.ONE;
+        BigDecimal valorUnitario = subtotal.divide(qtd, 2, RoundingMode.HALF_UP);
 
-                if (item.getOptions() != null && !item.getOptions().isEmpty()) {
-                    for (BudgetItemOption option : item.getOptions()) {
-                        String categoria = traduzirCategoria(option.getCategoryType());
-                        String material = option.getMaterialName() != null ? option.getMaterialName() : "";
-                        String cor = (option.getSelectedColor() != null && !option.getSelectedColor().trim().isEmpty())
-                                ? " " + option.getSelectedColor().trim() : "";
+        PdfPCell cellVUnit = new PdfPCell(new Phrase(formatarNumero(valorUnitario), FONTE_NORMAL));
+        cellVUnit.setHorizontalAlignment(Element.ALIGN_RIGHT);
+        cellVUnit.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        estilizarCelulaTabelaClean(cellVUnit);
+        table.addCell(cellVUnit);
 
-                        String textoOpcao = categoria + ": " + material + cor;
-                        phraseDescricao.add(new Chunk(textoOpcao + "\n", FONTE_DESCRICAO_SECUNDARIA));
-                    }
-                }
+        PdfPCell cellTotal = new PdfPCell(new Phrase(formatarNumero(subtotal), FONTE_NORMAL));
+        cellTotal.setHorizontalAlignment(Element.ALIGN_RIGHT);
+        cellTotal.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        estilizarCelulaTabelaClean(cellTotal);
+        table.addCell(cellTotal);
+    }
 
-                // Tag de Puxador com tratamento inteligente de JSON
-                String descricaoPuxador = extrairDescricaoPuxador(item.getHandleConfig());
-                if (descricaoPuxador != null && !descricaoPuxador.isBlank()) {
-                    phraseDescricao.add(new Chunk("\n", FONTE_DESCRICAO_SECUNDARIA));
-                    Chunk tag = new Chunk(" " + descricaoPuxador + " ", FONTE_TAG_PUXADOR);
-                    tag.setBackground(COR_TAG_FUNDO);
-                    phraseDescricao.add(tag);
-                    phraseDescricao.add(new Chunk("\n"));
-                }
+    private Phrase construirDescricaoItem(BudgetItem item) {
+        Phrase phraseDescricao = new Phrase();
+        phraseDescricao.add(new Chunk(obterDadoSeguro(item.getProductName()) + "\n", FONTE_NORMAL));
 
-                PdfPCell cellDesc = new PdfPCell(phraseDescricao);
-                cellDesc.setPadding(10f);
-                estilizarCelulaTabelaClean(cellDesc);
-                table.addCell(cellDesc);
+        BigDecimal wCm = item.getWidthMm() != null ? item.getWidthMm().divide(BigDecimal.TEN, 1, RoundingMode.HALF_UP) : BigDecimal.ZERO;
+        BigDecimal hCm = item.getHeightMm() != null ? item.getHeightMm().divide(BigDecimal.TEN, 1, RoundingMode.HALF_UP) : BigDecimal.ZERO;
+        phraseDescricao.add(new Chunk("L=" + formatarNumero(wCm) + "cm x A=" + formatarNumero(hCm) + "cm\n", FONTE_DESCRICAO_SECUNDARIA));
 
-                PdfPCell cellQtd = new PdfPCell(new Phrase(formatarQuantidade(item.getQuantity()), FONTE_NORMAL));
-                cellQtd.setHorizontalAlignment(Element.ALIGN_CENTER);
-                cellQtd.setVerticalAlignment(Element.ALIGN_MIDDLE);
-                estilizarCelulaTabelaClean(cellQtd);
-                table.addCell(cellQtd);
+        adicionarOpcoesItem(phraseDescricao, item);
+        adicionarTagPuxador(phraseDescricao, item);
 
-                BigDecimal subtotal = item.getSubtotal() != null ? item.getSubtotal() : BigDecimal.ZERO;
-                BigDecimal qtd = (item.getQuantity() != null && item.getQuantity() > 0) ? BigDecimal.valueOf(item.getQuantity()) : BigDecimal.ONE;
-                BigDecimal valorUnitario = subtotal.divide(qtd, 2, RoundingMode.HALF_UP);
+        return phraseDescricao;
+    }
 
-                PdfPCell cellVUnit = new PdfPCell(new Phrase(formatarNumero(valorUnitario), FONTE_NORMAL));
-                cellVUnit.setHorizontalAlignment(Element.ALIGN_RIGHT);
-                cellVUnit.setVerticalAlignment(Element.ALIGN_MIDDLE);
-                estilizarCelulaTabelaClean(cellVUnit);
-                table.addCell(cellVUnit);
-
-                PdfPCell cellTotal = new PdfPCell(new Phrase(formatarNumero(subtotal), FONTE_NORMAL));
-                cellTotal.setHorizontalAlignment(Element.ALIGN_RIGHT);
-                cellTotal.setVerticalAlignment(Element.ALIGN_MIDDLE);
-                estilizarCelulaTabelaClean(cellTotal);
-                table.addCell(cellTotal);
-            }
+    private void adicionarOpcoesItem(Phrase phraseDescricao, BudgetItem item) {
+        if (item.getOptions() == null || item.getOptions().isEmpty()) {
+            return;
         }
-        document.add(table);
+        for (BudgetItemOption option : item.getOptions()) {
+            String categoria = traduzirCategoria(option.getCategoryType());
+            String material = option.getMaterialName() != null ? option.getMaterialName() : "";
+            String cor = (option.getSelectedColor() != null && !option.getSelectedColor().trim().isEmpty())
+                    ? " " + option.getSelectedColor().trim() : "";
+            phraseDescricao.add(new Chunk(categoria + ": " + material + cor + "\n", FONTE_DESCRICAO_SECUNDARIA));
+        }
+    }
+
+    private void adicionarTagPuxador(Phrase phraseDescricao, BudgetItem item) {
+        String descricaoPuxador = extrairDescricaoPuxador(item.getHandleConfig());
+        if (descricaoPuxador != null && !descricaoPuxador.isBlank()) {
+            phraseDescricao.add(new Chunk("\n", FONTE_DESCRICAO_SECUNDARIA));
+            Chunk tag = new Chunk(" " + descricaoPuxador + " ", FONTE_TAG_PUXADOR);
+            tag.setBackground(COR_TAG_FUNDO);
+            phraseDescricao.add(tag);
+            phraseDescricao.add(new Chunk("\n"));
+        }
     }
 
     private void estilizarCelulaTabelaClean(PdfPCell cell) {
@@ -490,11 +501,11 @@ public class BudgetPdfService {
     }
 
     private String obterDadoSeguro(String dado) {
-        return (dado != null && !dado.trim().isEmpty()) ? dado : "Não informado";
+        return (dado != null && !dado.trim().isEmpty()) ? dado : NAO_INFORMADO;
     }
 
     private String formatarContato(Client client) {
-        if (client == null) return "Não informado";
+        if (client == null) return NAO_INFORMADO;
         List<String> contatos = new ArrayList<>();
         if (client.getEmail() != null && !client.getEmail().isBlank()) {
             contatos.add(client.getEmail().trim());
@@ -502,11 +513,11 @@ public class BudgetPdfService {
         if (client.getPhone() != null && !client.getPhone().isBlank()) {
             contatos.add(client.getPhone().trim());
         }
-        return contatos.isEmpty() ? "Não informado" : String.join(" | ", contatos);
+        return contatos.isEmpty() ? NAO_INFORMADO : String.join(" | ", contatos);
     }
 
     private String formatarEnderecoCompleto(Client client) {
-        if (client == null) return "Não informado";
+        if (client == null) return NAO_INFORMADO;
 
         List<String> partes = new ArrayList<>();
 
@@ -531,7 +542,7 @@ public class BudgetPdfService {
             partes.add(cidadeEstado);
         }
 
-        return partes.isEmpty() ? "Não informado" : String.join(" - ", partes);
+        return partes.isEmpty() ? NAO_INFORMADO : String.join(" - ", partes);
     }
 
     private String traduzirCategoria(MaterialCategoryType categoria) {
@@ -559,13 +570,7 @@ public class BudgetPdfService {
                     typeNode = node.get("type");
                 }
                 if (typeNode != null && !typeNode.isNull()) {
-                    String tipoStr = typeNode.asText();
-                    try {
-                        HandleType handleType = HandleType.valueOf(tipoStr);
-                        return traduzirTipoPuxador(handleType);
-                    } catch (IllegalArgumentException e) {
-                        return tipoStr;
-                    }
+                    return resolverDescricaoTipoPuxador(typeNode.asText());
                 }
             } catch (Exception e) {
                 log.debug("Não foi possível parsear handleConfig como JSON: {}", e.getMessage());
@@ -577,6 +582,15 @@ public class BudgetPdfService {
             return null;
         }
         return raw;
+    }
+
+    private String resolverDescricaoTipoPuxador(String tipoStr) {
+        try {
+            HandleType handleType = HandleType.valueOf(tipoStr);
+            return traduzirTipoPuxador(handleType);
+        } catch (IllegalArgumentException e) {
+            return tipoStr;
+        }
     }
 
     private String traduzirTipoPuxador(HandleType handleType) {

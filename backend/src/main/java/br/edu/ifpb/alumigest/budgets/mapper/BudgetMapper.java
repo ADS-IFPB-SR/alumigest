@@ -22,7 +22,7 @@ public interface BudgetMapper {
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "client.id", source = "clientId")
-    @Mapping(target = "notes", source = "notes")
+    @Mapping(target = "notes", expression = "java(request.notes() != null && !request.notes().isBlank() ? request.notes() : request.observacoes())")
     @Mapping(target = "paymentCondition", source = "paymentCondition")
     @Mapping(target = "paymentNotes", source = "commercialConditions")
     Budget toEntity(BudgetCreateRequest request);

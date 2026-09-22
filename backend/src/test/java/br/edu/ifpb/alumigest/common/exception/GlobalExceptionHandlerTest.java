@@ -67,6 +67,32 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
+    @DisplayName("[Técnica: Classes de Equivalência - Conflito de Negócio] Deve tratar ConflictException e retornar 409")
+    void handleConflictException_ShouldReturn409() {
+        ConflictException ex = new ConflictException("Recurso em conflito com o estado atual");
+
+        ResponseEntity<ErrorResponse> response = exceptionHandler.handleConflictException(ex, request);
+
+        assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals("Recurso em conflito com o estado atual", response.getBody().message());
+        assertEquals("/api/v1/test", response.getBody().path());
+    }
+
+    @Test
+    @DisplayName("[Técnica: Classes de Equivalência - JSON Malformado] Deve tratar HttpMessageNotReadableException e retornar 400")
+    void handleHttpMessageNotReadable_ShouldReturn400() {
+        org.springframework.http.converter.HttpMessageNotReadableException ex =
+                new org.springframework.http.converter.HttpMessageNotReadableException("JSON parse error");
+
+        ResponseEntity<ErrorResponse> response = exceptionHandler.handleHttpMessageNotReadable(ex, request);
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertTrue(response.getBody().message().contains("Formato da requisição inválido"));
+    }
+
+    @Test
     @DisplayName("Deve tratar DataIntegrityViolationException e retornar 409")
     void handleDataIntegrityViolation_ShouldReturn409() {
         DataIntegrityViolationException ex = new DataIntegrityViolationException("Duplicidade de chave");
