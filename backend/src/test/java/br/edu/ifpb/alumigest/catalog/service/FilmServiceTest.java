@@ -135,6 +135,7 @@ class FilmServiceTest {
 
         FilmResponseDTO result = filmService.updateFilmPrice(filmId, updateRequest);
 
+        assertNotNull(result);
         assertFalse(mockMaterial.isActive());
         verify(materialRepository, times(1)).save(mockMaterial);
     }

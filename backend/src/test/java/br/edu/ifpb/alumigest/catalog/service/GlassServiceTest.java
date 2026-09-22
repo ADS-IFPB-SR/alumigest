@@ -150,7 +150,7 @@ class GlassServiceTest {
         void shouldFindAllGlassesWithFilters() {
             when(groupRepository.findByCodeIgnoreCase("VIDRO")).thenReturn(Optional.of(glassGroup));
             Pageable pageable = PageRequest.of(0, 10);
-            when(materialRepository.findAllByGroupWithFilters(eq(glassGroup.getId()), eq(new BigDecimal("4")), eq("Incolor"), eq(pageable)))
+            when(materialRepository.findAllByGroupWithFilters(glassGroup.getId(), new BigDecimal("4"), "Incolor", pageable))
                     .thenReturn(new PageImpl<>(List.of(sampleGlass), pageable, 1));
 
             Page<GlassResponseDTO> result = glassService.findAllGlasses(new BigDecimal("4"), "Incolor", pageable);
