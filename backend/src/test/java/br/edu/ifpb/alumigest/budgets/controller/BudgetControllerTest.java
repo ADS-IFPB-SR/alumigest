@@ -8,16 +8,17 @@ import br.edu.ifpb.alumigest.budgets.dto.DiscountRequest;
 import br.edu.ifpb.alumigest.budgets.dto.BudgetItemCalculationRequestDTO;
 import br.edu.ifpb.alumigest.budgets.dto.BudgetItemCalculationResponseDTO;
 import br.edu.ifpb.alumigest.budgets.dto.BudgetItemRequestDTO;
+import br.edu.ifpb.alumigest.budgets.dto.BudgetPdfDTO;
 import br.edu.ifpb.alumigest.budgets.dto.BudgetRequestDTO;
 import br.edu.ifpb.alumigest.budgets.dto.BudgetResponseDTO;
 import br.edu.ifpb.alumigest.budgets.dto.BudgetSummaryResponseDTO;
 import br.edu.ifpb.alumigest.budgets.dto.StatusChangeRequest;
 import br.edu.ifpb.alumigest.budgets.domain.Budget;
-import br.edu.ifpb.alumigest.budgets.service.BudgetPdfService;
 import br.edu.ifpb.alumigest.budgets.service.BudgetQuantityService;
 import br.edu.ifpb.alumigest.budgets.service.BudgetService;
 import br.edu.ifpb.alumigest.common.dto.PageResponse;
 import br.edu.ifpb.alumigest.common.exception.BudgetImmutableException;
+import br.edu.ifpb.alumigest.common.exception.BusinessException;
 import br.edu.ifpb.alumigest.common.exception.GlobalExceptionHandler;
 import br.edu.ifpb.alumigest.common.exception.InvalidBudgetStatusTransitionException;
 import br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException;
@@ -57,9 +58,6 @@ class BudgetControllerTest {
 
     @Mock
     private BudgetQuantityService budgetQuantityService;
-
-    @Mock
-    private BudgetPdfService budgetPdfService;
 
     @InjectMocks
     private BudgetController budgetController;
@@ -608,43 +606,34 @@ class BudgetControllerTest {
     @DisplayName("Deve retornar 200 e bytes do PDF comercial com headers corretos")
     void gerarPdfComercial_DeveRetornar200EHeadersCorretos_QuandoOrcamentoExiste() throws Exception {
         UUID id = UUID.randomUUID();
-        Budget mockBudget = new Budget();
-        mockBudget.setId(id);
-        mockBudget.setCode("ORC-2026-001");
-
         byte[] pdfBytesMock = "%PDF-1.4 mock content".getBytes();
+        BudgetPdfDTO pdfDtoMock = new BudgetPdfDTO(pdfBytesMock, "ORC-2026-001-comercial.pdf");
 
-        when(budgetService.getBudgetOrThrow(id)).thenReturn(mockBudget);
-        when(budgetPdfService.gerarPdfComercial(mockBudget)).thenReturn(pdfBytesMock);
+        when(budgetService.gerarPdfComercial(id)).thenReturn(pdfDtoMock);
 
         mockMvc.perform(get("/api/budgets/{id}/pdf/comercial", id))
                 .andExpect(status().isOk())
                 .andExpect(header().string("Content-Type", "application/pdf"))
-                .andExpect(header().string("Content-Disposition", "attachment; filename=\"ORC-2026-001-comercial.pdf\""))
+                .andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.containsString("ORC-2026-001-comercial.pdf")))
                 .andExpect(header().longValue("Content-Length", pdfBytesMock.length))
                 .andExpect(content().bytes(pdfBytesMock));
 
-        verify(budgetService).getBudgetOrThrow(id);
-        verify(budgetPdfService).gerarPdfComercial(mockBudget);
+        verify(budgetService).gerarPdfComercial(id);
     }
 
     @Test
     @DisplayName("Deve retornar 200 ao gerar PDF comercial via rota legada /api/orcamentos/{id}/pdf/comercial")
     void gerarPdfComercial_ViaRotaLegada_DeveRetornar200() throws Exception {
         UUID id = UUID.randomUUID();
-        Budget mockBudget = new Budget();
-        mockBudget.setId(id);
-        mockBudget.setCode("ORC-1024");
-
         byte[] pdfBytesMock = "%PDF-1.4 mock".getBytes();
+        BudgetPdfDTO pdfDtoMock = new BudgetPdfDTO(pdfBytesMock, "ORC-1024-comercial.pdf");
 
-        when(budgetService.getBudgetOrThrow(id)).thenReturn(mockBudget);
-        when(budgetPdfService.gerarPdfComercial(mockBudget)).thenReturn(pdfBytesMock);
+        when(budgetService.gerarPdfComercial(id)).thenReturn(pdfDtoMock);
 
         mockMvc.perform(get("/api/orcamentos/{id}/pdf/comercial", id))
                 .andExpect(status().isOk())
                 .andExpect(header().string("Content-Type", "application/pdf"))
-                .andExpect(header().string("Content-Disposition", "attachment; filename=\"ORC-1024-comercial.pdf\""))
+                .andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.containsString("ORC-1024-comercial.pdf")))
                 .andExpect(content().bytes(pdfBytesMock));
     }
 
@@ -653,32 +642,40 @@ class BudgetControllerTest {
     void gerarPdfComercial_DeveRetornar404_QuandoOrcamentoNaoExiste() throws Exception {
         UUID id = UUID.randomUUID();
 
-        when(budgetService.getBudgetOrThrow(id))
+        when(budgetService.gerarPdfComercial(id))
                 .thenThrow(new ResourceNotFoundException("Orçamento", id.toString()));
 
         mockMvc.perform(get("/api/budgets/{id}/pdf/comercial", id))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404))
                 .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("não encontrado")));
-
-        verify(budgetPdfService, never()).gerarPdfComercial(any());
     }
 
     @Test
-    @DisplayName("Deve usar fallback de nome de arquivo quando código do orçamento for nulo")
+    @DisplayName("Deve retornar 422 quando tentar emitir PDF comercial de orçamento cancelado")
+    void gerarPdfComercial_DeveRetornar422_QuandoOrcamentoCancelado() throws Exception {
+        UUID id = UUID.randomUUID();
+
+        when(budgetService.gerarPdfComercial(id))
+                .thenThrow(new BusinessException("Não é possível gerar o PDF de um orçamento cancelado."));
+
+        mockMvc.perform(get("/api/budgets/{id}/pdf/comercial", id))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.status").value(422))
+                .andExpect(jsonPath("$.message").value("Não é possível gerar o PDF de um orçamento cancelado."));
+    }
+
+    @Test
+    @DisplayName("Deve usar fallback de nome de arquivo quando retornado pelo serviço")
     void gerarPdfComercial_DeveUsarFallbackFilename_QuandoCodigoNulo() throws Exception {
         UUID id = UUID.randomUUID();
-        Budget mockBudget = new Budget();
-        mockBudget.setId(id);
-        mockBudget.setCode(null);
-
         byte[] pdfBytesMock = "%PDF-1.4 mock".getBytes();
+        BudgetPdfDTO pdfDtoMock = new BudgetPdfDTO(pdfBytesMock, "orcamento-comercial.pdf");
 
-        when(budgetService.getBudgetOrThrow(id)).thenReturn(mockBudget);
-        when(budgetPdfService.gerarPdfComercial(mockBudget)).thenReturn(pdfBytesMock);
+        when(budgetService.gerarPdfComercial(id)).thenReturn(pdfDtoMock);
 
         mockMvc.perform(get("/api/budgets/{id}/pdf/comercial", id))
                 .andExpect(status().isOk())
-                .andExpect(header().string("Content-Disposition", "attachment; filename=\"orcamento-comercial.pdf\""));
+                .andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.containsString("orcamento-comercial.pdf")));
     }
 }

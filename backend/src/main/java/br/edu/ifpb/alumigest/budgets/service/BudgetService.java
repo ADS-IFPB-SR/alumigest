@@ -40,8 +40,9 @@ public class BudgetService {
     private final BudgetQuantityService budgetQuantityService;
     private final BudgetPricingService budgetPricingService;
     private final BudgetCodeGenerator budgetCodeGenerator;
+    private final BudgetPdfService budgetPdfService;
 
-    public BudgetService(BudgetRepository budgetRepository, ClientRepository clientRepository, BudgetMapper budgetMapper, BudgetQuantityService budgetQuantityService, BudgetPricingService budgetPricingService, BudgetCodeGenerator budgetCodeGenerator)
+    public BudgetService(BudgetRepository budgetRepository, ClientRepository clientRepository, BudgetMapper budgetMapper, BudgetQuantityService budgetQuantityService, BudgetPricingService budgetPricingService, BudgetCodeGenerator budgetCodeGenerator, BudgetPdfService budgetPdfService)
     {
         this.budgetRepository = budgetRepository;
         this.clientRepository = clientRepository;
@@ -49,6 +50,7 @@ public class BudgetService {
         this.budgetQuantityService = budgetQuantityService;
         this.budgetPricingService = budgetPricingService;
         this.budgetCodeGenerator = budgetCodeGenerator;
+        this.budgetPdfService = budgetPdfService;
     }
 
     @Transactional
@@ -285,7 +287,33 @@ public BudgetResponseDTO create(BudgetCreateRequest requestDTO) {
     }
 
     @Transactional(readOnly = true)
-    public Budget getBudgetOrThrow(UUID id) {
+    public BudgetPdfDTO gerarPdfComercial(UUID id) {
+        Budget budget = budgetRepository.findByIdWithDetails(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Orçamento", id.toString()));
+
+        if (budget.getStatus() == BudgetStatus.CANCELLED) {
+            throw new BusinessException("Não é possível gerar o PDF de um orçamento cancelado.");
+        }
+
+        // Força inicialização das opções das peças dentro da transação aberta para evitar LazyInitializationException
+        if (budget.getItems() != null) {
+            budget.getItems().forEach(item -> {
+                if (item.getOptions() != null) {
+                    item.getOptions().size();
+                }
+            });
+        }
+
+        byte[] bytes = budgetPdfService.gerarPdfComercial(budget);
+        String code = (budget.getCode() != null && !budget.getCode().isBlank())
+                ? budget.getCode()
+                : "orcamento";
+        String filename = code + "-comercial.pdf";
+
+        return new BudgetPdfDTO(bytes, filename);
+    }
+
+    private Budget getBudgetOrThrow(UUID id) {
         return budgetRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Orçamento", id.toString()));
     }
