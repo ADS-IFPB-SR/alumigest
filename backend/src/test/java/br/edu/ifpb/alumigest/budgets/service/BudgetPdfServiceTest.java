@@ -14,7 +14,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -73,11 +75,9 @@ class BudgetPdfServiceTest {
 
             assertThat(pdfBytes)
                     .as("Os bytes do PDF gerado não devem ser nulos")
-                    .isNotNull();
-
-            assertThat(pdfBytes.length)
+                    .isNotNull()
                     .as("O tamanho do array de bytes deve ser maior que zero")
-                    .isGreaterThan(0);
+                    .isNotEmpty();
 
             String header = new String(pdfBytes, 0, 5, StandardCharsets.US_ASCII);
             assertThat(header)
@@ -243,63 +243,24 @@ class BudgetPdfServiceTest {
             }
         }
 
-        @Test
-        @DisplayName("Dado handleConfig no formato JSON com handleType SHELL_LOCK, deve traduzir para 'Fecho Concha'")
-        void dadoHandleConfigJsonComHandleType_deveTraduzirCorretamente() throws IOException {
+        @ParameterizedTest(name = "config=''{0}'' deve conter ''{1}'' no PDF")
+        @CsvSource(delimiter = '|', value = {
+                "{\"handleType\":\"SHELL_LOCK\"}          | Fecho Concha",
+                "{\"type\":\"BAR_TUBULAR\"}                | Barra Tubular",
+                "{\"handleType\":\"PUXADOR_ESPECIAL_INOX\"}| PUXADOR_ESPECIAL_INOX",
+                "Puxador H 60cm                            | Puxador H 60cm"
+        })
+        @DisplayName("Dado diferentes configurações de handleConfig, deve renderizar o texto esperado no PDF")
+        void dadoHandleConfig_deveRenderizarTextoEsperado(String handleConfig, String textoEsperado) throws IOException {
             Budget budget = criarBudgetPadrao(false);
-            budget.getItems().getFirst().setHandleConfig("{\"handleType\":\"SHELL_LOCK\"}");
+            budget.getItems().getFirst().setHandleConfig(handleConfig);
 
             byte[] pdfBytes = budgetPdfService.gerarPdfComercial(budget);
 
             assertThat(pdfBytes).isNotNull();
             try (PdfReader reader = new PdfReader(pdfBytes)) {
                 String conteudo = extrairStreamsDeTexto(reader);
-                assertThat(conteudo).contains("Fecho Concha");
-            }
-        }
-
-        @Test
-        @DisplayName("Dado handleConfig no formato JSON com type BAR_TUBULAR, deve traduzir para 'Barra Tubular'")
-        void dadoHandleConfigJsonComType_deveTraduzirCorretamente() throws IOException {
-            Budget budget = criarBudgetPadrao(false);
-            budget.getItems().getFirst().setHandleConfig("{\"type\":\"BAR_TUBULAR\"}");
-
-            byte[] pdfBytes = budgetPdfService.gerarPdfComercial(budget);
-
-            assertThat(pdfBytes).isNotNull();
-            try (PdfReader reader = new PdfReader(pdfBytes)) {
-                String conteudo = extrairStreamsDeTexto(reader);
-                assertThat(conteudo).contains("Barra Tubular");
-            }
-        }
-
-        @Test
-        @DisplayName("Dado handleConfig com tipo customizado não enum no JSON, deve usar o valor do texto como fallback")
-        void dadoHandleConfigJsonComTipoCustomizado_deveUsarTextoOriginal() throws IOException {
-            Budget budget = criarBudgetPadrao(false);
-            budget.getItems().getFirst().setHandleConfig("{\"handleType\":\"PUXADOR_ESPECIAL_INOX\"}");
-
-            byte[] pdfBytes = budgetPdfService.gerarPdfComercial(budget);
-
-            assertThat(pdfBytes).isNotNull();
-            try (PdfReader reader = new PdfReader(pdfBytes)) {
-                String conteudo = extrairStreamsDeTexto(reader);
-                assertThat(conteudo).contains("PUXADOR_ESPECIAL_INOX");
-            }
-        }
-
-        @Test
-        @DisplayName("Dado handleConfig no formato texto livre 'Puxador H 60cm', deve renderizar a string informada")
-        void dadoHandleConfigTextoLivre_deveRenderizarString() throws IOException {
-            Budget budget = criarBudgetPadrao(false);
-            budget.getItems().getFirst().setHandleConfig("Puxador H 60cm");
-
-            byte[] pdfBytes = budgetPdfService.gerarPdfComercial(budget);
-
-            assertThat(pdfBytes).isNotNull();
-            try (PdfReader reader = new PdfReader(pdfBytes)) {
-                String conteudo = extrairStreamsDeTexto(reader);
-                assertThat(conteudo).contains("Puxador H 60cm");
+                assertThat(conteudo).contains(textoEsperado);
             }
         }
 
@@ -320,7 +281,7 @@ class BudgetPdfServiceTest {
 
         @Test
         @DisplayName("Dado handleConfig JSON malformado, não deve quebrar e deve tratar silenciosamente")
-        void dadoHandleConfigJsonMalformado_deveTratarSemExcecao() throws IOException {
+        void dadoHandleConfigJsonMalformado_deveTratarSemExcecao() {
             Budget budget = criarBudgetPadrao(false);
             budget.getItems().getFirst().setHandleConfig("{json-invalido: 123");
 
@@ -331,7 +292,7 @@ class BudgetPdfServiceTest {
 
         @Test
         @DisplayName("Dado handleConfig nulo ou vazio, deve gerar PDF sem tag de puxador")
-        void dadoHandleConfigNuloOuVazio_deveGerarPdfNormalmente() throws IOException {
+        void dadoHandleConfigNuloOuVazio_deveGerarPdfNormalmente() {
             Budget budget = criarBudgetPadrao(false);
             budget.getItems().getFirst().setHandleConfig("   ");
 
@@ -938,37 +899,16 @@ class BudgetPdfServiceTest {
             }
         }
 
-        @Test
-        @DisplayName("Deve tratar parser de puxador com JSON malformado sem falhar")
-        void deveTratarPuxadorComJsonMalformado() throws IOException {
+        @ParameterizedTest
+        @ValueSource(strings = {
+                "{not-a-valid-json: true",
+                "{\"type\":\"LEVER_HANDLE\"}",
+                "{\"handleType\":\"PUXADOR_ESPECIAL_INOX\"}"
+        })
+        @DisplayName("Deve processar puxador com JSON malformado, chave fallback ou tipo customizado sem quebrar")
+        void deveProcessarVariacoesDeHandleConfigSemQuebrar(String config) throws IOException {
             Budget budget = criarBudgetPadrao(false);
-            budget.getItems().getFirst().setHandleConfig("{not-a-valid-json: true");
-
-            byte[] pdf = budgetPdfService.gerarPdfComercial(budget);
-            assertThat(pdf).isNotNull();
-            try (PdfReader reader = new PdfReader(pdf)) {
-                assertThat(reader.getNumberOfPages()).isGreaterThanOrEqualTo(1);
-            }
-        }
-
-        @Test
-        @DisplayName("Deve processar puxador usando chave fallback 'type' quando 'handleType' for ausente")
-        void deveProcessarPuxadorUsandoChaveFallbackType() throws IOException {
-            Budget budget = criarBudgetPadrao(false);
-            budget.getItems().getFirst().setHandleConfig("{\"type\":\"LEVER_HANDLE\"}");
-
-            byte[] pdf = budgetPdfService.gerarPdfComercial(budget);
-            assertThat(pdf).isNotNull();
-            try (PdfReader reader = new PdfReader(pdf)) {
-                assertThat(reader.getNumberOfPages()).isGreaterThanOrEqualTo(1);
-            }
-        }
-
-        @Test
-        @DisplayName("Deve processar puxador com tipo desconhecido retornando o texto original")
-        void deveProcessarPuxadorComTipoCustomizado() throws IOException {
-            Budget budget = criarBudgetPadrao(false);
-            budget.getItems().getFirst().setHandleConfig("{\"handleType\":\"PUXADOR_ESPECIAL_INOX\"}");
+            budget.getItems().getFirst().setHandleConfig(config);
 
             byte[] pdf = budgetPdfService.gerarPdfComercial(budget);
             assertThat(pdf).isNotNull();
