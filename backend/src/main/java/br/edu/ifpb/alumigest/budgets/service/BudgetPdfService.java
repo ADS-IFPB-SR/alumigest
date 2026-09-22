@@ -5,6 +5,7 @@ import br.edu.ifpb.alumigest.budgets.domain.Budget;
 import br.edu.ifpb.alumigest.budgets.domain.BudgetItem;
 import br.edu.ifpb.alumigest.budgets.domain.BudgetItemOption;
 import br.edu.ifpb.alumigest.budgets.domain.BudgetStatus;
+import br.edu.ifpb.alumigest.budgets.service.pdf.BudgetPdfPageEvent;
 import br.edu.ifpb.alumigest.catalog.domain.HandleType;
 import br.edu.ifpb.alumigest.catalog.domain.MaterialCategoryType;
 import br.edu.ifpb.alumigest.clients.domain.Client;
@@ -96,9 +97,13 @@ public class BudgetPdfService {
         }
 
         try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-             Document document = new Document(PageSize.A4, 36, 36, 36, 36)) {
+             Document document = new Document(PageSize.A4, 36, 36, 54, 54)) {
 
-            PdfWriter.getInstance(document, outputStream);
+            PdfWriter writer = PdfWriter.getInstance(document, outputStream);
+            String nomeCliente = budget.getClient() != null ? budget.getClient().getFullName() : "";
+            BudgetPdfPageEvent pageEvent = new BudgetPdfPageEvent(
+                    budget.getCode(), nomeCliente, companyProps.getRazaoSocial());
+            writer.setPageEvent(pageEvent);
             document.open();
 
             adicionarCabecalho(document, budget);
