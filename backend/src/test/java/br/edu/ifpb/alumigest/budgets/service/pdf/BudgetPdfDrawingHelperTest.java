@@ -17,8 +17,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
+import java.awt.Color;
 import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
+import br.edu.ifpb.alumigest.budgets.domain.BudgetItemOption;
+import br.edu.ifpb.alumigest.catalog.domain.MaterialCategoryType;
+import br.edu.ifpb.alumigest.budgets.service.pdf.strategy.TemplateThumbnailRegistry;
+import br.edu.ifpb.alumigest.budgets.service.pdf.strategy.TemplateVisualContext;
+import br.edu.ifpb.alumigest.budgets.service.pdf.strategy.TemplateVisualContextResolver;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -318,6 +324,133 @@ class BudgetPdfDrawingHelperTest {
                 BudgetPdfDrawingHelper.DEFAULT_WIDTH, BudgetPdfDrawingHelper.DEFAULT_HEIGHT);
 
         assertNotNull(imagem, "Deve gerar miniatura usando alias 'FIXED'");
+    }
+
+    // ── Testes de SOLID: Extensibilidade, Exclusão e Edição de Templates ──
+
+    @Test
+    @DisplayName("SOLID - OCP: Deve permitir adicionar novo template dinamicamente sem alterar código existente")
+    void devePermitirAdicionarNovoTemplateSemQuebrarCodigo() {
+        String novoModeloKey = "CUSTOM_PIVOT_FACADE_360";
+
+        // Registra uma nova estratégia personalizada no Registry
+        TemplateThumbnailRegistry.getInstance().register(novoModeloKey, (tpl, itm, ctx, w, h) -> {
+            tpl.setColorFill(ctx.glassFill());
+            tpl.rectangle(5f, 5f, w - 10f, h - 10f);
+            tpl.fill();
+        });
+
+        assertTrue(TemplateThumbnailRegistry.getInstance().hasStrategy(novoModeloKey));
+
+        BudgetItem item = criarItemComTipologia(novoModeloKey);
+        Image imagem = BudgetPdfDrawingHelper.desenharMiniaturaEsquadria(writer, item);
+
+        assertNotNull(imagem, "A imagem do novo template registrado não deve ser nula");
+        assertEquals(BudgetPdfDrawingHelper.DEFAULT_WIDTH, imagem.getScaledWidth(), 0.1f);
+        assertEquals(BudgetPdfDrawingHelper.DEFAULT_HEIGHT, imagem.getScaledHeight(), 0.1f);
+    }
+
+    @Test
+    @DisplayName("SOLID - Resiliência: Deve permitir excluir um template sem quebrar o código (usando fallback seguro)")
+    void devePermitirExcluirTemplateSemQuebrarCodigo() {
+        String templateExcluidoKey = "TEMPLATE_DESCONTINUADO_V1";
+
+        // Garante que o template não existe ou foi removido do catálogo
+        TemplateThumbnailRegistry.getInstance().unregister(templateExcluidoKey);
+        assertFalse(TemplateThumbnailRegistry.getInstance().hasStrategy(templateExcluidoKey));
+
+        BudgetItem item = criarItemComTipologia(templateExcluidoKey);
+
+        // Deve renderizar sem lançar qualquer exceção
+        Image imagem = assertDoesNotThrow(() ->
+                BudgetPdfDrawingHelper.desenharMiniaturaEsquadria(writer, item));
+
+        assertNotNull(imagem, "Deve gerar imagem de fallback para template excluído/inexistente");
+        assertEquals(BudgetPdfDrawingHelper.DEFAULT_WIDTH, imagem.getScaledWidth(), 0.1f);
+        assertEquals(BudgetPdfDrawingHelper.DEFAULT_HEIGHT, imagem.getScaledHeight(), 0.1f);
+    }
+
+    @Test
+    @DisplayName("TEA: As imagens do motor gráfico dependem dinamicamente dos templates e opções do orçamento (Preto e Fumê)")
+    void deveRefletirEdicaoDeCoresEMateriaisDoTemplateDoOrcamentoPretoEFume() {
+        BudgetItem item = criarItemComTipologia("SLIDING_DOOR_2F");
+
+        BudgetItemOption optPerfil = new BudgetItemOption();
+        optPerfil.setCategoryType(MaterialCategoryType.PROFILE);
+        optPerfil.setSelectedColor("Preto Fosco");
+        optPerfil.setMaterialName("Perfil Alumínio Linha Suprema");
+        item.addOption(optPerfil);
+
+        BudgetItemOption optVidro = new BudgetItemOption();
+        optVidro.setCategoryType(MaterialCategoryType.GLASS);
+        optVidro.setSelectedColor("Fumê");
+        optVidro.setMaterialName("Vidro Temperado 8mm");
+        item.addOption(optVidro);
+
+        TemplateVisualContext ctx = TemplateVisualContextResolver.resolve(item);
+
+        assertEquals(new Color(33, 33, 33), ctx.frameFill(), "Cor do perfil deve ser Preto #212121");
+        assertEquals(new Color(100, 116, 139), ctx.glassFill(), "Cor do vidro deve ser Fumê #64748b");
+
+        Image imagem = assertDoesNotThrow(() ->
+                BudgetPdfDrawingHelper.desenharMiniaturaEsquadria(writer, item));
+        assertNotNull(imagem);
+    }
+
+    @Test
+    @DisplayName("TEA: As imagens do motor gráfico dependem dinamicamente dos templates e opções do orçamento (Bronze e Verde)")
+    void deveRefletirEdicaoDeCoresEMateriaisDoTemplateDoOrcamentoBronzeEVerde() {
+        BudgetItem item = criarItemComTipologia("SWING_DOOR_1F");
+
+        BudgetItemOption optPerfil = new BudgetItemOption();
+        optPerfil.setCategoryType(MaterialCategoryType.PROFILE);
+        optPerfil.setSelectedColor("Bronze 1002");
+        item.addOption(optPerfil);
+
+        BudgetItemOption optVidro = new BudgetItemOption();
+        optVidro.setCategoryType(MaterialCategoryType.GLASS);
+        optVidro.setSelectedColor("Verde Laminado");
+        item.addOption(optVidro);
+
+        TemplateVisualContext ctx = TemplateVisualContextResolver.resolve(item);
+
+        assertEquals(new Color(120, 53, 15), ctx.frameFill(), "Cor do perfil deve ser Bronze #78350f");
+        assertEquals(new Color(167, 243, 208), ctx.glassFill(), "Cor do vidro deve ser Verde #a7f3d0");
+
+        Image imagem = assertDoesNotThrow(() ->
+                BudgetPdfDrawingHelper.desenharMiniaturaEsquadria(writer, item));
+        assertNotNull(imagem);
+    }
+
+    @Test
+    @DisplayName("TEA: Deve resolver cores dinamicamente a partir do JSON de templateConfig do produto")
+    void deveResolverCoresDiretamenteDeTemplateConfigJson() {
+        BudgetItem item = criarItemComTipologia("AWNING_WINDOW_1F");
+        item.setTemplateConfig("{\"aluminumColor\":\"#D4AF37\",\"glassFinish\":\"reflecta\"}");
+
+        TemplateVisualContext ctx = TemplateVisualContextResolver.resolve(item);
+
+        assertEquals(new Color(180, 83, 9), ctx.frameFill(), "Cor do perfil deve ser Dourado #b45309");
+        assertEquals(new Color(254, 215, 170), ctx.glassFill(), "Cor do vidro deve ser Reflecta #fed7aa");
+
+        Image imagem = assertDoesNotThrow(() ->
+                BudgetPdfDrawingHelper.desenharMiniaturaEsquadria(writer, item));
+        assertNotNull(imagem);
+    }
+
+    @Test
+    @DisplayName("Resiliência: Deve rodar livremente sem falhas mesmo com dados corrompidos ou totalmente nulos")
+    void deveRodarLivrementeComDadosNulosOuCorrompidos() {
+        BudgetItem itemComTudoNulo = new BudgetItem();
+        itemComTudoNulo.setTemplateType(null);
+        itemComTudoNulo.setTemplateConfig(null);
+        itemComTudoNulo.setWidthMm(null);
+        itemComTudoNulo.setHeightMm(null);
+
+        Image imagem = assertDoesNotThrow(() ->
+                BudgetPdfDrawingHelper.desenharMiniaturaEsquadria(writer, itemComTudoNulo));
+
+        assertNotNull(imagem, "Deve gerar imagem padrão limpa sem exceção");
     }
 
     // ── Geração de PDF de Demonstração para Visualização ─────────────────
