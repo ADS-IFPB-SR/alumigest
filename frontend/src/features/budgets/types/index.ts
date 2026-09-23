@@ -184,6 +184,12 @@ export interface CustomerRequest {
 export interface BudgetDetail extends BudgetSummary {
   notes?: string;
   commercialConditions?: string;
+  freightCost?: number;
+  installationCost?: number;
+  paymentCondition?: PaymentCondition;
+  paymentConditionLabel?: string;
+  paymentMethod?: string | null;
+  paymentNotes?: string;
   items: {
     id: string;
     productId: string;

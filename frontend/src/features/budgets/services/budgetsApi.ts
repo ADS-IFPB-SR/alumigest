@@ -15,8 +15,6 @@ import type {
 } from '../types';
 import type { PageResponse } from '../../catalog/types';
 
-
-
 function parseJsonConfig<T>(raw: unknown, fallback: T): T {
   if (!raw) return fallback;
   if (typeof raw === 'object') return raw as T;
@@ -35,12 +33,21 @@ function formatValidUntil(val?: string): string | undefined {
   return val.includes('T') ? val : `${val}T23:59:59Z`;
 }
 
-function toBackendBudgetPayload(data: CreateBudgetPayload) {
+function stringifyConfig(config: unknown): string | undefined {
+  if (typeof config === 'object' && config !== null) {
+    return JSON.stringify(config);
+  }
+  return typeof config === 'string' ? config : undefined;
+}
+
+function toBackendBudgetPayload(data: CreateBudgetPayload): any {
   return {
     clientId: data.customerId,
     discountPercent: data.discountPercent,
     notes: data.notes,
     validUntil: formatValidUntil(data.validUntil),
+    paymentCondition: data.paymentCondition,
+    commercialConditions: data.commercialConditions,
     items: data.items.map((item) => ({
       productId: item.productId,
       widthMm: item.width,
@@ -48,15 +55,9 @@ function toBackendBudgetPayload(data: CreateBudgetPayload) {
       quantity: item.quantity,
       laborCost: item.laborCost ?? 0,
       templateType: item.templateType,
-      templateConfig: typeof item.templateConfig === 'object' && item.templateConfig !== null 
-        ? JSON.stringify(item.templateConfig) 
-        : item.templateConfig,
-      handleConfig: typeof item.handleConfig === 'object' && item.handleConfig !== null 
-        ? JSON.stringify(item.handleConfig) 
-        : item.handleConfig,
-      drillingConfig: typeof item.drillingConfig === 'object' && item.drillingConfig !== null 
-        ? JSON.stringify(item.drillingConfig) 
-        : item.drillingConfig,
+      templateConfig: stringifyConfig(item.templateConfig),
+      handleConfig: stringifyConfig(item.handleConfig),
+      drillingConfig: stringifyConfig(item.drillingConfig),
       notes: item.notes,
       options: (item.options ?? []).map((opt) => ({
         materialId: opt.materialId,
@@ -85,6 +86,11 @@ function mapBackendToBudgetDetail(res: any): BudgetDetail {
     discountValue: Number(res.discountValue ?? 0),
     total: Number(res.total ?? 0),
     notes: res.notes,
+    paymentCondition: res.paymentCondition,
+    paymentMethod: res.paymentMethod ?? res.formaPagamento,
+    paymentNotes: res.paymentNotes,
+    commercialConditions: res.commercialConditions,
+    
     itemCount: Array.isArray(res.items) ? res.items.length : 0,
     items: Array.isArray(res.items)
       ? res.items.map((item: any) => ({
@@ -148,15 +154,9 @@ function toBackendBudgetItemPayload(item: BudgetItemCreateRequest) {
     quantity: item.quantity,
     laborCost: item.laborCost ?? 0,
     templateType: item.templateType,
-    templateConfig: typeof item.templateConfig === 'object' && item.templateConfig !== null 
-      ? JSON.stringify(item.templateConfig) 
-      : item.templateConfig,
-    handleConfig: typeof item.handleConfig === 'object' && item.handleConfig !== null 
-      ? JSON.stringify(item.handleConfig) 
-      : item.handleConfig,
-    drillingConfig: typeof item.drillingConfig === 'object' && item.drillingConfig !== null 
-      ? JSON.stringify(item.drillingConfig) 
-      : item.drillingConfig,
+    templateConfig: stringifyConfig(item.templateConfig),
+    handleConfig: stringifyConfig(item.handleConfig),
+    drillingConfig: stringifyConfig(item.drillingConfig),
     notes: item.notes,
     options: (item.options ?? []).map((opt) => ({
       materialId: opt.materialId,
@@ -215,69 +215,64 @@ export const budgetsApi = {
   // ORÇAMENTOS - LISTAGEM
   // ============================================================
   getBudgets: async (filters: BudgetFilters): Promise<BudgetPageResponse> => {
-    try {
-      const params: Record<string, string | number> = {
-        page: filters.page,
-        size: filters.size,
-      };
+    const params: Record<string, string | number> = {
+      page: filters.page,
+      size: filters.size,
+    };
 
-      if (filters.status) {
-        params.status = filters.status;
-      }
-
-      if (filters.search) {
-        params.busca = filters.search;
-      }
-
-      if (filters.sort) {
-        params.sort = filters.sort;
-      }
-
-      const response = await api.get<any>('/api/orcamentos', {
-        baseURL: '',
-        params,
-      });
-      if (response.data && Array.isArray(response.data.content)) {
-        const mappedContent: BudgetSummary[] = response.data.content.map((b: any) => ({
-          id: b.id,
-          code: b.code,
-          customerId: b.clientId,
-          customerName: b.clientName,
-          customer: {
-            id: b.clientId,
-            name: b.clientName,
-          },
-          status: b.status,
-          createdAt: b.createdAt,
-          validUntil: b.validUntil,
-          subtotal: Number(b.subtotal ?? b.total ?? 0),
-          discountPercent: Number(b.discountPercent ?? 0),
-          discountValue: Number(b.discountValue ?? 0),
-          total: Number(b.total ?? 0),
-          itemCount: Number(b.itemCount ?? b.totalItems ?? 0),
-          isExpired: Boolean(b.isExpired ?? b.expired),
-        }));
-
-        const totalElements = Number(response.data.totalElements ?? mappedContent.length);
-        const totalPages = Number(response.data.totalPages ?? Math.max(1, Math.ceil(totalElements / filters.size)));
-        const pageNumber = Number(response.data.page ?? filters.page);
-        const pageSize = Number(response.data.size ?? filters.size);
-
-        return {
-          content: mappedContent,
-          page: pageNumber,
-          size: pageSize,
-          totalElements,
-          totalPages,
-          isFirst: pageNumber === 0,
-          isLast: pageNumber >= totalPages - 1,
-        };
-      }
-      throw new Error('Formato de resposta inválido da API');
-    } catch (error) {
-      console.error('Erro ao buscar orçamentos', error);
-      throw error;
+    if (filters.status) {
+      params.status = filters.status;
     }
+
+    if (filters.search) {
+      params.busca = filters.search;
+    }
+
+    if (filters.sort) {
+      params.sort = filters.sort;
+    }
+
+    const response = await api.get<any>('/api/orcamentos', {
+      baseURL: '',
+      params,
+    });
+    if (response.data && Array.isArray(response.data.content)) {
+      const mappedContent: BudgetSummary[] = response.data.content.map((b: any) => ({
+        id: b.id,
+        code: b.code,
+        customerId: b.clientId,
+        customerName: b.clientName,
+        customer: {
+          id: b.clientId,
+          name: b.clientName,
+        },
+        status: b.status,
+        createdAt: b.createdAt,
+        validUntil: b.validUntil,
+        subtotal: Number(b.subtotal ?? b.total ?? 0),
+        discountPercent: Number(b.discountPercent ?? 0),
+        discountValue: Number(b.discountValue ?? 0),
+        total: Number(b.total ?? 0),
+        itemCount: Number(b.itemCount ?? b.totalItems ?? 0),
+        isExpired: Boolean(b.isExpired ?? b.expired),
+      }));
+
+      const totalElements = Number(response.data.totalElements ?? mappedContent.length);
+      const totalPages = Number(response.data.totalPages ?? Math.max(1, Math.ceil(totalElements / filters.size)));
+      const pageNumber = Number(response.data.page ?? filters.page);
+      const pageSize = Number(response.data.size ?? filters.size);
+
+      return {
+        content: mappedContent,
+        page: pageNumber,
+        size: pageSize,
+        totalElements,
+        totalPages,
+        isFirst: pageNumber === 0,
+        isLast: pageNumber >= totalPages - 1,
+      };
+    }
+    throw new Error('Formato de resposta inválido da API');
   },
 
   getStatusCounts: async (): Promise<Record<BudgetStatus | '', number>> => {
@@ -348,5 +343,33 @@ export const budgetsApi = {
     });
     return mapBackendToBudgetItem(response.data);
   },
-};
 
+  // ============================================================
+  // ORÇAMENTOS - DOWNLOAD PDF E ACTIONS
+  // ============================================================
+
+  downloadCommercialPdf: async (id: string, code: string): Promise<void> => {
+    const response = await api.get<Blob>(`/api/orcamentos/${id}/pdf/comercial`, {
+      baseURL: '',
+      responseType: 'blob',
+    });
+    
+    const blob = new Blob([response.data], { type: 'application/pdf' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `Orcamento_${code}.pdf`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  },
+
+  getWhatsAppSummary: async (id: string): Promise<string> => {
+    const response = await api.get<string>(`/api/orcamentos/${id}/resumo-whatsapp`, {
+      baseURL: '',
+      responseType: 'text',
+    });
+    return response.data;
+  },
+};

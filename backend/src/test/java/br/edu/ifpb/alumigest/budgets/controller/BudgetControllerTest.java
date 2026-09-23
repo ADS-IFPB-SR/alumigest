@@ -725,4 +725,35 @@ class BudgetControllerTest {
                 .andExpect(jsonPath("$.status").value(422))
                 .andExpect(jsonPath("$.message").value("Não é possível gerar o PDF técnico de um orçamento cancelado."));
     }
+
+    // ── Testes do endpoint GET /api/budgets/{id}/resumo-whatsapp [US-10.7] ──
+
+    @Test
+    @DisplayName("Deve retornar 200 e texto formatado do WhatsApp com header charset=UTF-8")
+    void obterResumoWhatsApp_DeveRetornar200ETexto_QuandoOrcamentoExiste() throws Exception {
+        UUID id = UUID.randomUUID();
+        String textoMock = "Olá! 🛠️ Segue o resumo do orçamento...\nTotal: R$ 975,62";
+
+        when(budgetService.gerarResumoWhatsApp(id)).thenReturn(textoMock);
+
+        mockMvc.perform(get("/api/budgets/{id}/resumo-whatsapp", id))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Type", MediaType.TEXT_PLAIN_VALUE + ";charset=UTF-8"))
+                .andExpect(content().string(textoMock));
+
+        verify(budgetService).gerarResumoWhatsApp(id);
+    }
+
+    @Test
+    @DisplayName("Deve retornar 404 quando o orçamento não existir ao tentar emitir resumo WhatsApp")
+    void obterResumoWhatsApp_DeveRetornar404_QuandoOrcamentoNaoExiste() throws Exception {
+        UUID id = UUID.randomUUID();
+
+        when(budgetService.gerarResumoWhatsApp(id))
+                .thenThrow(new ResourceNotFoundException("Orçamento", id.toString()));
+
+        mockMvc.perform(get("/api/budgets/{id}/resumo-whatsapp", id))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404));
+    }
 }

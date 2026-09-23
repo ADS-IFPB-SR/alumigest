@@ -141,7 +141,7 @@ describe('useWindowBuilderState (Hook do Studio CAD)', () => {
 
     expect(result.current.state.drillingConfig.holeCount).toBe(3)
     expect(result.current.state.drillingConfig.divisionType).toBe('CUSTOM_DISTANCE')
-    expect(result.current.state.drillingConfig.customDistancesMm?.length).toBe(3)
+    expect(result.current.state.drillingConfig.customDistancesMm).toHaveLength(3)
   })
 
   it('deve navegar entre as etapas do wizard com validação', () => {
