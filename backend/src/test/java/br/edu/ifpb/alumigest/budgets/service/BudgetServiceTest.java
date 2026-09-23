@@ -1173,5 +1173,34 @@ class BudgetServiceTest {
 
             assertThat(opt.getBudgetItem()).isEqualTo(item);
         }
+
+        @Test
+        @DisplayName("gerarResumoWhatsApp: Deve buscar orçamento com detalhes e delegar para BudgetPdfService")
+        void gerarResumoWhatsApp_QuandoOrcamentoExiste_DeveDelegarParaBudgetPdfService() {
+            UUID budgetId = budget.getId();
+            String resumoEsperado = "📋 *Orçamento ORC-2026-001* ...";
+            when(budgetRepository.findByIdWithDetails(budgetId)).thenReturn(Optional.of(budget));
+            when(budgetPdfService.gerarResumoWhatsApp(budget)).thenReturn(resumoEsperado);
+
+            String resultado = budgetService.gerarResumoWhatsApp(budgetId);
+
+            assertThat(resultado).isEqualTo(resumoEsperado);
+            verify(budgetRepository).findByIdWithDetails(budgetId);
+            verify(budgetPdfService).gerarResumoWhatsApp(budget);
+        }
+
+        @Test
+        @DisplayName("gerarResumoWhatsApp: Deve lançar ResourceNotFoundException quando orçamento não existir")
+        void gerarResumoWhatsApp_QuandoOrcamentoNaoExiste_DeveLancarExcecao() {
+            UUID budgetId = UUID.randomUUID();
+            when(budgetRepository.findByIdWithDetails(budgetId)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> budgetService.gerarResumoWhatsApp(budgetId))
+                    .isInstanceOf(ResourceNotFoundException.class)
+                    .hasMessageContaining("Orçamento");
+
+            verify(budgetRepository).findByIdWithDetails(budgetId);
+            verifyNoInteractions(budgetPdfService);
+        }
     }
 }

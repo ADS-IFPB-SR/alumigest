@@ -33,6 +33,8 @@ import java.util.UUID;
 @Service
 public class BudgetService {
 
+    private static final String NOME_ENTIDADE = "Orçamento";
+
     private final BudgetRepository budgetRepository;
     private final ClientRepository clientRepository;
     private final BudgetMapper budgetMapper;
@@ -289,7 +291,7 @@ public BudgetResponseDTO create(BudgetCreateRequest requestDTO) {
     @Transactional(readOnly = true)
     public BudgetPdfDTO gerarPdfComercial(UUID id) {
         Budget budget = budgetRepository.findByIdWithDetails(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Orçamento", id.toString()));
+                .orElseThrow(() -> new ResourceNotFoundException(NOME_ENTIDADE, id.toString()));
 
         if (budget.getStatus() == BudgetStatus.CANCELLED) {
             throw new BusinessException("Não é possível gerar o PDF de um orçamento cancelado.");
@@ -315,7 +317,7 @@ public BudgetResponseDTO create(BudgetCreateRequest requestDTO) {
 
     private Budget getBudgetOrThrow(UUID id) {
         return budgetRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Orçamento", id.toString()));
+                .orElseThrow(() -> new ResourceNotFoundException(NOME_ENTIDADE, id.toString()));
     }
 
     private void validateBudgetIsDraft(Budget budget) {
@@ -414,12 +416,9 @@ public BudgetResponseDTO create(BudgetCreateRequest requestDTO) {
 
     @Transactional(readOnly = true)
     public String gerarResumoWhatsApp(UUID id) {
-        Budget budget = getBudgetOrThrow(id);
+        Budget budget = budgetRepository.findByIdWithDetails(id)
+                .orElseThrow(() -> new ResourceNotFoundException(NOME_ENTIDADE, id.toString()));
 
-        return "📋 *Orçamento " + (budget.getCode() != null ? budget.getCode() : "N/A") + "*\n\n" +
-                "⏳ ESPERANDO SAPE SUBIR O COD DELE " +
-                "💰 *Subtotal:* R$ " + budget.getSubtotal() + "\n" +
-                "📦 *TOTAL:* R$ " + budget.getTotal() + "\n\n" +
-                "_Alumiportas - Vidraçaria e Esquadrias_";
+        return budgetPdfService.gerarResumoWhatsApp(budget);
     }
 }

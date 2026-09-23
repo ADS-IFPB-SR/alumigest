@@ -955,6 +955,159 @@ class BudgetPdfServiceTest {
         }
     }
 
+    // =========================================================================
+    // 7. TESTES DO RESUMO PARA WHATSAPP [US-10.5] (#225)
+    // =========================================================================
+    @Nested
+    @DisplayName("7. Testes do Resumo para WhatsApp [US-10.5] (#225)")
+    class ResumoWhatsAppTest {
+
+        @Test
+        @DisplayName("Deve gerar resumo WhatsApp completo com múltiplos itens, desconto percentual e emojis")
+        void deveGerarResumoWhatsAppCompletoComSucesso() {
+            Budget budget = criarBudgetPadrao(true);
+            budget.setCode("ORC-2026-0001");
+            budget.getClient().setFullName("João Silva");
+            budget.setCreatedAt(OffsetDateTime.parse("2026-08-27T10:00:00Z"));
+            budget.setValidUntil(OffsetDateTime.parse("2026-09-11T23:59:59Z"));
+            budget.setSubtotal(new BigDecimal("2100.00"));
+            budget.setDiscountPercent(new BigDecimal("10.00"));
+            budget.setDiscountValue(new BigDecimal("210.00"));
+            budget.setTotal(new BigDecimal("1890.00"));
+            budget.setPaymentCondition(PaymentCondition.ENTRADA_50_SALDO_ENTREGA);
+
+            List<BudgetItem> itens = new ArrayList<>();
+
+            BudgetItem item1 = new BudgetItem();
+            item1.setProductName("Janela 2 Folhas Correr");
+            item1.setWidthMm(new BigDecimal("1200.00"));
+            item1.setHeightMm(new BigDecimal("1000.00"));
+            item1.setQuantity(2);
+            item1.setSubtotal(new BigDecimal("900.00"));
+            itens.add(item1);
+
+            BudgetItem item2 = new BudgetItem();
+            item2.setProductName("Porta de Abrir");
+            item2.setWidthMm(new BigDecimal("900.00"));
+            item2.setHeightMm(new BigDecimal("2100.00"));
+            item2.setQuantity(1);
+            item2.setSubtotal(new BigDecimal("1200.00"));
+            itens.add(item2);
+
+            budget.setItems(itens);
+
+            String resumo = budgetPdfService.gerarResumoWhatsApp(budget);
+
+            assertThat(resumo)
+                    .isNotBlank()
+                    .contains("📋 *Orçamento ORC-2026-0001*")
+                    .contains("📅 Emissão: 27/08/2026 | Validade: 11/09/2026")
+                    .contains("👤 Cliente: João Silva")
+                    .contains("📦 Itens:")
+                    .contains("• 2x Janela 2 Folhas Correr (1200x1000mm) - R$ 900,00")
+                    .contains("• 1x Porta de Abrir (900x2100mm) - R$ 1.200,00")
+                    .contains("💰 Subtotal: R$ 2.100,00")
+                    .contains("🏷️ Desconto (10%): -R$ 210,00")
+                    .contains("📦 *TOTAL: R$ 1.890,00*")
+                    .contains("💳 Pagamento: 50% Entrada + 50% na Entrega")
+                    .contains("_Alumiportas - Vidraçaria e Esquadrias_");
+        }
+
+        @Test
+        @DisplayName("Deve omitir linha de desconto quando valor de desconto for zero ou nulo")
+        void deveOmitirLinhaDeDescontoQuandoValorForZeroOuNulo() {
+            Budget budget = criarBudgetPadrao(true);
+            budget.setDiscountValue(BigDecimal.ZERO);
+            budget.setDiscountPercent(BigDecimal.ZERO);
+
+            String resumoComZero = budgetPdfService.gerarResumoWhatsApp(budget);
+            assertThat(resumoComZero).doesNotContain("Desconto");
+
+            budget.setDiscountValue(null);
+            String resumoComNulo = budgetPdfService.gerarResumoWhatsApp(budget);
+            assertThat(resumoComNulo).doesNotContain("Desconto");
+        }
+
+        @Test
+        @DisplayName("Deve formatar desconto fixo quando não houver percentual")
+        void deveFormatarDescontoFixoSemPercentual() {
+            Budget budget = criarBudgetPadrao(true);
+            budget.setDiscountValue(new BigDecimal("150.00"));
+            budget.setDiscountPercent(null);
+
+            String resumo = budgetPdfService.gerarResumoWhatsApp(budget);
+
+            assertThat(resumo)
+                    .contains("🏷️ Desconto: -R$ 150,00")
+                    .doesNotContain("Desconto (");
+        }
+
+        @Test
+        @DisplayName("Deve formatar item sem dimensões quando largura e altura forem nulas")
+        void deveFormatarItemSemDimensoes() {
+            Budget budget = criarBudgetPadrao(true);
+
+            BudgetItem itemSemMedidas = new BudgetItem();
+            itemSemMedidas.setProductName("Fechadura Especial");
+            itemSemMedidas.setWidthMm(null);
+            itemSemMedidas.setHeightMm(null);
+            itemSemMedidas.setQuantity(1);
+            itemSemMedidas.setSubtotal(new BigDecimal("80.00"));
+
+            budget.setItems(List.of(itemSemMedidas));
+
+            String resumo = budgetPdfService.gerarResumoWhatsApp(budget);
+
+            assertThat(resumo)
+                    .contains("• 1x Fechadura Especial - R$ 80,00")
+                    .doesNotContain("(mm)");
+        }
+
+        @Test
+        @DisplayName("Deve tratar cliente ou condição de pagamento nulos exibindo valores seguros")
+        void deveTratarClienteECondicaoPagamentoNulos() {
+            Budget budget = criarBudgetPadrao(false);
+            budget.setCode(null);
+            budget.setClient(null);
+            budget.setPaymentCondition(null);
+            budget.setItems(Collections.emptyList());
+
+            String resumo = budgetPdfService.gerarResumoWhatsApp(budget);
+
+            assertThat(resumo)
+                    .contains("📋 *Orçamento N/A*")
+                    .contains("👤 Cliente: Não informado")
+                    .contains("💳 Pagamento: A Combinar");
+        }
+
+        @Test
+        @DisplayName("Deve lançar NullPointerException quando budget for nulo")
+        void deveLancarNullPointerExceptionQuandoBudgetForNulo() {
+            assertThatThrownBy(() -> budgetPdfService.gerarResumoWhatsApp(null))
+                    .isInstanceOf(NullPointerException.class)
+                    .hasMessageContaining("O orçamento não pode ser nulo");
+        }
+
+        @Test
+        @DisplayName("Deve preservar rigorosamente todos os emojis e caracteres acentuados em UTF-8")
+        void devePreservarEmojisECaracteresAcentuadosEmUtf8() {
+            Budget budget = criarBudgetPadrao(true);
+            budget.setDiscountValue(new BigDecimal("50.00"));
+
+            String resumo = budgetPdfService.gerarResumoWhatsApp(budget);
+
+            assertThat(resumo)
+                    .contains("📋")
+                    .contains("📅")
+                    .contains("👤")
+                    .contains("📦")
+                    .contains("•")
+                    .contains("💰")
+                    .contains("🏷️")
+                    .contains("💳");
+        }
+    }
+
     private Budget criarBudgetComMuitosItens() {
         Client client = Client.builder()
                 .id(UUID.randomUUID())
