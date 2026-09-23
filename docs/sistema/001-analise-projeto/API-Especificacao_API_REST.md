@@ -4,8 +4,8 @@
 |---|---|
 | **Projeto** | AlumiGest — Sistema de Gestão para Vidraçaria e Esquadrias |
 | **Sigla** | ALG |
-| **Versão** | 2.0 (Atualizado para Sprint 3) |
-| **Data** | 21/08/2026 |
+| **Versão** | 2.1 (Atualizado para Sprint 4) |
+| **Data** | 23/09/2026 |
 | **Base URL** | `http://localhost:8080/api` |
 
 ---
@@ -16,6 +16,7 @@
 |---|---|---|---|
 | 05/08/2026 | 1.0 | Versão inicial — Endpoints da Release 1 (Materiais) | Ítalo Jefferson / Equipe AlumiGest |
 | 21/08/2026 | 2.0 | Atualização Sprint 3 — Módulo de Produtos com Templates Paramétricos SVG, Requisitos de Categorias e Orçamentos com Romaneio | Equipe de Engenharia AlumiGest |
+| 23/09/2026 | 2.1 | Atualização Sprint 4 — Módulo de Orçamentos com Descontos Comerciais (US-09), Emissão de PDF Comercial e WhatsApp (US-10) e Emissão de PDF Técnico de Oficina (US-11) | Equipe de Engenharia AlumiGest |
 
 ---
 
@@ -410,10 +411,10 @@ Cria um orçamento completo.
 
 **Response 201:** Retorna o orçamento criado com código gerado (`ORC-2026-001`) e totais calculados.
 
-### PUT `/api/orcamentos/{id}`
+### PUT `/api/budgets/{id}`
 Atualiza o orçamento em status `DRAFT`.
 
-### PATCH `/api/orcamentos/{id}/status`
+### PATCH `/api/budgets/{id}/status`
 Altera o status do orçamento (`DRAFT` $\rightarrow$ `SENT` $\rightarrow$ `APPROVED` ou `REJECTED` ou `CANCELLED`).
 
 **Request:**
@@ -423,27 +424,97 @@ Altera o status do orçamento (`DRAFT` $\rightarrow$ `SENT` $\rightarrow$ `APPRO
 }
 ```
 
+### POST `/api/budgets/{id}/discount` *(US-09)*
+Aplica condições comerciais, descontos (percentual ou valor fixo em R$) e taxas adicionais (frete e instalação) ao orçamento com recálculo reativo.
+
+> **Perfis:** ADMINISTRADOR, VENDEDOR
+
+**Request:**
+```json
+{
+  "discountType": "PERCENTAGE",
+  "discountValue": 10.0,
+  "shippingFee": 150.00,
+  "installationFee": 300.00,
+  "paymentConditions": "50% entrada via PIX e 50% na instalação",
+  "validityDays": 15
+}
+```
+
+**Response 200:** Retorna o `BudgetResponse` atualizado com o valor líquido recalculado.
+
+### GET `/api/budgets/{id}/pdf` *(US-10)*
+Emite o documento PDF formal da **Proposta Comercial** do orçamento em formato A4 institucional (OpenPDF) para apresentação ao cliente final.
+
+> **Perfis:** ADMINISTRADOR, VENDEDOR, OPERADOR  
+> **Headers de Resposta:**  
+> - `Content-Type: application/pdf`  
+> - `Content-Disposition: inline; filename="orcamento-comercial-ORC-YYYY-NNNN.pdf"`
+
+**Conteúdo do Documento:**
+- Cabeçalho timbrado com logotipo e dados institucionais da Alumiportas
+- Dados cadastrais completos do cliente (Nome, CPF/CNPJ, Telefone, Endereço da obra)
+- Tabela de itens com dimensões nominais (LxA mm), acabamento, vidro e subtotais
+- Painel de fechamento financeiro (Valor Bruto, Desconto aplicado, Frete/Instalação e Valor Total Líquido)
+- Prazos de validade da proposta, condições de pagamento e campo para assinatura de aceite.
+
+### GET `/api/budgets/{id}/whatsapp-summary` *(US-10)*
+Retorna o resumo textual formatado do orçamento pronto para compartilhamento via WhatsApp Web ou aplicativo móvel.
+
+**Response 200:**
+```json
+{
+  "budgetId": 1,
+  "budgetCode": "ORC-2026-0005",
+  "clientName": "João da Silva",
+  "formattedText": "*ORÇAMENTO ALUMIPORTAS - ORC-2026-0005*\n\nOlá, João da Silva! Segue a proposta comercial:\n- 2x Janela Suprema 2F (1200x1000mm) - Branco\n\n*Valor Total:* R$ 3.800,00\n*Validade:* 15 dias\n\nPara aprovar ou tirar dúvidas, responda esta mensagem.",
+  "whatsappUrl": "https://api.whatsapp.com/send?phone=5583999990000&text=..."
+}
+```
+
+### GET `/api/budgets/{id}/technical-pdf` *(US-11)*
+Emite o documento PDF da **Via Técnica de Oficina (Romaneio de Fabricação)** em formato A4 via OpenPDF, direcionado aos cortadores e montadores do galpão de produção.
+
+> **Perfis:** ADMINISTRADOR, VENDEDOR, OPERADOR  
+> **Headers de Resposta:**  
+> - `Content-Type: application/pdf`  
+> - `Content-Disposition: inline; filename="orcamento-tecnico-ORC-YYYY-NNNN.pdf"`
+
+**Garantias de Domínio & Sigilo Comercial:**
+- **Supressão Total de Preços:** Omissão de valores unitários, margens, descontos e valor total
+- **Especificações Físicas:** Cotas nominais milimétricas de corte (Largura x Altura mm)
+- **Detalhes Construtivos:** Cor do perfil, tipo e espessura do vidro, sentido de abertura e lado de travamento
+- **Checklist de Bancada:** Itens marcáveis para conferência visual na oficina (corte, esquadro, usinagem, vedação).
+
 ---
 
 ## 7. Resumo Geral de Rotas da API
 
-| Método | Rota | Descrição | Módulo |
-|---|---|---|---|
-| **Clientes** | | | |
-| `GET` | `/api/clientes` | Listar clientes paginados | `clients` |
-| `GET` | `/api/clientes/{id}` | Detalhes do cliente | `clients` |
-| `POST` | `/api/clientes` | Criar cliente | `clients` |
-| `PUT` | `/api/clientes/{id}` | Atualizar cliente | `clients` |
-| `PATCH` | `/api/clientes/{id}/status` | Ativar/Inativar cliente | `clients` |
-| **Produtos** | | | |
-| `GET` | `/api/products` | Listar produtos/templates | `catalog` |
-| `GET` | `/api/products/{id}` | Detalhes do template | `catalog` |
-| `POST` | `/api/products` | Criar template de produto | `catalog` |
-| `PUT` | `/api/products/{id}` | Atualizar template | `catalog` |
-| `GET` | `/api/product-categories` | Listar categorias de produto | `catalog` |
-| **Orçamentos** | | | |
-| `GET` | `/api/orcamentos` | Listar orçamentos paginados | `budgets` |
-| `GET` | `/api/orcamentos/{id}` | Detalhes do orçamento e romaneio | `budgets` |
-| `POST` | `/api/orcamentos` | Criar orçamento completo | `budgets` |
-| `PUT` | `/api/orcamentos/{id}` | Atualizar orçamento | `budgets` |
-| `PATCH` | `/api/orcamentos/{id}/status` | Alterar status | `budgets` |
+| Método | Rota | Descrição | Módulo | Release / US |
+|---|---|---|---|:---:|
+| **Autenticação** | | | | |
+| `POST` | `/api/auth/login` | Autenticação e obtenção de token JWT | `auth` | R1 |
+| `POST` | `/api/auth/refresh` | Renovação de token JWT | `auth` | R1 |
+| `POST` | `/api/auth/logout` | Invalidação de sessão | `auth` | R1 |
+| **Clientes** | | | | |
+| `GET` | `/api/clientes` | Listar clientes paginados com busca | `clients` | R1 / US-04 |
+| `GET` | `/api/clientes/{id}` | Detalhes do cliente | `clients` | R1 / US-04 |
+| `POST` | `/api/clientes` | Criar cliente (PF ou PJ com validação) | `clients` | R1 / US-04 |
+| `PUT` | `/api/clientes/{id}` | Atualizar dados cadastrais | `clients` | R1 / US-04 |
+| `PATCH` | `/api/clientes/{id}/status` | Ativar ou inativar cliente | `clients` | R1 / US-04 |
+| **Produtos & Templates** | | | | |
+| `GET` | `/api/products` | Listar produtos/templates de esquadrias | `catalog` | R1 / US-05 |
+| `GET` | `/api/products/{id}` | Detalhes do template paramétrico SVG | `catalog` | R1 / US-05 |
+| `POST` | `/api/products` | Criar template de produto | `catalog` | R1 / US-05 |
+| `PUT` | `/api/products/{id}` | Atualizar template | `catalog` | R1 / US-05 |
+| `GET` | `/api/product-categories` | Listar categorias de produto | `catalog` | R1 / US-02 |
+| **Orçamentos (Budgets)** | | | | |
+| `GET` | `/api/budgets` | Listar orçamentos paginados com filtros | `budgets` | R1 / US-06 |
+| `GET` | `/api/budgets/{id}` | Detalhes do orçamento e romaneio | `budgets` | R1 / US-06 |
+| `POST` | `/api/budgets` | Criar orçamento completo com cálculo paramétrico | `budgets` | R1 / US-07 |
+| `PUT` | `/api/budgets/{id}` | Atualizar orçamento em rascunho (`DRAFT`) | `budgets` | R1 / US-06 |
+| `PATCH` | `/api/budgets/{id}/status` | Alterar status do ciclo de vida | `budgets` | R1 / US-06 |
+| `POST` | `/api/budgets/{id}/discount` | Aplicar descontos, taxas e condições comerciais | `budgets` | R1 / US-09 |
+| `GET` | `/api/budgets/{id}/pdf` | Emitir Proposta Comercial em PDF A4 | `budgets` | R1 / US-10 |
+| `GET` | `/api/budgets/{id}/whatsapp-summary` | Obter texto formatado para envio no WhatsApp | `budgets` | R1 / US-10 |
+| `GET` | `/api/budgets/{id}/technical-pdf` | Emitir Via Técnica de Oficina em PDF (Sem Preços) | `budgets` | R1 / US-11 |

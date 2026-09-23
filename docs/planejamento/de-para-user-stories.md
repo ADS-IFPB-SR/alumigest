@@ -18,14 +18,15 @@ Este documento é a **referência oficial de sincronização** entre a numeraç�
 | **US-06** | **US-06** | Sprint 03 | Criar e Gerenciar Orçamentos de Venda | [#127](https://github.com/ADS-IFPB-SR/alumigest/issues/127) | 🟢 Concluída |
 | **US-07** | **US-07** | Sprint 03 | Motor de Cálculo Físico e Precificação de Orçamentos | [#128](https://github.com/ADS-IFPB-SR/alumigest/issues/128) | 🟢 Concluída |
 | **US-08** | **US-08** | Sprint 03 | Pipeline CI/CD com SonarQube e Testes E2E Cypress | [#129](https://github.com/ADS-IFPB-SR/alumigest/issues/129) | 🟢 Concluída |
-| **US-09** | **US-09** | Sprint 04 | Aplicar Descontos e Condições Comerciais no Orçamento | [#133](https://github.com/ADS-IFPB-SR/alumigest/issues/133) | 🔵 Planejada |
-| **US-10** | **US-10** | Sprint 04 | Emitir e Exportar Orçamento em PDF - Via Comercial e WhatsApp | [#134](https://github.com/ADS-IFPB-SR/alumigest/issues/134) | 🔵 Planejada |
-| **US-11** | **US-11** | Sprint 04 | Emitir Orçamento em PDF - Via Técnica de Oficina | [#135](https://github.com/ADS-IFPB-SR/alumigest/issues/135) | 🔵 Planejada |
-| **US-12** | **US-12** | Sprint 04 | Homologação Integrada e Validação da Release 1 (v1.0.0) | [#136](https://github.com/ADS-IFPB-SR/alumigest/issues/136) | 🔵 Planejada |
-| **US-13** | **US-13** | Sprint 05 | Aprovar Orçamento e Converter em Pedido de Venda | [#137](https://github.com/ADS-IFPB-SR/alumigest/issues/137) | 🔵 Planejada |
-| **US-14** | **US-14** | Sprint 05 | Snapshot Imutável e Lock de Preços do Pedido | [#138](https://github.com/ADS-IFPB-SR/alumigest/issues/138) | 🔵 Planejada |
-| **US-15** | **US-15** | Sprint 05 | Gestão de Status, Prazos e Cancelamento de Pedidos | [#139](https://github.com/ADS-IFPB-SR/alumigest/issues/139) | 🔵 Planejada |
-| **US-16** | **US-16** | Sprint 05 | Emissão do Comprovante do Pedido de Venda | [#140](https://github.com/ADS-IFPB-SR/alumigest/issues/140) | 🔵 Planejada |
+| **US-09** | **US-09 (P1)** | Sprint 04 | Aplicar Descontos Comerciais (Parte 1: Fundação & Modelagem) | [#133](https://github.com/ADS-IFPB-SR/alumigest/issues/133) | 🟢 Concluída |
+| **US-09** | **US-09 (P2)** | Sprint 05 | Aplicar Descontos Comerciais (Parte 2: Validade & Integração) | [#133](https://github.com/ADS-IFPB-SR/alumigest/issues/133) | 🟢 Concluída |
+| **US-10** | **US-10** | Sprint 05 | Emitir e Exportar Orçamento em PDF - Via Comercial e WhatsApp | [#134](https://github.com/ADS-IFPB-SR/alumigest/issues/134) | 🟢 Concluída |
+| **US-11** | **US-11** | Sprint 05 | Emitir Orçamento em PDF - Via Técnica de Oficina (Sigilo Comercial) | [#135](https://github.com/ADS-IFPB-SR/alumigest/issues/135) | 🟢 Concluída (PR #322) |
+| **US-12** | **US-12** | Sprint 04 | Homologação Integrada e Validação da Release 1 (v1.0.0 / Baseline v0.4.0) | [#136](https://github.com/ADS-IFPB-SR/alumigest/issues/136) | 🟡 Em Execução / Homologação (Não Concluída) |
+| **US-13** | **US-13** | Sprint 06 | Aprovar Orçamento e Converter em Pedido de Venda | [#137](https://github.com/ADS-IFPB-SR/alumigest/issues/137) | 🔵 Planejada |
+| **US-14** | **US-14** | Sprint 06 | Snapshot Imutável e Lock de Preços do Pedido | [#138](https://github.com/ADS-IFPB-SR/alumigest/issues/138) | 🔵 Planejada |
+| **US-15** | **US-15** | Sprint 06 | Gestão de Status, Prazos e Cancelamento de Pedidos | [#139](https://github.com/ADS-IFPB-SR/alumigest/issues/139) | 🔵 Planejada |
+| **US-16** | **US-16** | Sprint 06 | Emissão do Comprovante do Pedido de Venda em PDF | [#140](https://github.com/ADS-IFPB-SR/alumigest/issues/140) | 🔵 Planejada |
 | **US-17** | ❌ **DESCARTADA** | Sprint 06 | Gerar Ordens de Produção (OP) Individuais por Peça | — | 🚫 Removida do Escopo |
 | **US-18** | **US-17** | Sprint 06 | Emitir Etiquetas de Identificação de Peças por Item do Pedido | [#142](https://github.com/ADS-IFPB-SR/alumigest/issues/142) | 🔄 Adaptada (Sem QR Code) |
 | **US-19** | ❌ **DESCARTADA** | Sprint 06 | Atualizar Status de Produção via Scanner de QR Code | — | 🚫 Removida do Escopo |
@@ -67,8 +68,17 @@ Este documento é a **referência oficial de sincronização** entre a numeraç�
 
 ## 📌 Resumo da Regra de Conversão por Bloco
 
-- **Sprints 01 a 05 (`US-01` a `US-16`)**: Sem alteração (`US-X` = `US-X`).
-- **Sprint 06**:
+- **Sprints 01 a 03 (`US-01` a `US-08`)**: 🟢 Concluídas (Infraestrutura, Catálogo, Produtos Paramétricos, Clientes, Motor de Cálculo, CI/CD).
+- **Sprint 04**: 🟡 Em Execução / Homologação (`US-09 (Parte 1: Fundação & Modelagem)` [🟢 Concluída] e `US-12 (Homologação R1)` [🟡 Em Homologação]).
+- **Sprint 05**: 🟢 Concluída / Em Homologação (`US-09 (Parte 2: Validade & Integração)`, `US-10 (PDF Comercial e WhatsApp)` e `US-11 (PDF Técnico de Oficina / PR #322)`).
+- **Sprint 06 (Transição Release 2 - Pedidos de Venda & Fábrica)**:
+  - `US-13` a `US-16`: Aprovação, Lock de Preços, Status e Comprovante de Pedido.
+  - Antiga `US-17` (OPs) e Antiga `US-19` (Scanner QR): **Descartadas**.
+  - Antiga `US-18` (Etiquetas): virou **`US-17`** ([#142](https://github.com/ADS-IFPB-SR/alumigest/issues/142)).
+  - Antiga `US-20` (Kanban): virou **`US-18`** ([#143](https://github.com/ADS-IFPB-SR/alumigest/issues/143)).
+- **Sprint 05**: 🟢 Concluída / Em Homologação (`US-09 (Parte 2: Validade & Integração)`, `US-10 (PDF Comercial e WhatsApp)` e `US-11 (PDF Técnico de Oficina / PR #322)`).
+- **Sprint 06 (Transição Release 2 - Pedidos de Venda & Fábrica)**:
+  - `US-13` a `US-16`: Aprovação, Lock de Preços, Status e Comprovante de Pedido.
   - Antiga `US-17` (OPs) e Antiga `US-19` (Scanner QR): **Descartadas**.
   - Antiga `US-18` (Etiquetas): virou **`US-17`** ([#142](https://github.com/ADS-IFPB-SR/alumigest/issues/142)).
   - Antiga `US-20` (Kanban): virou **`US-18`** ([#143](https://github.com/ADS-IFPB-SR/alumigest/issues/143)).

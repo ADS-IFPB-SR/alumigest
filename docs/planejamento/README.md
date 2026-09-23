@@ -21,11 +21,11 @@ Este diretório centraliza a documentação de planejamento, especificações de
 | **Release 1 (v1.0.0)** | [Sprint 01](sprint-01/spec.md) | Iniciação, Governança e Infraestrutura Base | `US-01` | **4** | 🟢 Concluída |
 | **Release 1 (v1.0.0)** | [Sprint 02](sprint-02/spec.md) | Catálogo de Materiais e Fichas Técnicas | `US-02`, `US-03` | **8** | 🟢 Concluída |
 | **Release 1 (v1.0.0)** | [Sprint 03](sprint-03/spec.md) | Clientes, Motor de Orçamentos e Templates | `US-04`, `US-05`, `US-06`, `US-07`, `US-08` | **12** | 🟢 Concluída |
-| **Release 1 (v1.0.0)** | [Sprint 04](sprint-04/spec.md) | Descontos Comerciais, PDF em 2 Vias e Homologação R1 | `US-09`, `US-10`, `US-11`, `US-12` | **64** | 🔵 Planejada |
-| **Release 2 (v2.0.0)** | [Sprint 05](sprint-05/spec.md) | Pedidos de Venda e Lock de Preços | `US-13`, `US-14`, `US-15`, `US-16` | **43** | 🔵 Planejada |
-| **Release 2 (v2.0.0)** | [Sprint 06](sprint-06/spec.md) | Etiquetas de Identificação de Peças e Kanban de Produção | `US-17`, `US-18` | **11** | 🔵 Planejada |
-| **Release 2 (v2.0.0)** | [Sprint 07](sprint-07/spec.md) | Lista de Corte e Ficha Técnica de Montagem | `US-19`, `US-20` | **12** | 🔵 Planejada |
-| **Release 2 (v2.0.0)** | [Sprint 08](sprint-08/spec.md) | Controle de Estoque, Kardex e Homologação R2 | `US-21`, `US-22`, `US-23` | **28** | 🔵 Planejada |
+| **Release 1 (v1.0.0)** | [Sprint 04](sprint-04/spec.md) | Fundação de Descontos e Homologação R1 | `US-09 (P1)`, `US-12` | **29** | 🟡 Em Homologação (US-12 em aberto) |
+| **Release 1 (v1.0.0)** | [Sprint 05](sprint-05/spec.md) | Conclusão de Descontos, PDFs em 2 Vias e WhatsApp | `US-09 (P2)`, `US-10`, `US-11` | **36** | 🟢 Concluída / Em Homologação |
+| **Release 2 (v2.0.0)** | [Sprint 06](sprint-06/spec.md) | Pedidos de Venda, Lock de Preços e Transição Fabril | `US-13`, `US-14`, `US-15`, `US-16` | **43** | 🔵 Planejada |
+| **Release 2 (v2.0.0)** | [Sprint 07](sprint-07/spec.md) | Etiquetas de Identificação de Peças e Kanban | `US-17`, `US-18` | **11** | 🔵 Planejada |
+| **Release 2 (v2.0.0)** | [Sprint 08](sprint-08/spec.md) | Lista de Corte, Ficha de Montagem e Kardex | `US-19`, `US-20`, `US-21`, `US-22`, `US-23` | **40** | 🔵 Planejada |
 | **Release 3 (v3.0.0)** | [Sprint 09](sprint-09/spec.md) | Integração de Pagamento PIX e Webhooks | `US-24`, `US-25`, `US-26` | **27** | 🔵 Planejada |
 | **Release 3 (v3.0.0)** | [Sprint 10](sprint-10/spec.md) | Contas a Receber, Parcelamento e Inadimplência | `US-27`, `US-28`, `US-29` | **25** | 🔵 Planejada |
 | **Release 3 (v3.0.0)** | [Sprint 11](sprint-11/spec.md) | Fluxo de Caixa Mensal | `US-30` | **10** | 🔵 Planejada |

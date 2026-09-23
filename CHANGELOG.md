@@ -6,17 +6,49 @@ O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.
 
 ---
 
-## [Unreleased] — Sprint 04 (Em Planejamento / Execução)
+## [Unreleased] — Sprint 05 (Em Homologação / Conclusão de Orçamentos e PDFs)
 
-### 🚀 Planejado / Em Desenvolvimento
-- **Aplicação de Descontos e Condições Comerciais (US-09 / Issue #133):** Descontos em % e R$, taxas de frete e instalação, validade da proposta e recálculo reativo.
-- **Emissão de Orçamento em PDF — Via Comercial e WhatsApp (US-10 / Issue #134):** Geração de proposta formal em PDF via OpenPDF e formatação de texto para envio via WhatsApp.
-- **Emissão de Orçamento em PDF — Via Técnica de Oficina (US-11 / Issue #135):** Romaneio e layout técnico de produção com cotas milimétricas, sentidos de abertura e supressão de valores financeiros.
-- **Homologação Integrada da Release 1 v1.0.0 (US-12 / Issue #136):** Testes integrados ponta a ponta (Insumos ➔ Produto ➔ Orçamento ➔ PDF Comercial/Técnico).
+### ✨ Entregas Concluídas na Sprint 05
+- **Emissão de Orçamento em PDF — Via Técnica de Oficina (US-11 / Issue #135 / PR #322):**
+  - Geração de romaneio de fabricação em PDF via OpenPDF (`BudgetTechnicalPdfService`) com total sigilo comercial (omissão completa de valores unitários, margens e totalizadores).
+  - Exibição de cotas nominais milimétricas de corte (Largura x Altura mm), acabamentos, tipos de vidros, sentido de abertura, puxadores e visto do controle de qualidade.
+  - Endpoint `GET /api/budgets/{id}/technical-pdf` com bloqueio para orçamentos cancelados.
+  - Botão "Via Técnica" com indicador reativo `isPending` e download direto no frontend (`BudgetDetailPage.tsx`).
+  - Cobertura de testes unitários e de integração no backend e testes de componentes Vitest no frontend.
+- **Emissão de Orçamento em PDF — Via Comercial e WhatsApp (US-10 / Issue #134 / PRs #294 a #313):**
+  - Geração de proposta formal em PDF via OpenPDF (`BudgetPdfService`) com cabeçalho institucional, logotipo da Alumiportas, dados do cliente, lista discriminada de itens, subtotais e totais líquidos.
+  - Paginação automática com rodapé numerado "Página X de Y".
+  - Endpoint `GET /api/budgets/{id}/pdf` retornando stream binário `application/pdf`.
+  - Endpoint `GET /api/budgets/{id}/whatsapp-summary` com texto comercial estruturado e emojis.
+  - Botão de cópia para WhatsApp via Clipboard API e link dinâmico na tela de detalhes do orçamento (`BudgetDetailPage.tsx`).
+- **Conclusão de Descontos e Condições Comerciais (US-09 Parte 2 / Issue #133 / PRs #275 a #293):**
+  - Implementação da regra de validade padrão de 15 dias corridos e indicador de status `EXPIRED` (PR #275).
+  - Sincronização em tempo real das condições comerciais selecionadas com o resumo financeiro (PR #292).
+  - Listagem paginada e filtros dinâmicos de orçamentos por status e cliente no frontend (PR #280 / PR #293).
+- **Qualidade de Software, Testes e SonarQube:**
+  - Elevação da cobertura de testes do Frontend para **72.07%** com 431 testes unitários e de componentes passando (`npm test`).
+  - Eliminação de débitos técnicos apontados no SonarQube (sanitização de logs e acessibilidade de botões com spinners e tooltips).
 
 ### 📊 Governança & Planejamento
-- **Matriz Mestre de Estimativas do Backlog Geral (US-01 a US-45):** Elaboração do documento canônico [`docs/planejamento/estimativa-backlog-geral.md`](docs/planejamento/estimativa-backlog-geral.md) com pontuação pela escala Fibonacci (1 a 13 pts), justificativas arquiteturais e espaço para consenso de Planning Poker da equipe (total sugerido: 279 pts / média de ~17.4 pts/sprint).
-- **Consolidação do Escopo:** Formalização do descarte de 7 histórias de negócio (antigas US-17, US-19, US-23, US-25, US-34, US-36 e US-37), mantendo o fluxo ágil focado em 45 User Stories ativas cadastradas no GitHub remoto.
+- **Padronização BDD Gherkin Integral (US-11 a US-45):** Reestruturação de todas as User Stories principais em `docs/planejamento/sprint-XX/spec.md` com cenários `Dado que / Quando / Então`, regras de negócio formais (RN), especificações técnicas e matrizes de rastreabilidade.
+- **Matriz Mestre de Estimativas do Backlog Geral (US-01 a US-45):** Elaboração do documento canônico [`docs/planejamento/estimativa-backlog-geral.md`](docs/planejamento/estimativa-backlog-geral.md) com pontuação pela escala Fibonacci (1 a 13 pts) e 357 sub-tarefas ativas.
+- **Sincronização de Sprints e Docs-as-Code:** Alinhamento formal da alocação das US 10 e 11 na Sprint 05, divisão da US-09 entre Sprint 04 e 05, e consolidação do roadmap para a Release 2 (Pedidos de Venda).
+
+---
+
+## [0.4.0] - 2026-09-15 — Baseline Sprint 04 (B-ALG-v0.4.0-S04-01)
+
+### ✨ Adicionado (Added)
+- **Fundação de Descontos e Modelagem de Orçamentos (US-09 Parte 1 / Issue #133):**
+  - Criação da infraestrutura de banco de dados relacional com a migração Flyway `V8__create_budgets_schema.sql` gerando tabelas `budgets` e `budget_items`, constraints e índices.
+  - Entidades de domínio `Budget` e `BudgetItem` com enums `BudgetStatus`, `DiscountType` e `PaymentCondition`.
+  - Motor de cálculo numérico com precisão centesimal (`BigDecimal` com arredondamento `HALF_EVEN`) para cálculo de descontos percentuais (%) e fixos (R$) e validação de limites.
+  - DTOs Records de entrada e saída: `BudgetCreateRequest`, `BudgetItemCreateRequest`, `DiscountRequest` e `BudgetResponse`.
+
+### 🟡 Em Andamento / Homologação (In Progress - Não Concluída)
+- **Homologação Integrada da Release 1 (US-12 / Issue #136 / Baseline v0.4.0):**
+  - A homologação integrada da Release 1 (Baseline v0.4.0) **não foi concluída ainda**.
+  - Baterias de testes ponta a ponta, validação no ambiente integrado, documentação formal do TEA (`TEA-Testes_de_Aceitacao_Sprint04.md`) e validação de Quality Gate do SonarQube permanecem em execução e abertas.
 
 ---
 

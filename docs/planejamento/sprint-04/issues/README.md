@@ -71,7 +71,7 @@
 | [US-11.3](US-11.3-criar-teste-que-extrai-texto-do-pdf-tecnico-g/issue.md) | Criar teste que extrai texto do PDF técnico gerado e verifica ausência de padrão monetário (R$, valor, preço, total) em `BudgetPdfServiceTest` | `backlog` | 🔲 Aberta |
 | [US-11.4](US-11.4-adicionar-botao-emitir-via-tecnica-oficina-e-/issue.md) | Adicionar botão "Emitir Via Técnica (Oficina)" e função `downloadPdfTecnico()` na `BudgetDetailPage` em `frontend/src/pages/BudgetDetailPage.tsx` | `backlog` | 🔲 Aberta |
 
-## 📦 US-12: Homologação Integrada e Validação da Release 1 (v1.0.0)
+## 📦 US-12: Homologação Integrada e Validação da Release 1 (v1.0.0 / Baseline v0.4.0) — 🟡 Não Concluída
 
 | Sub-Task | Tarefa | Alvo / Módulo | Status |
 |---|---|---|:---:|
