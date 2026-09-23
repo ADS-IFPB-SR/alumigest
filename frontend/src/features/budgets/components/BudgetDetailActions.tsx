@@ -6,11 +6,9 @@ import type { CreateBudgetPayload } from '../types';
 import toast from 'react-hot-toast';
 
 interface BudgetDetailActionsProps {
-  budgetId: string;
-  budgetCode: string;
-  total: number;
-  onDeleteClick: () => void;
-  onDuplicateSuccess?: (newBudgetId: string) => void;
+  readonly budgetId: string;
+  readonly budgetCode: string;
+  readonly onDeleteClick: () => void;
 }
 
 export function BudgetDetailActions({

@@ -46,6 +46,8 @@ function toBackendBudgetPayload(data: CreateBudgetPayload): any {
     discountPercent: data.discountPercent,
     notes: data.notes,
     validUntil: formatValidUntil(data.validUntil),
+    paymentCondition: data.paymentCondition,
+    commercialConditions: data.commercialConditions,
     items: data.items.map((item) => ({
       productId: item.productId,
       widthMm: item.width,
@@ -84,6 +86,11 @@ function mapBackendToBudgetDetail(res: any): BudgetDetail {
     discountValue: Number(res.discountValue ?? 0),
     total: Number(res.total ?? 0),
     notes: res.notes,
+    paymentCondition: res.paymentCondition,
+    paymentMethod: res.paymentMethod ?? res.formaPagamento,
+    paymentNotes: res.paymentNotes,
+    commercialConditions: res.commercialConditions,
+    
     itemCount: Array.isArray(res.items) ? res.items.length : 0,
     items: Array.isArray(res.items)
       ? res.items.map((item: any) => ({

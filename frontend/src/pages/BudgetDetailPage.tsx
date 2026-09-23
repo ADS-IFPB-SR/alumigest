@@ -132,7 +132,6 @@ export function BudgetDetailPage() {
         <BudgetDetailActions
           budgetId={budget.id}
           budgetCode={budget.code}
-          total={total}
           onDeleteClick={() => setShowDeleteModal(true)}
         />
       </header>

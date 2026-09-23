@@ -280,7 +280,7 @@ export interface BudgetSummary {
   valorLiquido?: number;
   itemCount: number;
   totalItems?: number;
-  paymentCondition?: PaymentCondition;
+  paymentCondition?: PaymentCondition | string;
   paymentConditionLabel?: string;
   paymentNotes?: string;
   isExpired?: boolean;
