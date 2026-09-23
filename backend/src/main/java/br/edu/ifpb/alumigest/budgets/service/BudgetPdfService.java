@@ -40,6 +40,7 @@ import java.net.URL;
 import java.text.NumberFormat;
 import java.time.Duration;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -122,6 +123,102 @@ public class BudgetPdfService {
             throw new RuntimeException("Erro ao gerar PDF do orçamento: " + e.getMessage(), e);
         }
         return outputStream.toByteArray();
+    }
+
+    /**
+     * Gera o texto formatado para envio/compartilhamento de proposta comercial via WhatsApp [US-10.5] (#225).
+     *
+     * @param budget entidade do orçamento com itens e cliente carregados
+     * @return texto limpo e estruturado com marcadores e emojis do WhatsApp em UTF-8
+     */
+    public String gerarResumoWhatsApp(Budget budget) {
+        Objects.requireNonNull(budget, "O orçamento não pode ser nulo para geração do resumo WhatsApp.");
+
+        StringBuilder sb = new StringBuilder();
+
+        // 📋 *Orçamento {código}*
+        String codigo = (budget.getCode() != null && !budget.getCode().isBlank())
+                ? budget.getCode().trim()
+                : "N/A";
+        sb.append("📋 *Orçamento ").append(codigo).append("*\n");
+
+        // 📅 Emissão: dd/MM/yyyy | Validade: dd/MM/yyyy
+        String emissaoStr = formatarData(budget.getCreatedAt() != null
+                ? budget.getCreatedAt()
+                : OffsetDateTime.now(ZoneOffset.UTC));
+        String validadeStr = formatarData(budget.getValidUntil() != null
+                ? budget.getValidUntil()
+                : (budget.getCreatedAt() != null ? budget.getCreatedAt().plusDays(15) : OffsetDateTime.now(ZoneOffset.UTC).plusDays(15)));
+        sb.append("📅 Emissão: ").append(emissaoStr).append(" | Validade: ").append(validadeStr).append("\n");
+
+        // 👤 Cliente: {nome}
+        String nomeCliente = (budget.getClient() != null && budget.getClient().getFullName() != null && !budget.getClient().getFullName().isBlank())
+                ? budget.getClient().getFullName().trim()
+                : NAO_INFORMADO;
+        sb.append("👤 Cliente: ").append(nomeCliente).append("\n\n");
+
+        // 📦 Itens:
+        sb.append("📦 Itens:\n");
+        if (budget.getItems() != null && !budget.getItems().isEmpty()) {
+            for (BudgetItem item : budget.getItems()) {
+                sb.append("• ");
+                int qtd = (item.getQuantity() != null && item.getQuantity() > 0) ? item.getQuantity() : 1;
+                sb.append(qtd).append("x ");
+
+                String nomeProduto = (item.getProductName() != null && !item.getProductName().isBlank())
+                        ? item.getProductName().trim()
+                        : (item.getProduct() != null && item.getProduct().getName() != null ? item.getProduct().getName().trim() : "Item");
+                sb.append(nomeProduto);
+
+                if (item.getWidthMm() != null && item.getHeightMm() != null
+                        && item.getWidthMm().compareTo(BigDecimal.ZERO) > 0
+                        && item.getHeightMm().compareTo(BigDecimal.ZERO) > 0) {
+                    sb.append(" (")
+                            .append(formatarDimensaoMm(item.getWidthMm()))
+                            .append("x")
+                            .append(formatarDimensaoMm(item.getHeightMm()))
+                            .append("mm)");
+                }
+
+                BigDecimal valorItem = item.getSubtotal() != null ? item.getSubtotal() : BigDecimal.ZERO;
+                sb.append(" - ").append(formatarMoedaWhatsApp(valorItem)).append("\n");
+            }
+        }
+        sb.append("\n");
+
+        // 💰 Subtotal: R$ #,##0.00
+        BigDecimal subtotal = budget.getSubtotal() != null ? budget.getSubtotal() : BigDecimal.ZERO;
+        sb.append("💰 Subtotal: ").append(formatarMoedaWhatsApp(subtotal)).append("\n");
+
+        // 🏷️ Desconto: omitido se nulo ou <= 0
+        BigDecimal descontoValor = budget.getDiscountValue();
+        if (descontoValor != null && descontoValor.compareTo(BigDecimal.ZERO) > 0) {
+            BigDecimal descontoPercent = budget.getDiscountPercent();
+            if (descontoPercent != null && descontoPercent.compareTo(BigDecimal.ZERO) > 0) {
+                sb.append("🏷️ Desconto (")
+                        .append(formatarNumeroSemZeroDecimal(descontoPercent))
+                        .append("%): -")
+                        .append(formatarMoedaWhatsApp(descontoValor))
+                        .append("\n");
+            } else {
+                sb.append("🏷️ Desconto: -").append(formatarMoedaWhatsApp(descontoValor)).append("\n");
+            }
+        }
+
+        // 📦 *TOTAL: R$ #,##0.00*
+        BigDecimal total = budget.getTotal() != null ? budget.getTotal() : BigDecimal.ZERO;
+        sb.append("📦 *TOTAL: ").append(formatarMoedaWhatsApp(total)).append("*\n");
+
+        // 💳 Pagamento: {label amigável}
+        String condicaoPgto = (budget.getPaymentCondition() != null)
+                ? budget.getPaymentCondition().getDescricao()
+                : "A Combinar";
+        sb.append("💳 Pagamento: ").append(condicaoPgto).append("\n\n");
+
+        // Assinatura Alumiportas
+        sb.append("_Alumiportas - Vidraçaria e Esquadrias_");
+
+        return sb.toString();
     }
 
     private void adicionarCabecalho(Document document, Budget budget) throws DocumentException {
@@ -481,6 +578,27 @@ public class BudgetPdfService {
     private String formatarMoeda(BigDecimal valor) {
         if (valor == null) return "R$ 0,00";
         return NumberFormat.getCurrencyInstance(PT_BR).format(valor);
+    }
+
+    private String formatarMoedaWhatsApp(BigDecimal valor) {
+        if (valor == null) return "R$ 0,00";
+        return "R$ " + formatarNumero(valor);
+    }
+
+    private String formatarDimensaoMm(BigDecimal mm) {
+        if (mm == null) return "0";
+        if (mm.stripTrailingZeros().scale() <= 0) {
+            return String.valueOf(mm.longValue());
+        }
+        return formatarNumero(mm);
+    }
+
+    private String formatarNumeroSemZeroDecimal(BigDecimal valor) {
+        if (valor == null) return "0";
+        if (valor.stripTrailingZeros().scale() <= 0) {
+            return String.valueOf(valor.longValue());
+        }
+        return formatarNumero(valor);
     }
 
     private String formatarNumero(BigDecimal valor) {

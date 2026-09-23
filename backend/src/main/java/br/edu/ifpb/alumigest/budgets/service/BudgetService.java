@@ -414,12 +414,9 @@ public BudgetResponseDTO create(BudgetCreateRequest requestDTO) {
 
     @Transactional(readOnly = true)
     public String gerarResumoWhatsApp(UUID id) {
-        Budget budget = getBudgetOrThrow(id);
+        Budget budget = budgetRepository.findByIdWithDetails(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Orçamento", id.toString()));
 
-        return "📋 *Orçamento " + (budget.getCode() != null ? budget.getCode() : "N/A") + "*\n\n" +
-                "⏳ ESPERANDO SAPE SUBIR O COD DELE " +
-                "💰 *Subtotal:* R$ " + budget.getSubtotal() + "\n" +
-                "📦 *TOTAL:* R$ " + budget.getTotal() + "\n\n" +
-                "_Alumiportas - Vidraçaria e Esquadrias_";
+        return budgetPdfService.gerarResumoWhatsApp(budget);
     }
 }
