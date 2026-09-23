@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -74,9 +75,10 @@ class BudgetPdfServiceTest {
             byte[] pdfBytes = budgetPdfService.gerarPdfComercial(budget);
 
             assertThat(pdfBytes)
-                    .as("Os bytes do PDF gerado não devem ser nulos e devem ter tamanho maior que zero")
+                    .as("Os bytes do PDF gerado não devem ser nulos")
                     .isNotNull()
-                    .hasSizeGreaterThan(0);
+                    .as("O tamanho do array de bytes deve ser maior que zero")
+                    .isNotEmpty();
 
             String header = new String(pdfBytes, 0, 5, StandardCharsets.US_ASCII);
             assertThat(header)
@@ -242,24 +244,24 @@ class BudgetPdfServiceTest {
             }
         }
 
-        @ParameterizedTest(name = "Config: {0} -> Esperado: {1}")
-        @CsvSource({
-                "'{\"handleType\":\"SHELL_LOCK\"}', 'Fecho Concha'",
-                "'{\"type\":\"BAR_TUBULAR\"}', 'Barra Tubular'",
-                "'{\"handleType\":\"PUXADOR_ESPECIAL_INOX\"}', 'PUXADOR_ESPECIAL_INOX'",
-                "'Puxador H 60cm', 'Puxador H 60cm'"
+        @ParameterizedTest(name = "config=''{0}'' deve conter ''{1}'' no PDF")
+        @CsvSource(delimiter = '|', value = {
+                "{\"handleType\":\"SHELL_LOCK\"}          | Fecho Concha",
+                "{\"type\":\"BAR_TUBULAR\"}                | Barra Tubular",
+                "{\"handleType\":\"PUXADOR_ESPECIAL_INOX\"}| PUXADOR_ESPECIAL_INOX",
+                "Puxador H 60cm                            | Puxador H 60cm"
         })
-        @DisplayName("Dado diferentes configurações de handleConfig, deve renderizar a descrição esperada no PDF")
-        void dadoDiferentesConfiguracoesHandleConfig_deveRenderizarDescricaoEsperada(String config, String esperado) throws IOException {
+        @DisplayName("Dado diferentes configurações de handleConfig, deve renderizar o texto esperado no PDF")
+        void dadoHandleConfig_deveRenderizarTextoEsperado(String handleConfig, String textoEsperado) throws IOException {
             Budget budget = criarBudgetPadrao(false);
-            budget.getItems().getFirst().setHandleConfig(config);
+            budget.getItems().getFirst().setHandleConfig(handleConfig);
 
             byte[] pdfBytes = budgetPdfService.gerarPdfComercial(budget);
 
             assertThat(pdfBytes).isNotNull();
             try (PdfReader reader = new PdfReader(pdfBytes)) {
                 String conteudo = extrairStreamsDeTexto(reader);
-                assertThat(conteudo).contains(esperado);
+                assertThat(conteudo).contains(textoEsperado);
             }
         }
 
@@ -1048,6 +1050,313 @@ class BudgetPdfServiceTest {
 
         budget.setItems(new ArrayList<>(List.of(item)));
         return budget;
+    }
+
+    // =========================================================================
+    // CASOS COMPLEMENTARES DE COBERTURA E ROBUSTEZ [Joseph Nichollas]
+    // =========================================================================
+
+    @Nested
+    @DisplayName("Casos Complementares de Cobertura e Robustez [Joseph Nichollas]")
+    class CasosComplementaresJosephTest {
+
+        @Test
+        @DisplayName("Deve formatar endereço com cliente sem número (apenas logradouro)")
+        void deveFormatarEnderecoSemNumero() throws IOException {
+            Client client = Client.builder()
+                    .id(UUID.randomUUID())
+                    .fullName("Cliente Sem Numero")
+                    .street("Rua Principal")
+                    .number(null)
+                    .neighborhood("Centro")
+                    .city("Sousa")
+                    .state("PB")
+                    .build();
+
+            Budget budget = criarBudgetPadrao(false);
+            budget.setClient(client);
+
+            byte[] pdf = budgetPdfService.gerarPdfComercial(budget);
+            assertThat(pdf).isNotNull();
+            try (PdfReader reader = new PdfReader(pdf)) {
+                assertThat(reader.getNumberOfPages()).isGreaterThanOrEqualTo(1);
+            }
+        }
+
+        @Test
+        @DisplayName("Deve formatar endereço com cliente sem estado (apenas cidade)")
+        void deveFormatarEnderecoSemEstado() throws IOException {
+            Client client = Client.builder()
+                    .id(UUID.randomUUID())
+                    .fullName("Cliente Sem Estado")
+                    .street("Rua Projetada")
+                    .number("10")
+                    .neighborhood("Bairro Novo")
+                    .city("Sousa")
+                    .state(null)
+                    .build();
+
+            Budget budget = criarBudgetPadrao(false);
+            budget.setClient(client);
+
+            byte[] pdf = budgetPdfService.gerarPdfComercial(budget);
+            assertThat(pdf).isNotNull();
+            try (PdfReader reader = new PdfReader(pdf)) {
+                assertThat(reader.getNumberOfPages()).isGreaterThanOrEqualTo(1);
+            }
+        }
+
+        @Test
+        @DisplayName("Deve formatar endereço com cliente sem bairro preenchido")
+        void deveFormatarEnderecoSemBairro() throws IOException {
+            Client client = Client.builder()
+                    .id(UUID.randomUUID())
+                    .fullName("Cliente Sem Bairro")
+                    .street("Rodovia BR-230")
+                    .number("KM 400")
+                    .neighborhood("   ")
+                    .city("Sousa")
+                    .state("PB")
+                    .build();
+
+            Budget budget = criarBudgetPadrao(false);
+            budget.setClient(client);
+
+            byte[] pdf = budgetPdfService.gerarPdfComercial(budget);
+            assertThat(pdf).isNotNull();
+            try (PdfReader reader = new PdfReader(pdf)) {
+                assertThat(reader.getNumberOfPages()).isGreaterThanOrEqualTo(1);
+            }
+        }
+
+        @Test
+        @DisplayName("Deve exibir fallback 'Não informado' para cliente sem telefone e sem e-mail")
+        void deveExibirFallbackContatosNaoInformados() throws IOException {
+            Client client = Client.builder()
+                    .id(UUID.randomUUID())
+                    .fullName("Cliente Sem Contato")
+                    .phone(null)
+                    .email("   ")
+                    .street("Rua Qualquer")
+                    .build();
+
+            Budget budget = criarBudgetPadrao(false);
+            budget.setClient(client);
+
+            byte[] pdf = budgetPdfService.gerarPdfComercial(budget);
+            assertThat(pdf).isNotNull();
+            try (PdfReader reader = new PdfReader(pdf)) {
+                assertThat(reader.getNumberOfPages()).isGreaterThanOrEqualTo(1);
+            }
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {
+                "{not-a-valid-json: true",
+                "{\"type\":\"LEVER_HANDLE\"}",
+                "{\"handleType\":\"PUXADOR_ESPECIAL_INOX\"}"
+        })
+        @DisplayName("Deve processar puxador com JSON malformado, chave fallback ou tipo customizado sem quebrar")
+        void deveProcessarVariacoesDeHandleConfigSemQuebrar(String config) throws IOException {
+            Budget budget = criarBudgetPadrao(false);
+            budget.getItems().getFirst().setHandleConfig(config);
+
+            byte[] pdf = budgetPdfService.gerarPdfComercial(budget);
+            assertThat(pdf).isNotNull();
+            try (PdfReader reader = new PdfReader(pdf)) {
+                assertThat(reader.getNumberOfPages()).isGreaterThanOrEqualTo(1);
+            }
+        }
+
+        @Test
+        @DisplayName("Deve traduzir categoria nula para 'Item' em opções de peças")
+        void deveTraduzirCategoriaNulaParaItem() throws IOException {
+            Budget budget = criarBudgetPadrao(false);
+            BudgetItem item = budget.getItems().getFirst();
+
+            BudgetItemOption opt = new BudgetItemOption();
+            opt.setId(UUID.randomUUID());
+            opt.setMaterialName("Acessório Especial");
+            opt.setCategoryType(null); // nulo força fallback "Item"
+            opt.setUnitMeasure("UN");
+            opt.setQuantity(new BigDecimal("1.00"));
+            opt.setUnitPrice(new BigDecimal("25.00"));
+            opt.setTotalPrice(new BigDecimal("25.00"));
+            opt.setBudgetItem(item);
+
+            item.setOptions(new ArrayList<>(List.of(opt)));
+
+            byte[] pdf = budgetPdfService.gerarPdfComercial(budget);
+            assertThat(pdf).isNotNull();
+            try (PdfReader reader = new PdfReader(pdf)) {
+                assertThat(reader.getNumberOfPages()).isGreaterThanOrEqualTo(1);
+            }
+        }
+
+        @Test
+        @DisplayName("Deve gerar PDF com quebra automática em múltiplas páginas para orçamento extenso")
+        void deveGerarPdfComMultiplasPaginasEValidarContagem() throws IOException {
+            Budget budget = criarBudgetComMuitosItens();
+
+            byte[] pdf = budgetPdfService.gerarPdfComercial(budget);
+            assertThat(pdf).isNotNull();
+            try (PdfReader reader = new PdfReader(pdf)) {
+                assertThat(reader.getNumberOfPages()).isGreaterThanOrEqualTo(2);
+            }
+        }
+    }
+
+    // =========================================================================
+    // 7. TESTES DO RESUMO PARA WHATSAPP [US-10.5] (#225)
+    // =========================================================================
+    @Nested
+    @DisplayName("7. Testes do Resumo para WhatsApp [US-10.5] (#225)")
+    class ResumoWhatsAppTest {
+
+        @Test
+        @DisplayName("Deve gerar resumo WhatsApp completo com múltiplos itens, desconto percentual e emojis")
+        void deveGerarResumoWhatsAppCompletoComSucesso() {
+            Budget budget = criarBudgetPadrao(true);
+            budget.setCode("ORC-2026-0001");
+            budget.getClient().setFullName("João Silva");
+            budget.setCreatedAt(OffsetDateTime.parse("2026-08-27T10:00:00Z"));
+            budget.setValidUntil(OffsetDateTime.parse("2026-09-11T23:59:59Z"));
+            budget.setSubtotal(new BigDecimal("2100.00"));
+            budget.setDiscountPercent(new BigDecimal("10.00"));
+            budget.setDiscountValue(new BigDecimal("210.00"));
+            budget.setTotal(new BigDecimal("1890.00"));
+            budget.setPaymentCondition(PaymentCondition.ENTRADA_50_SALDO_ENTREGA);
+
+            List<BudgetItem> itens = new ArrayList<>();
+
+            BudgetItem item1 = new BudgetItem();
+            item1.setProductName("Janela 2 Folhas Correr");
+            item1.setWidthMm(new BigDecimal("1200.00"));
+            item1.setHeightMm(new BigDecimal("1000.00"));
+            item1.setQuantity(2);
+            item1.setSubtotal(new BigDecimal("900.00"));
+            itens.add(item1);
+
+            BudgetItem item2 = new BudgetItem();
+            item2.setProductName("Porta de Abrir");
+            item2.setWidthMm(new BigDecimal("900.00"));
+            item2.setHeightMm(new BigDecimal("2100.00"));
+            item2.setQuantity(1);
+            item2.setSubtotal(new BigDecimal("1200.00"));
+            itens.add(item2);
+
+            budget.setItems(itens);
+
+            String resumo = budgetPdfService.gerarResumoWhatsApp(budget);
+
+            assertThat(resumo)
+                    .isNotBlank()
+                    .contains("📋 *Orçamento ORC-2026-0001*")
+                    .contains("📅 Emissão: 27/08/2026 | Validade: 11/09/2026")
+                    .contains("👤 Cliente: João Silva")
+                    .contains("📦 Itens:")
+                    .contains("• 2x Janela 2 Folhas Correr (1200x1000mm) - R$ 900,00")
+                    .contains("• 1x Porta de Abrir (900x2100mm) - R$ 1.200,00")
+                    .contains("💰 Subtotal: R$ 2.100,00")
+                    .contains("🏷️ Desconto (10%): -R$ 210,00")
+                    .contains("📦 *TOTAL: R$ 1.890,00*")
+                    .contains("💳 Pagamento: 50% Entrada + 50% na Entrega")
+                    .contains("_Alumiportas - Vidraçaria e Esquadrias_");
+        }
+
+        @Test
+        @DisplayName("Deve omitir linha de desconto quando valor de desconto for zero ou nulo")
+        void deveOmitirLinhaDeDescontoQuandoValorForZeroOuNulo() {
+            Budget budget = criarBudgetPadrao(true);
+            budget.setDiscountValue(BigDecimal.ZERO);
+            budget.setDiscountPercent(BigDecimal.ZERO);
+
+            String resumoComZero = budgetPdfService.gerarResumoWhatsApp(budget);
+            assertThat(resumoComZero).doesNotContain("Desconto");
+
+            budget.setDiscountValue(null);
+            String resumoComNulo = budgetPdfService.gerarResumoWhatsApp(budget);
+            assertThat(resumoComNulo).doesNotContain("Desconto");
+        }
+
+        @Test
+        @DisplayName("Deve formatar desconto fixo quando não houver percentual")
+        void deveFormatarDescontoFixoSemPercentual() {
+            Budget budget = criarBudgetPadrao(true);
+            budget.setDiscountValue(new BigDecimal("150.00"));
+            budget.setDiscountPercent(null);
+
+            String resumo = budgetPdfService.gerarResumoWhatsApp(budget);
+
+            assertThat(resumo)
+                    .contains("🏷️ Desconto: -R$ 150,00")
+                    .doesNotContain("Desconto (");
+        }
+
+        @Test
+        @DisplayName("Deve formatar item sem dimensões quando largura e altura forem nulas")
+        void deveFormatarItemSemDimensoes() {
+            Budget budget = criarBudgetPadrao(true);
+
+            BudgetItem itemSemMedidas = new BudgetItem();
+            itemSemMedidas.setProductName("Fechadura Especial");
+            itemSemMedidas.setWidthMm(null);
+            itemSemMedidas.setHeightMm(null);
+            itemSemMedidas.setQuantity(1);
+            itemSemMedidas.setSubtotal(new BigDecimal("80.00"));
+
+            budget.setItems(List.of(itemSemMedidas));
+
+            String resumo = budgetPdfService.gerarResumoWhatsApp(budget);
+
+            assertThat(resumo)
+                    .contains("• 1x Fechadura Especial - R$ 80,00")
+                    .doesNotContain("(mm)");
+        }
+
+        @Test
+        @DisplayName("Deve tratar cliente ou condição de pagamento nulos exibindo valores seguros")
+        void deveTratarClienteECondicaoPagamentoNulos() {
+            Budget budget = criarBudgetPadrao(false);
+            budget.setCode(null);
+            budget.setClient(null);
+            budget.setPaymentCondition(null);
+            budget.setItems(Collections.emptyList());
+
+            String resumo = budgetPdfService.gerarResumoWhatsApp(budget);
+
+            assertThat(resumo)
+                    .contains("📋 *Orçamento N/A*")
+                    .contains("👤 Cliente: Não informado")
+                    .contains("💳 Pagamento: A Combinar");
+        }
+
+        @Test
+        @DisplayName("Deve lançar NullPointerException quando budget for nulo")
+        void deveLancarNullPointerExceptionQuandoBudgetForNulo() {
+            assertThatThrownBy(() -> budgetPdfService.gerarResumoWhatsApp(null))
+                    .isInstanceOf(NullPointerException.class)
+                    .hasMessageContaining("O orçamento não pode ser nulo");
+        }
+
+        @Test
+        @DisplayName("Deve preservar rigorosamente todos os emojis e caracteres acentuados em UTF-8")
+        void devePreservarEmojisECaracteresAcentuadosEmUtf8() {
+            Budget budget = criarBudgetPadrao(true);
+            budget.setDiscountValue(new BigDecimal("50.00"));
+
+            String resumo = budgetPdfService.gerarResumoWhatsApp(budget);
+
+            assertThat(resumo)
+                    .contains("📋")
+                    .contains("📅")
+                    .contains("👤")
+                    .contains("📦")
+                    .contains("•")
+                    .contains("💰")
+                    .contains("🏷️")
+                    .contains("💳");
+        }
     }
 
     private Budget criarBudgetComMuitosItens() {

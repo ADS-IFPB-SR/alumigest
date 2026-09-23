@@ -354,6 +354,316 @@ describe('budgetsApi Service', () => {
       );
       expect(result.physicalAreaM2).toBe(2);
     });
+
+    it('deve chamar getBudgets com todos os filtros e mapear paginação corretamente', async () => {
+      vi.mocked(api.get).mockResolvedValueOnce({
+        data: {
+          content: [
+            {
+              id: 'orc-1',
+              code: 'ORC-2026-001',
+              clientId: 'cli-1',
+              clientName: 'Cliente A',
+              status: 'DRAFT',
+              subtotal: 1000,
+              total: 900,
+              totalItems: 2,
+              expired: false,
+            },
+          ],
+          totalElements: 1,
+          totalPages: 1,
+          page: 0,
+          size: 10,
+        },
+      });
+
+      const result = await budgetsApi.getBudgets({
+        page: 0,
+        size: 10,
+        status: 'DRAFT',
+        search: 'Cliente A',
+        sort: 'createdAt,desc',
+      });
+
+      expect(api.get).toHaveBeenCalledWith('/api/orcamentos', {
+        baseURL: '',
+        params: {
+          page: 0,
+          size: 10,
+          status: 'DRAFT',
+          busca: 'Cliente A',
+          sort: 'createdAt,desc',
+        },
+      });
+
+      expect(result.content).toHaveLength(1);
+      expect(result.content[0].customerName).toBe('Cliente A');
+      expect(result.isFirst).toBe(true);
+      expect(result.isLast).toBe(true);
+    });
+
+    it('deve lançar erro quando getBudgets receber resposta com formato inválido', async () => {
+      vi.mocked(api.get).mockResolvedValueOnce({ data: { content: null } });
+
+      await expect(
+        budgetsApi.getBudgets({ page: 0, size: 10 })
+      ).rejects.toThrow('Formato de resposta inválido da API');
+    });
+
+    it('deve chamar createBudget serializando payload do backend', async () => {
+      vi.mocked(api.post).mockResolvedValueOnce({
+        data: {
+          id: 'new-budget-id',
+          code: 'ORC-2026-999',
+          clientId: 'cli-1',
+          clientName: 'Novo Cliente',
+          status: 'DRAFT',
+          total: 1500,
+          items: [],
+        },
+      });
+
+      const result = await budgetsApi.createBudget({
+        customerId: 'cli-1',
+        discountPercent: 0,
+        notes: 'Sem notas',
+        validUntil: '2026-12-31',
+        items: [],
+      });
+
+      expect(api.post).toHaveBeenCalledWith(
+        '/api/orcamentos',
+        expect.objectContaining({
+          clientId: 'cli-1',
+          validUntil: '2026-12-31T23:59:59Z',
+        }),
+        { baseURL: '' }
+      );
+      expect(result.id).toBe('new-budget-id');
+    });
+
+    it('deve chamar updateBudget serializando payload', async () => {
+      vi.mocked(api.put).mockResolvedValueOnce({
+        data: {
+          id: 'updated-id',
+          code: 'ORC-2026-999',
+          clientId: 'cli-1',
+          status: 'DRAFT',
+          total: 2000,
+          items: [],
+        },
+      });
+
+      const result = await budgetsApi.updateBudget('updated-id', {
+        customerId: 'cli-1',
+        discountPercent: 5,
+        items: [],
+      });
+
+      expect(api.put).toHaveBeenCalledWith(
+        '/api/orcamentos/updated-id',
+        expect.objectContaining({ clientId: 'cli-1', discountPercent: 5 }),
+        { baseURL: '' }
+      );
+      expect(result.total).toBe(2000);
+    });
+
+    it('deve chamar deleteBudget com id correto', async () => {
+      vi.mocked(api.delete).mockResolvedValueOnce({ data: null });
+
+      const result = await budgetsApi.deleteBudget('budget-to-delete');
+      expect(api.delete).toHaveBeenCalledWith('/api/orcamentos/budget-to-delete', { baseURL: '' });
+      expect(result).toBe(true);
+    });
+
+    it('deve chamar updateBudgetStatus enviando status atualizado', async () => {
+      vi.mocked(api.patch).mockResolvedValueOnce({
+        data: {
+          id: 'budget-status-id',
+          status: 'SENT',
+          items: [],
+        },
+      });
+
+      const result = await budgetsApi.updateBudgetStatus('budget-status-id', 'SENT');
+      expect(api.patch).toHaveBeenCalledWith(
+        '/api/orcamentos/budget-status-id/status',
+        { status: 'SENT' },
+        { baseURL: '' }
+      );
+      expect(result.status).toBe('SENT');
+    });
+
+    it('deve buscar modelos de esquadrias em getWindowTemplates filtrando os que possuem templateType', async () => {
+      vi.mocked(api.get).mockResolvedValueOnce({
+        data: {
+          content: [
+            { id: '1', name: 'Janela 2F', templateType: 'SLIDING_DOOR_2F' },
+            { id: '2', name: 'Insumo sem template', templateType: null },
+          ],
+        },
+      });
+
+      const result = await budgetsApi.getWindowTemplates();
+      expect(api.get).toHaveBeenCalledWith('/catalog/products', { params: { size: 100 } });
+      expect(result).toHaveLength(1);
+      expect(result[0].name).toBe('Janela 2F');
+    });
+
+    it('deve retornar objeto vazio em getStatusCounts', async () => {
+      const counts = await budgetsApi.getStatusCounts();
+      expect(counts).toEqual({});
+    });
+
+    it('deve criar orçamento com items e configs serializados corretamente', async () => {
+      const payload: any = {
+        customerId: 'client-123',
+        discountPercent: 10,
+        notes: 'Nota orçamento',
+        validUntil: '2026-10-01',
+        items: [
+          {
+            productId: 'prod-1',
+            width: 1500,
+            height: 2000,
+            quantity: 1,
+            laborCost: 100,
+            templateType: 'SLIDING_DOOR_2F',
+            templateConfig: { color: 'Branco' },
+            handleConfig: { type: 'PUXADOR' },
+            drillingConfig: { holes: 2 },
+            notes: 'Item 1',
+            options: [
+              { materialId: 'mat-1', quantity: 2, categoryType: 'GLASS' }
+            ]
+          }
+        ]
+      };
+
+      const mockResponse = {
+        id: 'b-created-1',
+        code: 'ORC-2026-0001',
+        clientId: 'client-123',
+        clientName: 'Cliente Teste',
+        status: 'DRAFT',
+        subtotal: 1000,
+        discountPercent: 10,
+        discountValue: 100,
+        total: 900,
+        items: [
+          {
+            id: 'item-1',
+            productId: 'prod-1',
+            productName: 'Porta 2F',
+            templateType: 'SLIDING_DOOR_2F',
+            templateConfig: '{"color":"Branco"}',
+            handleConfig: '{"type":"PUXADOR"}',
+            drillingConfig: '{"holes":2}',
+            widthMm: 1500,
+            heightMm: 2000,
+            quantity: 1,
+            laborCost: 100,
+            subtotal: 900,
+            options: [
+              {
+                id: 'opt-1',
+                materialId: 'mat-1',
+                materialName: 'Vidro Temperado',
+                unitMeasure: 'M2',
+                categoryType: 'GLASS',
+                quantity: 2,
+                unitPrice: 150,
+                totalPrice: 300,
+              }
+            ]
+          }
+        ]
+      };
+
+      vi.mocked(api.post).mockResolvedValueOnce({ data: mockResponse });
+
+      const result = await budgetsApi.createBudget(payload);
+
+      expect(api.post).toHaveBeenCalledWith(
+        '/api/orcamentos',
+        expect.objectContaining({
+          clientId: 'client-123',
+          discountPercent: 10,
+        }),
+        { baseURL: '' }
+      );
+      expect(result.id).toBe('b-created-1');
+      expect(result.items[0].productName).toBe('Porta 2F');
+      expect(result.items[0].options[0].materialName).toBe('Vidro Temperado');
+    });
+
+    it('deve obter orçamento completo por id (getBudget)', async () => {
+      const mockResponse = {
+        id: 'b-100',
+        code: 'ORC-100',
+        clientId: 'c-100',
+        clientName: 'Maria Silva',
+        status: 'SENT',
+        subtotal: 2000,
+        total: 2000,
+        items: [
+          {
+            id: 'i-1',
+            templateConfig: null,
+            handleConfig: null,
+            drillingConfig: null,
+            options: null,
+          }
+        ]
+      };
+
+      vi.mocked(api.get).mockResolvedValueOnce({ data: mockResponse });
+
+      const result = await budgetsApi.getBudget('b-100');
+
+      expect(api.get).toHaveBeenCalledWith('/api/orcamentos/b-100', { baseURL: '' });
+      expect(result.code).toBe('ORC-100');
+      expect(result.items).toHaveLength(1);
+    });
+
+    it('deve atualizar orçamento (updateBudget)', async () => {
+      const payload: any = {
+        customerId: 'c-100',
+        items: [],
+      };
+      const mockResponse = { id: 'b-100', code: 'ORC-100', items: [] };
+
+      vi.mocked(api.put).mockResolvedValueOnce({ data: mockResponse });
+
+      const result = await budgetsApi.updateBudget('b-100', payload);
+
+      expect(api.put).toHaveBeenCalledWith('/api/orcamentos/b-100', expect.any(Object), { baseURL: '' });
+      expect(result.id).toBe('b-100');
+    });
+
+    it('deve excluir orçamento (deleteBudget)', async () => {
+      vi.mocked(api.delete).mockResolvedValueOnce({});
+
+      const success = await budgetsApi.deleteBudget('b-100');
+
+      expect(api.delete).toHaveBeenCalledWith('/api/orcamentos/b-100', { baseURL: '' });
+      expect(success).toBe(true);
+    });
+
+    it('deve alterar status do orçamento (updateBudgetStatus)', async () => {
+      const mockResponse = { id: 'b-100', status: 'APPROVED', items: [] };
+      vi.mocked(api.patch).mockResolvedValueOnce({ data: mockResponse });
+
+      const result = await budgetsApi.updateBudgetStatus('b-100', 'APPROVED' as any);
+
+      expect(api.patch).toHaveBeenCalledWith(
+        '/api/orcamentos/b-100/status',
+        { status: 'APPROVED' },
+        { baseURL: '' }
+      );
+      expect(result.status).toBe('APPROVED');
+    });
   });
   describe('downloadPdfTecnico', () => {
     it('deve chamar GET /api/budgets/${id}/pdf/tecnico com responseType blob e disparar download', async () => {
@@ -402,3 +712,4 @@ describe('budgetsApi Service', () => {
     });
   });
 });
+

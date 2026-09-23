@@ -12,6 +12,14 @@ vi.mock('../../../features/budgets/services/budgetsApi', () => ({
   budgetsApi: {
     applyDiscount: vi.fn(),
     downloadPdfTecnico: vi.fn(),
+    getBudgets: vi.fn(),
+    getBudget: vi.fn(),
+    createBudget: vi.fn(),
+    updateBudget: vi.fn(),
+    deleteBudget: vi.fn(),
+    updateBudgetStatus: vi.fn(),
+    getWindowTemplates: vi.fn(),
+    getStatusCounts: vi.fn(),
   },
 }));
 
@@ -195,6 +203,123 @@ describe('useDownloadPdfTecnico Hook', () => {
     });
 
     expect(toast.error).toHaveBeenCalledWith('Orçamento cancelado.');
+  });
+});
+
+describe('useBudgets Queries e Mutations [Joseph Nichollas]', () => {
+  let queryClient: QueryClient;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
+  });
+
+  it('useBudgets: Deve carregar lista paginada de orçamentos', async () => {
+    const filters = { page: 0, size: 10, search: 'teste' };
+    const mockPage = {
+      content: [{ id: '1', code: 'ORC-001', customerName: 'Cliente A' }],
+      totalElements: 1,
+      totalPages: 1,
+      page: 0,
+      size: 10,
+      isFirst: true,
+      isLast: true,
+    };
+    budgetsApi.getBudgets = vi.fn().mockResolvedValueOnce(mockPage);
+
+    const { useBudgets } = await import('../../../features/budgets/hooks/useBudgets');
+    const { result } = renderHook(() => useBudgets(filters), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(budgetsApi.getBudgets).toHaveBeenCalledWith(filters);
+    expect(result.current.data?.content).toHaveLength(1);
+  });
+
+  it('useBudget: Deve buscar orçamento por ID', async () => {
+    const mockDetail = { id: 'budget-1', code: 'ORC-001', customerName: 'Cliente A' };
+    budgetsApi.getBudget = vi.fn().mockResolvedValueOnce(mockDetail);
+
+    const { useBudget } = await import('../../../features/budgets/hooks/useBudgets');
+    const { result } = renderHook(() => useBudget('budget-1'), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(budgetsApi.getBudget).toHaveBeenCalledWith('budget-1');
+    expect(result.current.data?.code).toBe('ORC-001');
+  });
+
+  it('useCreateBudget: Sucesso invalida lista e exibe toast', async () => {
+    budgetsApi.createBudget = vi.fn().mockResolvedValueOnce({ id: 'new-id' });
+    const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
+
+    const { useCreateBudget } = await import('../../../features/budgets/hooks/useBudgets');
+    const { result } = renderHook(() => useCreateBudget(), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    result.current.mutate({ customerId: 'cli-1', items: [] });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(toast.success).toHaveBeenCalledWith('Orçamento criado com sucesso!');
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['budgets'] });
+  });
+
+  it('useUpdateBudget: Sucesso invalida lista e detalhe e exibe toast', async () => {
+    budgetsApi.updateBudget = vi.fn().mockResolvedValueOnce({ id: 'upd-id' });
+    const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
+
+    const { useUpdateBudget } = await import('../../../features/budgets/hooks/useBudgets');
+    const { result } = renderHook(() => useUpdateBudget(), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    result.current.mutate({ id: 'upd-id', data: { customerId: 'cli-1', items: [] } });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(toast.success).toHaveBeenCalledWith('Orçamento atualizado com sucesso!');
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['budgets'] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['budget', 'upd-id'] });
+  });
+
+  it('useDeleteBudget: Sucesso exclui, exibe toast e invalida lista', async () => {
+    budgetsApi.deleteBudget = vi.fn().mockResolvedValueOnce(true);
+    const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
+
+    const { useDeleteBudget } = await import('../../../features/budgets/hooks/useBudgets');
+    const { result } = renderHook(() => useDeleteBudget(), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    result.current.mutate('del-id');
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(toast.success).toHaveBeenCalledWith('Orçamento excluído com sucesso!');
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['budgets'] });
+  });
+
+  it('useUpdateBudgetStatus: Sucesso atualiza status e invalida queries', async () => {
+    budgetsApi.updateBudgetStatus = vi.fn().mockResolvedValueOnce({ id: 'status-id', status: 'SENT' });
+    const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
+
+    const { useUpdateBudgetStatus } = await import('../../../features/budgets/hooks/useBudgets');
+    const { result } = renderHook(() => useUpdateBudgetStatus(), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    result.current.mutate({ id: 'status-id', status: 'SENT' });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(toast.success).toHaveBeenCalledWith('Status do orçamento atualizado com sucesso!');
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['budgets'] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['budget', 'status-id'] });
   });
 });
 

@@ -44,6 +44,7 @@ import java.text.NumberFormat;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -162,12 +163,132 @@ public class BudgetPdfService {
             }
             return outputStream.toByteArray();
 
-        } catch (DocumentException e) {
+        } catch (DocumentException | IOException e) {
             log.error("Erro ao estruturar documento PDF para o orçamento {}: {}", budget.getCode(), e.getMessage(), e);
             throw new RuntimeException("Erro ao gerar PDF do orçamento: " + e.getMessage(), e);
-        } catch (IOException e) {
-            log.error("Erro de I/O na geração do PDF para o orçamento {}: {}", budget.getCode(), e.getMessage(), e);
-            throw new RuntimeException("Erro de I/O ao gerar PDF do orçamento: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Gera o texto formatado para envio/compartilhamento de proposta comercial via WhatsApp [US-10.5] (#225).
+     *
+     * @param budget entidade do orçamento com itens e cliente carregados
+     * @return texto limpo e estruturado com marcadores e emojis do WhatsApp em UTF-8
+     */
+    public String gerarResumoWhatsApp(Budget budget) {
+        Objects.requireNonNull(budget, "O orçamento não pode ser nulo para geração do resumo WhatsApp.");
+
+        StringBuilder sb = new StringBuilder();
+        construirCabecalhoWhatsApp(sb, budget);
+        construirItensWhatsApp(sb, budget);
+        construirFechamentoFinanceiroWhatsApp(sb, budget);
+
+        return sb.toString();
+    }
+
+    private void construirCabecalhoWhatsApp(StringBuilder sb, Budget budget) {
+        String codigo = (budget.getCode() != null && !budget.getCode().isBlank())
+                ? budget.getCode().trim()
+                : "N/A";
+        sb.append("📋 *Orçamento ").append(codigo).append("*\n");
+
+        OffsetDateTime emissao = budget.getCreatedAt() != null
+                ? budget.getCreatedAt()
+                : OffsetDateTime.now(ZoneOffset.UTC);
+
+        OffsetDateTime validade = budget.getValidUntil();
+        if (validade == null) {
+            validade = emissao.plusDays(15);
+        }
+
+        sb.append("📅 Emissão: ").append(formatarData(emissao))
+                .append(" | Validade: ").append(formatarData(validade))
+                .append("\n");
+
+        String nomeCliente = NAO_INFORMADO;
+        if (budget.getClient() != null && budget.getClient().getFullName() != null && !budget.getClient().getFullName().isBlank()) {
+            nomeCliente = budget.getClient().getFullName().trim();
+        }
+        sb.append("👤 Cliente: ").append(nomeCliente).append("\n\n");
+    }
+
+    private void construirItensWhatsApp(StringBuilder sb, Budget budget) {
+        sb.append("📦 Itens:\n");
+        if (budget.getItems() != null && !budget.getItems().isEmpty()) {
+            for (BudgetItem item : budget.getItems()) {
+                construirLinhaItemWhatsApp(sb, item);
+            }
+        }
+        sb.append("\n");
+    }
+
+    private void construirLinhaItemWhatsApp(StringBuilder sb, BudgetItem item) {
+        sb.append("• ");
+        int qtd = (item.getQuantity() != null && item.getQuantity() > 0) ? item.getQuantity() : 1;
+        sb.append(qtd).append("x ");
+
+        sb.append(obterNomeProdutoItem(item));
+
+        if (temDimensoesValidas(item)) {
+            sb.append(" (")
+                    .append(formatarDimensaoMm(item.getWidthMm()))
+                    .append("x")
+                    .append(formatarDimensaoMm(item.getHeightMm()))
+                    .append("mm)");
+        }
+
+        BigDecimal valorItem = item.getSubtotal() != null ? item.getSubtotal() : BigDecimal.ZERO;
+        sb.append(" - ").append(formatarMoedaWhatsApp(valorItem)).append("\n");
+    }
+
+    private String obterNomeProdutoItem(BudgetItem item) {
+        if (item.getProductName() != null && !item.getProductName().isBlank()) {
+            return item.getProductName().trim();
+        }
+        if (item.getProduct() != null && item.getProduct().getName() != null && !item.getProduct().getName().isBlank()) {
+            return item.getProduct().getName().trim();
+        }
+        return "Item";
+    }
+
+    private boolean temDimensoesValidas(BudgetItem item) {
+        return item.getWidthMm() != null && item.getHeightMm() != null
+                && item.getWidthMm().compareTo(BigDecimal.ZERO) > 0
+                && item.getHeightMm().compareTo(BigDecimal.ZERO) > 0;
+    }
+
+    private void construirFechamentoFinanceiroWhatsApp(StringBuilder sb, Budget budget) {
+        BigDecimal subtotal = budget.getSubtotal() != null ? budget.getSubtotal() : BigDecimal.ZERO;
+        sb.append("💰 Subtotal: ").append(formatarMoedaWhatsApp(subtotal)).append("\n");
+
+        adicionarDescontoWhatsApp(sb, budget);
+
+        BigDecimal total = budget.getTotal() != null ? budget.getTotal() : BigDecimal.ZERO;
+        sb.append("📦 *TOTAL: ").append(formatarMoedaWhatsApp(total)).append("*\n");
+
+        String condicaoPgto = (budget.getPaymentCondition() != null)
+                ? budget.getPaymentCondition().getDescricao()
+                : "A Combinar";
+        sb.append("💳 Pagamento: ").append(condicaoPgto).append("\n\n");
+
+        sb.append("_Alumiportas - Vidraçaria e Esquadrias_");
+    }
+
+    private void adicionarDescontoWhatsApp(StringBuilder sb, Budget budget) {
+        BigDecimal descontoValor = budget.getDiscountValue();
+        if (descontoValor == null || descontoValor.compareTo(BigDecimal.ZERO) <= 0) {
+            return;
+        }
+
+        BigDecimal descontoPercent = budget.getDiscountPercent();
+        if (descontoPercent != null && descontoPercent.compareTo(BigDecimal.ZERO) > 0) {
+            sb.append("🏷️ Desconto (")
+                    .append(formatarNumeroSemZeroDecimal(descontoPercent))
+                    .append("%): -")
+                    .append(formatarMoedaWhatsApp(descontoValor))
+                    .append("\n");
+        } else {
+            sb.append("🏷️ Desconto: -").append(formatarMoedaWhatsApp(descontoValor)).append("\n");
         }
     }
 
@@ -299,17 +420,17 @@ public class BudgetPdfService {
         table.setWidths(new float[]{5f, 1f, 2f, 2f});
         table.setHeaderRows(1);
 
-        adicionarCabecalhosTabelaItens(table);
+        adicionarCabecalhoItens(table);
 
         if (budget.getItems() != null) {
             for (BudgetItem item : budget.getItems()) {
-                adicionarLinhaItemTabela(table, item);
+                adicionarLinhaItem(table, item);
             }
         }
         document.add(table);
     }
 
-    private void adicionarCabecalhosTabelaItens(PdfPTable table) {
+    private void adicionarCabecalhoItens(PdfPTable table) {
         String[] cabecalhos = {"PRODUTO / DESCRIÇÃO TÉCNICA", "QTD", "V. UNIT (R$)", "TOTAL (R$)"};
         for (int i = 0; i < cabecalhos.length; i++) {
             PdfPCell header = new PdfPCell(new Phrase(cabecalhos[i], FONTE_CABECALHO_TABELA));
@@ -321,9 +442,8 @@ public class BudgetPdfService {
         }
     }
 
-    private void adicionarLinhaItemTabela(PdfPTable table, BudgetItem item) {
-        Phrase phraseDescricao = criarPhraseDescricaoItem(item);
-
+    private void adicionarLinhaItem(PdfPTable table, BudgetItem item) {
+        Phrase phraseDescricao = construirDescricaoItem(item);
         PdfPCell cellDesc = new PdfPCell(phraseDescricao);
         cellDesc.setPadding(10f);
         estilizarCelulaTabelaClean(cellDesc);
@@ -352,7 +472,7 @@ public class BudgetPdfService {
         table.addCell(cellTotal);
     }
 
-    private Phrase criarPhraseDescricaoItem(BudgetItem item) {
+    private Phrase construirDescricaoItem(BudgetItem item) {
         Phrase phraseDescricao = new Phrase();
         phraseDescricao.add(new Chunk(obterDadoSeguro(item.getProductName()) + "\n", FONTE_NORMAL));
 
@@ -360,16 +480,26 @@ public class BudgetPdfService {
         BigDecimal hCm = item.getHeightMm() != null ? item.getHeightMm().divide(BigDecimal.TEN, 1, RoundingMode.HALF_UP) : BigDecimal.ZERO;
         phraseDescricao.add(new Chunk("L=" + formatarNumero(wCm) + "cm x A=" + formatarNumero(hCm) + "cm\n", FONTE_DESCRICAO_SECUNDARIA));
 
-        if (item.getOptions() != null) {
-            for (BudgetItemOption option : item.getOptions()) {
-                String categoria = traduzirCategoria(option.getCategoryType());
-                String material = option.getMaterialName() != null ? option.getMaterialName() : "";
-                String cor = (option.getSelectedColor() != null && !option.getSelectedColor().trim().isEmpty())
-                        ? " " + option.getSelectedColor().trim() : "";
-                phraseDescricao.add(new Chunk(categoria + ": " + material + cor + "\n", FONTE_DESCRICAO_SECUNDARIA));
-            }
-        }
+        adicionarOpcoesItem(phraseDescricao, item);
+        adicionarTagPuxador(phraseDescricao, item);
 
+        return phraseDescricao;
+    }
+
+    private void adicionarOpcoesItem(Phrase phraseDescricao, BudgetItem item) {
+        if (item.getOptions() == null || item.getOptions().isEmpty()) {
+            return;
+        }
+        for (BudgetItemOption option : item.getOptions()) {
+            String categoria = traduzirCategoria(option.getCategoryType());
+            String material = option.getMaterialName() != null ? option.getMaterialName() : "";
+            String cor = (option.getSelectedColor() != null && !option.getSelectedColor().trim().isEmpty())
+                    ? " " + option.getSelectedColor().trim() : "";
+            phraseDescricao.add(new Chunk(categoria + ": " + material + cor + "\n", FONTE_DESCRICAO_SECUNDARIA));
+        }
+    }
+
+    private void adicionarTagPuxador(Phrase phraseDescricao, BudgetItem item) {
         String descricaoPuxador = extrairDescricaoPuxador(item.getHandleConfig());
         if (descricaoPuxador != null && !descricaoPuxador.isBlank()) {
             phraseDescricao.add(new Chunk("\n", FONTE_DESCRICAO_SECUNDARIA));
@@ -378,7 +508,6 @@ public class BudgetPdfService {
             phraseDescricao.add(tag);
             phraseDescricao.add(new Chunk("\n"));
         }
-        return phraseDescricao;
     }
 
     private void estilizarCelulaTabelaClean(PdfPCell cell) {
@@ -518,12 +647,43 @@ public class BudgetPdfService {
     }
 
     private String formatarMoeda(BigDecimal valor) {
-        if (valor == null) return "R$ 0,00";
+        if (valor == null) {
+            return "R$ 0,00";
+        }
         return NumberFormat.getCurrencyInstance(PT_BR).format(valor);
     }
 
+    private String formatarMoedaWhatsApp(BigDecimal valor) {
+        if (valor == null) {
+            return "R$ 0,00";
+        }
+        return "R$ " + formatarNumero(valor);
+    }
+
+    private String formatarDimensaoMm(BigDecimal mm) {
+        if (mm == null) {
+            return "0";
+        }
+        if (mm.stripTrailingZeros().scale() <= 0) {
+            return String.valueOf(mm.longValue());
+        }
+        return formatarNumero(mm);
+    }
+
+    private String formatarNumeroSemZeroDecimal(BigDecimal valor) {
+        if (valor == null) {
+            return "0";
+        }
+        if (valor.stripTrailingZeros().scale() <= 0) {
+            return String.valueOf(valor.longValue());
+        }
+        return formatarNumero(valor);
+    }
+
     private String formatarNumero(BigDecimal valor) {
-        if (valor == null) return "0,00";
+        if (valor == null) {
+            return "0,00";
+        }
         NumberFormat format = NumberFormat.getNumberInstance(PT_BR);
         format.setMinimumFractionDigits(2);
         format.setMaximumFractionDigits(2);

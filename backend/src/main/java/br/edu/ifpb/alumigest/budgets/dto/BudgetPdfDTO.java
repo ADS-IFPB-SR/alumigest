@@ -7,7 +7,6 @@ import java.util.Objects;
  * DTO que encapsula os bytes do documento PDF gerado e o nome do arquivo.
  */
 public record BudgetPdfDTO(byte[] bytes, String filename) {
-
     @Override
     public boolean equals(Object o) {
         if (this == o) {

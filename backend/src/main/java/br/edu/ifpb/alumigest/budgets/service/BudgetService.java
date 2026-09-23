@@ -440,4 +440,12 @@ public BudgetResponseDTO create(BudgetCreateRequest requestDTO) {
 
         return budgetMapper.toResponseDTO(item);
     }
+
+    @Transactional(readOnly = true)
+    public String gerarResumoWhatsApp(UUID id) {
+        Budget budget = budgetRepository.findByIdWithDetails(id)
+                .orElseThrow(() -> new ResourceNotFoundException(RESOURCE_ORCAMENTO, id.toString()));
+
+        return budgetPdfService.gerarResumoWhatsApp(budget);
+    }
 }

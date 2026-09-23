@@ -4,7 +4,6 @@ import {
   useBudget,
   useDeleteBudget,
   useUpdateBudgetStatus,
-  useCreateBudget,
   useDownloadPdfTecnico,
 } from '../features/budgets/hooks/useBudgets';
 import { Button } from '../components/ui/Button';
@@ -12,15 +11,13 @@ import {
   TEMPLATE_TYPE_INFO,
   type BudgetStatus,
   type DoorTemplateType,
-  type CreateBudgetPayload,
 } from '../features/budgets/types';
 import { formatBRL } from '../features/budgets/utils/calculations';
 import { WindowSvgPreview } from '../features/budgets/components/builder/WindowSvgPreview';
 import { BudgetMaterialsSummary } from '../features/budgets/components/BudgetMaterialsSummary';
 import { BudgetStatusPipeline } from '../features/budgets/components/BudgetStatusPipeline';
-
-// Removemos ALL_STATUSES pois agora usamos o Pipeline
-// const ALL_STATUSES: BudgetStatus[] = ['DRAFT', 'SENT', 'APPROVED', 'REJECTED', 'CANCELLED'];
+import { BudgetFinancialSummaryCard } from '../features/budgets/components/BudgetFinancialSummaryCard';
+import { BudgetDetailActions } from '../features/budgets/components/BudgetDetailActions';
 
 export function BudgetDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -30,7 +27,6 @@ export function BudgetDetailPage() {
   const { data: budget, isLoading, isError } = useBudget(id);
   const { mutate: deleteBudget, isPending: isDeleting } = useDeleteBudget();
   const { mutate: updateStatus, isPending: isUpdatingStatus } = useUpdateBudgetStatus();
-  const { mutate: createBudget, isPending: isDuplicating } = useCreateBudget();
   const { mutate: downloadPdf, isPending: isDownloadingPdf } = useDownloadPdfTecnico();
 
   const downloadPdfTecnico = () => {
@@ -40,7 +36,7 @@ export function BudgetDetailPage() {
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
-
+  
   const toggleItemExpanded = (itemId: string) => {
     setExpandedItems((prev) => ({
       ...prev,
@@ -72,45 +68,7 @@ export function BudgetDetailPage() {
     updateStatus({ id: budget.id, status: newStatus });
   };
 
-  const handleDuplicateBudget = () => {
-    if (!budget || isDuplicating) return;
-
-    const payload: CreateBudgetPayload = {
-      customerId: budget.customer?.id ?? budget.customerId ?? '',
-      discountPercent: budget.discountPercent ?? 0,
-      notes: budget.notes ? `${budget.notes} (Cópia do orçamento ${budget.code})` : `Cópia do orçamento ${budget.code}`,
-      commercialConditions: budget.commercialConditions,
-      validUntil: budget.validUntil,
-      items: (budget.items ?? []).map((item) => ({
-        productId: item.productId,
-        templateType: item.templateType,
-        templateConfig: item.templateConfig,
-        handleConfig: item.handleConfig,
-        drillingConfig: item.drillingConfig,
-        width: item.width,
-        height: item.height,
-        quantity: item.quantity,
-        laborCost: item.laborCost,
-        options: (item.options ?? []).map((opt) => ({
-          materialId: opt.materialId,
-          quantity: opt.quantity,
-          categoryType: opt.categoryType,
-        })),
-        notes: item.notes,
-      })),
-    };
-
-    createBudget(payload, {
-      onSuccess: (newBudget) => {
-        if (newBudget?.id) {
-          navigate(`/orcamentos/${newBudget.id}`, { state: { justCreated: true } });
-        } else {
-          navigate('/orcamentos');
-        }
-      },
-    });
-  };
-
+  
 
   if (isLoading) {
     return (
@@ -138,28 +96,40 @@ export function BudgetDetailPage() {
 
   const subtotal = budget.subtotal ?? 0;
   const discountValue = budget.discountValue ?? 0;
-  const total = budget.total ?? 0;
+  const freightCost = budget.freightCost ?? 0;
+  const installationCost = budget.installationCost ?? 0;
+  
+  const totalLaborCost = (budget.items ?? []).reduce((sum, item) => {
+    return sum + ((item.laborCost ?? 0) * (item.quantity ?? 1));
+  }, 0);
 
+  const total = budget.total ?? 0;
+  const hasDiscount = discountValue > 0;
+  const isPercentDiscount = Boolean(budget.discountPercent && budget.discountPercent > 0);
+
+  const commercialConditions = budget.paymentNotes ?? budget.commercialConditions ?? null;
+  const paymentMethod = budget.paymentConditionLabel ?? budget.paymentCondition ?? null;
+  
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-surface">
       {/* ── Topbar / Header Executivo ──────────────────────────────────── */}
-      <header className="border-b border-outline-variant bg-surface-container-lowest/80 backdrop-blur-md px-md lg:px-xl py-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-md shrink-0 shadow-2xs">
-        <div className="flex items-center gap-sm flex-wrap min-w-0">
+      <header className="border-b border-outline-variant bg-surface-container-lowest/80 backdrop-blur-md px-md lg:px-xl py-sm flex flex-col gap-3 shrink-0 shadow-2xs">
+        <div className="flex items-center gap-sm flex-wrap w-full">
           <Link
             to="/orcamentos"
-            className="flex items-center gap-1 text-xs font-label font-medium text-on-surface-variant hover:text-primary transition-colors py-1 px-2 rounded-md hover:bg-surface-container"
+            className="flex items-center gap-1 text-xs font-label font-medium text-on-surface-variant hover:text-primary transition-colors py-1 px-2 rounded-md hover:bg-surface-container shrink-0"
             title="Voltar aos orçamentos"
           >
             <span className="material-symbols-outlined text-[18px]">arrow_back</span>
             <span className="hidden sm:inline">Orçamentos</span>
           </Link>
-          <span className="text-outline-variant hidden sm:inline">/</span>
+          
+          <span className="text-outline-variant shrink-0 hidden sm:inline">/</span>
 
-          <h1 className="font-headline text-xl sm:text-2xl font-extrabold text-on-surface tracking-tight">
+          <h1 className="font-headline text-xl sm:text-2xl font-extrabold text-on-surface tracking-tight whitespace-nowrap shrink-0">
             {budget.code}
           </h1>
 
-          {/* Pipeline Visual de Status (CRM) */}
           <div className="ml-xs sm:ml-sm flex-shrink-0">
             <BudgetStatusPipeline
               status={budget.status}
@@ -169,83 +139,21 @@ export function BudgetDetailPage() {
           </div>
         </div>
 
-        {/* Ações de Topo Únicas */}
-        <div className="flex items-center gap-xs sm:gap-sm shrink-0 w-full sm:w-auto justify-end">
-          <button
-            type="button"
-            onClick={() => window.print()}
-            className="p-2 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-lg border border-outline-variant/60 transition-colors flex items-center gap-1.5 text-xs font-label font-medium"
-            title="Imprimir proposta"
-          >
-            <span className="material-symbols-outlined text-[18px]">print</span>
-            <span className="hidden md:inline">Imprimir</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={handleDuplicateBudget}
-            disabled={isDuplicating}
-            className="p-2 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-lg border border-outline-variant/60 transition-colors flex items-center gap-1.5 text-xs font-label font-medium disabled:opacity-50 cursor-pointer"
-            title="Duplicar este orçamento como uma nova proposta"
-          >
-            <span className="material-symbols-outlined text-[18px]">
-              {isDuplicating ? 'progress_activity' : 'content_copy'}
-            </span>
-            <span className="hidden md:inline">
-              {isDuplicating ? 'Duplicando...' : 'Duplicar'}
-            </span>
-          </button>
-
-          {/* Botão Emitir Via Técnica (Oficina) [US-11.5] */}
-          <button
-              type="button"
-              data-testid="btn-download-pdf-tecnico"
-              onClick={downloadPdfTecnico}
-              disabled={isDownloadingPdf || budget.status === 'CANCELLED'}
-              className="p-2 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-lg border border-outline-variant/60 transition-colors flex items-center gap-1.5 text-xs font-label font-medium disabled:opacity-50 cursor-pointer"
-              title={
-                budget.status === 'CANCELLED'
-                    ? 'Não é possível emitir ficha técnica de orçamento cancelado'
-                    : 'Emitir Via Técnica de Oficina (PDF de produção sem valores comerciais)'
-              }
-          >
-            <span className="material-symbols-outlined text-[18px]">
-              {isDownloadingPdf ? 'progress_activity' : 'engineering'}
-            </span>
-            <span className="hidden md:inline">
-              {isDownloadingPdf ? 'Gerando...' : 'Via Técnica'}
-            </span>
-          </button>
-
-          <Button
-            variant="outline"
-            icon="delete"
-            onClick={() => setShowDeleteModal(true)}
-            className="text-error border-error/30 hover:bg-error/10 hover:border-error text-xs py-1.5 px-2.5"
-            title="Excluir este orçamento"
-          >
-            <span className="hidden md:inline">Excluir</span>
-          </Button>
-
-          <Link to={`/orcamentos/${budget.id}/editar`}>
-            <Button variant="outline" icon="edit" className="text-xs py-1.5 px-3">
-              Editar
-            </Button>
-          </Link>
-
-          <Link to="/orcamentos/novo">
-            <Button variant="primary" icon="add" className="text-xs py-1.5 px-3">
-              Novo
-            </Button>
-          </Link>
-        </div>
+        {/* ── Barra de Ações Superior Isolada ────────────────────────────── */}
+        <BudgetDetailActions
+          budgetId={budget.id}
+          budgetCode={budget.code}
+          budgetStatus={budget.status}
+          onDeleteClick={() => setShowDeleteModal(true)}
+          onDownloadPdfTecnico={downloadPdfTecnico}
+          isDownloadingPdfTecnico={isDownloadingPdf}
+        />
       </header>
 
-      {/* ── Conteúdo Principal: Layout 2 Colunas ─────────────────────────── */}
+      {/* ── Conteúdo Principal ───────────────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto p-md lg:p-xl">
         <div className="max-w-[1440px] mx-auto flex flex-col gap-md">
 
-          {/* Success banner (se acabou de criar) */}
           {showCreatedBanner && (
             <div className="bg-tertiary-container/20 border border-tertiary-container/40 rounded-xl p-md flex items-center justify-between gap-sm animate-fadeIn">
               <div className="flex items-center gap-sm">
@@ -268,13 +176,10 @@ export function BudgetDetailPage() {
             </div>
           )}
 
-          {/* ── Grid Principal: 8 Colunas (Itens/Obs) + 4 Colunas (Sidebar Cliente/Financeiro) ── */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-md lg:gap-lg items-start">
             
-            {/* ════ COLUNA ESQUERDA: ITENS & ESQUADRIAS (8 colunas) ════ */}
+            {/* Coluna Esquerda: Itens & Materiais (8 colunas) */}
             <div className="lg:col-span-8 flex flex-col gap-md">
-
-              {/* Card de Lista de Esquadrias */}
               <div className="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-xs overflow-hidden">
                 <div className="bg-surface-container-low/50 border-b border-outline-variant px-md py-sm flex justify-between items-center flex-wrap gap-xs">
                   <div className="flex items-center gap-xs">
@@ -293,7 +198,6 @@ export function BudgetDetailPage() {
                   </div>
                 </div>
 
-                {/* Empty State ou Lista de Itens */}
                 {!budget.items || budget.items.length === 0 ? (
                   <div className="p-xl text-center flex flex-col items-center justify-center gap-sm bg-surface-container-lowest">
                     <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-xs">
@@ -303,7 +207,7 @@ export function BudgetDetailPage() {
                       Nenhuma esquadria adicionada a esta proposta
                     </h3>
                     <p className="text-xs sm:text-sm text-on-surface-variant max-w-md font-body">
-                      Este orçamento ainda não possui itens cadastrados. Clique no botão abaixo para adicionar esquadrias sob medida com o motor de cálculo.
+                      Este orçamento ainda não possui itens cadastrados. Clique no botão abaixo para adicionar esquadrias sob medida.
                     </p>
                     <Link to={`/orcamentos/${budget.id}/editar`} className="mt-xs">
                       <Button variant="primary" icon="add">
@@ -321,7 +225,6 @@ export function BudgetDetailPage() {
                       return (
                         <div key={itemId} className="p-md hover:bg-surface-container-lowest/50 transition-colors flex flex-col gap-sm">
                           <div className="flex flex-col sm:flex-row gap-md items-start">
-                            {/* Preview CAD miniatura */}
                             {item.templateType ? (
                               <div className="shrink-0 bg-surface-container-low rounded-lg p-2 border border-outline-variant self-center sm:self-start w-[140px] flex items-center justify-center">
                                 <WindowSvgPreview
@@ -344,7 +247,6 @@ export function BudgetDetailPage() {
                               </div>
                             )}
 
-                            {/* Informações Centrais do Item */}
                             <div className="flex-1 min-w-0 w-full flex flex-col gap-xs">
                               <div className="flex items-start justify-between gap-sm">
                                 <div>
@@ -372,7 +274,6 @@ export function BudgetDetailPage() {
                                 </div>
                               </div>
 
-                              {/* Chips de Dimensões e Parâmetros Técnicos */}
                               <div className="flex flex-wrap gap-xs text-xs font-data-mono text-on-surface-variant mt-1">
                                 <span className="bg-surface-container px-2 py-0.5 rounded border border-outline-variant font-medium flex items-center gap-1">
                                   <span className="material-symbols-outlined text-[13px] text-primary">square_foot</span>
@@ -406,13 +307,12 @@ export function BudgetDetailPage() {
                                 </p>
                               )}
 
-                              {/* Botão para Expandir Composição de Materiais */}
                               {hasOptions && (
                                 <div className="mt-2 pt-1 border-t border-outline-variant/30 flex justify-between items-center">
                                   <button
                                     type="button"
                                     onClick={() => toggleItemExpanded(itemId)}
-                                    className="flex items-center gap-1 text-xs font-label font-semibold text-primary hover:text-primary/80 transition-colors focus:outline-none"
+                                    className="flex items-center gap-1 text-xs font-label font-semibold text-primary hover:text-primary/80 transition-colors focus:outline-none cursor-pointer"
                                   >
                                     <span className="material-symbols-outlined text-[16px] transition-transform duration-200" style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>
                                       expand_more
@@ -429,7 +329,6 @@ export function BudgetDetailPage() {
                             </div>
                           </div>
 
-                          {/* Tabela/Lista Sanfonável de Insumos */}
                           {hasOptions && isExpanded && (
                             <div className="bg-surface-container-low rounded-lg p-sm border border-outline-variant/60 flex flex-col gap-1 mt-1 animate-fadeIn">
                               <p className="text-[10px] font-label font-bold text-on-surface-variant uppercase tracking-wider pb-1 border-b border-outline-variant/40">
@@ -471,40 +370,27 @@ export function BudgetDetailPage() {
                 )}
               </div>
 
-              {/* Resumo Agregado de Consumo de Materiais da Obra */}
               {budget.items && budget.items.length > 0 && (
                 <BudgetMaterialsSummary items={budget.items} />
               )}
 
-              {/* Observações e Condições Comerciais */}
-              {(budget.notes || budget.commercialConditions) && (
+              {budget.notes && (
                 <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-md shadow-xs flex flex-col gap-sm">
                   <h3 className="font-label font-bold text-xs uppercase tracking-wider text-on-surface-variant pb-xs border-b border-outline-variant flex items-center gap-1">
                     <span className="material-symbols-outlined text-[16px] text-primary">description</span>
-                    {' '}Observações e Termos Comerciais
+                    {' '}Observações / Notas do Orçamento
                   </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-md text-xs font-body">
-                    {budget.notes && (
-                      <div className="bg-surface-container-low p-sm rounded-lg border border-outline-variant/50">
-                        <p className="font-label font-semibold text-on-surface mb-1">Observações Gerais:</p>
-                        <p className="text-on-surface-variant whitespace-pre-line leading-relaxed">{budget.notes}</p>
-                      </div>
-                    )}
-                    {budget.commercialConditions && (
-                      <div className="bg-surface-container-low p-sm rounded-lg border border-outline-variant/50">
-                        <p className="font-label font-semibold text-on-surface mb-1">Condições de Pagamento & Entrega:</p>
-                        <p className="text-on-surface-variant whitespace-pre-line leading-relaxed">{budget.commercialConditions}</p>
-                      </div>
-                    )}
+                  <div className="bg-surface-container-low p-sm rounded-lg border border-outline-variant/50 text-xs font-body">
+                    <p className="text-on-surface-variant whitespace-pre-line leading-relaxed">{budget.notes}</p>
                   </div>
                 </div>
               )}
             </div>
 
-            {/* ════ COLUNA DIREITA: SIDEBAR (CLIENTE + RESUMO FINANCEIRO) (4 colunas) ════ */}
+            {/* Coluna Direita: Sidebar Cliente + Fechamento Financeiro (4 colunas) */}
             <div className="lg:col-span-4 flex flex-col gap-md lg:sticky lg:top-4">
 
-              {/* Card Moderno do Cliente */}
+              {/* Card do Cliente */}
               <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-md shadow-xs flex flex-col gap-sm">
                 <div className="flex items-center justify-between pb-xs border-b border-outline-variant">
                   <span className="text-xs font-label font-bold text-on-surface uppercase tracking-wider flex items-center gap-1">
@@ -537,7 +423,6 @@ export function BudgetDetailPage() {
                   </div>
                 </div>
 
-                {/* Contatos do Cliente */}
                 <div className="flex flex-col gap-xs pt-xs border-t border-outline-variant/50 text-xs font-body text-on-surface-variant">
                   {budget.customer?.phone ? (
                     <div className="flex items-center justify-between">
@@ -575,65 +460,25 @@ export function BudgetDetailPage() {
                 </div>
               </div>
 
-              {/* Card de Resumo Financeiro da Proposta */}
-              <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-md shadow-xs flex flex-col gap-sm">
-                <div className="flex items-center justify-between pb-xs border-b border-outline-variant">
-                  <h3 className="text-xs font-label font-bold text-on-surface uppercase tracking-wider flex items-center gap-1">
-                    <span className="material-symbols-outlined text-[16px] text-primary">receipt_long</span>
-                    {' '}Resumo Financeiro
-                  </h3>
-                  <span className="text-[10px] font-data-mono text-secondary px-1.5 py-0.5 rounded bg-surface-container">
-                    BRL (R$)
-                  </span>
-                </div>
-
-                <div className="flex flex-col gap-xs pt-xs">
-                  <div className="flex justify-between items-center text-xs py-1 border-b border-outline-variant/40 border-dashed">
-                    <span className="text-on-surface-variant font-body">Subtotal dos Itens:</span>
-                    <span className="font-data-mono text-on-surface font-semibold">{formatBRL(subtotal)}</span>
-                  </div>
-
-                  {discountValue > 0 && (
-                    <div className="flex justify-between items-center text-xs py-1 border-b border-outline-variant/40 border-dashed">
-                      <span className="text-on-surface-variant font-body flex items-center gap-1">
-                        <span>Desconto</span>
-                        <span className="text-[10px] px-1 rounded bg-error/10 text-error font-semibold">
-                          {budget.discountPercent}%
-                        </span>
-                      </span>
-                      <span className="font-data-mono text-error font-semibold">− {formatBRL(discountValue)}</span>
-                    </div>
-                  )}
-
-                  {/* Total Líquido em Destaque */}
-                  <div className="bg-surface-container-low rounded-lg p-sm border border-outline-variant/60 flex flex-col gap-0.5 mt-xs">
-                    <span className="text-[11px] font-label font-bold text-on-surface-variant uppercase tracking-wider">
-                      Valor Total da Proposta
-                    </span>
-                    <span className="font-data-mono font-extrabold text-primary text-2xl sm:text-3xl leading-tight">
-                      {formatBRL(total)}
-                    </span>
-                  </div>
-
-                  {/* Informações de Validade */}
-                  <div className="flex flex-col gap-1 pt-xs text-[11px] font-body text-on-surface-variant">
-                    <div className="flex items-center justify-between">
-                      <span>Criado em:</span>
-                      <strong className="font-data-mono text-on-surface">
-                        {new Date(budget.createdAt).toLocaleDateString('pt-BR')}
-                      </strong>
-                    </div>
-                    {budget.validUntil && (
-                      <div className="flex items-center justify-between">
-                        <span>Validade da proposta:</span>
-                        <strong className="font-data-mono text-on-surface">
-                          {new Date(budget.validUntil).toLocaleDateString('pt-BR')}
-                        </strong>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
+              {/* ── CARD DE FECHAMENTO FINANCEIRO ISOLADO ────────────────── */}
+              <BudgetFinancialSummaryCard
+                subtotal={subtotal}
+                totalLaborCost={totalLaborCost}
+                freightCost={freightCost}
+                installationCost={installationCost}
+                hasDiscount={hasDiscount}
+                isPercentDiscount={isPercentDiscount}
+                discountPercent={budget.discountPercent}
+                discountValue={discountValue}
+                total={total}
+                paymentCondition={budget.paymentCondition}
+                paymentConditionLabel={budget.paymentConditionLabel}
+                paymentMethod={paymentMethod}
+                paymentNotes={budget.paymentNotes}
+                commercialConditions={commercialConditions}
+                createdAt={budget.createdAt}
+                validUntil={budget.validUntil}
+              />
 
             </div>
 
@@ -657,7 +502,7 @@ export function BudgetDetailPage() {
                 type="button"
                 onClick={() => setShowDeleteModal(false)}
                 disabled={isDeleting}
-                className="px-md py-xs rounded-md border border-outline-variant text-sm font-label font-medium hover:bg-surface-container transition-colors disabled:opacity-50"
+                className="px-md py-xs rounded-md border border-outline-variant text-sm font-label font-medium hover:bg-surface-container transition-colors disabled:opacity-50 cursor-pointer"
               >
                 Cancelar
               </button>
@@ -665,7 +510,7 @@ export function BudgetDetailPage() {
                 type="button"
                 onClick={handleDelete}
                 disabled={isDeleting}
-                className="px-md py-xs rounded-md bg-error text-on-error text-sm font-label font-bold hover:opacity-90 transition-opacity disabled:opacity-50"
+                className="px-md py-xs rounded-md bg-error text-on-error text-sm font-label font-bold hover:opacity-90 transition-opacity disabled:opacity-50 cursor-pointer"
               >
                 {isDeleting ? 'Excluindo...' : 'Excluir'}
               </button>

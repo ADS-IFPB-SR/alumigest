@@ -219,4 +219,16 @@ public class BudgetController {
         budgetService.delete(id);
         return ResponseEntity.noContent().build();
     }
+
+
+    @GetMapping(value = "/{id}/resumo-whatsapp", produces = MediaType.TEXT_PLAIN_VALUE + ";charset=UTF-8")
+    @Operation( summary = "Obter resumo do orçamento para WhatsApp", description = "Gera e retorna o texto formatado com os dados do orçamento para envio via WhatsApp.")
+    @ApiResponse(responseCode = "200", description = "Texto do resumo gerado com sucesso")
+    @ApiResponse(responseCode = "404", description = "Orçamento não encontrado")
+    public ResponseEntity<String> obterResumoWhatsApp(
+            @Parameter(description = "ID do orçamento") @PathVariable UUID id) {
+
+        String textoWhatsApp = budgetService.gerarResumoWhatsApp(id);
+        return ResponseEntity.ok(textoWhatsApp);
+    }
 }
