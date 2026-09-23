@@ -49,7 +49,7 @@ public class BudgetPdfPageEvent extends PdfPageEventHelper {
         float larguraPagina = paginaRect.getWidth() - margemEsq - margemDir;
 
         adicionarCabecalhoRepetido(canvas, writer, paginaRect, margemEsq, margemDir);
-        adicionarRodapeComPaginacao(canvas, writer, margemEsq, margemDir, yRodape, larguraPagina);
+        adicionarRodapeComPaginacao(canvas, writer, margemEsq, yRodape, larguraPagina);
     }
 
     @Override
@@ -87,7 +87,7 @@ public class BudgetPdfPageEvent extends PdfPageEventHelper {
     }
 
     private void adicionarRodapeComPaginacao(PdfContentByte canvas, PdfWriter writer,
-                                              float margemEsq, float margemDir,
+                                              float margemEsq,
                                               float yRodape, float larguraPagina) {
         String dataHoraGeracao = ZonedDateTime.now(ZoneId.of("America/Sao_Paulo"))
                 .format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));

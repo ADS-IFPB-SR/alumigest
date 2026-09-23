@@ -169,6 +169,29 @@ public class BudgetController {
                 .body(pdfDto.bytes());
     }
 
+    @GetMapping("/{id}/pdf/tecnico")
+    @Operation(
+            summary = "Exportar PDF técnico (Ficha de Oficina) do orçamento",
+            description = "Gera e exporta a ficha de corte e usinagem da oficina em formato PDF A4 para download."
+    )
+    @ApiResponse(responseCode = "200", description = "PDF técnico gerado com sucesso (binário)")
+    @ApiResponse(responseCode = "404", description = "Orçamento não encontrado")
+    @ApiResponse(responseCode = "422", description = "Não é possível gerar o PDF técnico de um orçamento cancelado")
+    public ResponseEntity<byte[]> gerarPdfTecnico(
+            @Parameter(description = "ID do orçamento") @PathVariable UUID id) {
+        BudgetPdfDTO pdfDto = budgetService.gerarPdfTecnico(id);
+
+        ContentDisposition contentDisposition = ContentDisposition.attachment()
+                .filename(pdfDto.filename(), StandardCharsets.UTF_8)
+                .build();
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .headers(headers -> headers.setContentDisposition(contentDisposition))
+                .contentLength(pdfDto.bytes().length)
+                .body(pdfDto.bytes());
+    }
+
 
     @PostMapping("/{id}/recalcular")
     @Operation(summary = "Forçar recálculo", description = "Força o recálculo de quantidades e preços de um orçamento DRAFT.")

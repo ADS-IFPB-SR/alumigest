@@ -15,6 +15,7 @@ import br.edu.ifpb.alumigest.common.exception.BudgetImmutableException;
 import br.edu.ifpb.alumigest.common.exception.BusinessException;
 import br.edu.ifpb.alumigest.common.exception.InvalidBudgetStatusTransitionException;
 import br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException;
+import org.hibernate.Hibernate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -32,6 +33,8 @@ import java.util.UUID;
 
 @Service
 public class BudgetService {
+
+    private static final String RESOURCE_ORCAMENTO = "Orçamento";
 
     private final BudgetRepository budgetRepository;
     private final ClientRepository clientRepository;
@@ -84,7 +87,7 @@ public BudgetResponseDTO create(BudgetCreateRequest requestDTO) {
                 item.getOptions().clear();
 
                 for (BudgetItemOption option : optionsCopy) {
-                    item.addOption(option); // ou option.setBudgetItem(item);
+                    item.addOption(option);
                 }
             }
         }
@@ -289,7 +292,7 @@ public BudgetResponseDTO create(BudgetCreateRequest requestDTO) {
     @Transactional(readOnly = true)
     public BudgetPdfDTO gerarPdfComercial(UUID id) {
         Budget budget = budgetRepository.findByIdWithDetails(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Orçamento", id.toString()));
+                .orElseThrow(() -> new ResourceNotFoundException(RESOURCE_ORCAMENTO, id.toString()));
 
         if (budget.getStatus() == BudgetStatus.CANCELLED) {
             throw new BusinessException("Não é possível gerar o PDF de um orçamento cancelado.");
@@ -299,7 +302,7 @@ public BudgetResponseDTO create(BudgetCreateRequest requestDTO) {
         if (budget.getItems() != null) {
             budget.getItems().forEach(item -> {
                 if (item.getOptions() != null) {
-                    item.getOptions().size();
+                    Hibernate.initialize(item.getOptions());
                 }
             });
         }
@@ -313,9 +316,35 @@ public BudgetResponseDTO create(BudgetCreateRequest requestDTO) {
         return new BudgetPdfDTO(bytes, filename);
     }
 
+    @Transactional(readOnly = true)
+    public BudgetPdfDTO gerarPdfTecnico(UUID id) {
+        Budget budget = budgetRepository.findByIdWithDetails(id)
+                .orElseThrow(() -> new ResourceNotFoundException(RESOURCE_ORCAMENTO, id.toString()));
+
+        if (budget.getStatus() == BudgetStatus.CANCELLED) {
+            throw new BusinessException("Não é possível gerar o PDF técnico de um orçamento cancelado.");
+        }
+
+        if (budget.getItems() != null) {
+            budget.getItems().forEach(item -> {
+                if (item.getOptions() != null) {
+                    Hibernate.initialize(item.getOptions());
+                }
+            });
+        }
+
+        byte[] bytes = budgetPdfService.gerarPdfTecnico(budget);
+        String code = (budget.getCode() != null && !budget.getCode().isBlank())
+                ? budget.getCode()
+                : "orcamento";
+        String filename = code + "-tecnico.pdf";
+
+        return new BudgetPdfDTO(bytes, filename);
+    }
+
     private Budget getBudgetOrThrow(UUID id) {
         return budgetRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Orçamento", id.toString()));
+                .orElseThrow(() -> new ResourceNotFoundException(RESOURCE_ORCAMENTO, id.toString()));
     }
 
     private void validateBudgetIsDraft(Budget budget) {

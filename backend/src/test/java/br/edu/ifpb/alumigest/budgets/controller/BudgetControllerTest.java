@@ -1,7 +1,7 @@
 package br.edu.ifpb.alumigest.budgets.controller;
 
 import br.edu.ifpb.alumigest.budgets.domain.BudgetStatus;
-import br.edu.ifpb.alumigest.budgets.domain.PaymentCondition; // NOVO IMPORT
+import br.edu.ifpb.alumigest.budgets.domain.PaymentCondition;
 import br.edu.ifpb.alumigest.budgets.domain.DiscountType;
 import br.edu.ifpb.alumigest.budgets.dto.BudgetItemResponseDTO;
 import br.edu.ifpb.alumigest.budgets.dto.DiscountRequest;
@@ -13,7 +13,6 @@ import br.edu.ifpb.alumigest.budgets.dto.BudgetRequestDTO;
 import br.edu.ifpb.alumigest.budgets.dto.BudgetResponseDTO;
 import br.edu.ifpb.alumigest.budgets.dto.BudgetSummaryResponseDTO;
 import br.edu.ifpb.alumigest.budgets.dto.StatusChangeRequest;
-import br.edu.ifpb.alumigest.budgets.domain.Budget;
 import br.edu.ifpb.alumigest.budgets.service.BudgetQuantityService;
 import br.edu.ifpb.alumigest.budgets.service.BudgetService;
 import br.edu.ifpb.alumigest.common.dto.PageResponse;
@@ -677,5 +676,53 @@ class BudgetControllerTest {
         mockMvc.perform(get("/api/budgets/{id}/pdf/comercial", id))
                 .andExpect(status().isOk())
                 .andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.containsString("orcamento-comercial.pdf")));
+    }
+
+    // ── Testes do endpoint GET /api/budgets/{id}/pdf/tecnico [US-11.1/US-11.3] ──
+
+    @Test
+    @DisplayName("Deve retornar 200 ao gerar PDF técnico da via de oficina")
+    void gerarPdfTecnico_DeveRetornar200EHeadersCorretos() throws Exception {
+        UUID id = UUID.randomUUID();
+        byte[] pdfBytesMock = "%PDF-1.4 mock tecnico".getBytes();
+        BudgetPdfDTO pdfDtoMock = new BudgetPdfDTO(pdfBytesMock, "ORC-2026-001-tecnico.pdf");
+
+        when(budgetService.gerarPdfTecnico(id)).thenReturn(pdfDtoMock);
+
+        mockMvc.perform(get("/api/budgets/{id}/pdf/tecnico", id))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Type", "application/pdf"))
+                .andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.containsString("ORC-2026-001-tecnico.pdf")))
+                .andExpect(header().longValue("Content-Length", pdfBytesMock.length))
+                .andExpect(content().bytes(pdfBytesMock));
+
+        verify(budgetService).gerarPdfTecnico(id);
+    }
+
+    @Test
+    @DisplayName("Deve retornar 404 quando orçamento não existir ao tentar emitir PDF técnico")
+    void gerarPdfTecnico_DeveRetornar404_QuandoOrcamentoNaoExiste() throws Exception {
+        UUID id = UUID.randomUUID();
+
+        when(budgetService.gerarPdfTecnico(id))
+                .thenThrow(new ResourceNotFoundException("Orçamento", id.toString()));
+
+        mockMvc.perform(get("/api/budgets/{id}/pdf/tecnico", id))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404));
+    }
+
+    @Test
+    @DisplayName("Deve retornar 422 quando orçamento estiver cancelado ao tentar emitir PDF técnico")
+    void gerarPdfTecnico_DeveRetornar422_QuandoOrcamentoCancelado() throws Exception {
+        UUID id = UUID.randomUUID();
+
+        when(budgetService.gerarPdfTecnico(id))
+                .thenThrow(new BusinessException("Não é possível gerar o PDF técnico de um orçamento cancelado."));
+
+        mockMvc.perform(get("/api/budgets/{id}/pdf/tecnico", id))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.status").value(422))
+                .andExpect(jsonPath("$.message").value("Não é possível gerar o PDF técnico de um orçamento cancelado."));
     }
 }
