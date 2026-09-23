@@ -1,6 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Link, useParams, useLocation, useNavigate } from 'react-router-dom';
-import { useBudget, useDeleteBudget, useUpdateBudgetStatus, useCreateBudget } from '../features/budgets/hooks/useBudgets';
+import {
+  useBudget,
+  useDeleteBudget,
+  useUpdateBudgetStatus,
+  useCreateBudget,
+  useDownloadPdfTecnico,
+} from '../features/budgets/hooks/useBudgets';
 import { Button } from '../components/ui/Button';
 import {
   TEMPLATE_TYPE_INFO,
@@ -25,6 +31,12 @@ export function BudgetDetailPage() {
   const { mutate: deleteBudget, isPending: isDeleting } = useDeleteBudget();
   const { mutate: updateStatus, isPending: isUpdatingStatus } = useUpdateBudgetStatus();
   const { mutate: createBudget, isPending: isDuplicating } = useCreateBudget();
+  const { mutate: downloadPdf, isPending: isDownloadingPdf } = useDownloadPdfTecnico();
+
+  const downloadPdfTecnico = () => {
+    if (!budget || isDownloadingPdf || budget.status === 'CANCELLED') return;
+    downloadPdf({ id: budget.id, code: budget.code });
+  };
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
@@ -181,6 +193,27 @@ export function BudgetDetailPage() {
             </span>
             <span className="hidden md:inline">
               {isDuplicating ? 'Duplicando...' : 'Duplicar'}
+            </span>
+          </button>
+
+          {/* Botão Emitir Via Técnica (Oficina) [US-11.5] */}
+          <button
+              type="button"
+              data-testid="btn-download-pdf-tecnico"
+              onClick={downloadPdfTecnico}
+              disabled={isDownloadingPdf || budget.status === 'CANCELLED'}
+              className="p-2 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-lg border border-outline-variant/60 transition-colors flex items-center gap-1.5 text-xs font-label font-medium disabled:opacity-50 cursor-pointer"
+              title={
+                budget.status === 'CANCELLED'
+                    ? 'Não é possível emitir ficha técnica de orçamento cancelado'
+                    : 'Emitir Via Técnica de Oficina (PDF de produção sem valores comerciais)'
+              }
+          >
+            <span className="material-symbols-outlined text-[18px]">
+              {isDownloadingPdf ? 'progress_activity' : 'engineering'}
+            </span>
+            <span className="hidden md:inline">
+              {isDownloadingPdf ? 'Gerando...' : 'Via Técnica'}
             </span>
           </button>
 

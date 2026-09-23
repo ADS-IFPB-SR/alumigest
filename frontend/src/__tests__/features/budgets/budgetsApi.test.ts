@@ -355,4 +355,50 @@ describe('budgetsApi Service', () => {
       expect(result.physicalAreaM2).toBe(2);
     });
   });
+  describe('downloadPdfTecnico', () => {
+    it('deve chamar GET /api/budgets/${id}/pdf/tecnico com responseType blob e disparar download', async () => {
+      const budgetId = 'budget-uuid-123';
+      const budgetCode = 'ORC-2026-001';
+      const mockPdfData = new Uint8Array([37, 80, 68, 70]); // %PDF
+
+      vi.mocked(api.get).mockResolvedValueOnce({
+        data: mockPdfData,
+        headers: {
+          'content-disposition': `attachment; filename="${budgetCode}-tecnico.pdf"`,
+        },
+      });
+
+      const createObjectURLMock = vi.fn().mockReturnValue('blob:http://localhost/mock-blob-url');
+      const revokeObjectURLMock = vi.fn();
+      window.URL.createObjectURL = createObjectURLMock;
+      window.URL.revokeObjectURL = revokeObjectURLMock;
+
+      const clickMock = vi.fn();
+      const originalCreateElement = document.createElement.bind(document);
+      vi.spyOn(document, 'createElement').mockImplementation((tagName: string) => {
+        const element = originalCreateElement(tagName);
+        if (tagName === 'a') {
+          element.click = clickMock;
+        }
+        return element;
+      });
+
+      await budgetsApi.downloadPdfTecnico(budgetId, budgetCode);
+
+      expect(api.get).toHaveBeenCalledWith(`/api/budgets/${budgetId}/pdf/tecnico`, {
+        responseType: 'blob',
+        baseURL: '',
+      });
+      expect(createObjectURLMock).toHaveBeenCalled();
+      expect(clickMock).toHaveBeenCalled();
+      expect(revokeObjectURLMock).toHaveBeenCalledWith('blob:http://localhost/mock-blob-url');
+    });
+
+    it('deve propagar erro caso a requisição falhe', async () => {
+      const budgetId = 'budget-err';
+      vi.mocked(api.get).mockRejectedValueOnce(new Error('Erro ao buscar PDF'));
+
+      await expect(budgetsApi.downloadPdfTecnico(budgetId)).rejects.toThrow('Erro ao buscar PDF');
+    });
+  });
 });
