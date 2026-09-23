@@ -49,7 +49,7 @@ export function BudgetFinancialSummaryCard({
       <div className="flex items-center justify-between pb-xs border-b border-outline-variant">
         <h3 className="text-xs font-label font-bold text-on-surface uppercase tracking-wider flex items-center gap-1">
           <span className="material-symbols-outlined text-[16px] text-primary">receipt_long</span>
-          Fechamento Financeiro
+          {' '}Fechamento Financeiro
         </h3>
         <span className="text-[10px] font-data-mono text-secondary px-1.5 py-0.5 rounded bg-surface-container">
           BRL (R$)
@@ -92,7 +92,7 @@ export function BudgetFinancialSummaryCard({
           <div className="flex justify-between items-center text-xs py-1 border-b border-outline-variant/40 border-dashed">
             <span className="text-on-surface-variant font-body flex items-center gap-1.5">
               <span>Desconto</span>
-              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-error/10 border border-error/20 text-error font-extrabold tracking-wide">
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-error/10 border border-error/20 text-error font-extrabold tracking-wide">
                 {isPercentDiscount ? `${discountPercent}%` : 'R$'}
               </span>
             </span>
@@ -115,7 +115,7 @@ export function BudgetFinancialSummaryCard({
           <div className="mt-2 pt-2 border-t border-outline-variant/50 flex flex-col gap-1">
             <span className="text-[10px] font-label font-bold text-on-surface uppercase flex items-center gap-1">
               <span className="material-symbols-outlined text-[14px] text-primary">payments</span>
-              Forma de Pagamento
+              {' '}Forma de Pagamento
             </span>
             <p className="text-[11px] font-body text-primary font-bold bg-surface-container px-2 py-1.5 rounded-md border border-outline-variant/50">
               {resolvedPaymentMethod}
@@ -128,7 +128,7 @@ export function BudgetFinancialSummaryCard({
           <div className="mt-1 pt-1 flex flex-col gap-1">
             <span className="text-[10px] font-label font-bold text-on-surface uppercase flex items-center gap-1">
               <span className="material-symbols-outlined text-[14px] text-primary">credit_card</span>
-              Condição de Pagamento
+              {' '}Condição de Pagamento
             </span>
             <p className="text-[11px] font-body text-on-surface-variant bg-surface-container px-2 py-1.5 rounded-md border border-outline-variant/50">
               {resolvedPaymentCondition}
@@ -141,7 +141,7 @@ export function BudgetFinancialSummaryCard({
           <div className="mt-1">
             <span className="text-[10px] font-label font-bold text-on-surface uppercase flex items-center gap-1 mb-1">
               <span className="material-symbols-outlined text-[14px] text-primary">description</span>
-              Notas Comerciais
+              {' '}Notas Comerciais
             </span>
             <p className="text-[11px] font-body text-on-surface-variant bg-surface-container px-2 py-1.5 rounded-md border border-outline-variant/50 whitespace-pre-line leading-relaxed">
               {resolvedNotes}

@@ -186,7 +186,7 @@ export interface BudgetDetail extends BudgetSummary {
   commercialConditions?: string;
   freightCost?: number;
   installationCost?: number;
-  paymentCondition?: PaymentCondition | string;
+  paymentCondition?: PaymentCondition;
   paymentConditionLabel?: string;
   paymentMethod?: string | null;
   paymentNotes?: string;
