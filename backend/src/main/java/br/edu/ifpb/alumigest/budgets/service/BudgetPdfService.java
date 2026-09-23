@@ -135,90 +135,117 @@ public class BudgetPdfService {
         Objects.requireNonNull(budget, "O orçamento não pode ser nulo para geração do resumo WhatsApp.");
 
         StringBuilder sb = new StringBuilder();
+        construirCabecalhoWhatsApp(sb, budget);
+        construirItensWhatsApp(sb, budget);
+        construirFechamentoFinanceiroWhatsApp(sb, budget);
 
-        // 📋 *Orçamento {código}*
+        return sb.toString();
+    }
+
+    private void construirCabecalhoWhatsApp(StringBuilder sb, Budget budget) {
         String codigo = (budget.getCode() != null && !budget.getCode().isBlank())
                 ? budget.getCode().trim()
                 : "N/A";
         sb.append("📋 *Orçamento ").append(codigo).append("*\n");
 
-        // 📅 Emissão: dd/MM/yyyy | Validade: dd/MM/yyyy
-        String emissaoStr = formatarData(budget.getCreatedAt() != null
+        OffsetDateTime emissao = budget.getCreatedAt() != null
                 ? budget.getCreatedAt()
-                : OffsetDateTime.now(ZoneOffset.UTC));
-        String validadeStr = formatarData(budget.getValidUntil() != null
-                ? budget.getValidUntil()
-                : (budget.getCreatedAt() != null ? budget.getCreatedAt().plusDays(15) : OffsetDateTime.now(ZoneOffset.UTC).plusDays(15)));
-        sb.append("📅 Emissão: ").append(emissaoStr).append(" | Validade: ").append(validadeStr).append("\n");
+                : OffsetDateTime.now(ZoneOffset.UTC);
 
-        // 👤 Cliente: {nome}
-        String nomeCliente = (budget.getClient() != null && budget.getClient().getFullName() != null && !budget.getClient().getFullName().isBlank())
-                ? budget.getClient().getFullName().trim()
-                : NAO_INFORMADO;
+        OffsetDateTime validade = budget.getValidUntil();
+        if (validade == null) {
+            validade = emissao.plusDays(15);
+        }
+
+        sb.append("📅 Emissão: ").append(formatarData(emissao))
+                .append(" | Validade: ").append(formatarData(validade))
+                .append("\n");
+
+        String nomeCliente = NAO_INFORMADO;
+        if (budget.getClient() != null && budget.getClient().getFullName() != null && !budget.getClient().getFullName().isBlank()) {
+            nomeCliente = budget.getClient().getFullName().trim();
+        }
         sb.append("👤 Cliente: ").append(nomeCliente).append("\n\n");
+    }
 
-        // 📦 Itens:
+    private void construirItensWhatsApp(StringBuilder sb, Budget budget) {
         sb.append("📦 Itens:\n");
         if (budget.getItems() != null && !budget.getItems().isEmpty()) {
             for (BudgetItem item : budget.getItems()) {
-                sb.append("• ");
-                int qtd = (item.getQuantity() != null && item.getQuantity() > 0) ? item.getQuantity() : 1;
-                sb.append(qtd).append("x ");
-
-                String nomeProduto = (item.getProductName() != null && !item.getProductName().isBlank())
-                        ? item.getProductName().trim()
-                        : (item.getProduct() != null && item.getProduct().getName() != null ? item.getProduct().getName().trim() : "Item");
-                sb.append(nomeProduto);
-
-                if (item.getWidthMm() != null && item.getHeightMm() != null
-                        && item.getWidthMm().compareTo(BigDecimal.ZERO) > 0
-                        && item.getHeightMm().compareTo(BigDecimal.ZERO) > 0) {
-                    sb.append(" (")
-                            .append(formatarDimensaoMm(item.getWidthMm()))
-                            .append("x")
-                            .append(formatarDimensaoMm(item.getHeightMm()))
-                            .append("mm)");
-                }
-
-                BigDecimal valorItem = item.getSubtotal() != null ? item.getSubtotal() : BigDecimal.ZERO;
-                sb.append(" - ").append(formatarMoedaWhatsApp(valorItem)).append("\n");
+                construirLinhaItemWhatsApp(sb, item);
             }
         }
         sb.append("\n");
+    }
 
-        // 💰 Subtotal: R$ #,##0.00
+    private void construirLinhaItemWhatsApp(StringBuilder sb, BudgetItem item) {
+        sb.append("• ");
+        int qtd = (item.getQuantity() != null && item.getQuantity() > 0) ? item.getQuantity() : 1;
+        sb.append(qtd).append("x ");
+
+        sb.append(obterNomeProdutoItem(item));
+
+        if (temDimensoesValidas(item)) {
+            sb.append(" (")
+                    .append(formatarDimensaoMm(item.getWidthMm()))
+                    .append("x")
+                    .append(formatarDimensaoMm(item.getHeightMm()))
+                    .append("mm)");
+        }
+
+        BigDecimal valorItem = item.getSubtotal() != null ? item.getSubtotal() : BigDecimal.ZERO;
+        sb.append(" - ").append(formatarMoedaWhatsApp(valorItem)).append("\n");
+    }
+
+    private String obterNomeProdutoItem(BudgetItem item) {
+        if (item.getProductName() != null && !item.getProductName().isBlank()) {
+            return item.getProductName().trim();
+        }
+        if (item.getProduct() != null && item.getProduct().getName() != null && !item.getProduct().getName().isBlank()) {
+            return item.getProduct().getName().trim();
+        }
+        return "Item";
+    }
+
+    private boolean temDimensoesValidas(BudgetItem item) {
+        return item.getWidthMm() != null && item.getHeightMm() != null
+                && item.getWidthMm().compareTo(BigDecimal.ZERO) > 0
+                && item.getHeightMm().compareTo(BigDecimal.ZERO) > 0;
+    }
+
+    private void construirFechamentoFinanceiroWhatsApp(StringBuilder sb, Budget budget) {
         BigDecimal subtotal = budget.getSubtotal() != null ? budget.getSubtotal() : BigDecimal.ZERO;
         sb.append("💰 Subtotal: ").append(formatarMoedaWhatsApp(subtotal)).append("\n");
 
-        // 🏷️ Desconto: omitido se nulo ou <= 0
-        BigDecimal descontoValor = budget.getDiscountValue();
-        if (descontoValor != null && descontoValor.compareTo(BigDecimal.ZERO) > 0) {
-            BigDecimal descontoPercent = budget.getDiscountPercent();
-            if (descontoPercent != null && descontoPercent.compareTo(BigDecimal.ZERO) > 0) {
-                sb.append("🏷️ Desconto (")
-                        .append(formatarNumeroSemZeroDecimal(descontoPercent))
-                        .append("%): -")
-                        .append(formatarMoedaWhatsApp(descontoValor))
-                        .append("\n");
-            } else {
-                sb.append("🏷️ Desconto: -").append(formatarMoedaWhatsApp(descontoValor)).append("\n");
-            }
-        }
+        adicionarDescontoWhatsApp(sb, budget);
 
-        // 📦 *TOTAL: R$ #,##0.00*
         BigDecimal total = budget.getTotal() != null ? budget.getTotal() : BigDecimal.ZERO;
         sb.append("📦 *TOTAL: ").append(formatarMoedaWhatsApp(total)).append("*\n");
 
-        // 💳 Pagamento: {label amigável}
         String condicaoPgto = (budget.getPaymentCondition() != null)
                 ? budget.getPaymentCondition().getDescricao()
                 : "A Combinar";
         sb.append("💳 Pagamento: ").append(condicaoPgto).append("\n\n");
 
-        // Assinatura Alumiportas
         sb.append("_Alumiportas - Vidraçaria e Esquadrias_");
+    }
 
-        return sb.toString();
+    private void adicionarDescontoWhatsApp(StringBuilder sb, Budget budget) {
+        BigDecimal descontoValor = budget.getDiscountValue();
+        if (descontoValor == null || descontoValor.compareTo(BigDecimal.ZERO) <= 0) {
+            return;
+        }
+
+        BigDecimal descontoPercent = budget.getDiscountPercent();
+        if (descontoPercent != null && descontoPercent.compareTo(BigDecimal.ZERO) > 0) {
+            sb.append("🏷️ Desconto (")
+                    .append(formatarNumeroSemZeroDecimal(descontoPercent))
+                    .append("%): -")
+                    .append(formatarMoedaWhatsApp(descontoValor))
+                    .append("\n");
+        } else {
+            sb.append("🏷️ Desconto: -").append(formatarMoedaWhatsApp(descontoValor)).append("\n");
+        }
     }
 
     private void adicionarCabecalho(Document document, Budget budget) throws DocumentException {
