@@ -15,6 +15,7 @@ import br.edu.ifpb.alumigest.common.exception.BudgetImmutableException;
 import br.edu.ifpb.alumigest.common.exception.BusinessException;
 import br.edu.ifpb.alumigest.common.exception.InvalidBudgetStatusTransitionException;
 import br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException;
+import org.hibernate.Hibernate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -299,7 +300,7 @@ public BudgetResponseDTO create(BudgetCreateRequest requestDTO) {
         if (budget.getItems() != null) {
             budget.getItems().forEach(item -> {
                 if (item.getOptions() != null) {
-                    item.getOptions().size();
+                    Hibernate.initialize(item.getOptions());
                 }
             });
         }
@@ -325,7 +326,7 @@ public BudgetResponseDTO create(BudgetCreateRequest requestDTO) {
         if (budget.getItems() != null) {
             budget.getItems().forEach(item -> {
                 if (item.getOptions() != null) {
-                    item.getOptions().size();
+                    Hibernate.initialize(item.getOptions());
                 }
             });
         }

@@ -102,6 +102,14 @@ public class BudgetPdfService {
     private static final Font FONTE_TECNICA_TEXTO_SEC = FontFactory.getFont(FontFactory.HELVETICA, 7.5f, COR_TECNICA_TEXT_SEC);
     private static final Font FONTE_TECNICA_CHECKBOX_LABEL = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 7, COR_TECNICA_TEXT_SEC);
 
+    private static final String KEY_DETAILS = "details";
+    private static final String KEY_HOLES_COUNT = "holesCount";
+    private static final String KEY_POSITION = "position";
+    private static final String KEY_FORMAT = "format";
+    private static final String KEY_HANDLE_TYPE = "handleType";
+    private static final String PADRAO = "Padrão";
+    private static final String BADGE_PADRAO = "PADRÃO";
+
     private final CompanyProperties companyProps;
     private final ObjectMapper objectMapper;
 
@@ -739,9 +747,7 @@ public class BudgetPdfService {
                 ? budget.getClient().getFullName().toUpperCase(PT_BR)
                 : "NÃO INFORMADO";
 
-        String contato = (budget.getClient() != null && budget.getClient().getPhone() != null && !budget.getClient().getPhone().isBlank())
-                ? budget.getClient().getPhone().trim()
-                : (budget.getClient() != null && budget.getClient().getEmail() != null ? budget.getClient().getEmail().trim() : "NÃO INFORMADO");
+        String contato = extrairContatoCliente(budget.getClient());
 
         String volume = totalPecas == 1 ? "1 PEÇA" : totalPecas + " PEÇAS";
 
@@ -750,6 +756,19 @@ public class BudgetPdfService {
         card.addCell(criarSubCelulaCardCliente("Volume do Pedido", volume, true));
 
         document.add(card);
+    }
+
+    private String extrairContatoCliente(Client client) {
+        if (client == null) {
+            return "NÃO INFORMADO";
+        }
+        if (client.getPhone() != null && !client.getPhone().isBlank()) {
+            return client.getPhone().trim();
+        }
+        if (client.getEmail() != null && !client.getEmail().isBlank()) {
+            return client.getEmail().trim();
+        }
+        return "NÃO INFORMADO";
     }
 
     private PdfPCell criarSubCelulaCardCliente(String label, String valor, boolean destaque) {
@@ -908,7 +927,7 @@ public class BudgetPdfService {
         Paragraph pFolga = new Paragraph();
         pFolga.setLeading(9f);
         pFolga.add(new Chunk("Folga: ", FontFactory.getFont(FontFactory.HELVETICA_BOLD, 7.5f, COR_TECNICA_HEADER_BG)));
-        pFolga.add(new Chunk("Padrão", FontFactory.getFont(FontFactory.HELVETICA, 7.5f, COR_TECNICA_TEXT_SEC)));
+        pFolga.add(new Chunk(PADRAO, FontFactory.getFont(FontFactory.HELVETICA, 7.5f, COR_TECNICA_TEXT_SEC)));
         cell.addElement(pFolga);
 
         return cell;
@@ -1057,7 +1076,7 @@ public class BudgetPdfService {
 
     private String extrairTipoFuracaoBadge(String templateType) {
         if (templateType == null || templateType.isBlank()) {
-            return "PADRÃO";
+            return BADGE_PADRAO;
         }
         String clean = templateType.trim().toUpperCase(Locale.ROOT);
         if (clean.startsWith("TIPO:")) {
@@ -1074,7 +1093,7 @@ public class BudgetPdfService {
             case "AWNING_WINDOW_1F", "AWNING_WINDOW_1F_INV", "MAX_AR_WINDOW_1_LEAF", "MAX_AR_WINDOW_INVERSE_1_LEAF",
                  "MAXIM_AR_WINDOW", "MAXIM_AR", "TILT_WINDOW", "TILT", "BASCULANTE", "BASCULANTE INVERTIDO" -> "DOBRADIÇA/PISTÃO";
             case "FRONT_DRAWER", "DRAWER_FRONT", "DRAWER", "GAVETA", "FRENTE DE GAVETA" -> "FIXAÇÃO CAIXA";
-            case "FIXED_PANEL", "FIXED_GLASS_FACADE", "FIXED", "FIXO" -> "PADRÃO";
+            case "FIXED_PANEL", "FIXED_GLASS_FACADE", "FIXED", "FIXO" -> BADGE_PADRAO;
             default -> {
                 TemplateType parsed = TemplateType.parse(clean);
                 if (parsed != null) {
@@ -1083,92 +1102,103 @@ public class BudgetPdfService {
                         case SLIDING_1_LEAF, SLIDING_2_LEAF, SLIDING_3_LEAF, SLIDING_4_LEAF -> "ROLDANAS";
                         case MAX_AR_WINDOW_1_LEAF, MAX_AR_WINDOW_INVERSE_1_LEAF -> "DOBRADIÇA/PISTÃO";
                         case DRAWER_FRONT -> "FIXAÇÃO CAIXA";
-                        case FIXED_PANEL -> "PADRÃO";
+                        case FIXED_PANEL -> BADGE_PADRAO;
                     };
                 }
-                yield "PADRÃO";
+                yield BADGE_PADRAO;
             }
         };
     }
 
     private List<String> gerarLinhasFuracao(BudgetItem item) {
-        List<String> linhas = new ArrayList<>();
-        String raw = item.getDrillingConfig();
-        if (raw != null && !raw.isBlank() && !raw.equals("{}") && !raw.equalsIgnoreCase("NONE")) {
-            try {
-                JsonNode node = objectMapper.readTree(raw);
-                if (node.has("details") && !node.get("details").isNull()) {
-                    linhas.add(node.get("details").asText());
-                }
-                if (node.has("holesCount") && !node.get("holesCount").isNull()) {
-                    linhas.add(node.get("holesCount").asInt() + " furos previstos.");
-                }
-                if (node.has("position") && !node.get("position").isNull()) {
-                    linhas.add("Posição: " + node.get("position").asText());
-                }
-            } catch (Exception e) {
-                linhas.add(raw.trim());
-            }
-        }
-
+        List<String> linhas = extrairLinhasFuracaoJson(item.getDrillingConfig());
         if (linhas.isEmpty()) {
-            String t = item.getTemplateType() != null ? item.getTemplateType().toUpperCase(Locale.ROOT) : "";
-            if (t.contains("GIRO") || t.contains("PIVOT") || t.contains("SWING")) {
-                linhas.add("3 furos para dobradiças.");
-                linhas.add("Distância dividida por igual.");
-            } else if (t.contains("CORRER") || t.contains("SLIDING") || t.contains("BOX")) {
-                linhas.add("Furação superior padrão.");
-                linhas.add("2 roldanas por folha.");
-            } else if (t.contains("BASCULANTE") || t.contains("TILT") || t.contains("AWNING") || t.contains("MAX")) {
-                linhas.add("Furação na travessa superior.");
-                linhas.add("Distância conforme gabarito.");
-            } else if (t.contains("GAVETA") || t.contains("DRAWER")) {
-                linhas.add("Furação interna fixação MDF.");
-            } else {
-                linhas.add("Furação padrão de fábrica.");
-                linhas.add("Conforme gabarito do perfil.");
-            }
+            linhas.addAll(obterLinhasFuracaoFallback(item.getTemplateType()));
         }
         return linhas;
     }
 
-    private List<String> gerarLinhasPuxador(BudgetItem item) {
+    private List<String> extrairLinhasFuracaoJson(String raw) {
         List<String> linhas = new ArrayList<>();
-        String raw = item.getHandleConfig();
-        if (raw != null && !raw.isBlank() && !raw.equals("{}") && !raw.equalsIgnoreCase("NONE")) {
-            try {
-                JsonNode node = objectMapper.readTree(raw);
-                if (node.has("type") || node.has("handleType")) {
-                    String tipo = node.has("handleType") ? node.get("handleType").asText() : node.get("type").asText();
-                    linhas.add("Tipo: " + tipo);
-                }
-                if (node.has("format") && !node.get("format").isNull()) {
-                    linhas.add("Formato: " + node.get("format").asText());
-                }
-                if (node.has("position") && !node.get("position").isNull()) {
-                    linhas.add("Posição: " + node.get("position").asText());
-                }
-            } catch (Exception e) {
-                linhas.add("Configuração: " + raw.trim());
-            }
+        if (raw == null || raw.isBlank() || "{}".equals(raw) || "NONE".equalsIgnoreCase(raw)) {
+            return linhas;
         }
-
-        if (linhas.isEmpty()) {
-            String puxadorOpt = extrairNomeMaterialPorCategoria(item, MaterialCategoryType.HARDWARE);
-            if (puxadorOpt != null && !puxadorOpt.equalsIgnoreCase("Padrão") && !puxadorOpt.equalsIgnoreCase("Não informado")) {
-                linhas.add("Modelo: " + puxadorOpt);
-                linhas.add("Posição padrão centralizada.");
-            } else {
-                linhas.add("Formato: Padrão do modelo.");
-                linhas.add("Posição: Lado de abertura.");
+        try {
+            JsonNode node = objectMapper.readTree(raw);
+            if (node.has(KEY_DETAILS) && !node.get(KEY_DETAILS).isNull()) {
+                linhas.add(node.get(KEY_DETAILS).asText());
             }
+            if (node.has(KEY_HOLES_COUNT) && !node.get(KEY_HOLES_COUNT).isNull()) {
+                linhas.add(node.get(KEY_HOLES_COUNT).asInt() + " furos previstos.");
+            }
+            if (node.has(KEY_POSITION) && !node.get(KEY_POSITION).isNull()) {
+                linhas.add("Posição: " + node.get(KEY_POSITION).asText());
+            }
+        } catch (Exception e) {
+            linhas.add(raw.trim());
         }
         return linhas;
+    }
+
+    private List<String> obterLinhasFuracaoFallback(String templateType) {
+        String t = templateType != null ? templateType.toUpperCase(Locale.ROOT) : "";
+        if (t.contains("GIRO") || t.contains("PIVOT") || t.contains("SWING")) {
+            return List.of("3 furos para dobradiças.", "Distância dividida por igual.");
+        }
+        if (t.contains("CORRER") || t.contains("SLIDING") || t.contains("BOX")) {
+            return List.of("Furação superior padrão.", "2 roldanas por folha.");
+        }
+        if (t.contains("BASCULANTE") || t.contains("TILT") || t.contains("AWNING") || t.contains("MAX")) {
+            return List.of("Furação na travessa superior.", "Distância conforme gabarito.");
+        }
+        if (t.contains("GAVETA") || t.contains("DRAWER")) {
+            return List.of("Furação interna fixação MDF.");
+        }
+        return List.of("Furação padrão de fábrica.", "Conforme gabarito do perfil.");
+    }
+
+    private List<String> gerarLinhasPuxador(BudgetItem item) {
+        List<String> linhas = extrairLinhasPuxadorJson(item.getHandleConfig());
+        if (linhas.isEmpty()) {
+            linhas.addAll(obterLinhasPuxadorFallback(item));
+        }
+        return linhas;
+    }
+
+    private List<String> extrairLinhasPuxadorJson(String raw) {
+        List<String> linhas = new ArrayList<>();
+        if (raw == null || raw.isBlank() || "{}".equals(raw) || "NONE".equalsIgnoreCase(raw)) {
+            return linhas;
+        }
+        try {
+            JsonNode node = objectMapper.readTree(raw);
+            if (node.has("type") || node.has(KEY_HANDLE_TYPE)) {
+                String tipo = node.has(KEY_HANDLE_TYPE) ? node.get(KEY_HANDLE_TYPE).asText() : node.get("type").asText();
+                linhas.add("Tipo: " + tipo);
+            }
+            if (node.has(KEY_FORMAT) && !node.get(KEY_FORMAT).isNull()) {
+                linhas.add("Formato: " + node.get(KEY_FORMAT).asText());
+            }
+            if (node.has(KEY_POSITION) && !node.get(KEY_POSITION).isNull()) {
+                linhas.add("Posição: " + node.get(KEY_POSITION).asText());
+            }
+        } catch (Exception e) {
+            linhas.add("Configuração: " + raw.trim());
+        }
+        return linhas;
+    }
+
+    private List<String> obterLinhasPuxadorFallback(BudgetItem item) {
+        String puxadorOpt = extrairNomeMaterialPorCategoria(item, MaterialCategoryType.HARDWARE);
+        if (puxadorOpt != null && !puxadorOpt.equalsIgnoreCase(PADRAO) && !puxadorOpt.equalsIgnoreCase("Não informado")) {
+            return List.of("Modelo: " + puxadorOpt, "Posição padrão centralizada.");
+        }
+        return List.of("Formato: Padrão do modelo.", "Posição: Lado de abertura.");
     }
 
     private String extrairNomeMaterialPorCategoria(BudgetItem item, MaterialCategoryType categoria) {
         if (item.getOptions() == null || item.getOptions().isEmpty()) {
-            return "Padrão";
+            return PADRAO;
         }
         return item.getOptions().stream()
                 .filter(opt -> opt.getCategoryType() == categoria)
@@ -1180,7 +1210,7 @@ public class BudgetPdfService {
                 })
                 .filter(Objects::nonNull)
                 .findFirst()
-                .orElse("Padrão");
+                .orElse(PADRAO);
     }
 
     private static class BordaTracejada implements PdfPCellEvent {

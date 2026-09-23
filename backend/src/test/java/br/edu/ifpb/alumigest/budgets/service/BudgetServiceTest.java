@@ -750,9 +750,10 @@ class BudgetServiceTest {
     @DisplayName("gerarPdfComercial: Lança BusinessException quando orçamento estiver CANCELLED")
     void gerarPdfComercial_DeveLancarBusinessException_QuandoOrcamentoCancelado() {
         budget.setStatus(BudgetStatus.CANCELLED);
-        when(budgetRepository.findByIdWithDetails(budget.getId())).thenReturn(Optional.of(budget));
+        UUID budgetId = budget.getId();
+        when(budgetRepository.findByIdWithDetails(budgetId)).thenReturn(Optional.of(budget));
 
-        assertThatThrownBy(() -> budgetService.gerarPdfComercial(budget.getId()))
+        assertThatThrownBy(() -> budgetService.gerarPdfComercial(budgetId))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("Não é possível gerar o PDF de um orçamento cancelado.");
 
@@ -804,9 +805,10 @@ class BudgetServiceTest {
     @DisplayName("gerarPdfTecnico: Lança BusinessException quando orçamento estiver CANCELLED")
     void gerarPdfTecnico_DeveLancarBusinessException_QuandoOrcamentoCancelado() {
         budget.setStatus(BudgetStatus.CANCELLED);
-        when(budgetRepository.findByIdWithDetails(budget.getId())).thenReturn(Optional.of(budget));
+        UUID budgetId = budget.getId();
+        when(budgetRepository.findByIdWithDetails(budgetId)).thenReturn(Optional.of(budget));
 
-        assertThatThrownBy(() -> budgetService.gerarPdfTecnico(budget.getId()))
+        assertThatThrownBy(() -> budgetService.gerarPdfTecnico(budgetId))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("Não é possível gerar o PDF técnico de um orçamento cancelado.");
 

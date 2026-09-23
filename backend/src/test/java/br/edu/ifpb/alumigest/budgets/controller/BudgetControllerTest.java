@@ -1,7 +1,7 @@
 package br.edu.ifpb.alumigest.budgets.controller;
 
 import br.edu.ifpb.alumigest.budgets.domain.BudgetStatus;
-import br.edu.ifpb.alumigest.budgets.domain.PaymentCondition; // NOVO IMPORT
+import br.edu.ifpb.alumigest.budgets.domain.PaymentCondition;
 import br.edu.ifpb.alumigest.budgets.domain.DiscountType;
 import br.edu.ifpb.alumigest.budgets.dto.BudgetItemResponseDTO;
 import br.edu.ifpb.alumigest.budgets.dto.DiscountRequest;
@@ -13,7 +13,6 @@ import br.edu.ifpb.alumigest.budgets.dto.BudgetRequestDTO;
 import br.edu.ifpb.alumigest.budgets.dto.BudgetResponseDTO;
 import br.edu.ifpb.alumigest.budgets.dto.BudgetSummaryResponseDTO;
 import br.edu.ifpb.alumigest.budgets.dto.StatusChangeRequest;
-import br.edu.ifpb.alumigest.budgets.domain.Budget;
 import br.edu.ifpb.alumigest.budgets.service.BudgetQuantityService;
 import br.edu.ifpb.alumigest.budgets.service.BudgetService;
 import br.edu.ifpb.alumigest.common.dto.PageResponse;
