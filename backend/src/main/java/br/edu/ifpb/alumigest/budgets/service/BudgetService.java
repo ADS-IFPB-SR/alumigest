@@ -34,6 +34,8 @@ import java.util.UUID;
 @Service
 public class BudgetService {
 
+    private static final String RESOURCE_ORCAMENTO = "Orçamento";
+
     private final BudgetRepository budgetRepository;
     private final ClientRepository clientRepository;
     private final BudgetMapper budgetMapper;
@@ -85,7 +87,7 @@ public BudgetResponseDTO create(BudgetCreateRequest requestDTO) {
                 item.getOptions().clear();
 
                 for (BudgetItemOption option : optionsCopy) {
-                    item.addOption(option); // ou option.setBudgetItem(item);
+                    item.addOption(option);
                 }
             }
         }
@@ -290,7 +292,7 @@ public BudgetResponseDTO create(BudgetCreateRequest requestDTO) {
     @Transactional(readOnly = true)
     public BudgetPdfDTO gerarPdfComercial(UUID id) {
         Budget budget = budgetRepository.findByIdWithDetails(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Orçamento", id.toString()));
+                .orElseThrow(() -> new ResourceNotFoundException(RESOURCE_ORCAMENTO, id.toString()));
 
         if (budget.getStatus() == BudgetStatus.CANCELLED) {
             throw new BusinessException("Não é possível gerar o PDF de um orçamento cancelado.");
@@ -317,7 +319,7 @@ public BudgetResponseDTO create(BudgetCreateRequest requestDTO) {
     @Transactional(readOnly = true)
     public BudgetPdfDTO gerarPdfTecnico(UUID id) {
         Budget budget = budgetRepository.findByIdWithDetails(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Orçamento", id.toString()));
+                .orElseThrow(() -> new ResourceNotFoundException(RESOURCE_ORCAMENTO, id.toString()));
 
         if (budget.getStatus() == BudgetStatus.CANCELLED) {
             throw new BusinessException("Não é possível gerar o PDF técnico de um orçamento cancelado.");
@@ -342,7 +344,7 @@ public BudgetResponseDTO create(BudgetCreateRequest requestDTO) {
 
     private Budget getBudgetOrThrow(UUID id) {
         return budgetRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Orçamento", id.toString()));
+                .orElseThrow(() -> new ResourceNotFoundException(RESOURCE_ORCAMENTO, id.toString()));
     }
 
     private void validateBudgetIsDraft(Budget budget) {
