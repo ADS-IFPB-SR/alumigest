@@ -1131,11 +1131,15 @@ public class BudgetPdfService {
 
     private List<String> extrairLinhasFuracaoJson(String raw) {
         List<String> linhas = new ArrayList<>();
-        if (raw == null || raw.isBlank() || "{}".equals(raw) || "NONE".equalsIgnoreCase(raw)) {
+        if (raw == null || raw.isBlank()) {
+            return linhas;
+        }
+        String trimmed = raw.trim();
+        if ("{}".equals(trimmed) || "NONE".equalsIgnoreCase(trimmed)) {
             return linhas;
         }
         try {
-            JsonNode node = objectMapper.readTree(raw);
+            JsonNode node = objectMapper.readTree(trimmed);
             if (node.has(KEY_DETAILS) && !node.get(KEY_DETAILS).isNull()) {
                 linhas.add(node.get(KEY_DETAILS).asText());
             }
@@ -1146,7 +1150,7 @@ public class BudgetPdfService {
                 linhas.add("Posição: " + node.get(KEY_POSITION).asText());
             }
         } catch (Exception e) {
-            linhas.add(raw.trim());
+            linhas.add(trimmed);
         }
         return linhas;
     }
@@ -1178,11 +1182,15 @@ public class BudgetPdfService {
 
     private List<String> extrairLinhasPuxadorJson(String raw) {
         List<String> linhas = new ArrayList<>();
-        if (raw == null || raw.isBlank() || "{}".equals(raw) || "NONE".equalsIgnoreCase(raw)) {
+        if (raw == null || raw.isBlank()) {
+            return linhas;
+        }
+        String trimmed = raw.trim();
+        if ("{}".equals(trimmed) || "NONE".equalsIgnoreCase(trimmed)) {
             return linhas;
         }
         try {
-            JsonNode node = objectMapper.readTree(raw);
+            JsonNode node = objectMapper.readTree(trimmed);
             if (node.has("type") || node.has(KEY_HANDLE_TYPE)) {
                 String tipo = node.has(KEY_HANDLE_TYPE) ? node.get(KEY_HANDLE_TYPE).asText() : node.get("type").asText();
                 linhas.add("Tipo: " + tipo);
@@ -1194,7 +1202,7 @@ public class BudgetPdfService {
                 linhas.add("Posição: " + node.get(KEY_POSITION).asText());
             }
         } catch (Exception e) {
-            linhas.add("Configuração: " + raw.trim());
+            linhas.add("Configuração: " + trimmed);
         }
         return linhas;
     }

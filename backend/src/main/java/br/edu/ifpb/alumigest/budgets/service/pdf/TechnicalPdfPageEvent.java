@@ -6,6 +6,7 @@ import com.lowagie.text.Font;
 import com.lowagie.text.FontFactory;
 import com.lowagie.text.Phrase;
 import com.lowagie.text.Rectangle;
+import com.lowagie.text.pdf.BaseFont;
 import com.lowagie.text.pdf.ColumnText;
 import com.lowagie.text.pdf.PdfContentByte;
 import com.lowagie.text.pdf.PdfPageEventHelper;
@@ -61,7 +62,8 @@ public class TechnicalPdfPageEvent extends PdfPageEventHelper {
 
         // Rodapé minimalista acordado: "Ficha Técnica #XXXX • Página X de Y"
         String prefixo = "Ficha Técnica #" + codigoPedido + " • Página " + writer.getPageNumber() + " de ";
-        float larguraPrefixo = FONTE_RODAPE.getBaseFont().getWidthPoint(prefixo, 8);
+        BaseFont baseFont = FONTE_RODAPE.getCalculatedBaseFont(true);
+        float larguraPrefixo = baseFont.getWidthPoint(prefixo, 8);
         float xInicio = margemEsq + (larguraPagina - (larguraPrefixo + 15)) / 2f;
 
         ColumnText.showTextAligned(canvas, Element.ALIGN_LEFT, new Phrase(prefixo, FONTE_RODAPE), xInicio, yRodape, 0);
