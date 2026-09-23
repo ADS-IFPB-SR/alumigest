@@ -2,14 +2,16 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React, { type ReactNode } from 'react';
-import { useApplyDiscount } from '../../../features/budgets/hooks/useBudgets';
+import { useApplyDiscount, useDownloadPdfTecnico } from '../../../features/budgets/hooks/useBudgets';
 import { budgetsApi } from '../../../features/budgets/services/budgetsApi';
 import type { DiscountRequest, Budget } from '../../../features/budgets/types';
 import toast from 'react-hot-toast';
 
+
 vi.mock('../../../features/budgets/services/budgetsApi', () => ({
   budgetsApi: {
     applyDiscount: vi.fn(),
+    downloadPdfTecnico: vi.fn(),
     getBudgets: vi.fn(),
     getBudget: vi.fn(),
     createBudget: vi.fn(),
@@ -152,6 +154,55 @@ describe('useApplyDiscount Hook', () => {
     });
 
     expect(toast.error).toHaveBeenCalledWith('Erro ao aplicar desconto e condições comerciais.');
+  });
+});
+
+describe('useDownloadPdfTecnico Hook', () => {
+  let queryClient: QueryClient;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
+  });
+
+  it('deve chamar downloadPdfTecnico e disparar toast de sucesso', async () => {
+    vi.mocked(budgetsApi.downloadPdfTecnico as any).mockResolvedValueOnce(undefined);
+
+    const { result } = renderHook(() => useDownloadPdfTecnico(), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    result.current.mutate({ id: 'orc-1', code: 'ORC-2026-001' });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(budgetsApi.downloadPdfTecnico).toHaveBeenCalledWith('orc-1', 'ORC-2026-001');
+    expect(toast.success).toHaveBeenCalledWith('PDF da Ficha Técnica baixado com sucesso!');
+  });
+
+  it('deve exibir toast de erro quando a API falhar', async () => {
+    vi.mocked(budgetsApi.downloadPdfTecnico as any).mockRejectedValueOnce({
+      response: { data: { message: 'Orçamento cancelado.' } },
+    });
+
+    const { result } = renderHook(() => useDownloadPdfTecnico(), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    result.current.mutate({ id: 'orc-err' });
+
+    await waitFor(() => {
+      expect(result.current.isError).toBe(true);
+    });
+
+    expect(toast.error).toHaveBeenCalledWith('Orçamento cancelado.');
   });
 });
 

@@ -128,3 +128,18 @@ export const useApplyDiscount = () => {
     },
   });
 };
+
+export const useDownloadPdfTecnico = () => {
+  return useMutation({
+    mutationFn: ({ id, code }: { id: string; code?: string }) =>
+      budgetsApi.downloadPdfTecnico(id, code),
+    onSuccess: () => {
+      toast.success('PDF da Ficha Técnica baixado com sucesso!');
+    },
+    onError: (error: unknown) => {
+      const err = error as { response?: { data?: { message?: string } } };
+      const message = err?.response?.data?.message || 'Erro ao gerar o PDF técnico.';
+      toast.error(message);
+    },
+  });
+};

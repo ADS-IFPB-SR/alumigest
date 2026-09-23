@@ -8,18 +8,27 @@ import toast from 'react-hot-toast';
 interface BudgetDetailActionsProps {
   readonly budgetId: string;
   readonly budgetCode: string;
+  readonly budgetStatus?: string;
   readonly onDeleteClick: () => void;
+  readonly onDownloadPdfTecnico?: () => void;
+  readonly isDownloadingPdfTecnico?: boolean;
 }
 
 export function BudgetDetailActions({
   budgetId,
   budgetCode,
+  budgetStatus,
   onDeleteClick,
+  onDownloadPdfTecnico,
+  isDownloadingPdfTecnico,
 }: BudgetDetailActionsProps) {
   const navigate = useNavigate();
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const [isCopyingWhatsApp, setIsCopyingWhatsApp] = useState(false);
   const [isDuplicating, setIsDuplicating] = useState(false);
+  const [localDownloadingPdfTecnico, setLocalDownloadingPdfTecnico] = useState(false);
+
+  const isDownloadingTecnico = isDownloadingPdfTecnico ?? localDownloadingPdfTecnico;
 
   const handleDownloadPdfComercial = async () => {
     if (isDownloadingPdf) return;
@@ -51,8 +60,21 @@ export function BudgetDetailActions({
     }
   };
 
-  const handleEmitirViaTecnica = () => {
-    navigate(`/orcamentos/${budgetId}/pdf-tecnico`);
+  const handleEmitirViaTecnica = async () => {
+    if (onDownloadPdfTecnico) {
+      onDownloadPdfTecnico();
+      return;
+    }
+    if (isDownloadingTecnico || budgetStatus === 'CANCELLED') return;
+    try {
+      setLocalDownloadingPdfTecnico(true);
+      await budgetsApi.downloadPdfTecnico(budgetId, budgetCode);
+      toast.success('PDF da Ficha Técnica baixado com sucesso!');
+    } catch {
+      toast.error('Erro ao gerar o PDF técnico.');
+    } finally {
+      setLocalDownloadingPdfTecnico(false);
+    }
   };
 
   const handleDuplicateBudget = async () => {
@@ -139,12 +161,22 @@ export function BudgetDetailActions({
 
       <button
         type="button"
+        data-testid="btn-download-pdf-tecnico"
         onClick={handleEmitirViaTecnica}
-        className="p-2 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-lg border border-outline-variant/60 transition-colors flex items-center gap-1.5 text-xs font-label font-medium cursor-pointer shrink-0"
-        title="Emitir Via Técnica (Oficina)"
+        disabled={isDownloadingTecnico || budgetStatus === 'CANCELLED'}
+        className="p-2 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-lg border border-outline-variant/60 transition-colors flex items-center gap-1.5 text-xs font-label font-medium disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shrink-0"
+        title={
+          budgetStatus === 'CANCELLED'
+            ? 'Não é possível emitir ficha técnica de orçamento cancelado'
+            : 'Emitir Via Técnica de Oficina (PDF de produção sem valores comerciais)'
+        }
       >
-        <span className="material-symbols-outlined text-[18px]">engineering</span>
-        <span className="whitespace-nowrap">Via Técnica</span>
+        <span className={`material-symbols-outlined text-[18px] ${isDownloadingTecnico ? 'animate-spin' : ''}`}>
+          {isDownloadingTecnico ? 'progress_activity' : 'engineering'}
+        </span>
+        <span className="whitespace-nowrap">
+          {isDownloadingTecnico ? 'Gerando...' : 'Via Técnica'}
+        </span>
       </button>
 
       <button

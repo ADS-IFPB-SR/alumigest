@@ -10,6 +10,7 @@ vi.mock('../../../features/budgets/hooks/useBudgets', () => ({
   useBudget: vi.fn(),
   useDeleteBudget: () => ({ mutate: vi.fn(), isPending: false }),
   useUpdateBudgetStatus: () => ({ mutate: vi.fn(), isPending: false }),
+  useDownloadPdfTecnico: () => ({ mutate: vi.fn(), isPending: false }),
 }));
 
 const mockBudgetDetail = {

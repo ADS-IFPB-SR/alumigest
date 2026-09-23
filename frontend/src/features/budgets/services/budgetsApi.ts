@@ -344,6 +344,33 @@ export const budgetsApi = {
     return mapBackendToBudgetItem(response.data);
   },
 
+  downloadPdfTecnico: async (id: string, code?: string): Promise<void> => {
+    const response = await api.get(`/api/budgets/${id}/pdf/tecnico`, {
+      responseType: 'blob',
+      baseURL: '',
+    });
+
+    // Extrai o nome do arquivo do header Content-Disposition se fornecido pelo backend
+    let filename = `${code || id}-tecnico.pdf`;
+    const disposition = (response.headers?.['content-disposition'] || response.headers?.['Content-Disposition']) as string | undefined;
+    if (disposition) {
+      const filenameMatch = disposition.match(/filename\*?=['"]?(?:UTF-8'')?([^;"\n]+)['"]?/i);
+      if (filenameMatch?.[1]) {
+        filename = decodeURIComponent(filenameMatch[1].trim());
+      }
+    }
+
+    const blob = new Blob([response.data], { type: 'application/pdf' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  },
+
   // ============================================================
   // ORÇAMENTOS - DOWNLOAD PDF E ACTIONS
   // ============================================================
