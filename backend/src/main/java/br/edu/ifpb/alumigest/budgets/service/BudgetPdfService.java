@@ -1201,7 +1201,7 @@ public class BudgetPdfService {
 
     private List<String> obterLinhasPuxadorFallback(BudgetItem item) {
         String puxadorOpt = extrairNomeMaterialPorCategoria(item, MaterialCategoryType.HARDWARE);
-        if (puxadorOpt != null && !puxadorOpt.equalsIgnoreCase(PADRAO) && !puxadorOpt.equalsIgnoreCase("Não informado")) {
+        if (puxadorOpt != null && !puxadorOpt.equalsIgnoreCase(PADRAO) && !puxadorOpt.equalsIgnoreCase(NAO_INFORMADO)) {
             return List.of("Modelo: " + puxadorOpt, "Posição padrão centralizada.");
         }
         return List.of("Formato: Padrão do modelo.", "Posição: Lado de abertura.");

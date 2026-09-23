@@ -74,11 +74,8 @@ class BudgetPdfServiceTest {
             byte[] pdfBytes = budgetPdfService.gerarPdfComercial(budget);
 
             assertThat(pdfBytes)
-                    .as("Os bytes do PDF gerado não devem ser nulos")
-                    .isNotNull();
-
-            assertThat(pdfBytes)
-                    .as("O tamanho do array de bytes deve ser maior que zero")
+                    .as("Os bytes do PDF gerado não devem ser nulos e devem ter tamanho maior que zero")
+                    .isNotNull()
                     .hasSizeGreaterThan(0);
 
             String header = new String(pdfBytes, 0, 5, StandardCharsets.US_ASCII);
