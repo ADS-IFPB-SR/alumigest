@@ -34,6 +34,9 @@ public final class BudgetPdfDrawingHelper {
     /** Espessura do marco externo em pontos PDF. */
     private static final float ESPESSURA_MARCO = 1.8f;
 
+    /** Offset de alinhamento perimetral do marco externo em pontos PDF. */
+    private static final float OFFSET_MARCO = ESPESSURA_MARCO / 2f;
+
     private BudgetPdfDrawingHelper() {
         throw new UnsupportedOperationException("Classe utilitária não pode ser instanciada.");
     }
@@ -91,8 +94,7 @@ public final class BudgetPdfDrawingHelper {
     private static void desenharMarcoExterno(PdfTemplate tpl, TemplateVisualContext ctx, float w, float h) {
         tpl.setColorStroke(ctx.frameStroke());
         tpl.setLineWidth(ESPESSURA_MARCO);
-        float offset = ESPESSURA_MARCO / 2f;
-        tpl.rectangle(offset, offset, w - ESPESSURA_MARCO, h - ESPESSURA_MARCO);
+        tpl.rectangle(OFFSET_MARCO, OFFSET_MARCO, w - ESPESSURA_MARCO, h - ESPESSURA_MARCO);
         tpl.stroke();
     }
 }

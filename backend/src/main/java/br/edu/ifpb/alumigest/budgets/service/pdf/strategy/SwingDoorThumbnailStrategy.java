@@ -76,22 +76,20 @@ public class SwingDoorThumbnailStrategy implements TemplateThumbnailStrategy {
             tpl.stroke();
         }
 
-        // Arcos de abertura opostos
+        // Arcos de abertura opostos agrupados em um único stroke
         tpl.setColorStroke(ctx.indicatorColor());
         tpl.setLineWidth(0.5f);
         tpl.setLineDash(2f, 2f, 0f);
 
         float raio = Math.min(folhaW * 0.8f, h * 0.35f);
         tpl.arc(x, y, x + 2 * raio, y + 2 * raio, 0f, 90f);
-        tpl.stroke();
         tpl.arc(x + w - 2 * raio, y, x + w, y + 2 * raio, 90f, 90f);
         tpl.stroke();
         tpl.setLineDash(0f);
 
-        // Puxadores centrais
+        // Puxadores centrais agrupados em um único subcomponente com stroke
         float centroX = x + folhaW;
-        desenharPuxador(tpl, centroX - 3.5f, y + (h / 2) - 7f, 14f, ctx);
-        desenharPuxador(tpl, centroX + 3.5f, y + (h / 2) - 7f, 14f, ctx);
+        desenharPuxadoresCentraisDuplos(tpl, centroX, y + (h / 2) - 7f, 14f, ctx);
     }
 
     private void desenharPuxador(PdfTemplate tpl, float px, float py, float len, TemplateVisualContext ctx) {
@@ -99,6 +97,17 @@ public class SwingDoorThumbnailStrategy implements TemplateThumbnailStrategy {
         tpl.setLineWidth(1.2f);
         tpl.moveTo(px, py);
         tpl.lineTo(px, py + len);
+        tpl.stroke();
+    }
+
+    private void desenharPuxadoresCentraisDuplos(PdfTemplate tpl, float cx, float py, float len,
+                                                TemplateVisualContext ctx) {
+        tpl.setColorStroke(ctx.frameStroke());
+        tpl.setLineWidth(1.2f);
+        tpl.moveTo(cx - 3.5f, py);
+        tpl.lineTo(cx - 3.5f, py + len);
+        tpl.moveTo(cx + 3.5f, py);
+        tpl.lineTo(cx + 3.5f, py + len);
         tpl.stroke();
     }
 }

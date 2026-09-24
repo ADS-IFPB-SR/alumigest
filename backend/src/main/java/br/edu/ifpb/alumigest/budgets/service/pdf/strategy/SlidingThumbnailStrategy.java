@@ -57,18 +57,15 @@ public class SlidingThumbnailStrategy implements TemplateThumbnailStrategy {
         float endX = fx + fw - arrowMargin;
         float arrowHead = Math.min(fw * 0.15f, 4f);
 
+        // Traçado do subcomponente visual completo da seta com stroke único
         tpl.moveTo(startX, centerY);
         tpl.lineTo(endX, centerY);
-        tpl.stroke();
 
         float tipX = paraDireita ? endX : startX;
         float dir = paraDireita ? -1 : 1;
 
-        tpl.moveTo(tipX, centerY);
-        tpl.lineTo(tipX + dir * arrowHead, centerY + arrowHead);
-        tpl.stroke();
-
-        tpl.moveTo(tipX, centerY);
+        tpl.moveTo(tipX + dir * arrowHead, centerY + arrowHead);
+        tpl.lineTo(tipX, centerY);
         tpl.lineTo(tipX + dir * arrowHead, centerY - arrowHead);
         tpl.stroke();
     }
