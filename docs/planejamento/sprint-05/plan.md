@@ -1,12 +1,12 @@
-﻿# Implementation Plan: Sprint 5 — Aprovação de Orçamentos e Pedidos (Lock de Preços)
+# Implementation Plan: Sprint 5 — Aprovação de Orçamentos e Pedidos (Lock de Preços)
 
-**Branch**: `002-pedidos-lock-precos` | **Date**: 2026-08-27 | **Spec**: [spec.md](spec.md)
+**Branch**: `002-pedidos-lock-precos` | **Período da Sprint 05**: 15/09/2026 a 28/09/2026 | **Spec**: [spec.md](spec.md)
 
 **Input**: Feature specification from `specs/002-pedidos-lock-precos/spec.md`
 
 ## Summary
 
-Implementar a formalização da aprovação de orçamentos e a conversão automatizada em Pedidos de Venda vinculantes (`Order` / `OrderItem`), garantindo o congelamento total de preços unitários e especificações técnicas (Lock de Preços). O módulo gerencia o ciclo de vida do pedido (`AGUARDANDO_PRODUCAO` a `CONCLUIDO` / `CANCELADO`), com emissão de Comprovante do Pedido em PDF via OpenPDF e sugestão inteligente de prazo de entrega.
+Implementar a formalização da aprovação de orçamentos e a conversão automatizada em Pedidos de Venda vinculantes (`Order` / `OrderItem`), garantindo o congelamento total de preços unitários e especificações técnicas (Lock de Preços). O módulo gerencia o ciclo de vida do pedido (`AGUARDANDO_PRODUCAO` a `CONCLUIDO` / `CANCELADO`), com emissão de Comprovante do Pedido em PDF via OpenPDF e sugestão inteligente de prazo de entrega. Complementarmente, absorve a homologação contínua da Release 1 (descontinuada como falsa US e convertida em critério de qualidade) através do Definition of Done (DoD) das histórias de saída US-10 e US-11.
 
 ## Technical Context
 

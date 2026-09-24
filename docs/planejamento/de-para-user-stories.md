@@ -21,8 +21,7 @@ Este documento é a **referência oficial de sincronização** entre a numeraç�
 | **US-09** | **US-09 (P1)** | Sprint 04 | Aplicar Descontos Comerciais (Parte 1: Fundação & Modelagem) | [#133](https://github.com/ADS-IFPB-SR/alumigest/issues/133) | 🟢 Concluída |
 | **US-09** | **US-09 (P2)** | Sprint 05 | Aplicar Descontos Comerciais (Parte 2: Validade & Integração) | [#133](https://github.com/ADS-IFPB-SR/alumigest/issues/133) | 🟢 Concluída |
 | **US-10** | **US-10** | Sprint 05 | Emitir e Exportar Orçamento em PDF - Via Comercial e WhatsApp | [#134](https://github.com/ADS-IFPB-SR/alumigest/issues/134) | 🟢 Concluída |
-| **US-11** | **US-11** | Sprint 05 | Emitir Orçamento em PDF - Via Técnica de Oficina (Sigilo Comercial) | [#135](https://github.com/ADS-IFPB-SR/alumigest/issues/135) | 🟢 Concluída (PR #322) |
-| **US-12** | **US-12** | Sprint 04 | Homologação Integrada e Validação da Release 1 (v1.0.0 / Baseline v0.4.0) | [#136](https://github.com/ADS-IFPB-SR/alumigest/issues/136) | 🟡 Em Execução / Homologação (Não Concluída) |
+| **US-12** | ❌ **DESCONTINUADA COMO US** | Sprint 04 / 05 | Homologação Integrada da Release 1 (v1.0.0) | [#136](https://github.com/ADS-IFPB-SR/alumigest/issues/136) | 🛡️ **Incorporada no DoD de US-10 e US-11** (Homologação não é feature) |
 | **US-13** | **US-13** | Sprint 06 | Aprovar Orçamento e Converter em Pedido de Venda | [#137](https://github.com/ADS-IFPB-SR/alumigest/issues/137) | 🔵 Planejada |
 | **US-14** | **US-14** | Sprint 06 | Snapshot Imutável e Lock de Preços do Pedido | [#138](https://github.com/ADS-IFPB-SR/alumigest/issues/138) | 🔵 Planejada |
 | **US-15** | **US-15** | Sprint 06 | Gestão de Status, Prazos e Cancelamento de Pedidos | [#139](https://github.com/ADS-IFPB-SR/alumigest/issues/139) | 🔵 Planejada |
@@ -37,7 +36,7 @@ Este documento é a **referência oficial de sincronização** entre a numeraç�
 | **US-24** | **US-21** | Sprint 08 | Reservar e Baixar Matéria-Prima no Estoque Automaticamente | [#146](https://github.com/ADS-IFPB-SR/alumigest/issues/146) | 🔄 Renumerada (-3) |
 | **US-25** | ❌ **DESCARTADA** | Sprint 08 | Apontar Perdas, Quebras e Descarte de Sucata | — | 🚫 Removida do Escopo |
 | **US-26** | **US-22** | Sprint 08 | Consultar Posição de Estoque e Kardex de Movimentações | [#147](https://github.com/ADS-IFPB-SR/alumigest/issues/147) | 🔄 Renumerada (-4) |
-| **US-27** | **US-23** | Sprint 08 | Homologação Integrada e Validação da Release 2 (v2.0.0) | [#148](https://github.com/ADS-IFPB-SR/alumigest/issues/148) | 🔄 Renumerada (-4) |
+| **US-27** | ❌ **DESCONTINUADA COMO US** | Sprint 08 | Homologação Integrada da Release 2 (v2.0.0) | [#148](https://github.com/ADS-IFPB-SR/alumigest/issues/148) | 🛡️ **Incorporada no DoD de US-22** (Homologação não é feature) |
 | **US-28** | **US-24** | Sprint 09 | Gerar Cobrança PIX com QR Code Dinâmico e Copia e Cola | [#149](https://github.com/ADS-IFPB-SR/alumigest/issues/149) | 🔄 Renumerada (-4) |
 | **US-29** | **US-25** | Sprint 09 | Confirmar Pagamento PIX via Webhook com Liberação Automática | [#150](https://github.com/ADS-IFPB-SR/alumigest/issues/150) | 🔄 Renumerada (-4) |
 | **US-30** | **US-26** | Sprint 09 | Modal PIX Interativo no Frontend e Histórico de Transações | [#151](https://github.com/ADS-IFPB-SR/alumigest/issues/151) | 🔄 Renumerada (-4) |
@@ -58,7 +57,7 @@ Este documento é a **referência oficial de sincronização** entre a numeraç�
 | **US-45** | **US-38** | Sprint 14 | Sincronizar Fila de Alterações e Fotos em Segundo Plano | [#163](https://github.com/ADS-IFPB-SR/alumigest/issues/163) | 🔄 Renumerada (-7) |
 | **US-46** | **US-39** | Sprint 14 | Comprimir Imagens no Dispositivo e Otimizar Performance Web | [#164](https://github.com/ADS-IFPB-SR/alumigest/issues/164) | 🔄 Renumerada (-7) |
 | **US-47** | **US-40** | Sprint 15 | Executar Carga Inicial de Dados e Importador de Clientes via CSV | [#165](https://github.com/ADS-IFPB-SR/alumigest/issues/165) | 🔄 Renumerada (-7) |
-| **US-48** | **US-41** | Sprint 15 | Homologação Integrada Ponta a Ponta da Release 3 (v3.0.0) | [#166](https://github.com/ADS-IFPB-SR/alumigest/issues/166) | 🔄 Renumerada (-7) |
+| **US-48** | ❌ **DESCONTINUADA COMO US** | Sprint 15 | Homologação Integrada Ponta a Ponta da Release 3 (v3.0.0) | [#166](https://github.com/ADS-IFPB-SR/alumigest/issues/166) | 🛡️ **Incorporada no DoD de US-42** (Homologação não é feature) |
 | **US-49** | **US-42** | Sprint 15 | Disponibilizar Guias de Treinamento por Perfil e Central de Ajuda | [#167](https://github.com/ADS-IFPB-SR/alumigest/issues/167) | 🔄 Renumerada (-7) |
 | **US-50** | **US-43** | Sprint 16 | Executar Rotinas de Backup Automático e Disaster Recovery | [#168](https://github.com/ADS-IFPB-SR/alumigest/issues/168) | 🔄 Renumerada (-7) |
 | **US-51** | **US-44** | Sprint 16 | Registrar Trilha de Auditoria Imutável para Ações Críticas | [#169](https://github.com/ADS-IFPB-SR/alumigest/issues/169) | 🔄 Renumerada (-7) |
@@ -69,14 +68,8 @@ Este documento é a **referência oficial de sincronização** entre a numeraç�
 ## 📌 Resumo da Regra de Conversão por Bloco
 
 - **Sprints 01 a 03 (`US-01` a `US-08`)**: 🟢 Concluídas (Infraestrutura, Catálogo, Produtos Paramétricos, Clientes, Motor de Cálculo, CI/CD).
-- **Sprint 04**: 🟡 Em Execução / Homologação (`US-09 (Parte 1: Fundação & Modelagem)` [🟢 Concluída] e `US-12 (Homologação R1)` [🟡 Em Homologação]).
-- **Sprint 05**: 🟢 Concluída / Em Homologação (`US-09 (Parte 2: Validade & Integração)`, `US-10 (PDF Comercial e WhatsApp)` e `US-11 (PDF Técnico de Oficina / PR #322)`).
-- **Sprint 06 (Transição Release 2 - Pedidos de Venda & Fábrica)**:
-  - `US-13` a `US-16`: Aprovação, Lock de Preços, Status e Comprovante de Pedido.
-  - Antiga `US-17` (OPs) e Antiga `US-19` (Scanner QR): **Descartadas**.
-  - Antiga `US-18` (Etiquetas): virou **`US-17`** ([#142](https://github.com/ADS-IFPB-SR/alumigest/issues/142)).
-  - Antiga `US-20` (Kanban): virou **`US-18`** ([#143](https://github.com/ADS-IFPB-SR/alumigest/issues/143)).
-- **Sprint 05**: 🟢 Concluída / Em Homologação (`US-09 (Parte 2: Validade & Integração)`, `US-10 (PDF Comercial e WhatsApp)` e `US-11 (PDF Técnico de Oficina / PR #322)`).
+- **Sprint 04**: 🟢 Concluída (`quality #245`, `US-05 #126`, `US-46 #172` e `US-09 (Parte 1: Fundação & Modelagem)`). A antiga demanda de homologação da Release 1 foi descontinuada como história e incorporada no Definition of Done (DoD) de US-10 e US-11.
+- **Sprint 05**: 🟢 Concluída / Em Homologação (`US-09 (Parte 2: Validade & Integração)`, `US-10 (PDF Comercial e WhatsApp)` e `US-11 (PDF Técnico de Oficina / PR #322)`). O encerramento de US-10 e US-11 homologa integralmente a Release 1 (v1.0.0).
 - **Sprint 06 (Transição Release 2 - Pedidos de Venda & Fábrica)**:
   - `US-13` a `US-16`: Aprovação, Lock de Preços, Status e Comprovante de Pedido.
   - Antiga `US-17` (OPs) e Antiga `US-19` (Scanner QR): **Descartadas**.
@@ -90,7 +83,7 @@ Este documento é a **referência oficial de sincronização** entre a numeraç�
   - Antiga `US-24` (Reserva e Baixa de Estoque): virou **`US-21`** ([#146](https://github.com/ADS-IFPB-SR/alumigest/issues/146), `-3`).
   - Antiga `US-25` (Perdas e Sucata): **Descartada**.
   - Antiga `US-26` (Posição e Kardex): virou **`US-22`** ([#147](https://github.com/ADS-IFPB-SR/alumigest/issues/147), `-4`).
-  - Antiga `US-27` (Homologação Release 2): virou **`US-23`** ([#148](https://github.com/ADS-IFPB-SR/alumigest/issues/148), `-4`).
+  - Antiga `US-27` (Homologação Release 2): virou **`US-23`** ([#148](https://github.com/ADS-IFPB-SR/alumigest/issues/148)) -> **Descontinuada como US**, critérios absorvidos no DoD de US-22.
 - **Sprint 09 (`US-28` a `US-30` antigas)**:
   - Deslocamento contínuo em **`-4`**: **`US-24`** ([#149](https://github.com/ADS-IFPB-SR/alumigest/issues/149)), **`US-25`** ([#150](https://github.com/ADS-IFPB-SR/alumigest/issues/150)), **`US-26`** ([#151](https://github.com/ADS-IFPB-SR/alumigest/issues/151)).
 - **Sprint 10 (`US-31` a `US-33` antigas)**:
@@ -106,3 +99,4 @@ Este documento é a **referência oficial de sincronização** entre a numeraç�
   - Antiga `US-40` (OS em PDF): virou **`US-33`** (`-7`).
 - **Sprints 13 a 16 (`US-41` a `US-52` antigas)**:
   - Todas deslocadas em **`-7`**: `US_Nova = US_Antiga - 7` (totalizando até a **`US-45`**).
+  - Antiga `US-48` (Homologação Release 3): virou **`US-41`** ([#166](https://github.com/ADS-IFPB-SR/alumigest/issues/166)) -> **Descontinuada como US**, critérios absorvidos no DoD de US-42.

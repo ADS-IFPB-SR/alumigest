@@ -4,7 +4,7 @@ import { parseCurrencyString } from '../../../utils/formatters';
 const basePriceRefinement = (data: { costPrice: string; salePrice: string }, ctx: z.RefinementCtx) => {
   const cost = parseCurrencyString(data.costPrice);
   const sale = parseCurrencyString(data.salePrice);
-  
+
   if (cost <= 0) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'O preço de custo deve ser maior que zero.', path: ['costPrice'] });
   }
@@ -57,7 +57,7 @@ export const hardwareSchema = z.object({
 export type HardwareFormValues = z.infer<typeof hardwareSchema>;
 
 export const filmSchema = z.object({
-  skuCode: z.string().optional().transform(v => v ? v.toUpperCase() : undefined),
+  skuCode: z.string().optional(),
   name: z.string().min(1, 'A descrição é obrigatória.').transform(v => v.toUpperCase()),
   ncmCode: z.string().optional(),
   filmType: z.string().min(1, 'O tipo é obrigatório.').transform(v => v.toUpperCase()),

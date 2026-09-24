@@ -2,7 +2,7 @@
 
 > **Padrão**: User Stories sequenciais no projeto com Sub-tarefas decimais (`US-XX.Y`).
 
-> ℹ️ **Status Consolidado da Sprint 05**:  
+> ℹ️ **Status Consolidado da Sprint 05 (15/09/2026 a 28/09/2026)**:  
 > - **US-09 (Parte 2: US-09.20 a US-09.40)**: 🟢 **Concluída** (Validade de 15 dias, descontos no frontend, listagem e filtros).  
 > - **US-10 (US-10.1 a US-10.10)**: 🟢 **Concluída** (Emissão de PDF Comercial e resumo WhatsApp).  
 > - **US-11 (US-11.1 a US-11.5)**: 🟢 **Concluída** (Emissão de PDF Técnico de Oficina sob sigilo comercial via PR #322).  

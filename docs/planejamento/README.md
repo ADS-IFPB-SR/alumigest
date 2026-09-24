@@ -21,18 +21,18 @@ Este diretório centraliza a documentação de planejamento, especificações de
 | **Release 1 (v1.0.0)** | [Sprint 01](sprint-01/spec.md) | Iniciação, Governança e Infraestrutura Base | `US-01` | **4** | 🟢 Concluída |
 | **Release 1 (v1.0.0)** | [Sprint 02](sprint-02/spec.md) | Catálogo de Materiais e Fichas Técnicas | `US-02`, `US-03` | **8** | 🟢 Concluída |
 | **Release 1 (v1.0.0)** | [Sprint 03](sprint-03/spec.md) | Clientes, Motor de Orçamentos e Templates | `US-04`, `US-05`, `US-06`, `US-07`, `US-08` | **12** | 🟢 Concluída |
-| **Release 1 (v1.0.0)** | [Sprint 04](sprint-04/spec.md) | Fundação de Descontos e Homologação R1 | `US-09 (P1)`, `US-12` | **29** | 🟡 Em Homologação (US-12 em aberto) |
-| **Release 1 (v1.0.0)** | [Sprint 05](sprint-05/spec.md) | Conclusão de Descontos, PDFs em 2 Vias e WhatsApp | `US-09 (P2)`, `US-10`, `US-11` | **36** | 🟢 Concluída / Em Homologação |
+| **Release 1 (v1.0.0)** | [Sprint 04](sprint-04/spec.md) | Templates SVG, Budget V2, Descontos Base e Quality SonarQube | `quality #245`, `US-05`, `US-46`, `US-09 (P1)` | **41** | 🟢 Concluída |
+| **Release 1 (v1.0.0)** | [Sprint 05](sprint-05/spec.md) | Conclusão de Descontos, PDFs em 2 Vias e Homologação R1 via DoD | `US-09 (P2)`, `US-10`, `US-11` (DoD R1) | **36** | 🟢 Concluída / Em Homologação |
 | **Release 2 (v2.0.0)** | [Sprint 06](sprint-06/spec.md) | Pedidos de Venda, Lock de Preços e Transição Fabril | `US-13`, `US-14`, `US-15`, `US-16` | **43** | 🔵 Planejada |
 | **Release 2 (v2.0.0)** | [Sprint 07](sprint-07/spec.md) | Etiquetas de Identificação de Peças e Kanban | `US-17`, `US-18` | **11** | 🔵 Planejada |
-| **Release 2 (v2.0.0)** | [Sprint 08](sprint-08/spec.md) | Lista de Corte, Ficha de Montagem e Kardex | `US-19`, `US-20`, `US-21`, `US-22`, `US-23` | **40** | 🔵 Planejada |
+| **Release 2 (v2.0.0)** | [Sprint 08](sprint-08/spec.md) | Lista de Corte, Ficha de Montagem e Kardex | `US-19`, `US-20`, `US-21`, `US-22` (DoD R2) | **40** | 🔵 Planejada |
 | **Release 3 (v3.0.0)** | [Sprint 09](sprint-09/spec.md) | Integração de Pagamento PIX e Webhooks | `US-24`, `US-25`, `US-26` | **27** | 🔵 Planejada |
 | **Release 3 (v3.0.0)** | [Sprint 10](sprint-10/spec.md) | Contas a Receber, Parcelamento e Inadimplência | `US-27`, `US-28`, `US-29` | **25** | 🔵 Planejada |
 | **Release 3 (v3.0.0)** | [Sprint 11](sprint-11/spec.md) | Fluxo de Caixa Mensal | `US-30` | **10** | 🔵 Planejada |
 | **Release 3 (v3.0.0)** | [Sprint 12](sprint-12/spec.md) | Gestão de Instalações, Execução em Campo (OS) e Agenda | `US-31`, `US-32`, `US-33` | **24** | 🔵 Planejada |
 | **Release 3 (v3.0.0)** | [Sprint 13](sprint-13/spec.md) | Dashboard Executivo, KPIs e DRE Gerencial | `US-34`, `US-35`, `US-36` | **21** | 🔵 Planejada |
 | **Release 3 (v3.0.0)** | [Sprint 14](sprint-14/spec.md) | Modo PWA/Offline para Instaladores e Performance | `US-37`, `US-38`, `US-39` | **21** | 🔵 Planejada |
-| **Release 3 (v3.0.0)** | [Sprint 15](sprint-15/spec.md) | Treinamento dos Usuários, Carga Real e Homologação R3 | `US-40`, `US-41`, `US-42` | **24** | 🔵 Planejada |
+| **Release 3 (v3.0.0)** | [Sprint 15](sprint-15/spec.md) | Treinamento dos Usuários, Carga Real e Manuais | `US-40`, `US-42` (DoD R3) | **24** | 🔵 Planejada |
 | **Sustentação** | [Sprint 16](sprint-16/spec.md) | Estabilização pós-implantação, Backup e Auditoria | `US-43`, `US-44`, `US-45` | **23** | 🔵 Planejada |
 
 ---
@@ -40,8 +40,8 @@ Este diretório centraliza a documentação de planejamento, especificações de
 ### 📊 Resumo Consolidado do Projeto AlumiGest
 
 - **Total de Sprints**: **16 Sprints (Sprints 01 a 16)**
-- **Total de User Stories (Pais)**: **45 User Stories Sequenciais (`US-01` a `US-45`)**
-- **Total Geral de Sub-Tarefas / Issues Ativas**: **357 Issues individuais** com checklists executáveis
+- **Total de User Stories (Pais)**: **42 User Stories Funcionais (`US-01` a `US-45`, com homologações de R1, R2 e R3 integradas no DoD contínuo)**
+- **Total Geral de Sub-Tarefas / Issues Ativas**: **347 Issues individuais** de features com checklists executáveis
 - **Padrão de Sub-tarefas**: **Decimal (`US-XX.Y`)**
 - **Arquitetura & Qualidade**: Clean Architecture, Package-by-Feature, Records Java, Spring Boot 3.4, React PWA, BDD/Gherkin e SonarQube Quality Gate.
 

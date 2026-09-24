@@ -1,9 +1,9 @@
-# 📋 Lista de Tarefas (Tasks) — Sprint 04 — Descontos Comerciais (Parte 1: Fundação & Modelagem) e Homologação R1
+# 📋 Lista de Tarefas (Tasks) — Sprint 04 — Descontos Comerciais (Parte 1: Fundação & Modelagem)
 
 > **Padrão**: User Stories sequenciais no projeto com Sub-tarefas decimais (`US-XX.Y`).
 
 > ℹ️ **Divisão de Escopo entre Sprints 04 e 05**:  
-> - **Sprint 04**: Cobriu a **US-09 (Parte 1: tarefas US-09.1 a US-09.19)** (🟢 Concluída: modelagem Flyway V8, entidades, DTOs, regras de cálculo decimais) e a **US-12 (Homologação R1 / Baseline v0.4.0)** (🟡 Em Homologação - Não Concluída).  
+> - **Sprint 04**: Cobriu a **US-09 (Parte 1: tarefas US-09.1 a US-09.19)** (🟢 Concluída: modelagem Flyway V8, entidades, DTOs, regras de cálculo decimais). A antiga demanda de homologação da Release 1 foi descontinuada como história e absorvida no DoD de US-10 e US-11 na Sprint 05.  
 > - **Sprint 05**: Cobriu a **US-09 (Parte 2: tarefas US-09.20 a US-09.40)**, a **US-10 (PDF Comercial e WhatsApp)** e a **US-11 (PDF Técnico de Oficina)**.
 
 ---
@@ -95,34 +95,11 @@
 
 ---
 
-## 📦 US-12: Homologação Integrada e Validação da Release 1 (v1.0.0 / Baseline v0.4.0)
-**Status**: 🟡 Em Execução / Homologação (Não Concluída) ([Issue #136](https://github.com/ADS-IFPB-SR/alumigest/issues/136))
+## 🛡️ Homologação Integrada da Release 1 (v1.0.0) — [Incorporada no DoD de US-10 e US-11]
+**Status de Governança**: 🛡️ **Critérios Incorporados no DoD da Sprint 05** ([Issue #136](https://github.com/ADS-IFPB-SR/alumigest/issues/136))
 
-> **Descrição**: Validar a integração ponta a ponta da Release 1 (Catálogo de Insumos -> Produto Paramétrico -> Motor de Cálculo -> Orçamento com Desconto -> PDFs Comercial e Técnico), assegurando cobertura de testes e aprovação no SonarQube Quality Gate.
+> ℹ️ **Decisão de Governança Técnica & Engenharia Ágil**:  
+> Conforme acordado entre o Product Owner e a equipe de Engenharia do AlumiGest, **atividades de homologação, testes E2E e quality gates não constituem User Stories**, visto que não implementam funcionalidades de negócio perceptíveis ao usuário final.  
+> Dessa forma, a antiga demanda isolada de homologação da Release 1 foi formalmente descontinuada como história de usuário independente. Todos os seus critérios de verificação técnica (pirâmide de testes Maven/Vitest, SonarQube Quality Gate $\ge 80\%$, testes de responsividade mobile e validação do fluxo do `quickstart.md`) foram **incorporados diretamente como Definition of Done (DoD) e Critérios de Aceitação das histórias US-10 (PDF Comercial & WhatsApp) e US-11 (PDF Técnico de Oficina) na [Sprint 05](../sprint-05/tasks.md)**.
 
-| ID | Tarefa | Status |
-|---|---|:---:|
-| **US-12.1** | [US-12.1](issues/US-12.1-executar-mvn-clean-verify-e-corrigir-qualquer/issue.md) Executar `mvn clean verify` e corrigir qualquer falha nos testes unitários e de integração do backend | 🟡 Em Homologação |
-| **US-12.2** | [US-12.2](issues/US-12.2-executar-npm-run-build-no-frontend-e-corrigir/issue.md) Executar `npm run build` no frontend e corrigir erros de compilação TypeScript | 🟡 Em Homologação |
-| **US-12.3** | [US-12.3](issues/US-12.3-validar-os-cenarios-de-quickstart-md-cenarios/issue.md) Validar os cenários de quickstart.md (Cenários 1 a 7) manualmente no ambiente local | 🔲 Pendente |
-| **US-12.4** | [US-12.4](issues/US-12.4-verificar-que-o-sonarqube-quality-gate-passa-/issue.md) Verificar que o SonarQube Quality Gate passa no pipeline de CI do GitHub Actions | 🟡 Em Homologação |
-| **US-12.5** | [US-12.5](issues/US-12.5-documentar-resultado-dos-testes-de-aceitacao-/issue.md) Documentar resultado dos Testes de Aceitação (TEA) da Release 1 em `docs/projeto-001/003-teste/TEA-Testes_de_Aceitacao_Sprint04.md` | 🔲 Pendente |
-| **US-12.6** | [US-12.6](issues/US-12.6-adicionar-documentacao-openapi-swagger-nos-en/issue.md) Adicionar documentação OpenAPI/Swagger nos endpoints do `BudgetController` com anotações `@Operation`, `@ApiResponse` do springdoc | 🔲 Pendente |
-| **US-12.7** | [US-12.7](issues/US-12.7-atualizar-o-link-de-navegacao-no-sidebar-menu/issue.md) Atualizar o link de navegação no sidebar/menu do frontend para incluir "Orçamentos" com ícone Lucide | 🔲 Pendente |
-| **US-12.8** | [US-12.8](issues/US-12.8-revisar-e-garantir-responsividade-mobile-pwa-/issue.md) Revisar e garantir responsividade mobile (PWA) nas telas de orçamentos | 🔲 Pendente |
-| **US-12.9** | [US-12.9](issues/US-12.9-validar-tratamento-de-campos-ausentes-no-pdf-/issue.md) Validar tratamento de campos ausentes no PDF (cliente sem CPF/endereço → exibir "Não informado") | 🔲 Pendente |
-| **US-12.10** | [US-12.10](issues/US-12.10-executar-validacao-completa-do-quickstart-md-/issue.md) Executar validação completa do `quickstart.md` e marcar checklist final | 🔲 Pendente |
-
-### Detalhamento das Tarefas (Checklist):
-
-- [ ] **US-12.1**: Executar `mvn clean verify` e corrigir qualquer falha nos testes unitários e de integração do backend
-- [ ] **US-12.2**: Executar `npm run build` no frontend e corrigir erros de compilação TypeScript
-- [ ] **US-12.3**: Validar os cenários de quickstart.md (Cenários 1 a 7) manualmente no ambiente local
-- [ ] **US-12.4**: Verificar que o SonarQube Quality Gate passa no pipeline de CI do GitHub Actions
-- [ ] **US-12.5**: Documentar resultado dos Testes de Aceitação (TEA) da Release 1 em `docs/projeto-001/003-teste/TEA-Testes_de_Aceitacao_Sprint04.md`
-- [ ] **US-12.6**: Adicionar documentação OpenAPI/Swagger nos endpoints do `BudgetController` com anotações `@Operation`, `@ApiResponse` do springdoc
-- [ ] **US-12.7**: Atualizar o link de navegação no sidebar/menu do frontend para incluir "Orçamentos" com ícone Lucide
-- [ ] **US-12.8**: Revisar e garantir responsividade mobile (PWA) nas telas de orçamentos
-- [ ] **US-12.9**: Validar tratamento de campos ausentes no PDF (cliente sem CPF/endereço → exibir "Não informado")
-- [ ] **US-12.10**: Executar validação completa do `quickstart.md` e marcar checklist final
 

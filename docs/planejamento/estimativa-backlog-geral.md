@@ -1,6 +1,6 @@
 # 📊 Matriz Mestre de Estimativas do Product Backlog (US-01 a US-45)
 
-Este documento consolida a **estimativa completa do Product Backlog** do projeto **AlumiGest**, abrangendo todas as **45 User Stories ativas** distribuídas pelas **16 Sprints (Releases 1, 2, 3 e Sustentação)**.
+Este documento consolida a **estimativa completa do Product Backlog** do projeto **AlumiGest**, abrangendo todas as **42 User Stories ativas** (numeração de US-01 a US-45) distribuídas pelas **16 Sprints (Releases 1, 2, 3 e Sustentação)**.
 
 > 🎯 **Objetivo**: Atender à exigência formal do acompanhamento ágil da disciplina e do projeto, servindo como base técnica para a dinâmica de **Planning Poker** da equipe.
 > 
@@ -19,11 +19,11 @@ A atribuição de Story Points considera **Complexidade do Domínio**, **Incerte
 | **3 pts** | **Baixa** | CRUD padrão com validação Jakarta/Bean Validation, 1 ou 2 telas reativas e endpoints REST diretos. | `US-01` (Setup), `US-04` (Clientes), `US-26` (Modal PIX), `US-29` (Extrato), `US-33` (PDF OS), `US-36` (Export CSV), `US-42` (Manuais) |
 | **5 pts** | **Média** | Módulo com múltiplas entidades relacionadas, regras de negócio financeiras/fiscais, filtros complexos ou wizards em etapas. | `US-02` (Materiais), `US-03` (Fichas), `US-08` (CI/CD), `US-09` (Descontos), `US-11` (PDF Oficina), `US-13` (Conversão Pedido), `US-15` (Status), `US-16` (Comprovante), `US-17` (Etiquetas), `US-18` (Kanban), `US-20` (Ficha Montagem), `US-22` (Kardex), `US-27` (Parcelamento), `US-28` (Contas a Receber), `US-30` (Fluxo Mensal), `US-32` (Calendário), `US-39` (Compressão), `US-40` (Carga CSV), `US-43` (Backup), `US-44` (Auditoria) |
 | **8 pts** | **Alta** | Módulos com alta complexidade algorítmica, renderização gráfica paramétrica (SVG), fórmulas matemáticas, relatórios PDF milimétricos, lock imutável ou modo offline com sincronização. | `US-05` (Templates Paramétricos), `US-07` (Motor de Cálculo), `US-06` (Orçamentos), `US-10` (PDF Orçamento), `US-14` (Lock de Preços), `US-19` (Lista de Corte), `US-21` (Reserva/Baixa Estoque), `US-24` (Cobrança PIX), `US-25` (Webhook PIX), `US-31` (OS em Campo PWA), `US-34` (Dashboard), `US-35` (DRE), `US-37` (PWA Offline), `US-38` (Fila Offline) |
-| **13 pts** | **Muito Alta / Épica** | Histórias com múltiplos pontos de integração ponta a ponta, dependências externas críticas ou homologação geral de release cobrindo regressão de múltiplos módulos. | `US-12` (Homologação R1), `US-23` (Homologação R2), `US-41` (Homologação R3) |
+| **13 pts** | **Muito Alta / Épica** | Módulos de altíssima complexidade integrando múltiplos serviços críticos externos (no AlumiGest, homologações de release não pontuam como USs e foram absorvidas no DoD). | — |
 
 ---
 
-## 🗺️ 2. Tabela Geral de Estimativas: 45 User Stories Ativas
+## 🗺️ 2. Tabela Geral de Estimativas: 42 User Stories Ativas
 
 ### 🚀 Release 1 (v1.0.0) — Catálogo, Motor de Orçamentos e Homologação Inicial
 
@@ -40,7 +40,7 @@ A atribuição de Story Points considera **Complexidade do Domínio**, **Incerte
 | **US-09** | [#133](https://github.com/ADS-IFPB-SR/alumigest/issues/133) | Aplicar Descontos e Condições Comerciais no Orçamento | `Sprint 04` | Descontos em % e R$, taxas de frete/instalação, prazos de validade e recálculo em memória. | **5** | |
 | **US-10** | [#134](https://github.com/ADS-IFPB-SR/alumigest/issues/134) | Emitir e Exportar Orçamento em PDF - Via Comercial e WhatsApp | `Sprint 04` | Geração de PDF oficial OpenPDF, layout comercial institucional e cópia WhatsApp. | **8** | |
 | **US-11** | [#135](https://github.com/ADS-IFPB-SR/alumigest/issues/135) | Emitir Orçamento em PDF - Via Técnica de Oficina | `Sprint 04` | Layout técnico para serralheria com cotas, sentidos de abertura e supressão de valores. | **5** | |
-| **US-12** | [#136](https://github.com/ADS-IFPB-SR/alumigest/issues/136) | Homologação Integrada e Validação da Release 1 (v1.0.0) | `Sprint 04` | Testes integrados ponta a ponta (Insumo ➔ Produto ➔ Orçamento ➔ PDF), carga de homologação. | **13** | |
+| **US-12** | [#136](https://github.com/ADS-IFPB-SR/alumigest/issues/136) | 🛡️ *[DESCONTINUADA COMO US]* Homologação Integrada da Release 1 | `Sprint 04/05` | Critérios de homologação e qualidade absorvidos integralmente no DoD das histórias US-10 e US-11 (não contabiliza pontos de feature). | **0 (DoD)** | |
 
 ---
 
@@ -58,7 +58,7 @@ A atribuição de Story Points considera **Complexidade do Domínio**, **Incerte
 | **US-20** | [#145](https://github.com/ADS-IFPB-SR/alumigest/issues/145) | Gerar Ficha Técnica de Montagem por Item do Pedido | `Sprint 07` | Roteiro passo a passo com orientações, ferragens e componentes necessários por peça. | **5** | |
 | **US-21** | [#146](https://github.com/ADS-IFPB-SR/alumigest/issues/146) | Reservar e Baixar Matéria-Prima no Estoque Automaticamente | `Sprint 08` | Reserva automática na confirmação e baixa real definitiva no início da produção dos itens. | **8** | |
 | **US-22** | [#147](https://github.com/ADS-IFPB-SR/alumigest/issues/147) | Consultar Posição de Estoque e Kardex de Movimentações | `Sprint 08` | Histórico cronológico auditável de movimentações, saldo físico/reservado/disponível e alertas. | **5** | |
-| **US-23** | [#148](https://github.com/ADS-IFPB-SR/alumigest/issues/148) | Homologação Integrada e Validação da Release 2 (v2.0.0) | `Sprint 08` | Validação integrada do ciclo produtivo completo (Orçamento ➔ Pedido ➔ Chão de Fábrica ➔ Estoque). | **13** | |
+| **US-23** | [#148](https://github.com/ADS-IFPB-SR/alumigest/issues/148) | 🛡️ *[DESCONTINUADA COMO US]* Homologação Integrada da Release 2 | `Sprint 08` | Critérios de homologação absorvidos integralmente no DoD da história US-22 (não contabiliza pontos de feature). | **0 (DoD)** | |
 
 ---
 
@@ -83,7 +83,7 @@ A atribuição de Story Points considera **Complexidade do Domínio**, **Incerte
 | **US-38** | [#163](https://github.com/ADS-IFPB-SR/alumigest/issues/163) | Sincronizar Fila de Alterações e Fotos em Segundo Plano | `Sprint 14` | Background Sync e fila offline resiliente para envio automático de fotos e status reconectados. | **8** | |
 | **US-39** | [#164](https://github.com/ADS-IFPB-SR/alumigest/issues/164) | Comprimir Imagens no Dispositivo e Otimizar Performance Web | `Sprint 14` | Compressão de imagens antes do envio no PWA, lazy loading de rotas e performance web. | **5** | |
 | **US-40** | [#165](https://github.com/ADS-IFPB-SR/alumigest/issues/165) | Executar Carga Inicial de Dados e Importador de Clientes via CSV | `Sprint 15` | Parser CSV em lote com validações de duplicidade e carga mestre de materiais via Flyway. | **5** | |
-| **US-41** | [#166](https://github.com/ADS-IFPB-SR/alumigest/issues/166) | Homologação Integrada Ponta a Ponta da Release 3 (v3.0.0) | `Sprint 15` | Homologação funcional E2E completa: Orçamento ➔ Pedido ➔ PIX ➔ OS Campo ➔ DRE. | **13** | |
+| **US-41** | [#166](https://github.com/ADS-IFPB-SR/alumigest/issues/166) | 🛡️ *[DESCONTINUADA COMO US]* Homologação Integrada Ponta a Ponta da Release 3 | `Sprint 15` | Critérios de homologação absorvidos integralmente no DoD da história US-42 (não contabiliza pontos de feature). | **0 (DoD)** | |
 | **US-42** | [#167](https://github.com/ADS-IFPB-SR/alumigest/issues/167) | Disponibilizar Guias de Treinamento por Perfil e Central de Ajuda | `Sprint 15` | Manuais operacionais em PDF embarcados na aplicação para cada perfil de usuário. | **3** | |
 
 ---
@@ -100,31 +100,34 @@ A atribuição de Story Points considera **Complexidade do Domínio**, **Incerte
 
 ## 🚫 3. Histórias Descartadas por Decisão de Negócio (Registro de Governança)
 
-As 7 histórias a seguir foram analisadas pelo time e descontinuadas do escopo ativo do projeto para manter o foco na entrega enxuta e de alto valor:
+As histórias a seguir foram analisadas pelo time e descontinuadas do escopo funcional ativo do projeto para manter o foco na entrega enxuta e de alto valor:
 
 | ID Original (PO) | Título Original | Sprint Original | Motivo do Descarte |
 | :---: | :--- | :---: | :--- |
+| **US-12** | Homologação Integrada e Validação da Release 1 (v1.0.0) | Sprint 04 / 05 | **Homologação não é User Story**. Não implementa feature. Seus critérios foram convertidos em Definition of Done (DoD) contínuo das histórias US-10 e US-11. |
 | **US-17** | Gerar Ordens de Produção (OP) Individuais por Peça | Sprint 06 | Produção gerenciada diretamente a partir do Pedido de Venda e seus itens no Kanban. |
 | **US-19** | Atualizar Status de Produção via Scanner de QR Code | Sprint 06 | Atualização operacional direta via cartões no painel Kanban da fábrica. |
 | **US-23** | Emitir Romaneio de Oficina em PDF com Checklist de Conferência | Sprint 07 | Substituído pela Lista de Corte consolidada e Ficha Técnica por item na tela do pedido. |
 | **US-25** | Apontar Perdas, Quebras e Descarte de Sucata | Sprint 08 | Controle de perdas simplificado, mantendo o controle patrimonial via Kardex de movimentações. |
+| **US-27 (US-23)** | Homologação Integrada e Validação da Release 2 (v2.0.0) | Sprint 08 | **Homologação não é User Story**. Não implementa feature. Seus critérios foram convertidos em Definition of Done (DoD) contínuo da história US-22. |
 | **US-34** | Realizar Baixa Financeira Manual com Parciais, Juros e Descontos | Sprint 11 | Foco em recebimentos automatizados via PIX dinâmico e gestão de títulos a receber. |
 | **US-36** | Emitir Relatório de Fechamento de Caixa Diário em PDF | Sprint 11 | Foco estratégico e consolidado no **Fluxo de Caixa Mensal**. |
 | **US-37** | Agendar Instalação e Gerar Ordem de Serviço (OS) | Sprint 12 | Agendamento manual avulso desnecessário; controle vinculado diretamente ao fluxo do pedido. |
+| **US-48 (US-41)** | Homologação Integrada Ponta a Ponta da Release 3 (v3.0.0) | Sprint 15 | **Homologação não é User Story**. Não implementa feature. Seus critérios foram convertidos em Definition of Done (DoD) contínuo da história US-42. |
 
 ---
 
 ## 📈 4. Resumo Consolidado das Estimativas Sugeridas
 
-* **Total de User Stories Ativas**: **45 Histórias**
-* **Soma Total dos Story Points Sugeridos**: **279 Pontos**
+* **Total de User Stories Ativas**: **42 Histórias Funcionais**
+* **Soma Total dos Story Points Sugeridos**: **240 Pontos** (13 pts de cada uma das 3 homologações R1, R2 e R3 transferidos para o DoD de qualidade contínua)
 * **Distribuição de Complexidade Sugerida**:
   * **2 pontos (Muito Baixa)**: 1 história (2%)
-  * **3 pontos (Baixa Complexidade)**: 7 histórias (16%)
-  * **5 pontos (Média Complexidade)**: 20 histórias (44%)
-  * **8 pontos (Alta Complexidade)**: 14 histórias (31%)
-  * **13 pontos (Muito Alta / Homologação)**: 3 histórias (7%)
-* **Média de Pontos por Sprint**: **~17.4 Story Points por Sprint** *(ritmo ideal para uma equipe de 5 desenvolvedores com capacidade média entre 16 e 20 pts por ciclo quinzenal)*.
+  * **3 pontos (Baixa Complexidade)**: 7 histórias (17%)
+  * **5 pontos (Média Complexidade)**: 20 histórias (48%)
+  * **8 pontos (Alta Complexidade)**: 14 histórias (33%)
+  * **13 pontos (Muito Alta / Homologação R1/R2/R3)**: 0 histórias (0% — convertidas em DoD contínuo)
+* **Média de Pontos por Sprint**: **15.0 Story Points por Sprint** *(ritmo ideal e sustentável para uma equipe de 5 desenvolvedores com capacidade média entre 15 e 18 pts por ciclo quinzenal)*.
 
 ---
 

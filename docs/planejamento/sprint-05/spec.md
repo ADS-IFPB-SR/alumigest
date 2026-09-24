@@ -2,8 +2,9 @@
 
 **Feature**: `001-orcamento-descontos-pdf` & `002-pedidos-lock-precos`  
 **Release**: Release 1 (Homologação Final v0.5.0) & Transição para Release 2 (v2.0.0)  
+**Período da Sprint 05**: 15/09/2026 a 28/09/2026  
 **Created**: 2026-08-27  
-**Last Updated**: 2026-09-23  
+**Last Updated**: 2026-09-24  
 **Status**: 🟢 Concluída / Em Homologação (US-09 Parte 2, US-10 e US-11 entregues)
 
 ---
@@ -23,6 +24,9 @@ A **Sprint 05** representa o marco de consolidação comercial e fabril do Alumi
    - Geração de documento PDF voltado para o chão de fábrica com **estrito sigilo comercial** (zero menções a valores monetários em R$), detalhando dimensões nominais (L x A mm), modelos, perfis, vidros, ferragens e opções construtivas (PR #322 mergeado em 23/09/2026).
 4. **Transição para Gestão de Pedidos de Venda (US-13 a US-16)**:
    - Especificação e alinhamento do mecanismo de conversão 1-para-1, snapshot imutável (Lock de Preços) e máquina de estados de produção para a Release 2.
+5. **Homologação Integrada da Release 1 (v1.0.0) Incorporada no DoD de US-10 e US-11**:
+   - Conforme pactuado entre o Product Owner e a equipe de Engenharia, atividades de homologação e validação de release **não constituem User Stories**, pois não implementam features autônomas.
+   - Dessa forma, os critérios da homologação integrada da Release 1 foram **divididos e incorporados como Definition of Done (DoD) e Critérios de Aceitação (TEA)** de **US-10** (Homologação Comercial & WhatsApp) e **US-11** (Homologação Fabril & Sigilo de Oficina). A aprovação de ambas as histórias homologa 100% da Release 1.
 
 ---
 
@@ -51,6 +55,11 @@ A **Sprint 05** representa o marco de consolidação comercial e fabril do Alumi
   - **Dado que** existem dezenas de propostas salvas no banco de dados
   - **Quando** o usuário navega pela tela `/orcamentos` e pesquisa por nome do cliente ou filtra por status (`DRAFT`, `APPROVED`)
   - **Então** a API `GET /api/budgets` retorna a página de resultados ordenada por data de criação com metadados de paginação.
+
+#### 🛡️ Definition of Done (DoD) — Módulo Comercial de Descontos
+- [x] **Cálculos Matemáticos de Precisão**: Regras de desconto e parcelamento validadas com `BigDecimal` e escala 2 em 100% dos testes.
+- [x] **Persistência Relacional e Migrações**: Esquema de orçamentos e itens persistido via Flyway sem falhas de integridade referencial.
+- [x] **SonarQube Quality Gate**: Cobertura de código novo $\ge 80\%$ nas classes do módulo `budgets` e zero vulnerabilidades SAST.
 
 ---
 
@@ -90,6 +99,14 @@ A **Sprint 05** representa o marco de consolidação comercial e fabril do Alumi
   - **Dado que** o documento emitido é a via comercial
   - **Quando** o PDF é gerado
   - **Então** os valores monetários de venda são exibidos, mas quaisquer custos internos de matéria-prima, fórmulas de usinagem e listas de corte permanecem estritamente omitidos.
+
+#### 🛡️ Definition of Done & Homologação Comercial da Release 1 (v1.0.0)
+> *Critérios de homologação da jornada comercial absorvidos da Release 1*
+- [x] **Homologação E2E da Jornada Comercial (Quickstart R1)**: Fluxo ponta a ponta validado com sucesso (Insumo ➔ Produto ➔ Orçamento com Desconto ➔ Emissão do PDF Comercial e cópia para WhatsApp).
+- [x] **Performance de Renderização**: Emissão de documentos PDF em menos de 2 segundos para propostas de até 20 itens.
+- [x] **Resiliência a Falhas de Entrada**: Geração correta do PDF mesmo com dados cadastrais incompletos do cliente ("Não informado").
+- [x] **Auditoria de Responsividade Mobile**: Telas de orçamento, botão de PDF e link de WhatsApp operando fluidamente em smartphones/tablets ($\le 768px$).
+- [x] **Conformidade de CI/CD & SonarQube**: Build Maven e suíte Vitest/Cypress 100% verdes sem regressões, com New Code Coverage $\ge 80\%$ no SonarQube.
 
 ---
 
@@ -135,6 +152,14 @@ A **Sprint 05** representa o marco de consolidação comercial e fabril do Alumi
   - **Dado que** é solicitada a via técnica informando um identificador inválido ou não cadastrado
   - **Quando** o endpoint `GET /api/budgets/{id}/technical-pdf` for invocado
   - **Então** o backend responde com status HTTP `404 Not Found` no payload padronizado `ErrorResponse`.
+
+#### 🛡️ Definition of Done & Homologação Fabril da Release 1 (v1.0.0)
+> *Critérios de homologação da jornada de chão de fábrica absorvidos da Release 1*
+- [x] **Homologação de Estrito Sigilo Comercial**: Validação automatizada e manual de que nenhuma seção, coluna ou rodapé exibe valores monetários (zero R$, sem descontos, sem preços unitários ou totais).
+- [x] **Homologação da Ficha de Montagem & Corte**: Discriminação rigorosa das medidas nominais milimétricas ($W \times H$ mm), cor do alumínio, vidro, sentido de abertura e espaço para visto técnico do encarregado de qualidade.
+- [x] **Validação de Invariante de Máquina de Estados**: Bloqueio HTTP 422 e desabilitação do botão visual para orçamentos cancelados (`CANCELLED`).
+- [x] **Teste Automatizado de Extração de Texto**: Teste unitário OpenPDF extraindo texto e afirmando a ausência de termos monetários.
+- [x] **Aprovação Global da Release 1**: Conclusão formal da esteira de fabricação com SonarQube Quality Gate verde, selando a baseline v1.0.0.
 
 ---
 

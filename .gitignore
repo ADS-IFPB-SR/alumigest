@@ -36,6 +36,8 @@ backend/.env
 frontend/node_modules/
 frontend/dist/
 frontend/build/
+frontend/coverage/
+coverage/
 frontend/.npm
 frontend/.eslintcache
 frontend/*.tsbuildinfo

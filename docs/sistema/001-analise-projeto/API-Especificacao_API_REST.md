@@ -424,8 +424,8 @@ Altera o status do orçamento (`DRAFT` $\rightarrow$ `SENT` $\rightarrow$ `APPRO
 }
 ```
 
-### POST `/api/budgets/{id}/discount` *(US-09)*
-Aplica condições comerciais, descontos (percentual ou valor fixo em R$) e taxas adicionais (frete e instalação) ao orçamento com recálculo reativo.
+### PUT `/api/budgets/{id}/discount` *(US-09)*
+Aplica condições comerciais, descontos (percentual ou valor fixo em R$) e taxas adicionais ao orçamento com recálculo reativo. Mapeado também no alias `PUT /api/budgets/{id}/desconto`.
 
 > **Perfis:** ADMINISTRADOR, VENDEDOR
 
@@ -441,50 +441,55 @@ Aplica condições comerciais, descontos (percentual ou valor fixo em R$) e taxa
 }
 ```
 
-**Response 200:** Retorna o `BudgetResponse` atualizado com o valor líquido recalculado.
+**Response 200:** Retorna o `BudgetResponseDTO` atualizado com o valor líquido recalculado.
 
-### GET `/api/budgets/{id}/pdf` *(US-10)*
-Emite o documento PDF formal da **Proposta Comercial** do orçamento em formato A4 institucional (OpenPDF) para apresentação ao cliente final.
+### GET `/api/budgets/{id}/pdf/comercial` *(US-10)*
+Gera e exporta a proposta comercial oficial em formato PDF A4 institucional (OpenPDF) para download. Mapeado também no alias `GET /api/budgets/{id}/pdf`.
 
 > **Perfis:** ADMINISTRADOR, VENDEDOR, OPERADOR  
 > **Headers de Resposta:**  
 > - `Content-Type: application/pdf`  
-> - `Content-Disposition: inline; filename="orcamento-comercial-ORC-YYYY-NNNN.pdf"`
+> - `Content-Disposition: attachment; filename="orcamento-comercial-ORC-YYYY-NNNN.pdf"`
 
 **Conteúdo do Documento:**
 - Cabeçalho timbrado com logotipo e dados institucionais da Alumiportas
-- Dados cadastrais completos do cliente (Nome, CPF/CNPJ, Telefone, Endereço da obra)
+- Dados cadastrais do cliente (Nome, CPF/CNPJ, Telefone, Endereço da obra)
 - Tabela de itens com dimensões nominais (LxA mm), acabamento, vidro e subtotais
 - Painel de fechamento financeiro (Valor Bruto, Desconto aplicado, Frete/Instalação e Valor Total Líquido)
-- Prazos de validade da proposta, condições de pagamento e campo para assinatura de aceite.
+- Prazos de validade da proposta (15 dias corridos padrão), condições de pagamento e campo para assinatura.
 
-### GET `/api/budgets/{id}/whatsapp-summary` *(US-10)*
-Retorna o resumo textual formatado do orçamento pronto para compartilhamento via WhatsApp Web ou aplicativo móvel.
+### GET `/api/budgets/{id}/resumo-whatsapp` *(US-10)*
+Gera e retorna o texto formatado (`text/plain;charset=UTF-8`) com os dados do orçamento prontos para envio via WhatsApp.
 
-**Response 200:**
-```json
-{
-  "budgetId": 1,
-  "budgetCode": "ORC-2026-0005",
-  "clientName": "João da Silva",
-  "formattedText": "*ORÇAMENTO ALUMIPORTAS - ORC-2026-0005*\n\nOlá, João da Silva! Segue a proposta comercial:\n- 2x Janela Suprema 2F (1200x1000mm) - Branco\n\n*Valor Total:* R$ 3.800,00\n*Validade:* 15 dias\n\nPara aprovar ou tirar dúvidas, responda esta mensagem.",
-  "whatsappUrl": "https://api.whatsapp.com/send?phone=5583999990000&text=..."
-}
+> **Perfis:** ADMINISTRADOR, VENDEDOR  
+> **Content-Type:** `text/plain; charset=UTF-8`
+
+**Response 200 (Texto Puro):**
+```text
+*ORÇAMENTO ALUMIPORTAS - ORC-2026-0005*
+
+Olá, João da Silva! Segue a proposta comercial:
+- 2x Janela Suprema 2F (1200x1000mm) - Branco
+
+*Valor Total:* R$ 3.800,00
+*Validade:* 15 dias corridos
+
+Para aprovar ou tirar dúvidas, responda esta mensagem.
 ```
 
-### GET `/api/budgets/{id}/technical-pdf` *(US-11)*
-Emite o documento PDF da **Via Técnica de Oficina (Romaneio de Fabricação)** em formato A4 via OpenPDF, direcionado aos cortadores e montadores do galpão de produção.
+### GET `/api/budgets/{id}/pdf/tecnico` *(US-11)*
+Gera e exporta a ficha de corte e usinagem da oficina (Romaneio Técnico de Fabricação) em formato PDF A4 via OpenPDF, direcionada aos cortadores e montadores do galpão de produção sob **estrito sigilo comercial**.
 
 > **Perfis:** ADMINISTRADOR, VENDEDOR, OPERADOR  
 > **Headers de Resposta:**  
 > - `Content-Type: application/pdf`  
-> - `Content-Disposition: inline; filename="orcamento-tecnico-ORC-YYYY-NNNN.pdf"`
+> - `Content-Disposition: attachment; filename="orcamento-tecnico-ORC-YYYY-NNNN.pdf"`
 
 **Garantias de Domínio & Sigilo Comercial:**
-- **Supressão Total de Preços:** Omissão de valores unitários, margens, descontos e valor total
+- **Supressão Total de Preços:** Omissão absoluta de valores unitários, margens, descontos e valor total (zero menções a R$)
 - **Especificações Físicas:** Cotas nominais milimétricas de corte (Largura x Altura mm)
 - **Detalhes Construtivos:** Cor do perfil, tipo e espessura do vidro, sentido de abertura e lado de travamento
-- **Checklist de Bancada:** Itens marcáveis para conferência visual na oficina (corte, esquadro, usinagem, vedação).
+- **Checklist de Bancada:** Itens marcáveis para conferência visual na oficina (corte, esquadro, usinagem, vedação) com visto técnico.
 
 ---
 
@@ -514,7 +519,9 @@ Emite o documento PDF da **Via Técnica de Oficina (Romaneio de Fabricação)** 
 | `POST` | `/api/budgets` | Criar orçamento completo com cálculo paramétrico | `budgets` | R1 / US-07 |
 | `PUT` | `/api/budgets/{id}` | Atualizar orçamento em rascunho (`DRAFT`) | `budgets` | R1 / US-06 |
 | `PATCH` | `/api/budgets/{id}/status` | Alterar status do ciclo de vida | `budgets` | R1 / US-06 |
-| `POST` | `/api/budgets/{id}/discount` | Aplicar descontos, taxas e condições comerciais | `budgets` | R1 / US-09 |
-| `GET` | `/api/budgets/{id}/pdf` | Emitir Proposta Comercial em PDF A4 | `budgets` | R1 / US-10 |
-| `GET` | `/api/budgets/{id}/whatsapp-summary` | Obter texto formatado para envio no WhatsApp | `budgets` | R1 / US-10 |
-| `GET` | `/api/budgets/{id}/technical-pdf` | Emitir Via Técnica de Oficina em PDF (Sem Preços) | `budgets` | R1 / US-11 |
+| `PUT` | `/api/budgets/{id}/discount` | Aplicar descontos, taxas e condições comerciais | `budgets` | R1 / US-09 |
+| `POST` | `/api/budgets/{id}/items` | Adicionar item avulso ao orçamento | `budgets` | R1 / US-09 |
+| `GET` | `/api/budgets/{id}/pdf/comercial` | Emitir Proposta Comercial em PDF A4 | `budgets` | R1 / US-10 |
+| `GET` | `/api/budgets/{id}/resumo-whatsapp` | Obter texto formatado para envio no WhatsApp | `budgets` | R1 / US-10 |
+| `GET` | `/api/budgets/{id}/pdf/tecnico` | Emitir Via Técnica de Oficina em PDF (Sem Preços) | `budgets` | R1 / US-11 |
+
