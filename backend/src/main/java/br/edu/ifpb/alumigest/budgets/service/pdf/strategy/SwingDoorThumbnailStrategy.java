@@ -12,7 +12,7 @@ public class SwingDoorThumbnailStrategy implements TemplateThumbnailStrategy {
     private final int leafCount;
 
     public SwingDoorThumbnailStrategy(int leafCount) {
-        this.leafCount = Math.max(1, Math.min(leafCount, 2));
+        this.leafCount = Math.clamp(leafCount, 1, 2);
     }
 
     @Override

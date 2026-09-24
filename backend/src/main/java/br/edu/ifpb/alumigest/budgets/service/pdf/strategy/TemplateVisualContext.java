@@ -14,9 +14,7 @@ public record TemplateVisualContext(
         Color glassFill,
         Color fixedGlassFill,
         Color dividerColor,
-        Color indicatorColor,
-        float aspectRatio,
-        boolean hasGlass
+        Color indicatorColor
 ) {
     // ── Valores Padrão (Fallback Seguro) ──────────────────────────────────
     public static final Color DEFAULT_FRAME_FILL = new Color(55, 71, 101);     // #374765
@@ -33,9 +31,7 @@ public record TemplateVisualContext(
                 DEFAULT_GLASS_FILL,
                 DEFAULT_FIXED_GLASS,
                 DEFAULT_DIVIDER,
-                DEFAULT_INDICATOR,
-                1.0f,
-                true
+                DEFAULT_INDICATOR
         );
     }
 }

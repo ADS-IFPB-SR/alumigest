@@ -12,7 +12,7 @@ public class SlidingThumbnailStrategy implements TemplateThumbnailStrategy {
     private final int leafCount;
 
     public SlidingThumbnailStrategy(int leafCount) {
-        this.leafCount = Math.max(1, Math.min(leafCount, 4));
+        this.leafCount = Math.clamp(leafCount, 1, 4);
     }
 
     @Override
