@@ -17,7 +17,9 @@ public class DrawerThumbnailStrategy implements TemplateThumbnailStrategy {
         float areaW = width - (2 * margin);
         float areaH = height - (2 * margin);
 
-        if (areaW <= 0 || areaH <= 0) return;
+        if (areaW <= 0 || areaH <= 0) {
+            return;
+        }
 
         // Superfície do painel (opaco com cor do acabamento de perfil)
         tpl.setColorFill(ctx.frameFill());

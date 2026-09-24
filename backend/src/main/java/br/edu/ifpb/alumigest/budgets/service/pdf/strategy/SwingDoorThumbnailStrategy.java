@@ -23,7 +23,9 @@ public class SwingDoorThumbnailStrategy implements TemplateThumbnailStrategy {
         float areaW = width - (2 * margin);
         float areaH = height - (2 * margin);
 
-        if (areaW <= 0 || areaH <= 0) return;
+        if (areaW <= 0 || areaH <= 0) {
+            return;
+        }
 
         if (leafCount == 1) {
             desenharGiroUmaFolha(tpl, areaX, areaY, areaW, areaH, ctx);

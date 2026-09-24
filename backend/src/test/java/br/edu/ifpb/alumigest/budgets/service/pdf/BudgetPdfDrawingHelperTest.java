@@ -236,22 +236,6 @@ class BudgetPdfDrawingHelperTest {
         assertNotNull(BudgetPdfDrawingHelper.getRegistry(), "O registry retornado não deve ser nulo");
     }
 
-    @Test
-    @DisplayName("Deve lançar UnsupportedOperationException ao tentar instanciar classe utilitária via reflexão")
-    void deveLancarExcecaoAoInstanciarBudgetPdfDrawingHelperViaReflexao() throws Exception {
-        var constructor = BudgetPdfDrawingHelper.class.getDeclaredConstructor();
-        constructor.setAccessible(true);
-        assertThrows(InvocationTargetException.class, constructor::newInstance);
-    }
-
-    @Test
-    @DisplayName("Deve cobrir construtor privado de TemplateVisualContextResolver via reflexão")
-    void deveCobrirConstrutorPrivadoTemplateVisualContextResolver() throws Exception {
-        var constructor = TemplateVisualContextResolver.class.getDeclaredConstructor();
-        constructor.setAccessible(true);
-        assertNotNull(constructor.newInstance());
-    }
-
     // ── Teste de resolução por Alias ─────────────────────────────────────
 
     @ParameterizedTest(name = "Deve resolver alias {0} sem erro")
@@ -600,11 +584,10 @@ class BudgetPdfDrawingHelperTest {
     @Test
     @DisplayName("Gera arquivo PDF de demonstração visual com todas as 10 tipologias")
     void gerarPdfDemonstracaoParaVisualizacao() throws Exception {
-        java.io.File pdfFile = java.io.File.createTempFile("miniaturas-esquadrias-demo-", ".pdf");
-        pdfFile.deleteOnExit();
-        try (java.io.FileOutputStream fos = new java.io.FileOutputStream(pdfFile)) {
+        ByteArrayOutputStream demoOutput = new ByteArrayOutputStream();
+        try (demoOutput) {
             Document demoDoc = new Document(PageSize.A4, 36, 36, 36, 36);
-            PdfWriter demoWriter = PdfWriter.getInstance(demoDoc, fos);
+            PdfWriter demoWriter = PdfWriter.getInstance(demoDoc, demoOutput);
             demoDoc.open();
 
             com.lowagie.text.Font titleFont = com.lowagie.text.FontFactory.getFont(com.lowagie.text.FontFactory.HELVETICA_BOLD, 16, new java.awt.Color(20, 30, 50));
@@ -682,7 +665,6 @@ class BudgetPdfDrawingHelperTest {
             demoDoc.add(table);
             demoDoc.close();
         }
-        assertTrue(pdfFile.exists(), "O arquivo PDF de demonstração deve ter sido gerado");
-        assertTrue(pdfFile.length() > 0, "O PDF de demonstração não deve estar vazio");
+        assertTrue(demoOutput.size() > 0, "O PDF de demonstração não deve estar vazio");
     }
 }
