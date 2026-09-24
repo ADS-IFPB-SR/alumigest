@@ -41,6 +41,7 @@ import java.util.List;
 import java.util.UUID;
 import java.time.LocalDate;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -675,7 +676,7 @@ class BudgetControllerTest {
 
         mockMvc.perform(get("/api/budgets/{id}/pdf/comercial", id))
                 .andExpect(status().isOk())
-                .andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.containsString("orcamento-comercial.pdf")));
+                .andExpect(header().string("Content-Disposition", containsString("orcamento-comercial.pdf")));
     }
 
     @Test
@@ -683,10 +684,13 @@ class BudgetControllerTest {
     void obterResumoWhatsApp_DeveRetornar200ETexto_QuandoOrcamentoExiste() throws Exception {
         UUID id = UUID.randomUUID();
 
-        String textoMock = "📋 *Orçamento ORC-2026-0001*\n" +
-                "📦 Itens:\n• 1x Porta - R$ 975,62\n\n" +
-                "💰 Subtotal: R$ 975,62\n" +
-                "📦 *TOTAL: R$ 975,62*";
+        String textoMock = """
+                📋 *Orçamento ORC-2026-0001*
+                📦 Itens:
+                • 1x Porta - R$ 975,62
+
+                💰 Subtotal: R$ 975,62
+                📦 *TOTAL: R$ 975,62*""";
 
         when(budgetService.gerarResumoWhatsApp(id)).thenReturn(textoMock);
 
@@ -695,12 +699,12 @@ class BudgetControllerTest {
                 // Valida o charset UTF-8 (Critério de Aceitação)
                 .andExpect(header().string("Content-Type", MediaType.TEXT_PLAIN_VALUE + ";charset=UTF-8"))
                 // Valida os marcadores de negrito (*) no código e no total (Critério de Aceitação)
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("*Orçamento ORC-2026-0001*")))
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("*TOTAL:")))
+                .andExpect(content().string(containsString("*Orçamento ORC-2026-0001*")))
+                .andExpect(content().string(containsString("*TOTAL:")))
                 // Valida formatação monetária padrão brasileiro com vírgula e R$ (Critério de Aceitação)
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("R$ 975,62")))
+                .andExpect(content().string(containsString("R$ 975,62")))
                 // Valida a presença de itens
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("📦 Itens:")));
+                .andExpect(content().string(containsString("📦 Itens:")));
 
         verify(budgetService).gerarResumoWhatsApp(id);
     }
