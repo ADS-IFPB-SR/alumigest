@@ -6,7 +6,7 @@
 **Branch de Trabalho:** `feat/us-11.5-botao-emitir-via-tecnica-288`  
 **Ferramentas de Medição:** Vitest v5 (v8 engine), React Testing Library, Oxlint, SonarQube  
 **Data de Emissão:** 24 de Setembro de 2026  
-**Status do Quality Gate:** 🏆 **APROVADO** (524 testes passando, 0 falhas, Linhas $\ge 80.0\%$ atingido: **80.08%**)
+**Status do Quality Gate:** 🏆 **APROVADO** (517 testes passando, 0 falhas, Linhas $\ge 80.0\%$ atingido: **80.55%**)
 
 ---
 
@@ -18,10 +18,10 @@ O objetivo primordial foi sanar lacunas de testes identificadas no SonarQube e n
 
 ### Principais Conquistas Técnicas
 1. **Meta Global Superada com Sucesso**:
-   - **Testes Unitários e de Integração**: Evoluíram de **444 testes** (65 suítes) para **524 testes** (71 suítes), todos **100% GREEN**.
-   - **Cobertura Global de Linhas**: Saltou de **70.69%** para **80.08%** (+9.39 p.p.).
-   - **Cobertura Global de Funções**: Elevada para **77.01%**.
-   - **Cobertura Global de Branches**: Elevada para **63.20%**.
+   - **Testes Unitários e de Integração**: Evoluíram de **444 testes** para **517 testes** (71 suítes), todos **100% GREEN**.
+   - **Cobertura Global de Linhas**: Saltou de **70.69%** para **80.55%** (+9.86 p.p.).
+   - **Cobertura Global de Funções**: Elevada para **77.10%**.
+   - **Cobertura Global de Branches**: Elevada para **63.70%**.
    - **Zero Regressões e Zero Erros de Lint**: Validação completa com `oxlint` (224 arquivos analisados, 0 erros).
 
 2. **Blindagem de Módulos Críticos a 100% de Linhas**:
@@ -100,19 +100,19 @@ xychart-beta
 
 | Métrica Global | Antes da Atuação | Depois da Atuação | Delta Absoluto | Status |
 | :--- | :---: | :---: | :---: | :---: |
-| **Linhas Totais Cobertas** | **70.69%** | **80.08%** | **+9.39%** | 🏆 **Meta $\ge 80\%$ Superada** |
-| **Instruções (Stmts)** | **67.84%** | **77.23%** | **+9.39%** | ✅ Forte Evolução |
-| **Branches** | **56.25%** | **63.20%** | **+6.95%** | ✅ Ramo Seguro |
-| **Funções** | **68.12%** | **77.01%** | **+8.89%** | ✅ Alta Cobertura |
-| **Total de Testes** | **444 testes** | **524 testes** | **+80 novos testes** | 🟢 100% Passing |
+| **Linhas Totais Cobertas** | **70.69%** | **80.55%** | **+9.86%** | 🏆 **Meta $\ge 80\%$ Superada** |
+| **Instruções (Stmts)** | **67.84%** | **77.76%** | **+9.92%** | ✅ Forte Evolução |
+| **Branches** | **56.25%** | **63.70%** | **+7.45%** | ✅ Ramo Seguro |
+| **Funções** | **68.12%** | **77.10%** | **+8.98%** | ✅ Alta Cobertura |
+| **Total de Testes** | **444 testes** | **517 testes** | **+73 novos testes** | 🟢 100% Passing |
 | **Total de Arquivos de Teste** | **65 arquivos** | **71 arquivos** | **+6 novas suítes** | 🟢 100% Passing |
 
 ---
 
 ## 5. Definition of Done (DoD) — Checklist Final
 
-- [x] Todas as novas suítes de teste executam localmente via Vitest v8 com 100% de sucesso (`524 passed`).
-- [x] A cobertura global de Linhas do Frontend atingiu e superou a meta de 80.0% (**80.08%**).
+- [x] Todas as novas suítes de teste executam localmente via Vitest v8 com 100% de sucesso (`517 passed`).
+- [x] A cobertura global de Linhas do Frontend atingiu e superou a meta de 80.0% (**80.55%**).
 - [x] Todas as suítes utilizam convenção limpa de asserções `@testing-library/react` e `@testing-library/user-event`.
 - [x] O linter (`oxlint`) foi executado em todo o projeto, reportando **0 erros**.
 - [x] Nenhuma alteração invasiva ou regressão foi introduzida nas regras de negócio de produção.

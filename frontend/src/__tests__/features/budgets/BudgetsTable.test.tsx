@@ -133,6 +133,11 @@ describe('BudgetsTable', () => {
     fireEvent.click(clientHeaderButton);
 
     expect(mockOnSort).toHaveBeenCalledWith('customerName');
+
+    const totalButton = screen.getByRole('button', { name: /ordenar por valor total/i });
+    fireEvent.click(totalButton);
+
+    expect(mockOnSort).toHaveBeenCalledWith('total');
   });
 
   it('deve navegar para a página de detalhes ao clicar na linha da tabela', () => {

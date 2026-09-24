@@ -135,4 +135,22 @@ describe('CustomerQuickCreateModal Component [Joseph Nichollas]', () => {
     const cancelBtn = screen.getByRole('button', { name: /cancelar/i });
     expect(cancelBtn).toBeDisabled();
   });
+
+  it('deve exibir erros de validação e não chamar onSubmit ao tentar submeter formulário inválido', () => {
+    const handleSubmit = vi.fn();
+
+    render(
+      <CustomerQuickCreateModal
+        isOpen={true}
+        onClose={vi.fn()}
+        onSubmit={handleSubmit}
+        isLoading={false}
+      />
+    );
+
+    const submitBtn = screen.getByRole('button', { name: /cadastrar cliente/i });
+    fireEvent.click(submitBtn);
+
+    expect(handleSubmit).not.toHaveBeenCalled();
+  });
 });

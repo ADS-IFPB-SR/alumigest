@@ -164,14 +164,14 @@ export function BudgetDetailActions({
         data-testid="btn-download-pdf-tecnico"
         onClick={handleEmitirViaTecnica}
         disabled={isDownloadingTecnico || budgetStatus === 'CANCELLED'}
-        className="p-2 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-lg border border-outline-variant/60 transition-colors flex items-center gap-1.5 text-xs font-label font-medium disabled:opacity-50 cursor-pointer shrink-0"
+        className="p-2 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-lg border border-outline-variant/60 transition-colors flex items-center gap-1.5 text-xs font-label font-medium disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shrink-0"
         title={
           budgetStatus === 'CANCELLED'
             ? 'Não é possível emitir ficha técnica de orçamento cancelado'
             : 'Emitir Via Técnica de Oficina (PDF de produção sem valores comerciais)'
         }
       >
-        <span className="material-symbols-outlined text-[18px]">
+        <span className={`material-symbols-outlined text-[18px] ${isDownloadingTecnico ? 'animate-spin' : ''}`}>
           {isDownloadingTecnico ? 'progress_activity' : 'engineering'}
         </span>
         <span className="whitespace-nowrap">
