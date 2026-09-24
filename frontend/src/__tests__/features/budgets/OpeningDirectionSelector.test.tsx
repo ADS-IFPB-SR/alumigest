@@ -50,4 +50,40 @@ describe('OpeningDirectionSelector', () => {
 
     expect(handleChange).toHaveBeenCalledWith('RIGHT_TO_LEFT');
   });
+
+  it('deve formatar e renderizar direções OUTSIDE, INSIDE e CENTER_TO_SIDES', async () => {
+    const user = userEvent.setup();
+    const handleChange = vi.fn();
+    const directions: OpeningDirection[] = ['OUTSIDE', 'INSIDE', 'CENTER_TO_SIDES'];
+
+    renderWithProviders(
+      <OpeningDirectionSelector
+        openingDirection="OUTSIDE"
+        supportedDirections={directions}
+        onOpeningDirectionChange={handleChange}
+      />
+    );
+
+    expect(screen.getByText('Para Fora')).toBeInTheDocument();
+    expect(screen.getByText('Para Dentro')).toBeInTheDocument();
+    expect(screen.getByText('Centro p/ Lados')).toBeInTheDocument();
+
+    await user.click(screen.getByText('Centro p/ Lados'));
+    expect(handleChange).toHaveBeenCalledWith('CENTER_TO_SIDES');
+
+    await user.click(screen.getByText('Para Dentro'));
+    expect(handleChange).toHaveBeenCalledWith('INSIDE');
+  });
+
+  it('deve usar label padrão quando for uma direção não mapeada', () => {
+    renderWithProviders(
+      <OpeningDirectionSelector
+        openingDirection={'CUSTOM_DIR' as any}
+        supportedDirections={['CUSTOM_DIR' as any, 'LEFT_TO_RIGHT']}
+        onOpeningDirectionChange={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText('Abrir')).toBeInTheDocument();
+  });
 });
