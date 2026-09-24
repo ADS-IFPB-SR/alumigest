@@ -91,4 +91,35 @@ describe('BudgetMaterialsSummary', () => {
     // Total de insumos: (14 * 30 = 420) + (4 * 150 = 600) + 45 = 1065
     expect(screen.getByText(/Total Insumos:/i)).toBeInTheDocument();
   });
+
+  it('deve ordenar insumos da mesma categoria pelo custo total decrescente', () => {
+    const items = [
+      {
+        quantity: 1,
+        options: [
+          {
+            materialId: 'mat-profile-low',
+            materialName: 'Perfil U Pequeno',
+            categoryType: 'PROFILE' as const,
+            unitMeasure: 'm',
+            quantity: 2,
+            unitPrice: 10, // totalCost = 20
+          },
+          {
+            materialId: 'mat-profile-high',
+            materialName: 'Perfil Tubular Reforçado',
+            categoryType: 'PROFILE' as const,
+            unitMeasure: 'm',
+            quantity: 5,
+            unitPrice: 50, // totalCost = 250
+          },
+        ],
+      },
+    ];
+
+    renderWithProviders(<BudgetMaterialsSummary items={items} />);
+
+    expect(screen.getByText('Perfil Tubular Reforçado')).toBeInTheDocument();
+    expect(screen.getByText('Perfil U Pequeno')).toBeInTheDocument();
+  });
 });

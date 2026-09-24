@@ -134,17 +134,44 @@ describe('catalogApi Service', () => {
       expect(api.get).toHaveBeenCalledWith('/catalog/products?size=100');
     });
 
+    it('getProductById deve chamar /catalog/products/:id', async () => {
+      vi.mocked(api.get).mockResolvedValueOnce({ data: { id: 'prod-1', name: 'Janela' } });
+      const result = await catalogApi.getProductById('prod-1');
+      expect(api.get).toHaveBeenCalledWith('/catalog/products/prod-1');
+      expect(result.id).toBe('prod-1');
+    });
+
+    it('createProduct deve chamar post em /catalog/products', async () => {
+      const payload = { name: 'Nova Janela' } as any;
+      vi.mocked(api.post).mockResolvedValueOnce({ data: { id: 'p-new', ...payload } });
+      const result = await catalogApi.createProduct(payload);
+      expect(api.post).toHaveBeenCalledWith('/catalog/products', payload);
+      expect(result.id).toBe('p-new');
+    });
+
+    it('updateProduct deve chamar put em /catalog/products/:id', async () => {
+      const payload = { name: 'Janela Atualizada' } as any;
+      vi.mocked(api.put).mockResolvedValueOnce({ data: { id: 'p-1', ...payload } });
+      const result = await catalogApi.updateProduct('p-1', payload);
+      expect(api.put).toHaveBeenCalledWith('/catalog/products/p-1', payload);
+      expect(result.id).toBe('p-1');
+    });
+
     it('inactivateProduct deve chamar delete em /catalog/products/:id', async () => {
       vi.mocked(api.delete).mockResolvedValueOnce({ data: { success: true } });
       await catalogApi.inactivateProduct('prod-1');
       expect(api.delete).toHaveBeenCalledWith('/catalog/products/prod-1');
     });
 
-    it('getMaterialFamilies deve passar query param groupCode quando fornecido', async () => {
+    it('getMaterialFamilies deve passar query param groupCode quando fornecido e desempacotar data aninhado', async () => {
       vi.mocked(api.get).mockResolvedValueOnce({ data: ['SUPREMA', 'LINHA_25'] });
       const families = await catalogApi.getMaterialFamilies('PROFILE');
       expect(api.get).toHaveBeenCalledWith('/catalog/materials/families?groupCode=PROFILE');
       expect(families).toEqual(['SUPREMA', 'LINHA_25']);
+
+      vi.mocked(api.get).mockResolvedValueOnce({ data: { data: ['GOLD'] } });
+      const familiesNested = await catalogApi.getMaterialFamilies();
+      expect(familiesNested).toEqual(['GOLD']);
     });
   });
 });

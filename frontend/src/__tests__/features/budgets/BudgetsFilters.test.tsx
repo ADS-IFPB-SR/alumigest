@@ -126,4 +126,29 @@ describe('BudgetsFilters', () => {
 
     expect(input.value).toBe('');
   });
+
+  it('deve cancelar o timeout anterior ao digitar caracteres rapidamente', () => {
+    renderWithProviders(
+      <BudgetsFilters
+        activeStatus=""
+        searchTerm=""
+        onStatusChange={mockOnStatusChange}
+        onSearchChange={mockOnSearchChange}
+      />,
+    );
+
+    const input = screen.getByPlaceholderText('Buscar por código ou cliente...');
+    fireEvent.change(input, { target: { value: 'A' } });
+    act(() => {
+      vi.advanceTimersByTime(100);
+    });
+
+    fireEvent.change(input, { target: { value: 'AB' } });
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
+
+    expect(mockOnSearchChange).toHaveBeenCalledTimes(1);
+    expect(mockOnSearchChange).toHaveBeenCalledWith('AB');
+  });
 });

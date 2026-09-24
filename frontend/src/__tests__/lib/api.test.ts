@@ -63,5 +63,10 @@ describe('Axios api Instance and Interceptors', () => {
       const result = requestInterceptor.fulfilled(mockConfig);
       expect(result).toBe(mockConfig);
     });
+
+    it('deve rejeitar promise quando o request interceptor de erro for invocado', async () => {
+      const mockError = new Error('Falha no envio da requisição');
+      await expect(requestInterceptor.rejected(mockError)).rejects.toThrow('Falha no envio da requisição');
+    });
   });
 });

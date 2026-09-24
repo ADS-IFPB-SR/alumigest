@@ -1,24 +1,36 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import React from 'react';
 import { Table } from '@/components/ui/Table';
 
-describe('Table Component', () => {
+describe('Table Component [Joseph Nichollas]', () => {
   interface MockRow {
     id: number;
     name: string;
     code: string;
+    price?: number | null;
   }
 
   const columns = [
     { header: 'Código', accessor: 'code' as const },
     { header: 'Nome', accessor: (row: MockRow) => <strong>{row.name}</strong> },
+    {
+      header: 'Preço',
+      accessor: 'price' as const,
+      exportValue: (row: MockRow) => (row.price ? `R$ ${row.price};00` : null),
+    },
   ];
 
   const mockData: MockRow[] = [
-    { id: 1, name: 'Vidro Incolor', code: 'VID-01' },
-    { id: 2, name: 'Perfil Alumínio', code: 'PRF-02' },
+    { id: 1, name: 'Vidro Incolor', code: 'VID-01', price: 150 },
+    { id: 2, name: 'Perfil Alumínio', code: 'PRF-02', price: null },
   ];
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    window.URL.createObjectURL = vi.fn().mockReturnValue('blob:http://localhost/mock-csv');
+    window.URL.revokeObjectURL = vi.fn();
+  });
 
   it('deve renderizar cabeçalhos e linhas com os dados fornecidos', () => {
     render(<Table columns={columns} data={mockData} />);
@@ -30,6 +42,44 @@ describe('Table Component', () => {
     expect(screen.getByText('PRF-02')).toBeInTheDocument();
     expect(screen.getByText('Perfil Alumínio')).toBeInTheDocument();
     expect(screen.getByText('Total: 2')).toBeInTheDocument();
+  });
+
+  it('deve exportar CSV corretamente com exportValue e accessor padrão', () => {
+    const appendChildSpy = vi.spyOn(document.body, 'appendChild');
+
+    render(<Table columns={columns} data={mockData} />);
+
+    const exportBtn = screen.getByRole('button', { name: /Exportar/i });
+    fireEvent.click(exportBtn);
+
+    expect(window.URL.createObjectURL).toHaveBeenCalledTimes(1);
+    expect(appendChildSpy).toHaveBeenCalled();
+    expect(window.URL.revokeObjectURL).toHaveBeenCalledWith('blob:http://localhost/mock-csv');
+  });
+
+  it('não deve disparar exportação quando a lista de dados estiver vazia', () => {
+    render(<Table columns={columns} data={[]} />);
+
+    const exportBtn = screen.getByRole('button', { name: /Exportar/i });
+    fireEvent.click(exportBtn);
+
+    expect(window.URL.createObjectURL).not.toHaveBeenCalled();
+    expect(screen.getByText('Total: 0')).toBeInTheDocument();
+  });
+
+  it('deve aplicar rowTestId e rowTestAttributes nas linhas', () => {
+    render(
+      <Table
+        columns={columns}
+        data={mockData}
+        rowTestId={(row) => `custom-row-${row.id}`}
+        rowTestAttributes={(row) => ({ 'data-custom-type': row.code })}
+      />
+    );
+
+    const firstRow = document.querySelector('[data-cy="custom-row-1"]');
+    expect(firstRow).toBeInTheDocument();
+    expect(firstRow).toHaveAttribute('data-custom-type', 'VID-01');
   });
 
   it('deve disparar onEdit ao clicar no botão de edição', () => {
