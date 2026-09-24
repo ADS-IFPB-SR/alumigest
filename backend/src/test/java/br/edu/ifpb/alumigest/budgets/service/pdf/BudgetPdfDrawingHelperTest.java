@@ -21,6 +21,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import java.awt.Color;
 import java.io.ByteArrayOutputStream;
+import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import br.edu.ifpb.alumigest.budgets.domain.BudgetItemOption;
 import br.edu.ifpb.alumigest.catalog.domain.MaterialCategoryType;
@@ -229,6 +230,28 @@ class BudgetPdfDrawingHelperTest {
                 BudgetPdfDrawingHelper.desenharMiniaturaEsquadria(writer, item, 60f, -5f));
     }
 
+    @Test
+    @DisplayName("Deve retornar instância ativa do TemplateThumbnailRegistry via helper")
+    void deveRetornarInstanciaAtivaDoRegistryViaHelper() {
+        assertNotNull(BudgetPdfDrawingHelper.getRegistry(), "O registry retornado não deve ser nulo");
+    }
+
+    @Test
+    @DisplayName("Deve lançar UnsupportedOperationException ao tentar instanciar classe utilitária via reflexão")
+    void deveLancarExcecaoAoInstanciarBudgetPdfDrawingHelperViaReflexao() throws Exception {
+        var constructor = BudgetPdfDrawingHelper.class.getDeclaredConstructor();
+        constructor.setAccessible(true);
+        assertThrows(InvocationTargetException.class, constructor::newInstance);
+    }
+
+    @Test
+    @DisplayName("Deve cobrir construtor privado de TemplateVisualContextResolver via reflexão")
+    void deveCobrirConstrutorPrivadoTemplateVisualContextResolver() throws Exception {
+        var constructor = TemplateVisualContextResolver.class.getDeclaredConstructor();
+        constructor.setAccessible(true);
+        assertNotNull(constructor.newInstance());
+    }
+
     // ── Teste de resolução por Alias ─────────────────────────────────────
 
     @ParameterizedTest(name = "Deve resolver alias {0} sem erro")
@@ -433,16 +456,47 @@ class BudgetPdfDrawingHelperTest {
     }
 
     @Test
-    @DisplayName("Deve resolver acabamento de vidro a partir da opção com categoria FILM")
-    void deveResolverAcabamentoVidroViaCategoriaFilm() {
+    @DisplayName("Deve resolver acabamento de vidro a partir da opção estética de película textual")
+    void deveResolverAcabamentoVidroViaOpcaoDePeliculaTextual() {
         BudgetItem item = criarItemComTipologia("SLIDING_2_LEAF");
         BudgetItemOption opt = new BudgetItemOption();
-        opt.setCategoryType(MaterialCategoryType.FILM);
+        opt.setCategoryType(MaterialCategoryType.GLASS);
+        opt.setSelectedColor("Fumê");
+        opt.setMaterialName("Película Fumê Térmica");
+        item.addOption(opt);
+
+        TemplateVisualContext ctx = TemplateVisualContextResolver.resolve(item);
+        assertEquals(new Color(100, 116, 139), ctx.glassFill());
+    }
+
+    @ParameterizedTest(name = "Deve resolver película com termo {0}")
+    @ValueSource(strings = {"Pelicula Fume", "Film Fume", "película fume"})
+    @DisplayName("Deve resolver película com variações textuais de grafia")
+    void deveResolverPeliculaComVariacoesTextuais(String nomeMaterial) {
+        BudgetItem item = criarItemComTipologia("SLIDING_2_LEAF");
+        BudgetItemOption opt = new BudgetItemOption();
+        opt.setMaterialName(nomeMaterial);
         opt.setSelectedColor("Fumê");
         item.addOption(opt);
 
         TemplateVisualContext ctx = TemplateVisualContextResolver.resolve(item);
         assertEquals(new Color(100, 116, 139), ctx.glassFill());
+    }
+
+    @Test
+    @DisplayName("Deve ignorar opções nulas ou categorias não relacionadas ao vidro")
+    void deveIgnorarOpcoesNulasOuNaoRelacionadasAoVidro() {
+        BudgetItem item = criarItemComTipologia("SLIDING_2_LEAF");
+        BudgetItemOption optInvalida = new BudgetItemOption();
+        optInvalida.setCategoryType(MaterialCategoryType.HARDWARE);
+        optInvalida.setMaterialName("Dobradiça Inox");
+        item.addOption(optInvalida);
+
+        BudgetItemOption optVazia = new BudgetItemOption();
+        item.addOption(optVazia);
+
+        TemplateVisualContext ctx = TemplateVisualContextResolver.resolve(item);
+        assertEquals(TemplateVisualContext.DEFAULT_GLASS_FILL, ctx.glassFill());
     }
 
     @Test

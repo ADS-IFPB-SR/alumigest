@@ -30,15 +30,13 @@ public class PanelFixedThumbnailStrategy implements TemplateThumbnailStrategy {
         tpl.rectangle(areaX, areaY, areaW, areaH);
         tpl.stroke();
 
-        // Linhas técnicas cruzadas ("X") indicando elemento fixo
+        // Linhas técnicas cruzadas ("X") indicando elemento fixo com stroke único
         tpl.setColorStroke(ctx.indicatorColor());
         tpl.setLineWidth(0.4f);
         tpl.setLineDash(3f, 3f, 0f);
 
         tpl.moveTo(areaX, areaY);
         tpl.lineTo(areaX + areaW, areaY + areaH);
-        tpl.stroke();
-
         tpl.moveTo(areaX + areaW, areaY);
         tpl.lineTo(areaX, areaY + areaH);
         tpl.stroke();

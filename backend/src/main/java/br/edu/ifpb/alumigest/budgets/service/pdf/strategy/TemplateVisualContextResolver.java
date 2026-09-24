@@ -106,8 +106,7 @@ public final class TemplateVisualContextResolver {
             return null;
         }
         for (BudgetItemOption opt : item.getOptions()) {
-            MaterialCategoryType cat = opt.getCategoryType();
-            if (cat == MaterialCategoryType.GLASS || cat == MaterialCategoryType.FILM) {
+            if (isGlassOrFilmOption(opt)) {
                 String valor = extrairCorOuNome(opt);
                 if (valor != null) {
                     return valor;
@@ -115,6 +114,26 @@ public final class TemplateVisualContextResolver {
             }
         }
         return null;
+    }
+
+    private static boolean isGlassOrFilmOption(BudgetItemOption opt) {
+        if (opt == null) {
+            return false;
+        }
+        MaterialCategoryType cat = opt.getCategoryType();
+        if (cat == MaterialCategoryType.GLASS) {
+            return true;
+        }
+        // Resiliência OCP: suporte a película via checagem textual estética sem acoplamento estático ao enum FILM
+        if (cat != null && "FILM".equalsIgnoreCase(cat.name())) {
+            return true;
+        }
+        String matName = opt.getMaterialName();
+        if (matName != null) {
+            String lower = matName.toLowerCase(Locale.ROOT);
+            return lower.contains("película") || lower.contains("pelicula") || lower.contains("film");
+        }
+        return false;
     }
 
     private static String extrairCorOuNome(BudgetItemOption opt) {
