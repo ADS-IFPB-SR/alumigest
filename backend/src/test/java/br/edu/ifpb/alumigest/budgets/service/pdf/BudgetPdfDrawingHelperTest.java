@@ -15,13 +15,17 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.awt.Color;
 import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
 import br.edu.ifpb.alumigest.budgets.domain.BudgetItemOption;
 import br.edu.ifpb.alumigest.catalog.domain.MaterialCategoryType;
+import br.edu.ifpb.alumigest.catalog.domain.Product;
+import br.edu.ifpb.alumigest.catalog.domain.TemplateConfig;
 import br.edu.ifpb.alumigest.budgets.service.pdf.strategy.TemplateThumbnailRegistry;
 import br.edu.ifpb.alumigest.budgets.service.pdf.strategy.TemplateVisualContext;
 import br.edu.ifpb.alumigest.budgets.service.pdf.strategy.TemplateVisualContextResolver;
@@ -53,6 +57,7 @@ class BudgetPdfDrawingHelperTest {
 
     @AfterEach
     void tearDown() {
+        TemplateThumbnailRegistry.getInstance().unregister("CUSTOM_PIVOT_FACADE_360");
         try {
             if (document != null && document.isOpen()) {
                 document.close();
@@ -76,92 +81,25 @@ class BudgetPdfDrawingHelperTest {
 
     // ── Testes por Tipologia ─────────────────────────────────────────────
 
-    @Test
-    @DisplayName("Deve desenhar miniatura SLIDING_2_LEAF (Janela Correr 2 Folhas) sem erro")
-    void deveDesenharMiniaturaSlidingDuasFolhasSemErro() {
-        BudgetItem item = criarItemComTipologia("SLIDING_2_LEAF");
+    @ParameterizedTest(name = "Deve desenhar miniatura {0} sem erro")
+    @ValueSource(strings = {
+        "SLIDING_2_LEAF",
+        "SLIDING_4_LEAF",
+        "SWING_1_LEAF",
+        "SWING_2_LEAF",
+        "MAX_AR_WINDOW_1_LEAF",
+        "MAX_AR_WINDOW_INVERSE_1_LEAF",
+        "FIXED_PANEL",
+        "DRAWER_FRONT"
+    })
+    @DisplayName("Deve desenhar miniatura das tipologias principais sem erro")
+    void deveDesenharMiniaturaPrincipaisTipologiasSemErro(String templateType) {
+        BudgetItem item = criarItemComTipologia(templateType);
 
         Image imagem = BudgetPdfDrawingHelper.desenharMiniaturaEsquadria(writer, item,
                 BudgetPdfDrawingHelper.DEFAULT_WIDTH, BudgetPdfDrawingHelper.DEFAULT_HEIGHT);
 
-        assertNotNull(imagem, "A imagem retornada não deve ser nula");
-    }
-
-    @Test
-    @DisplayName("Deve desenhar miniatura SLIDING_4_LEAF (Janela Correr 4 Folhas) sem erro")
-    void deveDesenharMiniaturaSlidingQuatroFolhasSemErro() {
-        BudgetItem item = criarItemComTipologia("SLIDING_4_LEAF");
-
-        Image imagem = BudgetPdfDrawingHelper.desenharMiniaturaEsquadria(writer, item,
-                BudgetPdfDrawingHelper.DEFAULT_WIDTH, BudgetPdfDrawingHelper.DEFAULT_HEIGHT);
-
-        assertNotNull(imagem, "A imagem retornada não deve ser nula");
-    }
-
-    @Test
-    @DisplayName("Deve desenhar miniatura SWING_1_LEAF (Porta Giro 1 Folha) sem erro")
-    void deveDesenharMiniaturaSwingUmaFolhaSemErro() {
-        BudgetItem item = criarItemComTipologia("SWING_1_LEAF");
-
-        Image imagem = BudgetPdfDrawingHelper.desenharMiniaturaEsquadria(writer, item,
-                BudgetPdfDrawingHelper.DEFAULT_WIDTH, BudgetPdfDrawingHelper.DEFAULT_HEIGHT);
-
-        assertNotNull(imagem, "A imagem retornada não deve ser nula");
-    }
-
-    @Test
-    @DisplayName("Deve desenhar miniatura SWING_2_LEAF (Porta Giro 2 Folhas) sem erro")
-    void deveDesenharMiniaturaSwingDuasFolhasSemErro() {
-        BudgetItem item = criarItemComTipologia("SWING_2_LEAF");
-
-        Image imagem = BudgetPdfDrawingHelper.desenharMiniaturaEsquadria(writer, item,
-                BudgetPdfDrawingHelper.DEFAULT_WIDTH, BudgetPdfDrawingHelper.DEFAULT_HEIGHT);
-
-        assertNotNull(imagem, "A imagem retornada não deve ser nula");
-    }
-
-    @Test
-    @DisplayName("Deve desenhar miniatura MAX_AR_WINDOW_1_LEAF (Maxim-Ar) sem erro")
-    void deveDesenharMiniaturaMaximArSemErro() {
-        BudgetItem item = criarItemComTipologia("MAX_AR_WINDOW_1_LEAF");
-
-        Image imagem = BudgetPdfDrawingHelper.desenharMiniaturaEsquadria(writer, item,
-                BudgetPdfDrawingHelper.DEFAULT_WIDTH, BudgetPdfDrawingHelper.DEFAULT_HEIGHT);
-
-        assertNotNull(imagem, "A imagem retornada não deve ser nula");
-    }
-
-    @Test
-    @DisplayName("Deve desenhar miniatura MAX_AR_WINDOW_INVERSE_1_LEAF (Maxim-Ar Invertido) sem erro")
-    void deveDesenharMiniaturaMaximArInvertidoSemErro() {
-        BudgetItem item = criarItemComTipologia("MAX_AR_WINDOW_INVERSE_1_LEAF");
-
-        Image imagem = BudgetPdfDrawingHelper.desenharMiniaturaEsquadria(writer, item,
-                BudgetPdfDrawingHelper.DEFAULT_WIDTH, BudgetPdfDrawingHelper.DEFAULT_HEIGHT);
-
-        assertNotNull(imagem, "A imagem retornada não deve ser nula");
-    }
-
-    @Test
-    @DisplayName("Deve desenhar miniatura FIXED_PANEL (Painel Fixo) sem erro")
-    void deveDesenharMiniaturaPainelFixoSemErro() {
-        BudgetItem item = criarItemComTipologia("FIXED_PANEL");
-
-        Image imagem = BudgetPdfDrawingHelper.desenharMiniaturaEsquadria(writer, item,
-                BudgetPdfDrawingHelper.DEFAULT_WIDTH, BudgetPdfDrawingHelper.DEFAULT_HEIGHT);
-
-        assertNotNull(imagem, "A imagem retornada não deve ser nula");
-    }
-
-    @Test
-    @DisplayName("Deve desenhar miniatura DRAWER_FRONT (Gaveta) sem erro")
-    void deveDesenharMiniaturaGavetaSemErro() {
-        BudgetItem item = criarItemComTipologia("DRAWER_FRONT");
-
-        Image imagem = BudgetPdfDrawingHelper.desenharMiniaturaEsquadria(writer, item,
-                BudgetPdfDrawingHelper.DEFAULT_WIDTH, BudgetPdfDrawingHelper.DEFAULT_HEIGHT);
-
-        assertNotNull(imagem, "A imagem retornada não deve ser nula");
+        assertNotNull(imagem, "A imagem retornada não deve ser nula para " + templateType);
     }
 
     // ── Teste de Dimensões ───────────────────────────────────────────────
@@ -293,37 +231,16 @@ class BudgetPdfDrawingHelperTest {
 
     // ── Teste de resolução por Alias ─────────────────────────────────────
 
-    @Test
-    @DisplayName("Deve resolver alias SLIDING para SLIDING_2_LEAF")
-    void deveResolverAliasSlidingParaSlidingDuasFolhas() {
-        BudgetItem item = criarItemComTipologia("SLIDING");
+    @ParameterizedTest(name = "Deve resolver alias {0} sem erro")
+    @ValueSource(strings = {"SLIDING", "SWING", "FIXED"})
+    @DisplayName("Deve resolver aliases de tipologias sem erro")
+    void deveResolverAliasesDeTipologias(String alias) {
+        BudgetItem item = criarItemComTipologia(alias);
 
         Image imagem = BudgetPdfDrawingHelper.desenharMiniaturaEsquadria(writer, item,
                 BudgetPdfDrawingHelper.DEFAULT_WIDTH, BudgetPdfDrawingHelper.DEFAULT_HEIGHT);
 
-        assertNotNull(imagem, "Deve gerar miniatura usando alias 'SLIDING'");
-    }
-
-    @Test
-    @DisplayName("Deve resolver alias SWING para SWING_1_LEAF")
-    void deveResolverAliasSwingParaSwingUmaFolha() {
-        BudgetItem item = criarItemComTipologia("SWING");
-
-        Image imagem = BudgetPdfDrawingHelper.desenharMiniaturaEsquadria(writer, item,
-                BudgetPdfDrawingHelper.DEFAULT_WIDTH, BudgetPdfDrawingHelper.DEFAULT_HEIGHT);
-
-        assertNotNull(imagem, "Deve gerar miniatura usando alias 'SWING'");
-    }
-
-    @Test
-    @DisplayName("Deve resolver alias FIXED para FIXED_PANEL")
-    void deveResolverAliasFixedParaPainelFixo() {
-        BudgetItem item = criarItemComTipologia("FIXED");
-
-        Image imagem = BudgetPdfDrawingHelper.desenharMiniaturaEsquadria(writer, item,
-                BudgetPdfDrawingHelper.DEFAULT_WIDTH, BudgetPdfDrawingHelper.DEFAULT_HEIGHT);
-
-        assertNotNull(imagem, "Deve gerar miniatura usando alias 'FIXED'");
+        assertNotNull(imagem, "Deve gerar miniatura usando alias '" + alias + "'");
     }
 
     // ── Testes de SOLID: Extensibilidade, Exclusão e Edição de Templates ──
@@ -451,6 +368,177 @@ class BudgetPdfDrawingHelperTest {
                 BudgetPdfDrawingHelper.desenharMiniaturaEsquadria(writer, itemComTudoNulo));
 
         assertNotNull(imagem, "Deve gerar imagem padrão limpa sem exceção");
+    }
+
+    @ParameterizedTest(name = "Deve resolver paleta de perfil {0} corretamente")
+    @CsvSource({
+        "Preto Fosco, 33, 33, 33, 9, 9, 11",
+        "Black Piano, 33, 33, 33, 9, 9, 11",
+        "#212121, 33, 33, 33, 9, 9, 11",
+        "Branco Neve, 248, 250, 252, 148, 163, 184",
+        "White, 248, 250, 252, 148, 163, 184",
+        "#ffffff, 248, 250, 252, 148, 163, 184",
+        "Bronze 1002, 120, 53, 15, 69, 26, 3",
+        "Champagne, 120, 53, 15, 69, 26, 3",
+        "#8c6239, 120, 53, 15, 69, 26, 3",
+        "Dourado Real, 180, 83, 9, 120, 53, 15",
+        "Gold, 180, 83, 9, 120, 53, 15",
+        "#d4af37, 180, 83, 9, 120, 53, 15",
+        "Inox Escovado, 148, 163, 184, 71, 85, 105",
+        "Cromado Polido, 148, 163, 184, 71, 85, 105",
+        "#9e9e9e, 148, 163, 184, 71, 85, 105",
+        "Fosco Anodizado, 71, 85, 105, 30, 41, 59",
+        "Anodizado Natural, 71, 85, 105, 30, 41, 59",
+        "#b0bec5, 71, 85, 105, 30, 41, 59"
+    })
+    @DisplayName("Deve resolver todas as paletas de perfis de alumínio")
+    void deveResolverTodasPaletasDePerfis(String cor, int rFill, int gFill, int bFill, int rStroke, int gStroke, int bStroke) {
+        BudgetItem item = criarItemComTipologia("SLIDING_2_LEAF");
+        BudgetItemOption opt = new BudgetItemOption();
+        opt.setCategoryType(MaterialCategoryType.PROFILE);
+        opt.setSelectedColor(cor);
+        item.addOption(opt);
+
+        TemplateVisualContext ctx = TemplateVisualContextResolver.resolve(item);
+        assertEquals(new Color(rFill, gFill, bFill), ctx.frameFill());
+        assertEquals(new Color(rStroke, gStroke, bStroke), ctx.frameStroke());
+    }
+
+    @ParameterizedTest(name = "Deve resolver paleta de vidro {0} corretamente")
+    @CsvSource({
+        "Fumê Temperado, 100, 116, 139, 71, 85, 105",
+        "Cinza Escuro, 100, 116, 139, 71, 85, 105",
+        "#595959, 100, 116, 139, 71, 85, 105",
+        "Verde Laminado, 167, 243, 208, 110, 231, 183",
+        "Green, 167, 243, 208, 110, 231, 183",
+        "#e0f2f1, 167, 243, 208, 110, 231, 183",
+        "Reflecta Bronze, 254, 215, 170, 253, 186, 116",
+        "Bronze Champ, 254, 215, 170, 253, 186, 116",
+        "#b87333, 254, 215, 170, 253, 186, 116",
+        "Canelado 4mm, 241, 245, 249, 226, 232, 240",
+        "Texturizado Mini-Boreal, 241, 245, 249, 226, 232, 240",
+        "#e0e0e0, 241, 245, 249, 226, 232, 240"
+    })
+    @DisplayName("Deve resolver todas as paletas de acabamentos de vidros")
+    void deveResolverTodasPaletasDeVidros(String cor, int rFill, int gFill, int bFill, int rFixed, int gFixed, int bFixed) {
+        BudgetItem item = criarItemComTipologia("SLIDING_2_LEAF");
+        BudgetItemOption opt = new BudgetItemOption();
+        opt.setCategoryType(MaterialCategoryType.GLASS);
+        opt.setSelectedColor(cor);
+        item.addOption(opt);
+
+        TemplateVisualContext ctx = TemplateVisualContextResolver.resolve(item);
+        assertEquals(new Color(rFill, gFill, bFill), ctx.glassFill());
+        assertEquals(new Color(rFixed, gFixed, bFixed), ctx.fixedGlassFill());
+    }
+
+    @Test
+    @DisplayName("Deve resolver acabamento de vidro a partir da opção com categoria FILM")
+    void deveResolverAcabamentoVidroViaCategoriaFilm() {
+        BudgetItem item = criarItemComTipologia("SLIDING_2_LEAF");
+        BudgetItemOption opt = new BudgetItemOption();
+        opt.setCategoryType(MaterialCategoryType.FILM);
+        opt.setSelectedColor("Fumê");
+        item.addOption(opt);
+
+        TemplateVisualContext ctx = TemplateVisualContextResolver.resolve(item);
+        assertEquals(new Color(100, 116, 139), ctx.glassFill());
+    }
+
+    @Test
+    @DisplayName("Deve resolver cor a partir do materialName se selectedColor for nula ou em branco")
+    void deveResolverCorViaMaterialNameQuandoSelectedColorAusente() {
+        BudgetItem item = criarItemComTipologia("SWING_1_LEAF");
+        BudgetItemOption optPerfil = new BudgetItemOption();
+        optPerfil.setCategoryType(MaterialCategoryType.PROFILE);
+        optPerfil.setSelectedColor("   ");
+        optPerfil.setMaterialName("Alumínio Branco");
+        item.addOption(optPerfil);
+
+        BudgetItemOption optVidro = new BudgetItemOption();
+        optVidro.setCategoryType(MaterialCategoryType.GLASS);
+        optVidro.setSelectedColor(null);
+        optVidro.setMaterialName("Vidro Verde");
+        item.addOption(optVidro);
+
+        TemplateVisualContext ctx = TemplateVisualContextResolver.resolve(item);
+        assertEquals(new Color(248, 250, 252), ctx.frameFill());
+        assertEquals(new Color(167, 243, 208), ctx.glassFill());
+    }
+
+    @Test
+    @DisplayName("Deve resolver cor a partir do TemplateConfig do Produto vinculado")
+    void deveResolverCorViaProdutoVinculado() {
+        BudgetItem item = criarItemComTipologia("SLIDING_2_LEAF");
+        Product produto = new Product();
+        TemplateConfig config = new TemplateConfig();
+        config.setAluminumColor("Branco");
+        config.setGlassColor("Verde");
+        produto.setTemplateConfig(config);
+        item.setProduct(produto);
+
+        TemplateVisualContext ctx = TemplateVisualContextResolver.resolve(item);
+        assertEquals(new Color(248, 250, 252), ctx.frameFill());
+        assertEquals(new Color(167, 243, 208), ctx.glassFill());
+    }
+
+    @Test
+    @DisplayName("Deve ignorar TemplateConfig com valores vazios ou Produto nulo")
+    void deveIgnorarTemplateConfigVazio() {
+        BudgetItem item = criarItemComTipologia("SLIDING_2_LEAF");
+        Product produto = new Product();
+        TemplateConfig config = new TemplateConfig();
+        config.setAluminumColor("  ");
+        config.setGlassColor(null);
+        produto.setTemplateConfig(config);
+        item.setProduct(produto);
+
+        TemplateVisualContext ctx = TemplateVisualContextResolver.resolve(item);
+        assertEquals(TemplateVisualContext.DEFAULT_FRAME_FILL, ctx.frameFill());
+        assertEquals(TemplateVisualContext.DEFAULT_GLASS_FILL, ctx.glassFill());
+    }
+
+    @Test
+    @DisplayName("Deve resolver JSON com valores nulos, numéricos e fallback seguro de parsing")
+    void deveResolverJsonComValoresNulosENumericos() {
+        BudgetItem item = criarItemComTipologia("SLIDING_2_LEAF");
+        item.setTemplateConfig("{\"aluminumColor\": null, \"glassColor\": \"verde\", \"numericProp\": 123}");
+
+        TemplateVisualContext ctx = TemplateVisualContextResolver.resolve(item);
+        assertEquals(TemplateVisualContext.DEFAULT_FRAME_FILL, ctx.frameFill());
+        assertEquals(new Color(167, 243, 208), ctx.glassFill());
+    }
+
+    @Test
+    @DisplayName("Deve tratar JSON malformado ou corrompido sem lançar exceções")
+    void deveTratarJsonMalformadoDefensivamente() {
+        BudgetItem item = criarItemComTipologia("SLIDING_2_LEAF");
+        item.setTemplateConfig("{malformed_json: true");
+
+        TemplateVisualContext ctx = TemplateVisualContextResolver.resolve(item);
+        assertEquals(TemplateVisualContext.DEFAULT_FRAME_FILL, ctx.frameFill());
+        assertEquals(TemplateVisualContext.DEFAULT_GLASS_FILL, ctx.glassFill());
+    }
+
+    @Test
+    @DisplayName("Deve utilizar cores padrão para opções de cores desconhecidas ou não mapeadas")
+    void deveUsarCoresPadraoParaCoresDesconhecidas() {
+        BudgetItem item = criarItemComTipologia("SLIDING_2_LEAF");
+        BudgetItemOption optPerfil = new BudgetItemOption();
+        optPerfil.setCategoryType(MaterialCategoryType.PROFILE);
+        optPerfil.setSelectedColor("AzulTurquesaInexistente");
+        item.addOption(optPerfil);
+
+        BudgetItemOption optVidro = new BudgetItemOption();
+        optVidro.setCategoryType(MaterialCategoryType.GLASS);
+        optVidro.setSelectedColor("VermelhoFogoInexistente");
+        item.addOption(optVidro);
+
+        TemplateVisualContext ctx = TemplateVisualContextResolver.resolve(item);
+        assertEquals(TemplateVisualContext.DEFAULT_FRAME_FILL, ctx.frameFill());
+        assertEquals(TemplateVisualContext.DEFAULT_FRAME_STROKE, ctx.frameStroke());
+        assertEquals(TemplateVisualContext.DEFAULT_GLASS_FILL, ctx.glassFill());
+        assertEquals(TemplateVisualContext.DEFAULT_FIXED_GLASS, ctx.fixedGlassFill());
     }
 
     // ── Geração de PDF de Demonstração para Visualização ─────────────────

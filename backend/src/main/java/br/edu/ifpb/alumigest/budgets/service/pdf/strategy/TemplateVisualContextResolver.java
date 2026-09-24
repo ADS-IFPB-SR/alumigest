@@ -3,10 +3,10 @@ package br.edu.ifpb.alumigest.budgets.service.pdf.strategy;
 import br.edu.ifpb.alumigest.budgets.domain.BudgetItem;
 import br.edu.ifpb.alumigest.budgets.domain.BudgetItemOption;
 import br.edu.ifpb.alumigest.catalog.domain.MaterialCategoryType;
-import br.edu.ifpb.alumigest.catalog.domain.TemplateConfig;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.awt.Color;
-import java.math.BigDecimal;
 import java.util.Locale;
 
 /**
@@ -14,9 +14,12 @@ import java.util.Locale;
  *
  * <p>Extrai as cores do perfil de alumínio e do acabamento de vidro diretamente das
  * opções do orçamento ({@link BudgetItemOption}) e da configuração paramétrica do
- * produto ({@link TemplateConfig}), garantindo perfeita sincronia estética com o preview SVG.</p>
+ * produto, garantindo perfeita sincronia estética com o preview SVG.</p>
  */
 public final class TemplateVisualContextResolver {
+
+    private static final String BRONZE = "bronze";
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private TemplateVisualContextResolver() {
         // Classe utilitária pura
@@ -27,7 +30,7 @@ public final class TemplateVisualContextResolver {
      * Opera defensivamente: qualquer campo nulo ou ausente utiliza os valores padrão.
      *
      * @param item item do orçamento
-     * @return contexto visual com cores reais e proporções
+     * @return contexto visual com cores reais
      */
     public static TemplateVisualContext resolve(BudgetItem item) {
         if (item == null) {
@@ -43,88 +46,101 @@ public final class TemplateVisualContextResolver {
         Color glassFill = resolverCorVidroFill(rawGlassFinish);
         Color fixedGlassFill = resolverCorVidroFixo(rawGlassFinish);
 
-        float aspectRatio = calcularProporcao(item.getWidthMm(), item.getHeightMm());
-        boolean hasGlass = !isTemplateSemVidro(item.getTemplateType());
-
         return new TemplateVisualContext(
                 frameFill,
                 frameStroke,
                 glassFill,
                 fixedGlassFill,
                 TemplateVisualContext.DEFAULT_DIVIDER,
-                TemplateVisualContext.DEFAULT_INDICATOR,
-                aspectRatio,
-                hasGlass
+                TemplateVisualContext.DEFAULT_INDICATOR
         );
     }
 
     private static String extrairCorAluminio(BudgetItem item) {
-        // 1. Prioridade: Opções de Materiais selecionadas no item (categoria PROFILE)
-        if (item.getOptions() != null) {
-            for (BudgetItemOption opt : item.getOptions()) {
-                if (opt.getCategoryType() == MaterialCategoryType.PROFILE) {
-                    if (opt.getSelectedColor() != null && !opt.getSelectedColor().isBlank()) {
-                        return opt.getSelectedColor();
-                    }
-                    if (opt.getMaterialName() != null && !opt.getMaterialName().isBlank()) {
-                        return opt.getMaterialName();
-                    }
-                }
-            }
+        String corOpcao = extrairCorDeOpcoes(item, MaterialCategoryType.PROFILE);
+        if (corOpcao != null) {
+            return corOpcao;
         }
 
-        // 2. Segunda prioridade: Configuração paramétrica do produto vinculado
-        if (item.getProduct() != null && item.getProduct().getTemplateConfig() != null) {
-            TemplateConfig config = item.getProduct().getTemplateConfig();
-            if (config.getAluminumColor() != null && !config.getAluminumColor().isBlank()) {
-                return config.getAluminumColor();
-            }
+        String corProduto = extrairCorPerfilProduto(item);
+        if (corProduto != null) {
+            return corProduto;
         }
 
-        // 3. Terceira prioridade: JSON templateConfig do item
-        String jsonConfig = item.getTemplateConfig();
-        if (jsonConfig != null && jsonConfig.contains("aluminumColor")) {
-            return extrairValorJson(jsonConfig, "aluminumColor");
-        }
-
-        return null;
+        return extrairValorJson(item.getTemplateConfig(), "aluminumColor");
     }
 
     private static String extrairAcabamentoVidro(BudgetItem item) {
-        // 1. Prioridade: Opções de Materiais selecionadas no item (categoria GLASS ou FILM)
-        if (item.getOptions() != null) {
-            for (BudgetItemOption opt : item.getOptions()) {
-                if (opt.getCategoryType() == MaterialCategoryType.GLASS || opt.getCategoryType() == MaterialCategoryType.FILM) {
-                    if (opt.getSelectedColor() != null && !opt.getSelectedColor().isBlank()) {
-                        return opt.getSelectedColor();
-                    }
-                    if (opt.getMaterialName() != null && !opt.getMaterialName().isBlank()) {
-                        return opt.getMaterialName();
-                    }
+        String corOpcao = extrairCorVidroDeOpcoes(item);
+        if (corOpcao != null) {
+            return corOpcao;
+        }
+
+        String corProduto = extrairCorVidroProduto(item);
+        if (corProduto != null) {
+            return corProduto;
+        }
+
+        String jsonConfig = item.getTemplateConfig();
+        String glassFinish = extrairValorJson(jsonConfig, "glassFinish");
+        return glassFinish != null ? glassFinish : extrairValorJson(jsonConfig, "glassColor");
+    }
+
+    private static String extrairCorDeOpcoes(BudgetItem item, MaterialCategoryType targetCategory) {
+        if (item.getOptions() == null) {
+            return null;
+        }
+        for (BudgetItemOption opt : item.getOptions()) {
+            if (opt.getCategoryType() == targetCategory) {
+                String valor = extrairCorOuNome(opt);
+                if (valor != null) {
+                    return valor;
                 }
             }
         }
-
-        // 2. Segunda prioridade: Configuração paramétrica do produto vinculado
-        if (item.getProduct() != null && item.getProduct().getTemplateConfig() != null) {
-            TemplateConfig config = item.getProduct().getTemplateConfig();
-            if (config.getGlassColor() != null && !config.getGlassColor().isBlank()) {
-                return config.getGlassColor();
-            }
-        }
-
-        // 3. Terceira prioridade: JSON templateConfig do item
-        String jsonConfig = item.getTemplateConfig();
-        if (jsonConfig != null) {
-            if (jsonConfig.contains("glassFinish")) {
-                return extrairValorJson(jsonConfig, "glassFinish");
-            }
-            if (jsonConfig.contains("glassColor")) {
-                return extrairValorJson(jsonConfig, "glassColor");
-            }
-        }
-
         return null;
+    }
+
+    private static String extrairCorVidroDeOpcoes(BudgetItem item) {
+        if (item.getOptions() == null) {
+            return null;
+        }
+        for (BudgetItemOption opt : item.getOptions()) {
+            MaterialCategoryType cat = opt.getCategoryType();
+            if (cat == MaterialCategoryType.GLASS || cat == MaterialCategoryType.FILM) {
+                String valor = extrairCorOuNome(opt);
+                if (valor != null) {
+                    return valor;
+                }
+            }
+        }
+        return null;
+    }
+
+    private static String extrairCorOuNome(BudgetItemOption opt) {
+        if (opt.getSelectedColor() != null && !opt.getSelectedColor().isBlank()) {
+            return opt.getSelectedColor();
+        }
+        if (opt.getMaterialName() != null && !opt.getMaterialName().isBlank()) {
+            return opt.getMaterialName();
+        }
+        return null;
+    }
+
+    private static String extrairCorPerfilProduto(BudgetItem item) {
+        if (item.getProduct() == null || item.getProduct().getTemplateConfig() == null) {
+            return null;
+        }
+        String color = item.getProduct().getTemplateConfig().getAluminumColor();
+        return (color != null && !color.isBlank()) ? color : null;
+    }
+
+    private static String extrairCorVidroProduto(BudgetItem item) {
+        if (item.getProduct() == null || item.getProduct().getTemplateConfig() == null) {
+            return null;
+        }
+        String color = item.getProduct().getTemplateConfig().getGlassColor();
+        return (color != null && !color.isBlank()) ? color : null;
     }
 
     // ── Resolução de Paleta de Perfis ────────────────────────────────────
@@ -140,7 +156,7 @@ public final class TemplateVisualContextResolver {
         if (n.contains("branco") || n.contains("white") || n.contains("#ffffff")) {
             return new Color(248, 250, 252);    // #f8fafc
         }
-        if (n.contains("bronze") || n.contains("champ") || n.contains("#8c6239")) {
+        if (n.contains(BRONZE) || n.contains("champ") || n.contains("#8c6239")) {
             return new Color(120, 53, 15);      // #78350f
         }
         if (n.contains("dourad") || n.contains("gold") || n.contains("#d4af37")) {
@@ -166,7 +182,7 @@ public final class TemplateVisualContextResolver {
         if (n.contains("branco") || n.contains("white") || n.contains("#ffffff")) {
             return new Color(148, 163, 184);    // #94a3b8
         }
-        if (n.contains("bronze") || n.contains("champ") || n.contains("#8c6239")) {
+        if (n.contains(BRONZE) || n.contains("champ") || n.contains("#8c6239")) {
             return new Color(69, 26, 3);        // #451a03
         }
         if (n.contains("dourad") || n.contains("gold") || n.contains("#d4af37")) {
@@ -194,7 +210,7 @@ public final class TemplateVisualContextResolver {
         if (n.contains("verde") || n.contains("green") || n.contains("#e0f2f1")) {
             return new Color(167, 243, 208);    // #a7f3d0
         }
-        if (n.contains("reflecta") || n.contains("bronze") || n.contains("#b87333")) {
+        if (n.contains("reflecta") || n.contains(BRONZE) || n.contains("#b87333")) {
             return new Color(254, 215, 170);    // #fed7aa
         }
         if (n.contains("canelad") || n.contains("textur") || n.contains("#e0e0e0")) {
@@ -214,7 +230,7 @@ public final class TemplateVisualContextResolver {
         if (n.contains("verde") || n.contains("green") || n.contains("#e0f2f1")) {
             return new Color(110, 231, 183);    // #6ee7b7
         }
-        if (n.contains("reflecta") || n.contains("bronze") || n.contains("#b87333")) {
+        if (n.contains("reflecta") || n.contains(BRONZE) || n.contains("#b87333")) {
             return new Color(253, 186, 116);    // #fdba74
         }
         if (n.contains("canelad") || n.contains("textur") || n.contains("#e0e0e0")) {
@@ -223,28 +239,19 @@ public final class TemplateVisualContextResolver {
         return TemplateVisualContext.DEFAULT_FIXED_GLASS;
     }
 
-    private static float calcularProporcao(BigDecimal widthMm, BigDecimal heightMm) {
-        if (widthMm == null || heightMm == null || widthMm.signum() <= 0 || heightMm.signum() <= 0) {
-            return 1.0f;
-        }
-        return widthMm.floatValue() / heightMm.floatValue();
-    }
-
-    private static boolean isTemplateSemVidro(String templateType) {
-        if (templateType == null) return false;
-        String t = templateType.toUpperCase(Locale.ROOT);
-        return t.contains("DRAWER") || t.contains("GAVETA");
-    }
-
     private static String extrairValorJson(String json, String key) {
-        int idx = json.indexOf("\"" + key + "\"");
-        if (idx == -1) return null;
-        int colon = json.indexOf(':', idx);
-        if (colon == -1) return null;
-        int startQuote = json.indexOf('"', colon);
-        if (startQuote == -1) return null;
-        int endQuote = json.indexOf('"', startQuote + 1);
-        if (endQuote == -1) return null;
-        return json.substring(startQuote + 1, endQuote);
+        if (json == null || json.isBlank()) {
+            return null;
+        }
+        try {
+            JsonNode root = OBJECT_MAPPER.readTree(json);
+            if (root == null) {
+                return null;
+            }
+            JsonNode node = root.get(key);
+            return (node != null && !node.isNull()) ? node.asText() : null;
+        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+            return null;
+        }
     }
 }
