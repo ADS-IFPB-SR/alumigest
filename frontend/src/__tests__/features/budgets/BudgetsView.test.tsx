@@ -171,5 +171,10 @@ describe('BudgetsView Component [Joseph Nichollas]', () => {
     expect(useBudgetsSpy).toHaveBeenCalledWith(
       expect.objectContaining({ sort: 'total,desc' })
     );
+
+    // Testar busca
+    const searchInput = screen.getByPlaceholderText('Buscar por código ou cliente...');
+    fireEvent.change(searchInput, { target: { value: 'Cliente' } });
+    expect(searchInput).toHaveValue('Cliente');
   });
 });
