@@ -159,5 +159,82 @@ describe('useMaterialSync and Material Helpers', () => {
       const notFound = result.current.findCatalogMaterial('unknown-id');
       expect(notFound).toBeNull();
     });
+
+    describe('buildSelectionsForTemplate', () => {
+      it('deve montar seleções a partir de targetTemplate.items', () => {
+        const { result } = renderHook(() =>
+          useMaterialSync({
+            glasses: mockGlasses,
+            profiles: mockProfiles,
+            hardwares: mockHardwares,
+            films: mockFilms,
+          })
+        );
+
+        const template = {
+          id: 'temp-1',
+          name: 'Janela Teste',
+          items: [
+            { id: 'item-1', materialId: 'g-1', materialName: 'Vidro', quantity: 2 },
+          ],
+        };
+
+        const selections = result.current.buildSelectionsForTemplate(template as any, 1000, 1000);
+        expect(selections).toHaveLength(1);
+        expect(selections[0].materialId).toBe('g-1');
+        expect(selections[0].quantity).toBe(2);
+        expect(selections[0].totalPrice).toBe(300.0);
+      });
+
+      it('deve montar seleções a partir de categoryRequirements com cores combinadas', () => {
+        const { result } = renderHook(() =>
+          useMaterialSync({
+            glasses: mockGlasses,
+            profiles: mockProfiles,
+            hardwares: mockHardwares,
+            films: mockFilms,
+          })
+        );
+
+        const template = {
+          id: 'temp-2',
+          name: 'Porta 2 Folhas',
+          categoryRequirements: ['GLASS', 'PROFILE', 'HARDWARE', 'FILM'],
+        };
+
+        const selections = result.current.buildSelectionsForTemplate(
+          template as any,
+          1000,
+          2000,
+          'Branco',
+          'Incolor'
+        );
+        expect(selections).toHaveLength(4);
+        expect(selections.find((s) => s.categoryType === 'GLASS')?.materialId).toBe('g-1');
+        expect(selections.find((s) => s.categoryType === 'PROFILE')?.materialId).toBe('p-1');
+      });
+
+      it('deve gerar seleções de fallback quando template não tiver items nem categoryRequirements', () => {
+        const { result } = renderHook(() =>
+          useMaterialSync({
+            glasses: mockGlasses,
+            profiles: mockProfiles,
+            hardwares: mockHardwares,
+            films: mockFilms,
+          })
+        );
+
+        const template = {
+          id: 'temp-fallback',
+          name: 'Sem Requisitos',
+        };
+
+        const selections = result.current.buildSelectionsForTemplate(template as any, 1000, 1000);
+        expect(selections.length).toBeGreaterThanOrEqual(3);
+        expect(selections[0].categoryType).toBe('GLASS');
+        expect(selections[1].categoryType).toBe('PROFILE');
+        expect(selections[2].categoryType).toBe('HARDWARE');
+      });
+    });
   });
 });
