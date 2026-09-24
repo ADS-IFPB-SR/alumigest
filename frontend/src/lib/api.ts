@@ -19,10 +19,19 @@ api.interceptors.request.use((config) => {
   return Promise.reject(error);
 });
 
-// Interceptor para extrair o campo "data" do ApiResponse do backend
+// Interceptor para extrair o campo "data" do ApiResponse do backend quando aplicável
 api.interceptors.response.use(
   (response) => {
-    if (response.data && response.data.data !== undefined) {
+    // Preserva Blobs, ArrayBuffers e respostas binárias sem tentar desenvelopar
+    if (response.data instanceof Blob || response.config.responseType === 'blob') {
+      return response;
+    }
+    if (
+      response.data &&
+      typeof response.data === 'object' &&
+      'data' in response.data &&
+      response.data.data !== undefined
+    ) {
       // O backend sempre envelopa a resposta em um ApiResponse { status, message, data }
       response.data = response.data.data;
     }

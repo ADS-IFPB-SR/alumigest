@@ -1,0 +1,228 @@
+package br.edu.ifpb.alumigest.budgets.domain;
+
+import br.edu.ifpb.alumigest.clients.domain.Client;
+import jakarta.persistence.*;
+import java.math.BigDecimal;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
+@Entity
+@Table(name = "tb_budgets")
+public class Budget {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private UUID id;
+
+    @Column(nullable = false, unique = true, length = 50)
+    private String code;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "client_id", nullable = false)
+    private Client client;
+
+    @Column(nullable = false, precision = 12, scale = 2)
+    private BigDecimal subtotal = BigDecimal.ZERO;
+
+    @Column(name = "discount_percent", precision = 5, scale = 2)
+    private BigDecimal discountPercent = BigDecimal.ZERO;
+
+    @Column(name = "discount_value", precision = 12, scale = 2)
+    private BigDecimal discountValue = BigDecimal.ZERO;
+
+    @Column(nullable = false, precision = 12, scale = 2)
+    private BigDecimal total = BigDecimal.ZERO;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 30)
+    private BudgetStatus status = BudgetStatus.DRAFT;
+
+    @Column(columnDefinition = "TEXT")
+    private String notes;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_condition", length = 50)
+    private PaymentCondition paymentCondition;
+
+    @Column(name = "payment_notes", columnDefinition = "TEXT")
+    private String paymentNotes;
+
+    @Column(name = "valid_until", nullable = false)
+    private OffsetDateTime validUntil;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private OffsetDateTime createdAt;
+
+    @Column(name = "updated_at", nullable = false)
+    private OffsetDateTime updatedAt;
+
+    @OneToMany(mappedBy = "budget", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<BudgetItem> items = new ArrayList<>();
+
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = OffsetDateTime.now(ZoneOffset.UTC);
+        this.updatedAt = OffsetDateTime.now(ZoneOffset.UTC);
+        if (this.validUntil == null) {
+            this.validUntil = this.createdAt.plusDays(15);
+        }
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = OffsetDateTime.now(ZoneOffset.UTC);
+    }
+
+    // Métodos Utilitários
+    public void addItem(BudgetItem item) {
+        items.add(item);
+        item.setBudget(this);
+    }
+
+    public void removeItem(BudgetItem item) {
+        items.remove(item);
+        item.setBudget(null);
+    }
+
+    public UUID getId() {
+        return id;
+    }
+
+    public void setId(UUID id) {
+        this.id = id;
+    }
+
+    public String getCode() {
+        return code;
+    }
+
+    public void setCode(String code) {
+        this.code = code;
+    }
+
+    public Client getClient() {
+        return client;
+    }
+
+    public void setClient(Client client) {
+        this.client = client;
+    }
+
+    public BigDecimal getSubtotal() {
+        return subtotal;
+    }
+
+    public void setSubtotal(BigDecimal subtotal) {
+        this.subtotal = subtotal;
+    }
+
+    public BigDecimal getDiscountPercent() {
+        return discountPercent;
+    }
+
+    public void setDiscountPercent(BigDecimal discountPercent) {
+        this.discountPercent = discountPercent;
+    }
+
+    public BigDecimal getDiscountValue() {
+        return discountValue;
+    }
+
+    public void setDiscountValue(BigDecimal discountValue) {
+        this.discountValue = discountValue;
+    }
+
+    public BigDecimal getTotal() {
+        return total;
+    }
+
+    public void setTotal(BigDecimal total) {
+        this.total = total;
+    }
+
+    public BudgetStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(BudgetStatus status) {
+        this.status = status;
+    }
+
+    public String getNotes() {
+        return notes;
+    }
+
+    public void setNotes(String notes) {
+        this.notes = notes;
+    }
+
+    public PaymentCondition getPaymentCondition() {
+        return paymentCondition;
+    }
+
+    public void setPaymentCondition(PaymentCondition paymentCondition) {
+        this.paymentCondition = paymentCondition;
+    }
+
+    public String getPaymentNotes() {
+        return paymentNotes;
+    }
+
+    public void setPaymentNotes(String paymentNotes) {
+        this.paymentNotes = paymentNotes;
+    }
+
+    public OffsetDateTime getValidUntil() {
+        return validUntil;
+    }
+
+    public void setValidUntil(OffsetDateTime validUntil) {
+        this.validUntil = validUntil;
+    }
+
+    public OffsetDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(OffsetDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public OffsetDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(OffsetDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
+    public List<BudgetItem> getItems() {
+        return items;
+    }
+
+    public void setItems(List<BudgetItem> items) {
+        this.items = items;
+    }
+
+    /**
+     * Verifica se o orçamento está expirado.
+     * Considera expirado quando o status for EXPIRED ou quando estiver em DRAFT/SENT
+     * e a data de validade for anterior ao momento atual (UTC).
+     *
+     * @return true se expirado, false caso contrário
+     */
+    public boolean isExpired() {
+        if (this.status == BudgetStatus.EXPIRED) {
+            return true;
+        }
+        if ((this.status == BudgetStatus.DRAFT || this.status == BudgetStatus.SENT)
+                && this.validUntil != null) {
+            return OffsetDateTime.now(ZoneOffset.UTC).isAfter(this.validUntil);
+        }
+        return false;
+    }
+}
+

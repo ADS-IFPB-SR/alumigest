@@ -1,34 +1,17 @@
 package br.edu.ifpb.alumigest.catalog.domain;
 
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
-import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
-import jakarta.persistence.Table;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.PositiveOrZero;
-import jakarta.validation.constraints.Size;
 
 @Entity
 @Table(name = "tb_products")
@@ -43,21 +26,21 @@ public class Product {
     @Column(name = "name", nullable = false, length = 150)
     private String name;
 
-    @NotNull(message = "A categoria do produto é obrigatória")
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "category_id", nullable = false)
-    private ProductCategory category;
+    @NotNull(message = "O modelo de template da esquadria é obrigatório")
+    @Enumerated(EnumType.STRING)
+    @Column(name = "template_type", nullable = false, length = 50)
+    private DoorTemplateType templateType;
 
-    @NotNull(message = "O custo de mão de obra não pode ser nulo")
-    @PositiveOrZero(message = "O custo de mão de obra não pode ser negativo")
-    @Column(name = "labor_cost", nullable = false, precision = 12, scale = 2)
-    private BigDecimal laborCost = BigDecimal.ZERO;
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "template_config", columnDefinition = "jsonb")
+    private TemplateConfig templateConfig;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "category_requirements", columnDefinition = "jsonb")
+    private List<MaterialCategoryType> categoryRequirements = new ArrayList<>();
 
     @Column(name = "is_active", nullable = false)
     private boolean isActive = true;
-
-    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<ProductItem> items = new ArrayList<>();
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
@@ -67,13 +50,28 @@ public class Product {
 
     @PrePersist
     protected void onCreate() {
-        this.createdAt = OffsetDateTime.now();
-        this.updatedAt = OffsetDateTime.now();
+        this.createdAt = OffsetDateTime.now(ZoneOffset.UTC);
+        this.updatedAt = OffsetDateTime.now(ZoneOffset.UTC);
     }
 
     @PreUpdate
     protected void onUpdate() {
-        this.updatedAt = OffsetDateTime.now();
+        this.updatedAt = OffsetDateTime.now(ZoneOffset.UTC);
+    }
+
+    /**
+     * Retorna a categoria canônica da esquadria derivada do template e do nome:
+     * Portas, Janelas, Box ou Móveis / Painéis.
+     */
+    public String getCategoryName() {
+        if (templateType == null) return "Geral";
+        if (name != null && name.toLowerCase().contains("box")) {
+            return "Box";
+        }
+        if (name != null && name.toLowerCase().contains("janela")) {
+            return "Janelas";
+        }
+        return templateType.getGroupName();
     }
 
     // Getters and Setters
@@ -94,20 +92,28 @@ public class Product {
         this.name = name;
     }
 
-    public ProductCategory getCategory() {
-        return category;
+    public DoorTemplateType getTemplateType() {
+        return templateType;
     }
 
-    public void setCategory(ProductCategory category) {
-        this.category = category;
+    public void setTemplateType(DoorTemplateType templateType) {
+        this.templateType = templateType;
     }
 
-    public BigDecimal getLaborCost() {
-        return laborCost;
+    public TemplateConfig getTemplateConfig() {
+        return templateConfig;
     }
 
-    public void setLaborCost(BigDecimal laborCost) {
-        this.laborCost = laborCost;
+    public void setTemplateConfig(TemplateConfig templateConfig) {
+        this.templateConfig = templateConfig;
+    }
+
+    public List<MaterialCategoryType> getCategoryRequirements() {
+        return categoryRequirements;
+    }
+
+    public void setCategoryRequirements(List<MaterialCategoryType> categoryRequirements) {
+        this.categoryRequirements = categoryRequirements != null ? categoryRequirements : new ArrayList<>();
     }
 
     public boolean isActive() {
@@ -118,15 +124,11 @@ public class Product {
         isActive = active;
     }
 
-    public List<ProductItem> getItems() {
-        return items;
+    public OffsetDateTime getCreatedAt() {
+        return createdAt;
     }
 
-    // Método auxiliar para adicionar itens na Ficha Técnica e manter os dois lados
-    // sincronizados
-    public void addItem(ProductItem item) {
-        this.items.add(item);
-        item.setProduct(this);
+    public OffsetDateTime getUpdatedAt() {
+        return updatedAt;
     }
-
 }

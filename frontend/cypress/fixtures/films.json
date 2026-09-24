@@ -1,0 +1,47 @@
+[
+  {
+    "id": "850e8400-e29b-41d4-a716-446655440001",
+    "name": "Película Fumê",
+    "colorFinish": "Fumê",
+    "costPrice": 35.00,
+    "salePrice": 59.90,
+    "unitMeasure": "M2",
+    "thicknessMm": 0.20,
+    "standardLengthM": 30.00,
+    "maxWidthMm": 1520.00,
+    "active": true,
+    "commercialReference": "FIL-FUME-20",
+    "skuCode": "FIL-001",
+    "ncmCode": "39199000"
+  },
+  {
+    "id": "850e8400-e29b-41d4-a716-446655440002",
+    "name": "Película Espelhada",
+    "colorFinish": "Espelhada",
+    "costPrice": 45.00,
+    "salePrice": 74.90,
+    "unitMeasure": "M2",
+    "thicknessMm": 0.25,
+    "standardLengthM": 30.00,
+    "maxWidthMm": 1520.00,
+    "active": true,
+    "commercialReference": "FIL-ESPELHO-25",
+    "skuCode": "FIL-002",
+    "ncmCode": "39199000"
+  },
+  {
+    "id": "850e8400-e29b-41d4-a716-446655440003",
+    "name": "Película Transparente",
+    "colorFinish": "Transparente",
+    "costPrice": 28.00,
+    "salePrice": 49.90,
+    "unitMeasure": "M2",
+    "thicknessMm": 0.15,
+    "standardLengthM": 30.00,
+    "maxWidthMm": 1800.00,
+    "active": false,
+    "commercialReference": "FIL-TRANSP-15",
+    "skuCode": "FIL-003",
+    "ncmCode": "39199000"
+  }
+]

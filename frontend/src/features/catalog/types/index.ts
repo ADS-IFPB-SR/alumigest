@@ -1,3 +1,6 @@
+// Re-export template types
+export * from './templates';
+
 export type MaterialType = 'Glass' | 'Profile' | 'Film' | 'Hardware' | 'Product';
 
 export type UnitMeasure = 'M2' | 'METRO' | 'BARRA_3M' | 'BARRA_6M' | 'UN' | 'PAR' | 'PAIR' | 'KG' | 'LITRO';
@@ -5,7 +8,7 @@ export type UnitMeasure = 'M2' | 'METRO' | 'BARRA_3M' | 'BARRA_6M' | 'UN' | 'PAR
 export type CalculationType = 'SQUARE_METER' | 'LINEAR_METER' | 'UNIT' | 'PAIR' | 'WEIGHT_KG';
 
 export interface GlassDTO {
-  id: string; // Updated to match UUID pattern from backend
+  id: string;
   name: string;
   thicknessMm: number;
   colorFinish: string;
@@ -18,10 +21,11 @@ export interface GlassDTO {
   supplierId?: string;
   supplierName?: string;
   active?: boolean;
+  familyCode?: string;
 }
 
 export interface ProfileDTO {
-  id: string; // UUID from AluminumProfileResponseDTO
+  id: string;
   name: string;
   commercialReference: string;
   ncmCode: string;
@@ -31,12 +35,14 @@ export interface ProfileDTO {
   costPrice: number;
   salePrice: number;
   active: boolean;
-  createdAt?: string; // OffsetDateTime
-  updatedAt?: string; // OffsetDateTime
+  createdAt?: string;
+  updatedAt?: string;
+  familyCode?: string;
+  isHandle?: boolean;
 }
 
 export interface HardwareDTO {
-  id: string; // UUID from HardwareResponseDTO
+  id: string;
   skuCode: string;
   commercialReference?: string;
   name: string;
@@ -45,19 +51,22 @@ export interface HardwareDTO {
   costPrice: number;
   salePrice: number;
   active: boolean;
-  createdAt?: string; // OffsetDateTime
-  updatedAt?: string; // OffsetDateTime
+  createdAt?: string;
+  updatedAt?: string;
+  familyCode?: string;
+  isHandle?: boolean;
 }
 
 export interface FilmDTO {
-  id: string; // UUID from FilmResponseDTO
+  id: string;
   name: string;
   commercialReference?: string;
   skuCode?: string;
   colorFinish: string;
   salePrice: number;
-  unitMeasure: string; // Backend currently returns String, not UnitMeasure enum here
+  unitMeasure: string;
   active?: boolean;
+  familyCode?: string;
 }
 
 export interface PageResponse<T> {
@@ -70,13 +79,6 @@ export interface PageResponse<T> {
   };
 }
 
-export interface ProductCategory {
-  id: string;
-  name: string;
-  description?: string;
-  isActive: boolean;
-}
-
 export interface MaterialSummary {
   id: string;
   name: string;
@@ -87,33 +89,23 @@ export interface MaterialSummary {
   costPrice: number;
   colorFinish?: string;
   isActive: boolean;
-}
-
-export interface ProductItem {
-  id: string;
-  materialId: string;
-  materialName: string;
-  quantity: number;
+  isHandle?: boolean;
 }
 
 export interface Product {
   id: string;
   name: string;
-  categoryId: string;
   categoryName: string;
-  laborCost: number;
+  templateType: import('./templates').DoorTemplateType;
+  templateConfig?: import('./templates').TemplateConfig;
+  categoryRequirements?: import('./templates').MaterialCategoryType[];
   isActive: boolean;
-  items: ProductItem[];
-}
-
-export interface ProductItemRequest {
-  materialId: string;
-  quantity: number;
+  items?: never[];
 }
 
 export interface ProductRequest {
   name: string;
-  categoryId: string;
-  laborCost: number;
-  items: ProductItemRequest[];
+  templateType: import('./templates').DoorTemplateType;
+  templateConfig?: import('./templates').TemplateConfig;
+  categoryRequirements: import('./templates').MaterialCategoryType[];
 }

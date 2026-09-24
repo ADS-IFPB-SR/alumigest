@@ -16,6 +16,9 @@ import java.util.Map;
 @Component
 public class AluminumProfileMapper {
 
+    private static final String ATTR_WEIGHT = "weight";
+    private static final String ATTR_COMMERCIAL_LINE = "commercialLine";
+
     private final ObjectMapper objectMapper;
 
     public AluminumProfileMapper(ObjectMapper objectMapper) {
@@ -31,10 +34,14 @@ public class AluminumProfileMapper {
         material.setCommercialReference(request.commercialReference());
         material.setNcmCode(request.ncmCode());
         material.setColorFinish(request.colorFinish());
+        material.setFamilyCode(request.familyCode());
         material.setStandardLengthM(request.standardLengthM());
         material.setUnitMeasure(UnitMeasure.METRO);
         material.setCostPrice(request.costPrice());
         material.setSalePrice(request.salePrice());
+        if (request.isHandle() != null) {
+            material.setHandle(request.isHandle());
+        }
         
         if (request.weight() != null || request.commercialLine() != null) {
             material.setAttributesJson(buildAttributesJson(request.weight(), request.commercialLine()));
@@ -49,8 +56,8 @@ public class AluminumProfileMapper {
         }
         try {
             Map<String, Object> attrs = new HashMap<>();
-            if (weight != null) attrs.put("weight", weight);
-            if (commercialLine != null) attrs.put("commercialLine", commercialLine);
+            if (weight != null) attrs.put(ATTR_WEIGHT, weight);
+            if (commercialLine != null) attrs.put(ATTR_COMMERCIAL_LINE, commercialLine);
             return objectMapper.writeValueAsString(attrs);
         } catch (JsonProcessingException e) {
             return null;
@@ -67,11 +74,11 @@ public class AluminumProfileMapper {
         if (material.getAttributesJson() != null && !material.getAttributesJson().isEmpty()) {
             try {
                 Map<String, Object> attrs = objectMapper.readValue(material.getAttributesJson(), new TypeReference<Map<String, Object>>(){});
-                if (attrs.containsKey("weight")) {
-                    weight = new BigDecimal(attrs.get("weight").toString());
+                if (attrs.containsKey(ATTR_WEIGHT)) {
+                    weight = new BigDecimal(attrs.get(ATTR_WEIGHT).toString());
                 }
-                if (attrs.containsKey("commercialLine")) {
-                    commercialLine = attrs.get("commercialLine").toString();
+                if (attrs.containsKey(ATTR_COMMERCIAL_LINE)) {
+                    commercialLine = attrs.get(ATTR_COMMERCIAL_LINE).toString();
                 }
             } catch (JsonProcessingException e) {
                 // Ignore parsing errors
@@ -92,7 +99,9 @@ public class AluminumProfileMapper {
                 weight,
                 material.isActive(),
                 material.getCreatedAt(),
-                material.getUpdatedAt()
+                material.getUpdatedAt(),
+                material.getFamilyCode(),
+                material.isHandle()
         );
     }
 }

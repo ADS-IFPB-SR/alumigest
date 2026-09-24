@@ -14,5 +14,22 @@ public record GlassResponseDTO(
         String unitMeasure,
         boolean active,
         BigDecimal maxWidthMm,
-        BigDecimal maxHeightMm
-) {}
+        BigDecimal maxHeightMm,
+        String familyCode
+) {
+    public GlassResponseDTO(
+            UUID id,
+            String name,
+            String colorFinish,
+            String ncmCode,
+            BigDecimal thicknessMm,
+            BigDecimal costPrice,
+            BigDecimal salePrice,
+            String unitMeasure,
+            boolean active,
+            BigDecimal maxWidthMm,
+            BigDecimal maxHeightMm
+    ) {
+        this(id, name, colorFinish, ncmCode, thicknessMm, costPrice, salePrice, unitMeasure, active, maxWidthMm, maxHeightMm, null);
+    }
+}

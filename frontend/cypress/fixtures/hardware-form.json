@@ -1,0 +1,18 @@
+[
+  {
+    "skuCode": "FER-001",
+    "name": "FECHADURA PARA PORTA",
+    "ncmCode": "83014000",
+    "unitMeasure": "UN",
+    "costPrice": "80,00",
+    "salePrice": "129,90"
+  },
+  {
+    "skuCode": "FER-002",
+    "name": "DOBRADICA DE ALUMINIO",
+    "ncmCode": "83021000",
+    "unitMeasure": "PAR",
+    "costPrice": "25,00",
+    "salePrice": "42,90"
+  }
+]

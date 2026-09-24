@@ -1,0 +1,214 @@
+import { useNavigate } from 'react-router-dom';
+import type { BudgetSummary, BudgetStatus } from '../types';
+import { StatusBadge } from './StatusBadge';
+
+interface BudgetsTableProps {
+  readonly data: readonly BudgetSummary[];
+  readonly sortField?: string;
+  readonly sortDirection?: 'asc' | 'desc';
+  readonly onSort: (field: string) => void;
+}
+
+interface SortableHeaderProps {
+  readonly label: string;
+  readonly field: string;
+  readonly activeField?: string;
+  readonly direction?: 'asc' | 'desc';
+  readonly onSort: (field: string) => void;
+  readonly align?: 'left' | 'right' | 'center';
+  readonly className?: string;
+}
+
+function getAlignmentClasses(align: 'left' | 'center' | 'right'): string {
+  if (align === 'right') return 'justify-end text-right';
+  if (align === 'center') return 'justify-center text-center';
+  return 'justify-start text-left';
+}
+
+function SortableHeader({
+  label,
+  field,
+  activeField,
+  direction,
+  onSort,
+  align = 'left',
+  className = '',
+}: SortableHeaderProps) {
+  const isActive = activeField === field;
+
+  return (
+    <th
+      scope="col"
+      aria-label={label}
+      className={`p-0 font-label-bold text-label-bold text-primary text-xs sm:text-sm ${className}`}
+    >
+      <button
+        type="button"
+        aria-label={`Ordenar por ${label}`}
+        onClick={() => onSort(field)}
+        className={`w-full p-xs sm:p-sm lg:p-md flex items-center gap-xs cursor-pointer select-none hover:bg-surface-container transition-colors ${getAlignmentClasses(align)}`}
+      >
+        <span>{label}</span>
+        <span
+          className={`material-symbols-outlined text-[14px] transition-all ${
+            isActive
+              ? 'text-primary opacity-100'
+              : 'text-secondary/40 opacity-0 group-hover:opacity-100'
+          }`}
+        >
+          {isActive && direction === 'desc' ? 'arrow_downward' : 'arrow_upward'}
+        </span>
+      </button>
+    </th>
+  );
+}
+
+function formatDate(isoDate: string): string {
+  if (!isoDate) return '-';
+  const date = new Date(isoDate);
+  if (Number.isNaN(date.getTime())) return isoDate;
+  return date.toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  });
+}
+
+function formatCurrency(value: number): string {
+  return (value || 0).toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+export function BudgetsTable({ data, sortField, sortDirection, onSort }: BudgetsTableProps) {
+  const navigate = useNavigate();
+
+  const handleRowClick = (budget: BudgetSummary) => {
+    navigate(`/orcamentos/${budget.id}`);
+  };
+
+  return (
+    <div className="overflow-x-auto flex-1 w-full relative">
+      <table className="table-zebra w-full text-left border-collapse min-w-[800px]">
+        <thead className="sticky top-0 z-10">
+          <tr className="bg-surface-container-low border-b border-outline-variant group">
+            <SortableHeader
+              label="Código"
+              field="code"
+              activeField={sortField}
+              direction={sortDirection}
+              onSort={onSort}
+            />
+            <SortableHeader
+              label="Cliente"
+              field="customerName"
+              activeField={sortField}
+              direction={sortDirection}
+              onSort={onSort}
+            />
+            <SortableHeader
+              label="Data de Emissão"
+              field="createdAt"
+              activeField={sortField}
+              direction={sortDirection}
+              onSort={onSort}
+            />
+            <th className="p-xs sm:p-sm lg:p-md font-label-bold text-label-bold text-primary text-xs sm:text-sm">
+              Validade
+            </th>
+            <th className="p-xs sm:p-sm lg:p-md font-label-bold text-label-bold text-primary text-xs sm:text-sm text-center">
+              Qtd de Itens
+            </th>
+            <SortableHeader
+              label="Valor Total (R$)"
+              field="total"
+              activeField={sortField}
+              direction={sortDirection}
+              onSort={onSort}
+              align="right"
+            />
+            <th className="p-xs sm:p-sm lg:p-md font-label-bold text-label-bold text-primary text-xs sm:text-sm text-center">
+              Status
+            </th>
+            <th className="p-xs sm:p-sm lg:p-md font-label-bold text-label-bold text-primary text-xs sm:text-sm text-center">
+              Ações
+            </th>
+          </tr>
+        </thead>
+        <tbody className="font-body text-xs sm:text-sm">
+          {data.map((budget) => {
+            const effectiveStatus: BudgetStatus = budget.isExpired ? 'EXPIRED' : budget.status;
+
+            return (
+              <tr
+                key={budget.id}
+                onClick={() => handleRowClick(budget)}
+                className="border-b border-outline-variant/40 hover:bg-surface-container-high transition-colors cursor-pointer group/row"
+              >
+                <td className="p-xs sm:p-sm lg:p-md">
+                  <span className="font-data-mono text-data-mono text-primary font-semibold text-xs">
+                    {budget.code}
+                  </span>
+                </td>
+
+                <td className="p-xs sm:p-sm lg:p-md">
+                  <span className="text-on-surface font-medium">
+                    {budget.customerName || budget.customer?.name || '-'}
+                  </span>
+                </td>
+
+                <td className="p-xs sm:p-sm lg:p-md">
+                  <span className="font-data-mono text-data-mono text-secondary text-xs">
+                    {formatDate(budget.createdAt)}
+                  </span>
+                </td>
+
+                <td className="p-xs sm:p-sm lg:p-md">
+                  <span className="font-data-mono text-data-mono text-secondary text-xs">
+                    {formatDate(budget.validUntil)}
+                  </span>
+                </td>
+
+                <td className="p-xs sm:p-sm lg:p-md text-center">
+                  <span className="font-data-mono text-data-mono text-secondary">
+                    {budget.itemCount}
+                  </span>
+                </td>
+
+                <td className="p-xs sm:p-sm lg:p-md text-right">
+                  <span className="font-data-mono text-data-mono text-primary font-bold">
+                    {formatCurrency(budget.total)}
+                  </span>
+                </td>
+
+                <td className="p-xs sm:p-sm lg:p-md text-center">
+                  <StatusBadge status={effectiveStatus} />
+                </td>
+
+                <td className="p-xs sm:p-sm lg:p-md text-center">
+                  <div className="flex items-center justify-center gap-xs">
+                    <button
+                      type="button"
+                      aria-label={`Ver detalhes do orçamento ${budget.code}`}
+                      title="Ver detalhes"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRowClick(budget);
+                      }}
+                      className="p-xs text-secondary hover:text-primary hover:bg-surface-container rounded-md transition-colors cursor-pointer inline-flex items-center justify-center"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">visibility</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}

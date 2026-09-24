@@ -1,0 +1,24 @@
+[
+  {
+    "skuCode": "FIL-001",
+    "name": "PELICULA FUME",
+    "ncmCode": "39199000",
+    "filmType": "FUME",
+    "thicknessMm": "0.20",
+    "standardLengthM": "30",
+    "maxWidthMm": "1520",
+    "costPrice": "35,00",
+    "salePrice": "59,90"
+  },
+  {
+    "skuCode": "FIL-002",
+    "name": "PELICULA ESPELHADA",
+    "ncmCode": "39199000",
+    "filmType": "ESPELHADA",
+    "thicknessMm": "0.25",
+    "standardLengthM": "30",
+    "maxWidthMm": "1520",
+    "costPrice": "45,00",
+    "salePrice": "74,90"
+  }
+]

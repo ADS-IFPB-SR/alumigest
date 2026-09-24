@@ -31,6 +31,8 @@ backend/logs/
 backend/.env
 !.mvn/wrapper/maven-wrapper.jar
 !backend/.mvn/wrapper/maven-wrapper.jar
+target/
+.scannerwork/
 
 # Frontend - Node / TypeScript / React / Vite / PWA
 frontend/node_modules/
@@ -60,6 +62,8 @@ docker-compose.override.yml
 specs/
 .agents/skills/speckit-*
 
-# Configurações Locais
+# Configurações Locais e Protótipos
 .env
-scratch/
+scratch/
+.prototipos_sprint3_exemplo/
+modular-prototype.html

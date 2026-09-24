@@ -15,9 +15,12 @@ public class OpenApiConfig {
         return new OpenAPI()
                 .info(new Info()
                         .title("AlumiGest API — Gestão e Precificação")
-                        .description("API REST do sistema AlumiGest para gestão de catálogo de insumos, orçamentos e produção de esquadrias e vidraçaria.\n\n" +
-                                "**Parceiro Social:** Alumiportas\n\n" +
-                                "**Instituição:** Instituto Federal da Paraíba (IFPB Campus Sousa)")
+                        .description("""
+                                API REST do sistema AlumiGest para gestão de catálogo de insumos, orçamentos e produção de esquadrias e vidraçaria.
+
+                                **Parceiro Social:** Alumiportas
+
+                                **Instituição:** Instituto Federal da Paraíba (IFPB Campus Santa Rita)""")
                         .version("v0.1.0")
                         .contact(new Contact()
                                 .name("Equipe de Engenharia AlumiGest (IFPB)")

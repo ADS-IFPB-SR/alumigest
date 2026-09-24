@@ -16,6 +16,7 @@
 | Data | Versão | Descrição | Autor |
 |---|---|---|---|
 | 03/08/2026 | 1.0 | Versão inicial do Plano de Projeto | Ítalo Jefferson / Equipe AlumiGest |
+| 18/08/2026 | 1.1 | Ajuste do cronograma de escopo após conclusão e homologação da Sprint 2 | Equipe AlumiGest |
 
 ---
 

@@ -10,5 +10,6 @@ public record MaterialSummaryDTO(
         String commercialReference,
         BigDecimal salePrice,
         BigDecimal costPrice,
-        String unitMeasure
+        String unitMeasure,
+        boolean isHandle
 ) {}

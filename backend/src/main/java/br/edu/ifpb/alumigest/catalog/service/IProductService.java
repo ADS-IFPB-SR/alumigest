@@ -10,6 +10,7 @@ import java.util.UUID;
 public interface IProductService {
     ProductResponseDTO createProduct(ProductRequestDTO request);
     Page<ProductResponseDTO> findProducts(Pageable pageable, boolean activeOnly);
+    ProductResponseDTO findById(UUID id);
     ProductResponseDTO updateProduct(UUID id, ProductRequestDTO request);
     void inactivateProduct(UUID id);
 }
