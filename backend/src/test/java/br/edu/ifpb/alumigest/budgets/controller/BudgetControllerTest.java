@@ -41,6 +41,7 @@ import java.util.List;
 import java.util.UUID;
 import java.time.LocalDate;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -675,25 +676,38 @@ class BudgetControllerTest {
 
         mockMvc.perform(get("/api/budgets/{id}/pdf/comercial", id))
                 .andExpect(status().isOk())
-                .andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.containsString("orcamento-comercial.pdf")));
+                .andExpect(header().string("Content-Disposition", containsString("orcamento-comercial.pdf")));
     }
 
     @Test
-    @DisplayName("Deve retornar 200 e texto formatado do WhatsApp com header charset=UTF-8")
+    @DisplayName("Deve retornar 200 e texto formatado do WhatsApp com header charset=UTF-8 e marcadores corretos [US-10.9]")
     void obterResumoWhatsApp_DeveRetornar200ETexto_QuandoOrcamentoExiste() throws Exception {
         UUID id = UUID.randomUUID();
-        String textoMock = "Olá! 🛠️ Segue o resumo do orçamento...\nTotal: R$ 975,62";
+
+        String textoMock = """
+                📋 *Orçamento ORC-2026-0001*
+                📦 Itens:
+                • 1x Porta - R$ 975,62
+
+                💰 Subtotal: R$ 975,62
+                📦 *TOTAL: R$ 975,62*""";
 
         when(budgetService.gerarResumoWhatsApp(id)).thenReturn(textoMock);
 
         mockMvc.perform(get("/api/budgets/{id}/resumo-whatsapp", id))
                 .andExpect(status().isOk())
+                // Valida o charset UTF-8 (Critério de Aceitação)
                 .andExpect(header().string("Content-Type", MediaType.TEXT_PLAIN_VALUE + ";charset=UTF-8"))
-                .andExpect(content().string(textoMock));
+                // Valida os marcadores de negrito (*) no código e no total (Critério de Aceitação)
+                .andExpect(content().string(containsString("*Orçamento ORC-2026-0001*")))
+                .andExpect(content().string(containsString("*TOTAL:")))
+                // Valida formatação monetária padrão brasileiro com vírgula e R$ (Critério de Aceitação)
+                .andExpect(content().string(containsString("R$ 975,62")))
+                // Valida a presença de itens
+                .andExpect(content().string(containsString("📦 Itens:")));
 
         verify(budgetService).gerarResumoWhatsApp(id);
     }
-
     @Test
     @DisplayName("Deve retornar 404 quando o orçamento não existir ao tentar emitir resumo WhatsApp")
     void obterResumoWhatsApp_DeveRetornar404_QuandoOrcamentoNaoExiste() throws Exception {
