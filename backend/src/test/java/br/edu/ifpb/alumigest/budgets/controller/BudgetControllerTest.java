@@ -679,21 +679,31 @@ class BudgetControllerTest {
     }
 
     @Test
-    @DisplayName("Deve retornar 200 e texto formatado do WhatsApp com header charset=UTF-8")
+    @DisplayName("Deve retornar 200 e texto formatado do WhatsApp com header charset=UTF-8 e marcadores corretos [US-10.9]")
     void obterResumoWhatsApp_DeveRetornar200ETexto_QuandoOrcamentoExiste() throws Exception {
         UUID id = UUID.randomUUID();
-        String textoMock = "Olá! 🛠️ Segue o resumo do orçamento...\nTotal: R$ 975,62";
+
+        String textoMock = "📋 *Orçamento ORC-2026-0001*\n" +
+                "📦 Itens:\n• 1x Porta - R$ 975,62\n\n" +
+                "💰 Subtotal: R$ 975,62\n" +
+                "📦 *TOTAL: R$ 975,62*";
 
         when(budgetService.gerarResumoWhatsApp(id)).thenReturn(textoMock);
 
         mockMvc.perform(get("/api/budgets/{id}/resumo-whatsapp", id))
                 .andExpect(status().isOk())
+                // Valida o charset UTF-8 (Critério de Aceitação)
                 .andExpect(header().string("Content-Type", MediaType.TEXT_PLAIN_VALUE + ";charset=UTF-8"))
-                .andExpect(content().string(textoMock));
+                // Valida os marcadores de negrito (*) no código e no total (Critério de Aceitação)
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("*Orçamento ORC-2026-0001*")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("*TOTAL:")))
+                // Valida formatação monetária padrão brasileiro com vírgula e R$ (Critério de Aceitação)
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("R$ 975,62")))
+                // Valida a presença de itens
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("📦 Itens:")));
 
         verify(budgetService).gerarResumoWhatsApp(id);
     }
-
     @Test
     @DisplayName("Deve retornar 404 quando o orçamento não existir ao tentar emitir resumo WhatsApp")
     void obterResumoWhatsApp_DeveRetornar404_QuandoOrcamentoNaoExiste() throws Exception {
