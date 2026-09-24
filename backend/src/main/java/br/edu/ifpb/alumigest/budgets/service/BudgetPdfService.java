@@ -5,6 +5,7 @@ import br.edu.ifpb.alumigest.budgets.domain.Budget;
 import br.edu.ifpb.alumigest.budgets.domain.BudgetItem;
 import br.edu.ifpb.alumigest.budgets.domain.BudgetItemOption;
 import br.edu.ifpb.alumigest.budgets.domain.BudgetStatus;
+import br.edu.ifpb.alumigest.budgets.service.pdf.BudgetPdfDrawingHelper;
 import br.edu.ifpb.alumigest.budgets.service.pdf.BudgetPdfPageEvent;
 import br.edu.ifpb.alumigest.catalog.domain.HandleType;
 import br.edu.ifpb.alumigest.catalog.domain.MaterialCategoryType;
@@ -112,7 +113,7 @@ public class BudgetPdfService {
             adicionarDadosCliente(document, budget);
             document.add(new Paragraph(" "));
 
-            adicionarTabelaItens(document, budget);
+            adicionarTabelaItens(document, writer, budget);
             document.add(new Paragraph(" "));
 
             adicionarFechamentoFinanceiro(document, budget);
@@ -370,35 +371,49 @@ public class BudgetPdfService {
         document.add(cardTable);
     }
 
-    private void adicionarTabelaItens(Document document, Budget budget) throws DocumentException {
-        PdfPTable table = new PdfPTable(4);
+    private void adicionarTabelaItens(Document document, PdfWriter writer, Budget budget) throws DocumentException {
+        PdfPTable table = new PdfPTable(5);
         table.setWidthPercentage(100);
-        table.setWidths(new float[]{5f, 1f, 2f, 2f});
+        table.setWidths(new float[]{1.4f, 4.2f, 1f, 1.7f, 1.7f});
         table.setHeaderRows(1);
 
         adicionarCabecalhoItens(table);
 
         if (budget.getItems() != null) {
             for (BudgetItem item : budget.getItems()) {
-                adicionarLinhaItem(table, item);
+                adicionarLinhaItem(table, writer, item);
             }
         }
         document.add(table);
     }
 
     private void adicionarCabecalhoItens(PdfPTable table) {
-        String[] cabecalhos = {"PRODUTO / DESCRIÇÃO TÉCNICA", "QTD", "V. UNIT (R$)", "TOTAL (R$)"};
+        String[] cabecalhos = {"MINIATURA", "PRODUTO / DESCRIÇÃO TÉCNICA", "QTD", "V. UNIT (R$)", "TOTAL (R$)"};
         for (int i = 0; i < cabecalhos.length; i++) {
             PdfPCell header = new PdfPCell(new Phrase(cabecalhos[i], FONTE_CABECALHO_TABELA));
             header.setBackgroundColor(COR_CABECALHO_TABELA);
             header.setBorder(Rectangle.NO_BORDER);
             header.setPadding(8f);
-            header.setHorizontalAlignment(i == 0 ? Element.ALIGN_LEFT : Element.ALIGN_CENTER);
+            header.setHorizontalAlignment(i <= 1 ? Element.ALIGN_LEFT : Element.ALIGN_CENTER);
             table.addCell(header);
         }
     }
 
-    private void adicionarLinhaItem(PdfPTable table, BudgetItem item) {
+    private void adicionarLinhaItem(PdfPTable table, PdfWriter writer, BudgetItem item) {
+        PdfPCell cellMiniatura;
+        try {
+            Image miniatura = BudgetPdfDrawingHelper.desenharMiniaturaEsquadria(writer, item, 48f, 56f);
+            cellMiniatura = new PdfPCell(miniatura, true);
+            cellMiniatura.setPadding(4f);
+            cellMiniatura.setHorizontalAlignment(Element.ALIGN_CENTER);
+            cellMiniatura.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        } catch (Exception e) {
+            log.warn("Falha ao desenhar miniatura vetorial para o item: {}", e.getMessage());
+            cellMiniatura = new PdfPCell(new Phrase(""));
+        }
+        estilizarCelulaTabelaClean(cellMiniatura);
+        table.addCell(cellMiniatura);
+
         Phrase phraseDescricao = construirDescricaoItem(item);
         PdfPCell cellDesc = new PdfPCell(phraseDescricao);
         cellDesc.setPadding(10f);
