@@ -6,9 +6,9 @@ import { WindowSvgPreview } from './builder/WindowSvgPreview';
 export type BudgetProposalItem = BudgetDetail['items'][number];
 
 interface BudgetProposalItemCardProps {
-  item: BudgetProposalItem;
-  isExpanded: boolean;
-  onToggleExpanded: () => void;
+  readonly item: BudgetProposalItem;
+  readonly isExpanded: boolean;
+  readonly onToggleExpanded: () => void;
 }
 
 export function BudgetProposalItemCard({

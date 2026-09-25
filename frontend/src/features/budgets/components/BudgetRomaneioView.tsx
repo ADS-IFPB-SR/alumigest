@@ -5,7 +5,7 @@ import { BudgetMaterialsSummary } from './BudgetMaterialsSummary';
 type BudgetWorkshopItem = BudgetDetail['items'][number];
 
 interface BudgetRomaneioViewProps {
-  budget: BudgetDetail;
+  readonly budget: BudgetDetail;
 }
 
 function formatHandleTechnicalDescription(handleConfig?: BudgetWorkshopItem['handleConfig']): string {
