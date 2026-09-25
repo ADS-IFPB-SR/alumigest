@@ -100,6 +100,60 @@ export function WhatsAppSummaryModal({
     }
   };
 
+  const renderStatusSection = () => {
+    if (status === 'DRAFT') {
+      return (
+        <div>
+          <label
+            htmlFor="chk-mark-sent"
+            className="flex items-center justify-between p-sm rounded-lg bg-surface-container border border-outline-variant/80 cursor-pointer hover:bg-surface-container-high transition-colors select-none"
+          >
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-[20px] text-primary">schedule_send</span>
+              <div>
+                <p className="text-xs font-semibold text-on-surface">Atualização Automática de Status</p>
+                <p className="text-[11px] text-on-surface-variant">
+                  Marcar orçamento como <strong>Enviado (SENT)</strong> ao compartilhar ou copiar.
+                </p>
+              </div>
+            </div>
+            <input
+              id="chk-mark-sent"
+              aria-label="Marcar orçamento como Enviado (SENT)"
+              type="checkbox"
+              checked={markAsSent}
+              onChange={(e) => setMarkAsSent(e.target.checked)}
+              className="rounded border-outline text-primary focus:ring-primary w-4 h-4 cursor-pointer shrink-0"
+            />
+          </label>
+        </div>
+      );
+    }
+
+    if (status === 'SENT') {
+      return (
+        <div>
+          <div className="flex items-center gap-2 p-sm rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs font-body">
+            <span className="material-symbols-outlined text-[20px] text-emerald-600 shrink-0">check_circle</span>
+            <div>
+              <p className="font-semibold">Status atual: Enviado (SENT)</p>
+              <p className="text-[11px] opacity-90">Este orçamento já foi registrado como enviado ao cliente.</p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div>
+        <div className="flex items-center gap-2 p-sm rounded-lg bg-surface-container-low border border-outline-variant/60 text-xs font-body text-on-surface-variant">
+          <span className="material-symbols-outlined text-[18px]">info</span>
+          <span>Status atual do orçamento: <strong>{status}</strong></span>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <Modal
       isOpen={isOpen}
@@ -165,47 +219,7 @@ export function WhatsAppSummaryModal({
         )}
 
         {/* Status e Opção de Transição */}
-        {!isLoading && !isError && (
-          <div>
-            {status === 'DRAFT' ? (
-              <label
-                htmlFor="chk-mark-sent"
-                className="flex items-center justify-between p-sm rounded-lg bg-surface-container border border-outline-variant/80 cursor-pointer hover:bg-surface-container-high transition-colors select-none"
-              >
-                <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-[20px] text-primary">schedule_send</span>
-                  <div>
-                    <p className="text-xs font-semibold text-on-surface">Atualização Automática de Status</p>
-                    <p className="text-[11px] text-on-surface-variant">
-                      Marcar orçamento como <strong>Enviado (SENT)</strong> ao compartilhar ou copiar.
-                    </p>
-                  </div>
-                </div>
-                <input
-                  id="chk-mark-sent"
-                  aria-label="Marcar orçamento como Enviado (SENT)"
-                  type="checkbox"
-                  checked={markAsSent}
-                  onChange={(e) => setMarkAsSent(e.target.checked)}
-                  className="rounded border-outline text-primary focus:ring-primary w-4 h-4 cursor-pointer shrink-0"
-                />
-              </label>
-            ) : status === 'SENT' ? (
-              <div className="flex items-center gap-2 p-sm rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs font-body">
-                <span className="material-symbols-outlined text-[20px] text-emerald-600 shrink-0">check_circle</span>
-                <div>
-                  <p className="font-semibold">Status atual: Enviado (SENT)</p>
-                  <p className="text-[11px] opacity-90">Este orçamento já foi registrado como enviado ao cliente.</p>
-                </div>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 p-sm rounded-lg bg-surface-container-low border border-outline-variant/60 text-xs font-body text-on-surface-variant">
-                <span className="material-symbols-outlined text-[18px]">info</span>
-                <span>Status atual do orçamento: <strong>{status}</strong></span>
-              </div>
-            )}
-          </div>
-        )}
+        {!isLoading && !isError && renderStatusSection()}
 
         {/* Notificação de fallback de cópia manual */}
         {fallbackNotice && (

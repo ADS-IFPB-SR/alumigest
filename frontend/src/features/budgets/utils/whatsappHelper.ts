@@ -53,7 +53,10 @@ export function buildCommercialPdfMessage(budgetCode: string, budgetId: string):
 
   const envPublicUrl = (import.meta as any).env?.VITE_PUBLIC_BASE_URL;
   if (envPublicUrl) {
-    origin = envPublicUrl.replace(/\/+$/, '');
+    origin = envPublicUrl;
+    while (origin.endsWith('/')) {
+      origin = origin.slice(0, -1);
+    }
   } else if (
     typeof window !== 'undefined' &&
     (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')

@@ -253,14 +253,18 @@ describe('WhatsAppSummaryModal - Suíte de Testes Formais', () => {
    * 2. PARTICIONAMENTO DE EQUIVALÊNCIA E ANÁLISE DE VALOR LIMITE (EP / BVA)
    * ──────────────────────────────────────────────────────────────────────────── */
   describe('Técnica 2: Particionamento de Equivalência e Análise de Valor Limite', () => {
-    it('CE-01 (Válido c/ máscara): deve repassar telefone para openWhatsAppChat', () => {
+    it.each([
+      ['CE-01 (Válido c/ máscara)', '(83) 98888-7766'],
+      ['CE-02 (Válido puro 11 dígitos)', '83988887766'],
+      ['CE-03 (Válido já com DDI 55)', '+55 (83) 98888-7766'],
+    ])('%s: deve repassar telefone para openWhatsAppChat', (_, phone) => {
       render(
         <WhatsAppSummaryModal
           isOpen={true}
           onClose={mockOnClose}
           budgetId="b1"
           budgetCode="ORC-2026-001"
-          customerPhone="(83) 98888-7766"
+          customerPhone={phone}
           status="SENT"
         />
       );
@@ -268,47 +272,7 @@ describe('WhatsAppSummaryModal - Suíte de Testes Formais', () => {
       fireEvent.click(screen.getByRole('button', { name: /abrir no whatsapp/i }));
       expect(mockOpenWhatsAppChat).toHaveBeenCalledWith(
         expect.objectContaining({
-          phone: '(83) 98888-7766',
-        })
-      );
-    });
-
-    it('CE-02 (Válido puro 11 dígitos): deve repassar telefone puro para openWhatsAppChat', () => {
-      render(
-        <WhatsAppSummaryModal
-          isOpen={true}
-          onClose={mockOnClose}
-          budgetId="b1"
-          budgetCode="ORC-2026-001"
-          customerPhone="83988887766"
-          status="SENT"
-        />
-      );
-
-      fireEvent.click(screen.getByRole('button', { name: /abrir no whatsapp/i }));
-      expect(mockOpenWhatsAppChat).toHaveBeenCalledWith(
-        expect.objectContaining({
-          phone: '83988887766',
-        })
-      );
-    });
-
-    it('CE-03 (Válido já com DDI 55): deve repassar para openWhatsAppChat', () => {
-      render(
-        <WhatsAppSummaryModal
-          isOpen={true}
-          onClose={mockOnClose}
-          budgetId="b1"
-          budgetCode="ORC-2026-001"
-          customerPhone="+55 (83) 98888-7766"
-          status="SENT"
-        />
-      );
-
-      fireEvent.click(screen.getByRole('button', { name: /abrir no whatsapp/i }));
-      expect(mockOpenWhatsAppChat).toHaveBeenCalledWith(
-        expect.objectContaining({
-          phone: '+55 (83) 98888-7766',
+          phone,
         })
       );
     });
