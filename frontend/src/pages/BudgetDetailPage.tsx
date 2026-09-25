@@ -132,6 +132,8 @@ export function BudgetDetailPage() {
         <BudgetDetailActions
           budgetId={budget.id}
           budgetCode={budget.code}
+          customerPhone={budget.customer?.phone}
+          status={budget.status}
           onDeleteClick={() => setShowDeleteModal(true)}
         />
       </header>

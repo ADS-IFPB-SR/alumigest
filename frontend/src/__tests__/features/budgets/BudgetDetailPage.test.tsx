@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { describe, it, expect, vi } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -10,6 +10,12 @@ vi.mock('../../../features/budgets/hooks/useBudgets', () => ({
   useBudget: vi.fn(),
   useDeleteBudget: () => ({ mutate: vi.fn(), isPending: false }),
   useUpdateBudgetStatus: () => ({ mutate: vi.fn(), isPending: false }),
+  useWhatsAppSummary: () => ({
+    data: 'Resumo oficial mock para WhatsApp',
+    isLoading: false,
+    isError: false,
+    refetch: vi.fn(),
+  }),
 }));
 
 const mockBudgetDetail = {
@@ -109,7 +115,7 @@ describe('BudgetDetailPage - Testes Unitários', () => {
     expect(screen.getByText('Empresa Teste LTDA')).toBeInTheDocument();
     // Telefone e WhatsApp formatados
     expect(screen.getByText('83999998888')).toBeInTheDocument();
-    expect(screen.getByText('WhatsApp')).toBeInTheDocument();
+    expect(screen.getAllByText('WhatsApp').length).toBeGreaterThanOrEqual(2);
   });
 
   it('deve calcular e exibir corretamente a mão de obra agregada e os custos financeiros', () => {
@@ -146,5 +152,64 @@ describe('BudgetDetailPage - Testes Unitários', () => {
 
     // Verifica que o componente carrega sem quebras quando o desconto é absoluto
     expect(screen.getByText('ORC-2026-001')).toBeInTheDocument();
+  });
+
+  it('deve abrir o modal de resumo para WhatsApp ao clicar no botão da barra superior', () => {
+    vi.spyOn(budgetsHooks, 'useBudget').mockReturnValue({
+      data: mockBudgetDetail,
+      isLoading: false,
+      isError: false,
+    } as any);
+
+    renderWithRouter();
+
+    const whatsAppButton = screen.getByRole('button', { name: /whatsapp/i });
+    expect(whatsAppButton).toBeInTheDocument();
+    expect(whatsAppButton).not.toBeDisabled();
+
+    // Abre o dropdown
+    fireEvent.click(whatsAppButton);
+
+    const sendTextOption = screen.getByRole('button', { name: /enviar resumo de texto/i });
+    expect(sendTextOption).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /enviar pdf comercial/i })).toBeInTheDocument();
+
+    // Clica em "Enviar Resumo de Texto"
+    fireEvent.click(sendTextOption);
+
+    // Modal deve estar aberto com o título característico
+    expect(screen.getByText('Resumo para WhatsApp — ORC-2026-001')).toBeInTheDocument();
+  });
+
+  it('deve desabilitar o botão de WhatsApp quando o orçamento estiver com status CANCELLED', () => {
+    vi.spyOn(budgetsHooks, 'useBudget').mockReturnValue({
+      data: {
+        ...mockBudgetDetail,
+        status: 'CANCELLED',
+      },
+      isLoading: false,
+      isError: false,
+    } as any);
+
+    renderWithRouter();
+
+    const whatsAppButton = screen.getByRole('button', { name: /whatsapp/i });
+    expect(whatsAppButton).toBeDisabled();
+    expect(whatsAppButton).toHaveAttribute(
+      'title',
+      'Orçamento cancelado. Não é permitido compartilhar proposta cancelada.'
+    );
+  });
+
+  it('não deve exibir botão de imprimir obsoleto (print de tela removido)', () => {
+    vi.spyOn(budgetsHooks, 'useBudget').mockReturnValue({
+      data: mockBudgetDetail,
+      isLoading: false,
+      isError: false,
+    } as any);
+
+    renderWithRouter();
+
+    expect(screen.queryByRole('button', { name: /imprimir/i })).not.toBeInTheDocument();
   });
 });

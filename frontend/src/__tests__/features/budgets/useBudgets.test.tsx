@@ -18,6 +18,7 @@ vi.mock('../../../features/budgets/services/budgetsApi', () => ({
     updateBudgetStatus: vi.fn(),
     getWindowTemplates: vi.fn(),
     getStatusCounts: vi.fn(),
+    getWhatsAppSummary: vi.fn(),
   },
 }));
 
@@ -269,6 +270,34 @@ describe('useBudgets Queries e Mutations [Joseph Nichollas]', () => {
     expect(toast.success).toHaveBeenCalledWith('Status do orçamento atualizado com sucesso!');
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['budgets'] });
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['budget', 'status-id'] });
+  });
+
+  describe('useWhatsAppSummary Hook', () => {
+    it('deve buscar o resumo formatado quando enabled for true', async () => {
+      const summaryText = 'Resumo oficial do orçamento para WhatsApp';
+      budgetsApi.getWhatsAppSummary = vi.fn().mockResolvedValueOnce(summaryText);
+
+      const { useWhatsAppSummary } = await import('../../../features/budgets/hooks/useBudgets');
+      const { result } = renderHook(() => useWhatsAppSummary('b1', true), {
+        wrapper: createWrapper(queryClient),
+      });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+      expect(result.current.data).toBe(summaryText);
+      expect(budgetsApi.getWhatsAppSummary).toHaveBeenCalledWith('b1');
+    });
+
+    it('não deve disparar a query quando enabled for false', async () => {
+      budgetsApi.getWhatsAppSummary = vi.fn();
+
+      const { useWhatsAppSummary } = await import('../../../features/budgets/hooks/useBudgets');
+      const { result } = renderHook(() => useWhatsAppSummary('b1', false), {
+        wrapper: createWrapper(queryClient),
+      });
+
+      expect(result.current.fetchStatus).toBe('idle');
+      expect(budgetsApi.getWhatsAppSummary).not.toHaveBeenCalled();
+    });
   });
 });
 
