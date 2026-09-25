@@ -376,6 +376,8 @@ public class BudgetPdfService {
         table.setWidthPercentage(100);
         table.setWidths(new float[]{1.4f, 4.2f, 1f, 1.7f, 1.7f});
         table.setHeaderRows(1);
+        table.setSplitLate(true);
+        table.setSplitRows(false);
 
         adicionarCabecalhoItens(table);
 
@@ -491,6 +493,7 @@ public class BudgetPdfService {
         PdfPTable cardContainer = new PdfPTable(1);
         cardContainer.setWidthPercentage(45);
         cardContainer.setHorizontalAlignment(Element.ALIGN_RIGHT);
+        cardContainer.setKeepTogether(true);
 
         PdfPCell cardCell = new PdfPCell();
         cardCell.setBorder(Rectangle.NO_BORDER);
@@ -570,6 +573,7 @@ public class BudgetPdfService {
         PdfPTable table = new PdfPTable(1);
         table.setWidthPercentage(50);
         table.setHorizontalAlignment(Element.ALIGN_CENTER);
+        table.setKeepTogether(true);
 
         PdfPCell cellAssinatura = new PdfPCell();
         cellAssinatura.setBorder(Rectangle.TOP);

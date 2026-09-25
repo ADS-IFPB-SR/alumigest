@@ -66,11 +66,23 @@ describe('whatsappHelper - Suíte de Testes Formais (Mobile & Desktop)', () => {
   });
 
   describe('buildCommercialPdfMessage', () => {
-    it('deve gerar mensagem estruturada contendo o link direto para o PDF e assinatura', () => {
+    it('deve gerar mensagem estruturada contendo o link direto para o PDF e assinatura padrão', () => {
       const message = buildCommercialPdfMessage('ORC-2026-001', 'b1');
       expect(message).toContain('*ORC-2026-001*');
-      expect(message).toContain('/api/orcamentos/b1/pdf/comercial');
+      expect(message).toContain('/api/budgets/b1/pdf/comercial');
       expect(message).toContain('Alumiportas - Vidraçaria e Esquadrias');
+    });
+
+    it('deve utilizar a razão social customizada quando fornecida via parâmetro ou VITE_COMPANY_NAME', () => {
+      // Via parâmetro
+      const messageParam = buildCommercialPdfMessage('ORC-2026-002', 'b2', 'Vidraçaria & Esquadrias Modelo');
+      expect(messageParam).toContain('Vidraçaria & Esquadrias Modelo');
+
+      // Via vi.stubEnv
+      vi.stubEnv('VITE_COMPANY_NAME', 'Empresa Teste Env');
+      const messageEnv = buildCommercialPdfMessage('ORC-2026-003', 'b3');
+      expect(messageEnv).toContain('Empresa Teste Env');
+      vi.unstubAllEnvs();
     });
 
     it('em ambiente localhost deve usar wildcard nip.io para ativar link clicável no WhatsApp', () => {
@@ -83,7 +95,7 @@ describe('whatsappHelper - Suíte de Testes Formais (Mobile & Desktop)', () => {
       } as any;
 
       const message = buildCommercialPdfMessage('ORC-2026-001', 'b1');
-      expect(message).toContain('http://127.0.0.1.nip.io:5173/api/orcamentos/b1/pdf/comercial');
+      expect(message).toContain('http://127.0.0.1.nip.io:5173/api/budgets/b1/pdf/comercial');
 
       window.location = originalLocation;
     });
@@ -153,7 +165,7 @@ describe('whatsappHelper - Suíte de Testes Formais (Mobile & Desktop)', () => {
       );
 
       const calledUrl = (window.open as any).mock.calls[0][0];
-      expect(decodeURIComponent(calledUrl)).toContain('/api/orcamentos/b1/pdf/comercial');
+      expect(decodeURIComponent(calledUrl)).toContain('/api/budgets/b1/pdf/comercial');
     });
 
     it('deve funcionar mesmo para cliente sem telefone, abrindo seleção de contato com o link', () => {

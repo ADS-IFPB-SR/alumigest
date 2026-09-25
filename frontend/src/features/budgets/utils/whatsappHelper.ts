@@ -48,7 +48,11 @@ export function sanitizeWhatsAppText(raw: string): string {
  * Por isso, em ambiente de desenvolvimento local, é utilizado o wildcard DNS 127.0.0.1.nip.io
  * ou a variável VITE_PUBLIC_BASE_URL, ativando o hiperlink clicável azul.
  */
-export function buildCommercialPdfMessage(budgetCode: string, budgetId: string): string {
+export function buildCommercialPdfMessage(
+  budgetCode: string,
+  budgetId: string,
+  customCompanyName?: string
+): string {
   let origin = typeof window !== 'undefined' ? window.location.origin : '';
 
   const envPublicUrl = (import.meta as any).env?.VITE_PUBLIC_BASE_URL;
@@ -64,14 +68,19 @@ export function buildCommercialPdfMessage(budgetCode: string, budgetId: string):
     origin = `http://127.0.0.1.nip.io:${window.location.port || '5173'}`;
   }
 
-  const pdfUrl = `${origin}/api/orcamentos/${budgetId}/pdf/comercial`;
+  const pdfUrl = `${origin}/api/budgets/${budgetId}/pdf/comercial`;
+  const companyName =
+    customCompanyName ||
+    (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_COMPANY_NAME) ||
+    (typeof globalThis !== 'undefined' && (globalThis as any).process?.env?.VITE_COMPANY_NAME) ||
+    'Alumiportas - Vidraçaria e Esquadrias';
 
   return `Olá! Segue o link para visualizar e baixar a proposta comercial do orçamento *${budgetCode}*:
 
 ${pdfUrl}
 
 Qualquer dúvida, estamos à disposição!
-_Alumiportas - Vidraçaria e Esquadrias_`;
+_${companyName}_`;
 }
 
 /**
@@ -114,6 +123,7 @@ export interface SharePdfOptions {
   budgetId: string;
   budgetCode: string;
   customerPhone?: string | null;
+  companyName?: string;
   onSuccess?: () => void;
 }
 
@@ -126,9 +136,10 @@ export function shareCommercialPdfLink({
   budgetId,
   budgetCode,
   customerPhone,
+  companyName,
   onSuccess,
 }: SharePdfOptions): void {
-  const message = buildCommercialPdfMessage(budgetCode, budgetId);
+  const message = buildCommercialPdfMessage(budgetCode, budgetId, companyName);
 
   openWhatsAppChat({
     phone: customerPhone,

@@ -12,6 +12,7 @@ export default defineConfig({
   },
   server: {
     host: true,
+    // Permite conexões via domínios wildcard (ex: nip.io para testes com WhatsApp em dev local) e túneis
     allowedHosts: true,
     proxy: {
       '/api': {
