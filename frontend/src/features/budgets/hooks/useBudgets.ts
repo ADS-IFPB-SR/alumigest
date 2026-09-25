@@ -128,3 +128,15 @@ export const useApplyDiscount = () => {
     },
   });
 };
+
+export const useWhatsAppSummary = (budgetId?: string, enabled = true) => {
+  return useQuery({
+    queryKey: ['budget', budgetId, 'whatsapp-summary'],
+    queryFn: () => {
+      if (!budgetId) throw new Error('ID do orçamento é obrigatório');
+      return budgetsApi.getWhatsAppSummary(budgetId);
+    },
+    enabled: Boolean(budgetId) && enabled,
+    staleTime: 5 * 60_000,
+  });
+};

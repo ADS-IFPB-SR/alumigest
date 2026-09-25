@@ -348,13 +348,16 @@ export const budgetsApi = {
   // ORÇAMENTOS - DOWNLOAD PDF E ACTIONS
   // ============================================================
 
-  downloadCommercialPdf: async (id: string, code: string): Promise<void> => {
+  getCommercialPdfBlob: async (id: string): Promise<Blob> => {
     const response = await api.get<Blob>(`/api/orcamentos/${id}/pdf/comercial`, {
       baseURL: '',
       responseType: 'blob',
     });
-    
-    const blob = new Blob([response.data], { type: 'application/pdf' });
+    return new Blob([response.data], { type: 'application/pdf' });
+  },
+
+  downloadCommercialPdf: async (id: string, code: string): Promise<void> => {
+    const blob = await budgetsApi.getCommercialPdfBlob(id);
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
