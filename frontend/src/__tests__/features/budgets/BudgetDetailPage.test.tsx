@@ -147,4 +147,47 @@ describe('BudgetDetailPage - Testes Unitários', () => {
     // Verifica que o componente carrega sem quebras quando o desconto é absoluto
     expect(screen.getByText('ORC-2026-001')).toBeInTheDocument();
   });
+
+  it('deve alternar para a aba Romaneio de Peças exibindo gabarito técnico e lista de corte', async () => {
+    const { fireEvent } = await import('@testing-library/react');
+    vi.spyOn(budgetsHooks, 'useBudget').mockReturnValue({
+      data: mockBudgetDetail,
+      isLoading: false,
+      isError: false,
+    } as any);
+
+    renderWithRouter();
+
+    // Clica na aba Romaneio de Peças
+    const tabRomaneio = screen.getByTestId('tab-romaneio');
+    expect(tabRomaneio).toBeInTheDocument();
+    fireEvent.click(tabRomaneio);
+
+    // Deve exibir o cabeçalho e visão técnica da oficina
+    expect(screen.getByText('Romaneio Técnico & Gabarito de Fabricação')).toBeInTheDocument();
+    expect(screen.getByText('Lista de Corte & Gabarito Técnico')).toBeInTheDocument();
+    expect(screen.getByText('Controle de Qualidade & Fábrica')).toBeInTheDocument();
+    expect(screen.getByTestId('romaneio-view')).toBeInTheDocument();
+
+    // Alterna de volta para Proposta Comercial
+    const tabProposta = screen.getByTestId('tab-proposta');
+    fireEvent.click(tabProposta);
+    expect(screen.getByText('Esquadrias & Itens do Orçamento')).toBeInTheDocument();
+  });
+
+  it('deve disponibilizar ações oficiais de emissão de PDF Comercial e Via Técnica', async () => {
+    vi.spyOn(budgetsHooks, 'useBudget').mockReturnValue({
+      data: mockBudgetDetail,
+      isLoading: false,
+      isError: false,
+    } as any);
+
+    renderWithRouter();
+
+    const btnPdfComercial = screen.getByTitle('Emitir PDF Comercial');
+    expect(btnPdfComercial).toBeInTheDocument();
+
+    const btnViaTecnica = screen.getByTitle('Emitir Via Técnica (Oficina)');
+    expect(btnViaTecnica).toBeInTheDocument();
+  });
 });

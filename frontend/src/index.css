@@ -122,3 +122,96 @@
 .table-zebra tbody tr:nth-child(odd) {
   @apply bg-surface-container-low;
 }
+
+/* ── Estilos de Impressão A4 Limpa (QA-03 / US-10) ───────────────────────── */
+@media screen {
+  .print-only {
+    display: none !important;
+  }
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 12mm 10mm 15mm 10mm;
+  }
+
+  *, *:before, *:after {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  html, body {
+    background: #ffffff !important;
+    color: #111827 !important;
+    overflow: visible !important;
+    height: auto !important;
+    min-height: auto !important;
+    font-size: 10pt;
+    line-height: 1.4;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Ocultar elementos de layout, navegação e botões */
+  aside,
+  nav,
+  .no-print,
+  button,
+  .toaster,
+  [role="dialog"],
+  [aria-modal="true"] {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  /* Desbloquear containers scrolláveis para fluir nas páginas A4 */
+  #root,
+  main,
+  div {
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+  }
+
+  /* Prevenção rigorosa de corte de desenhos SVG e blocos técnicos */
+  .break-inside-avoid,
+  .print-avoid-break,
+  table,
+  tr,
+  svg,
+  .group {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* Repetição automática de cabeçalhos de tabela no topo das páginas seguintes */
+  thead {
+    display: table-header-group !important;
+  }
+
+  tfoot {
+    display: table-footer-group !important;
+  }
+
+  /* Estilização limpa de cartões e tabelas no papel */
+  .border,
+  .border-b,
+  .border-t,
+  .border-r,
+  .border-l {
+    border-color: #cbd5e1 !important;
+  }
+
+  .bg-surface,
+  .bg-background,
+  .bg-surface-container-lowest,
+  .bg-surface-container-low,
+  .bg-surface-container {
+    background-color: transparent !important;
+  }
+}
+

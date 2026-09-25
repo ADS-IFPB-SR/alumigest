@@ -106,7 +106,7 @@ export function BudgetDetailActions({
   };
 
   return (
-    <div className="flex items-center gap-xs sm:gap-sm flex-wrap shrink-0 w-full pb-1">
+    <div className="flex items-center gap-xs sm:gap-sm flex-wrap shrink-0 w-full pb-1 no-print">
       <button
         type="button"
         onClick={handleDownloadPdfComercial}
