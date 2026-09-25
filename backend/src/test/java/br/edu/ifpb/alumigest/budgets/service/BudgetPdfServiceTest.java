@@ -957,6 +957,365 @@ class BudgetPdfServiceTest {
     }
 
     // =========================================================================
+    // 6. TESTES AUTOMATIZADOS DO PDF TÉCNICO — AUSÊNCIA DE TERMOS MONETÁRIOS
+    //    [US-11.4] (#285)
+    // =========================================================================
+    @Nested
+    @DisplayName("6. Ausência de Termos Monetários no PDF Técnico [US-11.4] (#285)")
+    class AusenciaTermosMonetariosPdfTecnicoTest {
+
+        /**
+         * Budget de teste com valores monetários conhecidos e variados para
+         * garantir que NENHUM deles "vaze" para a ficha técnica.
+         */
+        private Budget criarBudgetComValoresMonetariosConhecidos() {
+            Client client = Client.builder()
+                    .id(UUID.randomUUID())
+                    .fullName("Obra Residencial Alfa")
+                    .documentNumber("12.345.678/0001-90")
+                    .phone("(83) 99888-7766")
+                    .email("alfa@obra.com")
+                    .street("Av. Epitácio Pessoa")
+                    .number("1500")
+                    .neighborhood("Tambaú")
+                    .city("João Pessoa")
+                    .state("PB")
+                    .build();
+
+            Budget budget = new Budget();
+            budget.setId(UUID.randomUUID());
+            budget.setCode("ORC-2026-1234");
+            budget.setClient(client);
+            budget.setStatus(BudgetStatus.SENT);
+            budget.setPaymentCondition(PaymentCondition.ENTRADA_50_SALDO_ENTREGA);
+            budget.setSubtotal(new BigDecimal("4750.00"));
+            budget.setDiscountPercent(new BigDecimal("5.00"));
+            budget.setDiscountValue(new BigDecimal("237.50"));
+            budget.setTotal(new BigDecimal("4512.50"));
+            budget.setCreatedAt(OffsetDateTime.now());
+            budget.setValidUntil(OffsetDateTime.now().plusDays(15));
+            budget.setNotes("Desconto especial de 5% para pagamento à vista.");
+
+            List<BudgetItem> itens = new ArrayList<>();
+
+            // Item 1: Porta de Giro com valor alto
+            BudgetItem item1 = new BudgetItem();
+            item1.setId(UUID.randomUUID());
+            item1.setProductName("Porta de Giro Premium");
+            item1.setTemplateType("SWING_DOOR_1F");
+            item1.setWidthMm(new BigDecimal("900"));
+            item1.setHeightMm(new BigDecimal("2100"));
+            item1.setQuantity(2);
+            item1.setSubtotal(new BigDecimal("2400.00"));
+            item1.setLaborCost(new BigDecimal("350.00"));
+            item1.setBudget(budget);
+            item1.setHandleConfig("{\"handleType\":\"BAR_TUBULAR\",\"format\":\"Redondo 40cm\"}");
+
+            List<BudgetItemOption> opts1 = new ArrayList<>();
+            BudgetItemOption o1 = new BudgetItemOption();
+            o1.setCategoryType(MaterialCategoryType.PROFILE);
+            o1.setMaterialName("Linha 25 Suprema");
+            o1.setSelectedColor("Preto Fosco");
+            opts1.add(o1);
+            BudgetItemOption o2 = new BudgetItemOption();
+            o2.setCategoryType(MaterialCategoryType.GLASS);
+            o2.setMaterialName("Temperado 8mm");
+            o2.setSelectedColor("Incolor");
+            opts1.add(o2);
+            item1.setOptions(opts1);
+            itens.add(item1);
+
+            // Item 2: Janela de Correr com desconto no subtotal
+            BudgetItem item2 = new BudgetItem();
+            item2.setId(UUID.randomUUID());
+            item2.setProductName("Janela de Correr 3 Folhas");
+            item2.setTemplateType("SLIDING_DOOR_3F");
+            item2.setWidthMm(new BigDecimal("1800"));
+            item2.setHeightMm(new BigDecimal("1200"));
+            item2.setQuantity(3);
+            item2.setSubtotal(new BigDecimal("1850.00"));
+            item2.setLaborCost(new BigDecimal("200.00"));
+            item2.setBudget(budget);
+
+            List<BudgetItemOption> opts2 = new ArrayList<>();
+            BudgetItemOption o3 = new BudgetItemOption();
+            o3.setCategoryType(MaterialCategoryType.PROFILE);
+            o3.setMaterialName("060");
+            o3.setSelectedColor("Branco");
+            opts2.add(o3);
+            BudgetItemOption o4 = new BudgetItemOption();
+            o4.setCategoryType(MaterialCategoryType.ROLLERS);
+            o4.setMaterialName("Roldana 1125");
+            opts2.add(o4);
+            item2.setOptions(opts2);
+            itens.add(item2);
+
+            // Item 3: Frente de Gaveta — valor unitário baixo
+            BudgetItem item3 = new BudgetItem();
+            item3.setId(UUID.randomUUID());
+            item3.setProductName("Frente de Gaveta MDF");
+            item3.setTemplateType("FRONT_DRAWER");
+            item3.setWidthMm(new BigDecimal("600"));
+            item3.setHeightMm(new BigDecimal("200"));
+            item3.setQuantity(4);
+            item3.setSubtotal(new BigDecimal("500.00"));
+            item3.setLaborCost(new BigDecimal("80.00"));
+            item3.setBudget(budget);
+            itens.add(item3);
+
+            budget.setItems(itens);
+            return budget;
+        }
+
+        @Test
+        @DisplayName("US-11.4-CT01: O PDF técnico NÃO deve conter R$, Subtotal, Desconto, Preço, ou TOTAL A PAGAR")
+        void deveGarantirAusenciaEstritaDeTermosMonetarios() throws IOException {
+            Budget budget = criarBudgetComValoresMonetariosConhecidos();
+
+            byte[] pdfBytes = budgetPdfService.gerarPdfTecnico(budget);
+
+            try (PdfReader reader = new PdfReader(pdfBytes)) {
+                String textoExtraido = extrairStreamsDeTexto(reader);
+
+                assertThat(textoExtraido)
+                        .as("Nenhum símbolo de moeda R$ deve aparecer no PDF técnico")
+                        .doesNotContain("R$")
+
+                        .as("O termo 'Subtotal' não deve aparecer no PDF técnico")
+                        .doesNotContain("Subtotal")
+
+                        .as("O termo 'Desconto' não deve aparecer no PDF técnico")
+                        .doesNotContain("Desconto")
+
+                        .as("O termo 'Preço' não deve aparecer no PDF técnico")
+                        .doesNotContain("Preço")
+                        .doesNotContain("Preco")
+
+                        .as("O termo 'Valor Total' não deve aparecer no PDF técnico")
+                        .doesNotContain("Valor Total")
+
+                        .as("O termo 'TOTAL A PAGAR' não deve aparecer no PDF técnico")
+                        .doesNotContain("TOTAL A PAGAR")
+
+                        .as("O termo 'Mão de Obra' (como rótulo financeiro) não deve aparecer no PDF técnico")
+                        .doesNotContain("Mão de Obra")
+
+                        .as("O termo 'Condição de Pagamento' não deve aparecer no PDF técnico")
+                        .doesNotContain("Condição de Pagamento")
+                        .doesNotContain("Pagamento")
+
+                        .as("O termo 'V. UNIT' não deve aparecer no PDF técnico")
+                        .doesNotContain("V. UNIT")
+
+                        .as("O termo 'TOTAL (R$)' não deve aparecer no PDF técnico")
+                        .doesNotContain("TOTAL (R$)");
+            }
+        }
+
+        @Test
+        @DisplayName("US-11.4-CT02: Valores monetários conhecidos do orçamento NÃO devem vazar para o PDF técnico")
+        void deveGarantirQueValoresMonetariosConhecidosNaoVazam() throws IOException {
+            Budget budget = criarBudgetComValoresMonetariosConhecidos();
+
+            byte[] pdfBytes = budgetPdfService.gerarPdfTecnico(budget);
+
+            try (PdfReader reader = new PdfReader(pdfBytes)) {
+                String textoExtraido = extrairStreamsDeTexto(reader);
+
+                // Valores do budget
+                assertThat(textoExtraido)
+                        .doesNotContain("4.750,00")
+                        .doesNotContain("4750")
+                        .doesNotContain("237,50")
+                        .doesNotContain("4.512,50")
+                        .doesNotContain("4512");
+
+                // Valores dos itens (subtotais)
+                assertThat(textoExtraido)
+                        .doesNotContain("2.400,00")
+                        .doesNotContain("2400")
+                        .doesNotContain("1.850,00")
+                        .doesNotContain("1850");
+
+                // Valores de mão de obra
+                assertThat(textoExtraido)
+                        .doesNotContain("350,00")
+                        .doesNotContain("200,00")
+                        .doesNotContain("80,00");
+
+                // Valor unitário implícito (subtotal/qtd) → 2400/2 = 1200
+                assertThat(textoExtraido)
+                        .doesNotContain("1.200,00");
+            }
+        }
+
+        @Test
+        @DisplayName("US-11.4-CT03: As especificações técnicas obrigatórias DEVEM estar presentes no PDF técnico")
+        void deveConterEspecificacoesTecnicasObrigatorias() throws IOException {
+            Budget budget = criarBudgetComValoresMonetariosConhecidos();
+
+            byte[] pdfBytes = budgetPdfService.gerarPdfTecnico(budget);
+
+            try (PdfReader reader = new PdfReader(pdfBytes)) {
+                String textoExtraido = extrairStreamsDeTexto(reader);
+
+                // Dimensões em cm (900mm → 90,0cm × 2100mm → 210,0cm)
+                assertThat(textoExtraido)
+                        .as("Dimensões da Porta de Giro devem estar no PDF técnico")
+                        .contains("90,0 x 210,0 cm");
+
+                // Dimensões da Janela de Correr (1800mm → 180,0cm × 1200mm → 120,0cm)
+                assertThat(textoExtraido)
+                        .as("Dimensões da Janela de Correr devem estar no PDF técnico")
+                        .contains("180,0 x 120,0 cm");
+
+                // Dimensões da Frente de Gaveta (600mm → 60,0cm × 200mm → 20,0cm)
+                assertThat(textoExtraido)
+                        .as("Dimensões da Frente de Gaveta devem estar no PDF técnico")
+                        .contains("60,0 x 20,0 cm");
+
+                // Materiais e acabamentos
+                assertThat(textoExtraido)
+                        .as("Perfil Linha 25 Suprema deve constar")
+                        .contains("Linha 25 Suprema");
+
+                assertThat(textoExtraido)
+                        .as("Acabamento Preto Fosco deve constar")
+                        .contains("Fosco");
+
+                assertThat(textoExtraido)
+                        .as("Vidro Temperado 8mm deve constar")
+                        .contains("Temperado 8mm");
+
+                // Tipologias traduzidas
+                assertThat(textoExtraido)
+                        .contains("TIPO: GIRO")
+                        .contains("TIPO: CORRER (3 FOLHAS)")
+                        .contains("TIPO: FRENTE DE GAVETA");
+
+                // Badges de furação traduzidas
+                assertThat(textoExtraido)
+                        .contains("DOBRADIÇAS")
+                        .contains("ROLDANAS")
+                        .contains("FIXAÇÃO CAIXA");
+            }
+        }
+
+        @Test
+        @DisplayName("US-11.4-CT04: Budget com desconto alto e múltiplas condições financeiras não deve vazar nenhum dado comercial")
+        void deveManterSigiloComDescontoAltoECondicoesFinanceiras() throws IOException {
+            Budget budget = criarBudgetComValoresMonetariosConhecidos();
+            budget.setDiscountPercent(new BigDecimal("15.00"));
+            budget.setDiscountValue(new BigDecimal("712.50"));
+            budget.setTotal(new BigDecimal("4037.50"));
+            budget.setPaymentCondition(PaymentCondition.ENTRADA_50_SALDO_ENTREGA);
+            budget.setNotes("Desconto especial de 15% + condição 50/50.");
+
+            byte[] pdfBytes = budgetPdfService.gerarPdfTecnico(budget);
+
+            try (PdfReader reader = new PdfReader(pdfBytes)) {
+                String textoExtraido = extrairStreamsDeTexto(reader);
+
+                assertThat(textoExtraido)
+                        .doesNotContain("R$")
+                        .doesNotContain("712,50")
+                        .doesNotContain("4.037,50")
+                        .doesNotContain("15%")
+                        .doesNotContain("Desconto")
+                        .doesNotContain("Subtotal")
+                        .doesNotContain("TOTAL A PAGAR")
+                        .doesNotContain("50% Entrada")
+                        .doesNotContain("Pagamento");
+            }
+        }
+
+        @Test
+        @DisplayName("US-11.4-CT05: Budget padrão (fixture criarBudgetPadrao completo) deve manter sigilo dos valores 975.62, 639.00 e 150.00")
+        void deveManterSigiloNoBudgetPadraoCompleto() throws IOException {
+            Budget budget = criarBudgetPadrao(true);
+
+            byte[] pdfBytes = budgetPdfService.gerarPdfTecnico(budget);
+
+            try (PdfReader reader = new PdfReader(pdfBytes)) {
+                String textoExtraido = extrairStreamsDeTexto(reader);
+
+                assertThat(textoExtraido)
+                        .as("Subtotal 975,62 do budget padrão não deve aparecer")
+                        .doesNotContain("975,62")
+                        .doesNotContain("975.62");
+
+                assertThat(textoExtraido)
+                        .as("Subtotal 639,00 do item padrão não deve aparecer")
+                        .doesNotContain("639,00")
+                        .doesNotContain("639.00");
+
+                assertThat(textoExtraido)
+                        .as("Mão de obra 150,00 do item padrão não deve aparecer")
+                        .doesNotContain("150,00")
+                        .doesNotContain("150.00");
+
+                assertThat(textoExtraido)
+                        .doesNotContain("R$")
+                        .doesNotContain("Subtotal")
+                        .doesNotContain("Desconto")
+                        .doesNotContain("TOTAL A PAGAR");
+            }
+        }
+
+        @Test
+        @DisplayName("US-11.4-CT06: Budget com 20 itens e valores altos deve manter sigilo em todas as páginas")
+        void deveManterSigiloEmTodasAsPaginasComMuitosItens() throws IOException {
+            Budget budget = criarBudgetComMuitosItens();
+
+            byte[] pdfBytes = budgetPdfService.gerarPdfTecnico(budget);
+
+            try (PdfReader reader = new PdfReader(pdfBytes)) {
+                assertThat(reader.getNumberOfPages())
+                        .as("Budget com 20 itens deve gerar múltiplas páginas")
+                        .isGreaterThan(1);
+
+                String textoExtraido = extrairStreamsDeTexto(reader);
+
+                assertThat(textoExtraido)
+                        .doesNotContain("R$")
+                        .doesNotContain("Subtotal")
+                        .doesNotContain("Desconto")
+                        .doesNotContain("Preço")
+                        .doesNotContain("TOTAL A PAGAR")
+                        .doesNotContain("Mão de Obra")
+                        .doesNotContain("Pagamento")
+
+                        // Valores numéricos conhecidos do budget de muitos itens
+                        .doesNotContain("15.000,00")
+                        .doesNotContain("14.500,00")
+                        .doesNotContain("500,00")
+                        .doesNotContain("750,00")
+                        .doesNotContain("100,00");
+            }
+        }
+
+        @Test
+        @DisplayName("US-11.4-CT07: O cabeçalho FICHA DE USINAGEM E CORTE e código do pedido devem estar presentes mesmo com valores monetários no budget")
+        void deveConterCabecalhoFabrilMesmoComValoresFinanceiros() throws IOException {
+            Budget budget = criarBudgetComValoresMonetariosConhecidos();
+
+            byte[] pdfBytes = budgetPdfService.gerarPdfTecnico(budget);
+
+            try (PdfReader reader = new PdfReader(pdfBytes)) {
+                String textoExtraido = extrairStreamsDeTexto(reader);
+
+                assertThat(textoExtraido)
+                        .contains("FICHA DE USINAGEM E CORTE")
+                        .contains("PEDIDO")
+                        .contains("ORC-2026-1234")
+                        .contains("OBRA RESIDENCIAL ALFA")
+                        .contains("VOLUME DO PEDIDO")
+                        .contains("9 PEÇAS"); // 2+3+4 = 9
+            }
+        }
+    }
+
+    // =========================================================================
     // MÉTODOS AUXILIARES DE FIXTURE E INSPEÇÃO
     // =========================================================================
 
