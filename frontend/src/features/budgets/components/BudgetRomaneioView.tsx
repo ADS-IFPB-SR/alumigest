@@ -129,20 +129,27 @@ export function BudgetRomaneioView({ budget }: BudgetRomaneioViewProps) {
                           <span className="material-symbols-outlined text-[14px]">content_cut</span>
                           {' '}Lista de Corte & Gabarito Técnico
                         </p>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs font-data-mono">
-                          <div className="bg-surface-container p-2 rounded border border-outline-variant/40">
-                            <span className="text-[10px] text-on-surface-variant block uppercase font-sans">Trilho Sup / Inf:</span>
-                            <strong>{width} mm</strong> (2 un)
+                        {item.templateType === 'SLIDING_DOOR_2F' ? (
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs font-data-mono">
+                            <div className="bg-surface-container p-2 rounded border border-outline-variant/40">
+                              <span className="text-[10px] text-on-surface-variant block uppercase font-sans">Trilho Sup / Inf:</span>
+                              <strong>{width} mm</strong> (2 un)
+                            </div>
+                            <div className="bg-surface-container p-2 rounded border border-outline-variant/40">
+                              <span className="text-[10px] text-on-surface-variant block uppercase font-sans">Laterais / Marco:</span>
+                              <strong>{alturaPerfilMm} mm</strong> (2 un)
+                            </div>
+                            <div className="bg-surface-container p-2 rounded border border-outline-variant/40">
+                              <span className="text-[10px] text-on-surface-variant block uppercase font-sans">Vidro (2 folhas):</span>
+                              <strong>{larguraFolhaMm} × {alturaVidroMm} mm</strong>
+                            </div>
                           </div>
-                          <div className="bg-surface-container p-2 rounded border border-outline-variant/40">
-                            <span className="text-[10px] text-on-surface-variant block uppercase font-sans">Laterais / Marco:</span>
-                            <strong>{alturaPerfilMm} mm</strong> (2 un)
+                        ) : (
+                          <div className="bg-surface-container-low/80 p-2 rounded border border-outline-variant/40 text-xs font-body text-on-surface-variant flex items-center gap-2">
+                            <span className="material-symbols-outlined text-[16px] text-primary shrink-0">engineering</span>
+                            <span>Consulte a Ficha Técnica / Via Técnica da oficina para o plano de corte detalhado desta tipologia.</span>
                           </div>
-                          <div className="bg-surface-container p-2 rounded border border-outline-variant/40">
-                            <span className="text-[10px] text-on-surface-variant block uppercase font-sans">Vidro (2 folhas):</span>
-                            <strong>{larguraFolhaMm} × {alturaVidroMm} mm</strong>
-                          </div>
-                        </div>
+                        )}
                       </div>
                     </div>
                   </div>

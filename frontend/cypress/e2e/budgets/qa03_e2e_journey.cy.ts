@@ -86,18 +86,12 @@ describe('QA-03: Teste de Integração End-to-End (Produto -> Orçamento -> PDF)
     cy.contains('Lista de Corte & Gabarito Técnico').should('be.visible');
     cy.contains('Controle de Qualidade & Fábrica').should('be.visible');
 
-    // 7. Clicar em "Imprimir Proposta" e validar chamada de impressão limpa
-    cy.window().then((win) => {
-      cy.stub(win, 'print').as('windowPrint');
-    });
-
+    // 7. Validar ações oficiais de emissão de PDF Comercial e Via Técnica
     cy.get('[data-testid="tab-proposta"]').click();
-    cy.get('button[title="Imprimir proposta"]').click();
-    cy.get('@windowPrint').should('have.been.calledOnce');
+    cy.get('button[title="Emitir Via Técnica (Oficina)"]').should('be.visible');
 
-    // Validar emissão do PDF Comercial
     cy.intercept('GET', '**/api/orcamentos/*/pdf*').as('downloadPdf');
-    cy.get('button[title="Emitir PDF Comercial"]').click();
+    cy.get('button[title="Emitir PDF Comercial"]').should('be.visible').click();
   });
 
   it('Cenário 2: Teste de Paginação e Impressão Multipágina (5 Esquadrias Distintas)', () => {

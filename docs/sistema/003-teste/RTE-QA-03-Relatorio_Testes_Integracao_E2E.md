@@ -1,6 +1,6 @@
 # 🧪 RTE — Relatório Técnico de Execução de Testes de Integração End-to-End (E2E) — QA-03
 
-> **Nota:** Este documento também está versionado em [`docs/projeto-001/003-teste/sprint-05/RTE-QA-03-Relatorio_Testes_Integracao_E2E.md`](file:///c:/Users/Júlio%20Kennedy/Documents/alumigest/docs/projeto-001/003-teste/sprint-05/RTE-QA-03-Relatorio_Testes_Integracao_E2E.md).
+> **Nota:** Este documento também está versionado em [`docs/projeto-001/003-teste/sprint-05/RTE-QA-03-Relatorio_Testes_Integracao_E2E.md`](../../projeto-001/003-teste/sprint-05/RTE-QA-03-Relatorio_Testes_Integracao_E2E.md).
 
 | Campo | Valor |
 |---|---|
@@ -48,9 +48,9 @@ A demanda é requisito obrigatório de aceitação e faz parte do **Definition o
 
 ## 2. 📚 Referências Normativas e Técnicas
 
-* [`ESQ-Especificacao_Templates_Orcamentos.md`](file:///c:/Users/Júlio%20Kennedy/Documents/alumigest/docs/sistema/001-analise-projeto/ESQ-Especificacao_Templates_Orcamentos.md) — Fórmulas de corte e especificação de insumos.
-* [`REQ-Documento_de_Requisitos.md`](file:///c:/Users/Júlio%20Kennedy/Documents/alumigest/docs/sistema/000-requisitos/REQ-Documento_de_Requisitos.md) — Requisitos funcionais RF-025 a RF-037.
-* [`UCS-Casos_de_Uso.md`](file:///c:/Users/Júlio%20Kennedy/Documents/alumigest/docs/sistema/000-requisitos/UCS-Casos_de_Uso.md) — Casos de uso UC-07, UC-08, UC-09, UC-10, UC-11 e UC-12.
+* [`ESQ-Especificacao_Templates_Orcamentos.md`](../001-analise-projeto/ESQ-Especificacao_Templates_Orcamentos.md) — Fórmulas de corte e especificação de insumos.
+* [`REQ-Documento_de_Requisitos.md`](../000-requisitos/REQ-Documento_de_Requisitos.md) — Requisitos funcionais RF-025 a RF-037.
+* [`UCS-Casos_de_Uso.md`](../000-requisitos/UCS-Casos_de_Uso.md) — Casos de uso UC-07, UC-08, UC-09, UC-10, UC-11 e UC-12.
 
 ---
 
@@ -129,18 +129,18 @@ sequenceDiagram
 
 Para assegurar 100% de conformidade com os requisitos da issue #73 e do DoD da US-10:
 
-1. **Backend — [BudgetPdfService.java](file:///c:/Users/Júlio%20Kennedy/Documents/alumigest/backend/src/main/java/br/edu/ifpb/alumigest/budgets/service/BudgetPdfService.java):**
+1. **Backend — [BudgetPdfService.java](../../../backend/src/main/java/br/edu/ifpb/alumigest/budgets/service/BudgetPdfService.java):**
    - Configuração de `table.setSplitLate(true)` e `table.setSplitRows(false)` na tabela principal de itens, impedindo cortes de desenhos SVG e quebras inadequadas de linhas.
    - Configuração de `cardContainer.setKeepTogether(true)` no bloco de fechamento financeiro e resumo comercial.
    - Configuração de `table.setKeepTogether(true)` no bloco de assinaturas contratuais.
 
-2. **Frontend — [index.css](file:///c:/Users/Júlio%20Kennedy/Documents/alumigest/frontend/src/index.css):**
+2. **Frontend — [index.css](../../../frontend/src/index.css):**
    - Regras `@media print` completas:
      - Formato A4 retrato com margens padronizadas de $12\text{ mm}$ (`@page { size: A4 portrait; margin: 12mm 10mm 15mm 10mm; }`).
      - Ocultação automática de elementos de navegação (`.no-print`, `aside`, `nav`, botões de ação e modais).
      - Quebras controladas com `.break-inside-avoid`, `page-break-inside: avoid` e repetição de `thead { display: table-header-group !important }`.
 
-3. **Frontend — [BudgetDetailPage.tsx](file:///c:/Users/Júlio%20Kennedy/Documents/alumigest/frontend/src/pages/BudgetDetailPage.tsx):**
+3. **Frontend — [BudgetDetailPage.tsx](../../../frontend/src/pages/BudgetDetailPage.tsx):**
    - Inclusão do seletor de abas:
      - **Proposta Comercial:** visualização padrão para o cliente com preços, totais e exportação.
      - **Romaneio de Peças:** visualização técnica exclusiva para oficina/produção, com dimensões nominais, fórmulas de corte de perfis e vidros, gabarito de furação e puxadores, **ocultando estritamente qualquer indicador financeiro (R$)**.

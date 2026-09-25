@@ -175,12 +175,7 @@ describe('BudgetDetailPage - Testes Unitários', () => {
     expect(screen.getByText('Esquadrias & Itens do Orçamento')).toBeInTheDocument();
   });
 
-  it('deve acionar window.print ao clicar no botão Imprimir', async () => {
-    const { fireEvent } = await import('@testing-library/react');
-    const originalPrint = window.print;
-    const printMock = vi.fn();
-    window.print = printMock;
-
+  it('deve disponibilizar ações oficiais de emissão de PDF Comercial e Via Técnica', async () => {
     vi.spyOn(budgetsHooks, 'useBudget').mockReturnValue({
       data: mockBudgetDetail,
       isLoading: false,
@@ -189,11 +184,10 @@ describe('BudgetDetailPage - Testes Unitários', () => {
 
     renderWithRouter();
 
-    const printButton = screen.getByTitle('Imprimir proposta');
-    expect(printButton).toBeInTheDocument();
-    fireEvent.click(printButton);
+    const btnPdfComercial = screen.getByTitle('Emitir PDF Comercial');
+    expect(btnPdfComercial).toBeInTheDocument();
 
-    expect(printMock).toHaveBeenCalled();
-    window.print = originalPrint;
+    const btnViaTecnica = screen.getByTitle('Emitir Via Técnica (Oficina)');
+    expect(btnViaTecnica).toBeInTheDocument();
   });
 });

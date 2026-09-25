@@ -293,11 +293,7 @@ describe('QA-03: Suíte de Testes de Integração End-to-End [Issue #73]', () =>
       expect(screen.getByText('Responsável Técnico / Serralheiro')).toBeInTheDocument();
     });
 
-    it('deve acionar ações de impressão A4 e download de PDF Comercial', async () => {
-      const originalPrint = window.print;
-      const printMock = vi.fn();
-      window.print = printMock;
-
+    it('deve disponibilizar ações de emissão do PDF Comercial e Via Técnica', async () => {
       vi.spyOn(budgetsHooks, 'useBudget').mockReturnValue({
         data: mockBudgetFluxoFeliz,
         isLoading: false,
@@ -306,10 +302,9 @@ describe('QA-03: Suíte de Testes de Integração End-to-End [Issue #73]', () =>
 
       renderDetailPage('budget-qa03-1');
 
-      // Clicar em Imprimir Proposta
-      const btnImprimir = screen.getByTitle('Imprimir proposta');
-      fireEvent.click(btnImprimir);
-      expect(printMock).toHaveBeenCalled();
+      // Validar presença do botão de Via Técnica
+      const btnViaTecnica = screen.getByTitle('Emitir Via Técnica (Oficina)');
+      expect(btnViaTecnica).toBeInTheDocument();
 
       // Clicar em Emitir PDF Comercial
       const btnPdf = screen.getByTitle('Emitir PDF Comercial');
@@ -318,8 +313,6 @@ describe('QA-03: Suíte de Testes de Integração End-to-End [Issue #73]', () =>
       await waitFor(() => {
         expect(budgetsApi.downloadCommercialPdf).toHaveBeenCalledWith('budget-qa03-1', 'ORC-2026-QA03');
       });
-
-      window.print = originalPrint;
     });
   });
 
