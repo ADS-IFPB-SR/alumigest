@@ -71,8 +71,8 @@ export function buildCommercialPdfMessage(
   const pdfUrl = `${origin}/api/budgets/${budgetId}/pdf/comercial`;
   const companyName =
     customCompanyName ||
-    (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_COMPANY_NAME) ||
-    (typeof globalThis !== 'undefined' && (globalThis as any).process?.env?.VITE_COMPANY_NAME) ||
+    (import.meta as any).env?.VITE_COMPANY_NAME ||
+    (globalThis as any).process?.env?.VITE_COMPANY_NAME ||
     'Alumiportas - Vidraçaria e Esquadrias';
 
   return `Olá! Segue o link para visualizar e baixar a proposta comercial do orçamento *${budgetCode}*:
