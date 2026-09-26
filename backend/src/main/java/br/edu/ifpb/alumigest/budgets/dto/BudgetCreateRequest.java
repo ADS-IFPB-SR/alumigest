@@ -14,33 +14,43 @@ import java.util.UUID;
 
 public record BudgetCreateRequest(
         @NotNull(message = "O ID do cliente é obrigatório")
+        @JsonProperty("clientId")
         @JsonAlias({"customerId", "customer_id", "clientId"})
         UUID clientId,
 
+        @JsonProperty("observacoes")
         String observacoes,
 
+        @JsonProperty("notes")
         String notes,
 
+        @JsonProperty("discountPercent")
         @JsonAlias("discountPercent")
         BigDecimal discountPercent,
 
+        @JsonProperty("discountType")
         @JsonAlias("discountType")
         String discountType,
 
+        @JsonProperty("discountInput")
         @JsonAlias("discountInput")
         BigDecimal discountInput,
 
-        @JsonAlias("paymentCondition")
+        @JsonProperty("paymentCondition")
+        @JsonAlias({"condicaoPagamento", "payment_condition"})
         PaymentCondition paymentCondition,
 
-        @JsonAlias("commercialConditions")
+        @JsonProperty("commercialConditions")
+        @JsonAlias({"paymentNotes", "observacoesPagamento"})
         String commercialConditions,
 
+        @JsonProperty("validUntil")
         @JsonAlias("validUntil")
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ssXXX")
         OffsetDateTime validUntil,
 
         @Valid
+        @JsonProperty("items")
         @JsonAlias({"items", "itens"})
         List<BudgetItemRequestDTO> items
 ) {
@@ -51,16 +61,16 @@ public record BudgetCreateRequest(
 
     @JsonCreator
     public BudgetCreateRequest(
-            @JsonProperty("clientId") @JsonAlias({"customerId", "customer_id"}) UUID clientId,
+            @JsonProperty("clientId") @JsonAlias({"customerId", "customer_id", "clientId"}) UUID clientId,
             @JsonProperty("observacoes") String observacoes,
             @JsonProperty("notes") String notes,
             @JsonProperty("discountPercent") BigDecimal discountPercent,
             @JsonProperty("discountType") String discountType,
             @JsonProperty("discountInput") BigDecimal discountInput,
-            @JsonProperty("paymentCondition") PaymentCondition paymentCondition,
-            @JsonProperty("commercialConditions") @JsonAlias("paymentNotes") String commercialConditions,
+            @JsonProperty("paymentCondition") @JsonAlias({"condicaoPagamento", "payment_condition"}) PaymentCondition paymentCondition,
+            @JsonProperty("commercialConditions") @JsonAlias({"paymentNotes", "observacoesPagamento"}) String commercialConditions,
             @JsonProperty("validUntil") OffsetDateTime validUntil,
-            @JsonProperty("items") @JsonAlias("itens") List<BudgetItemRequestDTO> items
+            @JsonProperty("items") @JsonAlias({"items", "itens"}) List<BudgetItemRequestDTO> items
     ) {
         String effectiveNotes = (notes != null && !notes.isBlank()) ? notes : observacoes;
         String effectiveObservacoes = (observacoes != null && !observacoes.isBlank()) ? observacoes : notes;
@@ -74,5 +84,9 @@ public record BudgetCreateRequest(
         this.commercialConditions = commercialConditions;
         this.validUntil = validUntil;
         this.items = items;
+    }
+
+    public String paymentNotes() {
+        return commercialConditions;
     }
 }

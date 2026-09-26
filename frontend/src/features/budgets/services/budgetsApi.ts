@@ -1,17 +1,19 @@
 import { api } from '../../../lib/api';
-import type { 
-  BudgetFilters, 
-  BudgetPageResponse, 
-  BudgetSummary, 
-  BudgetStatus,
-  BudgetDetail,
-  CreateBudgetPayload,
-  WindowTemplate,
-  BudgetItemCalculationRequest,
-  BudgetItemCalculationResponse,
-  DiscountRequest,
-  BudgetItem,
-  BudgetItemCreateRequest,
+import { 
+  type BudgetFilters, 
+  type BudgetPageResponse, 
+  type BudgetSummary, 
+  type BudgetStatus,
+  type BudgetDetail,
+  type CreateBudgetPayload,
+  type WindowTemplate,
+  type BudgetItemCalculationRequest,
+  type BudgetItemCalculationResponse,
+  type DiscountRequest,
+  type BudgetItem,
+  type BudgetItemCreateRequest,
+  type PaymentCondition,
+  PAYMENT_CONDITION_LABELS,
 } from '../types';
 import type { PageResponse } from '../../catalog/types';
 
@@ -46,8 +48,11 @@ function toBackendBudgetPayload(data: CreateBudgetPayload): any {
     discountPercent: data.discountPercent,
     notes: data.notes,
     validUntil: formatValidUntil(data.validUntil),
-    paymentCondition: data.paymentCondition,
-    commercialConditions: data.commercialConditions,
+    paymentCondition: data.paymentCondition || undefined,
+    condicaoPagamento: data.paymentCondition || undefined,
+    commercialConditions: data.commercialConditions || undefined,
+    paymentNotes: data.commercialConditions || undefined,
+    observacoesPagamento: data.commercialConditions || undefined,
     items: data.items.map((item) => ({
       productId: item.productId,
       widthMm: item.width,
@@ -69,6 +74,13 @@ function toBackendBudgetPayload(data: CreateBudgetPayload): any {
 }
 
 function mapBackendToBudgetDetail(res: any): BudgetDetail {
+  const resolvedPaymentCondition = res.paymentCondition;
+  const resolvedConditionLabel =
+    res.paymentConditionLabel ??
+    (resolvedPaymentCondition && PAYMENT_CONDITION_LABELS[resolvedPaymentCondition as PaymentCondition]) ??
+    resolvedPaymentCondition;
+  const resolvedCommercialConditions = res.paymentNotes ?? res.commercialConditions;
+
   return {
     id: res.id,
     code: res.code,
@@ -86,10 +98,11 @@ function mapBackendToBudgetDetail(res: any): BudgetDetail {
     discountValue: Number(res.discountValue ?? 0),
     total: Number(res.total ?? 0),
     notes: res.notes,
-    paymentCondition: res.paymentCondition,
-    paymentMethod: res.paymentMethod ?? res.formaPagamento,
-    paymentNotes: res.paymentNotes,
-    commercialConditions: res.commercialConditions,
+    paymentCondition: resolvedPaymentCondition,
+    paymentConditionLabel: resolvedConditionLabel,
+    paymentMethod: resolvedConditionLabel ?? resolvedPaymentCondition ?? res.paymentMethod ?? res.formaPagamento,
+    paymentNotes: resolvedCommercialConditions,
+    commercialConditions: resolvedCommercialConditions,
     
     itemCount: Array.isArray(res.items) ? res.items.length : 0,
     items: Array.isArray(res.items)

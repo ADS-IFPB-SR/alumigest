@@ -691,7 +691,7 @@ class BudgetServiceTest {
 
         assertThatThrownBy(() -> budgetService.adicionarItem(budgetId, itemRequest))
                 .isInstanceOf(BudgetImmutableException.class)
-                .hasMessageContaining("Orçamento não pode ser alterado pois já se encontra no status: SENT");
+                .hasMessageContaining("Orçamento não pode ser alterado pois já se encontra no status: Enviado");
 
         verify(budgetRepository, never()).save(any());
         verify(budgetMapper, never()).toEntity(any(BudgetItemRequestDTO.class));
