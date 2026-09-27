@@ -105,7 +105,14 @@ export const useUpdateBudgetStatus = () => {
     },
     onError: (error: unknown) => {
       const err = error as { response?: { data?: { message?: string } } };
-      const message = err?.response?.data?.message || 'Erro ao atualizar status.';
+      let message = err?.response?.data?.message || 'Erro ao atualizar status.';
+      message = message
+        .replace(/\bDRAFT\b/g, 'Rascunho')
+        .replace(/\bSENT\b/g, 'Enviado')
+        .replace(/\bAPPROVED\b/g, 'Aprovado')
+        .replace(/\bREJECTED\b/g, 'Rejeitado')
+        .replace(/\bCANCELLED\b/g, 'Cancelado')
+        .replace(/\bEXPIRED\b/g, 'Expirado');
       toast.error(message);
     },
   });

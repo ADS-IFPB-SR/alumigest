@@ -322,7 +322,8 @@ public BudgetResponseDTO create(BudgetCreateRequest requestDTO) {
 
     private void validateBudgetIsDraft(Budget budget) {
         if (budget.getStatus() != BudgetStatus.DRAFT) {
-            throw new BudgetImmutableException("Orçamento não pode ser alterado pois já se encontra no status: " + budget.getStatus());
+            String statusDesc = budget.getStatus() != null ? budget.getStatus().getDescricao() : "Indefinido";
+            throw new BudgetImmutableException("Orçamento não pode ser alterado pois já se encontra no status: " + statusDesc);
         }
     }
 

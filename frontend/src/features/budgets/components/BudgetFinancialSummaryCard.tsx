@@ -1,4 +1,5 @@
 import { formatBRL } from '../utils/calculations';
+import { PAYMENT_CONDITION_LABELS, type PaymentCondition } from '../types';
 
 interface BudgetFinancialSummaryCardProps {
   readonly subtotal: number;
@@ -37,8 +38,13 @@ export function BudgetFinancialSummaryCard({
   createdAt,
   validUntil,
 }: BudgetFinancialSummaryCardProps) {
-  const resolvedPaymentCondition = paymentConditionLabel ?? paymentCondition;
-  const resolvedPaymentMethod = paymentMethod;
+  const resolvedPaymentCondition =
+    paymentConditionLabel ??
+    (paymentCondition && PAYMENT_CONDITION_LABELS[paymentCondition as PaymentCondition]) ??
+    paymentCondition;
+  const resolvedPaymentMethod = paymentMethod && paymentMethod !== paymentCondition
+    ? (PAYMENT_CONDITION_LABELS[paymentMethod as PaymentCondition] ?? paymentMethod)
+    : undefined;
   const resolvedNotes = paymentNotes ?? commercialConditions;
 
   // Evita duplicidade caso a API retorne a mesma string para ambos
