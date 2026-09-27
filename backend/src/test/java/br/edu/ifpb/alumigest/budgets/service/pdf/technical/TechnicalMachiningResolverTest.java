@@ -1,7 +1,6 @@
 package br.edu.ifpb.alumigest.budgets.service.pdf.technical;
 
 import br.edu.ifpb.alumigest.budgets.domain.BudgetItem;
-import br.edu.ifpb.alumigest.catalog.domain.HandlePosition;
 import br.edu.ifpb.alumigest.catalog.domain.OpeningDirection;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -9,7 +8,6 @@ import org.junit.jupiter.api.Test;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
