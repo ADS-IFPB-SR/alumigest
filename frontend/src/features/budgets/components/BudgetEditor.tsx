@@ -100,7 +100,7 @@ export const BudgetEditor: React.FC = () => {
         discountInput: existingDiscountInput,
         paymentCondition: (existingBudget as any).paymentCondition || '',
         notes: existingBudget.notes ?? '',
-        commercialConditions: existingBudget.commercialConditions ?? '',
+        commercialConditions: existingBudget.commercialConditions ?? (existingBudget as any).paymentNotes ?? '',
         validUntil: existingBudget.validUntil ? existingBudget.validUntil.split('T')[0] : '',
       });
     }

@@ -105,7 +105,14 @@ export const useUpdateBudgetStatus = () => {
     },
     onError: (error: unknown) => {
       const err = error as { response?: { data?: { message?: string } } };
-      const message = err?.response?.data?.message || 'Erro ao atualizar status.';
+      let message = err?.response?.data?.message || 'Erro ao atualizar status.';
+      message = message
+        .replace(/\bDRAFT\b/g, 'Rascunho')
+        .replace(/\bSENT\b/g, 'Enviado')
+        .replace(/\bAPPROVED\b/g, 'Aprovado')
+        .replace(/\bREJECTED\b/g, 'Rejeitado')
+        .replace(/\bCANCELLED\b/g, 'Cancelado')
+        .replace(/\bEXPIRED\b/g, 'Expirado');
       toast.error(message);
     },
   });
@@ -141,5 +148,17 @@ export const useDownloadPdfTecnico = () => {
       const message = err?.response?.data?.message || 'Erro ao gerar o PDF técnico.';
       toast.error(message);
     },
+  });
+};
+
+export const useWhatsAppSummary = (budgetId?: string, enabled = true) => {
+  return useQuery({
+    queryKey: ['budget', budgetId, 'whatsapp-summary'],
+    queryFn: () => {
+      if (!budgetId) throw new Error('ID do orçamento é obrigatório');
+      return budgetsApi.getWhatsAppSummary(budgetId);
+    },
+    enabled: Boolean(budgetId) && enabled,
+    staleTime: 5 * 60_000,
   });
 };

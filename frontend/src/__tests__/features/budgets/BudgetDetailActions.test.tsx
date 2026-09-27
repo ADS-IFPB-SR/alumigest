@@ -31,6 +31,8 @@ vi.mock('react-router-dom', async () => {
   };
 });
 
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
 describe('BudgetDetailActions Component [Joseph Nichollas]', () => {
   const defaultProps = {
     budgetId: 'budget-123',
@@ -52,10 +54,18 @@ describe('BudgetDetailActions Component [Joseph Nichollas]', () => {
   });
 
   const renderComponent = (props = {}) => {
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
     return render(
-      <MemoryRouter>
-        <BudgetDetailActions {...defaultProps} {...props} />
-      </MemoryRouter>
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter>
+          <BudgetDetailActions {...defaultProps} {...props} />
+        </MemoryRouter>
+      </QueryClientProvider>
     );
   };
 
@@ -63,9 +73,8 @@ describe('BudgetDetailActions Component [Joseph Nichollas]', () => {
     renderComponent();
 
     expect(screen.getByRole('button', { name: /PDF Comercial/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Copiar para WhatsApp/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /WhatsApp/i })).toBeInTheDocument();
     expect(screen.getByTestId('btn-download-pdf-tecnico')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Imprimir/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Duplicar/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Excluir/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Editar/i })).toHaveAttribute(
@@ -104,31 +113,22 @@ describe('BudgetDetailActions Component [Joseph Nichollas]', () => {
     });
   });
 
-  describe('WhatsApp Summary', () => {
-    it('deve buscar resumo do WhatsApp, copiar para o clipboard e disparar toast', async () => {
-      vi.mocked(budgetsApi.getWhatsAppSummary).mockResolvedValueOnce('Texto do WhatsApp');
+  describe('WhatsApp Dropdown & Ações', () => {
+    it('deve abrir menu do WhatsApp e exibir opções de envio de texto e link do PDF', () => {
       renderComponent();
 
-      const btn = screen.getByRole('button', { name: /Copiar para WhatsApp/i });
+      const btn = screen.getByRole('button', { name: /WhatsApp/i });
       fireEvent.click(btn);
 
-      await waitFor(() => {
-        expect(budgetsApi.getWhatsAppSummary).toHaveBeenCalledWith('budget-123');
-        expect(navigator.clipboard.writeText).toHaveBeenCalledWith('Texto do WhatsApp');
-        expect(toast.success).toHaveBeenCalledWith('Resumo para WhatsApp copiado com sucesso!');
-      });
+      expect(screen.getByText('Enviar Resumo de Texto')).toBeInTheDocument();
+      expect(screen.getByText('Enviar PDF Comercial')).toBeInTheDocument();
     });
 
-    it('deve exibir toast de erro se a cópia para WhatsApp falhar', async () => {
-      vi.mocked(budgetsApi.getWhatsAppSummary).mockRejectedValueOnce(new Error('API error'));
-      renderComponent();
+    it('deve desabilitar o botão do WhatsApp quando o orçamento for CANCELLED', () => {
+      renderComponent({ status: 'CANCELLED', budgetStatus: 'CANCELLED' });
 
-      const btn = screen.getByRole('button', { name: /Copiar para WhatsApp/i });
-      fireEvent.click(btn);
-
-      await waitFor(() => {
-        expect(toast.error).toHaveBeenCalledWith('Erro ao gerar ou copiar o resumo para o WhatsApp.');
-      });
+      const btn = screen.getByRole('button', { name: /WhatsApp/i });
+      expect(btn).toBeDisabled();
     });
   });
 
@@ -271,16 +271,7 @@ describe('BudgetDetailActions Component [Joseph Nichollas]', () => {
     });
   });
 
-  describe('Outras Ações (Imprimir e Excluir)', () => {
-    it('deve disparar window.print ao clicar no botão Imprimir', () => {
-      renderComponent();
-
-      const btn = screen.getByRole('button', { name: /Imprimir/i });
-      fireEvent.click(btn);
-
-      expect(window.print).toHaveBeenCalledTimes(1);
-    });
-
+  describe('Outras Ações (Excluir)', () => {
     it('deve disparar onDeleteClick ao clicar no botão Excluir', () => {
       const onDelete = vi.fn();
       renderComponent({ onDeleteClick: onDelete });

@@ -254,4 +254,31 @@ class BudgetMapperTest {
         assertThat(dto.options()).hasSize(1);
         assertThat(dto.options().getFirst().materialId()).isEqualTo(mat.getId());
     }
+
+    @Test
+    @DisplayName("Jackson: Deserializa BudgetCreateRequest com paymentCondition e commercialConditions")
+    void testJacksonDeserialize_BudgetCreateRequest() throws Exception {
+        com.fasterxml.jackson.databind.ObjectMapper om = new com.fasterxml.jackson.databind.ObjectMapper().findAndRegisterModules();
+        UUID clientId = UUID.randomUUID();
+        String json = """
+            {
+                "clientId": "%s",
+                "paymentCondition": "ENTRADA_50_SALDO_ENTREGA",
+                "commercialConditions": "50%% Entrada + 50%% na Entrega",
+                "notes": "Notas gerais",
+                "discountPercent": 10.0
+            }
+            """.formatted(clientId);
+
+        BudgetCreateRequest req = om.readValue(json, BudgetCreateRequest.class);
+        assertThat(req.clientId()).isEqualTo(clientId);
+        assertThat(req.paymentCondition()).isEqualTo(PaymentCondition.ENTRADA_50_SALDO_ENTREGA);
+        assertThat(req.commercialConditions()).isEqualTo("50% Entrada + 50% na Entrega");
+        assertThat(req.notes()).isEqualTo("Notas gerais");
+        assertThat(req.discountPercent()).isEqualByComparingTo("10.0");
+
+        Budget entity = mapper.toEntity(req);
+        assertThat(entity.getPaymentCondition()).isEqualTo(PaymentCondition.ENTRADA_50_SALDO_ENTREGA);
+        assertThat(entity.getPaymentNotes()).isEqualTo("50% Entrada + 50% na Entrega");
+    }
 }

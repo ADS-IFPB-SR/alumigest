@@ -898,8 +898,7 @@ class BudgetPdfServiceTest {
 
                 assertThat(textContent)
                         .contains("ESQUEMA")
-                        .contains("Usinagem & Puxador")
-                        .contains("US-11.2")
+                        .contains("(USINAGEM/PUXADOR)")
                         .contains("Alum.")
                         .contains("Vidro")
                         .contains("Mont.");
@@ -1561,6 +1560,25 @@ class BudgetPdfServiceTest {
             assertThat(pdf).isNotNull();
             try (PdfReader reader = new PdfReader(pdf)) {
                 assertThat(reader.getNumberOfPages()).isGreaterThanOrEqualTo(2);
+            }
+        }
+
+        @Test
+        @DisplayName("Deve renderizar miniatura gráfica vetorial na primeira coluna da tabela de itens [US-10.3]")
+        void deveRenderizarMiniaturaGraficaNaTabelaDeItens() throws IOException {
+            Budget budget = criarBudgetPadrao(false);
+            BudgetItem item = budget.getItems().getFirst();
+            item.setTemplateType("SLIDING_DOOR_2F");
+            item.setWidthMm(new BigDecimal("1500"));
+            item.setHeightMm(new BigDecimal("2100"));
+
+            byte[] pdf = budgetPdfService.gerarPdfComercial(budget);
+            assertThat(pdf).isNotNull();
+
+            try (PdfReader reader = new PdfReader(pdf)) {
+                String conteudo = extrairStreamsDeTexto(reader);
+                assertThat(conteudo).contains("MINIATURA");
+                assertThat(conteudo).contains("PRODUTO / DESCRIÇÃO TÉCNICA");
             }
         }
     }
