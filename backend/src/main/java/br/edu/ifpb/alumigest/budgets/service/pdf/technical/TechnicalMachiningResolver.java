@@ -149,10 +149,11 @@ public final class TechnicalMachiningResolver {
 
     private static List<DrillingHolePoint> fallbackFuracoesPorTemplate(String templateType) {
         String upper = templateType.toUpperCase();
-        if (upper.contains("GIRO") || upper.contains("PIVOT") || upper.contains("PORTA")) {
+        if (upper.contains("GIRO") || upper.contains("PIVOT") || upper.contains("PORTA")
+                || upper.contains("DOOR") || upper.contains("SWING")) {
             return gerarPontosEquidistantes(3);
         }
-        if (upper.contains("MAXIM") || upper.contains("BASCULANTE")) {
+        if (upper.contains("MAXIM") || upper.contains("BASCULANTE") || upper.contains("AWNING")) {
             return gerarPontosEquidistantes(2);
         }
         return List.of();
@@ -184,7 +185,8 @@ public final class TechnicalMachiningResolver {
 
         try {
             JsonNode node = OBJECT_MAPPER.readTree(raw.trim());
-            if (node.has(FIELD_HANDLE_TYPE) && "NONE".equalsIgnoreCase(node.get(FIELD_HANDLE_TYPE).asText())) {
+            JsonNode typeNode = node.has(FIELD_HANDLE_TYPE) ? node.get(FIELD_HANDLE_TYPE) : node.get("type");
+            if (typeNode != null && !typeNode.isNull() && "NONE".equalsIgnoreCase(typeNode.asText())) {
                 return null;
             }
 
