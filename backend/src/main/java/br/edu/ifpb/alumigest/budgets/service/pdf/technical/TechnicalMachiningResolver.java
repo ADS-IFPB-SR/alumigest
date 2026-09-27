@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Utilitário para resolução e normalização paramétrica do contexto de usinagem
@@ -76,7 +77,7 @@ public final class TechnicalMachiningResolver {
         try {
             JsonNode node = OBJECT_MAPPER.readTree(rawConfig.trim());
             if (node.has(FIELD_OPENING_DIRECTION) && !node.get(FIELD_OPENING_DIRECTION).isNull()) {
-                String val = node.get(FIELD_OPENING_DIRECTION).asText().toUpperCase();
+                String val = node.get(FIELD_OPENING_DIRECTION).asText().toUpperCase(Locale.ROOT);
                 if ("LEFT".equals(val)) {
                     return OpeningDirection.RIGHT_TO_LEFT;
                 }
@@ -92,8 +93,9 @@ public final class TechnicalMachiningResolver {
     }
 
     private static List<DrillingHolePoint> extrairFuracoes(BudgetItem item, BigDecimal heightMm, String templateType) {
-        List<DrillingHolePoint> pontos = parseDrillingJson(item.getDrillingConfig(), heightMm);
-        if (pontos.isEmpty() && templateType != null) {
+        String raw = item.getDrillingConfig();
+        List<DrillingHolePoint> pontos = parseDrillingJson(raw, heightMm);
+        if (pontos.isEmpty() && (raw == null || raw.isBlank()) && templateType != null) {
             pontos.addAll(fallbackFuracoesPorTemplate(templateType));
         }
         return pontos;
@@ -107,13 +109,22 @@ public final class TechnicalMachiningResolver {
 
         try {
             JsonNode node = OBJECT_MAPPER.readTree(raw.trim());
-            String modeStr = node.has(FIELD_MODE) && !node.get(FIELD_MODE).isNull()
-                    ? node.get(FIELD_MODE).asText().toUpperCase()
+            JsonNode modeNode = node.has(FIELD_MODE) ? node.get(FIELD_MODE) : node.get("drillingMode");
+            String modeStr = modeNode != null && !modeNode.isNull()
+                    ? modeNode.asText().toUpperCase(Locale.ROOT)
                     : "";
-            boolean isCustom = "CUSTOM".equals(modeStr) || "CUSTOM_DISTANCES".equals(modeStr);
 
-            if (isCustom && node.has(FIELD_CUSTOM_DISTANCES)) {
-                pontos.addAll(parseCustomDistances(node.get(FIELD_CUSTOM_DISTANCES), heightMm));
+            if ("NONE".equals(modeStr)) {
+                return pontos;
+            }
+
+            boolean isCustom = "CUSTOM".equals(modeStr) || "CUSTOM_DISTANCES".equals(modeStr);
+            JsonNode distNode = node.has(FIELD_CUSTOM_DISTANCES)
+                    ? node.get(FIELD_CUSTOM_DISTANCES)
+                    : node.get("customPositionsMm");
+
+            if (isCustom && distNode != null) {
+                pontos.addAll(parseCustomDistances(distNode, heightMm));
             } else {
                 pontos.addAll(parseEquidistantHoles(node));
             }
@@ -133,7 +144,7 @@ public final class TechnicalMachiningResolver {
             for (JsonNode dNode : distances) {
                 float dist = (float) dNode.asDouble();
                 float yRatio = Math.clamp(dist / h, 0.08f, 0.92f);
-                pontos.add(new DrillingHolePoint(yRatio, RAIO_PADRAO_MM, String.format("%.0f mm", dist)));
+                pontos.add(new DrillingHolePoint(yRatio, RAIO_PADRAO_MM, String.format(Locale.ROOT, "%.0f mm", dist)));
             }
         }
         return pontos;
@@ -141,14 +152,17 @@ public final class TechnicalMachiningResolver {
 
     private static List<DrillingHolePoint> parseEquidistantHoles(JsonNode node) {
         int count = 3;
-        if (node.has(FIELD_HOLES_COUNT) && !node.get(FIELD_HOLES_COUNT).isNull()) {
-            count = Math.clamp(node.get(FIELD_HOLES_COUNT).asInt(), 1, 6);
+        JsonNode countNode = node.has(FIELD_HOLES_COUNT) ? node.get(FIELD_HOLES_COUNT)
+                : node.has("holeCount") ? node.get("holeCount")
+                : node.get("quantity");
+        if (countNode != null && !countNode.isNull()) {
+            count = Math.clamp(countNode.asInt(), 1, 6);
         }
         return gerarPontosEquidistantes(count);
     }
 
     private static List<DrillingHolePoint> fallbackFuracoesPorTemplate(String templateType) {
-        String upper = templateType.toUpperCase();
+        String upper = templateType.toUpperCase(Locale.ROOT);
         if (upper.contains("GIRO") || upper.contains("PIVOT") || upper.contains("PORTA")
                 || upper.contains("DOOR") || upper.contains("SWING")) {
             return gerarPontosEquidistantes(3);
@@ -199,7 +213,13 @@ public final class TechnicalMachiningResolver {
                     : DEFAULT_HEIGHT_MM;
             float lengthRatio = Math.clamp(lengthMm / h, 0.12f, 0.60f);
 
-            return new TechnicalHandle(onRightSide, lengthRatio, 0.50f, formatHandleLabel(lengthMm));
+            float centerYRatio = 0.50f;
+            if (node.has("distanceFromFloorMm") && !node.get("distanceFromFloorMm").isNull()) {
+                float distFromFloor = (float) node.get("distanceFromFloorMm").asDouble();
+                centerYRatio = Math.clamp(distFromFloor / h, 0.15f, 0.85f);
+            }
+
+            return new TechnicalHandle(onRightSide, lengthRatio, centerYRatio, formatHandleLabel(lengthMm));
         } catch (Exception ex) {
             log.debug("Falha ao parsear handleConfig: {}", ex.getMessage());
             return null;
@@ -216,7 +236,7 @@ public final class TechnicalMachiningResolver {
     private static HandlePosition parseHandlePosition(JsonNode node) {
         if (node.has(FIELD_POSITION) && !node.get(FIELD_POSITION).isNull()) {
             try {
-                return HandlePosition.valueOf(node.get(FIELD_POSITION).asText().toUpperCase());
+                return HandlePosition.valueOf(node.get(FIELD_POSITION).asText().toUpperCase(Locale.ROOT));
             } catch (IllegalArgumentException ignored) {
                 return null;
             }
@@ -236,11 +256,11 @@ public final class TechnicalMachiningResolver {
 
     private static String formatHandleLabel(float lengthMm) {
         if (lengthMm >= 1000f) {
-            return String.format("Puxador (%.1fm)", lengthMm / 1000f);
+            return String.format(Locale.ROOT, "Puxador (%.1fm)", lengthMm / 1000f);
         }
         if (lengthMm % 10 == 0) {
-            return String.format("Puxador (%.0fcm)", lengthMm / 10f);
+            return String.format(Locale.ROOT, "Puxador (%.0fcm)", lengthMm / 10f);
         }
-        return String.format("Puxador (%.0fmm)", lengthMm);
+        return String.format(Locale.ROOT, "Puxador (%.0fmm)", lengthMm);
     }
 }

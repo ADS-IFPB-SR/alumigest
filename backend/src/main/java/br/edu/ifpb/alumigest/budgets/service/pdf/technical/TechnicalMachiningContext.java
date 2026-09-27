@@ -25,7 +25,7 @@ public record TechnicalMachiningContext(
 ) {
 
     public TechnicalMachiningContext {
-        drillingHoles = drillingHoles != null ? Collections.unmodifiableList(drillingHoles) : Collections.emptyList();
+        drillingHoles = drillingHoles != null ? List.copyOf(drillingHoles) : List.of();
     }
 
     public boolean hasDrilling() {

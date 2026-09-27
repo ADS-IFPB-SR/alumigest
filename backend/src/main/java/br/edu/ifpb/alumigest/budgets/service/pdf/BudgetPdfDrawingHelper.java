@@ -1,6 +1,10 @@
 package br.edu.ifpb.alumigest.budgets.service.pdf;
 
 import br.edu.ifpb.alumigest.budgets.domain.BudgetItem;
+import br.edu.ifpb.alumigest.budgets.service.pdf.strategy.TemplateThumbnailRegistry;
+import br.edu.ifpb.alumigest.budgets.service.pdf.strategy.TemplateThumbnailStrategy;
+import br.edu.ifpb.alumigest.budgets.service.pdf.strategy.TemplateVisualContext;
+import br.edu.ifpb.alumigest.budgets.service.pdf.strategy.TemplateVisualContextResolver;
 import br.edu.ifpb.alumigest.budgets.service.pdf.technical.DrillingHolePoint;
 import br.edu.ifpb.alumigest.budgets.service.pdf.technical.TechnicalHandle;
 import br.edu.ifpb.alumigest.budgets.service.pdf.technical.TechnicalMachiningContext;
@@ -14,15 +18,44 @@ import com.lowagie.text.pdf.PdfWriter;
 import java.awt.Color;
 
 /**
- * Utilitário gráfico vetorial para renderização do esquema técnico de usinagem,
- * furações e puxadores na Ficha Técnica de Oficina (US-11.2).
+ * Fachada unificada (Facade) do motor gráfico vetorial para PDFs do AlumiGest.
+ *
+ * <p>Responsável por:
+ * <ul>
+ *   <li>Renderização de miniaturas vetoriais de esquadrias para a Proposta Comercial (US-10.3).</li>
+ *   <li>Renderização do esquema técnico cotado de usinagem, furações e puxadores para a Ficha Técnica de Oficina (US-11.2).</li>
+ * </ul>
+ * </p>
  */
 public final class BudgetPdfDrawingHelper {
+
+    /** Largura padrão da miniatura em pontos PDF (US-10.3). */
+    public static final float DEFAULT_WIDTH = 60f;
+
+    /** Altura padrão da miniatura em pontos PDF (US-10.3). */
+    public static final float DEFAULT_HEIGHT = 70f;
 
     /** Dimensão padrão do esquema técnico de usinagem na Ficha Técnica (US-11.2). */
     public static final float DEFAULT_MACHINING_SIZE = 105f;
 
+    /** Espessura do marco externo em pontos PDF. */
+    private static final float ESPESSURA_MARCO = 1.8f;
+
+    /** Offset de alinhamento perimetral do marco externo em pontos PDF. */
+    private static final float OFFSET_MARCO = ESPESSURA_MARCO / 2f;
+
+    /** Folga interna da linha de usinagem. */
     private static final float INNER_OFFSET = 3.5f;
+
+    /** Cores constantes estáticas para renderização técnica. */
+    private static final Color COLOR_MOLDURA_EXTERNA = new Color(51, 65, 85);
+    private static final Color COLOR_MOLDURA_INTERNA = new Color(148, 163, 184);
+    private static final Color COLOR_FURO_FILL       = new Color(220, 38, 38);
+    private static final Color COLOR_FURO_STROKE     = new Color(153, 27, 27);
+    private static final Color COLOR_COTA_GUIA       = new Color(239, 68, 68, 180);
+    private static final Color COLOR_COTA_TEXTO      = new Color(71, 85, 105);
+    private static final Color COLOR_PUXADOR         = new Color(30, 41, 59);
+
     private static final BaseFont BASE_FONT_HELVETICA;
 
     static {
@@ -40,6 +73,71 @@ public final class BudgetPdfDrawingHelper {
     private BudgetPdfDrawingHelper() {
         throw new UnsupportedOperationException("Classe utilitária não pode ser instanciada.");
     }
+
+    // =========================================================================
+    // Motor Gráfico Comercial: Miniaturas Vetoriais de Esquadrias (US-10.3)
+    // =========================================================================
+
+    /**
+     * Desenha a miniatura vetorial da esquadria com base no item do orçamento e suas opções reais.
+     *
+     * @param writer instância ativa do {@link PdfWriter}
+     * @param item   item do orçamento contendo template, dimensões e materiais
+     * @param width  largura da miniatura em pontos PDF
+     * @param height altura da miniatura em pontos PDF
+     * @return {@link Image} vetorial pronta para uso em células de tabela do PDF
+     */
+    public static Image desenharMiniaturaEsquadria(PdfWriter writer, BudgetItem item, float width, float height) {
+        if (writer == null) {
+            throw new IllegalArgumentException("O PdfWriter não pode ser nulo.");
+        }
+        if (width <= 0 || height <= 0) {
+            throw new IllegalArgumentException("Largura e altura devem ser positivas.");
+        }
+
+        PdfContentByte directContent = writer.getDirectContent();
+        PdfTemplate template = directContent.createTemplate(width, height);
+
+        // 1. Resolução dinâmica de propriedades visuais (cores reais de perfil e vidro)
+        TemplateVisualContext visualContext = TemplateVisualContextResolver.resolve(item);
+
+        // 2. Marco/Caixilho perimetral externo com a cor real do alumínio
+        desenharMarcoExterno(template, visualContext, width, height);
+
+        // 3. Resolução da estratégia no Registry (resiliente contra exclusão de templates)
+        String rawTemplateType = item != null ? item.getTemplateType() : null;
+        TemplateThumbnailStrategy strategy = TemplateThumbnailRegistry.getInstance().getStrategy(rawTemplateType);
+
+        // 4. Execução da estratégia vetorial
+        strategy.draw(template, item, visualContext, width, height);
+
+        return Image.getInstance(template);
+    }
+
+    /**
+     * Sobrecarga de conveniência que utiliza as dimensões canônicas (60×70 pt).
+     */
+    public static Image desenharMiniaturaEsquadria(PdfWriter writer, BudgetItem item) {
+        return desenharMiniaturaEsquadria(writer, item, DEFAULT_WIDTH, DEFAULT_HEIGHT);
+    }
+
+    /**
+     * Retorna a instância global do registro de estratégias para extensibilidade.
+     */
+    public static TemplateThumbnailRegistry getRegistry() {
+        return TemplateThumbnailRegistry.getInstance();
+    }
+
+    private static void desenharMarcoExterno(PdfTemplate tpl, TemplateVisualContext ctx, float w, float h) {
+        tpl.setColorStroke(ctx.frameStroke());
+        tpl.setLineWidth(ESPESSURA_MARCO);
+        tpl.rectangle(OFFSET_MARCO, OFFSET_MARCO, w - ESPESSURA_MARCO, h - ESPESSURA_MARCO);
+        tpl.stroke();
+    }
+
+    // =========================================================================
+    // Motor Gráfico de Oficina: Esquema Cotado de Usinagem e Puxadores (US-11.2)
+    // =========================================================================
 
     /**
      * Desenha o esquema técnico ampliado de usinagem, furações e puxador para a Ficha Técnica de Oficina (US-11.2).
@@ -70,10 +168,10 @@ public final class BudgetPdfDrawingHelper {
         TechnicalMachiningContext ctx = TechnicalMachiningResolver.resolve(item);
 
         // 3. Cálculo de proporção geométrica no bounding box com margens para cotas
-        float marginX = 26.0f;
-        float marginY = 10.0f;
-        float availW = width - (2 * marginX);
-        float availH = height - (2 * marginY);
+        float marginX = Math.min(26.0f, width * 0.25f);
+        float marginY = Math.min(10.0f, height * 0.10f);
+        float availW = Math.max(10.0f, width - (2 * marginX));
+        float availH = Math.max(10.0f, height - (2 * marginY));
 
         float aspect = ctx.getAspectRatio();
         float drawW;
@@ -116,13 +214,13 @@ public final class BudgetPdfDrawingHelper {
 
     private static void desenharMolduraTecnica(PdfTemplate tpl, float x, float y, float w, float h) {
         // Moldura externa da folha
-        tpl.setColorStroke(new Color(51, 65, 85));
+        tpl.setColorStroke(COLOR_MOLDURA_EXTERNA);
         tpl.setLineWidth(1.4f);
         tpl.rectangle(x, y, w, h);
         tpl.stroke();
 
         // Linha interna pontilhada de folga de usinagem
-        tpl.setColorStroke(new Color(148, 163, 184));
+        tpl.setColorStroke(COLOR_MOLDURA_INTERNA);
         tpl.setLineWidth(0.6f);
         tpl.setLineDash(2f, 2f, 0f);
         tpl.rectangle(x + INNER_OFFSET, y + INNER_OFFSET, w - (2 * INNER_OFFSET), h - (2 * INNER_OFFSET));
@@ -144,14 +242,14 @@ public final class BudgetPdfDrawingHelper {
             float furoY = startY + INNER_OFFSET + furo.yRatio() * (drawH - (2 * INNER_OFFSET));
 
             // Círculo vermelho do furo
-            tpl.setColorFill(new Color(220, 38, 38));
-            tpl.setColorStroke(new Color(153, 27, 27));
+            tpl.setColorFill(COLOR_FURO_FILL);
+            tpl.setColorStroke(COLOR_FURO_STROKE);
             tpl.setLineWidth(0.8f);
             tpl.circle(furoX, furoY, 2.5f);
             tpl.fillStroke();
 
             // Linha guia pontilhada da cota
-            tpl.setColorStroke(new Color(239, 68, 68, 180));
+            tpl.setColorStroke(COLOR_COTA_GUIA);
             tpl.setLineWidth(0.5f);
             tpl.setLineDash(1.5f, 1.5f, 0f);
             tpl.moveTo(furoX, furoY);
@@ -162,7 +260,7 @@ public final class BudgetPdfDrawingHelper {
             // Texto técnico da cota
             tpl.beginText();
             tpl.setFontAndSize(BASE_FONT_HELVETICA, 5.5f);
-            tpl.setColorFill(new Color(71, 85, 105));
+            tpl.setColorFill(COLOR_COTA_TEXTO);
             tpl.showTextAligned(textAlign, furo.label(), cotaGuiaX + (onLeftSide ? -1.5f : 1.5f), furoY - 1.5f, 0f);
             tpl.endText();
         }
@@ -184,7 +282,7 @@ public final class BudgetPdfDrawingHelper {
         float py2 = centerY + (handleLen / 2f);
 
         // Barra do puxador
-        tpl.setColorStroke(new Color(30, 41, 59));
+        tpl.setColorStroke(COLOR_PUXADOR);
         tpl.setLineWidth(2.2f);
         tpl.moveTo(px, py1);
         tpl.lineTo(px, py2);
@@ -204,7 +302,7 @@ public final class BudgetPdfDrawingHelper {
 
         tpl.beginText();
         tpl.setFontAndSize(BASE_FONT_HELVETICA, 5.5f);
-        tpl.setColorFill(new Color(30, 41, 59));
+        tpl.setColorFill(COLOR_PUXADOR);
         tpl.showTextAligned(align, puxador.label(), textX, centerY - 1.5f, 0f);
         tpl.endText();
     }

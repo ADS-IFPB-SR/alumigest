@@ -14,5 +14,8 @@ public record DrillingHolePoint(float yRatio, float diameterMm, String label) {
         if (diameterMm <= 0) {
             diameterMm = 10.0f;
         }
+        if (label == null || label.isBlank()) {
+            label = String.format(java.util.Locale.ROOT, "Ø %.0fmm", diameterMm);
+        }
     }
 }

@@ -211,12 +211,15 @@ describe('Integridade das Rotas de Orçamentos (AppRoutes)', () => {
       expect(screen.getByText('João da Silva')).toBeInTheDocument();
       expect(screen.getByText('Porta de Correr 2 Folhas Prime')).toBeInTheDocument();
 
-      // Deve conter os botões de ação
-      expect(screen.getByRole('button', { name: /Imprimir/i })).toBeInTheDocument();
+      // Deve conter os botões de ação na barra
+      expect(screen.getByRole('button', { name: /WhatsApp/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /PDF Comercial/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Via Técnica/i })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /Duplicar/i })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /Excluir/i })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /Editar/i })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /Novo/i })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Imprimir/i })).not.toBeInTheDocument();
     });
 
     it('4. deve renderizar BudgetEditor na rota /orcamentos/:id/editar', async () => {
