@@ -31,6 +31,7 @@ public final class TechnicalMachiningResolver {
     private static final String FIELD_HANDLE_TYPE = "handleType";
     private static final String FIELD_CUSTOM_DISTANCES = "customDistancesMm";
     private static final String FIELD_MODE = "mode";
+    private static final String FIELD_DISTANCE_FROM_FLOOR_MM = "distanceFromFloorMm";
 
     private static final float RAIO_PADRAO_MM = 10.0f;
     private static final float DEFAULT_HANDLE_LENGTH_MM = 250.0f;
@@ -152,9 +153,13 @@ public final class TechnicalMachiningResolver {
 
     private static List<DrillingHolePoint> parseEquidistantHoles(JsonNode node) {
         int count = 3;
-        JsonNode countNode = node.has(FIELD_HOLES_COUNT) ? node.get(FIELD_HOLES_COUNT)
-                : node.has("holeCount") ? node.get("holeCount")
-                : node.get("quantity");
+        JsonNode countNode = node.get(FIELD_HOLES_COUNT);
+        if (countNode == null) {
+            countNode = node.get("holeCount");
+        }
+        if (countNode == null) {
+            countNode = node.get("quantity");
+        }
         if (countNode != null && !countNode.isNull()) {
             count = Math.clamp(countNode.asInt(), 1, 6);
         }
@@ -214,8 +219,9 @@ public final class TechnicalMachiningResolver {
             float lengthRatio = Math.clamp(lengthMm / h, 0.12f, 0.60f);
 
             float centerYRatio = 0.50f;
-            if (node.has("distanceFromFloorMm") && !node.get("distanceFromFloorMm").isNull()) {
-                float distFromFloor = (float) node.get("distanceFromFloorMm").asDouble();
+            JsonNode distNode = node.get(FIELD_DISTANCE_FROM_FLOOR_MM);
+            if (distNode != null && !distNode.isNull()) {
+                float distFromFloor = (float) distNode.asDouble();
                 centerYRatio = Math.clamp(distFromFloor / h, 0.15f, 0.85f);
             }
 

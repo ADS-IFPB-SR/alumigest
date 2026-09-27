@@ -303,7 +303,7 @@ export function BudgetDetailActions({
         budgetId={budgetId}
         budgetCode={budgetCode}
         customerPhone={customerPhone}
-        status={status}
+        status={status ?? (budgetStatus as BudgetStatus) ?? 'DRAFT'}
       />
     </div>
   );

@@ -2,7 +2,6 @@ package br.edu.ifpb.alumigest.budgets.service.pdf.technical;
 
 import br.edu.ifpb.alumigest.catalog.domain.OpeningDirection;
 import java.math.BigDecimal;
-import java.util.Collections;
 import java.util.List;
 
 /**

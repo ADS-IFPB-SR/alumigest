@@ -12,7 +12,7 @@ interface WhatsAppSummaryModalProps {
   readonly budgetId: string;
   readonly budgetCode: string;
   readonly customerPhone?: string | null;
-  readonly status: BudgetStatus;
+  readonly status?: BudgetStatus;
 }
 
 export function WhatsAppSummaryModal({
@@ -21,7 +21,7 @@ export function WhatsAppSummaryModal({
   budgetId,
   budgetCode,
   customerPhone,
-  status,
+  status = 'DRAFT',
 }: WhatsAppSummaryModalProps) {
   const { data: summaryText, isLoading, isError, refetch } = useWhatsAppSummary(budgetId, isOpen);
   const { mutate: updateStatus } = useUpdateBudgetStatus();
