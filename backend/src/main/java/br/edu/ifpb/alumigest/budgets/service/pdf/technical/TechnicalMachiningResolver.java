@@ -23,8 +23,17 @@ public final class TechnicalMachiningResolver {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
+    private static final String FIELD_OPENING_DIRECTION = "openingDirection";
+    private static final String FIELD_HOLES_COUNT = "holesCount";
+    private static final String FIELD_LENGTH_MM = "lengthMm";
+    private static final String FIELD_POSITION = "position";
+    private static final String FIELD_HANDLE_TYPE = "handleType";
+    private static final String FIELD_CUSTOM_DISTANCES = "customDistancesMm";
+    private static final String FIELD_MODE = "mode";
+
     private static final float RAIO_PADRAO_MM = 10.0f;
     private static final float DEFAULT_HANDLE_LENGTH_MM = 250.0f;
+    private static final float DEFAULT_HEIGHT_MM = 2100.0f;
 
     private TechnicalMachiningResolver() {
         throw new UnsupportedOperationException("Classe utilitária não pode ser instanciada.");
@@ -66,8 +75,8 @@ public final class TechnicalMachiningResolver {
         }
         try {
             JsonNode node = OBJECT_MAPPER.readTree(rawConfig.trim());
-            if (node.has("openingDirection") && !node.get("openingDirection").isNull()) {
-                String val = node.get("openingDirection").asText().toUpperCase();
+            if (node.has(FIELD_OPENING_DIRECTION) && !node.get(FIELD_OPENING_DIRECTION).isNull()) {
+                String val = node.get(FIELD_OPENING_DIRECTION).asText().toUpperCase();
                 if ("LEFT".equals(val)) {
                     return OpeningDirection.RIGHT_TO_LEFT;
                 }
@@ -83,47 +92,70 @@ public final class TechnicalMachiningResolver {
     }
 
     private static List<DrillingHolePoint> extrairFuracoes(BudgetItem item, BigDecimal heightMm, String templateType) {
-        List<DrillingHolePoint> pontos = new ArrayList<>();
-        String raw = item.getDrillingConfig();
-
-        if (raw != null && !raw.isBlank() && !"{}".equals(raw.trim()) && !"NONE".equalsIgnoreCase(raw.trim())) {
-            try {
-                JsonNode node = OBJECT_MAPPER.readTree(raw.trim());
-                String modeStr = node.has("mode") && !node.get("mode").isNull() ? node.get("mode").asText().toUpperCase() : "";
-                boolean isCustom = "CUSTOM".equals(modeStr) || "CUSTOM_DISTANCES".equals(modeStr);
-
-                if (isCustom && node.has("customDistancesMm")) {
-                    JsonNode distances = node.get("customDistancesMm");
-                    if (distances.isArray() && !distances.isEmpty()) {
-                        float h = heightMm != null && heightMm.compareTo(BigDecimal.ZERO) > 0 ? heightMm.floatValue() : 2100f;
-                        for (JsonNode dNode : distances) {
-                            float dist = (float) dNode.asDouble();
-                            float yRatio = Math.clamp(dist / h, 0.08f, 0.92f);
-                            pontos.add(new DrillingHolePoint(yRatio, RAIO_PADRAO_MM, String.format("%.0f mm", dist)));
-                        }
-                    }
-                } else {
-                    int count = 3;
-                    if (node.has("holesCount") && !node.get("holesCount").isNull()) {
-                        count = Math.clamp(node.get("holesCount").asInt(), 1, 6);
-                    }
-                    pontos.addAll(gerarPontosEquidistantes(count));
-                }
-            } catch (Exception ex) {
-                log.debug("Falha ao parsear drillingConfig: {}", ex.getMessage());
-            }
-        }
-
+        List<DrillingHolePoint> pontos = parseDrillingJson(item.getDrillingConfig(), heightMm);
         if (pontos.isEmpty() && templateType != null) {
-            String upper = templateType.toUpperCase();
-            if (upper.contains("GIRO") || upper.contains("PIVOT") || upper.contains("PORTA")) {
-                pontos.addAll(gerarPontosEquidistantes(3));
-            } else if (upper.contains("MAXIM") || upper.contains("BASCULANTE")) {
-                pontos.addAll(gerarPontosEquidistantes(2));
-            }
+            pontos.addAll(fallbackFuracoesPorTemplate(templateType));
+        }
+        return pontos;
+    }
+
+    private static List<DrillingHolePoint> parseDrillingJson(String raw, BigDecimal heightMm) {
+        List<DrillingHolePoint> pontos = new ArrayList<>();
+        if (raw == null || raw.isBlank() || "{}".equals(raw.trim()) || "NONE".equalsIgnoreCase(raw.trim())) {
+            return pontos;
         }
 
+        try {
+            JsonNode node = OBJECT_MAPPER.readTree(raw.trim());
+            String modeStr = node.has(FIELD_MODE) && !node.get(FIELD_MODE).isNull()
+                    ? node.get(FIELD_MODE).asText().toUpperCase()
+                    : "";
+            boolean isCustom = "CUSTOM".equals(modeStr) || "CUSTOM_DISTANCES".equals(modeStr);
+
+            if (isCustom && node.has(FIELD_CUSTOM_DISTANCES)) {
+                pontos.addAll(parseCustomDistances(node.get(FIELD_CUSTOM_DISTANCES), heightMm));
+            } else {
+                pontos.addAll(parseEquidistantHoles(node));
+            }
+        } catch (Exception ex) {
+            log.debug("Falha ao parsear drillingConfig: {}", ex.getMessage());
+        }
         return pontos;
+    }
+
+    private static List<DrillingHolePoint> parseCustomDistances(JsonNode distances, BigDecimal heightMm) {
+        List<DrillingHolePoint> pontos = new ArrayList<>();
+        if (distances != null && distances.isArray()) {
+            float h = heightMm != null && heightMm.compareTo(BigDecimal.ZERO) > 0
+                    ? heightMm.floatValue()
+                    : DEFAULT_HEIGHT_MM;
+
+            for (JsonNode dNode : distances) {
+                float dist = (float) dNode.asDouble();
+                float yRatio = Math.clamp(dist / h, 0.08f, 0.92f);
+                pontos.add(new DrillingHolePoint(yRatio, RAIO_PADRAO_MM, String.format("%.0f mm", dist)));
+            }
+        }
+        return pontos;
+    }
+
+    private static List<DrillingHolePoint> parseEquidistantHoles(JsonNode node) {
+        int count = 3;
+        if (node.has(FIELD_HOLES_COUNT) && !node.get(FIELD_HOLES_COUNT).isNull()) {
+            count = Math.clamp(node.get(FIELD_HOLES_COUNT).asInt(), 1, 6);
+        }
+        return gerarPontosEquidistantes(count);
+    }
+
+    private static List<DrillingHolePoint> fallbackFuracoesPorTemplate(String templateType) {
+        String upper = templateType.toUpperCase();
+        if (upper.contains("GIRO") || upper.contains("PIVOT") || upper.contains("PORTA")) {
+            return gerarPontosEquidistantes(3);
+        }
+        if (upper.contains("MAXIM") || upper.contains("BASCULANTE")) {
+            return gerarPontosEquidistantes(2);
+        }
+        return List.of();
     }
 
     private static List<DrillingHolePoint> gerarPontosEquidistantes(int count) {
@@ -152,49 +184,61 @@ public final class TechnicalMachiningResolver {
 
         try {
             JsonNode node = OBJECT_MAPPER.readTree(raw.trim());
-            if (node.has("handleType") && "NONE".equalsIgnoreCase(node.get("handleType").asText())) {
+            if (node.has(FIELD_HANDLE_TYPE) && "NONE".equalsIgnoreCase(node.get(FIELD_HANDLE_TYPE).asText())) {
                 return null;
             }
 
-            float lengthMm = DEFAULT_HANDLE_LENGTH_MM;
-            if (node.has("lengthMm") && !node.get("lengthMm").isNull()) {
-                lengthMm = (float) node.get("lengthMm").asDouble();
-            }
+            float lengthMm = parseHandleLengthMm(node);
+            HandlePosition position = parseHandlePosition(node);
+            boolean onRightSide = resolveHandleSide(position, direction);
 
-            HandlePosition position = null;
-            if (node.has("position") && !node.get("position").isNull()) {
-                try {
-                    position = HandlePosition.valueOf(node.get("position").asText().toUpperCase());
-                } catch (IllegalArgumentException ignored) {
-                    position = null;
-                }
-            }
-
-            boolean onRightSide = true;
-            if (position == HandlePosition.LEFT) {
-                onRightSide = false;
-            } else if (position == HandlePosition.RIGHT) {
-                onRightSide = true;
-            } else if (direction == OpeningDirection.RIGHT_TO_LEFT) {
-                onRightSide = false;
-            }
-
-            float h = heightMm != null && heightMm.compareTo(BigDecimal.ZERO) > 0 ? heightMm.floatValue() : 2100f;
+            float h = heightMm != null && heightMm.compareTo(BigDecimal.ZERO) > 0
+                    ? heightMm.floatValue()
+                    : DEFAULT_HEIGHT_MM;
             float lengthRatio = Math.clamp(lengthMm / h, 0.12f, 0.60f);
 
-            String label;
-            if (lengthMm >= 1000f) {
-                label = String.format("Puxador (%.1fm)", lengthMm / 1000f);
-            } else if (lengthMm % 10 == 0) {
-                label = String.format("Puxador (%.0fcm)", lengthMm / 10f);
-            } else {
-                label = String.format("Puxador (%.0fmm)", lengthMm);
-            }
-
-            return new TechnicalHandle(onRightSide, lengthRatio, 0.50f, label);
+            return new TechnicalHandle(onRightSide, lengthRatio, 0.50f, formatHandleLabel(lengthMm));
         } catch (Exception ex) {
             log.debug("Falha ao parsear handleConfig: {}", ex.getMessage());
             return null;
         }
+    }
+
+    private static float parseHandleLengthMm(JsonNode node) {
+        if (node.has(FIELD_LENGTH_MM) && !node.get(FIELD_LENGTH_MM).isNull()) {
+            return (float) node.get(FIELD_LENGTH_MM).asDouble();
+        }
+        return DEFAULT_HANDLE_LENGTH_MM;
+    }
+
+    private static HandlePosition parseHandlePosition(JsonNode node) {
+        if (node.has(FIELD_POSITION) && !node.get(FIELD_POSITION).isNull()) {
+            try {
+                return HandlePosition.valueOf(node.get(FIELD_POSITION).asText().toUpperCase());
+            } catch (IllegalArgumentException ignored) {
+                return null;
+            }
+        }
+        return null;
+    }
+
+    private static boolean resolveHandleSide(HandlePosition position, OpeningDirection direction) {
+        if (position == HandlePosition.LEFT) {
+            return false;
+        }
+        if (position == HandlePosition.RIGHT) {
+            return true;
+        }
+        return direction != OpeningDirection.RIGHT_TO_LEFT;
+    }
+
+    private static String formatHandleLabel(float lengthMm) {
+        if (lengthMm >= 1000f) {
+            return String.format("Puxador (%.1fm)", lengthMm / 1000f);
+        }
+        if (lengthMm % 10 == 0) {
+            return String.format("Puxador (%.0fcm)", lengthMm / 10f);
+        }
+        return String.format("Puxador (%.0fmm)", lengthMm);
     }
 }
