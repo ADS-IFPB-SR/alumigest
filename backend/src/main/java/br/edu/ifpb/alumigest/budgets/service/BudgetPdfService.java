@@ -6,6 +6,7 @@ import br.edu.ifpb.alumigest.budgets.domain.Budget;
 import br.edu.ifpb.alumigest.budgets.domain.BudgetItem;
 import br.edu.ifpb.alumigest.budgets.domain.BudgetItemOption;
 import br.edu.ifpb.alumigest.budgets.domain.BudgetStatus;
+import br.edu.ifpb.alumigest.budgets.service.pdf.BudgetPdfDrawingHelper;
 import br.edu.ifpb.alumigest.budgets.service.pdf.BudgetPdfPageEvent;
 import br.edu.ifpb.alumigest.budgets.service.pdf.TechnicalPdfPageEvent;
 import br.edu.ifpb.alumigest.catalog.domain.HandleType;
@@ -843,7 +844,7 @@ public class BudgetPdfService {
 
                 adicionarCabecalhoFabril(document, budget);
                 adicionarCardClienteProducao(document, budget);
-                adicionarTabelaProducao(document, budget);
+                adicionarTabelaProducao(document, budget, writer);
             }
             return outputStream.toByteArray();
 
@@ -964,7 +965,7 @@ public class BudgetPdfService {
         return cell;
     }
 
-    private void adicionarTabelaProducao(Document document, Budget budget) throws DocumentException {
+    private void adicionarTabelaProducao(Document document, Budget budget, PdfWriter writer) throws DocumentException {
         PdfPTable table = new PdfPTable(5);
         table.setWidthPercentage(100);
         // Proporções: Item (7%), Esquema (25%), Especificações (26%), Furação/Puxador (30%), Status (12%)
@@ -982,7 +983,7 @@ public class BudgetPdfService {
         int seq = 1;
         for (BudgetItem item : items) {
             table.addCell(criarCelulaItemSeq(seq, item));
-            table.addCell(criarCelulaEsquemaTecnico());
+            table.addCell(criarCelulaEsquemaTecnico(writer, item));
             table.addCell(criarCelulaEspecificacoesTecnicas(item));
             table.addCell(criarCelulaDetalhamentoFuracao(item));
             table.addCell(criarCelulaStatusCheckboxes());
@@ -1025,12 +1026,21 @@ public class BudgetPdfService {
         return cell;
     }
 
-    private PdfPCell criarCelulaEsquemaTecnico() {
+    private PdfPCell criarCelulaEsquemaTecnico(PdfWriter writer, BudgetItem item) {
         PdfPCell cell = new PdfPCell();
         cell.setBorderColor(COR_TECNICA_BORDA);
-        cell.setPadding(4f);
+        cell.setPadding(3f);
         cell.setVerticalAlignment(Element.ALIGN_MIDDLE);
         cell.setHorizontalAlignment(Element.ALIGN_CENTER);
+
+        try {
+            Image esquema = BudgetPdfDrawingHelper.desenharEsquemaUsinagem(writer, item, 98f, 98f);
+            esquema.setAlignment(Element.ALIGN_CENTER);
+            cell.addElement(esquema);
+            return cell;
+        } catch (Exception ex) {
+            log.warn("Falha ao desenhar esquema vetorial de usinagem do item {}: {}", item != null ? item.getId() : "null", ex.getMessage());
+        }
 
         PdfPTable container = new PdfPTable(1);
         container.setWidthPercentage(100);
