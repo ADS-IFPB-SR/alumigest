@@ -64,12 +64,13 @@ npm run dev
 | **TM-OF-09** | Auditoria Visual de Sigilo Comercial | Varrer visualmente todas as seções e células do PDF | Nenhuma menção a valores monetários (`R$`, `BRL`, centavos, "Preço", "Subtotal", "Desconto" ou "Total a Pagar"). Apenas medidas nominais ($W \times H$ cm/mm) e quantidades. | **Sigilo absoluto confirmado:** Zero dados de preço ou condição comercial impressos. | 🟢 **Aprovado** |
 | **TM-OF-10** | Checkboxes Manuais de Chão de Fábrica | Inspecionar a coluna "STATUS" de cada item | Exibe 3 caixas de seleção vazias com cantos arredondados para conferência com caneta na oficina: `[ ] Alum.`, `[ ] Vidro`, `[ ] Mont.`. | Checkboxes nítidos, tamanho ideal para marcação com caneta pelo serralheiro e montador. | 🟢 **Aprovado** |
 | **TM-OF-11** | Bloqueio para Proposta Cancelada (`CANCELLED`) | Acessar proposta com status cancelado no frontend | O botão "Via Técnica" permanece `disabled`, exibe cursor impeditivo (`not-allowed`) e tooltip "Não é possível emitir ficha técnica de orçamento cancelado". Requisições diretas retornam HTTP 422. | Operação defensiva validada na interface e na camada de serviço REST. | 🟢 **Aprovado** |
+| **TM-OF-12** | Localização e Tradução Estrita (Zero Termos em Inglês) | Inspecionar tipologias, furações e puxadores na Ficha Técnica | Nenhum termo em inglês deve ser exibido (`AWNING WINDOW`, `TUBULAR`, `RIGHT`, `SHELL_LOCK`). Todos devem constar em português claro (`BASCULANTE`, `Tubular`, `Direita`, `Fecho Concha`). | Dicionário de tradução aplicado; 100% dos termos em português. | 🟢 **Aprovado** |
 
 ---
 
-## 4. 🐛 Bug Identificado e Corrigido Durante o Teste Manual
+## 4. 🐛 Bugs Identificados e Corrigidos Durante o Teste Manual
 
-### Análise da Não-Conformidade (NC-US11-01)
+### Análise da Não-Conformidade 1 (NC-US11-01) — Colisão de Furações e Puxador
 * **Sintoma:** Ao gerar o PDF da Ficha Técnica para esquadrias com sentido de abertura para a esquerda (`OpeningDirection.RIGHT_TO_LEFT`), as furações das dobradiças e o puxador foram desenhados sobre o **mesmo montante** (lado direito).
 * **Impacto Visual:** A cota milimétrica do furo central (`1050 mm`) e o rótulo do puxador (`Puxador (40cm)`) colidiam no mesmo espaço geográfico, tornando a leitura difícil para o operador da oficina.
 * **Causa Raiz:** Em `BudgetPdfDrawingHelper.desenharFuracoesUsinagem`, a variável `onLeftSide` estava definida como `!ctx.isOpeningLeft()`, invertendo o lado das furações em relação ao montante pivô.
@@ -81,6 +82,19 @@ npm run dev
           : (ctx.isOpeningLeft() || ctx.openingDirection() == null);
   ```
 * **Resultado:** As furações de dobradiça passaram a ser renderizadas no montante de articulação (esquerdo) e o puxador no montante de fechamento (direito), eliminando a colisão e refletindo a física real de uma porta de giro.
+
+### Análise da Não-Conformidade 2 (NC-US11-02) — Termos em Inglês na Ficha Técnica
+* **Sintoma:** O documento técnico exibia termos em inglês brutos do enum/JSON (`TIPO: AWNING WINDOW`, `• Tipo: TUBULAR`, `• Posição: RIGHT`, `• Tipo: SHELL_LOCK`).
+* **Impacto no Negócio:** Ruído de comunicação com serralheiros e montadores na oficina, que utilizam a terminologia técnica padrão brasileira (Basculante/Maxim-Ar, Fecho Concha, Tubular, Direita/Esquerda).
+* **Causa Raiz:** Em `BudgetPdfService.java`, métodos `extrairLinhasPuxadorJson` e `extrairLinhasFuracaoJson` concatenavam diretamente os valores brutos do nó JSON sem passar por dicionário de tradução, e `formatarTipoTemplate` não mapeava o alias `AWNING_WINDOW`.
+* **Correção Aplicada:**
+  - Implementação dos métodos auxiliares `traduzirTipoPuxadorTexto`, `traduzirPosicaoTexto`, `traduzirFormatoTexto` e `traduzirDetalhesFuracao`.
+  - Mapeamento abrangente de tipologias em `formatarTipoTemplate` e `extrairTipoFuracaoBadge`.
+* **Resultado:** O documento passou a exibir termos perfeitamente localizados em português:
+  - `TIPO: BASCULANTE`
+  - `FURAÇÃO (DOBRADIÇA/PISTÃO)`
+  - `PUXADOR • Tipo: Tubular • Posição: Direita`
+  - `PUXADOR • Tipo: Fecho Concha`
 
 ---
 

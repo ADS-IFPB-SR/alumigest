@@ -609,7 +609,7 @@ class BudgetEndToEndIntegrationTest {
                         .doesNotContain("280.00")
                         .doesNotContain("750.00");
 
-                // B. Elementos Fabris e Técnicos Obrigatórios
+                // B. Elementos Fabris e Técnicos Obrigatórios e Tradução para Português
                 assertThat(textContent)
                         .contains("FICHA DE USINAGEM E CORTE")
                         .contains("ESQUEMA")
@@ -618,7 +618,16 @@ class BudgetEndToEndIntegrationTest {
                         .contains("Mont.")
                         .containsIgnoringCase("Serralheria Esquadrias do Sertão")
                         .contains("(83) 98765-4321")
-                        .contains("5 PEÇAS");
+                        .contains("5 PEÇAS")
+                        .contains("TIPO: GIRO")
+                        .contains("Tipo: Tubular")
+                        .contains("Posição: Direita")
+                        .contains("TIPO: BASCULANTE")
+                        .contains("Tipo: Fecho Concha")
+                        .doesNotContain("TIPO: AWNING WINDOW")
+                        .doesNotContain("Tipo: SHELL_LOCK")
+                        .doesNotContain("Tipo: TUBULAR")
+                        .doesNotContain("Posição: RIGHT");
             }
         }
 
