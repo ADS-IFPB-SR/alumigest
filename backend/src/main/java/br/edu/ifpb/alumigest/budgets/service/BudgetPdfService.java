@@ -457,7 +457,7 @@ public class BudgetPdfService {
     private void adicionarLinhaItem(PdfPTable table, PdfWriter writer, BudgetItem item) {
         PdfPCell cellMiniatura;
         try {
-            Image miniatura = BudgetPdfDrawingHelper.desenharMiniaturaEsquadria(writer, item, 48f, 56f);
+            Image miniatura = BudgetPdfDrawingHelper.drawWindowThumbnail(writer, item, 48f, 56f);
             cellMiniatura = new PdfPCell(miniatura, true);
             cellMiniatura.setPadding(4f);
             cellMiniatura.setHorizontalAlignment(Element.ALIGN_CENTER);
@@ -1061,7 +1061,7 @@ public class BudgetPdfService {
         cell.setHorizontalAlignment(Element.ALIGN_CENTER);
 
         try {
-            Image esquema = BudgetPdfDrawingHelper.desenharEsquemaUsinagem(writer, item, 126f, 96f);
+            Image esquema = BudgetPdfDrawingHelper.drawMachiningScheme(writer, item, 126f, 96f);
             esquema.setAlignment(Element.ALIGN_CENTER);
             cell.addElement(esquema);
             return cell;

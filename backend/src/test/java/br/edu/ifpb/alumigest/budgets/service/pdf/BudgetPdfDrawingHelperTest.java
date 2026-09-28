@@ -155,6 +155,32 @@ class BudgetPdfDrawingHelperTest {
         assertTrue(img4F.getWidth() > 0);
     }
 
+    @ParameterizedTest(name = "US-11.2 / #347: desenharEsquemaUsinagem para tipologia {0}")
+    @ValueSource(strings = {
+        "SWING_DOOR_1F",
+        "SWING_DOOR_2F",
+        "GIRO (2 FOLHAS)",
+        "SLIDING_DOOR_2F",
+        "SLIDING_DOOR_4F",
+        "AWNING_WINDOW_1F",
+        "FRONT_DRAWER",
+        "FIXED_PANEL"
+    })
+    @DisplayName("US-11.2 / #347: desenharEsquemaUsinagem deve renderizar imagem válida para todas as tipologias")
+    void deveDesenharEsquemaUsinagemParaTodasTipologias(String tipologia) {
+        BudgetItem item = new BudgetItem();
+        item.setTemplateType(tipologia);
+        item.setWidthMm(new BigDecimal("1600"));
+        item.setHeightMm(new BigDecimal("2100"));
+        item.setHandleConfig("{\"type\": \"TUBULAR\", \"lengthMm\": 250.0}");
+        item.setDrillingConfig("{\"mode\": \"EQUIDISTANT\", \"quantity\": 3}");
+
+        Image img = BudgetPdfDrawingHelper.desenharEsquemaUsinagem(writer, item);
+        assertNotNull(img);
+        assertTrue(img.getWidth() > 0);
+        assertTrue(img.getHeight() > 0);
+    }
+
     @Test
     @DisplayName("US-11.2: desenharEsquemaUsinagem lança IllegalArgumentException com parâmetros inválidos")
     void deveLancarExcecaoQuandoWriterOuDimensoesInvalidas() {
@@ -166,6 +192,28 @@ class BudgetPdfDrawingHelperTest {
                 BudgetPdfDrawingHelper.desenharEsquemaUsinagem(writer, item, 0f, 100f));
         assertThrows(IllegalArgumentException.class, () ->
                 BudgetPdfDrawingHelper.desenharEsquemaUsinagem(writer, item, 100f, -5f));
+    }
+
+    @Test
+    @DisplayName("US-11.2: drawMachiningScheme e drawWindowThumbnail funcionam com nomenclatura em inglês")
+    void deveExecutarMetodosEmInglesCorretamente() {
+        BudgetItem item = new BudgetItem();
+        item.setTemplateType("SWING_DOOR_1F");
+        item.setWidthMm(new BigDecimal("900"));
+        item.setHeightMm(new BigDecimal("2100"));
+
+        Image scheme = BudgetPdfDrawingHelper.drawMachiningScheme(writer, item);
+        assertNotNull(scheme);
+        assertTrue(scheme.getWidth() > 0);
+
+        Image thumb = BudgetPdfDrawingHelper.drawWindowThumbnail(writer, item);
+        assertNotNull(thumb);
+        assertTrue(thumb.getWidth() > 0);
+
+        assertThrows(IllegalArgumentException.class, () ->
+                BudgetPdfDrawingHelper.drawMachiningScheme(null, item));
+        assertThrows(IllegalArgumentException.class, () ->
+                BudgetPdfDrawingHelper.drawWindowThumbnail(null, item));
     }
 
     @Test
@@ -779,5 +827,128 @@ class BudgetPdfDrawingHelperTest {
             demoDoc.close();
         }
         assertTrue(demoOutput.size() > 0, "O PDF de demonstração não deve estar vazio");
+    }
+
+    @Test
+    @DisplayName("Gera arquivo PDF de demonstração visual com Esquemas Técnicos de Usinagem (US-11.2 / #347)")
+    void gerarPdfDemonstracaoEsquemaUsinagemParaVisualizacao() throws Exception {
+        ByteArrayOutputStream demoOutput = new ByteArrayOutputStream();
+        try (demoOutput) {
+            Document demoDoc = new Document(PageSize.A4, 36, 36, 36, 36);
+            PdfWriter demoWriter = PdfWriter.getInstance(demoDoc, demoOutput);
+            demoDoc.open();
+
+            com.lowagie.text.Font titleFont = com.lowagie.text.FontFactory.getFont(
+                    com.lowagie.text.FontFactory.HELVETICA_BOLD, 15, new java.awt.Color(20, 30, 50));
+            com.lowagie.text.Font subFont = com.lowagie.text.FontFactory.getFont(
+                    com.lowagie.text.FontFactory.HELVETICA, 9, new java.awt.Color(100, 110, 120));
+            com.lowagie.text.Font headerFont = com.lowagie.text.FontFactory.getFont(
+                    com.lowagie.text.FontFactory.HELVETICA_BOLD, 9, java.awt.Color.WHITE);
+            com.lowagie.text.Font cellFont = com.lowagie.text.FontFactory.getFont(
+                    com.lowagie.text.FontFactory.HELVETICA_BOLD, 9, new java.awt.Color(30, 40, 50));
+            com.lowagie.text.Font descFont = com.lowagie.text.FontFactory.getFont(
+                    com.lowagie.text.FontFactory.HELVETICA, 8, new java.awt.Color(80, 90, 100));
+
+            Paragraph titulo = new Paragraph(
+                    "AlumiGest — Demonstração do Esquema Técnico de Usinagem por Tipologia (US-11.2 / #347)",
+                    titleFont
+            );
+            titulo.setSpacingAfter(4f);
+            demoDoc.add(titulo);
+
+            Paragraph subtitulo = new Paragraph(
+                    "Motor Técnico de Oficina com Strategy Pattern especializado para chão de fábrica",
+                    subFont
+            );
+            subtitulo.setSpacingAfter(14f);
+            demoDoc.add(subtitulo);
+
+            com.lowagie.text.pdf.PdfPTable table = new com.lowagie.text.pdf.PdfPTable(3);
+            table.setWidthPercentage(100);
+            table.setWidths(new float[]{2.2f, 3.2f, 4.6f});
+
+            String[] headers = {"ESQUEMA TÉCNICO (105x105)", "TIPOLOGIA", "COMPORTAMENTO TÉCNICO DE USINAGEM"};
+            for (String h : headers) {
+                com.lowagie.text.pdf.PdfPCell cell = new com.lowagie.text.pdf.PdfPCell(new Phrase(h, headerFont));
+                cell.setBackgroundColor(new java.awt.Color(30, 41, 59));
+                cell.setPadding(6f);
+                cell.setHorizontalAlignment(Element.ALIGN_CENTER);
+                table.addCell(cell);
+            }
+
+            record ExemploUsinagem(String codigo, String nome, String descricao, String handleJson, String drillJson) {}
+            ExemploUsinagem[] exemplos = {
+                new ExemploUsinagem("SWING_DOOR_1F", "Porta de Giro 1 Folha",
+                        "1 folha com arco de abertura, dobradiças cotadas no lado fixo e puxador tubular no lado móvel.",
+                        "{\"type\": \"TUBULAR\", \"lengthMm\": 400.0, \"position\": \"RIGHT\"}",
+                        "{\"mode\": \"EQUIDISTANT\", \"quantity\": 3}"),
+                new ExemploUsinagem("SWING_DOOR_2F", "Porta de Giro 2 Folhas (Porta Dupla)",
+                        "2 folhas divididas no centro, arcos de projeção opostos, dobradiças nas extremidades e puxadores duplos centrais.",
+                        "{\"type\": \"TUBULAR\", \"lengthMm\": 400.0}",
+                        "{\"mode\": \"EQUIDISTANT\", \"quantity\": 3}"),
+                new ExemploUsinagem("SLIDING_DOOR_2F", "Porta de Correr 2 Folhas",
+                        "2 folhas divididas com caixilhos individuais sobrepostos e setas de deslizamento lateral alternadas.",
+                        "{\"type\": \"SHELL_LOCK\", \"lengthMm\": 150.0}",
+                        "{}"),
+                new ExemploUsinagem("SLIDING_DOOR_4F", "Porta de Correr 4 Folhas",
+                        "4 folhas com recolhimento para as laterais e setas de deslizamento bidirecionais.",
+                        "{\"type\": \"SHELL_LOCK\", \"lengthMm\": 150.0}",
+                        "{}"),
+                new ExemploUsinagem("AWNING_WINDOW_1F", "Janela Maxim-Ar / Basculante",
+                        "Folha basculante projetante com arco vertical e fecho concha centralizado na base inferior.",
+                        "{\"type\": \"SHELL_LOCK\", \"lengthMm\": 120.0}",
+                        "{}"),
+                new ExemploUsinagem("FRONT_DRAWER", "Frente de Gaveta",
+                        "Painel horizontal com puxador perfil horizontal centralizado e sem dobradiças de giro verticais.",
+                        "{\"type\": \"PROFILE_HANDLE\", \"lengthMm\": 300.0}",
+                        "{}"),
+                new ExemploUsinagem("FIXED_PANEL", "Painel Fixo / Fachada",
+                        "Painel perimetral com demarcação técnica em 'X' indicando folha fixa sem partes móveis.",
+                        null,
+                        "{}")
+            };
+
+            for (ExemploUsinagem ex : exemplos) {
+                BudgetItem item = new BudgetItem();
+                item.setTemplateType(ex.codigo);
+                item.setWidthMm(new BigDecimal("1600"));
+                item.setHeightMm(new BigDecimal("2100"));
+                item.setHandleConfig(ex.handleJson);
+                item.setDrillingConfig(ex.drillJson);
+
+                Image img = BudgetPdfDrawingHelper.drawMachiningScheme(demoWriter, item, 105f, 90f);
+
+                com.lowagie.text.pdf.PdfPCell cellImg = new com.lowagie.text.pdf.PdfPCell(img, true);
+                cellImg.setPadding(4f);
+                cellImg.setHorizontalAlignment(Element.ALIGN_CENTER);
+                cellImg.setVerticalAlignment(Element.ALIGN_MIDDLE);
+                cellImg.setBorderColor(new java.awt.Color(220, 225, 230));
+
+                Phrase phraseNome = new Phrase();
+                phraseNome.add(new Chunk(ex.nome + "\n", cellFont));
+                phraseNome.add(new Chunk("Código: " + ex.codigo, descFont));
+                com.lowagie.text.pdf.PdfPCell cellNome = new com.lowagie.text.pdf.PdfPCell(phraseNome);
+                cellNome.setPadding(6f);
+                cellNome.setVerticalAlignment(Element.ALIGN_MIDDLE);
+                cellNome.setBorderColor(new java.awt.Color(220, 225, 230));
+
+                com.lowagie.text.pdf.PdfPCell cellDesc = new com.lowagie.text.pdf.PdfPCell(new Phrase(ex.descricao, descFont));
+                cellDesc.setPadding(6f);
+                cellDesc.setVerticalAlignment(Element.ALIGN_MIDDLE);
+                cellDesc.setBorderColor(new java.awt.Color(220, 225, 230));
+
+                table.addCell(cellImg);
+                table.addCell(cellNome);
+                table.addCell(cellDesc);
+            }
+
+            demoDoc.add(table);
+            demoDoc.close();
+
+            byte[] pdfBytes = demoOutput.toByteArray();
+            java.nio.file.Files.createDirectories(java.nio.file.Path.of("target"));
+            java.nio.file.Files.write(java.nio.file.Path.of("target/amostra-esquema-usinagem-tipologias.pdf"), pdfBytes);
+        }
+        assertTrue(demoOutput.size() > 0);
     }
 }

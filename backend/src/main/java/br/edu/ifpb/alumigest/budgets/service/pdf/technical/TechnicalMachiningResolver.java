@@ -34,7 +34,7 @@ public final class TechnicalMachiningResolver {
     private static final String FIELD_MODE = "mode";
     private static final String FIELD_DISTANCE_FROM_FLOOR_MM = "distanceFromFloorMm";
 
-    private static final float RAIO_PADRAO_MM = 10.0f;
+    private static final float DEFAULT_RADIUS_MM = 10.0f;
     private static final float DEFAULT_HANDLE_LENGTH_MM = 250.0f;
     private static final float DEFAULT_HEIGHT_MM = 2100.0f;
 
@@ -50,16 +50,16 @@ public final class TechnicalMachiningResolver {
      */
     public static TechnicalMachiningContext resolve(BudgetItem item) {
         if (item == null) {
-            return new TechnicalMachiningContext(null, null, null, null, List.of(), null);
+            return new TechnicalMachiningContext(null, null, null, null, List.of(), null, 1, false);
         }
 
         BigDecimal widthMm = item.getWidthMm();
         BigDecimal heightMm = item.getHeightMm();
         String templateType = item.getTemplateType();
 
-        OpeningDirection openingDirection = extrairOpeningDirection(item);
-        List<DrillingHolePoint> drillingHoles = extrairFuracoes(item, heightMm, templateType);
-        TechnicalHandle handle = extrairPuxador(item, heightMm, openingDirection);
+        OpeningDirection openingDirection = extractOpeningDirection(item);
+        List<DrillingHolePoint> drillingHoles = extractDrillingHoles(item, heightMm, templateType);
+        TechnicalHandle handle = extractHandle(item, heightMm, openingDirection);
 
         TemplateType parsedType = TemplateType.parse(templateType);
         int leafCount = extractLeafCount(parsedType, templateType);
@@ -77,7 +77,7 @@ public final class TechnicalMachiningResolver {
         );
     }
 
-    private static OpeningDirection extrairOpeningDirection(BudgetItem item) {
+    private static OpeningDirection extractOpeningDirection(BudgetItem item) {
         String rawConfig = item.getTemplateConfig();
         if (rawConfig == null || rawConfig.isBlank()) {
             return null;
@@ -100,19 +100,21 @@ public final class TechnicalMachiningResolver {
         return null;
     }
 
-    private static List<DrillingHolePoint> extrairFuracoes(BudgetItem item, BigDecimal heightMm, String templateType) {
+    private static List<DrillingHolePoint> extractDrillingHoles(
+            BudgetItem item, BigDecimal heightMm, String templateType
+    ) {
         String raw = item.getDrillingConfig();
-        List<DrillingHolePoint> pontos = parseDrillingJson(raw, heightMm);
-        if (pontos.isEmpty() && (raw == null || raw.isBlank()) && templateType != null) {
-            pontos.addAll(fallbackFuracoesPorTemplate(templateType));
+        List<DrillingHolePoint> points = parseDrillingJson(raw, heightMm);
+        if (points.isEmpty() && (raw == null || raw.isBlank()) && templateType != null) {
+            points.addAll(fallbackDrillingsByTemplate(templateType));
         }
-        return pontos;
+        return points;
     }
 
     private static List<DrillingHolePoint> parseDrillingJson(String raw, BigDecimal heightMm) {
-        List<DrillingHolePoint> pontos = new ArrayList<>();
+        List<DrillingHolePoint> points = new ArrayList<>();
         if (raw == null || raw.isBlank() || "{}".equals(raw.trim()) || "NONE".equalsIgnoreCase(raw.trim())) {
-            return pontos;
+            return points;
         }
 
         try {
@@ -123,7 +125,7 @@ public final class TechnicalMachiningResolver {
                     : "";
 
             if ("NONE".equals(modeStr)) {
-                return pontos;
+                return points;
             }
 
             boolean isCustom = "CUSTOM".equals(modeStr) || "CUSTOM_DISTANCES".equals(modeStr);
@@ -132,18 +134,18 @@ public final class TechnicalMachiningResolver {
                     : node.get("customPositionsMm");
 
             if (isCustom && distNode != null) {
-                pontos.addAll(parseCustomDistances(distNode, heightMm));
+                points.addAll(parseCustomDistances(distNode, heightMm));
             } else {
-                pontos.addAll(parseEquidistantHoles(node));
+                points.addAll(parseEquidistantHoles(node));
             }
         } catch (Exception ex) {
             log.debug("Falha ao parsear drillingConfig: {}", ex.getMessage());
         }
-        return pontos;
+        return points;
     }
 
     private static List<DrillingHolePoint> parseCustomDistances(JsonNode distances, BigDecimal heightMm) {
-        List<DrillingHolePoint> pontos = new ArrayList<>();
+        List<DrillingHolePoint> points = new ArrayList<>();
         if (distances != null && distances.isArray()) {
             float h = heightMm != null && heightMm.compareTo(BigDecimal.ZERO) > 0
                     ? heightMm.floatValue()
@@ -152,10 +154,10 @@ public final class TechnicalMachiningResolver {
             for (JsonNode dNode : distances) {
                 float dist = (float) dNode.asDouble();
                 float yRatio = Math.clamp(dist / h, 0.08f, 0.92f);
-                pontos.add(new DrillingHolePoint(yRatio, RAIO_PADRAO_MM, String.format(Locale.ROOT, "%.0f mm", dist)));
+                points.add(new DrillingHolePoint(yRatio, DEFAULT_RADIUS_MM, String.format(Locale.ROOT, "%.0f mm", dist)));
             }
         }
-        return pontos;
+        return points;
     }
 
     private static List<DrillingHolePoint> parseEquidistantHoles(JsonNode node) {
@@ -170,26 +172,29 @@ public final class TechnicalMachiningResolver {
         if (countNode != null && !countNode.isNull()) {
             count = Math.clamp(countNode.asInt(), 1, 6);
         }
-        return gerarPontosEquidistantes(count);
+        return generateEquidistantPoints(count);
     }
 
-    private static List<DrillingHolePoint> fallbackFuracoesPorTemplate(String templateType) {
+    private static List<DrillingHolePoint> fallbackDrillingsByTemplate(String templateType) {
         String upper = templateType.toUpperCase(Locale.ROOT);
+        if (upper.contains("GAVETA") || upper.contains("DRAWER")
+                || upper.contains("FIXO") || upper.contains("FIXED")
+                || upper.contains("MAXIM") || upper.contains("BASCULANTE")
+                || upper.contains("AWNING") || upper.contains("TILT")) {
+            return List.of();
+        }
         if (upper.contains("GIRO") || upper.contains("PIVOT") || upper.contains("PORTA")
                 || upper.contains("DOOR") || upper.contains("SWING")) {
-            return gerarPontosEquidistantes(3);
-        }
-        if (upper.contains("MAXIM") || upper.contains("BASCULANTE") || upper.contains("AWNING")) {
-            return gerarPontosEquidistantes(2);
+            return generateEquidistantPoints(3);
         }
         return List.of();
     }
 
-    private static List<DrillingHolePoint> gerarPontosEquidistantes(int count) {
-        List<DrillingHolePoint> pontos = new ArrayList<>();
+    private static List<DrillingHolePoint> generateEquidistantPoints(int count) {
+        List<DrillingHolePoint> points = new ArrayList<>();
         if (count <= 1) {
-            pontos.add(new DrillingHolePoint(0.50f, RAIO_PADRAO_MM, "Furo Central"));
-            return pontos;
+            points.add(new DrillingHolePoint(0.50f, DEFAULT_RADIUS_MM, "Furo Central"));
+            return points;
         }
 
         float yMin = 0.12f;
@@ -198,12 +203,12 @@ public final class TechnicalMachiningResolver {
 
         for (int i = 0; i < count; i++) {
             float y = yMin + (i * step);
-            pontos.add(new DrillingHolePoint(y, RAIO_PADRAO_MM, "Dist. Iguais"));
+            points.add(new DrillingHolePoint(y, DEFAULT_RADIUS_MM, "Dist. Iguais"));
         }
-        return pontos;
+        return points;
     }
 
-    private static TechnicalHandle extrairPuxador(BudgetItem item, BigDecimal heightMm, OpeningDirection direction) {
+    private static TechnicalHandle extractHandle(BudgetItem item, BigDecimal heightMm, OpeningDirection direction) {
         String raw = item.getHandleConfig();
         if (raw == null || raw.isBlank() || "{}".equals(raw.trim()) || "NONE".equalsIgnoreCase(raw.trim())) {
             return null;
