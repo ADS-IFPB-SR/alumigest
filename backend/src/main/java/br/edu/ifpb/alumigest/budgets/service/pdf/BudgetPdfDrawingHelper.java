@@ -94,22 +94,6 @@ public final class BudgetPdfDrawingHelper {
     }
 
     /**
-     * @deprecated Use {@link #drawWindowThumbnail(PdfWriter, BudgetItem, float, float)} em substituição.
-     */
-    @Deprecated(since = "1.0", forRemoval = false)
-    public static Image desenharMiniaturaEsquadria(PdfWriter writer, BudgetItem item, float width, float height) {
-        return drawWindowThumbnail(writer, item, width, height);
-    }
-
-    /**
-     * @deprecated Use {@link #drawWindowThumbnail(PdfWriter, BudgetItem)} em substituição.
-     */
-    @Deprecated(since = "1.0", forRemoval = false)
-    public static Image desenharMiniaturaEsquadria(PdfWriter writer, BudgetItem item) {
-        return drawWindowThumbnail(writer, item, DEFAULT_WIDTH, DEFAULT_HEIGHT);
-    }
-
-    /**
      * Retorna a instância global do registro de estratégias para extensibilidade.
      */
     public static TemplateThumbnailRegistry getRegistry() {
@@ -179,22 +163,6 @@ public final class BudgetPdfDrawingHelper {
      * @return {@link Image} vetorial contendo o esquema cotado
      */
     public static Image drawMachiningScheme(PdfWriter writer, BudgetItem item) {
-        return drawMachiningScheme(writer, item, DEFAULT_MACHINING_SIZE, DEFAULT_MACHINING_SIZE);
-    }
-
-    /**
-     * @deprecated Use {@link #drawMachiningScheme(PdfWriter, BudgetItem, float, float)} instead.
-     */
-    @Deprecated(since = "1.0", forRemoval = false)
-    public static Image desenharEsquemaUsinagem(PdfWriter writer, BudgetItem item, float width, float height) {
-        return drawMachiningScheme(writer, item, width, height);
-    }
-
-    /**
-     * @deprecated Use {@link #drawMachiningScheme(PdfWriter, BudgetItem)} instead.
-     */
-    @Deprecated(since = "1.0", forRemoval = false)
-    public static Image desenharEsquemaUsinagem(PdfWriter writer, BudgetItem item) {
         return drawMachiningScheme(writer, item, DEFAULT_MACHINING_SIZE, DEFAULT_MACHINING_SIZE);
     }
 

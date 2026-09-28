@@ -67,7 +67,7 @@ class BudgetPdfDrawingHelperTest {
     }
 
     @Test
-    @DisplayName("US-11.2: desenharEsquemaUsinagem com dimensões default (105x105) gera imagem válida")
+    @DisplayName("US-11.2: drawMachiningScheme com dimensões default (105x105) gera imagem válida")
     void deveDesenharEsquemaUsinagemComDimensoesDefault() {
         BudgetItem item = new BudgetItem();
         item.setTemplateType("SWING_DOOR_1F");
@@ -75,7 +75,7 @@ class BudgetPdfDrawingHelperTest {
         item.setDrillingConfig("{\"mode\": \"EQUIDISTANT\", \"quantity\": 3}");
         item.setHandleConfig("{\"type\": \"TUBULAR\", \"lengthMm\": 400.0, \"distanceFromFloorMm\": 1000.0}");
 
-        Image img = BudgetPdfDrawingHelper.desenharEsquemaUsinagem(writer, item);
+        Image img = BudgetPdfDrawingHelper.drawMachiningScheme(writer, item);
 
         assertNotNull(img, "A imagem do esquema técnico não pode ser nula");
         assertTrue(img.getWidth() > 0, "Largura da imagem deve ser positiva");
@@ -83,7 +83,7 @@ class BudgetPdfDrawingHelperTest {
     }
 
     @Test
-    @DisplayName("US-11.2: desenharEsquemaUsinagem com furações equidistantes e puxador tubular cotado")
+    @DisplayName("US-11.2: drawMachiningScheme com furações equidistantes e puxador tubular cotado")
     void deveDesenharEsquemaUsinagemComFuracoesEquidistantesEPuxador() {
         BudgetItem item = new BudgetItem();
         item.setTemplateType("SWING_DOOR_1F");
@@ -91,27 +91,27 @@ class BudgetPdfDrawingHelperTest {
         item.setDrillingConfig("{\"mode\": \"EQUIDISTANT\", \"quantity\": 4}");
         item.setHandleConfig("{\"type\": \"TUBULAR\", \"lengthMm\": 600.0, \"distanceFromFloorMm\": 1050.0}");
 
-        Image img = BudgetPdfDrawingHelper.desenharEsquemaUsinagem(writer, item, 120f, 120f);
+        Image img = BudgetPdfDrawingHelper.drawMachiningScheme(writer, item, 120f, 120f);
 
         assertNotNull(img);
         assertTrue(img.getWidth() > 0);
     }
 
     @Test
-    @DisplayName("US-11.2: desenharEsquemaUsinagem com distâncias customizadas de furação")
+    @DisplayName("US-11.2: drawMachiningScheme com distâncias customizadas de furação")
     void deveDesenharEsquemaUsinagemComDistanciasCustomizadas() {
         BudgetItem item = new BudgetItem();
         item.setTemplateType("PORTA_GIRO");
         item.setTemplateConfig("{\"width\": 800, \"height\": 2000}");
         item.setDrillingConfig("{\"mode\": \"CUSTOM_DISTANCES\", \"customDistancesMm\": [250.0, 1000.0, 1750.0]}");
 
-        Image img = BudgetPdfDrawingHelper.desenharEsquemaUsinagem(writer, item, 100f, 100f);
+        Image img = BudgetPdfDrawingHelper.drawMachiningScheme(writer, item, 100f, 100f);
 
         assertNotNull(img);
     }
 
     @Test
-    @DisplayName("US-11.2: desenharEsquemaUsinagem omite puxador quando handleConfig é nulo ou vazio")
+    @DisplayName("US-11.2: drawMachiningScheme omite puxador quando handleConfig é nulo ou vazio")
     void deveOmitirPuxadorQuandoNaoConfigurado() {
         BudgetItem item = new BudgetItem();
         item.setTemplateType("SWING_DOOR_1F");
@@ -119,21 +119,21 @@ class BudgetPdfDrawingHelperTest {
         item.setHandleConfig(null);
         item.setDrillingConfig("{}");
 
-        Image img = BudgetPdfDrawingHelper.desenharEsquemaUsinagem(writer, item);
+        Image img = BudgetPdfDrawingHelper.drawMachiningScheme(writer, item);
 
         assertNotNull(img);
     }
 
     @Test
-    @DisplayName("US-11.2: desenharEsquemaUsinagem deve ser resiliente com BudgetItem nulo")
+    @DisplayName("US-11.2: drawMachiningScheme deve ser resiliente com BudgetItem nulo")
     void deveDesenharEsquemaUsinagemComItemNulo() {
-        Image img = BudgetPdfDrawingHelper.desenharEsquemaUsinagem(writer, null);
+        Image img = BudgetPdfDrawingHelper.drawMachiningScheme(writer, null);
 
         assertNotNull(img);
     }
 
     @Test
-    @DisplayName("US-11.2 / Task #342: desenharEsquemaUsinagem para esquadrias de correr multifolhas")
+    @DisplayName("US-11.2 / Task #342: drawMachiningScheme para esquadrias de correr multifolhas")
     void deveDesenharEsquemaUsinagemParaEsquadriasDeCorrerMultifolhas() {
         BudgetItem item2F = new BudgetItem();
         item2F.setTemplateType("SLIDING_DOOR_2F");
@@ -141,7 +141,7 @@ class BudgetPdfDrawingHelperTest {
         item2F.setHeightMm(new BigDecimal("2100"));
         item2F.setHandleConfig("{\"type\": \"TUBULAR\", \"position\": \"RIGHT\"}");
 
-        Image img2F = BudgetPdfDrawingHelper.desenharEsquemaUsinagem(writer, item2F);
+        Image img2F = BudgetPdfDrawingHelper.drawMachiningScheme(writer, item2F);
         assertNotNull(img2F);
         assertTrue(img2F.getWidth() > 0);
 
@@ -150,12 +150,12 @@ class BudgetPdfDrawingHelperTest {
         item4F.setWidthMm(new BigDecimal("2400"));
         item4F.setHeightMm(new BigDecimal("1200"));
 
-        Image img4F = BudgetPdfDrawingHelper.desenharEsquemaUsinagem(writer, item4F);
+        Image img4F = BudgetPdfDrawingHelper.drawMachiningScheme(writer, item4F);
         assertNotNull(img4F);
         assertTrue(img4F.getWidth() > 0);
     }
 
-    @ParameterizedTest(name = "US-11.2 / #347: desenharEsquemaUsinagem para tipologia {0}")
+    @ParameterizedTest(name = "US-11.2 / #347: drawMachiningScheme para tipologia {0}")
     @ValueSource(strings = {
         "SWING_DOOR_1F",
         "SWING_DOOR_2F",
@@ -166,7 +166,7 @@ class BudgetPdfDrawingHelperTest {
         "FRONT_DRAWER",
         "FIXED_PANEL"
     })
-    @DisplayName("US-11.2 / #347: desenharEsquemaUsinagem deve renderizar imagem válida para todas as tipologias")
+    @DisplayName("US-11.2 / #347: drawMachiningScheme deve renderizar imagem válida para todas as tipologias")
     void deveDesenharEsquemaUsinagemParaTodasTipologias(String tipologia) {
         BudgetItem item = new BudgetItem();
         item.setTemplateType(tipologia);
@@ -175,23 +175,23 @@ class BudgetPdfDrawingHelperTest {
         item.setHandleConfig("{\"type\": \"TUBULAR\", \"lengthMm\": 250.0}");
         item.setDrillingConfig("{\"mode\": \"EQUIDISTANT\", \"quantity\": 3}");
 
-        Image img = BudgetPdfDrawingHelper.desenharEsquemaUsinagem(writer, item);
+        Image img = BudgetPdfDrawingHelper.drawMachiningScheme(writer, item);
         assertNotNull(img);
         assertTrue(img.getWidth() > 0);
         assertTrue(img.getHeight() > 0);
     }
 
     @Test
-    @DisplayName("US-11.2: desenharEsquemaUsinagem lança IllegalArgumentException com parâmetros inválidos")
+    @DisplayName("US-11.2: drawMachiningScheme lança IllegalArgumentException com parâmetros inválidos")
     void deveLancarExcecaoQuandoWriterOuDimensoesInvalidas() {
         BudgetItem item = new BudgetItem();
 
         assertThrows(IllegalArgumentException.class, () ->
-                BudgetPdfDrawingHelper.desenharEsquemaUsinagem(null, item, 100f, 100f));
+                BudgetPdfDrawingHelper.drawMachiningScheme(null, item, 100f, 100f));
         assertThrows(IllegalArgumentException.class, () ->
-                BudgetPdfDrawingHelper.desenharEsquemaUsinagem(writer, item, 0f, 100f));
+                BudgetPdfDrawingHelper.drawMachiningScheme(writer, item, 0f, 100f));
         assertThrows(IllegalArgumentException.class, () ->
-                BudgetPdfDrawingHelper.desenharEsquemaUsinagem(writer, item, 100f, -5f));
+                BudgetPdfDrawingHelper.drawMachiningScheme(writer, item, 100f, -5f));
     }
 
     @Test
@@ -258,7 +258,7 @@ class BudgetPdfDrawingHelperTest {
     void deveDesenharMiniaturaPrincipaisTipologiasSemErro(String templateType) {
         BudgetItem item = criarItemComTipologia(templateType);
 
-        Image imagem = BudgetPdfDrawingHelper.desenharMiniaturaEsquadria(writer, item,
+        Image imagem = BudgetPdfDrawingHelper.drawWindowThumbnail(writer, item,
                 BudgetPdfDrawingHelper.DEFAULT_WIDTH, BudgetPdfDrawingHelper.DEFAULT_HEIGHT);
 
         assertNotNull(imagem, "A imagem retornada não deve ser nula para " + templateType);
@@ -271,7 +271,7 @@ class BudgetPdfDrawingHelperTest {
     void deveRetornarImagemComDimensoesCorretas() {
         BudgetItem item = criarItemComTipologia("SLIDING_2_LEAF");
 
-        Image imagem = BudgetPdfDrawingHelper.desenharMiniaturaEsquadria(writer, item,
+        Image imagem = BudgetPdfDrawingHelper.drawWindowThumbnail(writer, item,
                 BudgetPdfDrawingHelper.DEFAULT_WIDTH, BudgetPdfDrawingHelper.DEFAULT_HEIGHT);
 
         assertNotNull(imagem);
@@ -288,7 +288,7 @@ class BudgetPdfDrawingHelperTest {
         float customWidth = 80f;
         float customHeight = 100f;
 
-        Image imagem = BudgetPdfDrawingHelper.desenharMiniaturaEsquadria(writer, item, customWidth, customHeight);
+        Image imagem = BudgetPdfDrawingHelper.drawWindowThumbnail(writer, item, customWidth, customHeight);
 
         assertNotNull(imagem);
         assertEquals(customWidth, imagem.getScaledWidth(), 0.1f);
@@ -302,7 +302,7 @@ class BudgetPdfDrawingHelperTest {
     void deveDesenharMiniaturaComTemplateTypeNulo() {
         BudgetItem item = criarItemComTipologia(null);
 
-        Image imagem = BudgetPdfDrawingHelper.desenharMiniaturaEsquadria(writer, item,
+        Image imagem = BudgetPdfDrawingHelper.drawWindowThumbnail(writer, item,
                 BudgetPdfDrawingHelper.DEFAULT_WIDTH, BudgetPdfDrawingHelper.DEFAULT_HEIGHT);
 
         assertNotNull(imagem, "Deve gerar imagem fallback mesmo sem templateType");
@@ -313,7 +313,7 @@ class BudgetPdfDrawingHelperTest {
     void deveDesenharMiniaturaComTemplateTypeVazio() {
         BudgetItem item = criarItemComTipologia("   ");
 
-        Image imagem = BudgetPdfDrawingHelper.desenharMiniaturaEsquadria(writer, item,
+        Image imagem = BudgetPdfDrawingHelper.drawWindowThumbnail(writer, item,
                 BudgetPdfDrawingHelper.DEFAULT_WIDTH, BudgetPdfDrawingHelper.DEFAULT_HEIGHT);
 
         assertNotNull(imagem, "Deve gerar imagem fallback com templateType vazio");
@@ -322,7 +322,7 @@ class BudgetPdfDrawingHelperTest {
     @Test
     @DisplayName("Deve desenhar miniatura genérica quando item é nulo")
     void deveDesenharMiniaturaComItemNulo() {
-        Image imagem = BudgetPdfDrawingHelper.desenharMiniaturaEsquadria(writer, null,
+        Image imagem = BudgetPdfDrawingHelper.drawWindowThumbnail(writer, null,
                 BudgetPdfDrawingHelper.DEFAULT_WIDTH, BudgetPdfDrawingHelper.DEFAULT_HEIGHT);
 
         assertNotNull(imagem, "Deve gerar imagem fallback com item nulo");
@@ -333,7 +333,7 @@ class BudgetPdfDrawingHelperTest {
     void deveFuncionarComSobrecargaDeDimensoesPadrao() {
         BudgetItem item = criarItemComTipologia("SLIDING_2_LEAF");
 
-        Image imagem = BudgetPdfDrawingHelper.desenharMiniaturaEsquadria(writer, item);
+        Image imagem = BudgetPdfDrawingHelper.drawWindowThumbnail(writer, item);
 
         assertNotNull(imagem);
         assertEquals(BudgetPdfDrawingHelper.DEFAULT_WIDTH, imagem.getScaledWidth(), 0.1f);
@@ -349,7 +349,7 @@ class BudgetPdfDrawingHelperTest {
         BudgetItem item = criarItemComTipologia(tipo.name());
 
         assertDoesNotThrow(() -> {
-            Image imagem = BudgetPdfDrawingHelper.desenharMiniaturaEsquadria(writer, item,
+            Image imagem = BudgetPdfDrawingHelper.drawWindowThumbnail(writer, item,
                     BudgetPdfDrawingHelper.DEFAULT_WIDTH, BudgetPdfDrawingHelper.DEFAULT_HEIGHT);
             assertNotNull(imagem, "Imagem não deve ser nula para tipologia " + tipo.name());
         });
@@ -363,7 +363,7 @@ class BudgetPdfDrawingHelperTest {
         BudgetItem item = criarItemComTipologia("SLIDING_2_LEAF");
 
         assertThrows(IllegalArgumentException.class, () ->
-                BudgetPdfDrawingHelper.desenharMiniaturaEsquadria(null, item,
+                BudgetPdfDrawingHelper.drawWindowThumbnail(null, item,
                         BudgetPdfDrawingHelper.DEFAULT_WIDTH, BudgetPdfDrawingHelper.DEFAULT_HEIGHT));
     }
 
@@ -373,10 +373,10 @@ class BudgetPdfDrawingHelperTest {
         BudgetItem item = criarItemComTipologia("SLIDING_2_LEAF");
 
         assertThrows(IllegalArgumentException.class, () ->
-                BudgetPdfDrawingHelper.desenharMiniaturaEsquadria(writer, item, 0f, 70f));
+                BudgetPdfDrawingHelper.drawWindowThumbnail(writer, item, 0f, 70f));
 
         assertThrows(IllegalArgumentException.class, () ->
-                BudgetPdfDrawingHelper.desenharMiniaturaEsquadria(writer, item, -10f, 70f));
+                BudgetPdfDrawingHelper.drawWindowThumbnail(writer, item, -10f, 70f));
     }
 
     @Test
@@ -385,10 +385,10 @@ class BudgetPdfDrawingHelperTest {
         BudgetItem item = criarItemComTipologia("SLIDING_2_LEAF");
 
         assertThrows(IllegalArgumentException.class, () ->
-                BudgetPdfDrawingHelper.desenharMiniaturaEsquadria(writer, item, 60f, 0f));
+                BudgetPdfDrawingHelper.drawWindowThumbnail(writer, item, 60f, 0f));
 
         assertThrows(IllegalArgumentException.class, () ->
-                BudgetPdfDrawingHelper.desenharMiniaturaEsquadria(writer, item, 60f, -5f));
+                BudgetPdfDrawingHelper.drawWindowThumbnail(writer, item, 60f, -5f));
     }
 
     @Test
@@ -405,7 +405,7 @@ class BudgetPdfDrawingHelperTest {
     void deveResolverAliasesDeTipologias(String alias) {
         BudgetItem item = criarItemComTipologia(alias);
 
-        Image imagem = BudgetPdfDrawingHelper.desenharMiniaturaEsquadria(writer, item,
+        Image imagem = BudgetPdfDrawingHelper.drawWindowThumbnail(writer, item,
                 BudgetPdfDrawingHelper.DEFAULT_WIDTH, BudgetPdfDrawingHelper.DEFAULT_HEIGHT);
 
         assertNotNull(imagem, "Deve gerar miniatura usando alias '" + alias + "'");
@@ -428,7 +428,7 @@ class BudgetPdfDrawingHelperTest {
         assertTrue(TemplateThumbnailRegistry.getInstance().hasStrategy(novoModeloKey));
 
         BudgetItem item = criarItemComTipologia(novoModeloKey);
-        Image imagem = BudgetPdfDrawingHelper.desenharMiniaturaEsquadria(writer, item);
+        Image imagem = BudgetPdfDrawingHelper.drawWindowThumbnail(writer, item);
 
         assertNotNull(imagem, "A imagem do novo template registrado não deve ser nula");
         assertEquals(BudgetPdfDrawingHelper.DEFAULT_WIDTH, imagem.getScaledWidth(), 0.1f);
@@ -448,7 +448,7 @@ class BudgetPdfDrawingHelperTest {
 
         // Deve renderizar sem lançar qualquer exceção
         Image imagem = assertDoesNotThrow(() ->
-                BudgetPdfDrawingHelper.desenharMiniaturaEsquadria(writer, item));
+                BudgetPdfDrawingHelper.drawWindowThumbnail(writer, item));
 
         assertNotNull(imagem, "Deve gerar imagem de fallback para template excluído/inexistente");
         assertEquals(BudgetPdfDrawingHelper.DEFAULT_WIDTH, imagem.getScaledWidth(), 0.1f);
@@ -478,7 +478,7 @@ class BudgetPdfDrawingHelperTest {
         assertEquals(new Color(100, 116, 139), ctx.glassFill(), "Cor do vidro deve ser Fumê #64748b");
 
         Image imagem = assertDoesNotThrow(() ->
-                BudgetPdfDrawingHelper.desenharMiniaturaEsquadria(writer, item));
+                BudgetPdfDrawingHelper.drawWindowThumbnail(writer, item));
         assertNotNull(imagem);
     }
 
@@ -503,7 +503,7 @@ class BudgetPdfDrawingHelperTest {
         assertEquals(new Color(167, 243, 208), ctx.glassFill(), "Cor do vidro deve ser Verde #a7f3d0");
 
         Image imagem = assertDoesNotThrow(() ->
-                BudgetPdfDrawingHelper.desenharMiniaturaEsquadria(writer, item));
+                BudgetPdfDrawingHelper.drawWindowThumbnail(writer, item));
         assertNotNull(imagem);
     }
 
@@ -519,7 +519,7 @@ class BudgetPdfDrawingHelperTest {
         assertEquals(new Color(254, 215, 170), ctx.glassFill(), "Cor do vidro deve ser Reflecta #fed7aa");
 
         Image imagem = assertDoesNotThrow(() ->
-                BudgetPdfDrawingHelper.desenharMiniaturaEsquadria(writer, item));
+                BudgetPdfDrawingHelper.drawWindowThumbnail(writer, item));
         assertNotNull(imagem);
     }
 
@@ -533,7 +533,7 @@ class BudgetPdfDrawingHelperTest {
         itemComTudoNulo.setHeightMm(null);
 
         Image imagem = assertDoesNotThrow(() ->
-                BudgetPdfDrawingHelper.desenharMiniaturaEsquadria(writer, itemComTudoNulo));
+                BudgetPdfDrawingHelper.drawWindowThumbnail(writer, itemComTudoNulo));
 
         assertNotNull(imagem, "Deve gerar imagem padrão limpa sem exceção");
     }
@@ -797,7 +797,7 @@ class BudgetPdfDrawingHelperTest {
                 BudgetItem item = new BudgetItem();
                 item.setTemplateType(ex.codigo);
 
-                Image img = BudgetPdfDrawingHelper.desenharMiniaturaEsquadria(demoWriter, item, 60f, 70f);
+                Image img = BudgetPdfDrawingHelper.drawWindowThumbnail(demoWriter, item, 60f, 70f);
 
                 com.lowagie.text.pdf.PdfPCell cellImg = new com.lowagie.text.pdf.PdfPCell(img, true);
                 cellImg.setPadding(6f);
