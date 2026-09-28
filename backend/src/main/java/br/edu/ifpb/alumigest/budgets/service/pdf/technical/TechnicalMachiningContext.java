@@ -5,7 +5,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 /**
- * Contexto geométrico e dimensional imutável para a renderização do esquema técnico de usinagem e corte.
+ * Contexto geométrico e dimensional imutável para a renderização do esquema técnico de usinagem.
  *
  * @param templateType     tipo do modelo de esquadria (ex: GIRO_1F, CORRER_2F)
  * @param widthMm          largura real em milímetros
@@ -13,6 +13,8 @@ import java.util.List;
  * @param openingDirection sentido de abertura da folha
  * @param drillingHoles    lista imutável de furos técnicos com posições relativas e cotas
  * @param handle           dados do puxador posicionado ou null caso ausente
+ * @param leafCount        quantidade de folhas construtivas da esquadria
+ * @param sliding          indica se a esquadria é da família de correr
  */
 public record TechnicalMachiningContext(
         String templateType,
@@ -20,11 +22,28 @@ public record TechnicalMachiningContext(
         BigDecimal heightMm,
         OpeningDirection openingDirection,
         List<DrillingHolePoint> drillingHoles,
-        TechnicalHandle handle
+        TechnicalHandle handle,
+        int leafCount,
+        boolean sliding
 ) {
 
     public TechnicalMachiningContext {
         drillingHoles = drillingHoles != null ? List.copyOf(drillingHoles) : List.of();
+        leafCount = Math.max(1, leafCount);
+    }
+
+    /**
+     * Construtor de conveniência com valores padrão para folha única não-corrediça.
+     */
+    public TechnicalMachiningContext(
+            String templateType,
+            BigDecimal widthMm,
+            BigDecimal heightMm,
+            OpeningDirection openingDirection,
+            List<DrillingHolePoint> drillingHoles,
+            TechnicalHandle handle
+    ) {
+        this(templateType, widthMm, heightMm, openingDirection, drillingHoles, handle, 1, false);
     }
 
     public boolean hasDrilling() {
@@ -48,5 +67,19 @@ public record TechnicalMachiningContext(
             return Math.clamp(ratio, 0.40f, 2.20f);
         }
         return 0.75f;
+    }
+
+    /**
+     * Indica se a esquadria pertence à tipologia de correr.
+     */
+    public boolean isSliding() {
+        return sliding;
+    }
+
+    /**
+     * Retorna o número de folhas construtivas da esquadria (1 a 4).
+     */
+    public int getLeafCount() {
+        return leafCount;
     }
 }

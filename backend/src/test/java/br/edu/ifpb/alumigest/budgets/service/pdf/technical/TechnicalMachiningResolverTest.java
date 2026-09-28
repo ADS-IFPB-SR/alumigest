@@ -183,11 +183,39 @@ class TechnicalMachiningResolverTest {
     @Test
     @DisplayName("US-11.2: DrillingHolePoint sanitiza label nulo ou vazio com fallback seguro")
     void deveSanitizarLabelNuloEmDrillingHolePoint() {
-        DrillingHolePoint pontoComNull = new DrillingHolePoint(0.5f, 12.0f, null);
-        assertEquals("Ø 12mm", pontoComNull.label());
+        DrillingHolePoint pointWithNull = new DrillingHolePoint(0.5f, 12.0f, null);
+        assertEquals("Ø 12mm", pointWithNull.label());
 
-        DrillingHolePoint pontoComBlank = new DrillingHolePoint(0.5f, 10.0f, "   ");
-        assertEquals("Ø 10mm", pontoComBlank.label());
+        DrillingHolePoint pointWithBlank = new DrillingHolePoint(0.5f, 10.0f, "   ");
+        assertEquals("Ø 10mm", pointWithBlank.label());
+    }
+
+    @Test
+    @DisplayName("US-11.2 / Task #342: resolve detecta esquadrias de correr e quantidade de folhas")
+    void deveResolverEsquadriasDeCorrerEQtdFolhas() {
+        BudgetItem item2F = new BudgetItem();
+        item2F.setTemplateType("SLIDING_DOOR_2F");
+        TechnicalMachiningContext ctx2f = TechnicalMachiningResolver.resolve(item2F);
+        assertTrue(ctx2f.isSliding());
+        assertEquals(2, ctx2f.getLeafCount());
+
+        BudgetItem item4F = new BudgetItem();
+        item4F.setTemplateType("SLIDING_WINDOW_4F");
+        TechnicalMachiningContext ctx4f = TechnicalMachiningResolver.resolve(item4F);
+        assertTrue(ctx4f.isSliding());
+        assertEquals(4, ctx4f.getLeafCount());
+
+        BudgetItem item3F = new BudgetItem();
+        item3F.setTemplateType("SLIDING_3_LEAF");
+        TechnicalMachiningContext ctx3f = TechnicalMachiningResolver.resolve(item3F);
+        assertTrue(ctx3f.isSliding());
+        assertEquals(3, ctx3f.getLeafCount());
+
+        BudgetItem itemGiro = new BudgetItem();
+        itemGiro.setTemplateType("SWING_DOOR_1F");
+        TechnicalMachiningContext ctxGiro = TechnicalMachiningResolver.resolve(itemGiro);
+        assertFalse(ctxGiro.isSliding());
+        assertEquals(1, ctxGiro.getLeafCount());
     }
 
     @Test
