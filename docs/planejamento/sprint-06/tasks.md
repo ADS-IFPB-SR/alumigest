@@ -1,49 +1,63 @@
-# 📋 Lista de Tarefas (Tasks) — Sprint 06 — Etiquetas de Identificação de Peças e Kanban de Produção
+# 📋 Lista de Tarefas (Tasks) — Sprint 06 — Pedidos de Venda, Lock de Preços e Comprovante Oficial
 
-> **Padrão**: User Stories sequenciais no projeto com Sub-tarefas decimais (`US-XX.Y`).
-
----
-
-## 📦 US-17: Emitir Etiquetas de Identificação de Peças por Item do Pedido
-
-> **Descrição**: Emitir etiquetas adesivas térmicas (100x50mm) contendo identificação física das esquadrias do pedido (código do pedido, cliente, medidas L x A mm, modelo da esquadria, cor do perfil, tipo de vidro e número do volume/peça), sem necessidade de QR Code ou scanner.
-
-| ID | Tarefa | Status |
-|---|---|:---:|
-| **US-17.1** | [US-17.1](issues/US-17.1-criar-servico-labelpdfservice-usando-openpdf/issue.md) Criar serviço `LabelPdfService` usando OpenPDF com layout térmico (100x50mm) contendo dados do pedido, cliente, medidas nominais, cor, vidro e numeração da peça | 🔲 Pendente |
-| **US-17.2** | [US-17.2](issues/US-17.2-adicionar-endpoint-get-api-orders-orderid-labels-pdf/issue.md) Adicionar endpoint `GET /api/orders/{orderId}/labels-pdf` no backend retornando documento `application/pdf` | 🔲 Pendente |
-| **US-17.3** | [US-17.3](issues/US-17.3-criar-teste-unitario-do-labelpdfservice/issue.md) Criar teste unitário do `LabelPdfService` validando geração de bytes e paginação exata por quantidade de peças | 🔲 Pendente |
-| **US-17.4** | [US-17.4](issues/US-17.4-adicionar-botao-imprimir-etiquetas-no-frontend/issue.md) Adicionar botão "Imprimir Etiquetas" na tela de detalhes do pedido no frontend (`OrderDetailPage.tsx`) | 🔲 Pendente |
-
-### Detalhamento das Tarefas (Checklist):
-
-- [ ] **US-17.1**: Criar serviço `LabelPdfService` usando OpenPDF com layout térmico (100x50mm) contendo dados do pedido, cliente, medidas nominais, cor, vidro e numeração da peça em `backend/src/main/java/br/edu/ifpb/alumigest/production/service/LabelPdfService.java`
-- [ ] **US-17.2**: Adicionar endpoint `GET /api/orders/{orderId}/labels-pdf` no backend retornando documento `application/pdf`
-- [ ] **US-17.3**: Criar teste unitário do `LabelPdfService` validando geração de bytes e paginação exata por quantidade de peças em `backend/src/test/java/br/edu/ifpb/alumigest/production/service/LabelPdfServiceTest.java`
-- [ ] **US-17.4**: Adicionar botão "Imprimir Etiquetas" na tela de detalhes do pedido no frontend (`OrderDetailPage.tsx`)
+> **Padrão**: User Stories sequenciais do AlumiGest com Sub-tarefas decimais (`US-XX.Y`).  
+> **Arquitetura**: Fatias Verticais Finas (*Thin Vertical Slices* ponta a ponta: Banco + Backend + Frontend + Testes).  
+> **Regra de Estimativa**: Cada implementação tem duração máxima de **≤ 4 horas**.  
+> **Garantia de Qualidade**: Testes unitários em cada task, Definition of Done (DoD) com 7 critérios e tasks finais de integração/sistema.  
+> **Período da Sprint 06**: 29/09/2026 a 12/10/2026  
+> **Total de Tarefas**: 12 fatias verticais (~38h estimadas).
 
 ---
 
-## 📦 US-18: Acompanhar Produção via Painel Kanban de Pedidos de Venda
+## 📦 US-13: Aprovar Orçamento e Converter em Pedido de Venda
+**Issue GitHub**: [#137](https://github.com/ADS-IFPB-SR/alumigest/issues/137) | **Prioridade**: P1 (MVP)
 
-> **Descrição**: Disponibilizar painel visual Kanban em tempo real para o encarregado e diretoria acompanharem o avanço de fabricação dos Pedidos de Venda nas etapas industriais oficiais (`AGUARDANDO_PRODUCAO`, `EM_PRODUCAO`, `CONCLUIDO`).
+| ID | Tarefa | Duração | Tipo | Status |
+|---|---|:---:|---|:---:|
+| **US-13.1** | [US-13.1](issues/US-13.1-scaffolding-e-infraestrutura-do-modulo-orders/issue.md) Scaffolding e Infraestrutura do Módulo de Pedidos (Migration Flyway V19, pacotes, enums, entidades JPA base e repositórios) | ~1h | Scaffolding / Infra | 🔲 Aberta |
+| **US-13.2** | [US-13.2](issues/US-13.2-conversao-de-orcamento-em-pedido-backend-core/issue.md) Conversão de Orçamento em Pedido de Venda no Backend Core (OrderCodeGenerator PED-YYYY-NNNN, OrderService atômico, DTOs, mappers, endpoint POST e testes unitários) | ~4h | Backend Core / Regras | 🔲 Aberta |
+| **US-13.3** | [US-13.3](issues/US-13.3-modal-aprovacao-e-conversao-frontend/issue.md) Modal de Aprovação e Ação de Conversão na Tela de Orçamento (Tipos TS, Schema Zod, orderApi, hook useConvertBudget, OrderApprovalModal e botão na BudgetDetailPage) | ~3h | Frontend UI / API | 🔲 Aberta |
+| **US-13.4** | [US-13.4](issues/US-13.4-listagem-paginada-de-pedidos-fullstack/issue.md) Listagem Paginada de Pedidos de Venda com Filtros (Full-Stack: GET /api/orders paginado, OrderListPage, OrderStatusBadge, busca com debounce e filtros) | ~4h | Fatia Vertical Full-Stack | 🔲 Aberta |
+| **US-13.5** | [US-13.5](issues/US-13.5-detalhamento-do-pedido-de-venda-fullstack/issue.md) Visualização Detalhada do Pedido de Venda (Full-Stack: GET /api/orders/{id}, OrderDetailPage com cards informativos, resumo financeiro e vínculo do orçamento) | ~3h | Fatia Vertical Full-Stack | 🔲 Aberta |
 
-| ID | Tarefa | Status |
-|---|---|:---:|
-| **US-18.1** | [US-18.1](issues/US-18.1-implementar-endpoint-patch-api-orders-id-production-status/issue.md) Implementar endpoint `PATCH /api/orders/{id}/production-status` no backend com validação de transição e data de conclusão | 🔲 Pendente |
-| **US-18.2** | [US-18.2](issues/US-18.2-criar-hook-react-query-useproductionkanban/issue.md) Criar hook React Query `useProductionKanban` e serviços Axios de produção no frontend | 🔲 Pendente |
-| **US-18.3** | [US-18.3](issues/US-18.3-criar-componente-orderproductioncard-no-frontend/issue.md) Criar componente `OrderProductionCard` no frontend exibindo dados do pedido, cliente, alerta de prazo e total de peças | 🔲 Pendente |
-| **US-18.4** | [US-18.4](issues/US-18.4-criar-componente-productionkanbanboard-com-colunas-de-status/issue.md) Criar componente `ProductionKanbanBoard` com colunas (`AGUARDANDO_PRODUCAO`, `EM_PRODUCAO`, `CONCLUIDO`) | 🔲 Pendente |
-| **US-18.5** | [US-18.5](issues/US-18.5-criar-pagina-productionkanbanpage-com-filtros-de-busca/issue.md) Criar página `ProductionKanbanPage` com filtros de busca por cliente, período de entrega e código do pedido | 🔲 Pendente |
-| **US-18.6** | [US-18.6](issues/US-18.6-configurar-rota-producao-e-menu-lateral-no-frontend/issue.md) Configurar rota `/producao` no React Router e adicionar atalho "Produção (Kanban)" no menu lateral do frontend | 🔲 Pendente |
-| **US-18.7** | [US-18.7](issues/US-18.7-documentar-endpoints-no-openapi-swagger-e-testes-unitarios/issue.md) Documentar endpoints no OpenAPI/Swagger e criar testes unitários para a transição de status no backend | 🔲 Pendente |
+---
 
-### Detalhamento das Tarefas (Checklist):
+## 📦 US-14: Snapshot Imutável e Lock de Preços do Pedido
+**Issue GitHub**: [#138](https://github.com/ADS-IFPB-SR/alumigest/issues/138) | **Prioridade**: P1
 
-- [ ] **US-18.1**: Implementar endpoint `PATCH /api/orders/{id}/production-status` no backend com validação de transição e data de conclusão
-- [ ] **US-18.2**: Criar hook React Query `useProductionKanban` e serviços Axios de produção no frontend em `frontend/src/features/production/hooks/useProductionKanban.ts`
-- [ ] **US-18.3**: Criar componente `OrderProductionCard` no frontend exibindo dados do pedido, cliente, alerta de prazo e total de peças em `frontend/src/features/production/components/OrderProductionCard.tsx`
-- [ ] **US-18.4**: Criar componente `ProductionKanbanBoard` com colunas (`AGUARDANDO_PRODUCAO`, `EM_PRODUCAO`, `CONCLUIDO`) em `frontend/src/features/production/components/ProductionKanbanBoard.tsx`
-- [ ] **US-18.5**: Criar página `ProductionKanbanPage` com filtros de busca por cliente, período de entrega e código do pedido em `frontend/src/pages/ProductionKanbanPage.tsx`
-- [ ] **US-18.6**: Configurar rota `/producao` no React Router e adicionar atalho "Produção (Kanban)" no menu lateral do frontend
-- [ ] **US-18.7**: Documentar endpoints no OpenAPI/Swagger e criar testes unitários para a transição de status no backend em `backend/src/test/java/br/edu/ifpb/alumigest/order/OrderProductionStatusTest.java`
+| ID | Tarefa | Duração | Tipo | Status |
+|---|---|:---:|---|:---:|
+| **US-14.1** | [US-14.1](issues/US-14.1-snapshot-imutavel-lock-precos-deep-copy/issue.md) Snapshot Imutável, Lock de Preços e Tabela de Itens Congelados (Full-Stack: Deep copy em 3 níveis, snapshots JSONB, OrderItemsTable no front e testes unitários de blindagem contra reajuste do catálogo) | ~4h | Fatia Vertical Full-Stack | 🔲 Aberta |
+
+---
+
+## 📦 US-15: Gestão de Status, Prazos e Cancelamento de Pedidos
+**Issue GitHub**: [#139](https://github.com/ADS-IFPB-SR/alumigest/issues/139) | **Prioridade**: P2
+
+| ID | Tarefa | Duração | Tipo | Status |
+|---|---|:---:|---|:---:|
+| **US-15.1** | [US-15.1](issues/US-15.1-maquina-estados-e-cancelamento-de-pedidos/issue.md) Máquina de Estados e Cancelamento de Pedidos com Justificativa (Full-Stack: transições CRIADO a CONCLUIDO com dataConclusao automática, PATCH /cancel, OrderCancelModal e bloqueio estrito em produção) | ~4h | Fatia Vertical Full-Stack | 🔲 Aberta |
+| **US-15.2** | [US-15.2](issues/US-15.2-reabertura-de-orcamento-apos-cancelamento/issue.md) Reabertura de Orçamento após Cancelamento de Pedido (Ajuste na máquina de estados do BudgetService para APPROVED ➔ DRAFT condicional e botão contextual na BudgetDetailPage) | ~2h | Fatia Vertical Full-Stack | 🔲 Aberta |
+
+---
+
+## 📦 US-16: Emissão do Comprovante do Pedido de Venda em PDF
+**Issue GitHub**: [#140](https://github.com/ADS-IFPB-SR/alumigest/issues/140) | **Prioridade**: P2
+
+| ID | Tarefa | Duração | Tipo | Status |
+|---|---|:---:|---|:---:|
+| **US-16.1** | [US-16.1](issues/US-16.1-comprovante-oficial-do-pedido-em-pdf-openpdf/issue.md) Comprovante Oficial do Pedido de Venda em PDF via OpenPDF (Full-Stack: OrderPdfService layout A4 institucional, endpoint GET /pdf/comprovante e ação de download na OrderDetailPage) | ~4h | Fatia Vertical Full-Stack | 🔲 Aberta |
+| **US-16.2** | [US-16.2](issues/US-16.2-navegacao-openapi-swagger-e-contratos/issue.md) Navegação no Sidebar, Documentação OpenAPI/Swagger e Contratos (Atalho 'Pedidos de Venda' no sidebar, anotações Swagger no OrderController e atualização do contrato de API) | ~2h | Frontend & Docs | 🔲 Aberta |
+| **US-16.3** | [US-16.3](issues/US-16.3-testes-de-integracao-backend-mockmvc-h2/issue.md) Bateria de Testes de Integração do Backend (OrderControllerIntegrationTest cobrindo todos os endpoints REST, validações de erro, conflito 409 e downloads com base H2) | ~3h | Testes de Integração | 🔲 Aberta |
+| **US-16.4** | [US-16.4](issues/US-16.4-testes-e2e-sistema-e-validacao-quickstart/issue.md) Testes de Sistema E2E, Validação BDD e Homologação do Quickstart (Suite E2E Cypress/Playwright do fluxo ponta a ponta e execução completa do quickstart.md) | ~4h | Testes Sistema / E2E | 🔲 Aberta |
+
+---
+
+## 📊 Resumo de Esforço da Sprint 06
+
+- **Total de Horas Estimadas**: **~38 horas** (detalhamento e pontuação Story Points disponíveis no [Guia de Estimativa de Horas](../guia-estimativa-horas.md#8-dimensionamento-oficial-de-tarefas--sprint-06)).
+- **Duração Máxima por Tarefa**: Nenhuma tarefa ultrapassa **4 horas** (todas variam entre 1h e 4h).
+- **Cobertura de Testes**:
+  - Cada fatia vertical possui testes unitários dedicados escolhidos e implementados pelo desenvolvedor.
+  - As tarefas **US-16.3** e **US-16.4** realizam a cobertura global de testes de integração, testes de sistema e testes de aceitação ponta a ponta.
+- **Definition of Done (DoD)**: Padronizado com 7 critérios em todas as issues.

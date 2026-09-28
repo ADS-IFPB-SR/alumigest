@@ -1,197 +1,220 @@
-# Feature Specification: Sprint 6 — Etiquetas de Identificação de Peças e Kanban de Produção
+# Feature Specification: Sprint 6 — Gestão de Pedidos de Venda, Lock de Preços e Comprovante Oficial
 
-**Feature**: `003-producao-kanban-etiquetas`  
+**Feature**: `002-pedidos-lock-precos`  
 **Release**: Release 2 (v2.0.0) — Gestão de Produção & Fábrica  
+**Período da Sprint 06**: 29/09/2026 a 12/10/2026  
 **Created**: 2026-08-27  
-**Updated**: 2026-09-23  
-**Status**: APPROVED (Reestruturada após Decisão de Escopo — Padrão BDD Gherkin)  
+**Updated**: 2026-09-28  
+**Status**: APPROVED (Reestruturada como Sprint Ativa — Padrão BDD Gherkin)  
 
 ---
 
 ## 1. Visão Geral & Contexto de Negócio
 
-Após a conversão de um orçamento em Pedido de Venda (`Order`), o AlumiGest dá suporte à gestão da oficina da Alumiportas de forma direta, prática e sem burocracia excessiva.
+A **Sprint 06** marca a transição oficial do AlumiGest da esteira comercial para a esteira fabril e de execução. Após o encerramento da Sprint 05 (onde foram consolidados descontos, PDFs de orçamentos e a homologação da Release 1), a aprovação do cliente transforma uma proposta comercial em um **Pedido de Venda vinculante (`Order`)**.
 
-> ⚠️ **Nota de Decisão Arquitetural (ADR - Simplificação de Escopo)**:  
-> Por decisão unânime da equipe de engenharia e produto, as propostas iniciais de geração de dezenas de entidades individuais de "Ordem de Produção (OP)" por esquadria física e uso de "Scanner móvel de QR Code com câmera" foram descartadas do projeto. Identificou-se que esse modelo adicionava overhead operacional e complexidade desnecessária para a rotina da vidraçaria/serralheria.  
-> **Novo modelo adotado**: A gestão de chão de fábrica é centrada no **Pedido de Venda (`Order`)** como um todo através de um **Painel Kanban de Produção** e na **identificação física imediata das peças cortadas/montadas através de etiquetas adesivas impressas diretamente a partir dos itens do pedido (`OrderItem`)**.
-
-Esta sprint introduz:
-1. **Emissão de Etiquetas Físicas de Identificação de Peças (100x50mm)**: Geração de etiquetas adesivas com dados 100% legíveis (cliente, código do pedido, modelo da esquadria, dimensões nominais L x A mm, cor do alumínio, tipo de vidro e numeração da peça no lote).
-2. **Painel Kanban de Produção por Pedido de Venda**: Acompanhamento visual do fluxo de produção nas colunas oficiais de ciclo de vida do pedido (`AGUARDANDO_PRODUCAO`, `EM_PRODUCAO`, `CONCLUIDO`).
+O objetivo primordial desta sprint é garantir a formalização contratual da venda através de:
+1. **Conversão Automatizada (1-para-1)**: Transformação de orçamento aprovado em pedido com geração de código oficial sequencial anual (`PED-YYYY-NNNN`) e vínculo unívoco com o orçamento de origem.
+2. **Snapshot Imutável e Lock de Preços**: Clonagem profunda (*deep copy*) de itens, dimensões, preços unitários e custos calculados, blindando o pedido contra reajustes futuros no catálogo de materiais ou tabelas de preços.
+3. **Máquina de Estados e Cancelamento Controlado**: Ciclo de vida estrito (`CRIADO` ➔ `AGUARDANDO_PRODUCAO` ➔ `EM_PRODUCAO` ➔ `CONCLUIDO` ou `CANCELADO`), com justificativa obrigatória e possibilidade de reabertura do orçamento de origem para novas negociações.
+4. **Emissão de Comprovante Oficial em PDF**: Geração de documento institucional A4 com OpenPDF contendo todas as especificações das esquadrias, cronograma de entrega e condições de pagamento acertadas.
 
 ---
 
-## 2. 👥 Histórias de Usuário (User Stories)
+## 2. 👥 Histórias de Usuário da Sprint 06
 
-### 📌 US-17: Emitir Etiquetas de Identificação de Peças por Item do Pedido
+### 📌 US-13: Aprovar Orçamento e Converter em Pedido de Venda (Priority: P1) 🎯 MVP
+**Issue GitHub**: [#137](https://github.com/ADS-IFPB-SR/alumigest/issues/137)
 
 #### 🎯 Objetivo de Negócio
-> **Como** encarregado de produção da oficina da Alumiportas,  
-> **Desejo** emitir etiquetas adesivas térmicas de identificação (100x50mm) para cada exemplar físico de esquadria de um pedido de venda aprovado,  
-> **Para que** os cortadores e montadores possam colar nos perfis e vidros, identificando medidas nominais, cliente, cor, vidro e numeração individual da peça sem confusão no chão de fábrica.
+> **Como** vendedor ou gerente comercial da Alumiportas,  
+> **Desejo** aprovar formalmente uma proposta orçamentária e convertê-la automaticamente em um Pedido de Venda oficial (`PED-YYYY-NNNN`), registrando o canal de aprovação (WhatsApp, Presencial, Telefone, E-mail), observações e a data de entrega acordada,  
+> **Para que** seja firmado o contrato de venda e liberado o pedido para o fluxo fabril com rastreabilidade completa.
 
 #### 🧪 Critérios de Aceitação (Dado que / Quando / Então)
 
-- [ ] **Cenário 1: Emissão de PDF de etiquetas com paginação por unidade física**
-  - **Dado que** existe um pedido aprovado "PED-2026-0005" com 2 itens:
-    | Item | Descrição | Quantidade | Largura (mm) | Altura (mm) | Cor | Vidro |
-    | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-    | 1 | Janela 2 Folhas | 2 | 1200 | 1000 | Branco | Incolor 8mm |
-    | 2 | Porta Pivotante | 1 | 900 | 2100 | Preto | Fumê 10mm |
-  - **Quando** o encarregado clica no botão "Imprimir Etiquetas" na tela de detalhes do pedido
-  - **Então** o sistema gera e inicia o download de um arquivo PDF (`application/pdf`) contendo exatamente 3 páginas
-  - **E** cada página corresponde a 1 etiqueta física individual no formato 100x50mm
-  - **E** as páginas 1 e 2 exibem "Peça 1 de 2" e "Peça 2 de 2" da Janela 2 Folhas
-  - **E** a página 3 exibe "Peça 1 de 1" da Porta Pivotante.
+- [ ] **Cenário 1: Conversão Bem-Sucedida de Orçamento em Pedido de Venda**
+  - **Dado que** o vendedor visualiza um orçamento com status `DRAFT` ou `SENT` na página `BudgetDetailPage`
+  - **Quando** clica no botão "Aprovar e Gerar Pedido", preenche o canal de aprovação (ex: `WHATSAPP`), confirma a data de previsão de entrega e submete o formulário
+  - **Então** o sistema cria um novo Pedido de Venda com código sequencial anual no padrão `PED-YYYY-NNNN`
+  - **E** o status do orçamento de origem é atualizado automaticamente para `APPROVED`, vinculando-se de forma unívoca ao pedido gerado
+  - **E** o usuário é redirecionado para a página de detalhes do novo pedido (`/pedidos/:id`) com notificação toast de sucesso.
 
-- [ ] **Cenário 2: Conteúdo e formatação dos dados na etiqueta física**
-  - **Dado que** o sistema gera uma página de etiqueta para um item de pedido
-  - **Quando** a etiqueta é renderizada pelo serviço de impressão térmica
-  - **Então** o documento deve apresentar obrigatoriamente e em tipografia legível:
-    1. Cabeçalho com o nome do sistema ("AlumiGest") e código do pedido (`PED-YYYY-NNNN`)
-    2. Nome completo ou razão social do cliente
-    3. Descrição do produto/modelo da esquadria
-    4. Medidas nominais formatadas no padrão milimétrico: `Largura: {L} mm x Altura: {A} mm`
-    5. Cor e acabamento do alumínio (ex: "Branco", "Preto", "Bronze")
-    6. Especificação do vidro (ex: "Incolor 8mm Temperado")
-    7. Sentido/orientação de abertura (ex: "Correr", "Giro Direita", "Maxim-ar")
-    8. Numeração individual da peça: `Peça {i} de {total_do_item}`.
+- [ ] **Cenário 2: Sugestão Automática de Data de Entrega (+15 Dias Corridos)**
+  - **Dado que** o modal de aprovação de orçamento é aberto
+  - **Quando** o formulário é inicializado
+  - **Então** o campo `dataPrevisaoEntrega` é pré-preenchido automaticamente com a data atual $+15$ dias corridos
+  - **E** o vendedor pode editar essa data manualmente antes da confirmação final caso acorde prazo diferenciado com o cliente.
 
-- [ ] **Cenário 3: Tentativa de emissão para pedido inexistente**
-  - **Dado que** é feita uma requisição `GET /api/orders/99999/labels-pdf` para um pedido que não existe
-  - **Quando** a requisição for processada pelo backend
-  - **Então** o sistema deve retornar o status HTTP `404 Not Found`
-  - **E** o payload JSON deve conter `error: "Pedido não encontrado com ID: 99999"`.
+- [ ] **Cenário 3: Bloqueio de Conversão Duplicada (Invariante 1-para-1)**
+  - **Dado que** um orçamento já foi convertido previamente em um pedido ativo
+  - **Quando** qualquer usuário tenta disparar uma nova conversão para o mesmo `orcamentoId`
+  - **Então** o backend rejeita a solicitação retornando status HTTP `409 Conflict` (ou `422 Unprocessable Entity`)
+  - **E** a interface desabilita o botão de aprovação, indicando que o pedido já foi emitido com link direto para navegação.
 
-- [ ] **Cenário 4: Pedido sem itens cadastrados**
-  - **Dado que** existe um pedido cadastrado mas que não possui nenhum item vinculado
-  - **Quando** o usuário solicita a geração de etiquetas
-  - **Então** o backend deve retornar o status HTTP `400 Bad Request` com mensagem informativa de que o pedido não possui itens a etiquetar.
+- [ ] **Cenário 4: Bloqueio de Conversão para Orçamentos em Status Inválido**
+  - **Dado que** um orçamento possui status `CANCELLED`, `REJECTED` ou já está `APPROVED`
+  - **Quando** o endpoint `POST /api/orders/from-budget/{budgetId}` for invocado
+  - **Então** o backend bloqueia a operação lançando `BusinessException` com mensagem em português ("Apenas orçamentos em rascunho ou enviados podem ser convertidos em pedido").
 
-- [ ] **Cenário 5: Experiência do usuário e feedback de download no Frontend**
-  - **Dado que** o encarregado está na página de detalhes de um pedido aprovado (`OrderDetailPage.tsx`)
-  - **Quando** ele clica no botão "Imprimir Etiquetas"
-  - **Então** o botão deve entrar em estado de carregamento com spinner e texto "Gerando Etiquetas..."
-  - **E** ao receber o stream de bytes com sucesso, o arquivo `etiquetas-PED-YYYY-NNNN.pdf` deve ser descarregado automaticamente
-  - **E** uma notificação toast de sucesso deve informar "Etiquetas geradas com sucesso".
-
-#### 📋 Regras de Negócio e Restrições
-- **RN-01 (Dimensão do Papel 100x50mm)**: O PDF deve ser configurado com tamanho de página personalizado de 100mm de largura por 50mm de altura (aprox. 283.46 x 141.73 pontos no OpenPDF), com margens mínimas de 3mm a 5mm para permitir impressão perfeita em impressoras térmicas (Zebra, Elgin, Argox).
-- **RN-02 (Decomposição N/M por Unidade)**: Se um item possui quantidade $N$, devem ser geradas rigorosamente $N$ páginas consecutivas, com indicador `Peça i de N`, facilitando a colagem peça por peça na bancada de corte.
-- **RN-03 (Imutabilidade dos Dados da Etiqueta)**: Os dados impressos na etiqueta devem ser extraídos diretamente do snapshot congelado do pedido (`OrderItem`), garantindo que alterações cadastrais posteriores não adulterem as peças físicas em fabricação.
-- **RN-04 (Autenticação e Permissão)**: Apenas usuários autenticados com papéis `ADMIN`, `GERENTE` ou `OPERADOR` podem emitir etiquetas de produção.
-
-#### 🔌 Especificação Técnica
-- **Backend**:
-  - `LabelPdfService`: Serviço responsável pela montagem do documento PDF em memória (`ByteArrayOutputStream`) utilizando OpenPDF (`com.github.librepdf:openpdf`), iterando sobre os itens e quantidades.
-  - `OrderController`: Endpoint `GET /api/orders/{orderId}/labels-pdf` retornando `ResponseEntity<byte[]>` com headers `Content-Type: application/pdf` e `Content-Disposition: inline; filename="etiquetas-{codigo}.pdf"`.
-  - Testes unitários com JUnit 5 e Mockito validando geração de bytes, layout correto e paginação exata pela soma das quantidades dos itens.
-- **Frontend**:
-  - `orderApi.ts`: Método `downloadOrderLabelsPdf(orderId: number)`.
-  - `OrderDetailPage.tsx`: Botão de ação "Imprimir Etiquetas" com ícone de etiqueta/impressora, tratamento de loading e download via `blob`.
-
-#### 🛠️ Sub-tarefas Técnicas (Sub-issues):
-- **US-17.1**: Criar serviço `LabelPdfService` usando OpenPDF com layout de etiqueta física (100x50mm) contendo dados do pedido, cliente, medidas nominais (L x A mm), cor do perfil, tipo de vidro e numeração da peça (ex: Peça 1 de 2) em `backend/src/main/java/br/edu/ifpb/alumigest/production/service/LabelPdfService.java`
-- **US-17.2**: Adicionar endpoint `GET /api/orders/{orderId}/labels-pdf` no `OrderController` retornando o documento `application/pdf`
-- **US-17.3**: Criar teste unitário do `LabelPdfService` validando geração de bytes não-vazios e paginação exata pela quantidade de peças em `backend/src/test/java/br/edu/ifpb/alumigest/production/service/LabelPdfServiceTest.java`
-- **US-17.4**: Adicionar botão "Imprimir Etiquetas" na tela de detalhes do pedido no frontend (`OrderDetailPage.tsx`) disparando o download do arquivo PDF com feedback de loading e notificação toast
+- [ ] **Cenário 5: Validação de Dados Obrigatórios na Aprovação**
+  - **Dado que** o modal de aprovação está aberto
+  - **Quando** o usuário tenta submeter o formulário sem selecionar o canal de aprovação ou informando data no passado
+  - **Então** o schema Zod bloqueia a submissão e exibe mensagens de erro claras abaixo dos respectivos campos.
 
 ---
 
-### 📌 US-18: Acompanhar Produção via Painel Kanban de Pedidos de Venda
+### 📌 US-14: Snapshot Imutável e Lock de Preços do Pedido (Priority: P1)
+**Issue GitHub**: [#138](https://github.com/ADS-IFPB-SR/alumigest/issues/138)
 
 #### 🎯 Objetivo de Negócio
-> **Como** encarregado de fábrica e gestor comercial da Alumiportas,  
-> **Desejo** acompanhar o andamento dos pedidos de venda aprovados através de um painel visual Kanban estruturado por etapas de fabricação,  
-> **Para que** eu possa identificar gargalos em tempo real, monitorar prazos de entrega acordados com os clientes e transicionar pedidos entre as fases de produção de forma ágil e intuitiva.
+> **Como** gestor financeiro e responsável pela produção da Alumiportas,  
+> **Desejo** que o Pedido de Venda congele integralmente todos os valores financeiros, custos de matéria-prima, margens, descontos e especificações das esquadrias através de uma clonagem profunda (*deep copy*),  
+> **Para que** alterações posteriores no catálogo de materiais ou tabelas de preços não modifiquem os valores e configurações acordados com o cliente.
 
 #### 🧪 Critérios de Aceitação (Dado que / Quando / Então)
 
-- [ ] **Cenário 1: Visualização do Quadro Kanban com colunas de status oficiais**
-  - **Dado que** existem pedidos de venda cadastrados e aprovados no sistema em diferentes estágios de produção
-  - **Quando** o usuário acessa a página do Kanban de Produção (`/producao`)
-  - **Então** o sistema exibe 3 colunas principais de status de produção:
-    1. **Aguardando Produção** (`AGUARDANDO_PRODUCAO`)
-    2. **Em Produção** (`EM_PRODUCAO`)
-    3. **Concluído** (`CONCLUIDO`)
-  - **E** cada coluna exibe um contador com o total de pedidos presentes nela e o somatório de peças a fabricar.
+- [ ] **Cenário 1: Clonagem Profunda dos Itens do Orçamento (Deep Copy)**
+  - **Dado que** um orçamento com itens compostos de esquadria e itens avulsos é aprovado
+  - **Quando** o pedido é gerado no banco de dados
+  - **Então** cada `BudgetItem` gera um registro independente em `OrderItem`
+  - **E** todas as medidas (largura, altura em mm), modelo/tipologia, cores, especificações de vidro, ferragens, preços unitários e subtotais são replicados em colunas próprias da tabela `order_items`.
 
-- [ ] **Cenário 2: Exibição detalhada das informações no cartão do pedido**
-  - **Dado que** um pedido é apresentado em uma das colunas do Kanban
-  - **Quando** o usuário visualiza o cartão (`OrderProductionCard`)
-  - **Então** o cartão deve exibir:
-    1. Código formatado do pedido (`PED-YYYY-NNNN`)
-    2. Nome do cliente
-    3. Quantidade total de itens/esquadrias do pedido
-    4. Data prevista de entrega formatada no padrão brasileiro (`dd/MM/yyyy`)
-    5. Badge de status e atalho direto para a visualização dos detalhes do pedido.
+- [ ] **Cenário 2: Blindagem contra Reajuste Futuro de Preços no Catálogo**
+  - **Dado que** um pedido de venda foi criado no dia $D$ com valor total de R$ 3.500,00
+  - **Quando** no dia $D + 5$ os preços dos perfis de alumínio e vidros forem reajustados em 20% no módulo de catálogo
+  - **Então** o valor unitário e o valor total do pedido e de seus itens permanecem rigorosamente inalterados em R$ 3.500,00
+  - **E** consultas e relatórios continuam exibindo o snapshot financeiro contratado.
 
-- [ ] **Cenário 3: Movimentação de pedido e transição de status no Backend**
-  - **Dado que** o pedido "PED-2026-0010" está com status `AGUARDANDO_PRODUCAO`
-  - **Quando** o operador move o cartão para a coluna `EM_PRODUCAO` (seja via drag-and-drop ou seleção de ação no card)
-  - **Então** o frontend dispara a requisição `PATCH /api/orders/{id}/production-status` com payload `{"productionStatus": "EM_PRODUCAO"}`
-  - **E** o backend atualiza o status de produção no banco de dados e retorna `200 OK` com o DTO atualizado
-  - **E** a interface move o cartão para a nova coluna imediatamente com atualização otimista ou invalidação do cache React Query.
-
-- [ ] **Cenário 4: Preenchimento automático da data de conclusão ao finalizar pedido**
-  - **Dado que** o pedido "PED-2026-0010" está com status `EM_PRODUCAO`
-  - **Quando** o operador move o pedido para a coluna `CONCLUIDO`
-  - **Então** o backend atualiza o status para `CONCLUIDO` e define o campo `data_conclusao` com a data atual (`LocalDate.now()`)
-  - **E** caso o pedido seja retrocedido de `CONCLUIDO` para `EM_PRODUCAO`, a `data_conclusao` é limpa (`null`).
-
-- [ ] **Cenário 5: Alerta visual de prioridade e atraso de entrega**
-  - **Dado que** um pedido em produção possui `data_previsao_entrega`:
-    - menor que a data atual (pedido atrasado); OU
-    - nos próximos 2 dias corridos (prazo crítico)
-  - **Quando** o cartão é renderizado no Kanban
-  - **Então** o cartão deve apresentar um badge de alerta visual de alta visibilidade (vermelho para atrasado, amarelo/âmbar para prazo crítico)
-  - **E** o cartão exibe os dias restantes ou dias de atraso (ex: "Atrasado há 3 dias", "Vence amanhã").
-
-- [ ] **Cenário 6: Filtros dinâmicos de busca no Kanban**
-  - **Dado que** o usuário está no painel Kanban com diversos cartões distribuídos
-  - **Quando** ele digita o nome de um cliente ou código do pedido no campo de busca
-  - **Então** apenas os cartões que atendem aos termos pesquisados permanecem visíveis em suas respectivas colunas
-  - **E** os contadores das colunas refletem a quantidade de cartões filtrados.
-
-#### 📋 Regras de Negócio e Restrições
-- **RN-01 (Transições de Status Permitidas)**: As transições de status de produção válidas são:
-  - `AGUARDANDO_PRODUCAO` ➔ `EM_PRODUCAO`
-  - `EM_PRODUCAO` ➔ `CONCLUIDO`
-  - `EM_PRODUCAO` ➔ `AGUARDANDO_PRODUCAO` (estorno/pausa de fábrica)
-  - `CONCLUIDO` ➔ `EM_PRODUCAO` (reabertura de pedido por retrabalho)
-  - Qualquer transição direta de `AGUARDANDO_PRODUCAO` para `CONCLUIDO` sem passar por `EM_PRODUCAO` deve ser rejeitada com `422 Unprocessable Entity`.
-- **RN-02 (Preenchimento de Auditoria de Conclusão)**: A transição para `CONCLUIDO` grava compulsoriamente a data atual em `data_conclusao`.
-- **RN-03 (Alerta Visual de Prazo de Entrega)**: Prazos com diferença $\le 2$ dias recebem destaque de atenção (`warning`); prazos vencidos recebem destaque de perigo (`danger/critical`).
-- **RN-04 (Exclusão de Cancelados)**: Pedidos com status global `CANCELADO` não devem figurar nas colunas do Kanban de produção ativa.
-
-#### 🔌 Especificação Técnica
-- **Backend**:
-  - `ProductionStatus` (Enum): `AGUARDANDO_PRODUCAO`, `EM_PRODUCAO`, `CONCLUIDO`.
-  - `OrderController`: Endpoint `PATCH /api/orders/{id}/production-status` recebendo DTO `UpdateProductionStatusRequest` e retornando `OrderResponse`.
-  - `OrderService`: Método `atualizarStatusProducao(Long orderId, ProductionStatus novoStatus)` com validação das regras de negócio de transição e manipulação de `data_conclusao`.
-  - Testes com JUnit 5 cobrindo todas as transições válidas, transições inválidas e integridade da `data_conclusao`.
-- **Frontend**:
-  - `ProductionKanbanPage.tsx`: Página principal do Kanban com barra de pesquisa, filtros e cabeçalho de produtividade.
-  - `ProductionKanbanBoard.tsx`: Container do quadro com 3 colunas responsivas e acessíveis.
-  - `OrderProductionCard.tsx`: Card informativo com badges de urgência, cliente, código, total de itens e menu de transição rápida de status.
-  - `useProductionKanban.ts`: Hook React Query gerenciando consulta de pedidos agrupados e mutação otimista de status.
-  - Rota `/producao` protegida com permissão de visualização para operadores e gerentes.
-
-#### 🛠️ Sub-tarefas Técnicas (Sub-issues):
-- **US-18.1**: Implementar endpoint `PATCH /api/orders/{id}/production-status` no `OrderController` com validação das transições permitidas (`AGUARDANDO_PRODUCAO` → `EM_PRODUCAO` → `CONCLUIDO`) e atualização automática da `data_conclusao` em `backend/src/main/java/br/edu/ifpb/alumigest/order/controller/OrderController.java`
-- **US-18.2**: Criar hook React Query (`useProductionKanban.ts`) e serviços de API para listar pedidos agrupados por status de produção em `frontend/src/features/production/hooks/useProductionKanban.ts`
-- **US-18.3**: Criar componente `OrderProductionCard` no frontend exibindo código do pedido, cliente, data prevista de entrega, badges de alerta de prazo e total de esquadrias em `frontend/src/features/production/components/OrderProductionCard.tsx`
-- **US-18.4**: Criar componente `ProductionKanbanBoard` com colunas (`AGUARDANDO_PRODUCAO`, `EM_PRODUCAO`, `CONCLUIDO`) e movimentação ágil de cartões em `frontend/src/features/production/components/ProductionKanbanBoard.tsx`
-- **US-18.5**: Criar página `ProductionKanbanPage` com filtros de busca por cliente, período de entrega e código do pedido em `frontend/src/pages/ProductionKanbanPage.tsx`
-- **US-18.6**: Configurar rota `/producao` no React Router e adicionar atalho "Produção (Kanban)" no menu lateral do frontend
-- **US-18.7**: Documentar endpoints no OpenAPI/Swagger e criar testes unitários para a transição de status no backend
+- [ ] **Cenário 3: Imutabilidade Cadastral das Esquadrias do Pedido**
+  - **Dado que** o pedido foi formalizado
+  - **Quando** um usuário tenta editar medidas ou excluir itens diretamente no pedido aprovado
+  - **Então** o sistema não permite a alteração direta de itens contratuais, exigindo cancelamento formal e renegociação em caso de mudanças de projeto.
 
 ---
 
-## 3. Matriz de Rastreabilidade
+### 📌 US-15: Gestão de Status, Prazos e Cancelamento de Pedidos (Priority: P2)
+**Issue GitHub**: [#139](https://github.com/ADS-IFPB-SR/alumigest/issues/139)
 
-| Requisito | User Story | Sub-tarefa Backend | Sub-tarefa Frontend | Testes Automatizados |
-| :--- | :--- | :--- | :--- | :--- |
-| Emissão de Etiquetas Físicas (100x50mm) | **US-17** | US-17.1, US-17.2 | US-17.4 | US-17.3 (`LabelPdfServiceTest`) |
-| Painel Kanban de Produção | **US-18** | US-18.1, US-18.7 | US-18.2, US-18.3, US-18.4, US-18.5, US-18.6 | `OrderProductionStatusTest`, `ProductionKanbanBoard.test.tsx` |
+#### 🎯 Objetivo de Negócio
+> **Como** encarregado de fábrica e equipe de atendimento,  
+> **Desejo** gerenciar o ciclo de vida do pedido de venda através de status bem definidos (`CRIADO` ➔ `AGUARDANDO_PRODUCAO` ➔ `EM_PRODUCAO` ➔ `CONCLUIDO` ou `CANCELADO`), com registro obrigatório de justificativa em cancelamentos e possibilidade de reabertura do orçamento de origem,  
+> **Para que** seja mantido o controle operacional e comercial da fábrica com auditoria clara.
+
+#### 🧪 Critérios de Aceitação (Dado que / Quando / Então)
+
+- [ ] **Cenário 1: Transição Regular do Fluxo de Produção**
+  - **Dado que** um pedido está com status `CRIADO`
+  - **Quando** o encarregado envia o pedido para a fábrica
+  - **Então** o status avança para `AGUARDANDO_PRODUCAO`, e posteriormente para `EM_PRODUCAO` e `CONCLUIDO`
+  - **E** a data de conclusão real é registrada automaticamente quando o pedido atinge o status `CONCLUIDO`.
+
+- [ ] **Cenário 2: Cancelamento de Pedido com Justificativa Obrigatória**
+  - **Dado que** um pedido ainda não entrou em produção física (`CRIADO` ou `AGUARDANDO_PRODUCAO`)
+  - **Quando** o usuário aciona a ação de cancelamento
+  - **Então** o sistema exige o preenchimento de justificativa formal com no mínimo 10 caracteres (`orderCancelSchema`)
+  - **E** o pedido tem seu status atualizado para `CANCELADO`, persistindo a justificativa e o autor da ação para fins de auditoria.
+
+- [ ] **Cenário 3: Bloqueio de Cancelamento de Pedidos em Produção**
+  - **Dado que** um pedido já se encontra no status `EM_PRODUCAO` ou `CONCLUIDO`
+  - **Quando** o usuário tenta cancelar o pedido
+  - **Então** o sistema bloqueia a ação informando que pedidos em fase de corte ou concluídos não podem ser cancelados diretamente via sistema sem autorização da gerência de fábrica.
+
+- [ ] **Cenário 4: Reabertura do Orçamento após Cancelamento**
+  - **Dado que** um pedido de venda foi cancelado por desistência do modelo pelo cliente
+  - **Quando** o vendedor acessa o orçamento de origem vinculado
+  - **Então** o botão "Reabrir Orçamento para Edição" torna-se disponível
+  - **E** ao acioná-lo, o status do orçamento retorna para `DRAFT` (Rascunho), liberando itens e descontos para novos ajustes comerciais.
+
+---
+
+### 📌 US-16: Emissão do Comprovante do Pedido de Venda em PDF (Priority: P2)
+**Issue GitHub**: [#140](https://github.com/ADS-IFPB-SR/alumigest/issues/140)
+
+#### 🎯 Objetivo de Negócio
+> **Como** vendedor da Alumiportas,  
+> **Desejo** emitir e baixar o Comprovante Oficial do Pedido de Venda em PDF com layout profissional e elegante, contendo resumo financeiro dos itens contratados, condições de pagamento, endereço de entrega e cronograma prometido,  
+> **Para que** eu possa entregar uma via formal impressa ou digital ao cliente.
+
+#### 🧪 Critérios de Aceitação (Dado que / Quando / Então)
+
+- [ ] **Cenário 1: Emissão do Comprovante Oficial em PDF com Sucesso**
+  - **Dado que** o usuário visualiza um pedido ativo na página `OrderDetailPage`
+  - **Quando** clica no botão "Emitir Comprovante do Pedido"
+  - **Então** o sistema gera o arquivo `application/pdf` em menos de 2 segundos
+  - **E** o documento exibe cabeçalho oficial com dados da Alumiportas, número do pedido (`PED-YYYY-NNNN`), dados do cliente, cronograma (data de emissão e previsão de entrega), tabela detalhada dos itens com valores congelados, descontos e total líquido contratado.
+
+- [ ] **Cenário 2: Exibição das Condições Comerciais e Informações Legais**
+  - **Dado que** o comprovante do pedido é gerado
+  - **Quando** a seção de fechamento é inspecionada
+  - **Então** constam a forma de pagamento acertada, observações contratuais e campos para assinaturas do cliente e da empresa.
+
+- [ ] **Cenário 3: Paginação e Rodapé Institucional**
+  - **Dado que** um pedido com muitas esquadrias ultrapassa uma página A4
+  - **Quando** o motor OpenPDF renderiza o documento
+  - **Então** o documento realiza a quebra de página fluida com rodapé numerado "Página X de Y" e código do pedido em todas as páginas.
+
+- [ ] **Cenário 4: Tratamento de Erro para Pedido Inexistente**
+  - **Dado que** é realizada uma requisição com identificador de pedido inexistente
+  - **Quando** o endpoint `GET /api/orders/{id}/pdf/comprovante` for invocado
+  - **Então** o backend responde com status HTTP `404 Not Found` no formato padronizado `ErrorResponse`.
+
+---
+
+## 3. Requisitos Funcionais do Módulo de Pedidos
+
+1. **RF01 - Conversão 1-para-1**: Cada orçamento só pode gerar **um único** Pedido de Venda ativo. Orçamentos já convertidos não podem ser convertidos novamente (bloqueio por constraint UNIQUE `orcamento_id` e validação na camada de serviço).
+2. **RF02 - Cópia Profunda (Deep Copy) dos Itens**: No momento da conversão, todos os itens do orçamento (`BudgetItem`) devem ser clonados para itens do pedido (`OrderItem`), preservando dimensões, cores, orientações, ferragens, preços unitários e subtotais.
+3. **RF03 - Código Sequencial Anual**: O código do pedido deve seguir o padrão `PED-YYYY-NNNN` (ex: `PED-2026-0001`), reiniciando a numeração anualmente.
+4. **RF04 - Prazos e Previsão**: O sistema sugere automaticamente `dataPrevisaoEntrega = dataAprovacao + 15 dias corridos`, permitindo alteração manual pelo vendedor.
+5. **RF05 - Canais de Aprovação**: O sistema deve suportar os canais `WHATSAPP`, `PRESENCIAL`, `TELEFONE`, `EMAIL` com campo texto complementar para observações.
+6. **RF06 - Máquina de Estados do Pedido**:
+   - `CRIADO` ➔ `AGUARDANDO_PRODUCAO` ➔ `EM_PRODUCAO` ➔ `CONCLUIDO`
+   - Estados `CRIADO` e `AGUARDANDO_PRODUCAO` podem transicionar para `CANCELADO` com justificativa obrigatória ($\ge 10$ caracteres).
+7. **RF07 - Listagem e Filtros**: Permitir listar pedidos paginados com filtros por status, período de entrega e busca por cliente ou código.
+8. **RF08 - Emissão de Comprovante**: Gerar documento de confirmação do pedido em PDF via OpenPDF com identidade visual da Alumiportas.
+
+---
+
+## 4. Entidades Principais e Modelo de Dados
+
+```text
+Order (Pedido de Venda)
+├── id (UUID PK)
+├── codigo (VARCHAR(20) - ex: PED-2026-0001, UNIQUE)
+├── orcamento_id (UUID FK -> tb_budgets, UNIQUE, NOT NULL)
+├── cliente_id (UUID FK -> tb_clients, NULLABLE)
+├── cliente_nome, cliente_telefone, cliente_endereco (VARCHAR / TEXT)
+├── status (Enum: CRIADO, AGUARDANDO_PRODUCAO, EM_PRODUCAO, CONCLUIDO, CANCELADO)
+├── canal_aprovacao (Enum: WHATSAPP, PRESENCIAL, TELEFONE, EMAIL)
+├── data_aprovacao (DATE NOT NULL)
+├── data_previsao_entrega (DATE NOT NULL)
+├── data_conclusao (DATE NULLABLE)
+├── valor_bruto, valor_desconto, taxa_instalacao, taxa_frete, valor_liquido (NUMERIC(12,2))
+├── condicao_pagamento, observacoes_pagamento, observacoes (VARCHAR / TEXT)
+├── justificativa_cancelamento (TEXT NULLABLE)
+├── ativo (BOOLEAN DEFAULT TRUE) -- Soft Delete
+├── created_at, updated_at (TIMESTAMP)
+└── items (1:N -> OrderItem)
+
+OrderItem (Item do Pedido de Venda - Snapshot Imutável)
+├── id (UUID PK)
+├── order_id (UUID FK -> tb_orders, NOT NULL)
+├── product_id (UUID FK -> tb_products, NULLABLE)
+├── descricao (VARCHAR(300) NOT NULL)
+├── largura_mm, altura_mm (INTEGER NOT NULL)
+├── quantidade (INTEGER NOT NULL)
+├── cor_aluminio, tipo_vidro, orientacao_abertura, ferragens (VARCHAR / TEXT)
+├── template_config, handle_config, drilling_config (JSONB NULLABLE)
+├── valor_unitario, valor_total (NUMERIC(12,2) NOT NULL)
+└── ordem (INTEGER NOT NULL)
+```
+
+---
+
+## 5. Critérios de Sucesso e Desempenho
+
+1. **Eficiência na Conversão**: Conversão de orçamento em pedido em **menos de 1 segundo** via transação atômica `@Transactional`.
+2. **Integridade Financeira (Zero Divergência)**: 100% dos pedidos gerados devem apresentar exata paridade com os valores aprovados no orçamento de origem.
+3. **Imutabilidade Auditável**: Reajustes cadastrais em materiais nunca alteram pedidos já convertidos.
+4. **Agilidade no PDF**: Comprovante oficial do pedido gerado em menos de 2 segundos.

@@ -1,59 +1,102 @@
-# Quickstart Validation Guide: Sprint 6 — Etiquetas de Identificação e Kanban de Produção
+# Quickstart Validation Guide: Sprint 6 — Pedidos de Venda, Lock de Preços e Comprovante Oficial
 
-**Feature**: `003-producao-kanban-etiquetas`  
-**Date**: 2026-09-04  
+**Feature**: `002-pedidos-lock-precos`  
+**Período da Sprint 06**: 29/09/2026 a 12/10/2026  
+**Status**: APPROVED  
 
-## Prerequisites
+## Pré-requisitos
 
-- PostgreSQL rodando com migrations da Sprint 05 aplicadas
+- PostgreSQL rodando com migrations até V19 aplicadas (`V19__create_orders_schema.sql`)
 - Backend compilando sem erros (`mvn clean compile`)
-- Frontend buildando sem erros (`npm run build`)
-- Existência de pelo menos 1 Pedido de Venda aprovado (ex: ID 1)
+- Frontend executando sem erros de tipagem (`npm run build`)
+- Existência de pelo menos 1 orçamento criado em status `DRAFT` ou `SENT` (ex: ID 1)
 
-## Validation Scenarios
+---
 
-### Cenário 1: Baixar Lote de Etiquetas de Identificação das Peças
+## Cenários de Validação
 
-```bash
-# Baixar PDF de etiquetas térmicas para o pedido ID 1
-curl -s -o etiquetas-pedido-1.pdf http://localhost:8080/api/orders/1/labels-pdf
-
-# Resultado esperado:
-# - HTTP 200 OK com Content-Type: application/pdf
-# - Páginas no tamanho 100x50mm contendo cliente, código do pedido, medidas (L x A mm), cor e vidro
-# - Quantidade de páginas igual à soma das quantidades de todos os itens do pedido
-```
-
-### Cenário 2: Transicionar Status de Produção do Pedido
+### Cenário 1: Converter Orçamento em Pedido de Venda com Sugestão de Prazo
 
 ```bash
-# Iniciar produção do pedido ID 1
-curl -s -X PATCH http://localhost:8080/api/orders/1/production-status \
+# Converter orçamento ID 1 em pedido de venda
+curl -s -X POST http://localhost:8080/api/orders/from-budget/1 \
   -H "Content-Type: application/json" \
   -d '{
-    "novoStatus": "EM_PRODUCAO"
+    "canalAprovacao": "WHATSAPP",
+    "dataPrevisaoEntrega": "2026-10-14",
+    "observacoes": "Aprovado via WhatsApp após confirmação das medidas"
   }'
 
 # Resultado esperado:
-# - HTTP 200 OK com status atualizado para EM_PRODUCAO
+# - HTTP 201 Created
+# - Código do pedido gerado (ex: PED-2026-0001)
+# - Status inicial: AGUARDANDO_PRODUCAO
+# - Orçamento ID 1 com status atualizado para APPROVED
 ```
 
-### Cenário 3: Finalizar Produção do Pedido
+### Cenário 2: Validação do Snapshot Imutável (Lock de Preços)
 
 ```bash
-# Concluir produção do pedido ID 1
-curl -s -X PATCH http://localhost:8080/api/orders/1/production-status \
-  -H "Content-Type: application/json" \
-  -d '{
-    "novoStatus": "CONCLUIDO"
-  }'
+# 1. Consultar pedido gerado
+curl -s http://localhost:8080/api/orders/1
 
-# Resultado esperado:
-# - HTTP 200 OK com status CONCLUIDO e dataConclusao preenchida com a data de hoje
+# 2. Simular reajuste no catálogo: alterar o preço do material ou tipologia no banco
+# 3. Consultar novamente o pedido gerado
+curl -s http://localhost:8080/api/orders/1
+
+# Resultado esperado: 
+# - Todos os itens do pedido e valores totais permanecem 100% idênticos
+# - Blindagem contra reajuste comprovada pelo snapshot deep copy
 ```
 
-### Cenário 4: Visualização no Painel Kanban do Frontend
+### Cenário 3: Bloqueio de Conversão Duplicada (Invariante 1-para-1)
 
-1. Acessar rota `/producao` no navegador.
-2. O pedido ID 1 deve aparecer no card correspondente à sua coluna atual.
-3. Arrastar o card para a próxima coluna ou utilizar os botões de avanço rápido e verificar a atualização instantânea no backend.
+```bash
+# Tentar converter novamente o mesmo orçamento ID 1
+curl -s -X POST http://localhost:8080/api/orders/from-budget/1 \
+  -H "Content-Type: application/json" \
+  -d '{"canalAprovacao": "PRESENCIAL", "dataPrevisaoEntrega": "2026-10-14"}'
+
+# Resultado esperado: 
+# - HTTP 409 Conflict ou HTTP 422 Unprocessable Entity
+# - Mensagem: "Orçamento já convertido em pedido de venda"
+```
+
+### Cenário 4: Cancelamento de Pedido com Justificativa Obrigatória
+
+```bash
+# 1. Tentativa inválida sem justificativa (deve falhar por Bean Validation)
+curl -s -X PATCH http://localhost:8080/api/orders/1/cancel \
+  -H "Content-Type: application/json" \
+  -d '{"justificativa": "Curta"}' # Menos de 10 caracteres
+
+# Resultado esperado: HTTP 400 Bad Request
+
+# 2. Cancelamento com justificativa válida
+curl -s -X PATCH http://localhost:8080/api/orders/1/cancel \
+  -H "Content-Type: application/json" \
+  -d '{"justificativa": "Cliente solicitou cancelamento por adiamento da reforma residencial"}'
+
+# Resultado esperado: HTTP 200 OK com status CANCELADO e justificativa gravada
+```
+
+### Cenário 5: Emissão e Download do Comprovante do Pedido em PDF
+
+```bash
+curl -s -o comprovante-pedido.pdf http://localhost:8080/api/orders/1/pdf/comprovante
+
+# Resultado esperado: 
+# - Arquivo application/pdf válido
+# - Contém código PED-2026-0001, dados do cliente, itens congelados e total contratado
+```
+
+---
+
+## Checklist do Quality Gate da Sprint 06
+
+- [ ] `mvn clean verify` executado sem falhas no backend
+- [ ] `npm run build` executado sem erros de TypeScript no frontend
+- [ ] Testes unitários do `OrderService` cobrindo conversão, deep copy e cancelamento
+- [ ] Testes de integração do `OrderController` com base H2
+- [ ] Teste automatizado do `OrderPdfService`
+- [ ] SonarQube Quality Gate verde (New Code Coverage $\ge 80\%$, zero bugs e vulnerabilidades)

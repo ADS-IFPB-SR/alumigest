@@ -197,4 +197,29 @@ Antes de aprovar a pontuação no Planning, o Scrum Master e a equipe devem chec
 
 ---
 
+## 📊 8. Dimensionamento Oficial de Tarefas — Sprint 06
+
+> **Sprint 06**: Gestão de Pedidos de Venda, Lock de Preços e Comprovante Oficial  
+> **Período**: 29/09/2026 a 12/10/2026  
+> **Capacidade Planejada**: ~38.0 horas de desenvolvimento (12 Fatias Verticais)  
+> **Teto Máximo por Tarefa**: ≤ 4.0 horas (em conformidade com o limite de sub-tarefas da equipe)
+
+| ID | US Pai | Tarefa / Escopo | Tipo de Atividade (Matriz) | Estimativa (Horas) | Story Points |
+|---|---|---|---|:---:|:---:|
+| **US-13.1** | US-13 | Scaffolding e Infraestrutura do Módulo de Pedidos | 4.1 Infra + 4.2 Migration V19 + 4.3 Enums/JPA | **1.0h** | 1 SP |
+| **US-13.2** | US-13 | Conversão de Orçamento em Pedido (Backend Core) | 4.4 Service Atômico + 4.5 Controller REST + DTOs | **4.0h** | 3 SP |
+| **US-13.3** | US-13 | Modal de Aprovação e Ação de Conversão na Tela de Orçamento | 4.6 Schemas Zod + 4.7 Componente Modal + Hook | **3.0h** | 3 SP |
+| **US-13.4** | US-13 | Listagem Paginada de Pedidos de Venda com Filtros | 4.5 Query/Endpoint + 4.7 Tela Listagem + Badge | **4.0h** | 3 SP |
+| **US-13.5** | US-13.5 | Visualização Detalhada do Pedido de Venda | 4.5 Endpoint GET + 4.7 Tela Detalhes + Cards | **3.0h** | 3 SP |
+| **US-14.1** | US-14 | Snapshot Imutável, Lock de Preços e Tabela de Itens Congelados | 4.4 Deep Copy 3 Níveis + JSONB + 4.7 Tabela Itens | **4.0h** | 3 SP |
+| **US-15.1** | US-15 | Máquina de Estados e Cancelamento de Pedidos com Justificativa | 4.4 Validação Estados + 4.5 PATCH + 4.7 Modal Cancel | **4.0h** | 3 SP |
+| **US-15.2** | US-15 | Reabertura de Orçamento após Cancelamento de Pedido | 4.4 Ajuste BudgetService (APPROVED→DRAFT) + UI | **2.0h** | 2 SP |
+| **US-16.1** | US-16 | Comprovante Oficial do Pedido em PDF via OpenPDF | 4.4 OpenPDF A4 + 4.5 Endpoint + 4.7 Download UI | **4.0h** | 3 SP |
+| **US-16.2** | US-16 | Navegação no Sidebar, Documentação OpenAPI/Swagger e Contratos | 4.1 Menu Sidebar + 4.5 OpenAPI Docs + Contratos | **2.0h** | 2 SP |
+| **US-16.3** | US-16 | Bateria de Testes de Integração do Backend (MockMvc + H2) | 4.9 Testes de Integração REST (todos endpoints) | **3.0h** | 3 SP |
+| **US-16.4** | US-16 | Testes de Sistema E2E, Validação BDD e Homologação Quickstart | 4.9 Testes E2E (Cypress) + Homologação Quickstart | **4.0h** | 3 SP |
+| **TOTAL** | — | **12 Fatias Verticais** | — | **~38.0h** | **31 SP** |
+
+---
+
 *Documento homologado pela Equipe AlumiGest — Diretriz Oficial de Engenharia e Planejamento.*
