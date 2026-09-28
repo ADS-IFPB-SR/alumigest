@@ -38,6 +38,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -510,6 +511,147 @@ class BudgetControllerIntegrationTest {
             mockMvc.perform(post("/api/budgets/{id}/recalcular", approvedBudget.getId())
                             .contentType(MediaType.APPLICATION_JSON))
                     .andExpect(status().isUnprocessableEntity());
+        }
+    }
+
+    // =========================================================================
+    // 4. TESTES DO ENDPOINT GET /api/budgets/{id}/pdf/comercial [US-10.6]
+    // =========================================================================
+
+    @Nested
+    @DisplayName("GET /api/budgets/{id}/pdf/comercial — Exportar PDF Comercial")
+    class ExportPdfComercialEndpointTests {
+
+        @Test
+        @DisplayName("Deve gerar PDF comercial com sucesso (200 OK) a partir do banco de dados real H2")
+        void shouldExportPdfComercialSuccessfully() throws Exception {
+            Budget budget = createDraftBudgetWithItem();
+
+            mockMvc.perform(get("/api/budgets/{id}/pdf/comercial", budget.getId()))
+                    .andExpect(status().isOk())
+                    .andExpect(header().string("Content-Type", "application/pdf"))
+                    .andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.containsString(budget.getCode() + "-comercial.pdf")))
+                    .andExpect(content().contentType(MediaType.APPLICATION_PDF))
+                    .andExpect(result -> {
+                        byte[] bytes = result.getResponse().getContentAsByteArray();
+                        org.junit.jupiter.api.Assertions.assertTrue(bytes.length > 0);
+                        String header = new String(bytes, 0, Math.min(bytes.length, 4));
+                        org.junit.jupiter.api.Assertions.assertEquals("%PDF", header);
+                    });
+        }
+
+        @Test
+        @DisplayName("Deve retornar 422 Unprocessable Entity quando tentar emitir PDF de orçamento CANCELLED")
+        void shouldReturn422WhenBudgetIsCancelled() throws Exception {
+            Budget budget = createDraftBudgetWithItem();
+            budget.setStatus(BudgetStatus.CANCELLED);
+            budgetRepository.save(budget);
+
+            mockMvc.perform(get("/api/budgets/{id}/pdf/comercial", budget.getId()))
+                    .andExpect(status().isUnprocessableEntity())
+                    .andExpect(jsonPath("$.status").value(422))
+                    .andExpect(jsonPath("$.message").value("Não é possível gerar o PDF de um orçamento cancelado."));
+        }
+
+        @Test
+        @DisplayName("Deve retornar 404 Not Found quando o orçamento não existir")
+        void shouldReturn404WhenBudgetDoesNotExist() throws Exception {
+            UUID nonExistentId = UUID.randomUUID();
+
+            mockMvc.perform(get("/api/budgets/{id}/pdf/comercial", nonExistentId))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.status").value(404));
+        }
+    }
+
+    // =========================================================================
+    // 5. TESTES DO ENDPOINT GET /api/budgets/{id}/resumo-whatsapp [US-10.7]
+    // =========================================================================
+
+    @Nested
+    @DisplayName("GET /api/budgets/{id}/resumo-whatsapp — Resumo WhatsApp")
+    class WhatsAppSummaryEndpointTests {
+
+        @Test
+        @DisplayName("Deve retornar 200 OK e o texto do resumo quando o orçamento existir")
+        void shouldReturnWhatsAppSummarySuccessfully() throws Exception {
+            Budget budget = createDraftBudgetWithItem();
+
+            mockMvc.perform(get("/api/budgets/{id}/resumo-whatsapp", budget.getId()))
+                    .andExpect(status().isOk())
+                    .andExpect(header().string("Content-Type", MediaType.TEXT_PLAIN_VALUE + ";charset=UTF-8"))
+                    .andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_PLAIN));
+        }
+
+        @Test
+        @DisplayName("Deve retornar 404 Not Found quando o orçamento não existir para o WhatsApp")
+        void shouldReturn404WhenBudgetDoesNotExistForWhatsApp() throws Exception {
+            UUID nonExistentId = UUID.randomUUID();
+
+            mockMvc.perform(get("/api/budgets/{id}/resumo-whatsapp", nonExistentId))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.status").value(404));
+        }
+    }
+
+    // =========================================================================
+    // 6. TESTES DO ENDPOINT GET /api/budgets/{id}/pdf/tecnico [US-11.3 / QA-04]
+    // =========================================================================
+
+    @Nested
+    @DisplayName("GET /api/budgets/{id}/pdf/tecnico — Emissão da Ficha Técnica de Oficina (US-11.3)")
+    class TechnicalPdfEndpointTests {
+
+        @Test
+        @DisplayName("Deve retornar 200 OK com PDF técnico binário e headers de download")
+        void shouldReturn200AndTechnicalPdfSuccessfully() throws Exception {
+            Budget budget = createDraftBudgetWithItem();
+
+            mockMvc.perform(get("/api/budgets/{id}/pdf/tecnico", budget.getId()))
+                    .andExpect(status().isOk())
+                    .andExpect(header().string("Content-Type", MediaType.APPLICATION_PDF_VALUE))
+                    .andExpect(header().string("Content-Disposition", containsString("-tecnico.pdf")))
+                    .andExpect(header().exists("Content-Length"))
+                    .andExpect(content().contentType(MediaType.APPLICATION_PDF))
+                    .andExpect(result -> {
+                        byte[] content = result.getResponse().getContentAsByteArray();
+                        assertThat(content).isNotEmpty();
+                        assertThat(new String(content, 0, 5, java.nio.charset.StandardCharsets.US_ASCII)).isEqualTo("%PDF-");
+                    });
+        }
+
+        @Test
+        @DisplayName("Deve aceitar a rota legada /api/orcamentos/{id}/pdf/tecnico retornando 200 OK")
+        void shouldReturn200ForLegacyRouteOrcamentos() throws Exception {
+            Budget budget = createDraftBudgetWithItem();
+
+            mockMvc.perform(get("/api/orcamentos/{id}/pdf/tecnico", budget.getId()))
+                    .andExpect(status().isOk())
+                    .andExpect(header().string("Content-Type", MediaType.APPLICATION_PDF_VALUE))
+                    .andExpect(header().string("Content-Disposition", containsString("-tecnico.pdf")));
+        }
+
+        @Test
+        @DisplayName("Deve retornar 422 Unprocessable Entity quando tentar emitir PDF técnico de orçamento CANCELLED")
+        void shouldReturn422WhenTechnicalPdfBudgetIsCancelled() throws Exception {
+            Budget budget = createDraftBudgetWithItem();
+            budget.setStatus(BudgetStatus.CANCELLED);
+            budgetRepository.save(budget);
+
+            mockMvc.perform(get("/api/budgets/{id}/pdf/tecnico", budget.getId()))
+                    .andExpect(status().isUnprocessableEntity())
+                    .andExpect(jsonPath("$.status").value(422))
+                    .andExpect(jsonPath("$.message").value("Não é possível gerar o PDF técnico de um orçamento cancelado."));
+        }
+
+        @Test
+        @DisplayName("Deve retornar 404 Not Found quando o orçamento não existir ao tentar emitir PDF técnico")
+        void shouldReturn404WhenBudgetDoesNotExistForTechnicalPdf() throws Exception {
+            UUID nonExistentId = UUID.randomUUID();
+
+            mockMvc.perform(get("/api/budgets/{id}/pdf/tecnico", nonExistentId))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.status").value(404));
         }
     }
 }

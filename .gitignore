@@ -62,4 +62,5 @@ specs/
 .env
 .prototipos_sprint3_exemplo/
 modular-prototype.html
-.scannerwork/
+.scannerwork/
+target/

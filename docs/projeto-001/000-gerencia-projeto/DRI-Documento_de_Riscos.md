@@ -1,11 +1,22 @@
-# DRI — Documento de Riscos
+# ⚠️ DRI — Documento de Riscos do Projeto (AlumiGest)
 
 | Campo | Valor |
 |---|---|
 | **Projeto** | AlumiGest — Sistema de Gestão para Vidraçaria e Esquadrias |
-| **Versão** | 2.0 (Revisado ao final da Sprint 3) |
-| **Data** | 31/08/2026 |
-| **Autor** | Equipe AlumiGest (Scrum Master: Italo Jefferson Lima dos Santos) |
+| **Versão** | 3.0 (Homologado com Mitigações de Sigilo de Produção, Subdimensionamento e Quality Gate) |
+| **Data** | 24/09/2026 |
+| **Governança** | Docs-as-Code — Oficial de Governança (`alumigest-doc-governor`) |
+
+---
+
+## Histórico de Revisões
+
+| Data | Versão | Descrição | Autor |
+|---|---|---|---|
+| 05/08/2026 | 1.0 | Versão inicial da matriz de riscos (R01 a R06) | Ítalo Jefferson |
+| 12/08/2026 | 1.1 | Adição dos riscos R07 e R08 na Sprint 2 | Equipe AlumiGest |
+| 31/08/2026 | 2.0 | Revisão pós-Sprint 3 com adição dos riscos R09 e R10 e mitigação de fórmulas | Equipe AlumiGest (Scrum Master: Italo Santos) |
+| 24/09/2026 | 3.0 | Atualização de mitigação de R10 e adição de R11 (Sigilo Comercial de Oficina), R12 (Subdimensionamento Físico) e R13 (Quality Gate SonarQube) | Equipe AlumiGest (Tech Lead: Ítalo Jefferson) |
 
 ---
 
@@ -49,9 +60,9 @@
 | **Causa** | Complexidade do cálculo específico de esquadrias, variações por tipo de produto e conhecimento tácito da fábrica. |
 | **Consequência** | Orçamentos com valores errados → prejuízo na precificação → perda de confiança no sistema. |
 | **Estratégia** | Mitigar |
-| **Ações Executadas** | 1. Implementado o padrão Factory/Strategy no backend (`BudgetQuantityService` e `BudgetPricingService` no PR #117). 2. Cobertura de 141 testes automatizados cobrindo arredondamento de vidro, desconto de perfil ($4W + 6H$) e ferragens. 3. Validação das fórmulas no documento `RN-Regras_de_Calculo.md`. |
+| **Ações Executadas** | 1. Implementado o padrão Factory/Strategy no backend (`ProfileQuantityCalculator`, `GlassQuantityCalculator`, `HardwareQuantityCalculator`). 2. Arredondamentos estritos em `BigDecimal` (`RoundingMode.CEILING` para corte e `RoundingMode.HALF_EVEN` para financeiro). 3. Validação formal no documento `RN-Regras_de_Calculo.md` (v4.0). |
 | **Responsável** | Nichollas Cavalcante / Backend |
-| **Status** | 🟢 Materializado e Mitigado (PR #117) |
+| **Status** | 🟢 Materializado e Mitigado |
 
 ---
 
@@ -66,9 +77,9 @@
 | **Causa** | Curva de aprendizado em componentes vetoriais SVG e integração assíncrona com TypeScript/React. |
 | **Consequência** | Atraso nas entregas de frontend e sobrecarga no fluxo de desenvolvimento. |
 | **Estratégia** | Mitigar |
-| **Ações** | 1. Subdivisão das demandas em sub-issues menores. 2. Disponibilização de templates JSX/SVG de referência no grupo. 3. Apoio contínuo e pair programming nas tarefas complexas. |
+| **Ações** | 1. Subdivisão das demandas em sub-issues menores. 2. Disponibilização de templates JSX/SVG de referência no grupo. 3. Adoção do TanStack Query v5 e schemas Zod para isolar o estado de servidor e validações. |
 | **Responsável** | Scrum Master / Equipe Frontend |
-| **Status** | ⚪ Não materializado |
+| **Status** | 🟢 Mitigado / Sob Controle |
 
 ---
 
@@ -83,7 +94,7 @@
 | **Causa** | Natureza acadêmica do projeto, compromissos pessoais ou sobrecarga. |
 | **Consequência** | Redução da capacidade da equipe, necessidade de redistribuir tarefas, possível corte de escopo. |
 | **Estratégia** | Aceitar + Contingência |
-| **Ações** | 1. Matriz de backup no PPJ. 2. Documentação contínua de código e arquitetura para mitigar bus factor. |
+| **Ações** | 1. Matriz de backup no PPJ. 2. Documentação contínua de código e arquitetura Docs-as-Code para mitigar o bus factor. |
 | **Responsável** | Scrum Master + PO |
 | **Status** | ⚪ Não materializado (Equipe completa com 8 membros) |
 
@@ -100,9 +111,9 @@
 | **Causa** | Múltiplos PRs abertos simultaneamente sem merge contínuo da `develop`. |
 | **Consequência** | Tempo perdido resolvendo conflitos, possibilidade de perda de código e atraso na integração. |
 | **Estratégia** | Mitigar |
-| **Ações** | 1. Governança rígida de numeração de migrations. 2. Pipeline de CI no GitHub Actions validando Maven e build do Vite em todo PR. 3. Ambiente de homologação em nuvem `develop.italuhub.cloud` para validações integradas. |
+| **Ações Executadas** | 1. Governança rígida de numeração de migrations Flyway. 2. Pipeline de CI no GitHub Actions executando testes e build do Vite em todo PR (`run-tests-on-all-prs`). 3. Ambiente de homologação em nuvem `develop.italuhub.cloud` via Coolify. |
 | **Responsável** | Italo Jefferson (DevOps) / Todos os DEVs |
-| **Status** | ⚪ Não materializado |
+| **Status** | 🟢 Mitigado / Sob Monitoramento Ativo |
 
 ---
 
@@ -117,7 +128,7 @@
 | **Causa** | Variação de sistemas operacionais e mapeamentos Hibernate. |
 | **Consequência** | Erros HTTP 500 no backend que bloqueavam o avanço do frontend. |
 | **Estratégia** | Mitigar |
-| **Ações Executadas** | 1. Dockerfile e Docker Compose padronizados no PR #55. 2. Resolução definitiva do mapeamento de tipos no PR #38. |
+| **Ações Executadas** | 1. Dockerfile e Docker Compose padronizados. 2. Resolução definitiva do mapeamento de tipos UUID nativo no Hibernate e Flyway. |
 | **Responsável** | Italo Jefferson / Nichollas Cavalcante |
 | **Status** | 🟢 Materializado e Mitigado |
 
@@ -136,7 +147,7 @@
 | **Estratégia** | Mitigar |
 | **Ações Executadas** | 1. Criação da migration Flyway V10 e refatoração completa no backend e frontend através dos PRs #119 e #120. 2. Desacoplamento da gestão complexa de estoque para manter o motor focado na venda direta. |
 | **Responsável** | Italo Jefferson / Nichollas Cavalcante |
-| **Status** | 🟢 Materializado e Mitigado (PR #119/#120) |
+| **Status** | 🟢 Materializado e Mitigado |
 
 ---
 
@@ -151,13 +162,13 @@
 | **Causa** | Atrasos acumulados em sprints intermediárias. |
 | **Consequência** | Não homologação do sistema com o parceiro social no prazo estipulado. |
 | **Estratégia** | Mitigar |
-| **Ações** | 1. Priorização rígida de itens *Must Have*. 2. Replanejamento transparente de itens não críticos (ex: postergação de etiquetas e relatórios para a Sprint 4). 3. Acompanhamento por relatórios de auditoria e RAP a cada sprint. |
+| **Ações** | 1. Priorização rígida de itens *Must Have*. 2. Replanejamento transparente de itens não críticos (ex: postergação de relatórios complexos). 3. Acompanhamento por relatórios de auditoria e RAP a cada sprint. |
 | **Responsável** | Scrum Master + PO |
 | **Status** | 🟡 Sob Monitoramento Ativo |
 
 ---
 
-### 🆕 R09 — Desalinhamento entre Abordagens Frontend-First e Backend-First
+### R09 — Desalinhamento entre Abordagens Frontend-First e Backend-First
 
 | Campo | Valor |
 |---|---|
@@ -166,41 +177,91 @@
 | **Classificação** | 🟡 Moderado |
 | **Descrição** | O desenvolvimento de telas no frontend utilizando mocks ou DTOs presumidos antes da finalização dos endpoints REST gera fricção de integração e retrabalho de code review. |
 | **Causa** | Desenvolvimento paralelo com contratos de API não homologados previamente no Swagger. |
-| **Consequência** | Dificuldade no teste end-to-end e acúmulo de apontamentos em PRs de frontend (ex: feedback da Daily de 28/08). |
+| **Consequência** | Dificuldade no teste end-to-end e acúmulo de apontamentos em PRs de frontend. |
 | **Estratégia** | Mitigar |
-| **Ações** | 1. Adoção obrigatória de *API-First*: endpoints e DTOs devem ser definidos no documento `API-Especificacao_API_REST.md` antes da codificação das telas. 2. Uso do Swagger/OpenAPI local e do ambiente `develop.italuhub.cloud` como fonte única de verdade. |
+| **Ações Executadas** | 1. Adoção obrigatória de *API-First*: endpoints e DTOs documentados no Swagger e `API-Especificacao_API_REST.md`. 2. Utilização de instâncias integradas locais e de staging para testes de ponta a ponta. |
 | **Responsável** | Todos os Desenvolvedores (Backend & Frontend) |
-| **Status** | 🟡 Identificado na Sprint 3 / Ação para Sprint 4 |
+| **Status** | 🟢 Mitigado / Sob Controle |
 
 ---
 
-### 🆕 R10 — Sobrecarga no Escopo da Sprint 4 (Acúmulo de Entregas)
+### R10 — Sobrecarga no Escopo da Sprint 4 (Acúmulo de Entregas)
 
 | Campo | Valor |
 |---|---|
 | **Probabilidade** | Alta |
 | **Impacto** | Alto |
 | **Classificação** | 🔴 Crítico |
-| **Descrição** | A Sprint 4 precisará absorver as demandas postergadas da Sprint 3 (Relatório Comercial, Romaneio e PDF), o débito técnico da US-04 (Templates SVG de Produtos) e os novos requisitos de Descontos Comerciais e Homologação. |
+| **Descrição** | A Sprint 4 precisaria absorver as demandas postergadas da Sprint 3 (Relatório Comercial, Romaneio e PDF), o débito técnico da US-04 e os novos requisitos de Descontos Comerciais. |
 | **Causa** | Acúmulo de entregas não finalizadas nas sprints anteriores. |
-| **Consequência** | Risco de estouro de prazo na entrega da Release 1. |
+| **Consequência** | Risco de sobrecarga e atraso da Release 1. |
 | **Estratégia** | Mitigar |
-| **Ações** | 1. Priorização MoSCoW rígida: Emissão do PDF Comercial e Descontos são *Must Have*; Romaneio e Templates SVG avançados entram como *Should Have*. 2. Foco imediato na aprovação e merge dos PRs #110 e #111 no primeiro dia da Sprint 4. |
-| **Responsável** | Scrum Master / PO |
-| **Status** | 🟡 Ativo para a Sprint 4 |
+| **Ações Executadas** | 1. Desmembramento estruturado em sub-issues independentes (US-09 para Descontos, US-10 para PDF Comercial e US-11 para Ficha Técnica da Oficina). 2. Execução paralela em ondas por pares de desenvolvedores com testes automatizados dedicados. |
+| **Responsável** | Scrum Master / Tech Lead / PO |
+| **Status** | 🟢 Materializado e Mitigado (US-09, US-10 e US-11) |
 
 ---
 
-## 3. Resumo da Matriz de Riscos (Versão 2.0)
+### 🆕 R11 — Vazamento de Dados Financeiros e Quebra de Sigilo Comercial na Oficina
+
+| Campo | Valor |
+|---|---|
+| **Probabilidade** | Média |
+| **Impacto** | Alto |
+| **Classificação** | 🟠 Significativo |
+| **Descrição** | A impressão ou compartilhamento de orçamentos contendo margens de lucro, preços de compra de insumos, valores de mão de obra e totais financeiros dentro do chão de fábrica pode gerar quebra de sigilo comercial e conflitos operacionais. |
+| **Causa** | Documento único de proposta comercial misturando a visão do cliente com a ordem de corte de produção. |
+| **Consequência** | Exposição indevida da estratégia de precificação da empresa perante serralheiros e fornecedores. |
+| **Estratégia** | Prevenir / Mitigar |
+| **Ações Executadas** | 1. Segregação rigorosa de canais no `BudgetPdfService`: geração isolada do PDF Comercial (`gerarPdfComercial`) e da Ficha Técnica de Oficina (`gerarPdfTecnico`). 2. Omissão absoluta de cifras financeiras (R$) na via técnica (`TechnicalPdfPageEvent`), exibindo apenas medidas em mm, perfis em metros lineares, vidros em m² e ferragens. 3. Testes unitários com extração de texto assegurando que nenhum cifrão ("R$") está presente na via técnica. |
+| **Responsável** | Tech Lead / Backend (US-11) |
+| **Status** | 🟢 Materializado e Mitigado (US-11) |
+
+---
+
+### 🆕 R12 — Subdimensionamento Físico de Corte por Entrada Manual
+
+| Campo | Valor |
+|---|---|
+| **Probabilidade** | Alta |
+| **Impacto** | Alto |
+| **Classificação** | 🔴 Crítico |
+| **Descrição** | O vendedor ou operador inserir manualmente no orçamento uma quantidade de vidro ($m^2$) ou metragem de perfis inferior à área física ou perímetro real do vão da esquadria. |
+| **Causa** | Erro de digitação ou desconhecimento do operador de vendas. |
+| **Consequência** | Corte de perfis de alumínio ou chapas de vidro insuficientes para montagem, gerando sucateamento de matéria-prima, retrabalho e prejuízo financeiro. |
+| **Estratégia** | Mitigar |
+| **Ações Executadas** | 1. Implementação do serviço `BudgetQuantityService.previewCalculation`. 2. Algoritmo de validação física `isBelowMinimum`: caso a metragem informada seja inferior à área nominal ou consumo físico da esquadria, o sistema emite alerta visual imediato e bloqueio de inconsistência no frontend e backend. |
+| **Responsável** | Equipe de Backend & Frontend (US-09 / US-10) |
+| **Status** | 🟢 Materializado e Mitigado |
+
+---
+
+### 🆕 R13 — Bloqueio de CI/CD por Reprovação no SonarQube Quality Gate
+
+| Campo | Valor |
+|---|---|
+| **Probabilidade** | Alta |
+| **Impacto** | Médio |
+| **Classificação** | 🟠 Significativo |
+| **Descrição** | Pull Requests serem bloqueados no GitHub Actions devido à queda de cobertura de testes no New Code (<80%) ou introdução de bugs/code smells bloqueantes do SonarQube. |
+| **Causa** | Rigor dos parâmetros de qualidade exigidos pelo projeto associado à velocidade de desenvolvimento. |
+| **Consequência** | Atraso nas integrações da branch `develop` e retrabalho de refatoração tardia. |
+| **Estratégia** | Prevenir / Mitigar |
+| **Ações Executadas** | 1. Instituição do protocolo SonarLint Pré-PR (`.agents/rules/qualidade-sonarlint.md`). 2. Workflow `run-tests-on-all-prs` que gera feedback instantâneo no PR. 3. Atribuição de suítes de testes dedicadas (ex: US-10.12 com 269 testes automatizados no frontend e >97% de cobertura em serviços no backend). |
+| **Responsável** | Tech Lead & Equipe de QA |
+| **Status** | 🟢 Mitigado / Sob Monitoramento Ativo |
+
+---
+
+## 3. Resumo da Matriz de Riscos (Versão 3.0)
 
 | Classificação | Quantidade | IDs |
 |---|:---:|---|
-| 🔴 **Crítico** | **2** | R02, R10 |
-| 🟠 **Significativo** | **4** | R01, R03, R05, R08 |
-| 🟡 **Moderado** | **4** | R04, R06, R07, R09 |
+| 🔴 **Crítico** | **2** | R02, R12 |
+| 🟠 **Significativo** | **5** | R01, R03, R05, R08, R11 |
+| 🟡 **Moderado** | **6** | R04, R06, R07, R09, R10, R13 |
 | 🟢 **Baixo** | **0** | — |
-| **Total de Riscos Mapeados** | **10** | |
+| **Total de Riscos Mapeados** | **13** | (9 mitigados com sucesso, 4 sob monitoramento contínuo) |
 
 ---
-
-*Documento revisado e atualizado pela Equipe AlumiGest — Sprint 03 — 31/08/2026*
+*Documento homologado pelo Oficial de Governança Técnica (`alumigest-doc-governor`) em 24/09/2026.*

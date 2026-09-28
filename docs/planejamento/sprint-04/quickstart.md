@@ -1,4 +1,4 @@
-﻿# Quickstart Validation Guide: Sprint 4 — Descontos e Orçamentos
+﻿# Quickstart Validation Guide: Sprint 4 — Descontos, PDF e Homologação R1
 
 **Feature**: `001-orcamento-descontos-pdf`
 **Date**: 2026-08-27

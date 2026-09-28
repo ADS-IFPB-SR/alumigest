@@ -1,57 +1,67 @@
-# ARQ — Documento de Arquitetura
+# 🏛️ ARQ — Documento de Arquitetura de Software (AlumiGest)
 
-| Campo | Valor |
+| Metadado | Descrição |
 |---|---|
 | **Projeto** | AlumiGest — Sistema de Gestão para Vidraçaria e Esquadrias |
 | **Sigla** | ALG |
-| **Versão** | 2.0 (Atualizado com UUIDs, Motor Strategy de Cálculo, React/Vite e Pacotes IFPB) |
-| **Data** | 31/08/2026 |
+| **Versão** | 3.0 (Homologado com Motor de PDF, OpenPDF, TanStack Query, Zod e Quality Gate SonarQube) |
+| **Data** | 24/09/2026 |
+| **Governança** | Docs-as-Code — Oficial de Governança (`alumigest-doc-governor`) |
 
 ---
 
-## Revisões
+## Histórico de Revisões
 
 | Data | Versão | Descrição | Autor |
 |---|---|---|---|
 | 05/08/2026 | 1.0 | Versão inicial do Documento de Arquitetura | Ítalo Jefferson / Equipe AlumiGest |
-| 31/08/2026 | 2.0 | Atualização para padrão `br.edu.ifpb.alumigest`, UUIDs nativos, Factory Strategy de cálculo de orçamentos, React 18 + Vite e Flyway V10 | Equipe AlumiGest (Scrum Master: Italo Santos) |
+| 31/08/2026 | 2.0 | Atualização para padrão `br.edu.ifpb.alumigest`, UUIDs nativos, Factory Strategy de cálculo, React 18 + Vite e Flyway V10 | Equipe AlumiGest (Scrum Master: Italo Santos) |
+| 24/09/2026 | 3.0 | Integração do motor de emissão de PDF (OpenPDF / iText), segregação de vias técnica/comercial, TanStack Query v5 + Zod no frontend e Quality Gate SonarQube | Equipe AlumiGest (Tech Lead: Ítalo Jefferson) |
 
 ---
 
 ## 1. Visão Geral da Arquitetura
 
-O AlumiGest utiliza uma arquitetura **monolítica modular** com separação desacoplada entre backend (API REST) e frontend (PWA SPA), organizados em um monorepo.
+O AlumiGest adota o estilo arquitetural **Monolítico Modular Desacoplado**, separando claramente a camada de serviços e regras de negócio no Backend (Spring Boot REST API) da camada de apresentação no Frontend (React PWA SPA), unificados em um monorepo para máxima rastreabilidade Docs-as-Code.
 
-### 1.1 Diagrama de Alto Nível
+### 1.1 Diagrama de Alto Nível (Mermaid)
 
 ```mermaid
 graph TD
-    subgraph Cliente["Camada de Apresentação (Frontend PWA)"]
-        Browser["React 18 + TypeScript + Vite<br>(Tailwind CSS / Lucide Icons / PWA)"]
+    subgraph Cliente["Camada de Apresentação (Frontend PWA SPA)"]
+        Browser["React 18/19 + TypeScript + Vite<br>(Tailwind CSS / TanStack Query v5 / Zod / Lucide Icons)"]
     end
 
-    subgraph Servidor["Camada de Aplicação (Backend Spring Boot 3.4)"]
+    subgraph Servidor["Camada de Aplicação (Backend Spring Boot 3.4 / Java 21)"]
         API["Spring REST Controllers (@RestController)"]
         
-        subgraph Modulos["Módulos Package-by-Feature"]
+        subgraph Modulos["Módulos Package-by-Feature (br.edu.ifpb.alumigest)"]
             ClientsMod["clients (Clientes PF/PJ)"]
-            CatalogMod["catalog (Materiais & Templates)"]
-            BudgetsMod["budgets (Motor de Cálculo & Status)"]
-            CommonMod["common (Health, Exceptions, DTOs)"]
+            CatalogMod["catalog (Materiais & Templates Paramétricos)"]
+            BudgetsMod["budgets (Gestão Comercial & Máquina de Estados)"]
+            CommonMod["common (Health, Configs, DTOs, Handlers)"]
         end
         
-        subgraph MotorCalculo["Motor de Cálculo Strategy"]
-            CalcFactory["QuantityCalculatorFactory"]
+        subgraph MotorCalculo["Motor de Cálculo Físico & Precificação"]
+            CalcFactory["MaterialCalculatorFactory"]
             GlassCalc["GlassQuantityCalculator"]
             ProfileCalc["ProfileQuantityCalculator"]
             HardwareCalc["HardwareQuantityCalculator"]
             FilmCalc["FilmQuantityCalculator"]
             PricingSvc["BudgetPricingService"]
+            QtySvc["BudgetQuantityService"]
+        end
+
+        subgraph MotorPDF["Motor de Emissão Documental (OpenPDF)"]
+            PdfSvc["BudgetPdfService"]
+            ComercialEvent["BudgetPdfPageEvent (Via Cliente)"]
+            TecnicoEvent["TechnicalPdfPageEvent (Ficha Oficina)"]
+            WhatsSvc["Resumo WhatsApp Generator"]
         end
     end
 
-    subgraph Banco["Camada de Persistência"]
-        Postgres[("PostgreSQL 16<br>(UUIDs, Flyway Migrations V1-V10)")]
+    subgraph Banco["Camada de Persistência & Migrations"]
+        Postgres[("PostgreSQL 16<br>(UUIDs nativos, Flyway Migrations V1-V12+)")]
     end
 
     Browser -->|HTTPS / JSON REST API| API
@@ -64,21 +74,28 @@ graph TD
     CalcFactory --> HardwareCalc
     CalcFactory --> FilmCalc
     BudgetsMod --> PricingSvc
+    BudgetsMod --> QtySvc
+    BudgetsMod --> PdfSvc
+    PdfSvc --> ComercialEvent
+    PdfSvc --> TecnicoEvent
+    PdfSvc --> WhatsSvc
     Modulos -->|Spring Data JPA / Hibernate| Postgres
 ```
 
 ---
 
-### 1.2 Decisões Arquiteturais (ADRs)
+### 1.2 Decisões Arquiteturais Registradas (ADRs)
 
 | # | Decisão | Justificativa |
 |---|---|---|
-| **ADR-01** | **Monolítico Modular** | Adequado ao time e ao prazo acadêmico; elimina overhead de rede e infraestrutura de microserviços. |
+| **ADR-01** | **Monolítico Modular** | Elimina complexidade operacional, latência de rede e orquestração de microsserviços, ideal para o escopo e equipe. |
 | **ADR-02** | **Package-by-Feature** | Alta coesão interna e baixo acoplamento entre os domínios (`budgets`, `catalog`, `clients`, `common`). |
-| **ADR-03** | **Chaves Primárias UUIDv4** | Evita enumeração sequencial exposta, permite geração distribuída e desacopla IDs de concorrência. |
-| **ADR-04** | **Padrão Strategy + Factory para Cálculos** | Desacopla as fórmulas físicas de corte (vidro $m^2$, perfil linear $4W+6H$, ferragens e películas) das entidades de persistência. |
-| **ADR-05** | **PWA com React 18 e Vite** | Alta performance de compilação, responsividade mobile para fábrica e suporte a instalação offline/PWA. |
-| **ADR-06** | **Flyway Database Migrations** | Evolução estritamente controlada e auditável do schema relacional do PostgreSQL. |
+| **ADR-03** | **Identificadores UUIDv4 Nativos** | Previne ataques de enumeração sequencial (IDOR), viabiliza criação concorrente de registros e desacopla integridade relacional. |
+| **ADR-04** | **Padrão Strategy + Factory para Cálculos Físicos** | Isola as fórmulas paramétricas de perfis ($2W+2H$, $2W+4H$, $2W+6H$, $2W+8H$), vidros e ferragens das entidades de persistência. |
+| **ADR-05** | **PWA com React, Vite e TanStack Query** | Renderização ágil no navegador, gerenciamento declarativo de cache de servidor, responsividade para oficina e capacidade PWA. |
+| **ADR-06** | **Flyway Database Migrations** | Rastreabilidade absoluta e evolução incremental do schema relacional do PostgreSQL através de versionamento em código. |
+| **ADR-07** | **Segregação Estrita de Vias de PDF (OpenPDF)** | Separação completa da Ficha Técnica de Oficina (sigilo comercial absoluto, sem cifras financeiras) da Proposta Comercial do Cliente. |
+| **ADR-08** | **Validação Bidirecional JSR-380 e Zod** | Integridade dos dados garantida tanto no frontend (Zod schemas no submit) quanto no backend (Bean Validation JSR-380 nos Records). |
 
 ---
 
@@ -90,36 +107,53 @@ graph TD
 backend/src/main/java/br/edu/ifpb/alumigest/
 ├── AlumiGestApplication.java
 │
-├── budgets/                          # Módulo de Orçamentos Comerciais
-│   ├── calculator/                   # Motor de Cálculo (Strategy)
-│   │   ├── QuantityCalculatorStrategy.java
-│   │   ├── QuantityCalculatorFactory.java
+├── budgets/                          # Módulo de Orçamentos e Vendas
+│   ├── calculator/                   # Motor de Cálculo Paramétrico (Strategy)
+│   │   ├── MaterialCalculatorFactory.java
+│   │   ├── MaterialQuantityCalculator.java
 │   │   ├── GlassQuantityCalculator.java
 │   │   ├── ProfileQuantityCalculator.java
 │   │   ├── HardwareQuantityCalculator.java
-│   │   └── FilmQuantityCalculator.java
+│   │   ├── FilmQuantityCalculator.java
+│   │   ├── CategoryType.java
+│   │   └── TemplateType.java
+│   ├── config/
+│   │   └── CompanyProperties.java    # Configurações institucionais da Alumiportas
 │   ├── controller/
-│   │   └── BudgetController.java     # Endpoints /api/v1/budgets e /api/orcamentos
+│   │   └── BudgetController.java     # Endpoints REST de orçamentos, descontos e PDFs
 │   ├── domain/
 │   │   ├── Budget.java
 │   │   ├── BudgetItem.java
 │   │   ├── BudgetItemOption.java
-│   │   └── BudgetStatus.java
+│   │   ├── BudgetStatus.java         # DRAFT, SENT, APPROVED, REJECTED, CANCELLED, EXPIRED
+│   │   ├── DiscountType.java         # PERCENTUAL, VALOR_FIXO
+│   │   └── PaymentCondition.java     # A_VISTA_PIX, ENTRADA_50_SALDO_ENTREGA, etc.
 │   ├── dto/
-│   │   ├── BudgetRequestDTO.java
+│   │   ├── BudgetCreateRequest.java
 │   │   ├── BudgetResponseDTO.java
+│   │   ├── BudgetSummaryResponseDTO.java
 │   │   ├── BudgetItemRequestDTO.java
 │   │   ├── BudgetItemResponseDTO.java
-│   │   └── ...
+│   │   ├── DiscountRequest.java
+│   │   ├── StatusChangeRequest.java
+│   │   └── BudgetPdfDTO.java
 │   ├── mapper/
-│   │   └── BudgetMapper.java
+│   │   └── BudgetMapper.java         # Mapeamento MapStruct bidirecional
 │   ├── repository/
-│   │   └── BudgetRepository.java
+│   │   ├── BudgetRepository.java
+│   │   ├── BudgetItemRepository.java
+│   │   └── BudgetItemOptionRepository.java
 │   └── service/
-│       ├── BudgetService.java
-│       └── BudgetPricingService.java
+│       ├── BudgetService.java        # Regras de negócio e máquina de estados
+│       ├── BudgetPricingService.java # Consolidação de subtotal, descontos e totais
+│       ├── BudgetQuantityService.java# Dimensionamento físico e alerta de subdimensionamento
+│       ├── BudgetCodeGenerator.java  # Geração sequencial de códigos humanizados
+│       ├── BudgetPdfService.java     # Geração de PDFs (OpenPDF) e WhatsApp
+│       └── pdf/
+│           ├── BudgetPdfPageEvent.java    # Rodapé institucional comercial (Página X de Y)
+│           └── TechnicalPdfPageEvent.java # Rodapé institucional técnico para produção
 │
-├── catalog/                          # Módulo de Catálogo e Templates
+├── catalog/                          # Módulo de Catálogo e Insumos
 │   ├── controller/
 │   │   ├── AluminumProfileController.java
 │   │   ├── GlassController.java
@@ -128,44 +162,49 @@ backend/src/main/java/br/edu/ifpb/alumigest/
 │   │   ├── ProductController.java
 │   │   └── ProductCategoryController.java
 │   ├── domain/
-│   │   ├── Material.java
-│   │   ├── MaterialGroup.java
-│   │   ├── Product.java
-│   │   ├── ProductCategory.java
-│   │   └── TemplateType.java
+│   │   ├── Material.java             # Entidade polimórfica base
+│   │   ├── AluminumProfile.java
+│   │   ├── Glass.java
+│   │   ├── Hardware.java
+│   │   ├── Film.java
+│   │   ├── Product.java              # Template/Esquadria composta
+│   │   └── ProductCategory.java
 │   ├── dto/
 │   ├── mapper/
 │   ├── repository/
 │   └── service/
 │
-├── clients/                          # Módulo de Clientes
+├── clients/                          # Módulo de Clientes (PF/PJ)
 │   ├── controller/
-│   │   └── ClientController.java     # Endpoints /api/v1/clients e /api/clientes
+│   │   └── CustomerController.java
 │   ├── domain/
-│   │   └── Client.java
+│   │   └── Customer.java
 │   ├── dto/
 │   ├── mapper/
 │   ├── repository/
 │   └── service/
 │
-└── common/                           # Utilitários Compartilhados
+└── common/                           # Infraestrutura Compartilhada
     ├── config/
-    │   ├── CorsConfig.java
-    │   └── OpenApiConfig.java
+    │   ├── CorsConfig.java           # Políticas de CORS
+    │   └── OpenApiConfig.java        # Swagger / OpenAPI 3.0
     ├── controller/
     │   └── HealthController.java
     ├── dto/
+    │   ├── ApiResponse.java
     │   ├── PageResponse.java
     │   └── ErrorResponse.java
     └── exception/
         ├── GlobalExceptionHandler.java
         ├── BusinessException.java
+        ├── BudgetImmutableException.java
+        ├── InvalidBudgetStatusTransitionException.java
         └── ResourceNotFoundException.java
 ```
 
 ---
 
-### 2.2 Camadas Internas de cada Feature
+### 2.2 Camadas Internas e Fluxo de Execução
 
 ```
 ┌────────────────────────────────────────────────────────┐
@@ -175,6 +214,8 @@ backend/src/main/java/br/edu/ifpb/alumigest/
 ├────────────────────────────────────────────────────────┤
 │           Calculator Engine (Strategy Factory)         │ ← Fórmulas de Corte, Metragem e Pesos
 ├────────────────────────────────────────────────────────┤
+│             PDF Engine (OpenPDF Page Events)           │ ← Segregação de Vias Comercial / Técnica
+├────────────────────────────────────────────────────────┤
 │               Repository (Spring Data JPA)             │ ← JpaRepository<Entity, UUID>, JPQL
 ├────────────────────────────────────────────────────────┤
 │                 Domain (Entidades JPA)                 │ ← @Entity, @Table(name = "tb_*")
@@ -183,29 +224,36 @@ backend/src/main/java/br/edu/ifpb/alumigest/
 
 ---
 
-## 3. Arquitetura do Frontend (React 18 + TypeScript + Vite)
+## 3. Arquitetura do Frontend (React 18/19 + TypeScript + Vite)
 
-### 3.1 Estrutura de Diretórios (`frontend/src`)
+### 3.1 Estrutura de Diretórios por Feature (`frontend/src`)
 
 ```
 frontend/src/
-├── components/
-│   ├── catalog/              # Modais de Vidro, Perfil, Ferragem e Película
-│   ├── layout/               # Sidebar, Header, Navegação em Abas
-│   └── ui/                   # Button, Input, Modal, Badge, Toast
-├── pages/
-│   ├── catalog/              # Catálogo com 4 abas reativas
-│   ├── clients/              # Listagem e cadastro de clientes
-│   ├── budgets/              # Wizard de Orçamentos e Listagem
-│   └── dashboard/            # Visão geral de vendas e métricas
-├── services/                 # Clientes HTTP Axios tipados
-│   ├── api.ts
-│   ├── catalogService.ts
-│   ├── clientService.ts
-│   └── budgetService.ts
-├── hooks/                    # Custom React Hooks
-├── types/                    # Interfaces TypeScript (DTOs espelhados)
-└── App.tsx
+├── components/                       # Componentes Compartilhados Globais
+│   ├── layout/                       # Sidebar, Topbar, MainLayout
+│   └── ui/                           # Button, Input, Modal, Badge, Card, Toast
+├── features/                         # Módulos Funcionais Coesos
+│   ├── budgets/                      # Feature de Orçamentos
+│   │   ├── components/               # BudgetEditor, BudgetFinancialSummary, CustomerSelector, etc.
+│   │   ├── hooks/                    # useBudgets, useApplyDiscount, useDownloadPdf
+│   │   ├── schemas/                  # budgetSchema.ts, discountSchema.ts (Zod)
+│   │   ├── services/                 # budgetsApi.ts (Axios)
+│   │   └── types/                    # Tipos espelhados dos DTOs Java
+│   ├── catalog/                      # Feature de Catálogo
+│   │   ├── components/               # Modais de Cadastro de Perfis, Vidros, etc.
+│   │   └── services/                 # catalogApi.ts
+│   └── clients/                      # Feature de Clientes
+│       ├── components/               # CustomerForm, CustomerQuickCreateModal
+│       └── services/                 # clientsApi.ts
+├── pages/                            # Páginas de Rota
+│   ├── BudgetDetailPage.tsx
+│   ├── BudgetCreatePage.tsx
+│   ├── BudgetsListPage.tsx
+│   ├── CatalogPage.tsx
+│   └── CustomersPage.tsx
+├── routes/                           # Configuração do React Router
+└── services/                         # Instância base do Axios (api.ts com interceptors)
 ```
 
 ---
@@ -214,11 +262,11 @@ frontend/src/
 
 ### 4.1 Padrões de Modelagem
 * **Chaves Primárias:** `UUID` gerado nativamente via `gen_random_uuid()`.
-* **Prefixo de Tabelas:** `tb_*` em snake_case plural (`tb_customers`, `tb_materials`, `tb_products`, `tb_budgets`, `tb_budget_items`, `tb_budget_item_options`).
-* **Precisão Numérica:** `DECIMAL(12, 2)` para valores monetários e `DECIMAL(10, 4)` para quantidades e metragens.
-* **Auditoria:** Colunas `created_at` e `updated_at` com timestamp UTC.
+* **Convenção de Nomenclatura:** Tabelas com prefixo `tb_*` em snake_case plural (`tb_customers`, `tb_materials`, `tb_products`, `tb_budgets`, `tb_budget_items`, `tb_budget_item_options`).
+* **Tipagem Financeira e Física:** `NUMERIC(12, 2)` para valores monetários e `NUMERIC(10, 4)` para quantidades e metragens exatas.
+* **Auditoria de Registros:** Colunas `created_at` e `updated_at` com timestamp UTC.
 
-### 4.2 Histórico de Migrations Flyway
+### 4.2 Histórico Consolidado de Migrations Flyway
 
 ```
 V1__create_material_groups_and_materials.sql
@@ -231,23 +279,34 @@ V7__create_customers_table.sql
 V8__add_template_and_category_requirements_to_products.sql
 V9__create_budgets_tables.sql
 V10__remove_labor_cost_from_products.sql
+V11__add_budget_commercial_conditions.sql
+V12__add_budget_code_sequence.sql
 ```
 
 ---
 
-## 5. Infraestrutura e CI/CD
+## 5. Infraestrutura, Qualidade e Pipeline de CI/CD
 
-### 5.1 Pipeline GitHub Actions
+### 5.1 Pipeline GitHub Actions e SonarQube
 
 ```mermaid
 graph LR
     PR[Pull Request / Push develop] --> Build[Build Backend & Frontend]
-    Build --> TestBack[JUnit 5 & Mockito Tests]
-    Build --> TestFront[Cypress E2E Specs]
-    TestBack --> Sonar[SonarQube Quality Gate]
-    Sonar --> Staging[Deploy Staging: develop.italuhub.cloud]
+    Build --> TestBack[JUnit 5 & JaCoCo Coverage]
+    Build --> TestFront[Vitest & Cypress E2E]
+    TestBack --> SonarBack[SonarQube Backend Analysis]
+    TestFront --> SonarFront[SonarQube Frontend Analysis]
+    SonarBack --> Gate{Quality Gate Check}
+    SonarFront --> Gate
+    Gate -->|Aprovado (New Code >= 80%, 0 Bugs)| Deploy[Deploy Staging: Coolify]
+    Gate -->|Reprovado| Block[Bloqueia Merge do PR]
 ```
 
----
+### 5.2 Critérios do Quality Gate
+1. **Cobertura em Novo Código (New Code):** Mínimo de **80%** de linhas cobertas por testes automatizados.
+2. **Confiabilidade:** **Zero Bugs** novos e **Zero Vulnerabilidades** de segurança.
+3. **Manutenibilidade:** Débito técnico classificado como **A** (zero code smells bloqueantes).
+4. **Duplicação de Código:** Abaixo de **3%** em arquivos de produção.
 
-*Documento de Arquitetura homologado com a base de código — Versão 2.0 — 31/08/2026*
+---
+*Documento de Arquitetura homologado pelo Oficial de Governança Técnica (`alumigest-doc-governor`) em 24/09/2026.*

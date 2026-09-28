@@ -1,92 +1,122 @@
 # 📋 PBL — Product Backlog (AlumiGest)
+
 **Projeto:** AlumiGest — Sistema de Gestão para Vidraçaria e Esquadrias  
-**Cliente / Parceiro Social:** Alumiportas  
-**Product Owner (PO):** José Guylherme dos Santos Melo | **Scrum Master:** Italo Santos  
-**Versão:** 3.1 (Atualizado com fechamento técnico da Sprint 3 e detalhamento da Sprint 4)  
-**Data:** 31 de Agosto de 2026  
+**Cliente:** Alumiportas | **PO:** José Guylherme dos Santos Melo | **Scrum Master:** Nichollas Cavalcante  
+**Versão:** 3.0 (Atualizado e Alinhado com o Planejamento Geral em 04/09/2026)  
 
 ---
 
 ## 1. 🎯 Visão Geral das Releases e Sprints
 
+O backlog do AlumiGest está estruturado em **3 grandes Releases de Negócio** e um ciclo de **Sustentação/Estabilização**, distribuídos ao longo de **16 Sprints quinzenais**:
+
 ```mermaid
 gantt
-    title Cronograma de Sprints - Release 1 (AlumiGest)
+    title Cronograma de Sprints e Releases — AlumiGest (v1.0.0 a v3.0.0)
     dateFormat  YYYY-MM-DD
-    axisFormat  %d/%m
-
-    section Sprints Concluidas
-    Sprint 1 - Iniciacao e Governanca (Concluida)           :done, s1, 2026-07-28, 2026-08-03
-    Sprint 2 - Catalogo de Materiais e Produtos (Concluida) :done, s2, 2026-08-04, 2026-08-17
-    Sprint 3 - Clientes e Motor de Orcamentos (Concluida)   :done, s3, 2026-08-18, 2026-08-31
-
-    section Proxima Sprint
-    Sprint 4 - Descontos PDF 2 Vias e Homologacao R1 (A Iniciar) :active, s4, 2026-09-01, 2026-09-14
+    section Release 1 (Fundação & Orçamentos)
+    Sprint 01 - Iniciação & Governança (Concluída)        :done, s1, 2026-07-28, 2026-08-03
+    Sprint 02 - Catálogo de Materiais & Fichas Técnicas   :done, s2, 2026-08-04, 2026-08-17
+    Sprint 03 - Clientes, Motor de Orçamento & Templates  :done, s3, 2026-08-18, 2026-08-31
+    Sprint 04 - Descontos, PDF Comercial/Oficina & R1     :active, s4, 2026-09-01, 2026-09-14
+    section Release 2 (Pedidos, Produção & Estoque)
+    Sprint 05 - Pedidos de Venda & Lock de Preços         :s5, 2026-09-15, 2026-09-28
+    Sprint 06 - Etiquetas de Peças & Kanban de Pedidos     :s6, 2026-09-29, 2026-10-12
+    Sprint 07 - Lista de Corte & Ficha Técnica Montagem   :s7, 2026-10-13, 2026-10-26
+    Sprint 08 - Controle de Estoque, Kardex & R2          :s8, 2026-10-27, 2026-11-09
+    section Release 3 (Financeiro, Instalações & PWA)
+    Sprint 09 - Cobrança & Confirmação Instantânea PIX    :s9, 2026-11-10, 2026-11-23
+    Sprint 10 - Contas a Receber, Parcelamento & Extrato  :s10, 2026-11-24, 2026-12-07
+    Sprint 11 - Fluxo de Caixa Mensal Consolidado         :s11, 2026-12-08, 2026-12-21
+    Sprint 12 - Gestão de Instalações, OS em Campo & PDF  :s12, 2026-12-22, 2027-01-04
+    Sprint 13 - Dashboard Executivo, KPIs & DRE Gerencial :s13, 2027-01-05, 2027-01-18
+    Sprint 14 - PWA Offline para Instaladores & Sync      :s14, 2027-01-19, 2027-02-01
+    Sprint 15 - Carga Real, Manuais & Homologação R3      :s15, 2027-02-02, 2027-02-15
+    section Sustentação & Governança
+    Sprint 16 - Backup Automatizado, Auditoria & Health   :s16, 2027-02-16, 2027-03-01
 ```
 
----
-
-## 2. 📦 Estrutura de Épicos e Histórico de Sprints
-
-### 🟢 SPRINT 1 (28/07 a 03/08/2026) — *Concluída (Baseline B-ALG-v0.1.0-S01-01)*
-* **EP-01: Iniciação, Governança e Infraestrutura**
-  * PGC (Plano de Gerência de Configuração) e PPJ (Plano de Projeto). ✅
-  * Estrutura Monorepo com Rulesets, Branch Protection e CI/CD GitHub Actions. ✅
-  * Arquitetura Base Spring Boot 3.4 com OpenAPI Swagger e Docker Compose. ✅
+> 💡 **Referência de Sincronização**: Para verificar o mapeamento entre a numeração antiga do PO e a numeração ativa das User Stories, consulte a [Tabela De-Para Oficial](file:///c:/Users/italo/Desktop/Projects/alumigest/docs/planejamento/de-para-user-stories.md).
 
 ---
 
-### 🟢 SPRINT 2 (04/08 a 17/08/2026) — *Concluída (Baseline B-ALG-v0.2.0-S02-01)*
-* **EP-02: Catálogo de Materiais e Insumos Universais (Issue Pai #4)**
-  * **#11:** Backend: Migration Flyway V1 e Entidades Base (`tb_material_groups`, `tb_materials`). ✅
-  * **#12:** Backend: CRUD de Vidros (2mm a 10mm) calculados por $m^2$. ✅
-  * **#13:** Backend: CRUD de Perfis de Alumínio (Linhas Rometal/Alternativa, Barras 3m/6m, NCM). ✅
-  * **#14:** Backend: CRUD de Películas e Acabamentos por $m^2$ (Fumê, Jateada, Leitosa, Espelhada). ✅
-  * **#15:** Backend: CRUD de Ferragens e Acessórios por Unidade, Par ou Metro. ✅
-  * **#16:** Frontend: Interface PWA em Abas para Gestão Completa do Catálogo. ✅
-  * **#17:** QA: Suíte de Testes Unitários (48 testes) e 14 cenários TEA. ✅
-* **EP-03: Fichas Técnicas e Categorias de Produtos (Issue #31)**
-  * **#33 / #39:** Cadastro de Categorias e Modelos de Produtos (`tb_products` e `tb_product_items`). ✅
+## 2. 📦 Estrutura de Épicos e User Stories Ativas (US-01 a US-45)
+
+### 🟢 Release 1 (v1.0.0) — Fundação, Catálogo & Orçamentos Comerciais
+
+* **EP-01: Governança & Infraestrutura Base (Sprint 01)**
+  * `US-01`: Configurar Infraestrutura Monorepo, Docker e Governança do Projeto *(Concluída)*
+* **EP-02: Catálogo de Materiais & Fichas Técnicas (Sprint 02)**
+  * `US-02`: Gerenciar Catálogo de Materiais Genérico (Vidros, Perfis, Ferragens) *(Concluída)*
+  * `US-03`: Gerenciar Produtos e Fichas Técnicas de Esquadrias *(Concluída)*
+* **EP-03: Clientes, Motor de Precificação & Templates Paramétricos (Sprint 03)**
+  * `US-04`: Gerenciar Clientes PF e PJ *(Concluída)*
+  * `US-05`: Refatorar Produtos com Templates Paramétricos de Esquadrias *(Concluída)*
+  * `US-06`: Criar e Gerenciar Orçamentos de Venda *(Concluída)*
+  * `US-07`: Motor de Cálculo Físico e Precificação de Orçamentos *(Concluída)*
+  * `US-08`: Pipeline CI/CD com SonarQube e Testes E2E Cypress *(Concluída)*
+* **EP-04: Condições Comerciais, Propostas em PDF & Homologação R1 (Sprint 04/05)**
+  * `US-09`: Aplicar Descontos e Condições Comerciais no Orçamento *(Concluída)*
+  * `US-10`: Emitir e Exportar Orçamento em PDF - Via Comercial e WhatsApp *(Concluída)*
+  * `US-11`: Emitir Orçamento em PDF - Via Técnica de Oficina *(Concluída)*
+  * `US-12`: Homologação Integrada e Validação da Release 1 (v1.0.0) *(Concluída)*
 
 ---
 
-### 🟡 SPRINT 3 (18/08 a 31/08/2026) — *Em Fechamento (Foco: Clientes, Motor & Orçamentos)*
-* **EP-04: Cadastro de Clientes (Backend)**
-  * **#61 / PR #79:** API CRUD de Clientes PF/PJ (`/api/v1/customers`) com 11 classes Java e validações. ✅
-* **EP-05: Motor de Precificação e Orçamentos (Backend)**
-  * **#80 / PR #108:** Entidades JPA (`Budget`, `BudgetItem`, `BudgetItemOption`) e Migration V9. ✅
-  * **#81 / PR #112:** DTOs e Mappers MapStruct com validações JSR-380. ✅
-  * **#82 / PR #113:** `BudgetService` com gerador sequencial e máquina de estados. ✅
-  * **#83 / PR #116:** `BudgetController` e Endpoints REST (136 testes automatizados). ✅
-  * **#65 / #90, #91, #92 / PR #117:** Motor de Cálculo com Factory Strategy para Vidro $m^2$, Perfil linear ($4W+6H$), Ferragens e Películas (141 testes). ✅
-* **EP-06: Refatoração de Templates de Produtos (Backend)**
-  * **#62 / PR #104:** Suporte a Templates Paramétricos e Categorias Obrigatórias na Entidade `Product`. ✅
-  * **#119 / #120:** Remoção de `laborCost` do produto mestre e transferência para o Orçamento. ✅
-* **EP-07: Interfaces PWA de Orçamentos (Frontend)**
-  * **#67 / #98 / PR #110:** Wizard de Criação de Orçamentos com subtotal em tempo real. ✅ *(Mergeado)*
-  * **#66 / #93, #94 / PR #111:** Listagem e Paginação de Orçamentos com filtros. ✅ *(Mergeado)*
-* **EP-08: Qualidade e Infraestrutura**
-  * **#114 / PR #115, #118:** Suíte E2E Cypress com 23 specs para o Catálogo de Materiais. ✅
-  * **PR #78:** Pipeline CI/CD com SonarQube segregado. ✅
-  * **Débito Técnico:** **US-04 (#87, #88, #89)** — Componentes SVG e Tela de Produtos (transitando para S4). 🟡
+### 🟡 Release 2 (v2.0.0) — Gestão de Pedidos, Produção & Estoque
+
+* **EP-05: Pedidos de Venda & Lock de Preços (Sprint 05)**
+  * `US-13`: Aprovar Orçamento e Converter em Pedido de Venda
+  * `US-14`: Snapshot Imutável e Lock de Preços do Pedido
+  * `US-15`: Gestão de Status, Prazos e Cancelamento de Pedidos
+  * `US-16`: Emissão do Comprovante do Pedido de Venda
+* **EP-06: Identificação no Chão de Fábrica & Kanban Operacional (Sprint 06)**
+  * `US-17`: Emitir Etiquetas de Identificação de Peças por Item do Pedido *(Sem QR Code)*
+  * `US-18`: Acompanhar Produção via Painel Kanban de Pedidos de Venda
+* **EP-07: Engenharia de Corte & Fichas Técnicas de Montagem (Sprint 07)**
+  * `US-19`: Consolidar Lista Linear e Plana de Corte do Pedido
+  * `US-20`: Gerar Ficha Técnica de Montagem por Item do Pedido
+* **EP-08: Gestão de Estoque, Kardex & Homologação R2 (Sprint 08)**
+  * `US-21`: Reservar e Baixar Matéria-Prima no Estoque Automaticamente
+  * `US-22`: Consultar Posição de Estoque e Kardex de Movimentações
+  * `US-23`: Homologação Integrada e Validação da Release 2 (v2.0.0)
 
 ---
 
-### 🟣 SPRINT 4 (01/09 a 14/09/2026) — *Planejada (Descontos, PDF em 2 Vias & Homologação R1)*
-* **EP-09: Descontos Comerciais e Condições de Pagamento**
-  * Aplicação de descontos em % ou R$ com autonomia do vendedor.
-  * Taxas extras (frete/instalação) e condições de pagamento (À Vista PIX, 50%+50%, Cartão até 12x).
-  * Definição de prazo de validade da proposta comercial (padrão 15 dias).
-* **EP-10: Emissão de Proposta Comercial e Romaneio Técnico em PDF**
-  * **Via Comercial (PDF):** Layout profissional com logotipo Alumiportas, dados do cliente, itens discriminados, valores unitários/totais e botão de cópia de resumo para WhatsApp.
-  * **Via Técnica / Oficina (PDF):** Instrução de fabricação com medidas nominais (L x A em mm), modelos de esquadrias, cores de perfis, tipos de vidro, sentido de abertura e ferragens, **sem exibição de valores monetários**.
-  * **#68 / #69 / #70:** Relatório Comercial, Romaneio de Peças e Exportação PDF.
-* **EP-11: Conclusão do Frontend de Produtos (Absorção da US-04)**
-  * Finalização dos componentes SVG paramétricos de esquadrias e tela de produtos.
-* **EP-12: Homologação e Fechamento da Release 1**
-  * Teste E2E integrado do fluxo completo (Cliente → Produto → Orçamento → PDF) com a Alumiportas.
-  * Geração da Baseline `B-ALG-v1.0.0-R01-01`.
+### 🔵 Release 3 (v3.0.0) — Financeiro, Instalações & Gestão Estratégica
+
+* **EP-09: Pagamentos Instantâneos via PIX (Sprint 09)**
+  * `US-24`: Gerar Cobrança PIX com QR Code Dinâmico e Copia e Cola
+  * `US-25`: Confirmar Pagamento PIX via Webhook com Liberação Automática
+  * `US-26`: Modal PIX Interativo no Frontend e Histórico de Transações
+* **EP-10: Contas a Receber & Gestão de Títulos (Sprint 10)**
+  * `US-27`: Desdobrar e Gerenciar Parcelamento de Pedidos
+  * `US-28`: Controlar Contas a Receber, Vencimentos e Inadimplência
+  * `US-29`: Emitir Extrato Financeiro do Cliente e Recibo de Quitação
+* **EP-11: Gestão Financeira & Fluxo de Caixa Consolidado (Sprint 11)**
+  * `US-30`: Acompanhar Fluxo de Caixa Mensal
+* **EP-12: Instalações & Ordens de Serviço em Campo (Sprint 12)**
+  * `US-31`: Executar e Concluir OS em Campo com Registro Fotográfico (PWA)
+  * `US-32`: Visualizar Calendário de Instalações e Prevenção de Conflitos
+  * `US-33`: Emitir Ordem de Serviço (OS) em PDF
+* **EP-13: Inteligência de Negócio, KPIs & DRE (Sprint 13)**
+  * `US-34`: Visualizar Dashboard Executivo e Indicadores (KPIs) Comerciais
+  * `US-35`: Apurar DRE Gerencial (Competência e Caixa)
+  * `US-36`: Exportar Relatórios Executivos em PDF e Planilhas CSV/Excel
+* **EP-14: Operação Offline & Sincronização PWA (Sprint 14)**
+  * `US-37`: Instalar PWA e Consultar Pedidos e OS Offline via IndexedDB
+  * `US-38`: Sincronizar Fila de Alterações e Fotos em Segundo Plano
+  * `US-39`: Comprimir Imagens no Dispositivo e Otimizar Performance Web
+* **EP-15: Carga de Dados, Treinamento & Homologação R3 (Sprint 15)**
+  * `US-40`: Executar Carga Inicial de Dados e Importador de Clientes via CSV
+  * `US-41`: Homologação Integrada Ponta a Ponta da Release 3 (v3.0.0)
+  * `US-42`: Disponibilizar Guias de Treinamento por Perfil e Central de Ajuda
 
 ---
 
-*Product Backlog mantido pela Equipe AlumiGest — Atualizado em 31/08/2026*
+### 🟣 Sustentação & Governança Corporativa
+
+* **EP-16: Estabilização, Recuperação de Desastres & Auditoria (Sprint 16)**
+  * `US-43`: Executar Rotinas de Backup Automático e Disaster Recovery
+  * `US-44`: Registrar Trilha de Auditoria Imutável para Ações Críticas
+  * `US-45`: Monitorar Saúde do Sistema com Actuator e Publicar Documentação

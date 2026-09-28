@@ -47,4 +47,14 @@
 | [US-09.39](US-09.39-criar-pagina-budgetlistpage-listagem-paginada/issue.md) | Criar página `BudgetListPage` (listagem paginada com filtros de status e busca) em `frontend/src/pages/BudgetListPage.tsx` | `backlog` | 🔲 Aberta |
 | [US-09.40](US-09.40-adicionar-rotas-orcamentos-orcamentos-novo-or/issue.md) | Adicionar rotas `/orcamentos`/orcamentos/novo`/orcamentos/:id` no React Router em `frontend/src/App.tsx` (ou arquivo de rotas existente) | `backlog` | 🔲 Aberta |
 
+---
+
+## 🔀 Migração de Histórias e Governança de Qualidade
+
+> ℹ️ **Histórias Migradas para a Sprint 05**:  
+> Conforme definição de escopo oficial, as histórias **US-10** (*Emitir e Exportar Orçamento em PDF - Via Comercial e WhatsApp*) e **US-11** (*Emitir Orçamento em PDF - Via Técnica de Oficina*), juntamente com a **US-09 (Parte 2: tarefas US-09.20 a US-09.40)**, pertencem e foram implementadas na [Sprint 05](../../sprint-05/issues/README.md).
+> 
+> 🛡️ **Homologação da Release 1 (antiga US-12 #136)**:  
+> Atividades de homologação e testes de regressão **não constituem User Stories**, pois não entregam features funcionais avulsas. Seus critérios foram convertidos e incorporados integralmente no **Definition of Done (DoD) e Critérios de Aceitação das histórias US-10 e US-11 na Sprint 05**.
+
 

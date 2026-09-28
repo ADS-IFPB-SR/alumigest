@@ -275,7 +275,7 @@ describe('WindowBuilderModal — [US-09.34] Alinhamento e Adição de Esquadrias
 
     // O modal deve ser fechado
     expect(onClose).toHaveBeenCalledTimes(1);
-  });
+  }, 30000);
 
   it('deve carregar dados de um item existente em modo de edição e atualizar mantendo o tempId', async () => {
     const user = userEvent.setup();

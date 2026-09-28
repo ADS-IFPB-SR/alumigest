@@ -1,13 +1,14 @@
 package br.edu.ifpb.alumigest.budgets.controller;
 
 import br.edu.ifpb.alumigest.budgets.domain.BudgetStatus;
-import br.edu.ifpb.alumigest.budgets.domain.PaymentCondition; // NOVO IMPORT
+import br.edu.ifpb.alumigest.budgets.domain.PaymentCondition;
 import br.edu.ifpb.alumigest.budgets.domain.DiscountType;
 import br.edu.ifpb.alumigest.budgets.dto.BudgetItemResponseDTO;
 import br.edu.ifpb.alumigest.budgets.dto.DiscountRequest;
 import br.edu.ifpb.alumigest.budgets.dto.BudgetItemCalculationRequestDTO;
 import br.edu.ifpb.alumigest.budgets.dto.BudgetItemCalculationResponseDTO;
 import br.edu.ifpb.alumigest.budgets.dto.BudgetItemRequestDTO;
+import br.edu.ifpb.alumigest.budgets.dto.BudgetPdfDTO;
 import br.edu.ifpb.alumigest.budgets.dto.BudgetRequestDTO;
 import br.edu.ifpb.alumigest.budgets.dto.BudgetResponseDTO;
 import br.edu.ifpb.alumigest.budgets.dto.BudgetSummaryResponseDTO;
@@ -16,6 +17,7 @@ import br.edu.ifpb.alumigest.budgets.service.BudgetQuantityService;
 import br.edu.ifpb.alumigest.budgets.service.BudgetService;
 import br.edu.ifpb.alumigest.common.dto.PageResponse;
 import br.edu.ifpb.alumigest.common.exception.BudgetImmutableException;
+import br.edu.ifpb.alumigest.common.exception.BusinessException;
 import br.edu.ifpb.alumigest.common.exception.GlobalExceptionHandler;
 import br.edu.ifpb.alumigest.common.exception.InvalidBudgetStatusTransitionException;
 import br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException;
@@ -39,6 +41,7 @@ import java.util.List;
 import java.util.UUID;
 import java.time.LocalDate;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -597,5 +600,174 @@ class BudgetControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.status").value(422));
+    }
+
+    @Test
+    @DisplayName("Deve retornar 200 e bytes do PDF comercial com headers corretos")
+    void gerarPdfComercial_DeveRetornar200EHeadersCorretos_QuandoOrcamentoExiste() throws Exception {
+        UUID id = UUID.randomUUID();
+        byte[] pdfBytesMock = "%PDF-1.4 mock content".getBytes();
+        BudgetPdfDTO pdfDtoMock = new BudgetPdfDTO(pdfBytesMock, "ORC-2026-001-comercial.pdf");
+
+        when(budgetService.gerarPdfComercial(id)).thenReturn(pdfDtoMock);
+
+        mockMvc.perform(get("/api/budgets/{id}/pdf/comercial", id))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Type", "application/pdf"))
+                .andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.containsString("ORC-2026-001-comercial.pdf")))
+                .andExpect(header().longValue("Content-Length", pdfBytesMock.length))
+                .andExpect(content().bytes(pdfBytesMock));
+
+        verify(budgetService).gerarPdfComercial(id);
+    }
+
+    @Test
+    @DisplayName("Deve retornar 200 ao gerar PDF comercial via rota legada /api/orcamentos/{id}/pdf/comercial")
+    void gerarPdfComercial_ViaRotaLegada_DeveRetornar200() throws Exception {
+        UUID id = UUID.randomUUID();
+        byte[] pdfBytesMock = "%PDF-1.4 mock".getBytes();
+        BudgetPdfDTO pdfDtoMock = new BudgetPdfDTO(pdfBytesMock, "ORC-1024-comercial.pdf");
+
+        when(budgetService.gerarPdfComercial(id)).thenReturn(pdfDtoMock);
+
+        mockMvc.perform(get("/api/orcamentos/{id}/pdf/comercial", id))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Type", "application/pdf"))
+                .andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.containsString("ORC-1024-comercial.pdf")))
+                .andExpect(content().bytes(pdfBytesMock));
+    }
+
+    @Test
+    @DisplayName("Deve retornar 404 quando o orçamento não existir ao tentar emitir PDF comercial")
+    void gerarPdfComercial_DeveRetornar404_QuandoOrcamentoNaoExiste() throws Exception {
+        UUID id = UUID.randomUUID();
+
+        when(budgetService.gerarPdfComercial(id))
+                .thenThrow(new ResourceNotFoundException("Orçamento", id.toString()));
+
+        mockMvc.perform(get("/api/budgets/{id}/pdf/comercial", id))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("não encontrado")));
+    }
+
+    @Test
+    @DisplayName("Deve retornar 422 quando tentar emitir PDF comercial de orçamento cancelado")
+    void gerarPdfComercial_DeveRetornar422_QuandoOrcamentoCancelado() throws Exception {
+        UUID id = UUID.randomUUID();
+
+        when(budgetService.gerarPdfComercial(id))
+                .thenThrow(new BusinessException("Não é possível gerar o PDF de um orçamento cancelado."));
+
+        mockMvc.perform(get("/api/budgets/{id}/pdf/comercial", id))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.status").value(422))
+                .andExpect(jsonPath("$.message").value("Não é possível gerar o PDF de um orçamento cancelado."));
+    }
+
+    @Test
+    @DisplayName("Deve usar fallback de nome de arquivo quando retornado pelo serviço")
+    void gerarPdfComercial_DeveUsarFallbackFilename_QuandoCodigoNulo() throws Exception {
+        UUID id = UUID.randomUUID();
+        byte[] pdfBytesMock = "%PDF-1.4 mock".getBytes();
+        BudgetPdfDTO pdfDtoMock = new BudgetPdfDTO(pdfBytesMock, "orcamento-comercial.pdf");
+
+        when(budgetService.gerarPdfComercial(id)).thenReturn(pdfDtoMock);
+
+        mockMvc.perform(get("/api/budgets/{id}/pdf/comercial", id))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Disposition", containsString("orcamento-comercial.pdf")));
+    }
+
+    // ── Testes do endpoint GET /api/budgets/{id}/pdf/tecnico [US-11.1/US-11.3] ──
+
+    @Test
+    @DisplayName("Deve retornar 200 ao gerar PDF técnico da via de oficina")
+    void gerarPdfTecnico_DeveRetornar200EHeadersCorretos() throws Exception {
+        UUID id = UUID.randomUUID();
+        byte[] pdfBytesMock = "%PDF-1.4 mock tecnico".getBytes();
+        BudgetPdfDTO pdfDtoMock = new BudgetPdfDTO(pdfBytesMock, "ORC-2026-001-tecnico.pdf");
+
+        when(budgetService.gerarPdfTecnico(id)).thenReturn(pdfDtoMock);
+
+        mockMvc.perform(get("/api/budgets/{id}/pdf/tecnico", id))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Type", "application/pdf"))
+                .andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.containsString("ORC-2026-001-tecnico.pdf")))
+                .andExpect(header().longValue("Content-Length", pdfBytesMock.length))
+                .andExpect(content().bytes(pdfBytesMock));
+
+        verify(budgetService).gerarPdfTecnico(id);
+    }
+
+    @Test
+    @DisplayName("Deve retornar 404 quando orçamento não existir ao tentar emitir PDF técnico")
+    void gerarPdfTecnico_DeveRetornar404_QuandoOrcamentoNaoExiste() throws Exception {
+        UUID id = UUID.randomUUID();
+
+        when(budgetService.gerarPdfTecnico(id))
+                .thenThrow(new ResourceNotFoundException("Orçamento", id.toString()));
+
+        mockMvc.perform(get("/api/budgets/{id}/pdf/tecnico", id))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404));
+    }
+
+    @Test
+    @DisplayName("Deve retornar 422 quando orçamento estiver cancelado ao tentar emitir PDF técnico")
+    void gerarPdfTecnico_DeveRetornar422_QuandoOrcamentoCancelado() throws Exception {
+        UUID id = UUID.randomUUID();
+
+        when(budgetService.gerarPdfTecnico(id))
+                .thenThrow(new BusinessException("Não é possível gerar o PDF técnico de um orçamento cancelado."));
+
+        mockMvc.perform(get("/api/budgets/{id}/pdf/tecnico", id))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.status").value(422))
+                .andExpect(jsonPath("$.message").value("Não é possível gerar o PDF técnico de um orçamento cancelado."));
+    }
+
+    // ── Testes do endpoint GET /api/budgets/{id}/resumo-whatsapp [US-10.7] ──
+
+    @Test
+    @DisplayName("Deve retornar 200 e texto formatado do WhatsApp com header charset=UTF-8 e marcadores corretos [US-10.9]")
+    void obterResumoWhatsApp_DeveRetornar200ETexto_QuandoOrcamentoExiste() throws Exception {
+        UUID id = UUID.randomUUID();
+
+        String textoMock = """
+                📋 *Orçamento ORC-2026-0001*
+                📦 Itens:
+                • 1x Porta - R$ 975,62
+
+                💰 Subtotal: R$ 975,62
+                📦 *TOTAL: R$ 975,62*""";
+
+        when(budgetService.gerarResumoWhatsApp(id)).thenReturn(textoMock);
+
+        mockMvc.perform(get("/api/budgets/{id}/resumo-whatsapp", id))
+                .andExpect(status().isOk())
+                // Valida o charset UTF-8 (Critério de Aceitação)
+                .andExpect(header().string("Content-Type", MediaType.TEXT_PLAIN_VALUE + ";charset=UTF-8"))
+                // Valida os marcadores de negrito (*) no código e no total (Critério de Aceitação)
+                .andExpect(content().string(containsString("*Orçamento ORC-2026-0001*")))
+                .andExpect(content().string(containsString("*TOTAL:")))
+                // Valida formatação monetária padrão brasileiro com vírgula e R$ (Critério de Aceitação)
+                .andExpect(content().string(containsString("R$ 975,62")))
+                // Valida a presença de itens
+                .andExpect(content().string(containsString("📦 Itens:")));
+
+        verify(budgetService).gerarResumoWhatsApp(id);
+    }
+    @Test
+    @DisplayName("Deve retornar 404 quando o orçamento não existir ao tentar emitir resumo WhatsApp")
+    void obterResumoWhatsApp_DeveRetornar404_QuandoOrcamentoNaoExiste() throws Exception {
+        UUID id = UUID.randomUUID();
+
+        when(budgetService.gerarResumoWhatsApp(id))
+                .thenThrow(new ResourceNotFoundException("Orçamento", id.toString()));
+
+        mockMvc.perform(get("/api/budgets/{id}/resumo-whatsapp", id))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404));
     }
 }

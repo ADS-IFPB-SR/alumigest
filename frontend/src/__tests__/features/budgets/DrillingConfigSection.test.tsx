@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { screen } from '@testing-library/react';
+import { screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { DrillingConfigSection } from '../../../features/budgets/components/builder/steps/mechanics/DrillingConfigSection';
 import { renderWithProviders } from '../../../test/test-utils';
@@ -87,5 +87,80 @@ describe('DrillingConfigSection', () => {
     await user.type(inputFuro1, '250');
 
     expect(handleSingleDistance).toHaveBeenCalled();
+  });
+
+  it('deve aplicar clamp entre 0 e 20 na digitação manual e tratar campo vazio', () => {
+    const handleCount = vi.fn();
+
+    renderWithProviders(
+      <DrillingConfigSection {...defaultProps} onHoleCountChange={handleCount} />
+    );
+
+    const countInput = screen.getByPlaceholderText('0 (Sem furação)');
+
+    // Digitar valor maior que 20 (deve clampar para 20)
+    fireEvent.change(countInput, { target: { value: '25' } });
+    expect(handleCount).toHaveBeenCalledWith(20);
+
+    // Campo vazio (deve chamar com 0)
+    fireEvent.change(countInput, { target: { value: '   ' } });
+    expect(handleCount).toHaveBeenCalledWith(0);
+  });
+
+  it('deve renderizar rótulos corretos para 0 furos, 1 furo e textos de ajuda contextuais', () => {
+    const { rerender } = renderWithProviders(
+      <DrillingConfigSection
+        {...defaultProps}
+        heightMm=""
+        defaultHeight={2000}
+        drillingConfig={{ holeCount: 0, divisionType: 'EQUAL', customDistancesMm: [] }}
+      />
+    );
+
+    expect(screen.getByText('Sem furação')).toBeInTheDocument();
+    expect(screen.getByText('Defina a quantidade para habilitar a distribuição.')).toBeInTheDocument();
+
+    rerender(
+      <DrillingConfigSection
+        {...defaultProps}
+        drillingConfig={{ holeCount: 1, divisionType: 'EQUAL', customDistancesMm: [] }}
+      />
+    );
+
+    expect(screen.getByText('1 furo')).toBeInTheDocument();
+    expect(screen.getByText('Espaçamento automático pela altura.')).toBeInTheDocument();
+  });
+
+  it('deve permitir limpar furação pelo botão fechar e usar atalhos rápidos de quantidade', () => {
+    const handleCount = vi.fn();
+    const handleDivision = vi.fn();
+
+    renderWithProviders(
+      <DrillingConfigSection
+        {...defaultProps}
+        onHoleCountChange={handleCount}
+        onDivisionTypeChange={handleDivision}
+        drillingConfig={{ holeCount: 4, divisionType: 'EQUAL', customDistancesMm: [] }}
+      />
+    );
+
+    // Botão de limpar (fechar)
+    const clearButton = screen.getByTitle('Limpar (Sem furação)');
+    fireEvent.click(clearButton);
+    expect(handleCount).toHaveBeenCalledWith(0);
+
+    // Atalhos rápidos
+    const semFurosBtn = screen.getByRole('button', { name: 'Sem furos' });
+    fireEvent.click(semFurosBtn);
+    expect(handleCount).toHaveBeenCalledWith(0);
+
+    const preset2Btn = screen.getByRole('button', { name: '2' });
+    fireEvent.click(preset2Btn);
+    expect(handleCount).toHaveBeenCalledWith(2);
+
+    // Distribuição de furos select
+    const divisionSelect = screen.getByRole('combobox', { name: 'Divisão dos Furos' });
+    fireEvent.change(divisionSelect, { target: { value: 'CUSTOM_DISTANCE' } });
+    expect(handleDivision).toHaveBeenCalledWith('CUSTOM_DISTANCE');
   });
 });

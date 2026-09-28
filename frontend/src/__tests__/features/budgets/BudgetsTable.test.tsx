@@ -133,6 +133,11 @@ describe('BudgetsTable', () => {
     fireEvent.click(clientHeaderButton);
 
     expect(mockOnSort).toHaveBeenCalledWith('customerName');
+
+    const totalButton = screen.getByRole('button', { name: /ordenar por valor total/i });
+    fireEvent.click(totalButton);
+
+    expect(mockOnSort).toHaveBeenCalledWith('total');
   });
 
   it('deve navegar para a página de detalhes ao clicar na linha da tabela', () => {
@@ -167,5 +172,44 @@ describe('BudgetsTable', () => {
     fireEvent.click(actionButton);
 
     expect(mockNavigate).toHaveBeenCalledWith('/orcamentos/budget-1');
+  });
+
+  it('deve lidar com cliente através de budget.customer.name, cliente ausente e datas inválidas ou vazias', () => {
+    const edgeBudgets: any[] = [
+      {
+        id: 'budget-fallback',
+        code: 'ORC-FALLBACK',
+        customer: { name: 'Cliente Objeto' },
+        createdAt: '',
+        validUntil: 'data-invalida',
+        itemCount: 1,
+        total: 100,
+        status: 'DRAFT',
+      },
+      {
+        id: 'budget-empty-customer',
+        code: 'ORC-EMPTY',
+        customerName: '',
+        customer: null,
+        createdAt: '2026-01-01T00:00:00Z',
+        validUntil: '',
+        itemCount: 1,
+        total: 0,
+        status: 'DRAFT',
+      },
+    ];
+
+    renderWithProviders(
+      <BudgetsTable
+        data={edgeBudgets}
+        sortField="createdAt"
+        sortDirection="desc"
+        onSort={mockOnSort}
+      />,
+    );
+
+    expect(screen.getByText('Cliente Objeto')).toBeInTheDocument();
+    expect(screen.getByText('data-invalida')).toBeInTheDocument();
+    expect(screen.getAllByText('-').length).toBeGreaterThanOrEqual(1);
   });
 });

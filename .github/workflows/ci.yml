@@ -81,7 +81,8 @@ jobs:
             -Dsonar.token=$SONAR_TOKEN \
             -Dsonar.java.coveragePlugin=jacoco \
             -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
-            -Dsonar.coverage.exclusions="**/dto/**,**/domain/**,**/config/**,**/exception/**,**/br/edu/ifpb/alumigest/AlumiGestApplication.java"
+            -Dsonar.coverage.exclusions="**/dto/**,**/domain/**,**/config/**,**/exception/**,**/br/edu/ifpb/alumigest/AlumiGestApplication.java" \
+            -Dsonar.qualitygate.wait=true
 
   # ==========================================
   # FRONTEND CI
@@ -143,6 +144,8 @@ jobs:
         uses: sonarsource/sonarqube-scan-action@v4
         with:
           projectBaseDir: frontend/
+          args: >
+            -Dsonar.qualitygate.wait=true
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
@@ -183,6 +186,7 @@ jobs:
           BACKEND_STATUS: ${{ needs.backend-ci.result }}
           FRONTEND_STATUS: ${{ needs.frontend-ci.result }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
           script: |
             const generateReport = require('./.github/scripts/generate-ci-report.cjs');

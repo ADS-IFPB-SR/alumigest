@@ -43,13 +43,14 @@ export const useBudget = (id: string | undefined) => {
 export const useCreateBudget = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: CreateBudgetPayload) => budgetsApi.createBudget(data),
+    mutationFn: (data: CreateBudgetPayload) => {
+      return budgetsApi.createBudget(data);
+    },
     onSuccess: () => {
       toast.success('Orçamento criado com sucesso!');
       queryClient.invalidateQueries({ queryKey: ['budgets'] });
     },
     onError: (error: unknown) => {
-      console.error('Erro ao criar orçamento:', error);
       const err = error as { response?: { data?: { message?: string } } };
       const message = err?.response?.data?.message || 'Erro ao criar orçamento. Tente novamente.';
       toast.error(message);
@@ -85,7 +86,6 @@ export const useDeleteBudget = () => {
       queryClient.invalidateQueries({ queryKey: ['budgets'] });
     },
     onError: (error: unknown) => {
-      console.error('Erro ao excluir orçamento:', error);
       const err = error as { response?: { data?: { message?: string } } };
       const message = err?.response?.data?.message || 'Erro ao excluir orçamento.';
       toast.error(message);
@@ -104,9 +104,15 @@ export const useUpdateBudgetStatus = () => {
       queryClient.invalidateQueries({ queryKey: ['budget', variables.id] });
     },
     onError: (error: unknown) => {
-      console.error('Erro ao atualizar status do orçamento:', error);
       const err = error as { response?: { data?: { message?: string } } };
-      const message = err?.response?.data?.message || 'Erro ao atualizar status.';
+      let message = err?.response?.data?.message || 'Erro ao atualizar status.';
+      message = message
+        .replace(/\bDRAFT\b/g, 'Rascunho')
+        .replace(/\bSENT\b/g, 'Enviado')
+        .replace(/\bAPPROVED\b/g, 'Aprovado')
+        .replace(/\bREJECTED\b/g, 'Rejeitado')
+        .replace(/\bCANCELLED\b/g, 'Cancelado')
+        .replace(/\bEXPIRED\b/g, 'Expirado');
       toast.error(message);
     },
   });
@@ -123,10 +129,36 @@ export const useApplyDiscount = () => {
       queryClient.invalidateQueries({ queryKey: ['budget', id] });
     },
     onError: (error: unknown) => {
-      console.error('Erro ao aplicar desconto e condições comerciais:', error);
       const err = error as { response?: { data?: { message?: string } } };
       const message = err?.response?.data?.message || 'Erro ao aplicar desconto e condições comerciais.';
       toast.error(message);
     },
+  });
+};
+
+export const useDownloadPdfTecnico = () => {
+  return useMutation({
+    mutationFn: ({ id, code }: { id: string; code?: string }) =>
+      budgetsApi.downloadPdfTecnico(id, code),
+    onSuccess: () => {
+      toast.success('PDF da Ficha Técnica baixado com sucesso!');
+    },
+    onError: (error: unknown) => {
+      const err = error as { response?: { data?: { message?: string } } };
+      const message = err?.response?.data?.message || 'Erro ao gerar o PDF técnico.';
+      toast.error(message);
+    },
+  });
+};
+
+export const useWhatsAppSummary = (budgetId?: string, enabled = true) => {
+  return useQuery({
+    queryKey: ['budget', budgetId, 'whatsapp-summary'],
+    queryFn: () => {
+      if (!budgetId) throw new Error('ID do orçamento é obrigatório');
+      return budgetsApi.getWhatsAppSummary(budgetId);
+    },
+    enabled: Boolean(budgetId) && enabled,
+    staleTime: 5 * 60_000,
   });
 };

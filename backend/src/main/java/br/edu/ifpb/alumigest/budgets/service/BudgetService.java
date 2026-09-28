@@ -15,6 +15,7 @@ import br.edu.ifpb.alumigest.common.exception.BudgetImmutableException;
 import br.edu.ifpb.alumigest.common.exception.BusinessException;
 import br.edu.ifpb.alumigest.common.exception.InvalidBudgetStatusTransitionException;
 import br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException;
+import org.hibernate.Hibernate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -33,6 +34,8 @@ import java.util.UUID;
 @Service
 public class BudgetService {
 
+    private static final String RESOURCE_ORCAMENTO = "Orçamento";
+
     private final BudgetRepository budgetRepository;
     private final ClientRepository clientRepository;
     private final BudgetMapper budgetMapper;
@@ -40,8 +43,9 @@ public class BudgetService {
     private final BudgetQuantityService budgetQuantityService;
     private final BudgetPricingService budgetPricingService;
     private final BudgetCodeGenerator budgetCodeGenerator;
+    private final BudgetPdfService budgetPdfService;
 
-    public BudgetService(BudgetRepository budgetRepository, ClientRepository clientRepository, BudgetMapper budgetMapper, BudgetQuantityService budgetQuantityService, BudgetPricingService budgetPricingService, BudgetCodeGenerator budgetCodeGenerator)
+    public BudgetService(BudgetRepository budgetRepository, ClientRepository clientRepository, BudgetMapper budgetMapper, BudgetQuantityService budgetQuantityService, BudgetPricingService budgetPricingService, BudgetCodeGenerator budgetCodeGenerator, BudgetPdfService budgetPdfService)
     {
         this.budgetRepository = budgetRepository;
         this.clientRepository = clientRepository;
@@ -49,29 +53,52 @@ public class BudgetService {
         this.budgetQuantityService = budgetQuantityService;
         this.budgetPricingService = budgetPricingService;
         this.budgetCodeGenerator = budgetCodeGenerator;
+        this.budgetPdfService = budgetPdfService;
     }
 
     @Transactional
-    public BudgetResponseDTO create(BudgetCreateRequest requestDTO) {
-        Client client = clientRepository.findById(requestDTO.clientId())
-                .orElseThrow(() -> new ResourceNotFoundException("Cliente", requestDTO.clientId().toString()));
+public BudgetResponseDTO create(BudgetCreateRequest requestDTO) {
+    Client client = clientRepository.findById(requestDTO.clientId())
+            .orElseThrow(() -> new ResourceNotFoundException("Cliente", requestDTO.clientId().toString()));
 
-        Budget budget = budgetMapper.toEntity(requestDTO);
-        budget.setClient(client);
+    Budget budget = budgetMapper.toEntity(requestDTO);
+    budget.setClient(client);
 
-        budget.setCode(budgetCodeGenerator.generateNextCode());
+    budget.setCode(budgetCodeGenerator.generateNextCode());
 
-        // Status inicial obrigatório: novos orçamentos sempre começam como rascunho
-        budget.setStatus(BudgetStatus.DRAFT);
+    // Status inicial obrigatório: novos orçamentos sempre começam como rascunho
+    budget.setStatus(BudgetStatus.DRAFT);
 
-        // Validade padrão: 15 dias corridos a partir da criação, se não informada
-        if (budget.getValidUntil() == null) {
-            budget.setValidUntil(OffsetDateTime.now(ZoneOffset.UTC).plusDays(15));
-        }
-
-        budget = budgetRepository.save(budget);
-        return budgetMapper.toResponseDTO(budget);
+    // Validade padrão: 15 dias corridos a partir da criação, se não informada
+    if (budget.getValidUntil() == null) {
+        budget.setValidUntil(OffsetDateTime.now(ZoneOffset.UTC).plusDays(15));
     }
+
+    // Vínculo bidirecional obrigatório para o JPA salvar os itens na criação
+    if (budget.getItems() != null && !budget.getItems().isEmpty()) {
+        java.util.List<BudgetItem> itemsCopy = new java.util.ArrayList<>(budget.getItems());
+        budget.getItems().clear();
+
+        for (BudgetItem item : itemsCopy) {
+            budget.addItem(item);
+            
+            if (item.getOptions() != null && !item.getOptions().isEmpty()) {
+                java.util.List<BudgetItemOption> optionsCopy = new java.util.ArrayList<>(item.getOptions());
+                item.getOptions().clear();
+
+                for (BudgetItemOption option : optionsCopy) {
+                    item.addOption(option);
+                }
+            }
+        }
+        
+        budgetQuantityService.calculateQuantities(budget);
+        budgetPricingService.calculatePricing(budget);
+    }
+
+    budget = budgetRepository.save(budget);
+    return budgetMapper.toResponseDTO(budget);
+}
 
     @Transactional(readOnly = true)
     public BudgetResponseDTO findById(UUID id) {
@@ -135,6 +162,10 @@ public class BudgetService {
         existingBudget.setClient(client);
         existingBudget.setDiscountPercent(updatedData.getDiscountPercent());
         existingBudget.setNotes(updatedData.getNotes());
+
+        existingBudget.setPaymentCondition(updatedData.getPaymentCondition());
+        existingBudget.setPaymentNotes(updatedData.getPaymentNotes());
+        
         if (updatedData.getValidUntil() != null) {
             existingBudget.setValidUntil(updatedData.getValidUntil());
         }
@@ -258,14 +289,68 @@ public class BudgetService {
         budgetRepository.save(budget);
     }
 
+    @Transactional(readOnly = true)
+    public BudgetPdfDTO gerarPdfComercial(UUID id) {
+        Budget budget = budgetRepository.findByIdWithDetails(id)
+                .orElseThrow(() -> new ResourceNotFoundException(RESOURCE_ORCAMENTO, id.toString()));
+
+        if (budget.getStatus() == BudgetStatus.CANCELLED) {
+            throw new BusinessException("Não é possível gerar o PDF de um orçamento cancelado.");
+        }
+
+        // Força inicialização das opções das peças dentro da transação aberta para evitar LazyInitializationException
+        if (budget.getItems() != null) {
+            budget.getItems().forEach(item -> {
+                if (item.getOptions() != null) {
+                    Hibernate.initialize(item.getOptions());
+                }
+            });
+        }
+
+        byte[] bytes = budgetPdfService.gerarPdfComercial(budget);
+        String code = (budget.getCode() != null && !budget.getCode().isBlank())
+                ? budget.getCode()
+                : "orcamento";
+        String filename = code + "-comercial.pdf";
+
+        return new BudgetPdfDTO(bytes, filename);
+    }
+
+    @Transactional(readOnly = true)
+    public BudgetPdfDTO gerarPdfTecnico(UUID id) {
+        Budget budget = budgetRepository.findByIdWithDetails(id)
+                .orElseThrow(() -> new ResourceNotFoundException(RESOURCE_ORCAMENTO, id.toString()));
+
+        if (budget.getStatus() == BudgetStatus.CANCELLED) {
+            throw new BusinessException("Não é possível gerar o PDF técnico de um orçamento cancelado.");
+        }
+
+        if (budget.getItems() != null) {
+            budget.getItems().forEach(item -> {
+                if (item.getOptions() != null) {
+                    Hibernate.initialize(item.getOptions());
+                }
+            });
+        }
+
+        byte[] bytes = budgetPdfService.gerarPdfTecnico(budget);
+        String code = (budget.getCode() != null && !budget.getCode().isBlank())
+                ? budget.getCode()
+                : "orcamento";
+        String filename = code + "-tecnico.pdf";
+
+        return new BudgetPdfDTO(bytes, filename);
+    }
+
     private Budget getBudgetOrThrow(UUID id) {
         return budgetRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Orçamento", id.toString()));
+                .orElseThrow(() -> new ResourceNotFoundException(RESOURCE_ORCAMENTO, id.toString()));
     }
 
     private void validateBudgetIsDraft(Budget budget) {
         if (budget.getStatus() != BudgetStatus.DRAFT) {
-            throw new BudgetImmutableException("Orçamento não pode ser alterado pois já se encontra no status: " + budget.getStatus());
+            String statusDesc = budget.getStatus() != null ? budget.getStatus().getDescricao() : "Indefinido";
+            throw new BudgetImmutableException("Orçamento não pode ser alterado pois já se encontra no status: " + statusDesc);
         }
     }
 
@@ -355,5 +440,13 @@ public class BudgetService {
         budgetRepository.save(budget);
 
         return budgetMapper.toResponseDTO(item);
+    }
+
+    @Transactional(readOnly = true)
+    public String gerarResumoWhatsApp(UUID id) {
+        Budget budget = budgetRepository.findByIdWithDetails(id)
+                .orElseThrow(() -> new ResourceNotFoundException(RESOURCE_ORCAMENTO, id.toString()));
+
+        return budgetPdfService.gerarResumoWhatsApp(budget);
     }
 }

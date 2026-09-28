@@ -162,4 +162,153 @@ describe('BudgetItemsTable', () => {
 
     expect(handleDelete).toHaveBeenCalledWith('temp-1');
   });
+
+  it('deve formatar corretamente as diferentes direções de abertura e acabamentos', () => {
+    const itemsWithVariants: BudgetItem[] = [
+      {
+        ...sampleItems[0],
+        tempId: 'temp-rtl',
+        templateConfig: { openingDirection: 'RIGHT_TO_LEFT', aluminumColor: 'Preto', glassFinish: 'Fumê' },
+        notes: 'Entregar com película',
+      },
+      {
+        ...sampleItems[0],
+        tempId: 'temp-center',
+        templateConfig: { openingDirection: 'CENTER_TO_SIDES', aluminumColor: 'Branco' },
+      },
+      {
+        ...sampleItems[0],
+        tempId: 'temp-outside',
+        templateConfig: { openingDirection: 'OUTSIDE', glassFinish: 'Incolor' },
+      },
+      {
+        ...sampleItems[0],
+        tempId: 'temp-inside',
+        templateConfig: { openingDirection: 'INSIDE' },
+      },
+      {
+        ...sampleItems[0],
+        tempId: 'temp-custom-dir',
+        templateConfig: { openingDirection: 'CUSTOM_DIR' as any },
+      },
+    ];
+
+    renderWithProviders(
+      <BudgetItemsTable
+        items={itemsWithVariants}
+        onEdit={vi.fn()}
+        onDuplicate={vi.fn()}
+        onDelete={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText('5 items')).toBeInTheDocument();
+    expect(screen.getByText(/←/)).toBeInTheDocument();
+    expect(screen.getByText(/↔/)).toBeInTheDocument();
+    expect(screen.getByText(/↗/)).toBeInTheDocument();
+    expect(screen.getByText(/↙/)).toBeInTheDocument();
+    expect(screen.getByText(/CUSTOM_DIR/)).toBeInTheDocument();
+    expect(screen.getByText(/Cor: Preto · Vidro: Fumê/)).toBeInTheDocument();
+    expect(screen.getByText(/Cor: Branco/)).toBeInTheDocument();
+    expect(screen.getByText(/Vidro: Incolor/)).toBeInTheDocument();
+    expect(screen.getByText(/Obs: Entregar com película/)).toBeInTheDocument();
+  });
+
+  it('deve tratar contagem de materiais (0 materiais, 1 material extra, múltiplos materiais extras)', () => {
+    const multiMaterialItems: BudgetItem[] = [
+      {
+        ...sampleItems[0],
+        tempId: 'temp-no-opts',
+        options: [],
+        quantity: 0,
+        subtotal: 500,
+      },
+      {
+        ...sampleItems[0],
+        tempId: 'temp-2-opts',
+        options: [
+          sampleItems[0].options[0],
+          {
+            id: 'opt-2',
+            budgetItemId: 'item-1',
+            materialId: 'mat-2',
+            materialName: 'Vidro Temperado 8mm',
+            categoryType: 'GLASS',
+            unitMeasure: 'm2',
+            unitPrice: 100,
+            quantity: 2,
+            totalPrice: 200,
+          },
+        ],
+      },
+      {
+        ...sampleItems[0],
+        tempId: 'temp-3-opts',
+        options: [
+          sampleItems[0].options[0],
+          {
+            id: 'opt-2',
+            budgetItemId: 'item-1',
+            materialId: 'mat-2',
+            materialName: 'Vidro Temperado 8mm',
+            categoryType: 'GLASS',
+            unitMeasure: 'm2',
+            unitPrice: 100,
+            quantity: 2,
+            totalPrice: 200,
+          },
+          {
+            id: 'opt-3',
+            budgetItemId: 'item-1',
+            materialId: 'mat-3',
+            materialName: 'Fechadura Bico de Papagaio',
+            categoryType: 'HARDWARE',
+            unitMeasure: 'un',
+            unitPrice: 50,
+            quantity: 1,
+            totalPrice: 50,
+          },
+        ],
+      },
+    ];
+
+    renderWithProviders(
+      <BudgetItemsTable
+        items={multiMaterialItems}
+        onEdit={vi.fn()}
+        onDuplicate={vi.fn()}
+        onDelete={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText('Sem materiais')).toBeInTheDocument();
+    expect(screen.getByText('+1 material')).toBeInTheDocument();
+    expect(screen.getByText('+2 materiais')).toBeInTheDocument();
+  });
+
+  it('deve fechar o modal de exclusão ao clicar em Cancelar sem disparar onDelete', async () => {
+    const user = userEvent.setup();
+    const handleDelete = vi.fn();
+
+    renderWithProviders(
+      <BudgetItemsTable
+        items={sampleItems}
+        onEdit={vi.fn()}
+        onDuplicate={vi.fn()}
+        onDelete={handleDelete}
+      />
+    );
+
+    const deleteBtn = screen.getByTitle('Remover item');
+    await user.click(deleteBtn);
+
+    expect(screen.getByText('Excluir esquadria?')).toBeInTheDocument();
+
+    const cancelBtn = screen.getByRole('button', { name: /cancelar/i });
+    await user.click(cancelBtn);
+
+    expect(screen.queryByText('Excluir esquadria?')).not.toBeInTheDocument();
+    expect(handleDelete).not.toHaveBeenCalled();
+  });
 });
+
