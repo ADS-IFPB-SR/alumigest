@@ -460,4 +460,207 @@ class BudgetEndToEndIntegrationTest {
             return item;
         }
     }
+
+    // =========================================================================
+    // CENÁRIO 3: VIA TÉCNICA DE OFICINA (FICHA DE USINAGEM E CORTE) — QA-04 (#340)
+    // =========================================================================
+    @Nested
+    @DisplayName("Cenário 3 — Via Técnica de Oficina (Ficha de Usinagem e Corte) [QA-04 / Issue #340]")
+    class FichaTecnicaOficinaE2ETest {
+
+        @Test
+        @DisplayName("Deve executar o ciclo completo da Ficha Técnica: medidas em mm, furações, puxador e sigilo comercial absoluto")
+        void deveExecutarCicloCompletoFichaTecnicaOficinaComSigiloComercialTotal() throws IOException {
+            // 1. Orçamento de fábrica completo com dados de obra
+            Client cliente = new Client();
+            cliente.setId(UUID.randomUUID());
+            cliente.setFullName("Serralheria Esquadrias do Sertão LTDA");
+            cliente.setPhone("(83) 98765-4321");
+            cliente.setCity("Sousa");
+            cliente.setState("PB");
+            cliente.setStreet("Rua da Produção");
+            cliente.setNumber("100");
+            cliente.setNeighborhood("Distrito Fabril");
+
+            Budget budget = new Budget();
+            budget.setId(UUID.randomUUID());
+            budget.setCode("ORC-2026-QA04");
+            budget.setClient(cliente);
+            budget.setStatus(BudgetStatus.APPROVED);
+            budget.setCreatedAt(OffsetDateTime.now());
+
+            // 2. Item 1: Porta de Giro 1 Folha com Usinagem, Furações em mm e Puxador Tubular Cotado
+            BudgetItem porta = new BudgetItem();
+            porta.setId(UUID.randomUUID());
+            porta.setProductName("Porta de Giro 1 Folha");
+            porta.setTemplateType("SWING_DOOR_1F");
+            porta.setWidthMm(new BigDecimal("900"));
+            porta.setHeightMm(new BigDecimal("2100"));
+            porta.setQuantity(2);
+            porta.setLaborCost(new BigDecimal("250.00"));
+
+            porta.setTemplateConfig("""
+                    {
+                      "openingDirection": "LEFT",
+                      "aluminumColor": "Preto Fosco",
+                      "line": "Linha 25"
+                    }
+                    """);
+
+            porta.setDrillingConfig("""
+                    {
+                      "mode": "CUSTOM_DISTANCES",
+                      "customDistancesMm": [250.0, 1050.0, 1850.0]
+                    }
+                    """);
+
+            porta.setHandleConfig("""
+                    {
+                      "type": "TUBULAR",
+                      "position": "RIGHT",
+                      "lengthMm": 400.0,
+                      "distanceFromFloorMm": 1000.0
+                    }
+                    """);
+
+            BudgetItemOption optVidro = new BudgetItemOption();
+            optVidro.setId(UUID.randomUUID());
+            optVidro.setMaterialName("Vidro Temperado 8mm Incolor");
+            optVidro.setCategoryType(MaterialCategoryType.GLASS);
+            optVidro.setUnitPrice(new BigDecimal("280.00"));
+            optVidro.setQuantity(new BigDecimal("3.78"));
+            optVidro.setTotalPrice(new BigDecimal("1058.40"));
+            porta.setOptions(List.of(optVidro));
+            porta.setSubtotal(new BigDecimal("1558.40"));
+
+            // 3. Item 2: Janela Maxim-ar com furações equidistantes e fecho concha
+            BudgetItem janela = new BudgetItem();
+            janela.setId(UUID.randomUUID());
+            janela.setProductName("Janela Maxim-ar Linha Suprema");
+            janela.setTemplateType("AWNING_WINDOW");
+            janela.setWidthMm(new BigDecimal("600"));
+            janela.setHeightMm(new BigDecimal("800"));
+            janela.setQuantity(3);
+            janela.setLaborCost(new BigDecimal("80.00"));
+
+            janela.setTemplateConfig("""
+                    {
+                      "openingDirection": "TOP_TO_BOTTOM",
+                      "aluminumColor": "Branco Brilhante"
+                    }
+                    """);
+
+            janela.setDrillingConfig("""
+                    {
+                      "mode": "EQUIDISTANT",
+                      "holesCount": 2
+                    }
+                    """);
+
+            janela.setHandleConfig("""
+                    {
+                      "handleType": "SHELL_LOCK"
+                    }
+                    """);
+
+            janela.setSubtotal(new BigDecimal("750.00"));
+
+            budget.setItems(List.of(porta, janela));
+            budget.setSubtotal(new BigDecimal("2308.40"));
+            budget.setDiscountPercent(new BigDecimal("10.00"));
+            budget.setDiscountValue(new BigDecimal("230.84"));
+            budget.setTotal(new BigDecimal("2077.56"));
+
+            // 4. Emissão da Ficha Técnica de Oficina (Via Técnica)
+            byte[] pdfBytes = budgetPdfService.gerarPdfTecnico(budget);
+            assertNotNull(pdfBytes);
+            assertTrue(pdfBytes.length > 0);
+
+            // Validar cabeçalho do documento PDF
+            String pdfHeader = new String(pdfBytes, 0, 5, StandardCharsets.US_ASCII);
+            assertThat(pdfHeader).isEqualTo("%PDF-");
+
+            // 5. Inspecionar o texto e certificar o sigilo comercial absoluto
+            try (PdfReader reader = new PdfReader(pdfBytes)) {
+                assertThat(reader.getNumberOfPages()).isGreaterThanOrEqualTo(1);
+
+                PdfTextExtractor extractor = new PdfTextExtractor(reader);
+                StringBuilder fullText = new StringBuilder();
+                for (int page = 1; page <= reader.getNumberOfPages(); page++) {
+                    fullText.append(extractor.getTextFromPage(page)).append("\n");
+                }
+                String textContent = fullText.toString();
+
+                // A. Sigilo Comercial Estrito (Zero Menções a Preços ou Moeda)
+                assertThat(textContent)
+                        .doesNotContain("R$")
+                        .doesNotContain("BRL")
+                        .doesNotContain("Subtotal")
+                        .doesNotContain("Valor Total")
+                        .doesNotContain("TOTAL A PAGAR")
+                        .doesNotContain("2308.40")
+                        .doesNotContain("2077.56")
+                        .doesNotContain("1558.40")
+                        .doesNotContain("1058.40")
+                        .doesNotContain("250.00")
+                        .doesNotContain("280.00")
+                        .doesNotContain("750.00");
+
+                // B. Elementos Fabris e Técnicos Obrigatórios
+                assertThat(textContent)
+                        .contains("FICHA DE USINAGEM E CORTE")
+                        .contains("ESQUEMA")
+                        .contains("Alum.")
+                        .contains("Vidro")
+                        .contains("Mont.")
+                        .containsIgnoringCase("Serralheria Esquadrias do Sertão")
+                        .contains("(83) 98765-4321")
+                        .contains("5 PEÇAS");
+            }
+        }
+
+        @Test
+        @DisplayName("Deve garantir paginação multipágina consistente na Ficha Técnica com múltiplos itens")
+        void deveGarantirPaginacaoMultipaginaCorretaParaFichaTecnicaComMuitosItens() throws IOException {
+            Budget budget = new Budget();
+            budget.setId(UUID.randomUUID());
+            budget.setCode("ORC-2026-MULTIPAGE-TECH");
+            budget.setStatus(BudgetStatus.SENT);
+            budget.setCreatedAt(OffsetDateTime.now());
+
+            Client c = new Client();
+            c.setFullName("Construtora Vale do Piancó");
+            c.setCity("Itaporanga");
+            c.setState("PB");
+            budget.setClient(c);
+
+            List<BudgetItem> items = new ArrayList<>();
+            for (int i = 1; i <= 6; i++) {
+                BudgetItem it = new BudgetItem();
+                it.setId(UUID.randomUUID());
+                it.setProductName("Esquadria Técnica Tipo " + i);
+                it.setTemplateType("SWING_DOOR_1F");
+                it.setWidthMm(new BigDecimal(800 + (i * 50)));
+                it.setHeightMm(new BigDecimal(2000 + (i * 20)));
+                it.setQuantity(i);
+                it.setLaborCost(new BigDecimal("100.00"));
+                it.setTemplateConfig("{\"aluminumColor\": \"Bronze 1002\"}");
+                it.setDrillingConfig("{\"mode\": \"EQUIDISTANT\", \"holesCount\": 3}");
+                it.setHandleConfig("{\"type\": \"TUBULAR\", \"lengthMm\": 400.0}");
+                it.setSubtotal(new BigDecimal("999.00"));
+                items.add(it);
+            }
+            budget.setItems(items);
+            budget.setTotal(new BigDecimal("5994.00"));
+
+            byte[] pdfBytes = budgetPdfService.gerarPdfTecnico(budget);
+            assertNotNull(pdfBytes);
+
+            try (PdfReader reader = new PdfReader(pdfBytes)) {
+                assertThat(reader.getNumberOfPages())
+                        .as("Com 6 itens detalhados com esquema cotado, a Ficha Técnica deve gerar múltiplas páginas")
+                        .isGreaterThanOrEqualTo(2);
+            }
+        }
+    }
 }

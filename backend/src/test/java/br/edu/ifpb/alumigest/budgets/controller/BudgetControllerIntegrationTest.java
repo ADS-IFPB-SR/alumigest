@@ -593,4 +593,65 @@ class BudgetControllerIntegrationTest {
                     .andExpect(jsonPath("$.status").value(404));
         }
     }
+
+    // =========================================================================
+    // 6. TESTES DO ENDPOINT GET /api/budgets/{id}/pdf/tecnico [US-11.3 / QA-04]
+    // =========================================================================
+
+    @Nested
+    @DisplayName("GET /api/budgets/{id}/pdf/tecnico — Emissão da Ficha Técnica de Oficina (US-11.3)")
+    class TechnicalPdfEndpointTests {
+
+        @Test
+        @DisplayName("Deve retornar 200 OK com PDF técnico binário e headers de download")
+        void shouldReturn200AndTechnicalPdfSuccessfully() throws Exception {
+            Budget budget = createDraftBudgetWithItem();
+
+            mockMvc.perform(get("/api/budgets/{id}/pdf/tecnico", budget.getId()))
+                    .andExpect(status().isOk())
+                    .andExpect(header().string("Content-Type", MediaType.APPLICATION_PDF_VALUE))
+                    .andExpect(header().string("Content-Disposition", containsString("-tecnico.pdf")))
+                    .andExpect(header().exists("Content-Length"))
+                    .andExpect(content().contentType(MediaType.APPLICATION_PDF))
+                    .andExpect(result -> {
+                        byte[] content = result.getResponse().getContentAsByteArray();
+                        assertThat(content).isNotEmpty();
+                        assertThat(new String(content, 0, 5, java.nio.charset.StandardCharsets.US_ASCII)).isEqualTo("%PDF-");
+                    });
+        }
+
+        @Test
+        @DisplayName("Deve aceitar a rota legada /api/orcamentos/{id}/pdf/tecnico retornando 200 OK")
+        void shouldReturn200ForLegacyRouteOrcamentos() throws Exception {
+            Budget budget = createDraftBudgetWithItem();
+
+            mockMvc.perform(get("/api/orcamentos/{id}/pdf/tecnico", budget.getId()))
+                    .andExpect(status().isOk())
+                    .andExpect(header().string("Content-Type", MediaType.APPLICATION_PDF_VALUE))
+                    .andExpect(header().string("Content-Disposition", containsString("-tecnico.pdf")));
+        }
+
+        @Test
+        @DisplayName("Deve retornar 422 Unprocessable Entity quando tentar emitir PDF técnico de orçamento CANCELLED")
+        void shouldReturn422WhenTechnicalPdfBudgetIsCancelled() throws Exception {
+            Budget budget = createDraftBudgetWithItem();
+            budget.setStatus(BudgetStatus.CANCELLED);
+            budgetRepository.save(budget);
+
+            mockMvc.perform(get("/api/budgets/{id}/pdf/tecnico", budget.getId()))
+                    .andExpect(status().isUnprocessableEntity())
+                    .andExpect(jsonPath("$.status").value(422))
+                    .andExpect(jsonPath("$.message").value("Não é possível gerar o PDF técnico de um orçamento cancelado."));
+        }
+
+        @Test
+        @DisplayName("Deve retornar 404 Not Found quando o orçamento não existir ao tentar emitir PDF técnico")
+        void shouldReturn404WhenBudgetDoesNotExistForTechnicalPdf() throws Exception {
+            UUID nonExistentId = UUID.randomUUID();
+
+            mockMvc.perform(get("/api/budgets/{id}/pdf/tecnico", nonExistentId))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.status").value(404));
+        }
+    }
 }
