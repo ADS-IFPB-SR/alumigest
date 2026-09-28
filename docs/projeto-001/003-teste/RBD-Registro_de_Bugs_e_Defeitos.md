@@ -4,8 +4,8 @@
 |---|---|
 | **Projeto** | AlumiGest — Sistema de Gestão para Vidraçaria e Esquadrias |
 | **Documento** | Registro Unificado de Bugs, Defeitos e Hotfixes (RBD) |
-| **Versão** | 2.0.0 |
-| **Data de Atualização** | 05/09/2026 |
+| **Versão** | 2.1.0 (Atualizado com Catálogo do BUG-022 e Métricas de 242 Testes Unitários) |
+| **Data de Atualização** | 24/09/2026 |
 | **Responsável QA** | Herbert Carvalho dos Santos / Equipe de Engenharia AlumiGest |
 | **Branch** | `planejamento` |
 | **Padrão de Template** | Baseado em [`.github/ISSUE_TEMPLATE/bug_report.md`](../../../.github/ISSUE_TEMPLATE/bug_report.md) |
@@ -20,7 +20,7 @@ Este documento consolida o **catálogo histórico e investigativo de todos os bu
 Seguindo a governança do **Plano de Gerência de Configuração (PGC)** e do **Plano Geral de Testes (PLT)**:
 1. Todos os relatos respeitam estritamente a estrutura formal do template [`.github/ISSUE_TEMPLATE/bug_report.md`](../../../.github/ISSUE_TEMPLATE/bug_report.md).
 2. Cada defeito é rastreado com sua severidade, passos de reprodução, comportamento esperado, ambiente afetado e **análise técnica de causa raiz e solução aplicada**.
-3. O monitoramento contínuo aplica a filosofia **Clean as You Code**, suportada pela suíte de **141 testes automatizados JUnit 5**, **23 suítes E2E Cypress**, **Oxlint** e **SonarQube Community Edition**.
+3. O monitoramento contínuo aplica a filosofia **Clean as You Code**, suportada pela suíte de **242 testes automatizados JUnit 5**, **24 suítes E2E Cypress**, **Oxlint** e **SonarQube Community Edition**.
 
 ---
 
@@ -49,6 +49,7 @@ Seguindo a governança do **Plano de Gerência de Configuração (PGC)** e do **
 | **[BUG-019](#bug-019)** | Falha de Compilação e DI por Inconsistência na `MaterialCalculatorFactory` | Backend / Motor | 🔴 Alta | Sprint 03 | ✅ Resolvido | Commit `9cbf957` |
 | **[BUG-020](#bug-020)** | Funções Não Utilizadas no Cypress Violando Linting Estrito no Pipeline | Frontend / QA | 🟢 Baixa | Sprint 03 | ✅ Resolvido | Commit `6a48859` |
 | **[BUG-021](#bug-021)** | Perda de Insumos da Ficha Técnica em Produtos Estáticos e Ocultação de Templates na Categoria Janela | Frontend / Catálogo & Orçamentos | 🔴 Alta | Sprint 03 | ✅ Resolvido | Issue #235 / Branch `fix/products-static-items-and-window-category` |
+| **[BUG-022](#bug-022)** | Itens do Orçamento Descartados na Criação via POST /api/budgets por Ausência de Campo no BudgetCreateRequest | Backend / Orçamentos | 🔴 Alta | Sprint 04 | 🟡 Em Correção | Issue #300 / PR #293 |
 
 ---
 
@@ -615,6 +616,41 @@ Após a refatoração da tela de produtos para suporte a templates paramétricos
 
 ---
 
+
+
+---
+
+### BUG-022
+#### [BUG] Itens do Orçamento Descartados na Criação via POST /api/budgets por Ausência de Campo no BudgetCreateRequest
+
+**Descrição do Problema:**
+Ao criar um novo orçamento através do assistente ou formulário no Frontend (`/budgets/new`), o usuário vincula o cliente e adiciona as esquadrias/itens desejados. Ao submeter o formulário, o Frontend transmite um payload contendo o array de itens (`items: [...]`) para o endpoint `POST /api/budgets` (ou `/api/orcamentos`).
+No entanto, o backend utilizava o record `BudgetCreateRequest` contendo unicamente os campos `clientId` e `observacoes`. Por não declarar o campo `items`, a desserialização do Jackson descartava silenciosamente toda a lista de itens. Consequentemente, o orçamento era persistido no PostgreSQL com **0 itens e R$ 0,00 de subtotal**, gerando orçamentos vazios.
+
+**Passos para Reproduzir:**
+1. Acessar o frontend na rota `/budgets/new` (ou botão "Novo Orçamento").
+2. Selecionar um cliente válido.
+3. Adicionar uma ou mais esquadrias com medidas e componentes à lista de itens.
+4. Clicar em **"Salvar Orçamento"**.
+5. Verificar a requisição de rede: o payload enviado contém `items: [{ productId: ..., widthMm: ..., ... }]`.
+6. O backend responde com HTTP 201 Created.
+7. Ao abrir a listagem ou detalhes do orçamento recém-criado, a lista de itens está vazia e o valor total está zerado.
+
+**Comportamento Esperado:**
+O endpoint `POST /api/budgets` deve receber opcionalmente a lista de itens (`items`). Ao receber itens na criação, o backend deve instanciá-los, vinculá-los bidirecionalmente à entidade `Budget` e acionar os serviços de cálculo de quantitativos (`BudgetQuantityService`) e precificação (`BudgetPricingService`), gravando o orçamento completo e com totais consolidados.
+
+**Contexto / Ambiente:**
+- **Navegador / Sistema:** Java 21 / Spring Boot 3.4 / PostgreSQL 16.
+- **Módulo Afetado:** `backend/src/main/java/br/edu/ifpb/alumigest/budgets/dto/BudgetCreateRequest.java` e `BudgetService.java`.
+- **Severidade:** 🔴 Alta | **Sprint:** 04 | **Status:** 🟡 Em Correção / Validado em QA.
+- **Detecção / Correção:** Issue #300 / PR #293 (Refs: US-10).
+
+**Causa Raiz Técnica & Solução:**
+* **Causa Raiz:** O record `BudgetCreateRequest` foi modelado preliminarmente sem a propriedade `List<BudgetItemRequestDTO> items`. O endpoint criava apenas a capa do orçamento assumindo que itens seriam adicionados exclusivamente de forma avulsa via sub-recurso.
+* **Solução:** Adicionado o campo opcional `List<BudgetItemRequestDTO> items` com `@Valid` ao record `BudgetCreateRequest` (mantendo construtor de compatibilidade), e atualizado o método `BudgetService.create` para iterar sobre os itens recebidos, invocar `budgetMapper.toEntity`, associar os itens e chamar o recálculo automático de quantitativos e preços.
+
+---
+
 ## 4. 📈 Análise Categórica e Lições Aprendidas de Qualidade
 
 ### 4.1 Distribuição dos Defeitos por Camada
@@ -622,7 +658,7 @@ Após a refatoração da tela de produtos para suporte a templates paramétricos
 ```mermaid
 pie title "Origem dos Defeitos Identificados"
     "Frontend & UI/UX" : 9
-    "Backend & Regras de Negócio" : 6
+    "Backend & Regras de Negócio" : 7
     "Pipeline CI/CD & SonarQube" : 3
     "Infraestrutura & Docker" : 2
     "Governança & Git Flow" : 1
@@ -632,10 +668,10 @@ pie title "Origem dos Defeitos Identificados"
 
 | Categoria | Ocorrências | Ação Preventiva Definitiva Adotada |
 |---|:---:|---|
-| **Incompatibilidade de Contratos (DTOs / Types)** | 5 | Adoção de contratos OpenAPI sincronizados e tipagens estritas no TypeScript. |
+| **Incompatibilidade de Contratos (DTOs / Types)** | 6 | Adoção de contratos OpenAPI sincronizados e tipagens estritas no TypeScript. |
 | **Limitações de Ambiente (HTTP vs HTTPS / Docker)** | 3 | Uso de fallbacks nativos (`Math.random`) e parametrização com variáveis de ambiente `.env`. |
 | **Erros de Validação e Feedback ao Usuário** | 3 | Padronização dos formulários com **React Hook Form + Zod** em todos os modais. |
-| **Regressão por Refatoração** | 4 | Ampliação da suíte para **141 testes JUnit 5** e **23 suítes Cypress E2E** no pipeline obrigatório. |
+| **Regressão por Refatoração** | 4 | Ampliação da suíte para **242 testes JUnit 5** e **24 suítes Cypress E2E** no pipeline obrigatório. |
 | **Configuração de CI/CD e Build Tools** | 4 | Adição do Quality Gate no SonarQube bloqueando merges caso haja regressão ou falha de plugin. |
 | **Desvio de Git Flow / Merge Prematuro** | 1 | Configuração de Rulesets protegendo `main` e `develop` contra merges diretos sem aprovação de PR. |
 

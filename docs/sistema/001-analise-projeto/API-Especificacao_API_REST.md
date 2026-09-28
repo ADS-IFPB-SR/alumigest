@@ -1,9 +1,12 @@
 # API — Especificação da API REST
-**Projeto:** AlumiGest — Sistema de Gestão para Vidraçaria e Esquadrias  
-**Sigla:** ALG  
-**Versão:** 3.0 (Atualizado e sincronizado com os Controllers Spring Boot da Sprint 3)  
-**Data:** 31/08/2026  
-**Base URL:** `http://localhost:8080/api` (Aliases suportados: `/api/v1/...`)  
+
+| Campo | Valor |
+|---|---|
+| **Projeto** | AlumiGest — Sistema de Gestão para Vidraçaria e Esquadrias |
+| **Sigla** | ALG |
+| **Versão** | 2.1 (Atualizado para Sprint 4) |
+| **Data** | 23/09/2026 |
+| **Base URL** | `http://localhost:8080/api` |
 
 ---
 
@@ -11,9 +14,9 @@
 
 | Data | Versão | Descrição | Autor |
 |---|---|---|---|
-| 05/08/2026 | 1.0 | Versão inicial — Endpoints de Catálogo de Materiais | Ítalo Jefferson / Equipe AlumiGest |
-| 21/08/2026 | 2.0 | Atualização com templates de esquadrias e orçamentos | Equipe de Engenharia AlumiGest |
-| 31/08/2026 | 3.0 | Inclusão de `/recalcular`, `DELETE /orcamentos`, rotas canônicas `/api/v1/catalog/...` e remoção de `laborCost` do catálogo | Equipe AlumiGest (Scrum Master: Italo Santos) |
+| 05/08/2026 | 1.0 | Versão inicial — Endpoints da Release 1 (Materiais) | Ítalo Jefferson / Equipe AlumiGest |
+| 21/08/2026 | 2.0 | Atualização Sprint 3 — Módulo de Produtos com Templates Paramétricos SVG, Requisitos de Categorias e Orçamentos com Romaneio | Equipe de Engenharia AlumiGest |
+| 23/09/2026 | 2.1 | Atualização Sprint 4 — Módulo de Orçamentos com Descontos Comerciais (US-09), Emissão de PDF Comercial e WhatsApp (US-10) e Emissão de PDF Técnico de Oficina (US-11) | Equipe de Engenharia AlumiGest |
 
 ---
 
@@ -22,174 +25,242 @@
 ### 1.1 Padrões de URL
 
 ```
-/api/v1/{recurso}              → Coleção (GET lista paginada, POST cria)
-/api/v1/{recurso}/{id}         → Elemento (GET detalhe, PUT atualiza, DELETE remove)
-/api/v1/{recurso}/{id}/{acao}  → Ação específica (ex: /status, /recalcular)
+/api/{recurso}              → Coleção (GET lista, POST cria)
+/api/{recurso}/{id}         → Elemento (GET detalhe, PUT atualiza, DELETE remove)
+/api/{recurso}/{id}/{acao}  → Ação específica
 ```
 
-### 1.2 Formatos e Padrões de Dados
-* **Content-Type:** `application/json; charset=UTF-8`
-* **Datas:** Formato ISO 8601 (`2026-08-31T14:30:00`)
-* **Monetário:** `BigDecimal` serializado em formato numérico decimal (`1850.00`)
-* **Paginação:** `PageResponse<T>` contendo `content`, `page: { number, size, totalElements, totalPages }`
-* **Tratamento de Exceções:** Retorno em `ErrorResponse` padronizado via `GlobalExceptionHandler`
+### 1.2 Formatos de Resposta
+
+- **Content-Type:** `application/json; charset=UTF-8`
+- **Datas:** ISO 8601 (`2026-08-21T14:30:00`)
+- **Monetário:** Decimal com 2 casas (`180.00`)
+- **Paginação:** `PageResponse<T>` com `content`, `page: { number, size, totalElements, totalPages }`
 
 ### 1.3 Códigos de Status HTTP
 
 | Código | Significado | Uso |
 |---|---|---|
-| `200 OK` | Sucesso | Consultas (`GET`), atualizações (`PUT`/`PATCH`) e ações |
-| `201 Created` | Criado | Criação com header `Location` apontando para o recurso criado |
-| `204 No Content` | Sem Conteúdo | Exclusão lógica ou cancelamento |
-| `400 Bad Request` | Requisição Inválida | Falhas de validação de DTOs (JSR-380 / Bean Validation) |
-| `404 Not Found` | Não Encontrado | Recurso inexistente |
-| `409 Conflict` | Conflito | Duplicidade de chave única (CPF/CNPJ, SKU) |
-| `422 Unprocessable` | Regra de Negócio | Violação de regras (ex: tentar alterar orçamento aprovado) |
-| `500 Internal Error`| Erro de Servidor | Falha não tratada |
+| 200 | OK | Consulta ou atualização bem-sucedida |
+| 201 | Created | Recurso criado com sucesso |
+| 204 | No Content | Exclusão/ação sem retorno |
+| 400 | Bad Request | Validação falhou |
+| 401 | Unauthorized | Token ausente ou inválido |
+| 403 | Forbidden | Perfil sem permissão |
+| 404 | Not Found | Recurso não encontrado |
+| 409 | Conflict | Duplicidade (CPF, código, etc.) |
+| 422 | Unprocessable Entity | Regra de negócio violada |
+| 500 | Internal Server Error | Erro inesperado |
 
 ---
 
-## 2. Módulo de Sanidade e Infraestrutura (`/api/v1/health`)
+## 2. Módulo de Autenticação (`/api/auth`)
 
-### GET `/api/v1/health`
-Verifica a saúde da API e status da conexão com o banco de dados.
+### POST `/api/auth/login`
+Autentica o usuário e retorna tokens JWT.
 
-**Response 200:**
-```json
-{
-  "status": "UP",
-  "timestamp": "2026-08-31T15:00:00Z"
-}
-```
+### POST `/api/auth/refresh`
+Renova o token JWT usando o refresh token.
+
+### POST `/api/auth/logout`
+Invalida o refresh token.
 
 ---
 
-## 3. Módulo de Clientes (`/api/v1/clients` ou `/api/clientes`)
+## 3. Módulo de Clientes (`/api/clientes`)
 
-### GET `/api/v1/clients`
+> **Perfis:** ADMINISTRADOR, VENDEDOR
+
+### GET `/api/clientes`
 Lista clientes com paginação e busca textual.
 
-**Query params:** `?busca=joao&page=0&size=20&sort=name,asc`
+**Query params:** `?page=0&size=20&busca=silva&ativo=true`
 
 **Response 200:**
 ```json
 {
   "content": [
     {
-      "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-      "name": "João da Silva",
-      "personType": "INDIVIDUAL",
+      "id": "cli-1",
+      "nomeCompleto": "João da Silva",
       "cpfCnpj": "123.456.789-00",
-      "phone": "(83) 99999-0000",
+      "telefone": "(83) 99999-0000",
       "email": "joao@email.com",
-      "isActive": true
+      "cidade": "Santa Rita",
+      "uf": "PB",
+      "ativo": true
     }
   ],
-  "page": { "size": 20, "number": 0, "totalElements": 1, "totalPages": 1 }
+  "page": {
+    "size": 20,
+    "number": 0,
+    "totalElements": 1,
+    "totalPages": 1
+  }
 }
 ```
 
-### POST `/api/v1/clients`
-Cadastra um novo cliente PF ou PJ.
+### GET `/api/clientes/{id}`
+Retorna detalhe completo do cliente com endereço da obra.
+
+### POST `/api/clientes`
+Cadastra um novo cliente.
 
 **Request:**
 ```json
 {
-  "name": "João da Silva",
-  "personType": "INDIVIDUAL",
+  "nomeCompleto": "João da Silva",
   "cpfCnpj": "123.456.789-00",
-  "phone": "(83) 99999-0000",
+  "telefone": "(83) 99999-0000",
   "email": "joao@email.com",
-  "address": "Rua das Flores, 123",
-  "notes": "Cliente preferencial"
+  "cep": "58300-000",
+  "logradouro": "Rua das Flores",
+  "numero": "123",
+  "complemento": "Casa",
+  "bairro": "Centro",
+  "cidade": "Santa Rita",
+  "uf": "PB",
+  "observacoes": "Entrega na obra principal"
 }
 ```
 
-**Response 201:** Retorna o `ClientResponseDTO` criado com header `Location`.
+**Response 201:** Retorna o cliente criado com `id`.
+
+### PUT `/api/clientes/{id}`
+Atualiza os dados do cliente.
+
+### PATCH `/api/clientes/{id}/status`
+Ativa ou inativa o cliente (soft delete).
 
 ---
 
-## 4. Módulo de Catálogo de Materiais (`/api/v1/catalog/...`)
+## 4. Módulo de Catálogo de Materiais
 
-### 4.1 Vidros (`/api/v1/catalog/glasses`)
-* `GET /api/v1/catalog/glasses` — Lista tipos de vidro cadastrados.
-* `POST /api/v1/catalog/glasses` — Cadastra novo vidro (espessura mm, cor, preço/m²).
-* `PUT /api/v1/catalog/glasses/{id}` — Atualiza cadastro de vidro.
-* `PATCH /api/v1/catalog/glasses/{id}/status` — Altera status ativo/inativo.
+### 4.1 Vidros (`/api/vidros` ou `/api/glasses`)
+- `GET /api/glasses` — Lista tipos de vidro cadastrados.
+- `POST /api/glasses` — Cadastra novo vidro (espessura mm, cor/acabamento, preço/m²).
+- `PUT /api/glasses/{id}` | `PATCH /api/glasses/{id}/status`
 
-### 4.2 Perfis de Alumínio (`/api/v1/catalog/aluminum-profiles`)
-* `GET /api/v1/catalog/aluminum-profiles` — Lista perfis e puxadores (linhas Rometal/Alternativa, barras 3m/6m, preço/m).
-* `POST /api/v1/catalog/aluminum-profiles` — Cadastra perfil de alumínio.
+### 4.2 Perfis de Alumínio (`/api/aluminum-profiles`)
+- `GET /api/aluminum-profiles` — Lista perfis lineares (barra 3m/6m, preço/m, cor).
+- `POST /api/aluminum-profiles` — Cadastra perfil de alumínio.
 
-### 4.3 Ferragens (`/api/v1/catalog/hardware`)
-* `GET /api/v1/catalog/hardware` — Lista ferragens, roldanas e fechaduras (UN, PAR, METRO).
-* `POST /api/v1/catalog/hardware` — Cadastra ferragem.
+### 4.3 Ferragens (`/api/hardwares`)
+- `GET /api/hardwares` — Lista ferragens, puxadores e kits.
+- `POST /api/hardwares` — Cadastra ferragem.
 
-### 4.4 Películas (`/api/v1/catalog/films`)
-* `GET /api/v1/catalog/films` — Lista películas (Fumê, Jateada, Leitosa, Espelhada).
-* `POST /api/v1/catalog/films` — Cadastra película com preço/m².
+### 4.4 Películas (`/api/films`)
+- `GET /api/films` — Lista películas decorativas e de proteção.
+
+### 4.5 Resumo de Materiais (`/api/materials/summary`)
+Retorna visão simplificada de todos os insumos para os seletores de formulário.
 
 ---
 
-## 5. Módulo de Produtos e Templates (`/api/v1/catalog/products`)
+## 5. Módulo de Produtos e Templates (`/api/products`)
 
-> 📌 **Refatoração Sprint 3:** A entidade `Product` representa o **Template Paramétrico** de esquadria. O campo `laborCost` foi removido do produto mestre e transferido exclusivamente para o orçamento (`BudgetItem`).
+> **Conceito:** Cada produto funciona como um **Template de Esquadria Paramétrica** com modelo gráfico SVG e **Requisitos de Categorias de Insumos** (`GLASS`, `PROFILE`, `HARDWARE`, `FILM`).
 
-### GET `/api/v1/catalog/products`
-Lista todos os templates de esquadrias com paginação.
+### GET `/api/products`
+Lista todos os produtos/templates com paginação.
 
 **Response 200:**
 ```json
 {
   "content": [
     {
-      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "id": "prod-1",
       "name": "Porta de Correr 2 Folhas Linha Suprema",
-      "categoryId": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+      "categoryId": "cat-portas",
       "categoryName": "Portas de Vidro e Alumínio",
+      "laborCost": 150.00,
+      "isActive": true,
       "templateType": "SLIDING_DOOR_2F",
       "templateConfig": {
         "templateType": "SLIDING_DOOR_2F",
         "aluminumColor": "BLACK",
         "glassFinish": "CLEAR",
         "openingDirection": "LEFT_TO_RIGHT",
-        "handleType": "BAR_TUBULAR"
+        "handleType": "BAR_TUBULAR",
+        "handleConfig": {
+          "handleType": "BAR_TUBULAR",
+          "side": "BOTH_SIDES",
+          "coverage": "PIECE",
+          "pieceLengthCm": 40
+        },
+        "drillingConfig": {
+          "holeCount": 2,
+          "divisionType": "EQUAL",
+          "customDistancesMm": [150, 450]
+        }
       },
       "categoryRequirements": [
-        { "categoryType": "GLASS", "label": "Vidro das Folhas", "isOptional": false },
-        { "categoryType": "PROFILE", "label": "Perfis e Trilhos", "isOptional": false },
-        { "categoryType": "HARDWARE", "label": "Kit de Roldanas", "isOptional": false },
-        { "categoryType": "FILM", "label": "Película Protetora", "isOptional": true }
-      ],
-      "isActive": true
+        { "id": "req-vidro", "categoryType": "GLASS", "label": "Vidro das Folhas", "isOptional": false },
+        { "id": "req-perfil", "categoryType": "PROFILE", "label": "Perfis e Trilhos de Alumínio", "isOptional": false },
+        { "id": "req-ferragem", "categoryType": "HARDWARE", "label": "Kit de Ferragens e Fechos", "isOptional": false },
+        { "id": "req-pelicula", "categoryType": "FILM", "label": "Película Protetora/Decorativa", "isOptional": true }
+      ]
     }
   ],
   "page": { "size": 20, "number": 0, "totalElements": 1, "totalPages": 1 }
 }
 ```
 
-### POST `/api/v1/catalog/products`
-Cria um novo template de esquadria.
+### GET `/api/products/{id}`
+Retorna detalhe completo do template com todas as configurações.
+
+### POST `/api/products`
+Cria um novo template de produto.
+
+**Request:**
+```json
+{
+  "name": "Box Frontal F1 com Fixo e Correr",
+  "categoryId": "cat-box",
+  "laborCost": 100.00,
+  "templateType": "GLASS_BOX_FRONTAL",
+  "templateConfig": {
+    "templateType": "GLASS_BOX_FRONTAL",
+    "aluminumColor": "NATURAL",
+    "glassFinish": "CLEAR",
+    "openingDirection": "LEFT_TO_RIGHT",
+    "handleType": "SHELL_LOCK"
+  },
+  "categoryRequirements": [
+    { "id": "req-1", "categoryType": "GLASS", "label": "Vidro Temperado 8mm", "isOptional": false },
+    { "id": "req-2", "categoryType": "PROFILE", "label": "Kit Alumínio Box", "isOptional": false },
+    { "id": "req-3", "categoryType": "HARDWARE", "label": "Roldanas e Acessórios", "isOptional": false }
+  ]
+}
+```
+
+**Response 201:** Retorna o produto criado com `id`.
+
+### PUT `/api/products/{id}`
+Atualiza dados do template e seus requisitos de categorias.
 
 ---
 
-## 6. Módulo de Orçamentos (`/api/v1/budgets` ou `/api/orcamentos`)
+## 6. Módulo de Orçamentos (`/api/orcamentos` ou `/api/budgets`)
 
-### GET `/api/v1/budgets`
-Lista orçamentos de forma paginada com busca textual por código/cliente e filtro de status.
+> **Conceito:** O orçamento agrega dados do cliente, itens de esquadrias cotadas com medidas em mm, insumos específicos selecionados para cada categoria, puxadores, furação e totais calculados.
 
-**Query params:** `?busca=silva&status=DRAFT&page=0&size=20`
+### GET `/api/orcamentos`
+Lista orçamentos com filtros de status e busca.
+
+**Query params:** `?page=0&size=20&status=DRAFT&busca=joao`
 
 **Response 200:**
 ```json
 {
   "content": [
     {
-      "id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
-      "code": "ORC-20260831-0001",
-      "client": {
-        "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-        "name": "João da Silva"
+      "id": "orc-1",
+      "code": "ORC-2026-001",
+      "customer": {
+        "id": "cli-1",
+        "name": "João da Silva",
+        "phone": "(83) 99999-0000"
       },
       "status": "DRAFT",
       "subtotal": 1850.00,
@@ -197,69 +268,154 @@ Lista orçamentos de forma paginada com busca textual por código/cliente e filt
       "discountValue": 92.50,
       "total": 1757.50,
       "itemCount": 1,
-      "createdAt": "2026-08-31T10:00:00"
+      "createdAt": "2026-08-21T10:00:00",
+      "validUntil": "2026-09-05T10:00:00"
     }
   ],
   "page": { "size": 20, "number": 0, "totalElements": 1, "totalPages": 1 }
 }
 ```
 
----
+### GET `/api/orcamentos/{id}`
+Retorna orçamento completo com todos os itens, opções de materiais, gabarito e romaneio.
 
-### POST `/api/v1/budgets`
-Cria um orçamento completo. O Backend aciona o motor de cálculo (`BudgetQuantityService` e `BudgetPricingService`) para calcular automaticamente as quantidades de perfis, vidros e ferragens.
-
-**Request:**
+**Response 200:**
 ```json
 {
-  "clientId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "id": "orc-1",
+  "code": "ORC-2026-001",
+  "customer": {
+    "id": "cli-1",
+    "name": "João da Silva",
+    "phone": "(83) 99999-0000",
+    "email": "joao@email.com",
+    "document": "123.456.789-00",
+    "address": "Rua das Flores, 123 - Centro - Santa Rita/PB"
+  },
+  "status": "DRAFT",
+  "subtotal": 1850.00,
   "discountPercent": 5.0,
-  "discountValue": 0.0,
-  "notes": "Orçamento para sala comercial",
+  "discountValue": 92.50,
+  "total": 1757.50,
+  "notes": "Entrega em até 15 dias úteis. Pagamento em 3x no cartão.",
+  "createdAt": "2026-08-21T10:00:00",
+  "validUntil": "2026-09-05T10:00:00",
   "items": [
     {
-      "productId": "550e8400-e29b-41d4-a716-446655440000",
+      "id": "item-1",
+      "productId": "prod-1",
+      "productName": "Porta de Correr 2 Folhas Linha Suprema",
+      "templateType": "SLIDING_DOOR_2F",
+      "templateConfig": {
+        "templateType": "SLIDING_DOOR_2F",
+        "aluminumColor": "BLACK",
+        "glassFinish": "CLEAR",
+        "openingDirection": "LEFT_TO_RIGHT"
+      },
+      "handleConfig": {
+        "handleType": "BAR_TUBULAR",
+        "side": "BOTH_SIDES",
+        "coverage": "PIECE",
+        "pieceLengthCm": 40
+      },
+      "drillingConfig": {
+        "holeCount": 2,
+        "divisionType": "EQUAL"
+      },
       "width": 2000,
       "height": 2100,
       "quantity": 1,
       "laborCost": 150.00,
-      "notes": "Folha direita móvel",
       "options": [
         {
-          "materialId": "11111111-1111-1111-1111-111111111111",
+          "materialId": "mat-vidro-8mm",
+          "materialName": "Vidro Temperado 8mm Incolor",
           "categoryType": "GLASS",
-          "unitPrice": 220.00
+          "unitMeasure": "M2",
+          "selectedType": "8mm Temperado",
+          "selectedColor": "Incolor",
+          "quantity": 4.20,
+          "unitPrice": 220.00,
+          "totalPrice": 924.00
         },
         {
-          "materialId": "22222222-2222-2222-2222-222222222222",
+          "materialId": "mat-perfil-suprema",
+          "materialName": "Perfis Linha Suprema",
           "categoryType": "PROFILE",
-          "unitPrice": 45.00
+          "unitMeasure": "METRO",
+          "selectedType": "Suprema 25",
+          "selectedColor": "Preto",
+          "quantity": 8.20,
+          "unitPrice": 45.00,
+          "totalPrice": 369.00
         },
         {
-          "materialId": "33333333-3333-3333-3333-333333333333",
+          "materialId": "mat-kit-porta",
+          "materialName": "Kit Acessórios Porta de Correr",
           "categoryType": "HARDWARE",
-          "unitPrice": 120.00
+          "unitMeasure": "UN",
+          "quantity": 1,
+          "unitPrice": 407.00,
+          "totalPrice": 407.00
         }
-      ]
+      ],
+      "subtotal": 1850.00,
+      "notes": "Folha esquerda fixa, direita móvel."
     }
   ]
 }
 ```
 
-**Response 201:** Retorna o `BudgetResponseDTO` detalhado com todos os cálculos resolvidos.
+### POST `/api/orcamentos`
+Cria um orçamento completo.
 
----
+**Request:**
+```json
+{
+  "customerId": "cli-1",
+  "discountPercent": 5.0,
+  "notes": "Orçamento para reforma da sala",
+  "items": [
+    {
+      "productId": "prod-1",
+      "templateType": "SLIDING_DOOR_2F",
+      "templateConfig": {
+        "templateType": "SLIDING_DOOR_2F",
+        "aluminumColor": "BLACK",
+        "glassFinish": "CLEAR",
+        "openingDirection": "LEFT_TO_RIGHT"
+      },
+      "handleConfig": {
+        "handleType": "BAR_TUBULAR",
+        "side": "BOTH_SIDES",
+        "coverage": "PIECE",
+        "pieceLengthCm": 40
+      },
+      "drillingConfig": {
+        "holeCount": 2,
+        "divisionType": "EQUAL"
+      },
+      "width": 2000,
+      "height": 2100,
+      "quantity": 1,
+      "options": [
+        { "materialId": "mat-vidro-8mm", "quantity": 4.20 },
+        { "materialId": "mat-perfil-suprema", "quantity": 8.20 },
+        { "materialId": "mat-kit-porta", "quantity": 1 }
+      ],
+      "notes": "Folha esquerda fixa, direita móvel."
+    }
+  ]
+}
+```
 
-### POST `/api/v1/budgets/{id}/recalcular`
-Força o recálculo de quantidades e valores para um orçamento em status `DRAFT` (útil após alterações de preços no catálogo).
+**Response 201:** Retorna o orçamento criado com código gerado (`ORC-2026-001`) e totais calculados.
 
-**Response 200:** Retorna o `BudgetResponseDTO` recalculado.
+### PUT `/api/budgets/{id}`
+Atualiza o orçamento em status `DRAFT`.
 
----
-
-### PATCH `/api/v1/budgets/{id}/status`
-Altera o status do orçamento seguindo a máquina de estados:
-`DRAFT` $\rightarrow$ `SENT` $\rightarrow$ `APPROVED` ou `CANCELLED`.
+### PATCH `/api/budgets/{id}/status`
+Altera o status do orçamento (`DRAFT` $\rightarrow$ `SENT` $\rightarrow$ `APPROVED` ou `REJECTED` ou `CANCELLED`).
 
 **Request:**
 ```json
@@ -268,36 +424,104 @@ Altera o status do orçamento seguindo a máquina de estados:
 }
 ```
 
+### PUT `/api/budgets/{id}/discount` *(US-09)*
+Aplica condições comerciais, descontos (percentual ou valor fixo em R$) e taxas adicionais ao orçamento com recálculo reativo. Mapeado também no alias `PUT /api/budgets/{id}/desconto`.
+
+> **Perfis:** ADMINISTRADOR, VENDEDOR
+
+**Request:**
+```json
+{
+  "discountType": "PERCENTAGE",
+  "discountValue": 10.0,
+  "shippingFee": 150.00,
+  "installationFee": 300.00,
+  "paymentConditions": "50% entrada via PIX e 50% na instalação",
+  "validityDays": 15
+}
+```
+
+**Response 200:** Retorna o `BudgetResponseDTO` atualizado com o valor líquido recalculado.
+
+### GET `/api/budgets/{id}/pdf/comercial` *(US-10)*
+Gera e exporta a proposta comercial oficial em formato PDF A4 institucional (OpenPDF) para download. Mapeado também no alias `GET /api/budgets/{id}/pdf`.
+
+> **Perfis:** ADMINISTRADOR, VENDEDOR, OPERADOR  
+> **Headers de Resposta:**  
+> - `Content-Type: application/pdf`  
+> - `Content-Disposition: attachment; filename="orcamento-comercial-ORC-YYYY-NNNN.pdf"`
+
+**Conteúdo do Documento:**
+- Cabeçalho timbrado com logotipo e dados institucionais da Alumiportas
+- Dados cadastrais do cliente (Nome, CPF/CNPJ, Telefone, Endereço da obra)
+- Tabela de itens com dimensões nominais (LxA mm), acabamento, vidro e subtotais
+- Painel de fechamento financeiro (Valor Bruto, Desconto aplicado, Frete/Instalação e Valor Total Líquido)
+- Prazos de validade da proposta (15 dias corridos padrão), condições de pagamento e campo para assinatura.
+
+### GET `/api/budgets/{id}/resumo-whatsapp` *(US-10)*
+Gera e retorna o texto formatado (`text/plain;charset=UTF-8`) com os dados do orçamento prontos para envio via WhatsApp.
+
+> **Perfis:** ADMINISTRADOR, VENDEDOR  
+> **Content-Type:** `text/plain; charset=UTF-8`
+
+**Response 200 (Texto Puro):**
+```text
+*ORÇAMENTO ALUMIPORTAS - ORC-2026-0005*
+
+Olá, João da Silva! Segue a proposta comercial:
+- 2x Janela Suprema 2F (1200x1000mm) - Branco
+
+*Valor Total:* R$ 3.800,00
+*Validade:* 15 dias corridos
+
+Para aprovar ou tirar dúvidas, responda esta mensagem.
+```
+
+### GET `/api/budgets/{id}/pdf/tecnico` *(US-11)*
+Gera e exporta a ficha de corte e usinagem da oficina (Romaneio Técnico de Fabricação) em formato PDF A4 via OpenPDF, direcionada aos cortadores e montadores do galpão de produção sob **estrito sigilo comercial**.
+
+> **Perfis:** ADMINISTRADOR, VENDEDOR, OPERADOR  
+> **Headers de Resposta:**  
+> - `Content-Type: application/pdf`  
+> - `Content-Disposition: attachment; filename="orcamento-tecnico-ORC-YYYY-NNNN.pdf"`
+
+**Garantias de Domínio & Sigilo Comercial:**
+- **Supressão Total de Preços:** Omissão absoluta de valores unitários, margens, descontos e valor total (zero menções a R$)
+- **Especificações Físicas:** Cotas nominais milimétricas de corte (Largura x Altura mm)
+- **Detalhes Construtivos:** Cor do perfil, tipo e espessura do vidro, sentido de abertura e lado de travamento
+- **Checklist de Bancada:** Itens marcáveis para conferência visual na oficina (corte, esquadro, usinagem, vedação) com visto técnico.
+
 ---
 
-### DELETE `/api/v1/budgets/{id}`
-Cancela o orçamento alterando seu status para `CANCELLED` (soft delete).
+## 7. Resumo Geral de Rotas da API
 
-**Response 204:** No Content.
+| Método | Rota | Descrição | Módulo | Release / US |
+|---|---|---|---|:---:|
+| **Autenticação** | | | | |
+| `POST` | `/api/auth/login` | Autenticação e obtenção de token JWT | `auth` | R1 |
+| `POST` | `/api/auth/refresh` | Renovação de token JWT | `auth` | R1 |
+| `POST` | `/api/auth/logout` | Invalidação de sessão | `auth` | R1 |
+| **Clientes** | | | | |
+| `GET` | `/api/clientes` | Listar clientes paginados com busca | `clients` | R1 / US-04 |
+| `GET` | `/api/clientes/{id}` | Detalhes do cliente | `clients` | R1 / US-04 |
+| `POST` | `/api/clientes` | Criar cliente (PF ou PJ com validação) | `clients` | R1 / US-04 |
+| `PUT` | `/api/clientes/{id}` | Atualizar dados cadastrais | `clients` | R1 / US-04 |
+| `PATCH` | `/api/clientes/{id}/status` | Ativar ou inativar cliente | `clients` | R1 / US-04 |
+| **Produtos & Templates** | | | | |
+| `GET` | `/api/products` | Listar produtos/templates de esquadrias | `catalog` | R1 / US-05 |
+| `GET` | `/api/products/{id}` | Detalhes do template paramétrico SVG | `catalog` | R1 / US-05 |
+| `POST` | `/api/products` | Criar template de produto | `catalog` | R1 / US-05 |
+| `PUT` | `/api/products/{id}` | Atualizar template | `catalog` | R1 / US-05 |
+| `GET` | `/api/product-categories` | Listar categorias de produto | `catalog` | R1 / US-02 |
+| **Orçamentos (Budgets)** | | | | |
+| `GET` | `/api/budgets` | Listar orçamentos paginados com filtros | `budgets` | R1 / US-06 |
+| `GET` | `/api/budgets/{id}` | Detalhes do orçamento e romaneio | `budgets` | R1 / US-06 |
+| `POST` | `/api/budgets` | Criar orçamento completo com cálculo paramétrico | `budgets` | R1 / US-07 |
+| `PUT` | `/api/budgets/{id}` | Atualizar orçamento em rascunho (`DRAFT`) | `budgets` | R1 / US-06 |
+| `PATCH` | `/api/budgets/{id}/status` | Alterar status do ciclo de vida | `budgets` | R1 / US-06 |
+| `PUT` | `/api/budgets/{id}/discount` | Aplicar descontos, taxas e condições comerciais | `budgets` | R1 / US-09 |
+| `POST` | `/api/budgets/{id}/items` | Adicionar item avulso ao orçamento | `budgets` | R1 / US-09 |
+| `GET` | `/api/budgets/{id}/pdf/comercial` | Emitir Proposta Comercial em PDF A4 | `budgets` | R1 / US-10 |
+| `GET` | `/api/budgets/{id}/resumo-whatsapp` | Obter texto formatado para envio no WhatsApp | `budgets` | R1 / US-10 |
+| `GET` | `/api/budgets/{id}/pdf/tecnico` | Emitir Via Técnica de Oficina em PDF (Sem Preços) | `budgets` | R1 / US-11 |
 
----
-
-## 7. Resumo Consolidado de Endpoints
-
-| Método | Rota | Descrição | Módulo |
-|---|---|---|---|
-| `GET` | `/api/v1/health` | Verificação de saúde da aplicação | `common` |
-| `GET` | `/api/v1/clients` | Listar clientes paginados com busca | `clients` |
-| `POST` | `/api/v1/clients` | Cadastrar novo cliente | `clients` |
-| `GET` | `/api/v1/catalog/glasses` | Listar tipos de vidros | `catalog` |
-| `GET` | `/api/v1/catalog/aluminum-profiles` | Listar perfis de alumínio e puxadores | `catalog` |
-| `GET` | `/api/v1/catalog/hardware` | Listar ferragens e acessórios | `catalog` |
-| `GET` | `/api/v1/catalog/films` | Listar películas | `catalog` |
-| `GET` | `/api/v1/catalog/products` | Listar templates de esquadrias | `catalog` |
-| `POST` | `/api/v1/catalog/products` | Criar template de esquadria | `catalog` |
-| `GET` | `/api/v1/budgets` | Listar orçamentos com filtros | `budgets` |
-| `GET` | `/api/v1/budgets/{id}` | Buscar detalhes do orçamento | `budgets` |
-| `POST` | `/api/v1/budgets` | Criar orçamento com motor de cálculo | `budgets` |
-| `PUT` | `/api/v1/budgets/{id}` | Atualizar orçamento DRAFT | `budgets` |
-| `POST` | `/api/v1/budgets/{id}/recalcular` | Forçar recálculo de quantidades/preços | `budgets` |
-| `PATCH` | `/api/v1/budgets/{id}/status` | Alterar status (DRAFT → SENT → APPROVED) | `budgets` |
-| `DELETE` | `/api/v1/budgets/{id}` | Cancelar orçamento (status CANCELLED) | `budgets` |
-
----
-
-*Especificação homologada com os Controllers Spring Boot 3.4 — Versão 3.0 — 31/08/2026*

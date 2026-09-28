@@ -1,46 +1,60 @@
 # 📋 Especificação Funcional — Sprint 02
 
-> **Sprint:** 02 — Catálogo de Materiais, Insumos e Fichas Técnicas de Produtos  
+> **Sprint:** 02 — Catálogo Universal de Materiais e Fichas Técnicas  
 > **Período:** 04/08/2026 a 17/08/2026  
 > **Release:** Release 1 (v1.0.0) — Fundação & Cadastros  
 > **Status:** 🟢 Concluída (Baseline `B-ALG-v0.2.0-S02-01`)  
-> **Responsáveis:** Italo Santos (Scrum Master), José Guylherme (PO), Equipe AlumiGest  
+> **Responsáveis:** José Guylherme (PO), Nichollas Cavalcante (SM), Equipe AlumiGest  
 
 ---
 
 ## 1. 🎯 Objetivo da Sprint 2
 
-Implementar o **Catálogo Universal de Materiais** (Vidros, Perfis de Alumínio, Ferragens e Películas) e a **Estrutura de Produtos e Modelos de Esquadrias**, permitindo o cadastro, parametrização de preços e fichas técnicas com interface PWA em abas.
+Implementar o módulo completo de **Catálogo de Materiais Genérico** (vidros com cálculo por $m^2$, perfis de alumínio em barras de 3m/6m com linhas comerciais, películas e acabamentos por $m^2$, ferragens e acessórios unitários/pares/metro), suas migrations Flyway V1-V3, interface PWA com navegação em abas e início da modelagem de **Fichas Técnicas de Produtos**.
 
 ---
 
-## 2. 👥 Histórias de Usuário
+## 2. 👥 Histórias de Usuário (User Stories)
 
-### EP-02: Catálogo de Materiais (Issue Pai #4)
-* **US-013 (#12):** CRUD de Vidros (2mm a 10mm, cores, preço base por $m^2$).
-* **US-014 (#13):** CRUD de Perfis de Alumínio (linhas comerciais, barras de 3m e 6m, NCM).
-* **US-015 (#14):** CRUD de Películas (Fumê, Jateada, Leitosa, Espelhada por $m^2$).
-* **US-016 (#15):** CRUD de Ferragens e Acessórios (unidade, par ou metro).
-* **US-017 (#16):** Interface PWA com abas, busca textual e filtros de ativação.
-* **US-018 (#17):** Testes Automatizados e Cobertura QA (48 testes unitários).
+### 📌 US-02: Gerenciar Catálogo de Materiais Genérico (Vidros, Perfis, Películas e Ferragens)
+- **Como** gestor da vidraçaria,
+- **Quero** cadastrar, editar, listar e remover materiais com preços por unidade de medida,
+- **Para que** eu tenha o catálogo de insumos atualizado para a composição de orçamentos.
 
-### EP-03: Fichas Técnicas de Produtos (Issue #31)
-* **US-019 (#33, #39):** Cadastro de Categorias e Modelos de Produtos (`tb_products`).
+#### Sub-tarefas Técnicas (Sub-issues):
+- **US-02.1**: Migrations Flyway V1-V3 e Entidades Base de Materiais (#11)
+- **US-02.2**: Backend: CRUD de Vidros (2mm a 10mm) calculados por $m^2$ (#12)
+- **US-02.3**: Backend: CRUD de Perfis de Alumínio (Barras 3m/6m, Linhas) (#13)
+- **US-02.4**: Backend: CRUD de Películas e Acabamentos por $m^2$ (#14)
+- **US-02.5**: Backend: CRUD de Ferragens e Acessórios (UN/PAR/METRO) (#15)
+- **US-02.6**: Frontend: Interface PWA em Abas para Gestão de Materiais (#16)
+- **US-02.7**: QA: Suíte de 48 Testes Unitários e 14 Cenários TEA (#17)
+
+---
+
+### 📌 US-03: Gerenciar Produtos e Fichas Técnicas de Esquadrias
+- **Como** gestor da vidraçaria,
+- **Quero** cadastrar produtos (esquadrias) com suas categorias e fichas técnicas base,
+- **Para que** cada produto tenha uma composição clara de insumos.
+
+#### Sub-tarefas Técnicas (Sub-issues):
+- **US-03.1**: Backend: Cadastro de Categorias e Modelos de Produtos (`tb_products`) (#33 / #39)
 
 ---
 
 ## 3. 🧪 Cenários de Aceitação (BDD / Gherkin)
 
 ```gherkin
-Cenário: Cadastro de Vidro Temperado
-  Dado que o usuário está na aba "Vidros" do Catálogo
-  Quando preenche nome "Vidro Temperado Incolor 8mm", espessura 8mm e preço R$ 140,00/m²
-  Então o material deve ser persistido com UUID e status ativo
+Cenário: Cadastro e Cálculo de Preço de Vidro
+  Dado que o gestor cadastra um vidro "Temperado Incolor 8mm"
+  E define o valor base de R$ 140,00 por m²
+  Quando o sistema salva o registro
+  Então o insumo fica disponível para orçamentação com cálculo de área mínima de 0,25 m²
 
-Cenário: Cadastro de Perfil de Alumínio com Linha e Barra
-  Dado que o usuário está na aba "Perfis de Alumínio"
-  Quando cadastra perfil "S83" da linha "Rometal" barra 6m e preço R$ 45,00/m
-  Então o perfil é cadastrado com sucesso
+Cenário: Restrição de exclusão de insumo vinculado
+  Dado um perfil de alumínio vinculado a uma ficha técnica
+  Quando o usuário tenta excluir o perfil
+  Então o sistema bloqueia a exclusão com HTTP 409 (Conflict)
 ```
 
 ---

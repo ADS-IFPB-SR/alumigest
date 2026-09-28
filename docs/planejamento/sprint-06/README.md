@@ -1,68 +1,66 @@
-# 📌 Issues de Implementação — Sprint 06 — Gerar Pedido por Orçamento, Gerência, Snapshot Imutável e Lock de Preços do Pedido, Emissão do Comprovante do Pedido de Venda
+# 📌 Sprint 06 — Pedidos de Venda, Lock de Preços e Comprovante Oficial
 
-> Todas as sub-tarefas seguem o padrão decimal vinculadas às User Stories correspondentes.
-> As 36 sub-tarefas antigas relacionadas a OPs e Scanner QR Code foram arquivadas em [descartadas/](descartadas/).
+**Período Oficial da Sprint 06**: 29/09/2026 a 12/10/2026  
+**Status**: 🔵 Planejada / Pronta para Execução  
+**Total de Tarefas**: 12 Fatias Verticais (*Thin Vertical Slices* ≤ 4h cada)  
+**Esforço Total Estimado**: ~38 horas (31 Story Points)
 
-## 📦 US-13: Aprovar Orçamento e Converter em Pedido de Venda
+Esta pasta contém o pacote completo de engenharia da **Sprint 06** do projeto **AlumiGest**, compreendendo as User Stories **US-13, US-14, US-15 e US-16**, devidamente alinhadas e construídas sobre a base consolidada da **Sprint 05** (Orçamentos, Descontos, AlumiStudio e PDFs OpenPDF).
 
-| Sub-Task | Tarefa | Alvo / Módulo | Status |
-|---|---|---|:---:|
-| [US-13.1](US-13.1-criar-package-br-edu-ifpb-alumigest-orders-e-/issue.md) | Criar package `br.edu.ifpb.alumigest.orders` e diretório `frontend/src/features/orders` | `backlog` | 🔲 Aberta |
-| [US-13.2](US-13.2-criar-migration-flyway-backend-src-main-resou/issue.md) | Criar migration Flyway `backend/src/main/resources/db/migration/V9__create_orders_schema.sql` com tabelas `orders` e `order_itemsconstraints UNIQUE e índices | `backlog` | 🔲 Aberta |
-| [US-13.3](US-13.3-criar-enum-orderstatus-criado-aguardando-prod/issue.md) | Criar enum `OrderStatus` (CRIADO, AGUARDANDO_PRODUCAO, EM_PRODUCAO, CONCLUIDO, CANCELADO) em `backend/src/main/java/br/edu/ifpb/alumigest/orders/domain/OrderStatus.java` | `backlog` | 🔲 Aberta |
-| [US-13.4](US-13.4-criar-enum-approvalchannel-com-labels-em-port/issue.md) | Criar enum `ApprovalChannel` com labels em português (WHATSAPP, PRESENCIAL, TELEFONE, EMAIL) em `backend/src/main/java/br/edu/ifpb/alumigest/orders/domain/ApprovalChannel.java` | `backlog` | 🔲 Aberta |
-| [US-13.5](US-13.5-criar-entidade-jpa-order-com-mapeamento-de-to/issue.md) | Criar entidade JPA `Order` com mapeamento de todos os campos financeiros, cliente, orcamentoId (UNIQUE) e soft delete em `backend/src/main/java/br/edu/ifpb/alumigest/orders/domain/Order.java` | `backlog` | 🔲 Aberta |
-| [US-13.6](US-13.6-criar-entidade-jpa-orderitem-com-snapshot-imu/issue.md) | Criar entidade JPA `OrderItem` com snapshot imutável de itens em `backend/src/main/java/br/edu/ifpb/alumigest/orders/domain/OrderItem.java` | `backlog` | 🔲 Aberta |
-| [US-13.7](US-13.7-criar-repositorio-orderrepository-com-busca-p/issue.md) | Criar repositório `OrderRepository` com busca por código, status e cliente em `backend/src/main/java/br/edu/ifpb/alumigest/orders/repository/OrderRepository.java` | `backlog` | 🔲 Aberta |
-| [US-13.8](US-13.8-criar-repositorio-orderitemrepository-em-back/issue.md) | Criar repositório `OrderItemRepository` em `backend/src/main/java/br/edu/ifpb/alumigest/orders/repository/OrderItemRepository.java` | `backlog` | 🔲 Aberta |
-| [US-13.9](US-13.9-criar-gerador-de-codigo-sequencial-ordercodeg/issue.md) | Criar gerador de código sequencial `OrderCodeGenerator` (padrão PED-YYYY-NNNN) em `backend/src/main/java/br/edu/ifpb/alumigest/orders/service/OrderCodeGenerator.java` | `backlog` | 🔲 Aberta |
-| [US-13.10](US-13.10-criar-record-orderconvertrequest-canalaprovac/issue.md) | Criar record `OrderConvertRequest` (canalAprovacao, dataPrevisaoEntrega, observacoes) com Bean Validation em `backend/src/main/java/br/edu/ifpb/alumigest/orders/dto/OrderConvertRequest.java` | `backlog` | 🔲 Aberta |
-| [US-13.11](US-13.11-criar-record-orderresponse-resposta-completa-/issue.md) | Criar record `OrderResponse` (resposta completa com lista de itens e labels) em `backend/src/main/java/br/edu/ifpb/alumigest/orders/dto/OrderResponse.java` | `backlog` | 🔲 Aberta |
-| [US-13.12](US-13.12-criar-record-ordersummaryresponse-para-listag/issue.md) | Criar record `OrderSummaryResponse` para listagem paginada em `backend/src/main/java/br/edu/ifpb/alumigest/orders/dto/OrderSummaryResponse.java` | `backlog` | 🔲 Aberta |
-| [US-13.13](US-13.13-criar-record-orderitemresponse-em-backend-src/issue.md) | Criar record `OrderItemResponse` em `backend/src/main/java/br/edu/ifpb/alumigest/orders/dto/OrderItemResponse.java` | `backlog` | 🔲 Aberta |
-| [US-13.14](US-13.14-criar-mapper-mapstruct-ordermapper-em-backend/issue.md) | Criar mapper MapStruct `OrderMapper` em `backend/src/main/java/br/edu/ifpb/alumigest/orders/mapper/OrderMapper.java` | `backlog` | 🔲 Aberta |
-| [US-13.15](US-13.15-implementar-metodo-converterorcamentoempedido/issue.md) | Implementar método `converterOrcamentoEmPedido(Long orcamentoId, OrderConvertRequest request)` no `OrderService` com validação de status de orçamento e atualização para APROVADO em `backend/src/main/java/br/edu/ifpb/alumigest/orders/service/OrderService.java` | `backlog` | 🔲 Aberta |
-| [US-13.16](US-13.16-implementar-clonagem-profunda-deep-copy-dos-i/issue.md) | Implementar clonagem profunda (deep copy) dos itens do orçamento para `OrderItem` no `OrderService` garantindo lock de preços | `backlog` | 🔲 Aberta |
-| [US-13.17](US-13.17-implementar-metodos-buscarporid-e-listar-com-/issue.md) | Implementar métodos `buscarPorId()` e `listar()` com paginação e filtros no `OrderService` | `backlog` | 🔲 Aberta |
-| [US-13.18](US-13.18-criar-ordercontroller-com-endpoints-post-api-/issue.md) | Criar `OrderController` com endpoints POST /api/orders/from-budget/{budgetId}, GET /api/orders/{id}, GET /api/orders em `backend/src/main/java/br/edu/ifpb/alumigest/orders/controller/OrderController.java` | `backlog` | 🔲 Aberta |
-| [US-13.19](US-13.19-criar-testes-unitarios-do-orderservice-cobrin/issue.md) | Criar testes unitários do `OrderService` cobrindo conversão bem-sucedida, bloqueio de conversão duplicada e teste de imutabilidade de itens em `backend/src/test/java/br/edu/ifpb/alumigest/orders/service/OrderServiceTest.java` | `backlog` | 🔲 Aberta |
-| [US-13.20](US-13.20-criar-testes-de-integracao-dos-endpoints-rest/issue.md) | Criar testes de integração dos endpoints REST do `OrderController` com base H2 em `backend/src/test/java/br/edu/ifpb/alumigest/orders/controller/OrderControllerIntegrationTest.java` | `backlog` | 🔲 Aberta |
-| [US-13.21](US-13.21-criar-interfaces-typescript-order-orderitem-o/issue.md) | Criar interfaces TypeScript (Order, OrderItem, OrderConvertRequest, etc.) em `frontend/src/features/orders/types/order.ts` | `backlog` | 🔲 Aberta |
-| [US-13.22](US-13.22-criar-schemas-zod-de-validacao-orderconvertsc/issue.md) | Criar schemas Zod de validação (orderConvertSchema) em `frontend/src/features/orders/schemas/orderSchema.ts` | `backlog` | 🔲 Aberta |
-| [US-13.23](US-13.23-criar-servico-de-api-axios-em-frontend-src-fe/issue.md) | Criar serviço de API Axios em `frontend/src/features/orders/services/orderApi.ts` | `backlog` | 🔲 Aberta |
-| [US-13.24](US-13.24-criar-custom-hooks-react-query-useorders-useo/issue.md) | Criar custom hooks React Query (useOrders, useOrder, useConvertBudget) em `frontend/src/features/orders/hooks/useOrders.ts` | `backlog` | 🔲 Aberta |
-| [US-13.25](US-13.25-criar-modal-orderapprovalmodal-selecao-de-can/issue.md) | Criar modal `OrderApprovalModal` (seleção de canal de aprovação, sugestão automática de data +15 dias e confirmação) em `frontend/src/features/orders/components/OrderApprovalModal.tsx` | `backlog` | 🔲 Aberta |
-| [US-13.26](US-13.26-integrar-o-botao-aprovar-e-gerar-pedido-na-te/issue.md) | Integrar o botão "Aprovar e Gerar Pedido" na tela de detalhes do orçamento (`BudgetDetailPage.tsx`) abrindo o modal de aprovação | `backlog` | 🔲 Aberta |
-| [US-13.27](US-13.27-criar-componente-orderstatusbadge-em-frontend/issue.md) | Criar componente `OrderStatusBadge` em `frontend/src/features/orders/components/OrderStatusBadge.tsx` | `backlog` | 🔲 Aberta |
-| [US-13.28](US-13.28-criar-componente-orderitemstable-exibindo-a-t/issue.md) | Criar componente `OrderItemsTable` exibindo a tabela dos itens contratados com valores congelados em `frontend/src/features/orders/components/OrderItemsTable.tsx` | `backlog` | 🔲 Aberta |
-| [US-13.29](US-13.29-criar-pagina-orderlistpage-com-listagem-pagin/issue.md) | Criar página `OrderListPage` com listagem paginada, busca e filtros em `frontend/src/pages/OrderListPage.tsx` | `backlog` | 🔲 Aberta |
-| [US-13.30](US-13.30-criar-pagina-orderdetailpage-com-visualizacao/issue.md) | Criar página `OrderDetailPage` com visualização detalhada do pedido em `frontend/src/pages/OrderDetailPage.tsx` | `backlog` | 🔲 Aberta |
-| [US-13.31](US-13.31-configurar-rotas-pedidos-e-pedidos-id-no-reac/issue.md) | Configurar rotas `/pedidos` e `/pedidos/:id` no React Router em `frontend/src/App.tsx` | `backlog` | 🔲 Aberta |
+---
 
-## 📦 US-14: Snapshot Imutável e Lock de Preços do Pedido
+## 🗺️ Mapa de Histórias e Fatias Verticais
 
-| Sub-Task | Tarefa | Alvo / Módulo | Status |
-|---|---|---|:---:|
+### 📦 US-13: Aprovar Orçamento e Converter em Pedido de Venda
+**Issue GitHub**: [#137](https://github.com/ADS-IFPB-SR/alumigest/issues/137) | **Prioridade**: P1 (MVP)
 
-## 📦 US-15: Gestão de Status, Prazos e Cancelamento de Pedidos
+| Sub-Task | Tarefa | Duração | Tipo | Status |
+|---|---|:---:|---|:---:|
+| [US-13.1](issues/US-13.1-scaffolding-e-infraestrutura-do-modulo-orders/issue.md) | Scaffolding e Infraestrutura do Módulo de Pedidos (Migration Flyway V19, pacotes, enums, entidades JPA base e repositórios) | ~1h | Scaffolding / Infra | 🔲 Aberta |
+| [US-13.2](issues/US-13.2-conversao-de-orcamento-em-pedido-backend-core/issue.md) | Conversão de Orçamento em Pedido de Venda no Backend Core (OrderCodeGenerator PED-YYYY-NNNN, OrderService atômico, DTOs, mappers, endpoint POST e testes unitários) | ~4h | Backend Core / Regras | 🔲 Aberta |
+| [US-13.3](issues/US-13.3-modal-aprovacao-e-conversao-frontend/issue.md) | Modal de Aprovação e Ação de Conversão na Tela de Orçamento (Tipos TS, Schema Zod, orderApi, hook useConvertBudget, OrderApprovalModal e botão na BudgetDetailPage) | ~3h | Frontend UI / API | 🔲 Aberta |
+| [US-13.4](issues/US-13.4-listagem-paginada-de-pedidos-fullstack/issue.md) | Listagem Paginada de Pedidos de Venda com Filtros (Full-Stack: GET /api/orders paginado, OrderListPage, OrderStatusBadge, busca com debounce e filtros) | ~4h | Fatia Vertical Full-Stack | 🔲 Aberta |
+| [US-13.5](issues/US-13.5-detalhamento-do-pedido-de-venda-fullstack/issue.md) | Visualização Detalhada do Pedido de Venda (Full-Stack: GET /api/orders/{id}, OrderDetailPage com cards informativos, resumo financeiro e vínculo do orçamento) | ~3h | Fatia Vertical Full-Stack | 🔲 Aberta |
 
-| Sub-Task | Tarefa | Alvo / Módulo | Status |
-|---|---|---|:---:|
-| [US-15.1](US-15.1-criar-record-ordercancelrequest-justificativa/issue.md) | Criar record `OrderCancelRequest` (justificativa obrigatória com min 10 caracteres) com Bean Validation em `backend/src/main/java/br/edu/ifpb/alumigest/orders/dto/OrderCancelRequest.java` | `backlog` | 🔲 Aberta |
-| [US-15.2](US-15.2-implementar-metodo-cancelarpedido-long-id-ord/issue.md) | Implementar método `cancelarPedido(Long id, OrderCancelRequest request)` no `OrderService` validando que o pedido não está em produção | `backlog` | 🔲 Aberta |
-| [US-15.3](US-15.3-adicionar-endpoint-patch-api-orders-id-cancel/issue.md) | Adicionar endpoint PATCH /api/orders/{id}/cancel no `OrderController` | `backlog` | 🔲 Aberta |
-| [US-15.4](US-15.4-criar-modal-ordercancelmodal-com-campo-de-jus/issue.md) | Criar modal `OrderCancelModal` com campo de justificativa no frontend em `frontend/src/features/orders/components/OrderCancelModal.tsx` | `backlog` | 🔲 Aberta |
-| [US-15.5](US-15.5-adicionar-botao-reabrir-orcamento-para-edicao/issue.md) | Adicionar botão "Reabrir Orçamento para Edição" na tela do orçamento quando o pedido vinculado estiver cancelado | `backlog` | 🔲 Aberta |
+---
 
-## 📦 US-16: Emissão do Comprovante do Pedido de Venda
+### 📦 US-14: Snapshot Imutável e Lock de Preços do Pedido
+**Issue GitHub**: [#138](https://github.com/ADS-IFPB-SR/alumigest/issues/138) | **Prioridade**: P1
 
-| Sub-Task | Tarefa | Alvo / Módulo | Status |
-|---|---|---|:---:|
-| [US-16.1](US-16.1-criar-orderpdfservice-com-layout-instituciona/issue.md) | Criar `OrderPdfService` com layout institucional para comprovante do pedido usando OpenPDF em `backend/src/main/java/br/edu/ifpb/alumigest/orders/service/OrderPdfService.java` | `backlog` | 🔲 Aberta |
-| [US-16.2](US-16.2-adicionar-endpoint-get-api-orders-id-pdf-comp/issue.md) | Adicionar endpoint GET /api/orders/{id}/pdf/comprovante no `OrderController` | `backlog` | 🔲 Aberta |
-| [US-16.3](US-16.3-criar-teste-unitario-de-geracao-do-pdf-do-com/issue.md) | Criar teste unitário de geração do PDF do comprovante no `OrderPdfServiceTest` | `backlog` | 🔲 Aberta |
-| [US-16.4](US-16.4-adicionar-botao-emitir-comprovante-do-pedido-/issue.md) | Adicionar botão "Emitir Comprovante do Pedido" e integração de download na `OrderDetailPage` | `backlog` | 🔲 Aberta |
-| [US-16.5](US-16.5-adicionar-documentacao-openapi-swagger-nos-en/issue.md) | Adicionar documentação OpenAPI/Swagger nos endpoints do `OrderController` | `backlog` | 🔲 Aberta |
-| [US-16.6](US-16.6-adicionar-item-pedidos-de-venda-no-menu-de-na/issue.md) | Adicionar item "Pedidos de Venda" no menu de navegação do frontend | `backlog` | 🔲 Aberta |
-| [US-16.7](US-16.7-executar-validacao-completa-do-quickstart-md-/issue.md) | Executar validação completa do `quickstart.md` da Sprint 5 e documentar checklist | `backlog` | 🔲 Aberta |
+| Sub-Task | Tarefa | Duração | Tipo | Status |
+|---|---|:---:|---|:---:|
+| [US-14.1](issues/US-14.1-snapshot-imutavel-lock-precos-deep-copy/issue.md) | Snapshot Imutável, Lock de Preços e Tabela de Itens Congelados (Full-Stack: Deep copy em 3 níveis, snapshots JSONB, OrderItemsTable no front e testes unitários de blindagem contra reajuste do catálogo) | ~4h | Fatia Vertical Full-Stack | 🔲 Aberta |
 
+---
+
+### 📦 US-15: Gestão de Status, Prazos e Cancelamento de Pedidos
+**Issue GitHub**: [#139](https://github.com/ADS-IFPB-SR/alumigest/issues/139) | **Prioridade**: P2
+
+| Sub-Task | Tarefa | Duração | Tipo | Status |
+|---|---|:---:|---|:---:|
+| [US-15.1](issues/US-15.1-maquina-estados-e-cancelamento-de-pedidos/issue.md) | Máquina de Estados e Cancelamento de Pedidos com Justificativa (Full-Stack: transições CRIADO a CONCLUIDO com dataConclusao automática, PATCH /cancel, OrderCancelModal e bloqueio estrito em produção) | ~4h | Fatia Vertical Full-Stack | 🔲 Aberta |
+| [US-15.2](issues/US-15.2-reabertura-de-orcamento-apos-cancelamento/issue.md) | Reabertura de Orçamento após Cancelamento de Pedido (Ajuste na máquina de estados do BudgetService para APPROVED ➔ DRAFT condicional e botão contextual na BudgetDetailPage) | ~2h | Fatia Vertical Full-Stack | 🔲 Aberta |
+
+---
+
+### 📦 US-16: Emissão do Comprovante do Pedido de Venda em PDF
+**Issue GitHub**: [#140](https://github.com/ADS-IFPB-SR/alumigest/issues/140) | **Prioridade**: P2
+
+| Sub-Task | Tarefa | Duração | Tipo | Status |
+|---|---|:---:|---|:---:|
+| [US-16.1](issues/US-16.1-comprovante-oficial-do-pedido-em-pdf-openpdf/issue.md) | Comprovante Oficial do Pedido de Venda em PDF via OpenPDF (Full-Stack: OrderPdfService layout A4 institucional, endpoint GET /pdf/comprovante e ação de download na OrderDetailPage) | ~4h | Fatia Vertical Full-Stack | 🔲 Aberta |
+| [US-16.2](issues/US-16.2-navegacao-openapi-swagger-e-contratos/issue.md) | Navegação no Sidebar, Documentação OpenAPI/Swagger e Contratos (Atalho 'Pedidos de Venda' no sidebar, anotações Swagger no OrderController e atualização do contrato de API) | ~2h | Frontend & Docs | 🔲 Aberta |
+| [US-16.3](issues/US-16.3-testes-de-integracao-backend-mockmvc-h2/issue.md) | Bateria de Testes de Integração do Backend (OrderControllerIntegrationTest cobrindo todos os endpoints REST, validações de erro, conflito 409 e downloads com base H2) | ~3h | Testes de Integração | 🔲 Aberta |
+| [US-16.4](issues/US-16.4-testes-e2e-sistema-e-validacao-quickstart/issue.md) | Testes de Sistema E2E, Validação BDD e Homologação do Quickstart (Suite E2E Cypress/Playwright do fluxo ponta a ponta e execução completa do quickstart.md) | ~4h | Testes Sistema / E2E | 🔲 Aberta |
+
+---
+
+## 🔗 Documentos de Referência
+
+- 📑 **Especificação Funcional**: [spec.md](spec.md)
+- 📋 **Lista de Tarefas**: [tasks.md](tasks.md)
+- 📐 **Modelo de Dados**: [data-model.md](data-model.md)
+- 🔌 **Contrato de API**: [contracts/api-orders.md](contracts/api-orders.md)
+- ⏱️ **Guia de Estimativa de Horas**: [../guia-estimativa-horas.md](../guia-estimativa-horas.md#8-dimensionamento-oficial-de-tarefas--sprint-06)
+- 🚀 **Guia de Validação Rápida**: [quickstart.md](quickstart.md)
+- 📜 **Constituição do Projeto**: [../constitution.md](../constitution.md)

@@ -21,22 +21,18 @@ Estabelecer a governança formal do projeto, arquitetura base Monorepo, infraest
 
 ---
 
-## 3. 📦 Histórias de Usuário & Entregas
+## 3. 📦 Histórias de Usuário (User Stories)
 
-### US-001: Estrutura Monorepo e Governança
-- **Como** membro da equipe,
-- **Quero** uma estrutura de repositório organizada e protegida,
-- **Para** garantir a integridade do código e documentação.
+### 📌 US-01: Configurar Infraestrutura Monorepo, Docker e Governança do Projeto
+- **Como** membro da equipe e desenvolvedor,
+- **Quero** uma estrutura de repositório organizada e protegida, banco de dados PostgreSQL 16 containerizado e scaffold Spring Boot 3.4 com OpenAPI,
+- **Para que** tenhamos um ambiente padronizado, seguro e produtivo para o desenvolvimento de todas as features do AlumiGest.
 
-### US-002: Infraestrutura Containerizada
-- **Como** desenvolvedor,
-- **Quero** rodar PostgreSQL 16 e PgAdmin 4 via `docker compose up -d`,
-- **Para** ter persistência de dados isolada e extensão nativa de UUIDs (`uuid-ossp`).
-
-### US-003: Scaffold Spring Boot 3.4
-- **Como** desenvolvedor backend,
-- **Quero** uma base de código com Spring Boot 3.4, Java 21, Lombok, MapStruct e OpenAPI,
-- **Para** iniciar a criação de APIs REST com alta produtividade.
+#### Sub-tarefas Técnicas (Sub-issues):
+- **US-01.1**: Criar PGC, PPJ, DRI e estrutura de governança
+- **US-01.2**: Configurar `docker-compose.yml` com PostgreSQL 16 e PgAdmin 4
+- **US-01.3**: Scaffold Spring Boot 3.4 com Maven, Lombok e OpenAPI Swagger
+- **US-01.4**: Configurar Monorepo, Rulesets e CI/CD Base no GitHub Actions
 
 ---
 
