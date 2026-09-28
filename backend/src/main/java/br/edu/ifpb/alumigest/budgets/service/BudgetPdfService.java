@@ -123,6 +123,7 @@ public class BudgetPdfService {
     private static final String TIPO_AWNING = "AWNING";
     private static final String TIPO_FIXED = "FIXED";
     private static final String TIPO_STANDARD = "STANDARD";
+    private static final String TIPO_PADRAO = "PADRAO";
     private static final String LABEL_TIPO_GIRO = "TIPO: GIRO";
     private static final String LABEL_TIPO_BASCULANTE = "TIPO: BASCULANTE";
     private static final String LABEL_TIPO_FIXO = "TIPO: FIXO";
@@ -1463,7 +1464,7 @@ public class BudgetPdfService {
             case "LEVER_HANDLE", "LEVER", "ALAVANCA", "FECHO_ALAVANCA" -> "Alavanca";
             case "RECESSED", "EMBUTIDO" -> "Embutido";
             case "PULL" -> "Puxador Convencional";
-            case TIPO_STANDARD, BADGE_PADRAO -> PADRAO;
+            case TIPO_STANDARD, TIPO_PADRAO, BADGE_PADRAO -> PADRAO;
             default -> clean.replace('_', ' ');
         };
     }
@@ -1489,7 +1490,7 @@ public class BudgetPdfService {
         }
         String clean = formato.trim().toUpperCase(Locale.ROOT);
         return switch (clean) {
-            case "STANDARD", "PADRAO", "PADRÃO" -> "Padrão";
+            case TIPO_STANDARD, TIPO_PADRAO, BADGE_PADRAO -> PADRAO;
             case "SQUARE", "QUADRADO" -> "Quadrado";
             case "ROUND", "REDONDO" -> "Redondo";
             default -> clean.replace('_', ' ');
@@ -1502,7 +1503,7 @@ public class BudgetPdfService {
         }
         String clean = detalhes.trim().toUpperCase(Locale.ROOT);
         return switch (clean) {
-            case "STANDARD", "PADRAO" -> "Furação padrão";
+            case TIPO_STANDARD, TIPO_PADRAO, BADGE_PADRAO -> "Furação padrão";
             case "EQUAL", "EQUIDISTANT", "EQUIDISTANTE" -> "Distâncias divididas por igual";
             case "CUSTOM_DISTANCES" -> "Distâncias personalizadas conforme gabarito";
             default -> detalhes;
