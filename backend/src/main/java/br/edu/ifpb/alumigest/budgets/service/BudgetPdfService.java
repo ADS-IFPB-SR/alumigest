@@ -1184,9 +1184,9 @@ public class BudgetPdfService {
         PdfPTable tableChecks = new PdfPTable(1);
         tableChecks.setWidthPercentage(90);
 
-        tableChecks.addCell(criarItemCheckbox("Alum."));
+        tableChecks.addCell(criarItemCheckbox("Alumínio"));
         tableChecks.addCell(criarItemCheckbox("Vidro"));
-        tableChecks.addCell(criarItemCheckbox("Mont."));
+        tableChecks.addCell(criarItemCheckbox("Montagem"));
 
         cell.addElement(tableChecks);
         return cell;

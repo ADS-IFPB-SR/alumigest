@@ -899,9 +899,9 @@ class BudgetPdfServiceTest {
                 assertThat(textContent)
                         .contains("ESQUEMA")
                         .contains("(USINAGEM/PUXADOR)")
-                        .contains("Alum.")
+                        .contains("Alumínio")
                         .contains("Vidro")
-                        .contains("Mont.");
+                        .contains("Montagem");
             }
         }
 

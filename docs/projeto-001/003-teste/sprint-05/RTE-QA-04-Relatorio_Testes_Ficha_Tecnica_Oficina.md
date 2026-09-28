@@ -23,7 +23,7 @@ O objetivo desta atividade de QA foi validar, automatizar e homologar o fluxo co
 $$\text{Orçamento Aprovado} \longrightarrow \text{Ação "Via Técnica" (UI)} \longrightarrow \text{Endpoint REST} \longrightarrow \text{Motor Vetorial OpenPDF} \longrightarrow \text{Ficha de Corte \& Usinagem A4}$$
 
 A Ficha Técnica é o documento operacional de chão de fábrica direcionado a serralheiros, cortadores e montadores. A homologação seguiu rigorosamente dois princípios inegociáveis:
-1. **Riqueza Técnica de Engenharia:** Dimensões nominais milimétricas ($W \times H$ mm), esquema vetorial cotado em escala proporcional com furações em vermelho (`DrillingHolePoint`) e puxador posicionado (`TechnicalHandle`), acabamentos de perfil e vidro, folgas de usinagem e checkboxes físicos de chão de fábrica (`[ ] Alum.`, `[ ] Vidro`, `[ ] Mont.`).
+1. **Riqueza Técnica de Engenharia:** Dimensões nominais milimétricas ($W \times H$ mm), esquema vetorial cotado em escala proporcional com furações em vermelho (`DrillingHolePoint`) e puxador posicionado (`TechnicalHandle`), acabamentos de perfil e vidro, folgas de usinagem e checkboxes físicos de chão de fábrica (`[ ] Alumínio`, `[ ] Vidro`, `[ ] Montagem`).
 2. **Sigilo Comercial Absoluto:** Ausência estrita de preços unitários, totais, taxas de mão de obra, percentuais de desconto e termos monetários (`R$`, `BRL`, centavos).
 
 ---
