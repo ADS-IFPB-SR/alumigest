@@ -210,50 +210,71 @@ function mapBackendToBudgetItem(res: any): BudgetItem {
   };
 }
 
-export function extractFilenameFromContentDisposition(disposition?: string, fallback = 'documento.pdf'): string {
-  if (!disposition) return fallback;
+const FILENAME_STAR_REGEX = /filename\*\s*=\s*(?:UTF-8''|utf-8'')?([^;\n]+)/i;
+const FILENAME_NORMAL_REGEX = /filename\s*=\s*([^;\n]+)/i;
+const RFC2047_HEX_REGEX = /=([0-9A-F]{2})/gi;
+const FORBIDDEN_FS_CHARS_REGEX = /[<>:"/\\|?*]/g;
 
-  // 1. Prioridade para filename*=UTF-8''... (RFC 5987 / RFC 6266)
-  const starMatch = disposition.match(/filename\*\s*=\s*(?:UTF-8''|utf-8'')?([^;\n]+)/i);
-  if (starMatch?.[1]) {
-    const raw = starMatch[1].replace(/^["']|["']$/g, '').trim();
+function sanitizeFilename(raw: string): string {
+  return raw.replaceAll(FORBIDDEN_FS_CHARS_REGEX, '_').trim();
+}
+
+function decodeRfc2047(raw: string): string {
+  if (!raw.startsWith('=?') || !raw.endsWith('?=')) {
+    return raw;
+  }
+  const parts = raw.split('?');
+  if (parts.length < 5) {
+    return raw;
+  }
+  const encoding = parts[2].toUpperCase();
+  const encodedText = parts[3];
+
+  if (encoding === 'Q') {
+    return encodedText
+      .replaceAll(RFC2047_HEX_REGEX, (_, hex) => String.fromCodePoint(Number.parseInt(hex, 16)))
+      .replaceAll('_', ' ');
+  }
+  if (encoding === 'B') {
     try {
-      const decoded = decodeURIComponent(raw);
-      if (decoded) return decoded;
+      return atob(encodedText);
     } catch {
-      // fallback
+      return raw;
     }
   }
+  return raw;
+}
 
-  // 2. Extrai filename="..." ou filename=...
-  const normalMatch = disposition.match(/filename\s*=\s*([^;\n]+)/i);
-  if (normalMatch?.[1]) {
-    let raw = normalMatch[1].replace(/^["']|["']$/g, '').trim();
-    // Decodifica formato RFC 2047 (=?UTF-8?Q?...?= ou =?UTF-8?B?...?=) se presente
-    if (raw.startsWith('=?') && raw.endsWith('?=')) {
-      const parts = raw.split('?');
-      if (parts.length >= 5) {
-        const encoding = parts[2].toUpperCase();
-        const encodedText = parts[3];
-        if (encoding === 'Q') {
-          raw = encodedText
-            .replace(/=([0-9A-F]{2})/gi, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
-            .replace(/_/g, ' ');
-        } else if (encoding === 'B') {
-          try {
-            raw = atob(encodedText);
-          } catch {
-            // fallback
-          }
-        }
-      }
-    }
-    // Remove qualquer caractere proibido em sistemas de arquivos (evita substituição por '_' no Windows)
-    const cleaned = raw.replace(/[<>:"/\\|?*]/g, '_').trim();
-    if (cleaned) return cleaned;
+function extractStarFilename(disposition: string): string | null {
+  const match = FILENAME_STAR_REGEX.exec(disposition);
+  if (!match?.[1]) {
+    return null;
   }
+  const raw = match[1].replace(/^["']|["']$/g, '').trim();
+  try {
+    const decoded = decodeURIComponent(raw);
+    return decoded || null;
+  } catch {
+    return null;
+  }
+}
 
-  return fallback;
+function extractNormalFilename(disposition: string): string | null {
+  const match = FILENAME_NORMAL_REGEX.exec(disposition);
+  if (!match?.[1]) {
+    return null;
+  }
+  const raw = match[1].replace(/^["']|["']$/g, '').trim();
+  const decoded = decodeRfc2047(raw);
+  const cleaned = sanitizeFilename(decoded);
+  return cleaned || null;
+}
+
+export function extractFilenameFromContentDisposition(disposition?: string, fallback = 'documento.pdf'): string {
+  if (!disposition) {
+    return fallback;
+  }
+  return extractStarFilename(disposition) ?? extractNormalFilename(disposition) ?? fallback;
 }
 
 export const budgetsApi = {

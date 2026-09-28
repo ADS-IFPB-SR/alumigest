@@ -120,6 +120,14 @@ public class BudgetPdfService {
     private static final String TIPO_BASCULANTE = "BASCULANTE";
     private static final String TIPO_DRAWER = "DRAWER";
     private static final String TIPO_GAVETA = "GAVETA";
+    private static final String TIPO_AWNING = "AWNING";
+    private static final String TIPO_FIXED = "FIXED";
+    private static final String TIPO_STANDARD = "STANDARD";
+    private static final String LABEL_TIPO_GIRO = "TIPO: GIRO";
+    private static final String LABEL_TIPO_BASCULANTE = "TIPO: BASCULANTE";
+    private static final String LABEL_TIPO_FIXO = "TIPO: FIXO";
+    private static final String LABEL_TIPO_GAVETA = "TIPO: FRENTE DE GAVETA";
+    private static final String BADGE_DOBRADICA_PISTAO = "DOBRADIÇA/PISTÃO";
     private static final ZoneId TIME_ZONE_PADRAO = ZoneId.of("America/Sao_Paulo");
 
     private final CompanyProperties companyProps;
@@ -1240,49 +1248,49 @@ public class BudgetPdfService {
             clean = clean.substring(5).trim();
         }
         return switch (clean) {
-            case "SWING_DOOR_1F", "SWING_1F", "SWING_1_LEAF", TIPO_SWING, "PIVOT_DOOR", "PIVOTING_DOOR", "GIRO", "PORTA_GIRO" -> "TIPO: GIRO";
+            case "SWING_DOOR_1F", "SWING_1F", "SWING_1_LEAF", TIPO_SWING, "PIVOT_DOOR", "PIVOTING_DOOR", "GIRO", "PORTA_GIRO" -> LABEL_TIPO_GIRO;
             case "SWING_DOOR_2F", "SWING_2F", "SWING_2_LEAF" -> "TIPO: GIRO (2 FOLHAS)";
             case "SLIDING_DOOR_1F", "SLIDING_1F", "SLIDING_1_LEAF" -> "TIPO: CORRER (1 FOLHA)";
             case "SLIDING_DOOR_2F", "SLIDING_2F", "SLIDING_2_LEAF", "SLIDING_WINDOW_2F" -> "TIPO: CORRER (2 FOLHAS)";
             case "SLIDING_DOOR_3F", "SLIDING_3F", "SLIDING_3_LEAF" -> "TIPO: CORRER (3 FOLHAS)";
             case "SLIDING_DOOR_4F", "SLIDING_4F", "SLIDING_4_LEAF", "SLIDING_WINDOW_4F" -> "TIPO: CORRER (4 FOLHAS)";
             case "SLIDING_DOOR", TIPO_SLIDING, TIPO_CORRER, "PORTA_CORRER", "JANELA_CORRER" -> "TIPO: CORRER";
-            case "AWNING_WINDOW", "AWNING_WINDOW_1F", "AWNING", "MAX_AR_WINDOW_1_LEAF", "MAXIM_AR_WINDOW", "MAXIM_AR", "MAXIMAR", "TILT_WINDOW", "TILT", TIPO_BASCULANTE -> "TIPO: BASCULANTE";
+            case "AWNING_WINDOW", "AWNING_WINDOW_1F", TIPO_AWNING, "MAX_AR_WINDOW_1_LEAF", "MAXIM_AR_WINDOW", "MAXIM_AR", "MAXIMAR", "TILT_WINDOW", "TILT", TIPO_BASCULANTE -> LABEL_TIPO_BASCULANTE;
             case "AWNING_WINDOW_1F_INV", "MAX_AR_WINDOW_INVERSE_1_LEAF", "BASCULANTE INVERTIDO", "BASCULANTE_INVERTIDO" -> "TIPO: BASCULANTE INVERTIDO";
-            case "FRONT_DRAWER", "DRAWER_FRONT", TIPO_DRAWER, TIPO_GAVETA, "FRENTE DE GAVETA" -> "TIPO: FRENTE DE GAVETA";
-            case "FIXED_PANEL", "FIXED_GLASS_FACADE", "FIXED", "FIXO" -> "TIPO: FIXO";
+            case "FRONT_DRAWER", "DRAWER_FRONT", TIPO_DRAWER, TIPO_GAVETA, "FRENTE DE GAVETA" -> LABEL_TIPO_GAVETA;
+            case "FIXED_PANEL", "FIXED_GLASS_FACADE", TIPO_FIXED, "FIXO" -> LABEL_TIPO_FIXO;
             case "GLASS_BOX_FRONTAL" -> "TIPO: BOX FRONTAL";
             case "GLASS_BOX_CORNER" -> "TIPO: BOX DE CANTO";
             default -> {
                 TemplateType parsed = TemplateType.parse(clean);
                 if (parsed != null) {
                     yield switch (parsed) {
-                        case SWING_1_LEAF -> "TIPO: GIRO";
+                        case SWING_1_LEAF -> LABEL_TIPO_GIRO;
                         case SWING_2_LEAF -> "TIPO: GIRO (2 FOLHAS)";
                         case SLIDING_1_LEAF -> "TIPO: CORRER (1 FOLHA)";
                         case SLIDING_2_LEAF -> "TIPO: CORRER (2 FOLHAS)";
                         case SLIDING_3_LEAF -> "TIPO: CORRER (3 FOLHAS)";
                         case SLIDING_4_LEAF -> "TIPO: CORRER (4 FOLHAS)";
-                        case MAX_AR_WINDOW_1_LEAF -> "TIPO: BASCULANTE";
+                        case MAX_AR_WINDOW_1_LEAF -> LABEL_TIPO_BASCULANTE;
                         case MAX_AR_WINDOW_INVERSE_1_LEAF -> "TIPO: BASCULANTE INVERTIDO";
-                        case DRAWER_FRONT -> "TIPO: FRENTE DE GAVETA";
-                        case FIXED_PANEL -> "TIPO: FIXO";
+                        case DRAWER_FRONT -> LABEL_TIPO_GAVETA;
+                        case FIXED_PANEL -> LABEL_TIPO_FIXO;
                     };
                 }
-                if (clean.contains("AWNING") || clean.contains("MAXIM") || clean.contains("MAX_AR") || clean.contains("BASCULANTE")) {
-                    yield "TIPO: BASCULANTE";
+                if (clean.contains(TIPO_AWNING) || clean.contains("MAXIM") || clean.contains("MAX_AR") || clean.contains(TIPO_BASCULANTE)) {
+                    yield LABEL_TIPO_BASCULANTE;
                 }
-                if (clean.contains("SLIDING") || clean.contains("CORRER")) {
+                if (clean.contains(TIPO_SLIDING) || clean.contains(TIPO_CORRER)) {
                     yield "TIPO: CORRER";
                 }
-                if (clean.contains("SWING") || clean.contains("GIRO") || clean.contains("PIVOT")) {
-                    yield "TIPO: GIRO";
+                if (clean.contains(TIPO_SWING) || clean.contains("GIRO") || clean.contains("PIVOT")) {
+                    yield LABEL_TIPO_GIRO;
                 }
-                if (clean.contains("DRAWER") || clean.contains("GAVETA")) {
-                    yield "TIPO: FRENTE DE GAVETA";
+                if (clean.contains(TIPO_DRAWER) || clean.contains(TIPO_GAVETA)) {
+                    yield LABEL_TIPO_GAVETA;
                 }
-                if (clean.contains("FIXED") || clean.contains("FIXO")) {
-                    yield "TIPO: FIXO";
+                if (clean.contains(TIPO_FIXED) || clean.contains("FIXO")) {
+                    yield LABEL_TIPO_FIXO;
                 }
                 yield "TIPO: " + clean.replace('_', ' ');
             }
@@ -1305,23 +1313,23 @@ public class BudgetPdfService {
                  "SLIDING_3_LEAF", "SLIDING_4_LEAF", "SLIDING_DOOR", TIPO_SLIDING, TIPO_CORRER, "PORTA_CORRER",
                  "JANELA_CORRER", "SLIDING_WINDOW_2F", "SLIDING_WINDOW_4F", "GLASS_BOX_FRONTAL", "GLASS_BOX_CORNER",
                  "CORRER (1 FOLHA)", "CORRER (2 FOLHAS)", "CORRER (3 FOLHAS)", "CORRER (4 FOLHAS)" -> "ROLDANAS";
-            case "AWNING_WINDOW", "AWNING_WINDOW_1F", "AWNING_WINDOW_1F_INV", "AWNING", "MAX_AR_WINDOW_1_LEAF", "MAX_AR_WINDOW_INVERSE_1_LEAF",
-                 "MAXIM_AR_WINDOW", "MAXIM_AR", "MAXIMAR", "TILT_WINDOW", "TILT", TIPO_BASCULANTE, "BASCULANTE INVERTIDO" -> "DOBRADIÇA/PISTÃO";
+            case "AWNING_WINDOW", "AWNING_WINDOW_1F", "AWNING_WINDOW_1F_INV", TIPO_AWNING, "MAX_AR_WINDOW_1_LEAF", "MAX_AR_WINDOW_INVERSE_1_LEAF",
+                 "MAXIM_AR_WINDOW", "MAXIM_AR", "MAXIMAR", "TILT_WINDOW", "TILT", TIPO_BASCULANTE, "BASCULANTE INVERTIDO" -> BADGE_DOBRADICA_PISTAO;
             case "FRONT_DRAWER", "DRAWER_FRONT", TIPO_DRAWER, TIPO_GAVETA, "FRENTE DE GAVETA" -> "FIXAÇÃO CAIXA";
-            case "FIXED_PANEL", "FIXED_GLASS_FACADE", "FIXED", "FIXO" -> BADGE_PADRAO;
+            case "FIXED_PANEL", "FIXED_GLASS_FACADE", TIPO_FIXED, "FIXO" -> BADGE_PADRAO;
             default -> {
                 TemplateType parsed = TemplateType.parse(clean);
                 if (parsed != null) {
                     yield switch (parsed) {
                         case SWING_1_LEAF, SWING_2_LEAF -> "DOBRADIÇAS";
                         case SLIDING_1_LEAF, SLIDING_2_LEAF, SLIDING_3_LEAF, SLIDING_4_LEAF -> "ROLDANAS";
-                        case MAX_AR_WINDOW_1_LEAF, MAX_AR_WINDOW_INVERSE_1_LEAF -> "DOBRADIÇA/PISTÃO";
+                        case MAX_AR_WINDOW_1_LEAF, MAX_AR_WINDOW_INVERSE_1_LEAF -> BADGE_DOBRADICA_PISTAO;
                         case DRAWER_FRONT -> "FIXAÇÃO CAIXA";
                         case FIXED_PANEL -> BADGE_PADRAO;
                     };
                 }
-                if (clean.contains("AWNING") || clean.contains("MAXIM") || clean.contains("MAX_AR") || clean.contains("TILT")) {
-                    yield "DOBRADIÇA/PISTÃO";
+                if (clean.contains(TIPO_AWNING) || clean.contains("MAXIM") || clean.contains("MAX_AR") || clean.contains("TILT")) {
+                    yield BADGE_DOBRADICA_PISTAO;
                 }
                 yield BADGE_PADRAO;
             }
@@ -1373,7 +1381,7 @@ public class BudgetPdfService {
         if (t.contains(TIPO_CORRER) || t.contains(TIPO_SLIDING) || t.contains("BOX")) {
             return List.of("Furação superior padrão.", "2 roldanas por folha.");
         }
-        if (t.contains(TIPO_BASCULANTE) || t.contains("TILT") || t.contains("AWNING") || t.contains("MAX")) {
+        if (t.contains(TIPO_BASCULANTE) || t.contains("TILT") || t.contains(TIPO_AWNING) || t.contains("MAX")) {
             return List.of("Furação na travessa superior.", "Distância conforme gabarito.");
         }
         if (t.contains(TIPO_GAVETA) || t.contains(TIPO_DRAWER)) {
@@ -1401,29 +1409,46 @@ public class BudgetPdfService {
         }
         try {
             JsonNode node = objectMapper.readTree(trimmed);
-            if (node.has("type") || node.has(KEY_HANDLE_TYPE)) {
-                String tipo = node.has(KEY_HANDLE_TYPE) ? node.get(KEY_HANDLE_TYPE).asText() : node.get("type").asText();
-                String tipoTraduzido = traduzirTipoPuxadorTexto(tipo);
-                if (tipoTraduzido != null) {
-                    linhas.add("Tipo: " + tipoTraduzido);
-                }
-            }
-            if (node.has(KEY_FORMAT) && !node.get(KEY_FORMAT).isNull()) {
-                String formato = traduzirFormatoTexto(node.get(KEY_FORMAT).asText());
-                if (formato != null) {
-                    linhas.add("Formato: " + formato);
-                }
-            }
-            if (node.has(KEY_POSITION) && !node.get(KEY_POSITION).isNull()) {
-                String pos = traduzirPosicaoTexto(node.get(KEY_POSITION).asText());
-                if (pos != null) {
-                    linhas.add("Posição: " + pos);
-                }
-            }
+            adicionarTipoPuxador(node, linhas);
+            adicionarFormatoPuxador(node, linhas);
+            adicionarPosicaoPuxador(node, linhas);
         } catch (Exception e) {
             linhas.add("Configuração: " + trimmed);
         }
         return linhas;
+    }
+
+    private void adicionarTipoPuxador(JsonNode node, List<String> linhas) {
+        String tipo = null;
+        if (node.hasNonNull(KEY_HANDLE_TYPE)) {
+            tipo = node.get(KEY_HANDLE_TYPE).asText();
+        } else if (node.hasNonNull("type")) {
+            tipo = node.get("type").asText();
+        }
+        if (tipo != null) {
+            String tipoTraduzido = traduzirTipoPuxadorTexto(tipo);
+            if (tipoTraduzido != null) {
+                linhas.add("Tipo: " + tipoTraduzido);
+            }
+        }
+    }
+
+    private void adicionarFormatoPuxador(JsonNode node, List<String> linhas) {
+        if (node.hasNonNull(KEY_FORMAT)) {
+            String formato = traduzirFormatoTexto(node.get(KEY_FORMAT).asText());
+            if (formato != null) {
+                linhas.add("Formato: " + formato);
+            }
+        }
+    }
+
+    private void adicionarPosicaoPuxador(JsonNode node, List<String> linhas) {
+        if (node.hasNonNull(KEY_POSITION)) {
+            String pos = traduzirPosicaoTexto(node.get(KEY_POSITION).asText());
+            if (pos != null) {
+                linhas.add("Posição: " + pos);
+            }
+        }
     }
 
     private String traduzirTipoPuxadorTexto(String tipo) {
@@ -1438,7 +1463,7 @@ public class BudgetPdfService {
             case "LEVER_HANDLE", "LEVER", "ALAVANCA", "FECHO_ALAVANCA" -> "Alavanca";
             case "RECESSED", "EMBUTIDO" -> "Embutido";
             case "PULL" -> "Puxador Convencional";
-            case "STANDARD", "PADRAO", "PADRÃO" -> "Padrão";
+            case TIPO_STANDARD, BADGE_PADRAO -> PADRAO;
             default -> clean.replace('_', ' ');
         };
     }
