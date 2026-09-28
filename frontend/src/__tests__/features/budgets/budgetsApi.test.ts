@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { budgetsApi } from '../../../features/budgets/services/budgetsApi';
+import { budgetsApi, extractFilenameFromContentDisposition } from '../../../features/budgets/services/budgetsApi';
 import { api } from '../../../lib/api';
 import type { DiscountRequest, BudgetItemCreateRequest } from '../../../features/budgets/types';
 
@@ -711,5 +711,33 @@ describe('budgetsApi Service', () => {
       await expect(budgetsApi.downloadPdfTecnico(budgetId)).rejects.toThrow('Erro ao buscar PDF');
     });
   });
+
+  describe('extractFilenameFromContentDisposition', () => {
+    it('deve extrair nome simples com aspas padrão', () => {
+      const header = 'attachment; filename="ORC-2026-0002-tecnico.pdf"';
+      expect(extractFilenameFromContentDisposition(header)).toBe('ORC-2026-0002-tecnico.pdf');
+    });
+
+    it('deve priorizar e decodificar filename*=UTF-8 format RFC 5987', () => {
+      const header = "attachment; filename*=UTF-8''ORC-2026-0002-tecnico.pdf";
+      expect(extractFilenameFromContentDisposition(header)).toBe('ORC-2026-0002-tecnico.pdf');
+    });
+
+    it('deve decodificar cabeçalho misto Spring Boot com RFC 2047 e filename*', () => {
+      const header = 'attachment; filename="=?UTF-8?Q?ORC-2026-0002-tecnico.pdf?="; filename*=UTF-8\'\'ORC-2026-0002-tecnico.pdf';
+      expect(extractFilenameFromContentDisposition(header)).toBe('ORC-2026-0002-tecnico.pdf');
+    });
+
+    it('deve decodificar RFC 2047 Q-encoding mesmo sem filename*', () => {
+      const header = 'attachment; filename="=?UTF-8?Q?ORC-2026-0002-tecnico.pdf?="';
+      expect(extractFilenameFromContentDisposition(header)).toBe('ORC-2026-0002-tecnico.pdf');
+    });
+
+    it('deve retornar o fallback caso o header seja nulo ou indefinido', () => {
+      expect(extractFilenameFromContentDisposition(undefined, 'padrao.pdf')).toBe('padrao.pdf');
+      expect(extractFilenameFromContentDisposition('', 'padrao.pdf')).toBe('padrao.pdf');
+    });
+  });
 });
+
 

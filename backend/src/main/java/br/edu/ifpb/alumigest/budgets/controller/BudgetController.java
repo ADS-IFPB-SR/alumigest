@@ -30,7 +30,6 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 @RestController
@@ -159,7 +158,7 @@ public class BudgetController {
         BudgetPdfDTO pdfDto = budgetService.gerarPdfComercial(id);
 
         ContentDisposition contentDisposition = ContentDisposition.attachment()
-                .filename(pdfDto.filename(), StandardCharsets.UTF_8)
+                .filename(pdfDto.filename())
                 .build();
 
         return ResponseEntity.ok()
@@ -182,7 +181,7 @@ public class BudgetController {
         BudgetPdfDTO pdfDto = budgetService.gerarPdfTecnico(id);
 
         ContentDisposition contentDisposition = ContentDisposition.attachment()
-                .filename(pdfDto.filename(), StandardCharsets.UTF_8)
+                .filename(pdfDto.filename())
                 .build();
 
         return ResponseEntity.ok()

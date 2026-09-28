@@ -210,6 +210,52 @@ function mapBackendToBudgetItem(res: any): BudgetItem {
   };
 }
 
+export function extractFilenameFromContentDisposition(disposition?: string, fallback = 'documento.pdf'): string {
+  if (!disposition) return fallback;
+
+  // 1. Prioridade para filename*=UTF-8''... (RFC 5987 / RFC 6266)
+  const starMatch = disposition.match(/filename\*\s*=\s*(?:UTF-8''|utf-8'')?([^;\n]+)/i);
+  if (starMatch?.[1]) {
+    const raw = starMatch[1].replace(/^["']|["']$/g, '').trim();
+    try {
+      const decoded = decodeURIComponent(raw);
+      if (decoded) return decoded;
+    } catch {
+      // fallback
+    }
+  }
+
+  // 2. Extrai filename="..." ou filename=...
+  const normalMatch = disposition.match(/filename\s*=\s*([^;\n]+)/i);
+  if (normalMatch?.[1]) {
+    let raw = normalMatch[1].replace(/^["']|["']$/g, '').trim();
+    // Decodifica formato RFC 2047 (=?UTF-8?Q?...?= ou =?UTF-8?B?...?=) se presente
+    if (raw.startsWith('=?') && raw.endsWith('?=')) {
+      const parts = raw.split('?');
+      if (parts.length >= 5) {
+        const encoding = parts[2].toUpperCase();
+        const encodedText = parts[3];
+        if (encoding === 'Q') {
+          raw = encodedText
+            .replace(/=([0-9A-F]{2})/gi, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
+            .replace(/_/g, ' ');
+        } else if (encoding === 'B') {
+          try {
+            raw = atob(encodedText);
+          } catch {
+            // fallback
+          }
+        }
+      }
+    }
+    // Remove qualquer caractere proibido em sistemas de arquivos (evita substituição por '_' no Windows)
+    const cleaned = raw.replace(/[<>:"/\\|?*]/g, '_').trim();
+    if (cleaned) return cleaned;
+  }
+
+  return fallback;
+}
+
 export const budgetsApi = {
   // ============================================================
   // TEMPLATES DE ESQUADRIAS
@@ -364,14 +410,9 @@ export const budgetsApi = {
     });
 
     // Extrai o nome do arquivo do header Content-Disposition se fornecido pelo backend
-    let filename = `${code || id}-tecnico.pdf`;
+    const fallbackFilename = `${code || id}-tecnico.pdf`;
     const disposition = (response.headers?.['content-disposition'] || response.headers?.['Content-Disposition']) as string | undefined;
-    if (disposition) {
-      const filenameMatch = disposition.match(/filename\*?=['"]?(?:UTF-8'')?([^;"\n]+)['"]?/i);
-      if (filenameMatch?.[1]) {
-        filename = decodeURIComponent(filenameMatch[1].trim());
-      }
-    }
+    const filename = extractFilenameFromContentDisposition(disposition, fallbackFilename);
 
     const blob = new Blob([response.data], { type: 'application/pdf' });
     const url = window.URL.createObjectURL(blob);
