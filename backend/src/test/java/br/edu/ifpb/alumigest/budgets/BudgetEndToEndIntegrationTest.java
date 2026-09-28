@@ -580,6 +580,9 @@ class BudgetEndToEndIntegrationTest {
             String pdfHeader = new String(pdfBytes, 0, 5, StandardCharsets.US_ASCII);
             assertThat(pdfHeader).isEqualTo("%PDF-");
 
+            java.nio.file.Files.createDirectories(java.nio.file.Path.of("target"));
+            java.nio.file.Files.write(java.nio.file.Path.of("target/amostra-ficha-tecnica-ORC-2026-QA04.pdf"), pdfBytes);
+
             // 5. Inspecionar o texto e certificar o sigilo comercial absoluto
             try (PdfReader reader = new PdfReader(pdfBytes)) {
                 assertThat(reader.getNumberOfPages()).isGreaterThanOrEqualTo(1);

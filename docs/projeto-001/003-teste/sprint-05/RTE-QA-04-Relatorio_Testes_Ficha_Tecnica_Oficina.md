@@ -147,6 +147,10 @@ Resultados consolidados:
 4. **Prevenção de Requisições Concorrentes (Duplo Clique):**
    - *Risco:* O operador clicar repetidamente em "Via Técnica" enquanto o PDF é gerado, sobrecarregando a CPU do servidor.
    - *Solução Homologada:* O botão entra em estado `disabled` imediato com spinner (`isPending`), rejeitando cliques adicionais.
+5. **Prevenção de Colisão Geométrica em Furações e Puxadores (Bug Identificado em Teste Manual):**
+   - *Risco:* Esquadrias com abertura para a esquerda renderizarem furações de dobradiça e puxador no mesmo montante, provocando sobreposição de textos de cota milimétrica.
+   - *Solução Homologada:* O `BudgetPdfDrawingHelper` alinha as furações no montante oposto ao puxador (`!ctx.handle().onRightSide()`), garantindo coerência com a mecânica física da esquadria e separação visual das cotas.
+   - *Evidência Manual Completa:* Registrada em [`RTM-QA-04-Roteiro_Testes_Manuais_Ficha_Tecnica.md`](./RTM-QA-04-Roteiro_Testes_Manuais_Ficha_Tecnica.md) e na amostra [`amostra-ficha-tecnica-ORC-2026-QA04.pdf`](./amostra-ficha-tecnica-ORC-2026-QA04.pdf).
 
 ---
 
@@ -154,9 +158,10 @@ Resultados consolidados:
 
 A suíte de testes ponta a ponta e a validação integrada da **US-11: Emitir Orçamento em PDF - Via Técnica de Oficina (#135)** e suas 5 sub-issues (#283, #296, #284, #285, #288) foram executadas com sucesso absoluto.
 
-- [x] Todos os 10 casos de teste da matriz foram satisfeitos.
+- [x] Todos os 10 casos de teste automatizados e 11 testes manuais foram satisfeitos.
 - [x] Suíte de testes Cypress E2E criada e homologada.
 - [x] Testes de integração backend com banco e MockMvc aprovados.
+- [x] Testes manuais exploratórios executados com evidência documental em PDF.
 - [x] Zero violações de Checkstyle e zero erros de linter.
 - [x] Definition of Done (DoD) formalmente atendido.
 

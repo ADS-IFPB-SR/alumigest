@@ -233,7 +233,9 @@ public final class BudgetPdfDrawingHelper {
             TechnicalMachiningContext ctx,
             float startX, float startY, float drawW, float drawH
     ) {
-        boolean onLeftSide = !ctx.isOpeningLeft();
+        boolean onLeftSide = ctx.hasHandle()
+                ? ctx.handle().onRightSide()
+                : (ctx.isOpeningLeft() || ctx.openingDirection() == null);
         float furoX = onLeftSide ? (startX + INNER_OFFSET + 2.5f) : (startX + drawW - INNER_OFFSET - 2.5f);
         float cotaGuiaX = onLeftSide ? (startX - 5f) : (startX + drawW + 5f);
         int textAlign = onLeftSide ? PdfContentByte.ALIGN_RIGHT : PdfContentByte.ALIGN_LEFT;
