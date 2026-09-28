@@ -1,5 +1,6 @@
 package br.edu.ifpb.alumigest.budgets.service.pdf.technical;
 
+import br.edu.ifpb.alumigest.budgets.calculator.TemplateType;
 import br.edu.ifpb.alumigest.budgets.domain.BudgetItem;
 import br.edu.ifpb.alumigest.catalog.domain.HandlePosition;
 import br.edu.ifpb.alumigest.catalog.domain.OpeningDirection;
@@ -60,13 +61,19 @@ public final class TechnicalMachiningResolver {
         List<DrillingHolePoint> drillingHoles = extrairFuracoes(item, heightMm, templateType);
         TechnicalHandle handle = extrairPuxador(item, heightMm, openingDirection);
 
+        TemplateType parsedType = TemplateType.parse(templateType);
+        int leafCount = extractLeafCount(parsedType, templateType);
+        boolean sliding = extractIsSliding(parsedType, templateType);
+
         return new TechnicalMachiningContext(
                 templateType,
                 widthMm,
                 heightMm,
                 openingDirection,
                 drillingHoles,
-                handle
+                handle,
+                leafCount,
+                sliding
         );
     }
 
@@ -268,5 +275,39 @@ public final class TechnicalMachiningResolver {
             return String.format(Locale.ROOT, "Puxador (%.0fcm)", lengthMm / 10f);
         }
         return String.format(Locale.ROOT, "Puxador (%.0fmm)", lengthMm);
+    }
+
+    private static int extractLeafCount(TemplateType parsedType, String rawType) {
+        if (parsedType != null) {
+            return parsedType.getLeafCount();
+        }
+        if (rawType == null || rawType.isBlank()) {
+            return 1;
+        }
+        String upper = rawType.toUpperCase(Locale.ROOT);
+        if (upper.contains("4F") || upper.contains("4_LEAF") || upper.contains("4 FOLHAS")) {
+            return 4;
+        }
+        if (upper.contains("3F") || upper.contains("3_LEAF") || upper.contains("3 FOLHAS")) {
+            return 3;
+        }
+        if (upper.contains("2F") || upper.contains("2_LEAF") || upper.contains("2 FOLHAS")) {
+            return 2;
+        }
+        if (extractIsSliding(null, rawType)) {
+            return 2;
+        }
+        return 1;
+    }
+
+    private static boolean extractIsSliding(TemplateType parsedType, String rawType) {
+        if (parsedType != null) {
+            return parsedType.isSliding();
+        }
+        if (rawType == null || rawType.isBlank()) {
+            return false;
+        }
+        String upper = rawType.toUpperCase(Locale.ROOT);
+        return upper.contains("SLIDING") || upper.contains("CORRER");
     }
 }

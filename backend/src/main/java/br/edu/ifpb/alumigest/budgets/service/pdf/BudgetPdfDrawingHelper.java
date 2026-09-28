@@ -168,6 +168,39 @@ public final class BudgetPdfDrawingHelper {
         TechnicalMachiningContext ctx = TechnicalMachiningResolver.resolve(item);
 
         // 3. Determinação de margens dinâmicas baseadas nos componentes cotados
+        float[] margens = calcularMargensLaterais(ctx);
+        float[] bounds = calcularPosicionamentoDesenho(ctx, width, height, margens[0], margens[1]);
+        float startX = bounds[0];
+        float startY = bounds[1];
+        float drawW = bounds[2];
+        float drawH = bounds[3];
+
+        // 4. Desenho dos componentes técnicos
+        desenharMolduraTecnica(tpl, ctx, startX, startY, drawW, drawH);
+
+        if (ctx.hasDrilling()) {
+            desenharFuracoesUsinagem(tpl, ctx, startX, startY, drawW, drawH);
+        }
+
+        if (ctx.hasHandle()) {
+            desenharPuxadorTecnico(tpl, ctx.handle(), startX, startY, drawW, drawH, width);
+        }
+
+        return Image.getInstance(tpl);
+    }
+
+    /**
+     * Sobrecarga de conveniência que utiliza as dimensões canônicas da Ficha Técnica (105×105 pt).
+     *
+     * @param writer instância ativa do {@link PdfWriter}
+     * @param item   item do orçamento contendo template, furações e puxador
+     * @return {@link Image} vetorial contendo o esquema cotado
+     */
+    public static Image desenharEsquemaUsinagem(PdfWriter writer, BudgetItem item) {
+        return desenharEsquemaUsinagem(writer, item, DEFAULT_MACHINING_SIZE, DEFAULT_MACHINING_SIZE);
+    }
+
+    private static float[] calcularMargensLaterais(TechnicalMachiningContext ctx) {
         boolean hasDrill = ctx.hasDrilling();
         boolean hasHandle = ctx.hasHandle();
 
@@ -194,6 +227,12 @@ public final class BudgetPdfDrawingHelper {
             marginRight = Math.max(marginRight, 44.0f);
         }
 
+        return new float[]{marginLeft, marginRight};
+    }
+
+    private static float[] calcularPosicionamentoDesenho(
+            TechnicalMachiningContext ctx, float width, float height, float marginLeft, float marginRight
+    ) {
         float marginY = Math.min(8.0f, height * 0.08f);
         float availW = Math.max(10.0f, width - (marginLeft + marginRight));
         float availH = Math.max(10.0f, height - (2 * marginY));
@@ -211,46 +250,87 @@ public final class BudgetPdfDrawingHelper {
 
         float startX = marginLeft + (availW - drawW) / 2f;
         float startY = marginY + (availH - drawH) / 2f;
-
-        // 4. Desenho dos componentes técnicos
-        desenharMolduraTecnica(tpl, startX, startY, drawW, drawH);
-
-        if (ctx.hasDrilling()) {
-            desenharFuracoesUsinagem(tpl, ctx, startX, startY, drawW, drawH);
-        }
-
-        if (ctx.hasHandle()) {
-            desenharPuxadorTecnico(tpl, ctx.handle(), startX, startY, drawW, drawH, width);
-        }
-
-        return Image.getInstance(tpl);
+        return new float[]{startX, startY, drawW, drawH};
     }
 
-    /**
-     * Sobrecarga de conveniência que utiliza as dimensões canônicas da Ficha Técnica (105×105 pt).
-     *
-     * @param writer instância ativa do {@link PdfWriter}
-     * @param item   item do orçamento contendo template, furações e puxador
-     * @return {@link Image} vetorial contendo o esquema cotado
-     */
-    public static Image desenharEsquemaUsinagem(PdfWriter writer, BudgetItem item) {
-        return desenharEsquemaUsinagem(writer, item, DEFAULT_MACHINING_SIZE, DEFAULT_MACHINING_SIZE);
-    }
-
-    private static void desenharMolduraTecnica(PdfTemplate tpl, float x, float y, float w, float h) {
+    private static void desenharMolduraTecnica(
+            PdfTemplate tpl,
+            TechnicalMachiningContext ctx,
+            float x, float y, float w, float h
+    ) {
         // Moldura externa da folha
         tpl.setColorStroke(COLOR_MOLDURA_EXTERNA);
         tpl.setLineWidth(1.4f);
         tpl.rectangle(x, y, w, h);
         tpl.stroke();
 
-        // Linha interna pontilhada de folga de usinagem
+        int leaves = ctx != null ? ctx.getLeafCount() : 1;
+        boolean sliding = ctx != null && ctx.isSliding();
+
+        if (leaves <= 1 || !sliding) {
+            // Linha interna pontilhada de folga de usinagem (folha única)
+            tpl.setColorStroke(COLOR_MOLDURA_INTERNA);
+            tpl.setLineWidth(0.6f);
+            tpl.setLineDash(2f, 2f, 0f);
+            tpl.rectangle(x + INNER_OFFSET, y + INNER_OFFSET, w - (2 * INNER_OFFSET), h - (2 * INNER_OFFSET));
+            tpl.stroke();
+            tpl.setLineDash(0f);
+        } else {
+            // Divisão de folhas para tipologias de correr multifolhas (2F, 3F, 4F) - Task #342
+            float innerOffset = INNER_OFFSET;
+            float innerX = x + innerOffset;
+            float innerY = y + innerOffset;
+            float innerW = w - (2 * innerOffset);
+            float innerH = h - (2 * innerOffset);
+            float leafW = innerW / leaves;
+
+            for (int i = 0; i < leaves; i++) {
+                float fx = innerX + (i * leafW);
+
+                // Caixilho sólido da folha
+                tpl.setColorStroke(COLOR_MOLDURA_EXTERNA);
+                tpl.setLineWidth(0.85f);
+                tpl.rectangle(fx, innerY, leafW, innerH);
+                tpl.stroke();
+
+                // Folga interna pontilhada de usinagem
+                tpl.setColorStroke(COLOR_MOLDURA_INTERNA);
+                tpl.setLineWidth(0.5f);
+                tpl.setLineDash(1.5f, 1.5f, 0f);
+                tpl.rectangle(fx + 1.5f, innerY + 1.5f, leafW - 3f, innerH - 3f);
+                tpl.stroke();
+                tpl.setLineDash(0f);
+
+                // Seta de deslizamento lateral alternada
+                desenharSetaDeslizamento(tpl, fx, innerY, leafW, innerH, i % 2 == 0);
+            }
+        }
+    }
+
+    private static void desenharSetaDeslizamento(
+            PdfTemplate tpl, float fx, float fy, float fw, float fh, boolean toRight
+    ) {
         tpl.setColorStroke(COLOR_MOLDURA_INTERNA);
-        tpl.setLineWidth(0.6f);
-        tpl.setLineDash(2f, 2f, 0f);
-        tpl.rectangle(x + INNER_OFFSET, y + INNER_OFFSET, w - (2 * INNER_OFFSET), h - (2 * INNER_OFFSET));
-        tpl.stroke();
-        tpl.setLineDash(0f);
+        tpl.setLineWidth(0.55f);
+
+        float centerY = fy + (fh / 2f);
+        float arrowMargin = fw * 0.20f;
+        float startX = fx + arrowMargin;
+        float endX = fx + fw - arrowMargin;
+        float arrowHead = Math.min(fw * 0.15f, 3.2f);
+
+        if (endX > startX) {
+            tpl.moveTo(startX, centerY);
+            tpl.lineTo(endX, centerY);
+
+            float tipX = toRight ? endX : startX;
+            float dir = toRight ? -1 : 1;
+
+            tpl.moveTo(tipX + dir * arrowHead, centerY + arrowHead);
+            tpl.lineTo(tipX, centerY);
+            tpl.lineTo(tipX + dir * arrowHead, centerY - arrowHead);
+            tpl.stroke();
+        }
     }
 
     private static void desenharFuracoesUsinagem(

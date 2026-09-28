@@ -133,6 +133,29 @@ class BudgetPdfDrawingHelperTest {
     }
 
     @Test
+    @DisplayName("US-11.2 / Task #342: desenharEsquemaUsinagem para esquadrias de correr multifolhas")
+    void deveDesenharEsquemaUsinagemParaEsquadriasDeCorrerMultifolhas() {
+        BudgetItem item2F = new BudgetItem();
+        item2F.setTemplateType("SLIDING_DOOR_2F");
+        item2F.setWidthMm(new BigDecimal("1600"));
+        item2F.setHeightMm(new BigDecimal("2100"));
+        item2F.setHandleConfig("{\"type\": \"TUBULAR\", \"position\": \"RIGHT\"}");
+
+        Image img2F = BudgetPdfDrawingHelper.desenharEsquemaUsinagem(writer, item2F);
+        assertNotNull(img2F);
+        assertTrue(img2F.getWidth() > 0);
+
+        BudgetItem item4F = new BudgetItem();
+        item4F.setTemplateType("SLIDING_WINDOW_4F");
+        item4F.setWidthMm(new BigDecimal("2400"));
+        item4F.setHeightMm(new BigDecimal("1200"));
+
+        Image img4F = BudgetPdfDrawingHelper.desenharEsquemaUsinagem(writer, item4F);
+        assertNotNull(img4F);
+        assertTrue(img4F.getWidth() > 0);
+    }
+
+    @Test
     @DisplayName("US-11.2: desenharEsquemaUsinagem lança IllegalArgumentException com parâmetros inválidos")
     void deveLancarExcecaoQuandoWriterOuDimensoesInvalidas() {
         BudgetItem item = new BudgetItem();

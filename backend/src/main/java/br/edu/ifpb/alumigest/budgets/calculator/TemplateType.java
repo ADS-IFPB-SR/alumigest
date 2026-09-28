@@ -48,4 +48,26 @@ public enum TemplateType {
     public static TemplateType from(String raw) {
         return parse(raw);
     }
+
+    /**
+     * Retorna se a tipologia pertence à família de esquadrias de correr.
+     */
+    public boolean isSliding() {
+        return this == SLIDING_1_LEAF
+                || this == SLIDING_2_LEAF
+                || this == SLIDING_3_LEAF
+                || this == SLIDING_4_LEAF;
+    }
+
+    /**
+     * Retorna a quantidade de folhas construtivas do modelo.
+     */
+    public int getLeafCount() {
+        return switch (this) {
+            case SLIDING_4_LEAF -> 4;
+            case SLIDING_3_LEAF -> 3;
+            case SLIDING_2_LEAF, SWING_2_LEAF -> 2;
+            default -> 1;
+        };
+    }
 }
