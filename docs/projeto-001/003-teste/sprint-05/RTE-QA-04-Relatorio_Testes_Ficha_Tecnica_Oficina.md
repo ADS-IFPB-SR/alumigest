@@ -150,7 +150,10 @@ Resultados consolidados:
 5. **Prevenção de Colisão Geométrica em Furações e Puxadores (Bug Identificado em Teste Manual):**
    - *Risco:* Esquadrias com abertura para a esquerda renderizarem furações de dobradiça e puxador no mesmo montante, provocando sobreposição de textos de cota milimétrica.
    - *Solução Homologada:* O `BudgetPdfDrawingHelper` alinha as furações no montante oposto ao puxador (`!ctx.handle().onRightSide()`), garantindo coerência com a mecânica física da esquadria e separação visual das cotas.
-   - *Evidência Manual Completa:* Registrada em [`RTM-QA-04-Roteiro_Testes_Manuais_Ficha_Tecnica.md`](./RTM-QA-04-Roteiro_Testes_Manuais_Ficha_Tecnica.md) e na amostra [`amostra-ficha-tecnica-ORC-2026-QA04.pdf`](./amostra-ficha-tecnica-ORC-2026-QA04.pdf).
+6. **Prevenção de Truncamento do Rótulo de Puxador e Cotas Laterais:**
+   - *Risco:* O rótulo do puxador ser cortado pela borda direita da célula da tabela (ex: `Puxador (40` cortando `cm)`).
+   - *Solução Homologada:* Margens dinâmicas assimétricas alocadas por componente (`marginLeft` de 32pt para furações e `marginRight` de 44pt para puxadores), canvas técnico ampliado para 126×96 pt dentro de coluna com 26% de largura, e mecanismo de fallback que quebra o rótulo em duas linhas caso exceda o limite disponível, garantindo legibilidade perfeita.
+   - *Evidência Manual Completa:* Registrada em [`RTM-QA-04-Roteiro_Testes_Manuais_Ficha_Tecnica.md`](./RTM-QA-04-Roteiro_Testes_Manuais_Ficha_Tecnica.md) e na amostra atualizada [`amostra-ficha-tecnica-ORC-2026-QA04.pdf`](./amostra-ficha-tecnica-ORC-2026-QA04.pdf).
 
 ---
 

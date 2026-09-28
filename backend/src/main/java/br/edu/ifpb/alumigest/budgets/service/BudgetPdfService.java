@@ -986,8 +986,8 @@ public class BudgetPdfService {
     private void adicionarTabelaProducao(Document document, Budget budget, PdfWriter writer) throws DocumentException {
         PdfPTable table = new PdfPTable(5);
         table.setWidthPercentage(100);
-        // Proporções: Item (7%), Esquema (25%), Especificações (26%), Furação/Puxador (30%), Status (12%)
-        table.setWidths(new float[]{7f, 25f, 26f, 30f, 12f});
+        // Proporções: Item (6%), Esquema (26%), Especificações (26%), Furação/Puxador (30%), Status (12%)
+        table.setWidths(new float[]{6f, 26f, 26f, 30f, 12f});
         table.setHeaderRows(1);
         table.setSpacingAfter(8f);
 
@@ -1047,17 +1047,18 @@ public class BudgetPdfService {
     private PdfPCell criarCelulaEsquemaTecnico(PdfWriter writer, BudgetItem item) {
         PdfPCell cell = new PdfPCell();
         cell.setBorderColor(COR_TECNICA_BORDA);
-        cell.setPadding(3f);
+        cell.setPadding(2f);
         cell.setVerticalAlignment(Element.ALIGN_MIDDLE);
         cell.setHorizontalAlignment(Element.ALIGN_CENTER);
 
         try {
-            Image esquema = BudgetPdfDrawingHelper.desenharEsquemaUsinagem(writer, item, 98f, 98f);
+            Image esquema = BudgetPdfDrawingHelper.desenharEsquemaUsinagem(writer, item, 126f, 96f);
             esquema.setAlignment(Element.ALIGN_CENTER);
             cell.addElement(esquema);
             return cell;
         } catch (Exception ex) {
-            log.warn("Falha ao desenhar esquema vetorial de usinagem do item {}: {}", item != null ? item.getId() : "null", ex.getMessage());
+            log.warn("Falha ao desenhar esquema vetorial de usinagem do item {}: {}",
+                    item != null ? item.getId() : "null", ex.getMessage());
         }
 
         PdfPTable container = new PdfPTable(1);

@@ -167,10 +167,35 @@ public final class BudgetPdfDrawingHelper {
         // 2. Contexto técnico normalizado
         TechnicalMachiningContext ctx = TechnicalMachiningResolver.resolve(item);
 
-        // 3. Cálculo de proporção geométrica no bounding box com margens para cotas
-        float marginX = Math.min(26.0f, width * 0.25f);
-        float marginY = Math.min(10.0f, height * 0.10f);
-        float availW = Math.max(10.0f, width - (2 * marginX));
+        // 3. Determinação de margens dinâmicas baseadas nos componentes cotados
+        boolean hasDrill = ctx.hasDrilling();
+        boolean hasHandle = ctx.hasHandle();
+
+        boolean handleOnRight = hasHandle && ctx.handle().onRightSide();
+        boolean handleOnLeft = hasHandle && !ctx.handle().onRightSide();
+
+        boolean drillOnLeft = hasDrill && (handleOnRight
+                || (!hasHandle && (ctx.isOpeningLeft() || ctx.openingDirection() == null)));
+        boolean drillOnRight = hasDrill && !drillOnLeft;
+
+        float marginLeft = 10.0f;
+        if (drillOnLeft) {
+            marginLeft = Math.max(marginLeft, 32.0f);
+        }
+        if (handleOnLeft) {
+            marginLeft = Math.max(marginLeft, 44.0f);
+        }
+
+        float marginRight = 10.0f;
+        if (drillOnRight) {
+            marginRight = Math.max(marginRight, 32.0f);
+        }
+        if (handleOnRight) {
+            marginRight = Math.max(marginRight, 44.0f);
+        }
+
+        float marginY = Math.min(8.0f, height * 0.08f);
+        float availW = Math.max(10.0f, width - (marginLeft + marginRight));
         float availH = Math.max(10.0f, height - (2 * marginY));
 
         float aspect = ctx.getAspectRatio();
@@ -184,7 +209,7 @@ public final class BudgetPdfDrawingHelper {
             drawW = Math.min(availW, drawH * aspect);
         }
 
-        float startX = marginX + (availW - drawW) / 2f;
+        float startX = marginLeft + (availW - drawW) / 2f;
         float startY = marginY + (availH - drawH) / 2f;
 
         // 4. Desenho dos componentes técnicos
@@ -195,7 +220,7 @@ public final class BudgetPdfDrawingHelper {
         }
 
         if (ctx.hasHandle()) {
-            desenharPuxadorTecnico(tpl, ctx.handle(), startX, startY, drawW, drawH);
+            desenharPuxadorTecnico(tpl, ctx.handle(), startX, startY, drawW, drawH, width);
         }
 
         return Image.getInstance(tpl);
@@ -237,7 +262,7 @@ public final class BudgetPdfDrawingHelper {
                 ? ctx.handle().onRightSide()
                 : (ctx.isOpeningLeft() || ctx.openingDirection() == null);
         float furoX = onLeftSide ? (startX + INNER_OFFSET + 2.5f) : (startX + drawW - INNER_OFFSET - 2.5f);
-        float cotaGuiaX = onLeftSide ? (startX - 5f) : (startX + drawW + 5f);
+        float cotaGuiaX = onLeftSide ? (startX - 3.5f) : (startX + drawW + 3.5f);
         int textAlign = onLeftSide ? PdfContentByte.ALIGN_RIGHT : PdfContentByte.ALIGN_LEFT;
 
         for (DrillingHolePoint furo : ctx.drillingHoles()) {
@@ -271,7 +296,8 @@ public final class BudgetPdfDrawingHelper {
     private static void desenharPuxadorTecnico(
             PdfTemplate tpl,
             TechnicalHandle puxador,
-            float startX, float startY, float drawW, float drawH
+            float startX, float startY, float drawW, float drawH,
+            float totalWidth
     ) {
         float px = puxador.onRightSide()
                 ? (startX + drawW - INNER_OFFSET - 2.5f)
@@ -299,13 +325,29 @@ public final class BudgetPdfDrawingHelper {
         tpl.stroke();
 
         // Texto do puxador cotado
-        float textX = puxador.onRightSide() ? (startX + drawW + 4f) : (startX - 4f);
+        float textX = puxador.onRightSide() ? (startX + drawW + 3.5f) : (startX - 3.5f);
         int align = puxador.onRightSide() ? PdfContentByte.ALIGN_LEFT : PdfContentByte.ALIGN_RIGHT;
+
+        String label = puxador.label();
+        float maxAvailable = puxador.onRightSide()
+                ? (totalWidth - textX - 1.5f)
+                : (textX - 1.5f);
+
+        float labelWidth = BASE_FONT_HELVETICA.getWidthPoint(label, 5.5f);
 
         tpl.beginText();
         tpl.setFontAndSize(BASE_FONT_HELVETICA, 5.5f);
         tpl.setColorFill(COLOR_PUXADOR);
-        tpl.showTextAligned(align, puxador.label(), textX, centerY - 1.5f, 0f);
+
+        if (labelWidth <= maxAvailable || !label.contains(" ")) {
+            tpl.showTextAligned(align, label, textX, centerY - 1.5f, 0f);
+        } else {
+            int splitIdx = label.contains(" (") ? label.indexOf(" (") : label.lastIndexOf(' ');
+            String line1 = label.substring(0, splitIdx).trim();
+            String line2 = label.substring(splitIdx).trim();
+            tpl.showTextAligned(align, line1, textX, centerY + 2.0f, 0f);
+            tpl.showTextAligned(align, line2, textX, centerY - 4.5f, 0f);
+        }
         tpl.endText();
     }
 }
