@@ -50,11 +50,11 @@ Seguindo a governança do **Plano de Gerência de Configuração (PGC)** e do **
 | **[BUG-020](#bug-020)** | Funções Não Utilizadas no Cypress Violando Linting Estrito no Pipeline | Frontend / QA | 🟢 Baixa | Sprint 03 | ✅ Resolvido | Commit `6a48859` |
 | **[BUG-021](#bug-021)** | Perda de Insumos da Ficha Técnica em Produtos Estáticos e Ocultação de Templates na Categoria Janela | Frontend / Catálogo & Orçamentos | 🔴 Alta | Sprint 03 | ✅ Resolvido | Issue #235 / Branch `fix/products-static-items-and-window-category` |
 | **[BUG-022](#bug-022)** | Itens do Orçamento Descartados na Criação via POST /api/budgets por Ausência de Campo no BudgetCreateRequest | Backend / Orçamentos | 🔴 Alta | Sprint 04 | 🟡 Em Correção | Issue #300 / PR #293 |
-| **[BUG-023](#bug-023)** | Divergência de Cálculo de Mão de Obra (`laborCost`) entre Frontend e Backend com Múltiplas Quantidades (`quantity > 1`) | Motor de Orçamentos / Backend & UI | 🔴 Alta | Sprint 05 | 🟡 Em Aberto | Auditoria US-10 / Code Review |
-| **[BUG-024](#bug-024)** | Falha da Clipboard API em Ambientes HTTP e Ausência de Link Direto para WhatsApp (`api.whatsapp.com/send`) | Frontend / Ações | 🟡 Média | Sprint 05 | 🟡 Em Aberto | Auditoria US-10.10 |
-| **[BUG-025](#bug-025)** | Cálculo Incorreto de Dias de Validade no Rodapé do PDF com Sobrescrita Indevida para 15 Dias | Backend / PDF | 🟡 Média | Sprint 05 | 🟡 Em Aberto | Análise de Regra / US-10.1 |
-| **[BUG-026](#bug-026)** | Razão Social da Empresa Hardcodada no Resumo para WhatsApp Ignorando `CompanyProperties` | Backend / WhatsApp | 🟢 Baixa | Sprint 05 | 🟡 Em Aberto | Análise Estática / US-10.3 |
-| **[BUG-027](#bug-027)** | Resposta de Erro Empacotada como Blob sem Tratamento de Mensagem no Download de PDF Comercial | Frontend / API | 🟡 Média | Sprint 05 | 🟡 Em Aberto | Análise Estática / US-10.8 |
+| **[BUG-023](#bug-023)** | Divergência de Cálculo de Mão de Obra (`laborCost`) entre Frontend e Backend com Múltiplas Quantidades (`quantity > 1`) | Motor de Orçamentos / Backend & UI | 🔴 Alta | Sprint 05 | 🟡 Em Aberto | Issue #372 / US-10 |
+| **[BUG-024](#bug-024)** | Falha da Clipboard API em Ambientes HTTP e Ausência de Link Direto para WhatsApp (`api.whatsapp.com/send`) | Frontend / Ações | 🟡 Média | Sprint 05 | 🟡 Em Aberto | Issue #373 / US-10 |
+| **[BUG-025](#bug-025)** | Cálculo Incorreto de Dias de Validade no Rodapé do PDF com Sobrescrita Indevida para 15 Dias | Backend / PDF | 🟡 Média | Sprint 05 | 🟡 Em Aberto | Issue #374 / US-10 |
+| **[BUG-026](#bug-026)** | Razão Social da Empresa Hardcodada no Resumo para WhatsApp Ignorando `CompanyProperties` | Backend / WhatsApp | 🟢 Baixa | Sprint 05 | 🟡 Em Aberto | Issue #375 / US-10 |
+| **[BUG-027](#bug-027)** | Resposta de Erro Empacotada como Blob sem Tratamento de Mensagem no Download de PDF Comercial | Frontend / API | 🟡 Média | Sprint 05 | 🟡 Em Aberto | Issue #376 / US-10 |
 
 ---
 
@@ -687,7 +687,7 @@ O modelo de domínio e cálculo deve ser unificado: ou a mão de obra é sempre 
 - **Navegador / Sistema:** Spring Boot 3.4 / React 19 / Vite.
 - **Módulo Afetado:** Motor de Orçamentos e Precificação / PDF Comercial (`BudgetPricingService.java`, `BudgetPdfService.java`, `BudgetDetailPage.tsx`).
 - **Severidade:** 🔴 Alta (P2) | **Sprint:** 05 | **Status:** 🟡 Em Aberto.
-- **Detecção / Origem:** Auditoria de Regra de Negócio da US-10 / Code Review.
+- **Detecção / Origem:** Issue #372 / Auditoria de Regra de Negócio da US-10 (#134).
 
 **Causa Raiz Técnica & Solução Recomendada:**
 * **Causa Raiz:** Ausência de alinhamento no contrato DTO e na regra matemática do `BudgetPricingService` em relação ao caráter unitário ou global de `laborCost` ao iterar itens com `quantity > 1`.
@@ -720,7 +720,7 @@ Adicionalmente, a sub-tarefa **US-10.10** especifica expressamente a disponibili
 - **Navegador / Sistema:** Google Chrome / Firefox / Safari (Mobile PWA & HTTP).
 - **Módulo Afetado:** Frontend — Ações de Orçamento (`BudgetDetailActions.tsx`, `BudgetDetailPage.tsx`).
 - **Severidade:** 🟡 Média (P3) | **Sprint:** 05 | **Status:** 🟡 Em Aberto.
-- **Detecção / Origem:** Auditoria US-10.10 / Teste em PWA Mobile.
+- **Detecção / Origem:** Issue #373 / Auditoria US-10.10 (US-10 #134).
 
 **Causa Raiz Técnica & Solução Recomendada:**
 * **Causa Raiz:** Dependência irrestrita de API moderna restrita a contextos criptografados (HTTPS) e implementação parcial dos requisitos descritos na issue US-10.10.
@@ -765,7 +765,7 @@ O cálculo de dias corridos deve considerar a diferença entre as datas de calen
 - **Navegador / Sistema:** OpenPDF / Java 21 / Spring Boot 3.4.
 - **Módulo Afetado:** Backend — Serviço de PDF (`BudgetPdfService.java`).
 - **Severidade:** 🟡 Média (P3) | **Sprint:** 05 | **Status:** 🟡 Em Aberto.
-- **Detecção / Origem:** Análise de Regras de Negócio e Testes Paramétricos de Validade.
+- **Detecção / Origem:** Issue #374 / Análise de Regras de Negócio e Testes de Validade (US-10 #134).
 
 **Causa Raiz Técnica & Solução Recomendada:**
 * **Causa Raiz:** Utilização de `Duration` (baseada em segundos/horas absolutas) em vez de `ChronoUnit.DAYS` ou `Period` sobre datas locais (`LocalDate`), associada a um fallback que força `15` para qualquer intervalo que resulte em 0 dias.
@@ -804,7 +804,7 @@ O resumo para WhatsApp deve extrair o nome da empresa de `companyProps.getRazaoS
 - **Navegador / Sistema:** Spring Boot 3.4 / UTF-8 Text.
 - **Módulo Afetado:** Backend — Resumo WhatsApp (`BudgetPdfService.java`).
 - **Severidade:** 🟢 Baixa (P4) | **Sprint:** 05 | **Status:** 🟡 Em Aberto.
-- **Detecção / Origem:** Análise Estática de Código da US-10.3 / US-10.5.
+- **Detecção / Origem:** Issue #375 / Análise Estática de Código da US-10.3 / US-10.5 (#134).
 
 **Causa Raiz Técnica & Solução Recomendada:**
 * **Causa Raiz:** Uso de string literal estática em vez de referenciar o atributo `this.companyProps.getRazaoSocial()`.
@@ -853,7 +853,7 @@ Ao interceptar erros em requisições de download com `responseType: 'blob'`, o 
 - **Navegador / Sistema:** Axios 1.x / React 19 / Browser Blob API.
 - **Módulo Afetado:** Frontend — Serviço de Orçamentos e Feedback UI (`budgetsApi.ts`, `BudgetDetailActions.tsx`).
 - **Severidade:** 🟡 Média (P3) | **Sprint:** 05 | **Status:** 🟡 Em Aberto.
-- **Detecção / Origem:** Auditoria de UX e Robustez de Tratamento de Erros da US-10.8.
+- **Detecção / Origem:** Issue #376 / Auditoria de UX e Robustez de Tratamento de Erros da US-10.8 (#134).
 
 **Causa Raiz Técnica & Solução Recomendada:**
 * **Causa Raiz:** Ausência de conversor de erro para respostas do tipo binário no Axios e captura de erro sem extração de payload no componente React.

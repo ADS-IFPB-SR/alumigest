@@ -26,19 +26,19 @@ Conforme a governança da **Metodologia IMPROS** e do **Plano de Gerência de Co
 
 ## 2. 📊 Matriz de Bugs da US-10
 
-| ID | Título Resumido | Componente / Camada | Severidade | Impacto no Negócio / Usuário | Status |
-|:---:|:---|:---:|:---:|:---|:---:|
-| **[BUG-023](../RBD-Registro_de_Bugs_e_Defeitos.md#bug-023)** | Divergência de Cálculo de Mão de Obra (`laborCost`) entre Frontend e Backend com Múltiplas Quantidades (`quantity > 1`) | Motor de Orçamentos / Backend & UI | 🔴 Alta (P2) | O valor de mão de obra e o subtotal líquido de materiais divergem entre a tela e o PDF comercial impresso. | 🟡 Aberto |
-| **[BUG-024](../RBD-Registro_de_Bugs_e_Defeitos.md#bug-024)** | Falha da Clipboard API em Ambientes HTTP e Ausência de Link Direto para WhatsApp (`api.whatsapp.com/send`) | Frontend / Ações (`BudgetDetailActions.tsx`) | 🟡 Média (P3) | Em redes locais HTTP/PWA (`http://192.168.x.x`), o botão de copiar gera crash de console; falta link de envio direto. | 🟡 Aberto |
-| **[BUG-025](../RBD-Registro_de_Bugs_e_Defeitos.md#bug-025)** | Cálculo Incorreto de Dias de Validade no Rodapé do PDF com Sobrescrita Indevida para 15 Dias | Backend / PDF (`BudgetPdfService.java`) | 🟡 Média (P3) | Prazos curtos (< 24h ou horas próximas) são truncados e forçados para "15 dias", gerando contradição legal no PDF. | 🟡 Aberto |
-| **[BUG-026](../RBD-Registro_de_Bugs_e_Defeitos.md#bug-026)** | Razão Social da Empresa Hardcodada no Resumo para WhatsApp Ignorando `CompanyProperties` | Backend / WhatsApp (`BudgetPdfService.java`) | 🟢 Baixa (P4) | Propostas enviadas pelo WhatsApp fixam a assinatura "Alumiportas" mesmo se a empresa configurar outra razão social. | 🟡 Aberto |
-| **[BUG-027](../RBD-Registro_de_Bugs_e_Defeitos.md#bug-027)** | Resposta de Erro Empacotada como Blob sem Tratamento de Mensagem no Download de PDF Comercial | Frontend / API (`budgetsApi.ts`) | 🟡 Média (P3) | Exceções de regra (orçamento cancelado 422) são mascaradas por toasts genéricos sem orientação ao usuário. | 🟡 Aberto |
+| ID | Issue GitHub | Título Resumido | Componente / Camada | Severidade | Impacto no Negócio / Usuário | Status |
+|:---:|:---:|:---|:---:|:---:|:---|:---:|
+| **[BUG-023](../RBD-Registro_de_Bugs_e_Defeitos.md#bug-023)** | [#372](https://github.com/ADS-IFPB-SR/alumigest/issues/372) | Divergência de Cálculo de Mão de Obra (`laborCost`) entre Frontend e Backend com Múltiplas Quantidades (`quantity > 1`) | Motor de Orçamentos / Backend & UI | 🔴 Alta (P2) | O valor de mão de obra e o subtotal líquido de materiais divergem entre a tela e o PDF comercial impresso. | 🟡 Aberto |
+| **[BUG-024](../RBD-Registro_de_Bugs_e_Defeitos.md#bug-024)** | [#373](https://github.com/ADS-IFPB-SR/alumigest/issues/373) | Falha da Clipboard API em Ambientes HTTP e Ausência de Link Direto para WhatsApp (`api.whatsapp.com/send`) | Frontend / Ações (`BudgetDetailActions.tsx`) | 🟡 Média (P3) | Em redes locais HTTP/PWA (`http://192.168.x.x`), o botão de copiar gera crash de console; falta link de envio direto. | 🟡 Aberto |
+| **[BUG-025](../RBD-Registro_de_Bugs_e_Defeitos.md#bug-025)** | [#374](https://github.com/ADS-IFPB-SR/alumigest/issues/374) | Cálculo Incorreto de Dias de Validade no Rodapé do PDF com Sobrescrita Indevida para 15 Dias | Backend / PDF (`BudgetPdfService.java`) | 🟡 Média (P3) | Prazos curtos (< 24h ou horas próximas) são truncados e forçados para "15 dias", gerando contradição legal no PDF. | 🟡 Aberto |
+| **[BUG-026](../RBD-Registro_de_Bugs_e_Defeitos.md#bug-026)** | [#375](https://github.com/ADS-IFPB-SR/alumigest/issues/375) | Razão Social da Empresa Hardcodada no Resumo para WhatsApp Ignorando `CompanyProperties` | Backend / WhatsApp (`BudgetPdfService.java`) | 🟢 Baixa (P4) | Propostas enviadas pelo WhatsApp fixam a assinatura "Alumiportas" mesmo se a empresa configurar outra razão social. | 🟡 Aberto |
+| **[BUG-027](../RBD-Registro_de_Bugs_e_Defeitos.md#bug-027)** | [#376](https://github.com/ADS-IFPB-SR/alumigest/issues/376) | Resposta de Erro Empacotada como Blob sem Tratamento de Mensagem no Download de PDF Comercial | Frontend / API (`budgetsApi.ts`) | 🟡 Média (P3) | Exceções de regra (orçamento cancelado 422) são mascaradas por toasts genéricos sem orientação ao usuário. | 🟡 Aberto |
 
 ---
 
 ## 3. 🔍 Detalhamento Técnico das Não-Conformidades
 
-### BUG-023: Divergência de Cálculo de Mão de Obra com `quantity > 1`
+### BUG-023: Divergência de Cálculo de Mão de Obra com `quantity > 1` (Issue #372)
 * **Arquivos Afetados:**
   - [`BudgetPricingService.java`](file:///c:/Users/J%C3%BAlio%20Kennedy/Documents/alumigest/backend/src/main/java/br/edu/ifpb/alumigest/budgets/service/BudgetPricingService.java#L50-L58)
   - [`BudgetPdfService.java`](file:///c:/Users/J%C3%BAlio%20Kennedy/Documents/alumigest/backend/src/main/java/br/edu/ifpb/alumigest/budgets/service/BudgetPdfService.java#L510-L525)
@@ -49,7 +49,7 @@ Conforme a governança da **Metodologia IMPROS** e do **Plano de Gerência de Co
 
 ---
 
-### BUG-024: Quebra de Clipboard em HTTP e Falta de Link WhatsApp
+### BUG-024: Quebra de Clipboard em HTTP e Falta de Link WhatsApp (Issue #373)
 * **Arquivos Afetados:**
   - [`BudgetDetailActions.tsx`](file:///c:/Users/J%C3%BAlio%20Kennedy/Documents/alumigest/frontend/src/features/budgets/components/BudgetDetailActions.tsx#L37-L52)
   - [`BudgetDetailPage.tsx`](file:///c:/Users/J%C3%BAlio%20Kennedy/Documents/alumigest/frontend/src/pages/BudgetDetailPage.tsx)
@@ -59,7 +59,7 @@ Conforme a governança da **Metodologia IMPROS** e do **Plano de Gerência de Co
 
 ---
 
-### BUG-025: Cálculo Incorreto de Dias de Validade no PDF Comercial
+### BUG-025: Cálculo Incorreto de Dias de Validade no PDF Comercial (Issue #374)
 * **Arquivos Afetados:**
   - [`BudgetPdfService.java`](file:///c:/Users/J%C3%BAlio%20Kennedy/Documents/alumigest/backend/src/main/java/br/edu/ifpb/alumigest/budgets/service/BudgetPdfService.java#L604-L617)
 * **Diagnóstico Técnico:**
@@ -68,7 +68,7 @@ Conforme a governança da **Metodologia IMPROS** e do **Plano de Gerência de Co
 
 ---
 
-### BUG-026: Razão Social Hardcodada no WhatsApp
+### BUG-026: Razão Social Hardcodada no WhatsApp (Issue #375)
 * **Arquivos Afetados:**
   - [`BudgetPdfService.java`](file:///c:/Users/J%C3%BAlio%20Kennedy/Documents/alumigest/backend/src/main/java/br/edu/ifpb/alumigest/budgets/service/BudgetPdfService.java#L231)
 * **Diagnóstico Técnico:**
@@ -77,7 +77,7 @@ Conforme a governança da **Metodologia IMPROS** e do **Plano de Gerência de Co
 
 ---
 
-### BUG-027: Falta de Extração de Erro em Respostas Blob
+### BUG-027: Falta de Extração de Erro em Respostas Blob (Issue #376)
 * **Arquivos Afetados:**
   - [`budgetsApi.ts`](file:///c:/Users/J%C3%BAlio%20Kennedy/Documents/alumigest/frontend/src/features/budgets/services/budgetsApi.ts#L351-L366)
   - [`BudgetDetailActions.tsx`](file:///c:/Users/J%C3%BAlio%20Kennedy/Documents/alumigest/frontend/src/features/budgets/components/BudgetDetailActions.tsx#L24-L35)
@@ -90,8 +90,8 @@ Conforme a governança da **Metodologia IMPROS** e do **Plano de Gerência de Co
 ## 4. 🧭 Orientações ao Scrum Master para Gestão das Correções
 
 1. **Priorização no Backlog:**
-   - **Sprint Atual (Sprint 05):** O **BUG-023** e o **BUG-025** devem ser priorizados imediatamente para não comprometer a homologação comercial da Release 1.
-   - **Melhorias de Usabilidade:** **BUG-024**, **BUG-026** e **BUG-027** podem ser distribuídos como tarefas de refinamento contínuo da US-10.
+   - **Sprint Atual (Sprint 05):** O **BUG-023** ([#372](https://github.com/ADS-IFPB-SR/alumigest/issues/372)) e o **BUG-025** ([#374](https://github.com/ADS-IFPB-SR/alumigest/issues/374)) devem ser priorizados imediatamente para não comprometer a homologação comercial da Release 1.
+   - **Melhorias de Usabilidade:** **BUG-024** ([#373](https://github.com/ADS-IFPB-SR/alumigest/issues/373)), **BUG-026** ([#375](https://github.com/ADS-IFPB-SR/alumigest/issues/375)) e **BUG-027** ([#376](https://github.com/ADS-IFPB-SR/alumigest/issues/376)) podem ser distribuídos como tarefas de refinamento contínuo da US-10.
 2. **Atualização da Governança:**
    - Todos os bugs já foram integrados ao catálogo mestre [`RBD-Registro_de_Bugs_e_Defeitos.md`](../RBD-Registro_de_Bugs_e_Defeitos.md).
-   - Ao abrir issues individuais no GitHub, utilize o template padronizado em [`.github/ISSUE_TEMPLATE/bug_report.yml`](../../../../.github/ISSUE_TEMPLATE/bug_report.yml).
+   - As issues individuais no GitHub foram formalmente criadas vinculadas à sub-árvore da [US-10 (#134)](https://github.com/ADS-IFPB-SR/alumigest/issues/134): [#372](https://github.com/ADS-IFPB-SR/alumigest/issues/372), [#373](https://github.com/ADS-IFPB-SR/alumigest/issues/373), [#374](https://github.com/ADS-IFPB-SR/alumigest/issues/374), [#375](https://github.com/ADS-IFPB-SR/alumigest/issues/375) e [#376](https://github.com/ADS-IFPB-SR/alumigest/issues/376).
