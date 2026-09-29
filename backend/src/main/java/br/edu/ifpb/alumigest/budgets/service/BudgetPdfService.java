@@ -108,7 +108,6 @@ public class BudgetPdfService {
     private static final Font FONTE_TECNICA_CHECKBOX_LABEL = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 7, COR_TECNICA_TEXT_SEC);
 
     private static final String KEY_DETAILS = "details";
-    private static final String KEY_HOLES_COUNT = "holesCount";
     private static final String KEY_POSITION = "position";
     private static final String PREFIXO_POSICAO = "Posição: ";
     private static final String KEY_FORMAT = "format";
