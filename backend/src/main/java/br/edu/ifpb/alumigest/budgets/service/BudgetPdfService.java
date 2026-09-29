@@ -110,6 +110,7 @@ public class BudgetPdfService {
     private static final String KEY_DETAILS = "details";
     private static final String KEY_HOLES_COUNT = "holesCount";
     private static final String KEY_POSITION = "position";
+    private static final String PREFIXO_POSICAO = "Posição: ";
     private static final String KEY_FORMAT = "format";
     private static final String KEY_HANDLE_TYPE = "handleType";
     private static final String PADRAO = "Padrão";
@@ -1160,7 +1161,7 @@ public class BudgetPdfService {
             cell.addElement(p);
         }
 
-        if (ctx.hasNbr10821Warning()) {
+        if (ctx != null && ctx.hasNbr10821Warning()) {
             Font fontAlerta = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 7.5f, COR_TECNICA_DANGER);
             Paragraph pAviso = new Paragraph(
                     "[!] NBR 10821: Recomendado mín. 3 dobradiças para altura > 1800mm",
@@ -1350,12 +1351,6 @@ public class BudgetPdfService {
         };
     }
 
-    private List<String> gerarLinhasFuracao(BudgetItem item) {
-        TechnicalMachiningContext ctx = TechnicalMachiningResolver.resolve(item);
-        String tipoFuracao = extrairTipoFuracaoBadge(item != null ? item.getTemplateType() : null);
-        return gerarLinhasFuracao(item, ctx, tipoFuracao);
-    }
-
     private List<String> gerarLinhasFuracao(
             BudgetItem item, TechnicalMachiningContext ctx, String tipoFuracao
     ) {
@@ -1367,38 +1362,45 @@ public class BudgetPdfService {
         }
 
         if (ctx != null && ctx.hasDrilling()) {
-            int count = ctx.drillingHoles().size();
-            String acessorio = mapearAcessorioFuracao(tipoFuracao, count);
-            linhas.add(count + " " + acessorio + ".");
-
-            boolean isCustom = raw != null && (raw.contains("CUSTOM") || raw.contains("customPositionsMm"));
-            if (isCustom) {
-                linhas.add("Distâncias personalizadas conforme cotas.");
-            } else {
-                linhas.add("Distância dividida por igual.");
-            }
-
-            if (raw != null && !raw.isBlank()) {
-                try {
-                    JsonNode node = objectMapper.readTree(raw.trim());
-                    if (node.has(KEY_DETAILS) && !node.get(KEY_DETAILS).isNull()) {
-                        linhas.add(traduzirDetalhesFuracao(node.get(KEY_DETAILS).asText()));
-                    }
-                    if (node.has(KEY_POSITION) && !node.get(KEY_POSITION).isNull()) {
-                        String pos = traduzirPosicaoTexto(node.get(KEY_POSITION).asText());
-                        if (pos != null) {
-                            linhas.add("Posição: " + pos);
-                        }
-                    }
-                } catch (Exception ignored) {
-                    // Ignora erro de JSON adicional pois a geometria principal foi resolvida
-                }
-            }
+            adicionarLinhasFuracaoAtiva(linhas, ctx, raw, tipoFuracao);
             return linhas;
         }
 
         linhas.addAll(obterLinhasFuracaoFallback(item != null ? item.getTemplateType() : null));
         return linhas;
+    }
+
+    private void adicionarLinhasFuracaoAtiva(
+            List<String> linhas, TechnicalMachiningContext ctx, String raw, String tipoFuracao
+    ) {
+        int count = ctx.drillingHoles().size();
+        String acessorio = mapearAcessorioFuracao(tipoFuracao, count);
+        linhas.add(count + " " + acessorio + ".");
+
+        boolean isCustom = raw != null && (raw.contains("CUSTOM") || raw.contains("customPositionsMm"));
+        linhas.add(isCustom ? "Distâncias personalizadas conforme cotas." : "Distância dividida por igual.");
+
+        extrairDetalhesEPosicaoJson(linhas, raw);
+    }
+
+    private void extrairDetalhesEPosicaoJson(List<String> linhas, String raw) {
+        if (raw == null || raw.isBlank()) {
+            return;
+        }
+        try {
+            JsonNode node = objectMapper.readTree(raw.trim());
+            if (node.hasNonNull(KEY_DETAILS)) {
+                linhas.add(traduzirDetalhesFuracao(node.get(KEY_DETAILS).asText()));
+            }
+            if (node.hasNonNull(KEY_POSITION)) {
+                String pos = traduzirPosicaoTexto(node.get(KEY_POSITION).asText());
+                if (pos != null) {
+                    linhas.add(PREFIXO_POSICAO + pos);
+                }
+            }
+        } catch (Exception ignored) {
+            // Ignora erro de JSON adicional pois a geometria principal foi resolvida
+        }
     }
 
     private String mapearAcessorioFuracao(String tipoFuracao, int count) {
@@ -1416,49 +1418,6 @@ public class BudgetPdfService {
             return count == 1 ? "furo para fixação caixa" : "furos para fixação caixa";
         }
         return count == 1 ? "furo previsto" : "furos previstos";
-    }
-
-    private List<String> extrairLinhasFuracaoJson(String raw) {
-        List<String> linhas = new ArrayList<>();
-        if (raw == null || raw.isBlank()) {
-            return linhas;
-        }
-        String trimmed = raw.trim();
-        if ("{}".equals(trimmed) || "NONE".equalsIgnoreCase(trimmed)) {
-            return linhas;
-        }
-        try {
-            JsonNode node = objectMapper.readTree(trimmed);
-            if (node.has(KEY_DETAILS) && !node.get(KEY_DETAILS).isNull()) {
-                linhas.add(traduzirDetalhesFuracao(node.get(KEY_DETAILS).asText()));
-            }
-            JsonNode countNode = node.get(KEY_HOLES_COUNT);
-            if (countNode == null) {
-                countNode = node.get("holeCount");
-            }
-            if (countNode == null) {
-                countNode = node.get("quantity");
-            }
-            if (countNode == null) {
-                countNode = node.get("count");
-            }
-            if (countNode == null) {
-                countNode = node.get("holes");
-            }
-            if (countNode != null && !countNode.isNull()) {
-                int count = countNode.asInt();
-                linhas.add(count + (count == 1 ? " furo previsto." : " furos previstos."));
-            }
-            if (node.has(KEY_POSITION) && !node.get(KEY_POSITION).isNull()) {
-                String pos = traduzirPosicaoTexto(node.get(KEY_POSITION).asText());
-                if (pos != null) {
-                    linhas.add("Posição: " + pos);
-                }
-            }
-        } catch (Exception e) {
-            linhas.add(trimmed);
-        }
-        return linhas;
     }
 
     private List<String> obterLinhasFuracaoFallback(String templateType) {
@@ -1479,6 +1438,9 @@ public class BudgetPdfService {
     }
 
     private List<String> gerarLinhasPuxador(BudgetItem item) {
+        if (item == null) {
+            return List.of("Sem puxador previsto.");
+        }
         List<String> linhas = extrairLinhasPuxadorJson(item.getHandleConfig());
         if (linhas.isEmpty()) {
             linhas.addAll(obterLinhasPuxadorFallback(item));
@@ -1534,7 +1496,7 @@ public class BudgetPdfService {
         if (node.hasNonNull(KEY_POSITION)) {
             String pos = traduzirPosicaoTexto(node.get(KEY_POSITION).asText());
             if (pos != null) {
-                linhas.add("Posição: " + pos);
+                linhas.add(PREFIXO_POSICAO + pos);
             }
         }
     }
