@@ -4,7 +4,7 @@
 |---|---|
 | **Projeto** | AlumiGest — Sistema de Gestão para Vidraçaria e Esquadrias |
 | **Documento** | Registro Unificado de Bugs, Defeitos e Hotfixes (RBD) |
-| **Versão** | 2.3.0 (Catálogo de Bugs BUG-027 a BUG-031 da US-10 e BUG-023 da US-11.2 na Sprint 05) |
+| **Versão** | 2.6.0 (Catálogo de Bugs BUG-027 a BUG-031 da US-10 e BUG-024 a BUG-026 da US-11.2 na Sprint 05) |
 | **Data de Atualização** | 29/09/2026 |
 | **Responsável QA / SM** | Herbert Carvalho dos Santos / Júlio Kennedy dos Santos Silva / Equipe de Engenharia AlumiGest |
 | **Branch** | `develop` |
@@ -51,6 +51,9 @@ Seguindo a governança do **Plano de Gerência de Configuração (PGC)** e do **
 | **[BUG-021](#bug-021)** | Perda de Insumos da Ficha Técnica em Produtos Estáticos e Ocultação de Templates na Categoria Janela | Frontend / Catálogo & Orçamentos | 🔴 Alta | Sprint 03 | ✅ Resolvido | Issue #235 / Branch `fix/products-static-items-and-window-category` |
 | **[BUG-022](#bug-022)** | Itens do Orçamento Descartados na Criação via POST /api/budgets por Ausência de Campo no BudgetCreateRequest | Backend / Orçamentos | 🔴 Alta | Sprint 04 | ✅ Resolvido | Issue #300 / PR #293 |
 | **[BUG-023](#bug-023)** | Falta de Cotas Milimétricas Reais de Furação e Linha Divisória Cortando Texto do Puxador Duplo na Ficha Técnica | Backend / PDF | 🟡 Média | Sprint 05 | ✅ Resolvido | Issue #349 / Branch `fix/349-cotas-furacao-puxador-duplo` |
+| **[BUG-024](#bug-024)** | Inconsistência entre Texto de Furação e Desenho Técnico na Ficha Técnica (3 furos no texto vs 2 furos no desenho) | Backend / PDF | 🟡 Média | Sprint 05 | ✅ Resolvido | Issue #348 / Branch `fix/348-inconsistencia-furacao-ficha-tecnica` |
+| **[BUG-025](#bug-025)** | Cota e Rótulo do Puxador Cortados na Margem Lateral do Esquema Técnico de Usinagem | Backend / PDF | 🟡 Média | Sprint 05 | ✅ Resolvido | Issue #345 / Branch `fix/345-cota-rotulo-puxador-cortados` |
+| **[BUG-026](#bug-026)** | Termos em Inglês Exibidos no Detalhamento de Usinagem, Puxadores e Tipologias do PDF Técnico | Backend / PDF | 🟡 Média | Sprint 05 | ✅ Resolvido | Issue #344 / Branch `fix/344-termos-ingles-detalhamento-pdf` |
 | **[BUG-027](#bug-027)** | Divergência de Cálculo de Mão de Obra (`laborCost`) entre Frontend e Backend com Múltiplas Quantidades (`quantity > 1`) | Motor de Orçamentos / Backend & UI | 🔴 Alta | Sprint 05 | 🟡 Em Aberto | Issue #372 / US-10 |
 | **[BUG-028](#bug-028)** | Falha da Clipboard API em Ambientes HTTP e Ausência de Link Direto para WhatsApp (`api.whatsapp.com/send`) | Frontend / Ações | 🟡 Média | Sprint 05 | 🟡 Em Aberto | Issue #373 / US-10 |
 | **[BUG-029](#bug-029)** | Cálculo Incorreto de Dias de Validade no Rodapé do PDF com Sobrescrita Indevida para 15 Dias | Backend / PDF | 🟡 Média | Sprint 05 | 🟡 Em Aberto | Issue #374 / US-10 |
@@ -695,6 +698,119 @@ Na emissão da Ficha Técnica de Usinagem e Corte (Ficha de Oficina - US-11.2), 
 
 ---
 
+### BUG-024
+#### [BUG] [US-11.2] Inconsistência entre Texto de Furação e Desenho Técnico na Ficha Técnica (3 furos no texto vs 2 furos no desenho) (Issue #348)
+
+**Descrição do Problema:**
+Na emissão da Ficha Técnica de Oficina (Ficha de Usinagem e Corte - US-11.2), observou-se uma divergência direta e crítica para a produção fabril entre as informações textuais e gráficas de usinagem:
+1. No card de usinagem/furação, o texto descritivo afirmava fixamente: `"3 furos para dobradiças (10%, 50%, 90% da altura)."`, mesmo quando o item possuía apenas 2 dobradiças configuradas.
+2. No esquema gráfico adjacente, eram desenhados corretamente apenas 2 furos de dobradiça com suas respectivas cotas milimétricas.
+3. Essa discrepância entre o texto e o desenho causava dúvida operacional no chão de fábrica, com risco de furação indevida de perfis de alumínio.
+4. Adicionalmente, quando uma porta de giro com altura superior a 1800mm é configurada com menos de 3 dobradiças, a norma **ABNT NBR 10821** recomenda o uso de no mínimo 3 pontos de sustentação para mitigar empenamento e sobrecarga nas ferragens. O sistema não fornecia qualquer alerta normativo instrutivo ao operador.
+
+**Passos para Reproduzir:**
+1. Criar ou editar um orçamento adicionando uma porta de giro (ex: `SWING_DOOR_2F` com 2100mm de altura) configurada com 2 furos de dobradiça (`{"holeCount": 2, "divisionType": "EQUAL"}`).
+2. Gerar a Ficha Técnica de Oficina em PDF.
+3. Observar a seção de Usinagem e Furações do item:
+   - Texto descritivo exibe fixamente `"3 furos para dobradiças"`.
+   - Desenho técnico ao lado plota 2 furos de dobradiça cotados.
+
+**Comportamento Esperado:**
+- O texto do card descritivo e o desenho gráfico devem compartilhar estritamente a mesma fonte da verdade (`TechnicalMachiningContext`), reportando exatamente a quantidade configurada (ex: `"2 furos para dobradiças."`).
+- Suporte a múltiplos formatos e sinônimos no payload JSON de usinagem (`holeCount`, `holesCount`, `quantity`, `count`, `divisionType`, `drillingMode`).
+- Respeitar a escolha do usuário sem forçar furos adicionais no desenho nem no texto, mas caso seja uma porta de giro com altura > 1800mm e menos de 3 dobradiças, exibir uma linha em vermelho com aviso consultivo: `[!] NBR 10821: Recomendado mín. 3 dobradiças para altura > 1800mm`.
+
+**Contexto / Ambiente:**
+- **Módulo Afetado:** `BudgetPdfService.java`, `TechnicalMachiningResolver.java`, `TechnicalMachiningContext.java`.
+- **Severidade:** 🟡 Média / Funcional | **Sprint:** 05 | **Status:** ✅ Resolvido.
+- **Detecção / Correção:** Issue #348 / Branch `fix/348-inconsistencia-furacao-ficha-tecnica`.
+
+**Causa Raiz Técnica & Solução:**
+* **Causa Raiz:** O método `BudgetPdfService.gerarLinhasFuracao` continha strings hardcoded que assumiam invariavelmente 3 furos para dobradiças sem consultar o `TechnicalMachiningContext`. Além disso, o parser de furação no `TechnicalMachiningResolver` não tratava certas variações de chaves (`holesCount`, `divisionType`) que podiam ocorrer em orçamentos salvos.
+* **Solução:**
+  1. Adicionado suporte no `TechnicalMachiningResolver` para ler chaves flexíveis (`divisionType`, `drillingMode`, `holeCount`, `holesCount`, `quantity`, `count`, `holes`) e distâncias configuradas.
+  2. Implementados os métodos `isSwingDoor()` e `hasNbr10821Warning()` no `TechnicalMachiningContext` para identificar portas de giro com altura > 1800mm e furação < 3 dobradiças.
+  3. Atualizado o método `BudgetPdfService.criarCelulaDetalhamentoFuracao` para obter o `TechnicalMachiningContext` resolvido e passá-lo para `gerarLinhasFuracao`.
+  4. Método `gerarLinhasFuracao` atualizado para montar a descrição dinâmica baseada no número real de furos (`ctx.getPontoFuracaoList().size()`), adicionando a advertência da NBR 10821 em vermelho quando aplicável.
+  5. Atualizados testes unitários e de integração E2E com cobertura total (562 testes passando).
+  6. Gerada evidência visual em alta resolução em `docs/projeto-001/003-teste/sprint-05/evidencias/evidencia-fix-348-ficha-tecnica.png`.
+
+---
+
+### BUG-025
+#### [BUG] [US-11.2] Cota e Rótulo do Puxador Cortados na Margem Lateral do Esquema Técnico de Usinagem (Issue #345)
+
+**Descrição do Problema:**
+No esquema técnico de usinagem e corte da Ficha Técnica (renderizado na coluna de usinagem do PDF), o texto contendo a identificação e a cota do puxador (ex.: `Puxador (600mm)` ou `Puxador (250mm)`) ficava colado na margem direita ou ultrapassava os limites do canvas de 126 pt, ficando parcialmente coberto pela linha de contorno da tabela ou truncado.
+Em esquadrias onde o puxador se posiciona na borda lateral direita da folha, a soma das larguras de deslocamento projetava o texto para fora do limite da célula, gerando risco de leitura truncada pelo operador na serralheria.
+
+**Passos para Reproduzir:**
+1. Criar ou emitir um orçamento contendo esquadria com puxador lateral externo longo (ex.: `Puxador (600mm)` em janela ou porta com folha na lateral direita).
+2. Gerar a Ficha Técnica de Oficina (Via Técnica em PDF).
+3. Inspecionar o quadrante gráfico de usinagem e corte:
+   - Observar a legenda do puxador encostando ou ultrapassando a linha de contorno perimetral da célula da tabela.
+   - Parênteses final ou unidade `mm` cortados pelo traço da borda.
+
+**Comportamento Esperado:**
+- O texto do puxador e sua máscara opaca de fundo (*pill background*) devem respeitar contenção estrita (*clamping*) dentro dos limites úteis do canvas (`[1.5f, totalWidth - 1.5f]`).
+- Quando o texto for extenso, aplicar quebra inteligente no delimitador de cota `" ("` e redução proporcional de fonte (até mín. `4.8f`), garantindo margem de respiro de pelo menos 1.5 pt em relação à borda perimetral.
+
+**Contexto / Ambiente:**
+- **Módulo Afetado:** `BudgetPdfDrawingHelper.java`.
+- **Severidade:** 🟡 Média / UX | **Sprint:** 05 | **Status:** ✅ Resolvido.
+- **Detecção / Correção:** Issue #345 / Branch `fix/345-cota-rotulo-puxador-cortados`.
+
+**Causa Raiz Técnica & Solução:**
+* **Causa Raiz:** O método `desenharRotuloPuxadorComMascara` calculava `boxX` e `textX` apenas pelo offset de posição do puxador, sem receber a largura total do canvas (`totalWidth`) e sem aplicar regras de contenção de borda.
+* **Solução:**
+  1. Propagada a largura `totalWidth` para `desenharRotuloPuxadorComMascara`.
+  2. Implementado método `ajustarCoordenadasParaLimites(boxX, boxW, textX, totalWidth)` para aplicar clamping rígido contra margens mínimas e máximas.
+  3. Modularizada a renderização em `renderizarRotuloLinhaUnica` e `renderizarRotuloDuasLinhas` com auto-ajuste de tamanho de fonte para textos extensos.
+  4. Testes automatizados unitários e de integração adicionados e aprovados.
+  5. Evidência em alta resolução gerada em `docs/projeto-001/003-teste/sprint-05/evidencias/evidencia-fix-345-ficha-tecnica.png`.
+
+---
+
+### BUG-026: Termos em Inglês Exibidos no Detalhamento de Usinagem, Puxadores e Tipologias do PDF Técnico
+
+**Descrição do Problema:**  
+Tanto na Ficha Técnica de Oficina (US-11.2) quanto no PDF Comercial do orçamento, identificou-se que determinados valores brutos de enums e nomenclaturas em inglês (ex.: `TUBULAR`, `SHELL_LOCK`, `HANDLE`, `RIGHT`, `LEFT`, `BOTH`, `AWNING WINDOW`, `SLIDING DOOR`, `SWING DOOR`, `CUSTOM_DISTANCES`) eram exibidos sem tradução vernácula para o Português do Brasil (pt-BR).
+
+Isso gerava inconsistência de linguagem para o cliente final e dificultava a identificação imediata na bancada de corte e montagem da serralheria/vidraçaria.
+
+**Passos para Reproduzir:**
+1. Criar um orçamento contendo itens com tipologias variadas (ex.: `AWNING WINDOW`, `SLIDING DOOR`) ou configurações de puxador/furação com termos em inglês (`TUBULAR`, `SHELL_LOCK`, `HANDLE`, `RIGHT`, `BOTH`, `CUSTOM_DISTANCES`).
+2. Emitir o PDF Comercial do orçamento e a Ficha Técnica de Oficina.
+3. Observar na coluna de especificação técnica e na coluna de detalhamento de usinagem/puxador:
+   - Exibição de `Tipo: TUBULAR` em vez de `Tipo: Tubular`.
+   - Exibição de `Tipo: SHELL_LOCK` em vez de `Tipo: Fecho Concha`.
+   - Exibição de `Posição: RIGHT` em vez de `Posição: Direita`.
+   - Exibição de `Posição: BOTH` em vez de `Posição: Ambos os Lados`.
+   - Exibição de `TIPO: AWNING WINDOW` em vez de `TIPO: BASCULANTE`.
+
+**Comportamento Esperado:**
+- Todos os termos técnicos, tipos de puxador, posições, formatos, esquemas de furação e nomenclaturas de tipologias devem ser traduzidos e padronizados em Português do Brasil (pt-BR) de forma resiliente tanto no PDF Comercial quanto na Ficha Técnica.
+- Termos com espaços (ex.: `AWNING WINDOW`, `SLIDING DOOR`) devem ser normalizados para suas tipologias equivalentes (`BASCULANTE`, `CORRER`).
+
+**Contexto / Ambiente:**
+- **Módulo Afetado:** `BudgetPdfService.java`.
+- **Severidade:** 🟡 Média / I18n & UX | **Sprint:** 05 | **Status:** ✅ Resolvido.
+- **Detecção / Correção:** Issue #344 / Branch `fix/344-termos-ingles-detalhamento-pdf`.
+
+**Causa Raiz Técnica & Solução:**
+* **Causa Raiz:**
+  1. No PDF Comercial, `extrairDescricaoPuxador` retornava `raw` sem traduzir quando o valor não iniciava com `{` (ex.: `"TUBULAR"`), ou falhava no enum `HandleType.valueOf` para termos que não existiam no enum estrito.
+  2. Na Ficha Técnica, `formatarTipoTemplate` só aceitava underscores (`_`); entradas com espaço caíam no fallback e eram exibidas cruas com prefixo `TIPO: `.
+  3. Métodos auxiliares de usinagem (`traduzirPosicaoTexto`, `traduzirFormatoTexto`, `traduzirTipoPuxadorTexto`) não mapeavam variantes como `BOTH`, `TUBULAR`, `CUSTOM`, `HANDLE`.
+* **Solução:**
+  1. Centralizado o dicionário de tradução resiliente em `BudgetPdfService.java` cobrindo tipos de puxador (`Tubular`, `Fecho Concha`, `Alavanca`, `Puxador Convencional`, `Embutido`), posições (`Direita`, `Esquerda`, `Central`, `Ambos os Lados`, `Superior`, `Inferior`), formatos (`Tubular`, `Redondo`, `Quadrado`, `Retangular`, `Chato`) e furação (`Distâncias personalizadas conforme gabarito`).
+  2. Implementada normalização resiliente de tipologias com espaços (`AWNING WINDOW` -> `BASCULANTE`, `SLIDING DOOR` -> `CORRER`, `SWING DOOR` -> `GIRO`).
+  3. Adicionados testes automatizados unitários e integrados cobrindo todas as variantes e proibindo termos em inglês com asserções `doesNotContain`.
+  4. Gerada evidência visual em 300 DPI em `docs/projeto-001/003-teste/sprint-05/evidencias/evidencia-fix-344-ficha-tecnica.png`.
+
+---
+
+
 ### BUG-027
 #### [BUG] Divergência de Cálculo de Mão de Obra (`laborCost`) entre Frontend e Backend com Múltiplas Quantidades (`quantity > 1`)
 
@@ -915,7 +1031,7 @@ Ao interceptar erros em requisições de download com `responseType: 'blob'`, o 
 ```mermaid
 pie title "Origem dos Defeitos Identificados"
     "Frontend & UI/UX" : 11
-    "Backend & Regras de Negócio" : 10
+    "Backend & Regras de Negócio" : 14
     "Pipeline CI/CD & SonarQube" : 3
     "Infraestrutura & Docker" : 2
     "Governança & Git Flow" : 1

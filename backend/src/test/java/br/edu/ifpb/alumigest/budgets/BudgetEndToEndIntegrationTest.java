@@ -665,8 +665,8 @@ class BudgetEndToEndIntegrationTest {
                     """);
             porta2F.setDrillingConfig("""
                     {
-                      "mode": "EQUIDISTANT",
-                      "holesCount": 3
+                      "holeCount": 2,
+                      "divisionType": "EQUAL"
                     }
                     """);
             porta2F.setHandleConfig("""
@@ -718,7 +718,7 @@ class BudgetEndToEndIntegrationTest {
                     {
                       "type": "TUBULAR",
                       "position": "RIGHT",
-                      "lengthMm": 400.0
+                      "lengthMm": 600.0
                     }
                     """);
             BudgetItemOption optVidro1F = new BudgetItemOption();
@@ -798,6 +798,9 @@ class BudgetEndToEndIntegrationTest {
             assertTrue(pdfBytes.length > 0);
 
             java.nio.file.Files.createDirectories(java.nio.file.Path.of("target"));
+            java.nio.file.Files.write(java.nio.file.Path.of("target/amostra-ficha-tecnica-FIX-344.pdf"), pdfBytes);
+            java.nio.file.Files.write(java.nio.file.Path.of("target/amostra-ficha-tecnica-FIX-345.pdf"), pdfBytes);
+            java.nio.file.Files.write(java.nio.file.Path.of("target/amostra-ficha-tecnica-FIX-348.pdf"), pdfBytes);
             java.nio.file.Files.write(java.nio.file.Path.of("target/amostra-ficha-tecnica-FIX-349.pdf"), pdfBytes);
 
             try (PdfReader reader = new PdfReader(pdfBytes)) {
@@ -809,16 +812,24 @@ class BudgetEndToEndIntegrationTest {
                         .contains("TIPO: GIRO (2 FOLHAS)")
                         .contains("1600 x 2100 mm")
                         .contains("Puxador (250mm)")
+                        .contains("2 furos para dobradiças.")
+                        .contains("NBR 10821: Recomendado mín. 3")
+                        .contains("dobradiças para altura > 1800mm")
+                        .contains("3 furos para dobradiças.")
                         .contains("252 mm")
                         .contains("1050 mm")
                         .contains("1848 mm")
                         .contains("900 x 2100 mm")
-                        .contains("Puxador (400mm)")
+                        .contains("Puxador (600mm)")
+                        .contains("Tipo: Tubular")
+                        .contains("Posição: Direita")
                         .contains("1500 x 1200 mm")
                         .contains("800 x 600 mm")
                         .doesNotContain("Dist. Iguais")
                         .doesNotContain("160,0 x 210,0 cm")
-                        .doesNotContain("Puxado (250mm)");
+                        .doesNotContain("Puxado (250mm)")
+                        .doesNotContain("Tipo: TUBULAR")
+                        .doesNotContain("Posição: RIGHT");
             }
         }
 

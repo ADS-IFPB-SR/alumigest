@@ -953,6 +953,92 @@ class BudgetPdfServiceTest {
                         .contains("VOLUME DO PEDIDO");
             }
         }
+
+        @Test
+        @DisplayName("Deve traduzir termos em inglês de usinagem, puxadores e tipologias na Ficha Técnica e PDF Comercial [Issue #344]")
+        void deveTraduzirTermosInglesUsinagemPuxadoresETipologias() throws IOException {
+            Budget budget = criarBudgetPadrao(false);
+            List<BudgetItem> itens = new ArrayList<>();
+
+            BudgetItem item1 = new BudgetItem();
+            item1.setId(UUID.randomUUID());
+            item1.setProductName("Janela Maxim-ar");
+            item1.setTemplateType("AWNING WINDOW");
+            item1.setWidthMm(new BigDecimal("800"));
+            item1.setHeightMm(new BigDecimal("600"));
+            item1.setQuantity(1);
+            item1.setHandleConfig("{\"handleType\":\"TUBULAR\",\"format\":\"ROUND\",\"position\":\"RIGHT\"}");
+            item1.setDrillingConfig("{\"details\":\"CUSTOM_DISTANCES\",\"position\":\"BOTH\"}");
+            item1.setBudget(budget);
+            itens.add(item1);
+
+            BudgetItem item2 = new BudgetItem();
+            item2.setId(UUID.randomUUID());
+            item2.setProductName("Porta de Correr");
+            item2.setTemplateType("SLIDING DOOR");
+            item2.setWidthMm(new BigDecimal("1500"));
+            item2.setHeightMm(new BigDecimal("2100"));
+            item2.setQuantity(1);
+            item2.setHandleConfig("{\"type\":\"SHELL_LOCK\",\"format\":\"FLAT\",\"position\":\"BOTH_SIDES\"}");
+            item2.setBudget(budget);
+            itens.add(item2);
+
+            BudgetItem item3 = new BudgetItem();
+            item3.setId(UUID.randomUUID());
+            item3.setProductName("Porta Pivotante");
+            item3.setTemplateType("SWING DOOR");
+            item3.setWidthMm(new BigDecimal("900"));
+            item3.setHeightMm(new BigDecimal("2100"));
+            item3.setQuantity(1);
+            item3.setHandleConfig("{\"handle\":\"HANDLE\",\"shape\":\"RECTANGULAR\",\"pos\":\"CENTER\"}");
+            item3.setBudget(budget);
+            itens.add(item3);
+
+            budget.setItems(itens);
+
+            byte[] pdfTecnico = budgetPdfService.gerarPdfTecnico(budget);
+            try (PdfReader reader = new PdfReader(pdfTecnico)) {
+                String text = extrairStreamsDeTexto(reader);
+
+                assertThat(text)
+                        .contains("TIPO: BASCULANTE")
+                        .contains("TIPO: CORRER")
+                        .contains("TIPO: GIRO")
+                        .contains("Tipo: Tubular")
+                        .contains("Formato: Redondo")
+                        .contains("Posição: Direita")
+                        .contains("Distâncias personalizadas conforme")
+                        .contains("gabarito")
+                        .contains("Posição: Ambos os Lados")
+                        .contains("Tipo: Fecho Concha")
+                        .contains("Formato: Chato")
+                        .contains("Tipo: Puxador Convencional")
+                        .contains("Formato: Retangular")
+                        .contains("Posição: Central")
+                        .doesNotContain("TIPO: AWNING WINDOW")
+                        .doesNotContain("TIPO: SLIDING DOOR")
+                        .doesNotContain("TIPO: SWING DOOR")
+                        .doesNotContain("Tipo: TUBULAR")
+                        .doesNotContain("Tipo: SHELL_LOCK")
+                        .doesNotContain("Tipo: HANDLE")
+                        .doesNotContain("Formato: ROUND")
+                        .doesNotContain("Formato: FLAT")
+                        .doesNotContain("Posição: RIGHT")
+                        .doesNotContain("Posição: BOTH");
+            }
+
+            byte[] pdfComercial = budgetPdfService.gerarPdfComercial(budget);
+            try (PdfReader reader = new PdfReader(pdfComercial)) {
+                String text = extrairStreamsDeTexto(reader);
+
+                assertThat(text)
+                        .contains("Tubular")
+                        .contains("Fecho Concha")
+                        .contains("Puxador Convencional")
+                        .doesNotContain("TUBULAR")
+                        .doesNotContain("SHELL_LOCK");
+            }
+        }
     }
 
     // =========================================================================
@@ -1310,6 +1396,28 @@ class BudgetPdfServiceTest {
                         .contains("OBRA RESIDENCIAL ALFA")
                         .contains("VOLUME DO PEDIDO")
                         .contains("9 PEÇAS"); // 2+3+4 = 9
+            }
+        }
+
+        @Test
+        @DisplayName("US-11.2 / Issue #348: Deve renderizar 2 furos no texto e alerta NBR 10821 para porta de giro com holeCount: 2")
+        void deveRenderizarFichaTecnicaComConsistenciaDeFuracaoEAlertaNbr10821() throws IOException {
+            Budget budget = criarBudgetPadrao(true);
+            BudgetItem item = budget.getItems().get(0);
+            item.setTemplateType("SWING_DOOR_2F");
+            item.setHeightMm(new BigDecimal("2100"));
+            item.setWidthMm(new BigDecimal("1600"));
+            item.setDrillingConfig("{\"holeCount\": 2, \"divisionType\": \"EQUAL\"}");
+
+            byte[] pdfBytes = budgetPdfService.gerarPdfTecnico(budget);
+
+            try (PdfReader reader = new PdfReader(pdfBytes)) {
+                String texto = extrairStreamsDeTexto(reader);
+
+                assertThat(texto).contains("2 furos para dobradiças.");
+                assertThat(texto).doesNotContain("3 furos para dobradiças.");
+                assertThat(texto).contains("NBR 10821: Recomendado");
+                assertThat(texto).contains("dobradiças para altura > 1800mm");
             }
         }
     }

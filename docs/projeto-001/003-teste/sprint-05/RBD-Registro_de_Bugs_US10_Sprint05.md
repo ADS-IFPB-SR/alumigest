@@ -9,7 +9,7 @@
 | **Equipe Técnica** | Equipe de Engenharia e QA AlumiGest |
 | **Data de Emissão** | 29/09/2026 |
 | **Status Geral** | 🟡 5 Defeitos Catalogados para Triagem e Correção |
-| **Documento Central** | [`RBD-Registro_de_Bugs_e_Defeitos.md`](../RBD-Registro_de_Bugs_e_Defeitos.md) (v2.3.0) |
+| **Documento Central** | [`RBD-Registro_de_Bugs_e_Defeitos.md`](../RBD-Registro_de_Bugs_e_Defeitos.md) (v2.6.0) |
 
 ---
 

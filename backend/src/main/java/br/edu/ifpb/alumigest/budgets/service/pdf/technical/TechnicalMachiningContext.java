@@ -97,6 +97,36 @@ public record TechnicalMachiningContext(
             return true;
         }
         String upper = templateType.toUpperCase(java.util.Locale.ROOT);
-        return upper.contains("SWING") || upper.contains("GIRO") || upper.contains("2F") || upper.contains("2_LEAF");
+        return upper.contains("SWING") || upper.contains("GIRO") || upper.contains("2F")
+                || upper.contains("2_LEAF");
+    }
+
+    /**
+     * Indica se a esquadria pertence à tipologia de giro (abrir / pivotante).
+     */
+    public boolean isSwingDoor() {
+        if (sliding) {
+            return false;
+        }
+        if (templateType == null) {
+            return false;
+        }
+        String upper = templateType.toUpperCase(java.util.Locale.ROOT);
+        return upper.contains("SWING") || upper.contains("GIRO") || upper.contains("PIVOT");
+    }
+
+    /**
+     * Indica se a esquadria viola a recomendação da NBR 10821 para portas de giro
+     * com altura superior a 1800mm e menos de 3 dobradiças.
+     */
+    public boolean hasNbr10821Warning() {
+        if (!isSwingDoor()) {
+            return false;
+        }
+        if (heightMm == null || heightMm.compareTo(BigDecimal.valueOf(1800)) <= 0) {
+            return false;
+        }
+        int count = drillingHoles != null ? drillingHoles.size() : 0;
+        return count > 0 && count < 3;
     }
 }

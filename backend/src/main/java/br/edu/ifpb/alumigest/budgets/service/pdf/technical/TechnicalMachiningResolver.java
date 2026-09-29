@@ -118,7 +118,14 @@ public final class TechnicalMachiningResolver {
 
         try {
             JsonNode node = OBJECT_MAPPER.readTree(raw.trim());
-            JsonNode modeNode = node.has(FIELD_MODE) ? node.get(FIELD_MODE) : node.get("drillingMode");
+            JsonNode modeNode = node.get(FIELD_MODE);
+            if (modeNode == null) {
+                modeNode = node.get("drillingMode");
+            }
+            if (modeNode == null) {
+                modeNode = node.get("divisionType");
+            }
+
             String modeStr = modeNode != null && !modeNode.isNull()
                     ? modeNode.asText().toUpperCase(Locale.ROOT)
                     : "";
@@ -128,9 +135,13 @@ public final class TechnicalMachiningResolver {
             }
 
             boolean isCustom = "CUSTOM".equals(modeStr) || "CUSTOM_DISTANCES".equals(modeStr);
-            JsonNode distNode = node.has(FIELD_CUSTOM_DISTANCES)
-                    ? node.get(FIELD_CUSTOM_DISTANCES)
-                    : node.get("customPositionsMm");
+            JsonNode distNode = node.get(FIELD_CUSTOM_DISTANCES);
+            if (distNode == null) {
+                distNode = node.get("customPositionsMm");
+            }
+            if (distNode == null) {
+                distNode = node.get("customDistances");
+            }
 
             if (isCustom && distNode != null) {
                 pontos.addAll(parseCustomDistances(distNode, heightMm));
@@ -167,6 +178,12 @@ public final class TechnicalMachiningResolver {
         }
         if (countNode == null) {
             countNode = node.get("quantity");
+        }
+        if (countNode == null) {
+            countNode = node.get("count");
+        }
+        if (countNode == null) {
+            countNode = node.get("holes");
         }
         if (countNode != null && !countNode.isNull()) {
             count = Math.clamp(countNode.asInt(), 1, 6);
