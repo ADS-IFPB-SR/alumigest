@@ -6,7 +6,7 @@
 | **Documento** | Registro Unificado de Bugs, Defeitos e Hotfixes (RBD) |
 | **Versão** | 2.2.0 (Catálogo de Bugs BUG-023 a BUG-027 da US-10 na Sprint 05) |
 | **Data de Atualização** | 29/09/2026 |
-| **Responsável QA / SM** | Júlio Kennedy dos Santos Silva (Scrum Master) / Equipe de Engenharia AlumiGest |
+| **Responsável QA / SM** | Júlio Kennedy dos Santos Silva / Equipe de Engenharia AlumiGest |
 | **Branch** | `planejamento` |
 | **Padrão de Template** | Baseado em [`.github/ISSUE_TEMPLATE/bug_report.md`](../../../.github/ISSUE_TEMPLATE/bug_report.md) |
 | **Auditoria Técnica** | Análise estática SonarQube, Pipeline CI/CD GitHub Actions e Histórico Git |
