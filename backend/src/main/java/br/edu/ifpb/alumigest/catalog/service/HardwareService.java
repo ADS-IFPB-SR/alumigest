@@ -31,6 +31,7 @@ import java.util.UUID;
 public class HardwareService {
 
     private static final String HARDWARE_GROUP_CODE = "FERRAGEM";
+    private static final String HARDWARE_NOT_FOUND_MSG = "Ferragem não encontrada com ID: ";
 
     private final MaterialRepository materialRepository;
     private final MaterialGroupRepository materialGroupRepository;
@@ -108,7 +109,7 @@ public class HardwareService {
     public HardwareResponseDTO findById(UUID id) {
         Material material = materialRepository.findByIdAndGroupCode(id, HARDWARE_GROUP_CODE)
                 .orElseThrow(() ->
-                        new ResourceNotFoundException("Ferragem não encontrada com ID: " + id));
+                        new ResourceNotFoundException(HARDWARE_NOT_FOUND_MSG + id));
         return hardwareMapper.toResponse(material);
     }
 
@@ -128,7 +129,7 @@ public class HardwareService {
     public HardwareResponseDTO updatePrice(UUID id, HardwareUpdatePriceDTO request) {
         Material material = materialRepository.findByIdAndGroupCode(id, HARDWARE_GROUP_CODE)
                 .orElseThrow(() ->
-                        new ResourceNotFoundException("Ferragem não encontrada com ID: " + id));
+                        new ResourceNotFoundException(HARDWARE_NOT_FOUND_MSG + id));
 
         material.setName(request.name());
         material.setSkuCode(request.skuCode());
@@ -137,6 +138,12 @@ public class HardwareService {
         material.setNcmCode(request.ncmCode());
         material.setCostPrice(request.costPrice());
         material.setSalePrice(request.salePrice());
+        if (request.familyCode() != null) {
+            material.setFamilyCode(request.familyCode());
+        }
+        if (request.isHandle() != null) {
+            material.setHandle(request.isHandle());
+        }
         
         if (request.active() != null) {
             material.setActive(request.active());
@@ -159,7 +166,7 @@ public class HardwareService {
     public void softDelete(UUID id) {
         Material material = materialRepository.findByIdAndGroupCode(id, HARDWARE_GROUP_CODE)
                 .orElseThrow(() ->
-                        new ResourceNotFoundException("Ferragem não encontrada com ID: " + id));
+                        new ResourceNotFoundException(HARDWARE_NOT_FOUND_MSG + id));
 
         material.setActive(false);
         materialRepository.save(material);

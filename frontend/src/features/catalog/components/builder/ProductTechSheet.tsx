@@ -11,9 +11,9 @@ export interface FormItem {
 }
 
 interface ProductTechSheetProps {
-  items: FormItem[];
-  setItems: React.Dispatch<React.SetStateAction<FormItem[]>>;
-  materials: MaterialSummary[];
+  readonly items: readonly FormItem[];
+  readonly setItems: React.Dispatch<React.SetStateAction<FormItem[]>>;
+  readonly materials: readonly MaterialSummary[];
 }
 
 export function ProductTechSheet({ items, setItems, materials }: ProductTechSheetProps) {
@@ -30,7 +30,7 @@ export function ProductTechSheet({ items, setItems, materials }: ProductTechShee
       toast.error('Este insumo já está na ficha técnica.');
       return;
     }
-    setItems([...items, { tempId: Math.random().toString(36).slice(2), materialId: material.id, quantity: '' }]);
+    setItems([...items, { tempId: crypto.randomUUID(), materialId: material.id, quantity: '' }]);
     setIsPickerOpen(false);
   };
 
@@ -40,16 +40,25 @@ export function ProductTechSheet({ items, setItems, materials }: ProductTechShee
 
   const handleChangeItem = (tempId: string, field: keyof FormItem, value: string) => {
     if (field === 'quantity') {
+      const itemToUpdate = items.find(i => i.tempId === tempId);
+      const material = itemToUpdate ? materialsMap.get(itemToUpdate.materialId) : null;
+      const isIntegerUnit = material?.unitMeasure === 'UN' || material?.unitMeasure === 'PAR' || material?.unitMeasure === 'PAIR';
+
       let sanitized = value.replace(/[^0-9.,]/g, '');
       
-      // Permitir apenas uma vírgula ou ponto
-      const parts = sanitized.replace(',', '.').split('.');
-      if (parts.length > 2) {
-        return; // ignora se tentar botar mais de uma vírgula
+      if (isIntegerUnit) {
+        // Only allow digits
+        sanitized = value.replace(/\D/g, '');
+      } else {
+        // Permitir apenas uma vírgula ou ponto para unidades fracionáveis
+        const parts = sanitized.replace(',', '.').split('.');
+        if (parts.length > 2) {
+          return; // ignora se tentar botar mais de uma vírgula
+        }
       }
 
       const numValue = Number(sanitized.replace(',', '.'));
-      if (sanitized !== '' && (isNaN(numValue) || numValue < 0 || numValue > 99999)) {
+      if (sanitized !== '' && (Number.isNaN(numValue) || numValue < 0 || numValue > 99999)) {
         return;
       }
       if (sanitized.length > 8) return;
@@ -91,7 +100,10 @@ export function ProductTechSheet({ items, setItems, materials }: ProductTechShee
         ) : (
           items.map((item, index) => {
             const materialInfo = item.materialId ? materialsMap.get(item.materialId) : null;
-            const refCost = materialInfo ? (materialInfo.costPrice > 0 ? materialInfo.costPrice : materialInfo.salePrice) : 0;
+            let refCost = 0;
+            if (materialInfo) {
+              refCost = materialInfo.costPrice > 0 ? materialInfo.costPrice : materialInfo.salePrice;
+            }
             const unit = materialInfo ? materialInfo.unitMeasure : '-';
 
             return (

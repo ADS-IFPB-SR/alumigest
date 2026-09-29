@@ -1,218 +1,195 @@
-# PAD — Padrões de Código
+# 📏 PAD — Padrões de Código e Diretrizes de Qualidade (AlumiGest)
 
-| Campo | Valor |
+| Metadado | Descrição |
 |---|---|
-| **Projeto** | AlumiGest |
-| **Versão** | 1.0 |
-| **Data** | 05/08/2026 |
+| **Projeto** | AlumiGest — Sistema de Gestão para Vidraçaria e Esquadrias |
+| **Sigla** | ALG |
+| **Versão** | 3.0 (Homologado com Protocolo SonarLint, BigDecimal Estrito, TanStack Query v5 e Zod) |
+| **Data** | 24/09/2026 |
+| **Governança** | Docs-as-Code — Oficial de Governança (`alumigest-doc-governor`) |
 
 ---
 
-## 1. Convenções Java (Backend)
+## Histórico de Revisões
 
-### 1.1 Nomenclatura
+| Data | Versão | Descrição | Autor |
+|---|---|---|---|
+| 05/08/2026 | 1.0 | Versão inicial dos padrões de código | Ítalo Jefferson / Equipe AlumiGest |
+| 31/08/2026 | 2.0 | Atualização para padrão `br.edu.ifpb.alumigest`, UUIDs nativos, MapStruct e Nomenclatura Oficial | Equipe AlumiGest (Scrum Master: Italo Santos) |
+| 24/09/2026 | 3.0 | Incorporação do protocolo SonarLint, regras de precisão BigDecimal com RoundingMode explícito, TanStack Query v5, schemas Zod e Quality Gate SonarQube | Equipe AlumiGest (Tech Lead: Ítalo Jefferson) |
+
+---
+
+## 1. Convenções Java (Backend Spring Boot 3.4 / Java 21)
+
+### 1.1 Nomenclatura e Idioma
+
+> 📌 **Diretriz de Idioma:** Código-fonte (classes, métodos, variáveis, DTOs e entidades) é escrito em **inglês técnico**. Mensagens de validação de formulários, respostas de erro de API, interfaces visuais e documentação de requisitos são escritas em **Português do Brasil (`pt-br`)**.
 
 | Elemento | Convenção | Exemplo |
 |---|---|---|
-| Classe | PascalCase | `OrcamentoService`, `VidroController` |
-| Interface | PascalCase | `OrcamentoRepository` |
-| Método | camelCase | `calcularAreaVidro()`, `buscarPorId()` |
-| Variável | camelCase | `precoMetroLinear`, `areaVidroM2` |
-| Constante | UPPER_SNAKE_CASE | `AREA_MINIMA_VIDRO`, `MAX_TENTATIVAS_LOGIN` |
-| Pacote | lowercase | `com.alumigest.orcamento.service` |
-| Enum | PascalCase (tipo), UPPER_SNAKE_CASE (valores) | `StatusOrcamento.RASCUNHO` |
-| Tabela (DB) | snake_case, plural | `itens_orcamento`, `perfis_aluminio` |
-| Coluna (DB) | snake_case | `preco_metro_quadrado` |
+| Classe / Record | PascalCase | `BudgetService`, `GlassQuantityCalculator`, `BudgetResponseDTO` |
+| Interface | PascalCase | `MaterialQuantityCalculator`, `BudgetRepository` |
+| Método | camelCase | `calculateQuantities()`, `findById()`, `aplicarDesconto()` |
+| Variável / Parâmetro | camelCase | `linearMeterPrice`, `glassAreaM2`, `subtotal`, `widthMm` |
+| Constante | UPPER_SNAKE_CASE | `MIN_AREA`, `RESOURCE_ORCAMENTO`, `DEFAULT_VALIDITY_DAYS` |
+| Pacote | lowercase | `br.edu.ifpb.alumigest.budgets.service` |
+| Enum (Tipo e Valores) | PascalCase (tipo), UPPER_SNAKE (valores) | `BudgetStatus.DRAFT`, `PaymentCondition.A_VISTA_PIX` |
+| Tabela (DB) | snake_case com prefixo `tb_*` | `tb_budgets`, `tb_budget_items`, `tb_customers` |
+| Coluna (DB) | snake_case | `cost_price`, `thickness_mm`, `template_config` |
 
-### 1.2 Organização de Pacotes (Package-by-Feature)
+---
+
+### 1.2 Regras Estritas de Precisão Numérica (`BigDecimal` e `RoundingMode`)
+
+Para eliminar erros de arredondamento em cortes de esquadrias e fechamento contábil de orçamentos, aplicam-se as seguintes regras inegociáveis:
+
+1. **Proibição de Tipos Flutuantes:** É expressamente vedado o uso de `double` ou `float` para qualquer cálculo financeiro ou dimensionamento físico. Utilizar sempre `java.math.BigDecimal`.
+2. **Cálculos Financeiros (Monetários):**
+   * Escala padrão: **2 casas decimais**.
+   * Modo de arredondamento: `RoundingMode.HALF_EVEN` (arredondamento bancário) ou `RoundingMode.HALF_UP`.
+   ```java
+   BigDecimal discountValue = subtotal.multiply(discountPercent)
+           .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_EVEN);
+   ```
+3. **Cálculos Físicos de Corte (Metros e Áreas):**
+   * Metragem linear de perfis: escala de 2 casas decimais com `RoundingMode.CEILING` (para garantir folga e evitar barra insuficiente no corte).
+   * Área de vidro/película: escala de 2 casas decimais com `RoundingMode.CEILING` e validação do piso mínimo de $0,25 m^2$.
+   * Fatores de conversão de milímetros para metros: divisão por 1000 com 4 casas decimais e `RoundingMode.HALF_UP`.
+   ```java
+   BigDecimal widthM = BigDecimal.valueOf(widthMm).divide(BigDecimal.valueOf(1000), 4, RoundingMode.HALF_UP);
+   ```
+
+---
+
+### 1.3 Organização de Pacotes (`package-by-feature`)
 
 ```
-com.alumigest.{feature}/
-├── controller/    → @RestController (1 por feature principal)
-├── service/       → @Service com lógica de negócio
-├── repository/    → JpaRepository
-├── domain/        → @Entity, Enums, Value Objects
-├── dto/           → Records Java (Request/Response)
-└── config/        → Configurações específicas da feature (se necessário)
+br.edu.ifpb.alumigest.{feature}/
+├── controller/    → @RestController e anotações OpenAPI Swagger 3.0
+├── service/       → @Service com regras de negócio e transações (@Transactional)
+├── repository/    → JpaRepository<Entity, UUID> e queries customizadas JPQL
+├── domain/        → Entidades JPA (@Entity, @Table(name = "tb_*")), Enums
+├── dto/           → Records Java imutáveis de entrada e saída com JSR-380
+├── mapper/        → Interfaces MapStruct (@Mapper(componentModel = "spring"))
+└── calculator/    → (Módulo budgets) Padrão Strategy e Factory de cálculo
 ```
 
-### 1.3 Padrões de Controller
+---
+
+### 1.4 Padrões de Controllers REST
+
+* Retornar `ResponseEntity<T>` com status HTTP semântico (`200 OK`, `201 Created`, `204 No Content`).
+* Utilizar anotações OpenAPI (`@Operation`, `@ApiResponse`, `@Tag`).
+* Validação de payload de entrada obrigatória com `@Valid`.
 
 ```java
 @RestController
-@RequestMapping("/api/vidros")
-@RequiredArgsConstructor
-public class VidroController {
+@RequestMapping({"/api/v1/budgets", "/api/orcamentos"})
+@Tag(name = "Orçamentos", description = "Endpoints para gerenciamento do ciclo de vida de orçamentos")
+public class BudgetController {
 
-    private final VidroService vidroService;
+    private final BudgetService budgetService;
 
-    @GetMapping
-    public ResponseEntity<PageResponse<VidroResponse>> listar(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size,
-            @RequestParam(required = false) String busca,
-            @RequestParam(required = false) Boolean ativo) {
-        return ResponseEntity.ok(vidroService.listar(PageRequest.of(page, size), busca, ativo));
+    public BudgetController(BudgetService budgetService) {
+        this.budgetService = budgetService;
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMINISTRADOR')")
-    public ResponseEntity<VidroResponse> criar(@RequestBody @Valid VidroRequest request) {
-        VidroResponse response = vidroService.criar(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    @Operation(summary = "Criar orçamento", description = "Cria um novo orçamento com cálculo automático de insumos e preços.")
+    public ResponseEntity<BudgetResponseDTO> create(@RequestBody @Valid BudgetCreateRequest request) {
+        BudgetResponseDTO response = budgetService.create(request);
+        URI location = ServletUriComponentsBuilder.fromCurrentRequest()
+                .path("/{id}")
+                .buildAndExpand(response.id())
+                .toUri();
+        return ResponseEntity.created(location).body(response);
     }
 }
 ```
 
-### 1.4 Padrões de Service
+---
+
+### 1.5 Padrões de DTO (Java Records & JSR-380)
+
+* Todos os DTOs devem ser implementados como `record` para garantir imutabilidade estrutural.
+* Anotações de validação JSR-380 (`@NotNull`, `@NotBlank`, `@DecimalMin`, `@DecimalMax`, `@Size`, `@Valid`).
 
 ```java
-@Service
-@RequiredArgsConstructor
-@Transactional(readOnly = true)
-public class VidroService {
+public record DiscountRequest(
+    @NotNull(message = "O tipo de desconto é obrigatório.")
+    DiscountType tipo,
 
-    private final VidroRepository repository;
+    @NotNull(message = "O valor do desconto é obrigatório.")
+    @DecimalMin(value = "0.01", message = "O valor do desconto deve ser maior que zero.")
+    BigDecimal valor,
 
-    public PageResponse<VidroResponse> listar(Pageable pageable, String busca, Boolean ativo) {
-        // Lógica de listagem com filtros
-    }
-
-    @Transactional
-    public VidroResponse criar(VidroRequest request) {
-        // Validações de negócio
-        // Conversão DTO → Entity
-        // Persistência
-        // Conversão Entity → Response
-    }
-}
-```
-
-### 1.5 Padrões de DTO (Records Java)
-
-```java
-public record VidroRequest(
-    @NotBlank(message = "Nome é obrigatório")
-    String nome,
-
-    @NotNull(message = "Espessura é obrigatória")
-    @Positive(message = "Espessura deve ser positiva")
-    BigDecimal espessuraMm,
-
-    @NotBlank(message = "Cor/acabamento é obrigatório")
-    String corAcabamento,
-
-    @NotNull(message = "Preço é obrigatório")
-    @Positive(message = "Preço deve ser maior que zero")
-    BigDecimal precoMetroQuadrado,
-
-    @NotNull @Positive Integer larguraMaximaMm,
-    @NotNull @Positive Integer alturaMaximaMm,
-
-    Long fornecedorId
+    PaymentCondition condicaoPagamento,
+    String observacoesPagamento,
+    LocalDate dataValidade
 ) {}
 ```
 
-### 1.6 Tratamento de Exceções
+---
 
-```java
-// Exceções customizadas
-public class ResourceNotFoundException extends RuntimeException { ... }
-public class BusinessException extends RuntimeException { ... }
-public class ValidationException extends RuntimeException { ... }
+### 1.6 Tratamento Global de Exceções
 
-// Handler global
-@RestControllerAdvice
-public class GlobalExceptionHandler {
-    @ExceptionHandler(ResourceNotFoundException.class) → 404
-    @ExceptionHandler(BusinessException.class)        → 422
-    @ExceptionHandler(MethodArgumentNotValidException.class) → 400
-    @ExceptionHandler(DataIntegrityViolationException.class) → 409
-}
-```
-
-### 1.7 Boas Práticas
-
-- **Injeção de dependência** via construtor (`@RequiredArgsConstructor` do Lombok)
-- **Nunca** retornar entidades JPA diretamente — sempre usar DTOs
-- **`@Transactional(readOnly = true)`** no nível do Service, `@Transactional` nos métodos que alteram dados
-- **Validação dupla:** Bean Validation no DTO + validação de negócio no Service
-- **Soft delete** (`ativo = false`) em vez de DELETE real para dados de negócio
-- **Paginação** obrigatória em listagens (`Pageable`)
+* Centralizado na classe `GlobalExceptionHandler` (`@RestControllerAdvice`).
+* Respostas padronizadas com classe de payload de erro `ErrorResponse` (status, mensagem, timestamp).
 
 ---
 
-## 2. Convenções TypeScript (Frontend)
+## 2. Convenções Frontend (React 18/19 + TypeScript + Vite + Tailwind)
 
-### 2.1 Nomenclatura
+### 2.1 Nomenclatura e Tipagem
+* **Componentes React:** PascalCase (`BudgetDetailPage.tsx`, `CustomerQuickCreateModal.tsx`).
+* **Custom Hooks:** camelCase com prefixo `use` (`useBudgets.ts`, `useDownloadPdf.ts`).
+* **Tipagem Estrita:** Proibido o uso de `any`. Definir interfaces e tipos explicitamente espelhados no backend.
+* **Validação de Formulários:** Obrigatório o uso de schemas **Zod** acoplados ao React Hook Form.
 
-| Elemento | Convenção | Exemplo |
-|---|---|---|
-| Componente | PascalCase | `ClienteForm.tsx`, `OrcamentoList.tsx` |
-| Função | camelCase | `calcularAreaVidro()`, `formatarMoeda()` |
-| Variável | camelCase | `precoTotal`, `listaClientes` |
-| Constante | UPPER_SNAKE_CASE | `API_BASE_URL`, `MAX_DESCONTO` |
-| Interface/Type | PascalCase com prefixo semântico | `ClienteResponse`, `VidroRequest` |
-| CSS class | kebab-case | `orcamento-card`, `btn-primary` |
-| Arquivo | kebab-case ou PascalCase (componentes) | `api.ts`, `ClienteForm.tsx` |
-
-### 2.2 Padrão de Service (API)
+### 2.2 Chamadas de API e Gerenciamento de Estado de Servidor (TanStack Query)
+* Requisições HTTP encapsuladas em serviços dedicados (`budgetsApi.ts`).
+* Mutação e cache gerenciados via `useQuery` e `useMutation` do TanStack Query v5:
 
 ```typescript
-// services/api.ts
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
-
-async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
-  const token = localStorage.getItem('token');
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token && { 'Authorization': `Bearer ${token}` }),
+export function useApplyDiscount(budgetId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: DiscountRequest) => budgetsApi.applyDiscount(budgetId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['budget', budgetId] });
+      queryClient.invalidateQueries({ queryKey: ['budgets'] });
     },
-    ...options,
   });
-  if (!response.ok) throw new ApiError(response);
-  return response.json();
 }
 ```
 
-### 2.3 Formatação
-
-- **Indentação:** 2 espaços
-- **Ponto e vírgula:** Obrigatório
-- **Aspas:** Simples (`'`)
-- **Trailing comma:** Sempre
-- **Max line length:** 120 caracteres
-
 ---
 
-## 3. Convenções SQL (Migrações Flyway)
+## 3. 🛡️ Protocolo de Qualidade — SonarLint & Pre-PR
 
-```sql
--- V001__create_clientes.sql
-CREATE TABLE clientes (
-    id          BIGSERIAL       PRIMARY KEY,
-    nome_completo VARCHAR(200)  NOT NULL,
-    cpf_cnpj    VARCHAR(18)     NOT NULL,
-    -- ... demais colunas
-    created_at  TIMESTAMP       NOT NULL DEFAULT NOW(),
-    updated_at  TIMESTAMP       NOT NULL DEFAULT NOW(),
-    ativo       BOOLEAN         NOT NULL DEFAULT TRUE,
+Antes de qualquer commit ou abertura de Pull Request, o código deve ser submetido às seguintes validações estáticas:
 
-    CONSTRAINT uk_clientes_cpf_cnpj UNIQUE (cpf_cnpj)
-);
+### 3.1 As 10 Regras de Ouro do SonarLint
+1. **`java:S1128` (Unused Imports):** Proibido qualquer import não utilizado.
+2. **`java:S1192` (String Literals):** Literais de string repetidos 3 ou mais vezes devem ser extraídos como constantes (`private static final String`).
+3. **`java:S3776` (Cognitive Complexity):** Manter a complexidade cognitiva de métodos sempre $\le 15$.
+4. **`java:S1141` (Nested try-catch):** Proibidos blocos `try-catch` aninhados; extrair métodos auxiliares.
+5. **`java:S4087` (Redundant close):** Não invocar `.close()` manualmente em recursos abertos em blocos `try-with-resources`.
+6. **`java:S1172` (Unused Parameters):** Eliminar parâmetros não utilizados em métodos privados e internos.
+7. **`java:S5976` (Parameterized Tests):** Agrupar asserções e testes repetitivos usando `@ParameterizedTest` com `@CsvSource` ou `@ValueSource`.
+8. **`java:S1130` (Undeclared Exceptions):** Remover cláusulas `throws` não lançadas em assinaturas de métodos e testes.
+9. **`javascript:S6747` / `S6742` (JSX Semântico):** Evitar tags HTML genéricas sem significado semântico e props não tipadas.
+10. **Prevenção de NPE e Lazy Loading:** Inicializar explicitamente coleções JPA aninhadas antes da serialização ou geração de PDFs (`Hibernate.initialize()`).
 
-CREATE INDEX idx_clientes_nome ON clientes (nome_completo);
+### 3.2 Comandos de Validação Local Obrigatória
+```bash
+# Validação Backend:
+cd backend && ./mvnw checkstyle:check && ./mvnw test
+
+# Validação Frontend:
+cd frontend && npm run lint && npm run test
 ```
 
 ---
-
-## 4. Logs e Mensagens
-
-- **Logs:** SLF4J com Logback. Nível INFO em produção, DEBUG em desenvolvimento.
-- **Mensagens de validação:** Em português (`"Nome é obrigatório"`, `"Preço deve ser maior que zero"`).
-- **Mensagens de erro HTTP:** Em português, claras e acionáveis.
-
----
-
-*Documento elaborado pela Ítalo Jefferson / Equipe AlumiGest — IFPB CST em ADS — Agosto/2026*
+*Padrões de Código homologados pela Equipe AlumiGest — Versão 3.0 — 24/09/2026.*

@@ -45,6 +45,7 @@ public class GlassService implements IGlassService {
         material.setGroup(group);
         material.setName(dto.name());
         material.setColorFinish(dto.colorFinish());
+        material.setFamilyCode(dto.familyCode());
         material.setThicknessMm(dto.thicknessMm());
         material.setMaxWidthMm(dto.maxWidthMm());
         material.setMaxHeightMm(dto.maxHeightMm());
@@ -82,6 +83,9 @@ public class GlassService implements IGlassService {
 
         material.setName(dto.name());
         material.setColorFinish(dto.colorFinish());
+        if (dto.familyCode() != null) {
+            material.setFamilyCode(dto.familyCode());
+        }
         material.setThicknessMm(dto.thicknessMm());
         material.setMaxWidthMm(dto.maxWidthMm());
         material.setMaxHeightMm(dto.maxHeightMm());
@@ -138,7 +142,8 @@ public class GlassService implements IGlassService {
                 material.getUnitMeasure().name(),
                 material.isActive(),
                 material.getMaxWidthMm(),
-                material.getMaxHeightMm()
+                material.getMaxHeightMm(),
+                material.getFamilyCode()
         );
     }
 }

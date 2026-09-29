@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -64,7 +65,7 @@ public class MaterialGroup {
     @PrePersist
     protected void onCreate() {
         if (this.createdAt == null) {
-            this.createdAt = OffsetDateTime.now();
+            this.createdAt = OffsetDateTime.now(ZoneOffset.UTC);
         }
     }
 

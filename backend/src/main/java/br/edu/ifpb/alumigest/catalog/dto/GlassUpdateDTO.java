@@ -32,5 +32,21 @@ public record GlassUpdateDTO(
 
         BigDecimal maxWidthMm,
 
-        BigDecimal maxHeightMm
-) {}
+        BigDecimal maxHeightMm,
+
+        String familyCode
+) {
+    public GlassUpdateDTO(
+            String name,
+            String colorFinish,
+            BigDecimal thicknessMm,
+            String ncmCode,
+            BigDecimal costPrice,
+            BigDecimal salePrice,
+            Boolean active,
+            BigDecimal maxWidthMm,
+            BigDecimal maxHeightMm
+    ) {
+        this(name, colorFinish, thicknessMm, ncmCode, costPrice, salePrice, active, maxWidthMm, maxHeightMm, null);
+    }
+}

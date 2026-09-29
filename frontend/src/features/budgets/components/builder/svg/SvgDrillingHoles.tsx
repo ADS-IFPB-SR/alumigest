@@ -1,0 +1,228 @@
+import type { DrillingPosition } from '../../../types';
+import { HOLE_COLOR, HOLE_STROKE, COTA_COLOR, COTA_STROKE } from './svgConstants';
+
+export interface DrillingHolesProps {
+  readonly svgH: number;
+  readonly svgW?: number;
+  readonly frameW: number;
+  readonly count: number;
+  readonly divisionType?: string;
+  readonly drillingPosition?: DrillingPosition;
+  readonly customDistancesMm?: readonly number[];
+  readonly widthMm?: number;
+  readonly heightMm: number;
+  readonly posX: number;
+  readonly mirrored?: boolean;
+}
+
+interface TopHolePosition {
+  readonly px: number;
+  readonly distMm: number;
+}
+
+const SuperiorHoles: React.FC<DrillingHolesProps> = ({
+  svgW = 240,
+  frameW,
+  count,
+  divisionType,
+  customDistancesMm,
+  widthMm = 1000,
+}) => {
+  const innerW = svgW - frameW * 2;
+  const holeR = Math.min(3.2, innerW / (count * 6));
+  const py = frameW + 4;
+  const stepPx = innerW / (count + 1);
+  const stepMm = Math.round(widthMm / (count + 1));
+
+  const topPositions: TopHolePosition[] =
+    divisionType === 'CUSTOM_DISTANCE' && customDistancesMm?.length
+      ? customDistancesMm
+          .map((d) => ({ px: frameW + d * (innerW / Math.max(widthMm, 1)), distMm: d }))
+          .filter((pos) => pos.px >= frameW && pos.px <= svgW - frameW)
+      : Array.from({ length: count }, (_, idx) => {
+          const i = idx + 1;
+          return { px: frameW + stepPx * i, distMm: Math.round(stepMm * i) };
+        });
+
+  return (
+    <g className="drilling-holes-layer-superior">
+      {topPositions.map((pos) => (
+        <g key={`hole-top-${pos.px}-${pos.distMm}`}>
+          <circle cx={pos.px} cy={py} r={holeR + 1} fill="#1e293b" />
+          <circle cx={pos.px} cy={py} r={holeR} fill={HOLE_COLOR} stroke={HOLE_STROKE} strokeWidth={0.6} />
+          <line x1={pos.px - holeR * 0.7} y1={py} x2={pos.px + holeR * 0.7} y2={py} stroke={HOLE_STROKE} strokeWidth={0.4} />
+          <line x1={pos.px} y1={py - holeR * 0.7} x2={pos.px} y2={py + holeR * 0.7} stroke={HOLE_STROKE} strokeWidth={0.4} />
+          <line x1={pos.px} y1={py} x2={pos.px} y2={py + 8} stroke={COTA_STROKE} strokeWidth={0.5} strokeDasharray="2 1" opacity={0.8} />
+          <text
+            x={pos.px}
+            y={py + 17}
+            textAnchor="middle"
+            fontSize={8.5}
+            fontFamily="JetBrains Mono, monospace"
+            fontWeight="bold"
+            fill={COTA_COLOR}
+          >
+            {pos.distMm}mm
+          </text>
+        </g>
+      ))}
+    </g>
+  );
+};
+
+interface FrontHolePosition {
+  readonly px: number;
+  readonly py: number;
+  readonly cornerX: number;
+  readonly cornerY: number;
+  readonly label: string;
+}
+
+const FrontalHoles: React.FC<DrillingHolesProps> = ({
+  svgH,
+  svgW = 240,
+  frameW,
+  count,
+  widthMm = 1000,
+  heightMm,
+}) => {
+  const innerW = svgW - frameW * 2;
+  const innerH = svgH - frameW * 2;
+  const holeR = 3.2;
+
+  const insetX = Math.min(20, Math.max(12, innerW * 0.10));
+  const insetY = Math.min(20, Math.max(12, innerH * 0.10));
+  const edgeDistMm = Math.round((Math.min(widthMm, heightMm) || 1000) * 0.08);
+
+  const frontPositions: FrontHolePosition[] = [
+    { px: frameW + insetX, py: frameW + insetY, cornerX: frameW, cornerY: frameW, label: 'Sup. Esq.' },
+    { px: frameW + innerW - insetX, py: frameW + insetY, cornerX: frameW + innerW, cornerY: frameW, label: 'Sup. Dir.' },
+    { px: frameW + insetX, py: frameW + innerH - insetY, cornerX: frameW, cornerY: frameW + innerH, label: 'Inf. Esq.' },
+    { px: frameW + innerW - insetX, py: frameW + innerH - insetY, cornerX: frameW + innerW, cornerY: frameW + innerH, label: 'Inf. Dir.' },
+    ...(count > 4
+      ? [
+          { px: frameW + insetX, py: frameW + innerH / 2, cornerX: frameW, cornerY: frameW + innerH / 2, label: 'Médio Esq.' },
+          { px: frameW + innerW - insetX, py: frameW + innerH / 2, cornerX: frameW + innerW, cornerY: frameW + innerH / 2, label: 'Médio Dir.' },
+        ]
+      : []),
+  ];
+
+  return (
+    <g className="drilling-holes-layer-frontal">
+      {frontPositions.map((pos, idx) => (
+        <g key={`hole-front-${idx}-${pos.px}-${pos.py}`}>
+          <line
+            x1={pos.cornerX}
+            y1={pos.cornerY}
+            x2={pos.px}
+            y2={pos.py}
+            stroke="#0284c7"
+            strokeWidth={1.5}
+            strokeLinecap="round"
+            opacity={0.8}
+          />
+          <circle cx={pos.px} cy={pos.py} r={holeR + 4.5} fill="#0284c7" fillOpacity={0.18} stroke="#0284c7" strokeWidth={1} strokeDasharray="2 1.5" />
+          <circle cx={pos.px} cy={pos.py} r={holeR + 1.8} fill="#1e293b" stroke="#38bdf8" strokeWidth={0.8} />
+          <circle cx={pos.px} cy={pos.py} r={holeR} fill="#ffffff" stroke="#374151" strokeWidth={0.6} />
+          <line x1={pos.px - holeR - 2.5} y1={pos.py} x2={pos.px + holeR + 2.5} y2={pos.py} stroke="#0284c7" strokeWidth={0.6} />
+          <line x1={pos.px} y1={pos.py - holeR - 2.5} x2={pos.px} y2={pos.py + holeR + 2.5} stroke="#0284c7" strokeWidth={0.6} />
+          <text
+            x={pos.px + (pos.px > svgW / 2 ? -holeR - 6 : holeR + 6)}
+            y={pos.py + (pos.py > svgH / 2 ? -holeR - 3 : holeR + 9)}
+            textAnchor={pos.px > svgW / 2 ? 'end' : 'start'}
+            fontSize={8.5}
+            fontFamily="JetBrains Mono, monospace"
+            fontWeight="bold"
+            fill={COTA_COLOR}
+            opacity={0.9}
+          >
+            {edgeDistMm}mm
+          </text>
+        </g>
+      ))}
+    </g>
+  );
+};
+
+interface LateralHolePosition {
+  readonly py: number;
+  readonly distMm: number;
+}
+
+const LateralHoles: React.FC<DrillingHolesProps> = ({
+  svgH,
+  frameW,
+  count,
+  divisionType,
+  customDistancesMm,
+  heightMm,
+  posX,
+  mirrored = false,
+}) => {
+  const innerH = svgH - frameW * 2;
+  const holeR = Math.min(3.5, innerH / (count * 4));
+  const stepPx = innerH / (count + 1);
+  const stepMm = Math.round(heightMm / (count + 1));
+
+  const positions: LateralHolePosition[] =
+    divisionType === 'CUSTOM_DISTANCE' && customDistancesMm?.length
+      ? customDistancesMm
+          .map((d) => ({ py: frameW + d * (innerH / Math.max(heightMm, 1)), distMm: d }))
+          .filter((pos) => pos.py >= frameW && pos.py <= svgH - frameW)
+      : Array.from({ length: count }, (_, idx) => {
+          const i = idx + 1;
+          return { py: frameW + stepPx * i, distMm: Math.round(stepMm * i) };
+        });
+
+  const cotaOffset = mirrored ? 14 : -14;
+  const textAnchor = mirrored ? 'start' : 'end';
+
+  return (
+    <g className="drilling-holes-layer">
+      {positions.map((pos) => (
+        <g key={`hole-${pos.py}-${pos.distMm}`}>
+          <circle cx={posX} cy={pos.py} r={holeR + 1.2} fill="#1e293b" />
+          <circle cx={posX} cy={pos.py} r={holeR} fill={HOLE_COLOR} stroke={HOLE_STROKE} strokeWidth={0.6} />
+          <line x1={posX - holeR * 0.8} y1={pos.py} x2={posX + holeR * 0.8} y2={pos.py} stroke={HOLE_STROKE} strokeWidth={0.4} />
+          <line x1={posX} y1={pos.py - holeR * 0.8} x2={posX} y2={pos.py + holeR * 0.8} stroke={HOLE_STROKE} strokeWidth={0.4} />
+          <line x1={posX} y1={pos.py} x2={posX + cotaOffset} y2={pos.py} stroke={COTA_STROKE} strokeWidth={0.5} strokeDasharray="2 1" opacity={0.8} />
+          <rect
+            x={mirrored ? posX + cotaOffset : posX + cotaOffset - 36}
+            y={pos.py - 5}
+            width={38}
+            height={10}
+            fill="var(--color-surface-container-lowest, #ffffff)"
+            opacity={0.85}
+            rx={1.5}
+          />
+          <text
+            x={posX + cotaOffset + (mirrored ? 2 : -2)}
+            y={pos.py + 3.5}
+            textAnchor={textAnchor}
+            fontSize={10.5}
+            fontFamily="JetBrains Mono, monospace"
+            fontWeight="bold"
+            fill={COTA_COLOR}
+          >
+            {pos.distMm}mm
+          </text>
+        </g>
+      ))}
+    </g>
+  );
+};
+
+/** Furos técnicos paramétricos renderizados de acordo com a posição (SUPERIOR, FRONTAL ou LATERAL) */
+export const DrillingHoles: React.FC<DrillingHolesProps> = (props) => {
+  if (props.count <= 0) return null;
+
+  if (props.drillingPosition === 'SUPERIOR') {
+    return <SuperiorHoles {...props} />;
+  }
+
+  if (props.drillingPosition === 'FRONTAL') {
+    return <FrontalHoles {...props} />;
+  }
+
+  return <LateralHoles {...props} />;
+};

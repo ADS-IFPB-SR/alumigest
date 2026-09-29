@@ -1,98 +1,177 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+
+function getModalSaveLabel(isPending: boolean, isEditing: boolean): string {
+  if (isPending) return 'Salvando...';
+  return isEditing ? 'Atualizar' : 'Salvar';
+}
+
 import { Modal } from '../../../components/ui/Modal';
 import { Input } from '../../../components/ui/Input';
 import { Button } from '../../../components/ui/Button';
+
 import { useCreateGlass, useUpdateGlass } from '../hooks/useCatalog';
-import { formatCurrencyInput, parseCurrencyString, formatUppercase, formatInteger } from '../../../utils/formatters';
+
+import {
+  formatCurrencyInput,
+  parseCurrencyString,
+  formatUppercase,
+  formatInteger,
+} from '../../../utils/formatters';
+
 import { StatusToggle } from './StatusToggle';
+
 import toast from 'react-hot-toast';
 
+import {
+  glassSchema,
+  type GlassFormValues,
+} from '../schemas/catalogSchemas';
+
+import { FamilyAutocompleteInput } from './FamilyAutocompleteInput';
+
 interface Props {
-  isOpen: boolean;
-  onClose: () => void;
-  initialData?: any;
+  readonly isOpen: boolean;
+  readonly onClose: () => void;
+  readonly initialData?: any;
 }
 
-export function GlassFormModal({ isOpen, onClose, initialData }: Props) {
+export function GlassFormModal({
+  isOpen,
+  onClose,
+  initialData,
+}: Props) {
   const isEditing = Boolean(initialData);
-  const { mutate: createGlass, isPending: isCreatePending } = useCreateGlass();
-  const { mutate: updateGlass, isPending: isUpdatePending } = useUpdateGlass();
+
+  const {
+    mutate: createGlass,
+    isPending: isCreatePending,
+  } = useCreateGlass();
+
+  const {
+    mutate: updateGlass,
+    isPending: isUpdatePending,
+  } = useUpdateGlass();
+
   const isPending = isCreatePending || isUpdatePending;
 
-  const [name, setName] = useState('');
-  const [thicknessMm, setThicknessMm] = useState('8');
-  const [colorFinish, setColorFinish] = useState('');
-  const [ncmCode, setNcmCode] = useState('');
-  const [maxWidthMm, setMaxWidthMm] = useState('2000');
-  const [maxHeightMm, setMaxHeightMm] = useState('3000');
-  const [costPrice, setCostPrice] = useState('');
-  const [salePrice, setSalePrice] = useState('');
-  const [active, setActive] = useState(true);
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm<GlassFormValues>({
+    resolver: zodResolver(glassSchema),
+
+    defaultValues: {
+      name: '',
+      ncmCode: '',
+      thicknessMm: '8',
+      colorFinish: '',
+      familyCode: '',
+      maxWidthMm: '2000',
+      maxHeightMm: '3000',
+      costPrice: '',
+      salePrice: '',
+      active: true,
+    },
+  });
+
+  const activeValue = watch('active');
+  const familyCodeValue = watch('familyCode');
 
   useEffect(() => {
-    if (isOpen && initialData) {
-      setName(initialData.name || '');
-      setNcmCode(initialData.ncmCode || '');
-      setThicknessMm(initialData.thicknessMm?.toString() || '8');
-      setColorFinish(initialData.colorFinish || '');
-      setMaxWidthMm(initialData.maxWidthMm?.toString() || '2000');
-      setMaxHeightMm(initialData.maxHeightMm?.toString() || '3000');
-      
-      const cp = initialData.costPrice ?? 0;
-      const sp = initialData.salePrice ?? initialData.pricePerSqm ?? 0;
-      setCostPrice(formatCurrencyInput(cp.toFixed(2)));
-      setSalePrice(formatCurrencyInput(sp.toFixed(2)));
-      setActive(initialData.active ?? true);
-    } else if (isOpen && !initialData) {
-      setName('');
-      setNcmCode('');
-      setThicknessMm('8');
-      setColorFinish('');
-      setMaxWidthMm('2000');
-      setMaxHeightMm('3000');
-      setCostPrice('');
-      setSalePrice('');
-      setActive(true);
-    }
-  }, [isOpen, initialData]);
-
-  const handleSave = () => {
-    if (!name.trim()) {
-      toast.error('O nome/descrição é obrigatório.');
+    if (!isOpen) {
       return;
     }
 
-    const parsedCostPrice = parseCurrencyString(costPrice);
-    const parsedSalePrice = parseCurrencyString(salePrice);
+    if (initialData) {
+      reset({
+        name: initialData.name ?? '',
+        ncmCode: initialData.ncmCode ?? '',
+        thicknessMm: initialData.thicknessMm?.toString() ?? '8',
+        colorFinish: initialData.colorFinish ?? '',
+        familyCode: initialData.familyCode ?? '',
+        maxWidthMm: initialData.maxWidthMm?.toString() ?? '2000',
+        maxHeightMm: initialData.maxHeightMm?.toString() ?? '3000',
+        costPrice: formatCurrencyInput(
+          Number(initialData.costPrice ?? 0).toFixed(2)
+        ),
+        salePrice: formatCurrencyInput(
+          Number(
+            initialData.salePrice ??
+            initialData.pricePerSqm ??
+            0
+          ).toFixed(2)
+        ),
+        active: initialData.active ?? true,
+      });
 
-    if (parsedCostPrice < 0 || parsedSalePrice < 0) {
-      toast.error('Os preços não podem ser negativos.');
       return;
     }
 
+    reset({
+      name: '',
+      ncmCode: '',
+      thicknessMm: '8',
+      colorFinish: '',
+      familyCode: '',
+      maxWidthMm: '2000',
+      maxHeightMm: '3000',
+      costPrice: '',
+      salePrice: '',
+      active: true,
+    });
+  }, [isOpen, initialData, reset]);
+
+  const onSubmit = (data: GlassFormValues) => {
     const payload = {
-      name,
-      thicknessMm: Number(thicknessMm),
-      colorFinish,
-      maxWidthMm: Number(maxWidthMm),
-      maxHeightMm: Number(maxHeightMm),
-      costPrice: parsedCostPrice,
-      salePrice: parsedSalePrice,
-      ncmCode: ncmCode.trim() ? ncmCode.trim() : undefined,
-      active
+      name: data.name,
+      thicknessMm: Number(data.thicknessMm),
+      colorFinish: data.colorFinish,
+      familyCode: data.familyCode?.trim() ? data.familyCode.trim() : undefined,
+      maxWidthMm: Number(data.maxWidthMm),
+      maxHeightMm: Number(data.maxHeightMm),
+      costPrice: parseCurrencyString(data.costPrice),
+      salePrice: parseCurrencyString(data.salePrice),
+      ncmCode: data.ncmCode?.trim()
+        ? data.ncmCode.trim()
+        : undefined,
+      active: data.active,
     };
 
     if (isEditing) {
-      updateGlass({ id: initialData.id, data: payload as any }, { 
-        onSuccess: onClose, 
-        onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao atualizar o vidro.') 
-      });
-    } else {
-      createGlass(payload as any, { 
-        onSuccess: onClose, 
-        onError: (err: any) => toast.error(err?.response?.data?.message || 'Erro ao criar o vidro.') 
-      });
+      updateGlass(
+        {
+          id: initialData.id,
+          data: payload as any,
+        },
+        {
+          onSuccess: onClose,
+          onError: (err: any) => {
+            toast.error(
+              err?.response?.data?.message ||
+                'Erro de servidor.'
+            );
+          },
+        }
+      );
+
+      return;
     }
+
+    createGlass(payload as any, {
+      onSuccess: onClose,
+      onError: (err: any) => {
+        toast.error(
+          err?.response?.data?.message ||
+            'Erro de servidor.'
+        );
+      },
+    });
   };
 
   return (
@@ -102,88 +181,235 @@ export function GlassFormModal({ isOpen, onClose, initialData }: Props) {
       title={`${isEditing ? 'Edição' : 'Cadastro'} de Vidro`}
       footer={
         <>
-          <Button variant="ghost" onClick={onClose} disabled={isPending}>Cancelar</Button>
-          <Button variant="primary" onClick={handleSave} disabled={isPending}>
-            {isPending ? 'Salvando...' : (isEditing ? 'Atualizar' : 'Salvar')}
+          <Button
+            variant="ghost"
+            data-cy="glass-form-cancel-button"
+            onClick={onClose}
+            disabled={isPending}
+          >
+            Cancelar
+          </Button>
+
+          <Button
+            variant="primary"
+            data-cy="glass-form-save-button"
+            onClick={handleSubmit(onSubmit)}
+            disabled={isPending}
+          >
+            {getModalSaveLabel(isPending, isEditing)}
           </Button>
         </>
       }
     >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-md">
-        <Input 
-          label="Nome / Descrição" 
-          placeholder="Ex: Vidro Temperado 8mm Incolor" 
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="col-span-1 md:col-span-2" 
-        />
-        <Input 
-          label="Código NCM" 
-          placeholder="Opcional" 
-          value={ncmCode}
-          onChange={(e) => setNcmCode(formatInteger(e.target.value).slice(0, 8))}
-          className="col-span-1 md:col-span-2" 
-        />
-        
-        <div className="flex flex-col gap-xs">
-          <label htmlFor="glass-thickness" className="font-label-md text-label-md font-medium text-on-surface">
-            Espessura (mm)
+
+        {/* Nome */}
+        <div
+          data-cy="glass-form-name-field"
+          className="col-span-1 md:col-span-2"
+        >
+          <Input
+            data-cy="glass-form-name"
+            label="Nome / Descrição *"
+            placeholder="Ex: VIDRO TEMPERADO 8MM INCOLOR"
+            aria-invalid={Boolean(errors.name)}
+            {...register('name', {
+              onChange: (e) => {
+                setValue(
+                  'name',
+                  formatUppercase(e.target.value)
+                );
+              },
+            })}
+            error={errors.name?.message}
+          />
+        </div>
+
+        {/* NCM */}
+        <div
+          data-cy="glass-form-ncm-field"
+          className="col-span-1 md:col-span-2"
+        >
+          <Input
+            data-cy="glass-form-ncm"
+            label="Código NCM"
+            placeholder="Opcional"
+            aria-invalid={Boolean(errors.ncmCode)}
+            {...register('ncmCode', {
+              onChange: (e) => {
+                setValue(
+                  'ncmCode',
+                  formatInteger(e.target.value).slice(0, 8)
+                );
+              },
+            })}
+            error={errors.ncmCode?.message}
+          />
+        </div>
+
+        {/* Espessura */}
+        <div
+          data-cy="glass-form-thickness-field"
+          className="flex flex-col gap-xs"
+        >
+          <label
+            htmlFor="glass-thickness"
+            className="font-label-bold text-label-bold text-on-surface text-xs"
+          >
+            Espessura (mm) *
           </label>
+
           <select
             id="glass-thickness"
-            className="w-full bg-surface-container-lowest border border-outline-variant rounded-md px-sm py-xs h-[42px] font-body text-sm text-on-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all shadow-sm"
-            value={thicknessMm}
-            onChange={(e) => setThicknessMm(e.target.value)}
-            disabled={isEditing}
+            data-cy="glass-form-thickness"
+            aria-invalid={Boolean(errors.thicknessMm)}
+            className="w-full px-sm py-xs bg-surface-container-low border border-outline-variant rounded-sm font-body-sm text-body-sm text-on-surface h-[34px]"
+            {...register('thicknessMm')}
           >
-            <option value="2">2 mm</option>
-            <option value="4">4 mm</option>
-            <option value="6">6 mm</option>
-            <option value="8">8 mm</option>
-            <option value="10">10 mm</option>
+            {[2, 4, 6, 8, 10].map((value) => (
+              <option key={value} value={value}>
+                {value} mm
+              </option>
+            ))}
           </select>
-        </div>
-        <Input 
-          label="Cor / Acabamento" 
-          placeholder="Ex: INCOLOR" 
-          value={colorFinish}
-          onChange={(e) => setColorFinish(formatUppercase(e.target.value))}
-          disabled={isEditing}
-        />
 
-        <Input 
-          label="Largura Máxima (mm)" 
-          placeholder="Ex: 2000" 
-          value={maxWidthMm}
-          onChange={(e) => setMaxWidthMm(formatInteger(e.target.value).slice(0, 5))}
-        />
-        <Input 
-          label="Altura Máxima (mm)" 
-          placeholder="Ex: 3000" 
-          value={maxHeightMm}
-          onChange={(e) => setMaxHeightMm(formatInteger(e.target.value).slice(0, 5))}
-        />
- 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-md col-span-1 md:col-span-2 mt-xs">
-          <Input 
-            label="Preço de Custo" 
-            unit="R$/m²"
-            placeholder="0,00" 
-            value={costPrice}
-            onChange={(e) => setCostPrice(formatCurrencyInput(e.target.value))}
-          />
-          <Input 
-            label="Preço de Venda" 
-            unit="R$/m²"
-            placeholder="0,00" 
-            value={salePrice}
-            onChange={(e) => setSalePrice(formatCurrencyInput(e.target.value))}
+          {errors.thicknessMm?.message && (
+            <span
+              data-cy="glass-form-thickness-error"
+              className="font-body-sm text-body-sm text-error"
+            >
+              {errors.thicknessMm.message}
+            </span>
+          )}
+        </div>
+
+        {/* Cor / Acabamento */}
+        <div data-cy="glass-form-color-finish-field">
+          <Input
+            data-cy="glass-form-color-finish"
+            label="Cor / Acabamento *"
+            placeholder="Ex: INCOLOR"
+            aria-invalid={Boolean(errors.colorFinish)}
+            {...register('colorFinish', {
+              onChange: (e) => {
+                setValue(
+                  'colorFinish',
+                  formatUppercase(e.target.value)
+                );
+              },
+            })}
+            error={errors.colorFinish?.message}
           />
         </div>
-        
+
+        {/* Família do Material (Agrupamento de Cores) */}
+        <div
+          data-cy="glass-form-family-code-field"
+          className="col-span-1 md:col-span-2"
+        >
+          <FamilyAutocompleteInput
+            data-cy="glass-form-family-code"
+            label="Família do Vidro (Opcional - Troca de Cor)"
+            placeholder="Ex: FAM-VIDRO-TEMP-8MM"
+            groupCode="VIDRO"
+            value={familyCodeValue ?? ''}
+            onChange={(val) => setValue('familyCode', val, { shouldValidate: true })}
+            error={errors.familyCode?.message}
+          />
+        </div>
+
+        {/* Largura Máxima */}
+        <div data-cy="glass-form-max-width-field">
+          <Input
+            data-cy="glass-form-max-width"
+            label="Largura Máxima (mm) *"
+            placeholder="Ex: 2000"
+            aria-invalid={Boolean(errors.maxWidthMm)}
+            {...register('maxWidthMm', {
+              onChange: (e) => {
+                setValue(
+                  'maxWidthMm',
+                  formatInteger(e.target.value).slice(0, 5)
+                );
+              },
+            })}
+            error={errors.maxWidthMm?.message}
+          />
+        </div>
+
+        {/* Altura Máxima */}
+        <div data-cy="glass-form-max-height-field">
+          <Input
+            data-cy="glass-form-max-height"
+            label="Altura Máxima (mm) *"
+            placeholder="Ex: 3000"
+            aria-invalid={Boolean(errors.maxHeightMm)}
+            {...register('maxHeightMm', {
+              onChange: (e) => {
+                setValue(
+                  'maxHeightMm',
+                  formatInteger(e.target.value).slice(0, 5)
+                );
+              },
+            })}
+            error={errors.maxHeightMm?.message}
+          />
+        </div>
+
+        {/* Preços */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-md col-span-1 md:col-span-2 mt-xs">
+
+          {/* Preço de Custo */}
+          <div data-cy="glass-form-cost-price-field">
+            <Input
+              data-cy="glass-form-cost-price"
+              label="Preço de Custo *"
+              unit="R$/m²"
+              placeholder="0,00"
+              aria-invalid={Boolean(errors.costPrice)}
+              {...register('costPrice', {
+                onChange: (e) => {
+                  setValue(
+                    'costPrice',
+                    formatCurrencyInput(e.target.value)
+                  );
+                },
+              })}
+              error={errors.costPrice?.message}
+            />
+          </div>
+
+          {/* Preço de Venda */}
+          <div data-cy="glass-form-sale-price-field">
+            <Input
+              data-cy="glass-form-sale-price"
+              label="Preço de Venda *"
+              unit="R$/m²"
+              placeholder="0,00"
+              aria-invalid={Boolean(errors.salePrice)}
+              {...register('salePrice', {
+                onChange: (e) => {
+                  setValue(
+                    'salePrice',
+                    formatCurrencyInput(e.target.value)
+                  );
+                },
+              })}
+              error={errors.salePrice?.message}
+            />
+          </div>
+
+        </div>
+
+        {/* Status - somente edição */}
         {isEditing && (
           <div className="col-span-1 md:col-span-2 mt-xs">
-            <StatusToggle active={active} onChange={setActive} />
+            <StatusToggle
+              active={activeValue}
+              onChange={(value) =>
+                setValue('active', value)
+              }
+            />
           </div>
         )}
       </div>

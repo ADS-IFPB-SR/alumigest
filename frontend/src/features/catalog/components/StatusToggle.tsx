@@ -1,10 +1,10 @@
 
 
 interface Props {
- active: boolean;
- onChange: (active: boolean) => void;
- title?: string;
- description?: string;
+ readonly active: boolean;
+ readonly onChange: (active: boolean) => void;
+ readonly title?: string;
+ readonly description?: string;
 }
 
 export function StatusToggle({ 

@@ -1,0 +1,32 @@
+[
+  {
+    "name": "VIDRO TEMPERADO 8MM INCOLOR",
+    "ncmCode": "70071900",
+    "thicknessMm": "8",
+    "colorFinish": "INCOLOR",
+    "maxWidthMm": "2000",
+    "maxHeightMm": "3000",
+    "costPrice": "120,00",
+    "salePrice": "180,00"
+  },
+  {
+    "name": "VIDRO TEMPERADO 6MM FUME",
+    "ncmCode": "70071900",
+    "thicknessMm": "6",
+    "colorFinish": "FUME",
+    "maxWidthMm": "1800",
+    "maxHeightMm": "2800",
+    "costPrice": "95,00",
+    "salePrice": "145,00"
+  },
+  {
+    "name": "VIDRO LAMINADO 10MM INCOLOR",
+    "ncmCode": "70072900",
+    "thicknessMm": "10",
+    "colorFinish": "INCOLOR",
+    "maxWidthMm": "2500",
+    "maxHeightMm": "3200",
+    "costPrice": "180,00",
+    "salePrice": "260,00"
+  }
+]

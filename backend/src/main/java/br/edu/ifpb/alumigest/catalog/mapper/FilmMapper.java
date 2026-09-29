@@ -14,8 +14,12 @@ public interface FilmMapper {
     @Mapping(target = "unitMeasure", ignore = true)
     @Mapping(target = "active", ignore = true)
     @Mapping(target = "attributesJson", ignore = true)
+    @Mapping(target = "skuCode", ignore = true)
+    @Mapping(target = "maxHeightMm", ignore = true)
+    @Mapping(target = "handle", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
     Material toEntity(FilmRequestDTO dto);
 
     FilmResponseDTO toResponse(Material material);
-
 }

@@ -1,0 +1,50 @@
+[
+  {
+    "id": "650e8400-e29b-41d4-a716-446655440001",
+    "name": "Perfil 25x25",
+    "commercialReference": "P25X25",
+    "commercialLine": "Linha Suprema",
+    "ncmCode": "76042990",
+    "colorFinish": "Branco",
+    "standardLengthM": 6.00,
+    "unitMeasure": "METRO",
+    "costPrice": 32.50,
+    "salePrice": 49.90,
+    "weight": 1.25,
+    "active": true,
+    "createdAt": "2026-08-01T10:00:00-03:00",
+    "updatedAt": "2026-08-10T15:30:00-03:00"
+  },
+  {
+    "id": "650e8400-e29b-41d4-a716-446655440002",
+    "name": "Perfil 30x30",
+    "commercialReference": "P30X30",
+    "commercialLine": "Linha Suprema",
+    "ncmCode": "76042990",
+    "colorFinish": "Preto",
+    "standardLengthM": 6.00,
+    "unitMeasure": "METRO",
+    "costPrice": 38.00,
+    "salePrice": 56.90,
+    "weight": 1.48,
+    "active": true,
+    "createdAt": "2026-08-02T09:00:00-03:00",
+    "updatedAt": "2026-08-12T14:20:00-03:00"
+  },
+  {
+    "id": "650e8400-e29b-41d4-a716-446655440003",
+    "name": "Perfil 40x40",
+    "commercialReference": "P40X40",
+    "commercialLine": "Linha Gold",
+    "ncmCode": "76042990",
+    "colorFinish": "Natural",
+    "standardLengthM": 6.00,
+    "unitMeasure": "BARRA_6M",
+    "costPrice": 45.00,
+    "salePrice": 68.00,
+    "weight": 1.92,
+    "active": false,
+    "createdAt": "2026-07-15T08:30:00-03:00",
+    "updatedAt": "2026-08-05T11:45:00-03:00"
+  }
+]

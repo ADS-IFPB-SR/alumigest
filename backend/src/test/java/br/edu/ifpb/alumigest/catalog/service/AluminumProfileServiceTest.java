@@ -18,9 +18,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
@@ -30,6 +28,7 @@ import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -84,8 +83,8 @@ class AluminumProfileServiceTest {
         aluminumMaterial.setSalePrice(new BigDecimal("65.00"));
         aluminumMaterial.setActive(true);
         aluminumMaterial.setGroup(aluminumGroup);
-        aluminumMaterial.setCreatedAt(OffsetDateTime.now());
-        aluminumMaterial.setUpdatedAt(OffsetDateTime.now());
+        aluminumMaterial.setCreatedAt(OffsetDateTime.now(ZoneOffset.UTC));
+        aluminumMaterial.setUpdatedAt(OffsetDateTime.now(ZoneOffset.UTC));
     }
 
     @Nested
@@ -261,8 +260,8 @@ class AluminumProfileServiceTest {
             savedMaterial.setSalePrice(request.salePrice());
             savedMaterial.setActive(true);
             savedMaterial.setGroup(aluminumGroup);
-            savedMaterial.setCreatedAt(OffsetDateTime.now());
-            savedMaterial.setUpdatedAt(OffsetDateTime.now());
+            savedMaterial.setCreatedAt(OffsetDateTime.now(ZoneOffset.UTC));
+            savedMaterial.setUpdatedAt(OffsetDateTime.now(ZoneOffset.UTC));
 
             when(materialGroupRepository.findByCode("ALUMINIO"))
                     .thenReturn(Optional.of(aluminumGroup));
@@ -387,6 +386,65 @@ class AluminumProfileServiceTest {
 
             verify(materialRepository).findByIdAndGroupCode(MATERIAL_ID, "ALUMINIO");
             verify(materialRepository).save(aluminumMaterial);
+        }
+
+        @Test
+        @DisplayName("[Técnica: Teste de Caminhos] Deve atualizar preços com campos opcionais nulos (sem alterar atributosJson ou isHandle)")
+        void shouldUpdatePricesWithNullOptionals() {
+            // Given (Arrange) - 11 argumentos: commercialRef, name, color, line, weight, length, cost, sale, active, familyCode, isHandle
+            AluminumProfileUpdateDTO updateRequest =
+                    new AluminumProfileUpdateDTO("REF-123", "Perfil Básico", "BRANCO", null, null, new BigDecimal("6.00"), new BigDecimal("40.00"), new BigDecimal("65.00"), true, null, null);
+
+            when(materialRepository.findByIdAndGroupCode(MATERIAL_ID, "ALUMINIO"))
+                    .thenReturn(Optional.of(aluminumMaterial));
+            when(materialRepository.save(any(Material.class)))
+                    .thenReturn(aluminumMaterial);
+
+            // When (Act)
+            AluminumProfileResponseDTO response = aluminumProfileService.updatePrices(MATERIAL_ID, updateRequest);
+
+            // Then (Assert)
+            assertThat(response).isNotNull();
+            assertThat(response.name()).isEqualTo("Perfil Básico");
+            verify(materialRepository).save(aluminumMaterial);
+        }
+
+        @Test
+        @DisplayName("[Técnica: Teste de Caminhos] Deve atualizar isHandle quando fornecido explicitamente")
+        void shouldUpdatePricesWithExplicitIsHandle() {
+            // Given (Arrange) - 11 argumentos com isHandle = true
+            AluminumProfileUpdateDTO updateRequest =
+                    new AluminumProfileUpdateDTO("REF-123", "Perfil Puxador", "PRETO", "Alcoa", new BigDecimal("1.200"), new BigDecimal("6.00"), new BigDecimal("45.00"), new BigDecimal("70.00"), true, "FAM-ALU", true);
+
+            when(materialRepository.findByIdAndGroupCode(MATERIAL_ID, "ALUMINIO"))
+                    .thenReturn(Optional.of(aluminumMaterial));
+            when(materialRepository.save(any(Material.class)))
+                    .thenReturn(aluminumMaterial);
+
+            // When (Act)
+            AluminumProfileResponseDTO response = aluminumProfileService.updatePrices(MATERIAL_ID, updateRequest);
+
+            // Then (Assert)
+            assertThat(response).isNotNull();
+            assertThat(aluminumMaterial.isHandle()).isTrue();
+        }
+
+        @Test
+        @DisplayName("[Técnica: Classes de Equivalência - Conflito de Integridade] Deve propagar DataIntegrityViolationException no update")
+        void shouldThrowBusinessExceptionOnUpdateDataIntegrityViolation() {
+            // Given (Arrange)
+            AluminumProfileUpdateDTO updateRequest =
+                    new AluminumProfileUpdateDTO("REF-DUPLICADA", "Perfil Conflitante", "FOSCO", "Alcoa", new BigDecimal("1.200"), new BigDecimal("6.00"), new BigDecimal("45.00"), new BigDecimal("70.00"), false);
+
+            when(materialRepository.findByIdAndGroupCode(MATERIAL_ID, "ALUMINIO"))
+                    .thenReturn(Optional.of(aluminumMaterial));
+            when(materialRepository.save(any(Material.class)))
+                    .thenThrow(new DataIntegrityViolationException("Unique constraint violation"));
+
+            // When (Act) & Then (Assert)
+            assertThatThrownBy(() -> aluminumProfileService.updatePrices(MATERIAL_ID, updateRequest))
+                    .isInstanceOf(DataIntegrityViolationException.class)
+                    .hasMessageContaining("Unique constraint violation");
         }
 
         @Test

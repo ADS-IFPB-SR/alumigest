@@ -1,26 +1,27 @@
 package br.edu.ifpb.alumigest.catalog.dto;
 
+import br.edu.ifpb.alumigest.catalog.domain.DoorTemplateType;
+import br.edu.ifpb.alumigest.catalog.domain.MaterialCategoryType;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.PositiveOrZero;
-import java.math.BigDecimal;
 import java.util.List;
-import java.util.UUID;
 
+@Schema(description = "Requisição para cadastro ou atualização de Produto / Template de Esquadria")
 public record ProductRequestDTO(
         @NotBlank(message = "O nome do produto é obrigatório")
+        @Schema(description = "Nome do produto ou modelo da esquadria", example = "Porta de Giro Alumiportas")
         String name,
 
-        @NotNull(message = "A categoria é obrigatória")
-        UUID categoryId,
+        @NotNull(message = "O modelo de template da esquadria é obrigatório")
+        @Schema(description = "Modelo de template de esquadria (SLIDING_DOOR_2F, SWING_DOOR_1F, etc.)", example = "SLIDING_DOOR_2F")
+        DoorTemplateType templateType,
 
-        @NotNull(message = "O custo de mão de obra é obrigatório")
-        @PositiveOrZero(message = "O custo não pode ser negativo")
-        BigDecimal laborCost,
-
-        @NotEmpty(message = "A ficha técnica deve conter pelo menos um material")
+        @Schema(description = "Configurações padrão e opções permitidas para orçamento")
         @Valid
-        List<ProductItemRequestDTO> items
+        TemplateConfigDTO templateConfig,
+
+        @Schema(description = "Categorias de insumos obrigatórias para este template")
+        List<MaterialCategoryType> categoryRequirements
 ) {}

@@ -6,11 +6,9 @@ import br.edu.ifpb.alumigest.catalog.dto.HardwareResponseDTO;
 import br.edu.ifpb.alumigest.catalog.dto.HardwareUpdatePriceDTO;
 import br.edu.ifpb.alumigest.catalog.service.HardwareService;
 import br.edu.ifpb.alumigest.common.dto.ApiResponse;
-import br.edu.ifpb.alumigest.common.dto.ErrorResponse;
 import br.edu.ifpb.alumigest.common.dto.PageResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -45,40 +43,36 @@ public class HardwareController {
 
     @GetMapping
     @Operation(summary = "Listar ferragens com filtro opcional por unidade de medida e nome")
-    public ResponseEntity<?> findAll(
+    public ResponseEntity<ApiResponse<PageResponse<HardwareResponseDTO>>> findAll(
             @RequestParam(name = "unitMeasure", required = false) String unitMeasureParam,
             @RequestParam(name = "unit", required = false) String unitParam,
             @RequestParam(required = false) String name,
-            @PageableDefault(size = 20) Pageable pageable,
-            HttpServletRequest request) {
+            @PageableDefault(size = 20) Pageable pageable) {
 
-        String rawUnit = unitMeasureParam != null ? unitMeasureParam : unitParam;
-        String paramName = unitMeasureParam != null ? "unitMeasure" : (unitParam != null ? "unit" : null);
-
-        UnitMeasure parsedUnitMeasure = null;
-
-        if (rawUnit != null && !rawUnit.isBlank()) {
-            String normalizedUnit = rawUnit.trim();
-            if (!ALLOWED_HARDWARE_UNITS.contains(normalizedUnit)) {
-                String acceptedStr = String.join(", ", ALLOWED_HARDWARE_UNITS);
-                String errorMessage = String.format(
-                        "Valor inválido para o parâmetro '%s': '%s'. Valores aceitos: %s.",
-                        paramName, rawUnit, acceptedStr);
-
-                ErrorResponse error = ErrorResponse.of(
-                        HttpStatus.BAD_REQUEST.value(),
-                        HttpStatus.BAD_REQUEST.getReasonPhrase(),
-                        errorMessage,
-                        request.getRequestURI()
-                );
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
-            }
-            parsedUnitMeasure = UnitMeasure.valueOf(normalizedUnit);
-        }
+        UnitMeasure parsedUnitMeasure = resolveUnitMeasure(unitMeasureParam, unitParam);
 
         PageResponse<HardwareResponseDTO> response =
                 PageResponse.of(hardwareService.findAll(parsedUnitMeasure, name, pageable));
         return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
+    private UnitMeasure resolveUnitMeasure(String unitMeasureParam, String unitParam) {
+        String rawUnit = unitMeasureParam != null ? unitMeasureParam : unitParam;
+        if (rawUnit == null || rawUnit.isBlank()) {
+            return null;
+        }
+
+        String paramName = unitMeasureParam != null ? "unitMeasure" : "unit";
+        String normalizedUnit = rawUnit.trim();
+
+        if (!ALLOWED_HARDWARE_UNITS.contains(normalizedUnit)) {
+            String acceptedStr = String.join(", ", ALLOWED_HARDWARE_UNITS);
+            throw new IllegalArgumentException(String.format(
+                    "Valor inválido para o parâmetro '%s': '%s'. Valores aceitos: %s.",
+                    paramName, rawUnit, acceptedStr));
+        }
+
+        return UnitMeasure.valueOf(normalizedUnit);
     }
 
     @GetMapping("/{id}")

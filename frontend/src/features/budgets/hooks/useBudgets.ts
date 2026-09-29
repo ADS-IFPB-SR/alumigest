@@ -1,0 +1,164 @@
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { budgetsApi } from '../services/budgetsApi';
+import type { BudgetFilters, CreateBudgetPayload, BudgetStatus, DiscountRequest } from '../types';
+import toast from 'react-hot-toast';
+
+// ============================================================
+// TEMPLATES DE ESQUADRIAS
+// ============================================================
+export const useWindowTemplates = () => {
+  return useQuery({
+    queryKey: ['windowTemplates'],
+    queryFn: budgetsApi.getWindowTemplates,
+    staleTime: 5 * 60_000,
+  });
+};
+
+// ============================================================
+// ORÇAMENTOS
+// ============================================================
+export const useBudgets = (filters: BudgetFilters) => {
+  return useQuery({
+    queryKey: ['budgets', filters],
+    queryFn: () => budgetsApi.getBudgets(filters),
+    placeholderData: (previousData) => previousData,
+  });
+};
+
+export const useBudgetStatusCounts = () => {
+  return useQuery({
+    queryKey: ['budgets', 'status-counts'],
+    queryFn: () => budgetsApi.getStatusCounts(),
+  });
+};
+
+export const useBudget = (id: string | undefined) => {
+  return useQuery({
+    queryKey: ['budget', id],
+    queryFn: () => budgetsApi.getBudget(id!),
+    enabled: Boolean(id),
+  });
+};
+
+export const useCreateBudget = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: CreateBudgetPayload) => {
+      return budgetsApi.createBudget(data);
+    },
+    onSuccess: () => {
+      toast.success('Orçamento criado com sucesso!');
+      queryClient.invalidateQueries({ queryKey: ['budgets'] });
+    },
+    onError: (error: unknown) => {
+      const err = error as { response?: { data?: { message?: string } } };
+      const message = err?.response?.data?.message || 'Erro ao criar orçamento. Tente novamente.';
+      toast.error(message);
+    },
+  });
+};
+
+export const useUpdateBudget = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: CreateBudgetPayload }) =>
+      budgetsApi.updateBudget(id, data),
+    onSuccess: (_, variables) => {
+      toast.success('Orçamento atualizado com sucesso!');
+      queryClient.invalidateQueries({ queryKey: ['budgets'] });
+      queryClient.invalidateQueries({ queryKey: ['budget', variables.id] });
+    },
+    onError: (error: unknown) => {
+      console.error('Erro ao atualizar orçamento:', error);
+      const err = error as { response?: { data?: { message?: string } } };
+      const message = err?.response?.data?.message || 'Erro ao atualizar orçamento.';
+      toast.error(message);
+    },
+  });
+};
+
+export const useDeleteBudget = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => budgetsApi.deleteBudget(id),
+    onSuccess: () => {
+      toast.success('Orçamento excluído com sucesso!');
+      queryClient.invalidateQueries({ queryKey: ['budgets'] });
+    },
+    onError: (error: unknown) => {
+      const err = error as { response?: { data?: { message?: string } } };
+      const message = err?.response?.data?.message || 'Erro ao excluir orçamento.';
+      toast.error(message);
+    },
+  });
+};
+
+export const useUpdateBudgetStatus = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, status }: { id: string; status: BudgetStatus }) =>
+      budgetsApi.updateBudgetStatus(id, status),
+    onSuccess: (_, variables) => {
+      toast.success('Status do orçamento atualizado com sucesso!');
+      queryClient.invalidateQueries({ queryKey: ['budgets'] });
+      queryClient.invalidateQueries({ queryKey: ['budget', variables.id] });
+    },
+    onError: (error: unknown) => {
+      const err = error as { response?: { data?: { message?: string } } };
+      let message = err?.response?.data?.message || 'Erro ao atualizar status.';
+      message = message
+        .replace(/\bDRAFT\b/g, 'Rascunho')
+        .replace(/\bSENT\b/g, 'Enviado')
+        .replace(/\bAPPROVED\b/g, 'Aprovado')
+        .replace(/\bREJECTED\b/g, 'Rejeitado')
+        .replace(/\bCANCELLED\b/g, 'Cancelado')
+        .replace(/\bEXPIRED\b/g, 'Expirado');
+      toast.error(message);
+    },
+  });
+};
+
+export const useApplyDiscount = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: DiscountRequest }) =>
+      budgetsApi.applyDiscount(id, data),
+    onSuccess: (_, { id }) => {
+      toast.success('Condições comerciais aplicadas com sucesso!');
+      queryClient.invalidateQueries({ queryKey: ['budgets'] });
+      queryClient.invalidateQueries({ queryKey: ['budget', id] });
+    },
+    onError: (error: unknown) => {
+      const err = error as { response?: { data?: { message?: string } } };
+      const message = err?.response?.data?.message || 'Erro ao aplicar desconto e condições comerciais.';
+      toast.error(message);
+    },
+  });
+};
+
+export const useDownloadPdfTecnico = () => {
+  return useMutation({
+    mutationFn: ({ id, code }: { id: string; code?: string }) =>
+      budgetsApi.downloadPdfTecnico(id, code),
+    onSuccess: () => {
+      toast.success('PDF da Ficha Técnica baixado com sucesso!');
+    },
+    onError: (error: unknown) => {
+      const err = error as { response?: { data?: { message?: string } } };
+      const message = err?.response?.data?.message || 'Erro ao gerar o PDF técnico.';
+      toast.error(message);
+    },
+  });
+};
+
+export const useWhatsAppSummary = (budgetId?: string, enabled = true) => {
+  return useQuery({
+    queryKey: ['budget', budgetId, 'whatsapp-summary'],
+    queryFn: () => {
+      if (!budgetId) throw new Error('ID do orçamento é obrigatório');
+      return budgetsApi.getWhatsAppSummary(budgetId);
+    },
+    enabled: Boolean(budgetId) && enabled,
+    staleTime: 5 * 60_000,
+  });
+};

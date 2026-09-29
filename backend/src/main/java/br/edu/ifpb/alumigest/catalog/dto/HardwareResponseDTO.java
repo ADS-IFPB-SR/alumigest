@@ -22,6 +22,40 @@ public record HardwareResponseDTO(
         BigDecimal salePrice,
         boolean active,
         OffsetDateTime createdAt,
-        OffsetDateTime updatedAt
+        OffsetDateTime updatedAt,
+        String familyCode,
+        boolean isHandle
 ) {
+    public HardwareResponseDTO(
+            UUID id,
+            String skuCode,
+            String name,
+            UnitMeasure unitMeasure,
+            CalculationType calculationType,
+            String ncmCode,
+            BigDecimal costPrice,
+            BigDecimal salePrice,
+            boolean active,
+            OffsetDateTime createdAt,
+            OffsetDateTime updatedAt
+    ) {
+        this(id, skuCode, name, unitMeasure, calculationType, ncmCode, costPrice, salePrice, active, createdAt, updatedAt, null, false);
+    }
+
+    public HardwareResponseDTO(
+            UUID id,
+            String skuCode,
+            String name,
+            UnitMeasure unitMeasure,
+            CalculationType calculationType,
+            String ncmCode,
+            BigDecimal costPrice,
+            BigDecimal salePrice,
+            boolean active,
+            OffsetDateTime createdAt,
+            OffsetDateTime updatedAt,
+            String familyCode
+    ) {
+        this(id, skuCode, name, unitMeasure, calculationType, ncmCode, costPrice, salePrice, active, createdAt, updatedAt, familyCode, false);
+    }
 }

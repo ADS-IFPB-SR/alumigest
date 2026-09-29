@@ -1,5 +1,5 @@
 server:
-  port: ${SERVER_PORT:8080}
+  port: ${SERVER_PORT:8081}
   servlet:
     context-path: /
 
@@ -34,6 +34,7 @@ spring:
   flyway:
     enabled: true
     baseline-on-migrate: true
+    validate-on-migrate: false
     locations: classpath:db/migration
 
 springdoc:
@@ -43,3 +44,11 @@ springdoc:
     path: /swagger-ui.html
     operations-sorter: method
     tags-sorter: alpha
+
+empresa:
+  razao-social: ${EMPRESA_RAZAO_SOCIAL:Alumiportas LTDA}
+  cnpj: ${EMPRESA_CNPJ:00.000.000/0000-00}
+  inscricao-estadual: ${EMPRESA_IE:Isento}
+  telefone: ${EMPRESA_TELEFONE:(83) 99999-9999}
+  endereco: ${EMPRESA_ENDERECO:Rua Principal, 100 - Centro}
+  cidade-uf: ${EMPRESA_CIDADE_UF:Sousa - PB}

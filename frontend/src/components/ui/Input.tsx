@@ -1,17 +1,20 @@
 import React from 'react';
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
- label: string;
- error?: string;
- unit?: string;
+ readonly label: string;
+ readonly error?: string;
+ readonly unit?: string;
 }
 
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(
  ({ label, error, unit, className = '', ...props }, ref) => {
  return (
- <div className="flex flex-col gap-xs w-full">
- <label className="font-label-bold text-label-bold text-on-surface text-xs">{label}</label>
- <div className="relative">
+    <div className="flex flex-col gap-xs w-full">
+      <label className="font-label-bold text-label-bold text-on-surface text-xs">
+        {label}
+        {props.required && <span className="text-error ml-[2px]">*</span>}
+      </label>
+      <div className="relative">
  <input
  ref={ref}
  className={`w-full px-sm py-xs bg-surface-container-low border ${

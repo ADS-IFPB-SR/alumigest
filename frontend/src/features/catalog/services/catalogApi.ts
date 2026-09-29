@@ -1,14 +1,13 @@
 import { api } from '../../../lib/api';
-import type { 
-  GlassDTO, 
-  ProfileDTO, 
-  HardwareDTO, 
-  FilmDTO, 
+import type {
+  GlassDTO,
+  ProfileDTO,
+  HardwareDTO,
+  FilmDTO,
   PageResponse,
-  ProductCategory,
   MaterialSummary,
   Product,
-  ProductRequest
+  ProductRequest,
 } from '../types';
 
 export interface ApiResponse<T> {
@@ -18,8 +17,8 @@ export interface ApiResponse<T> {
 }
 
 export const catalogApi = {
-  // Glasses (Ainda não implementado no backend)
-  getGlasses: async () => {
+  // ── Glasses ──────────────────────────────────────────────────────────────
+  getGlasses: async (): Promise<PageResponse<GlassDTO>> => {
     const response = await api.get<PageResponse<GlassDTO>>('/catalog/glasses?size=100');
     return response.data;
   },
@@ -32,8 +31,8 @@ export const catalogApi = {
     return response.data;
   },
 
-  // Profiles
-  getProfiles: async () => {
+  // ── Profiles ──────────────────────────────────────────────────────────────
+  getProfiles: async (): Promise<PageResponse<ProfileDTO>> => {
     const response = await api.get<PageResponse<ProfileDTO>>('/catalog/aluminum-profiles?size=100');
     return response.data;
   },
@@ -46,8 +45,8 @@ export const catalogApi = {
     return response.data;
   },
 
-  // Hardware
-  getHardwares: async () => {
+  // ── Hardware ──────────────────────────────────────────────────────────────
+  getHardwares: async (): Promise<PageResponse<HardwareDTO>> => {
     const response = await api.get<PageResponse<HardwareDTO>>('/catalog/hardware?size=100');
     return response.data;
   },
@@ -60,8 +59,8 @@ export const catalogApi = {
     return response.data;
   },
 
-  // Films
-  getFilms: async () => {
+  // ── Films ──────────────────────────────────────────────────────────────────
+  getFilms: async (): Promise<PageResponse<FilmDTO>> => {
     const response = await api.get<PageResponse<FilmDTO>>('/catalog/films?size=100');
     return response.data;
   },
@@ -74,21 +73,22 @@ export const catalogApi = {
     return response.data;
   },
 
-  // Product Categories
-  getProductCategories: async () => {
-    const response = await api.get<ProductCategory[]>('/catalog/product-categories');
-    return response.data;
-  },
 
-  // Material Summary (Unified List)
-  getMaterialsSummary: async () => {
+
+  // ── Material Summary (lista unificada para o builder) ─────────────────────
+  // Consome o endpoint /catalog/materials que o MaterialController já fornece.
+  getMaterialsSummary: async (): Promise<MaterialSummary[]> => {
     const response = await api.get<MaterialSummary[]>('/catalog/materials?size=1000');
     return response.data;
   },
 
-  // Products
-  getProducts: async () => {
+  // ── Products (Esquadrias / Templates) ────────────────────────────────────
+  getProducts: async (): Promise<PageResponse<Product>> => {
     const response = await api.get<PageResponse<Product>>('/catalog/products?size=100');
+    return response.data;
+  },
+  getProductById: async (id: string) => {
+    const response = await api.get<Product>(`/catalog/products/${id}`);
     return response.data;
   },
   createProduct: async (data: ProductRequest) => {
@@ -102,6 +102,17 @@ export const catalogApi = {
   inactivateProduct: async (id: string) => {
     const response = await api.delete(`/catalog/products/${id}`);
     return response.data;
+  },
+
+  // ── Material Families ─────────────────────────────────────────────────────
+  getMaterialFamilies: async (groupCode?: string): Promise<string[]> => {
+    const params = groupCode ? `?groupCode=${encodeURIComponent(groupCode)}` : '';
+    const response = await api.get<any>(`/catalog/materials/families${params}`);
+    // O interceptor do axios já desempacota response.data = response.data.data quando 'data' existe
+    if (Array.isArray(response.data)) {
+      return response.data;
+    }
+    return response.data?.data ?? [];
   },
 };
 
