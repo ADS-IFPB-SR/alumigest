@@ -183,7 +183,7 @@ public final class BudgetPdfDrawingHelper {
         }
 
         if (ctx.hasHandle()) {
-            desenharPuxadorTecnico(tpl, ctx, ctx.handle(), startX, startY, drawW, drawH, width);
+            desenharPuxadorTecnico(tpl, ctx, startX, startY, drawW, drawH, width);
         }
 
         return Image.getInstance(tpl);
@@ -203,7 +203,7 @@ public final class BudgetPdfDrawingHelper {
     private static float[] calcularMargensLaterais(TechnicalMachiningContext ctx) {
         boolean hasDrill = ctx.hasDrilling();
         boolean hasHandle = ctx.hasHandle();
-        boolean isDoubleSwing = ctx != null && ctx.isDoubleSwingDoor();
+        boolean isDoubleSwing = ctx.isDoubleSwingDoor();
 
         boolean handleOnRight = hasHandle && !isDoubleSwing && ctx.handle().onRightSide();
         boolean handleOnLeft = hasHandle && !isDoubleSwing && !ctx.handle().onRightSide();
@@ -266,7 +266,6 @@ public final class BudgetPdfDrawingHelper {
         tpl.stroke();
 
         int leaves = ctx != null ? ctx.getLeafCount() : 1;
-        boolean sliding = ctx != null && ctx.isSliding();
         boolean isDoubleSwing = ctx != null && ctx.isDoubleSwingDoor();
 
         if (leaves <= 1 && !isDoubleSwing) {
@@ -404,11 +403,14 @@ public final class BudgetPdfDrawingHelper {
     private static void desenharPuxadorTecnico(
             PdfTemplate tpl,
             TechnicalMachiningContext ctx,
-            TechnicalHandle puxador,
             float startX, float startY, float drawW, float drawH,
             float totalWidth
     ) {
-        boolean isDoubleSwing = ctx != null && ctx.isDoubleSwingDoor();
+        TechnicalHandle puxador = ctx.handle();
+        if (puxador == null) {
+            return;
+        }
+        boolean isDoubleSwing = ctx.isDoubleSwingDoor();
 
         float hDisponivel = drawH - (2 * INNER_OFFSET);
         float handleLen = Math.max(12f, hDisponivel * puxador.lengthRatio());
@@ -455,7 +457,8 @@ public final class BudgetPdfDrawingHelper {
 
             textX = centroX;
             align = PdfContentByte.ALIGN_CENTER;
-            desenharRotuloPuxadorComMascara(tpl, puxador.label(), textX, py1 - 7.0f, align, totalWidth, drawW, true);
+            float maxAvailable = Math.max(drawW - 4.0f, 38.0f);
+            desenharRotuloPuxadorComMascara(tpl, puxador.label(), textX, py1 - 7.0f, align, maxAvailable);
         } else {
             float px = puxador.onRightSide()
                     ? (startX + drawW - INNER_OFFSET - 2.5f)
@@ -478,7 +481,8 @@ public final class BudgetPdfDrawingHelper {
             // Texto do puxador cotado na lateral
             textX = puxador.onRightSide() ? (startX + drawW + 3.5f) : (startX - 3.5f);
             align = puxador.onRightSide() ? PdfContentByte.ALIGN_LEFT : PdfContentByte.ALIGN_RIGHT;
-            desenharRotuloPuxadorComMascara(tpl, puxador.label(), textX, centerY, align, totalWidth, drawW, false);
+            float maxAvailable = puxador.onRightSide() ? (totalWidth - textX - 1.5f) : (textX - 1.5f);
+            desenharRotuloPuxadorComMascara(tpl, puxador.label(), textX, centerY, align, maxAvailable);
         }
     }
 
@@ -488,13 +492,8 @@ public final class BudgetPdfDrawingHelper {
             float textX,
             float centerY,
             int align,
-            float totalWidth,
-            float drawW,
-            boolean isCentered
+            float maxAvailable
     ) {
-        float maxAvailable = isCentered
-                ? Math.max(drawW - 4.0f, 38.0f)
-                : (align == PdfContentByte.ALIGN_LEFT ? (totalWidth - textX - 1.5f) : (textX - 1.5f));
 
         float labelWidth = BASE_FONT_HELVETICA.getWidthPoint(label, 5.5f);
         boolean singleLine = labelWidth <= maxAvailable || !label.contains(" ");

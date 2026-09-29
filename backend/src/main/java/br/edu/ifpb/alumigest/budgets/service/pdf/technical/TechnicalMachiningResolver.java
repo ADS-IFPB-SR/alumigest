@@ -37,6 +37,7 @@ public final class TechnicalMachiningResolver {
     private static final float RAIO_PADRAO_MM = 10.0f;
     private static final float DEFAULT_HANDLE_LENGTH_MM = 250.0f;
     private static final float DEFAULT_HEIGHT_MM = 2100.0f;
+    private static final String FORMAT_MM = "%.0f mm";
 
     private TechnicalMachiningResolver() {
         throw new UnsupportedOperationException("Classe utilitária não pode ser instanciada.");
@@ -152,7 +153,7 @@ public final class TechnicalMachiningResolver {
             for (JsonNode dNode : distances) {
                 float dist = (float) dNode.asDouble();
                 float yRatio = Math.clamp(dist / h, 0.08f, 0.92f);
-                pontos.add(new DrillingHolePoint(yRatio, RAIO_PADRAO_MM, String.format(Locale.ROOT, "%.0f mm", dist)));
+                pontos.add(new DrillingHolePoint(yRatio, RAIO_PADRAO_MM, String.format(Locale.ROOT, FORMAT_MM, dist)));
             }
         }
         return pontos;
@@ -193,7 +194,7 @@ public final class TechnicalMachiningResolver {
 
         if (count <= 1) {
             float distMm = Math.round(h * 0.50f);
-            pontos.add(new DrillingHolePoint(0.50f, RAIO_PADRAO_MM, String.format(Locale.ROOT, "%.0f mm", distMm)));
+            pontos.add(new DrillingHolePoint(0.50f, RAIO_PADRAO_MM, String.format(Locale.ROOT, FORMAT_MM, distMm)));
             return pontos;
         }
 
@@ -204,7 +205,7 @@ public final class TechnicalMachiningResolver {
         for (int i = 0; i < count; i++) {
             float y = yMin + (i * step);
             float distMm = Math.round(h * y);
-            pontos.add(new DrillingHolePoint(y, RAIO_PADRAO_MM, String.format(Locale.ROOT, "%.0f mm", distMm)));
+            pontos.add(new DrillingHolePoint(y, RAIO_PADRAO_MM, String.format(Locale.ROOT, FORMAT_MM, distMm)));
         }
         return pontos;
     }
