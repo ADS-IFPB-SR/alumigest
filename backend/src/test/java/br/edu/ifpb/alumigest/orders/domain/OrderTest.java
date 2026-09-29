@@ -5,6 +5,8 @@ import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -27,8 +29,9 @@ class OrderTest {
 
         assertThat(order.getAtivo()).isTrue();
         assertThat(order.getStatus()).isEqualTo(OrderStatus.AGUARDANDO_PRODUCAO);
-        assertThat(order.getDataAprovacao()).isEqualTo(LocalDate.now());
-        assertThat(order.getDataPrevisaoEntrega()).isEqualTo(LocalDate.now().plusDays(15));
+        assertThat(order.getDataAprovacao()).isEqualTo(LocalDate.now(ZoneOffset.UTC));
+        assertThat(order.getDataPrevisaoEntrega())
+                .isEqualTo(LocalDate.now(ZoneOffset.UTC).plusDays(15));
         assertThat(order.getCreatedAt()).isNotNull();
         assertThat(order.getUpdatedAt()).isNotNull();
     }
@@ -38,7 +41,7 @@ class OrderTest {
     void shouldBuildOrderWithBuilderPattern() {
         UUID orderId = UUID.randomUUID();
         UUID budgetId = UUID.randomUUID();
-        LocalDate entrega = LocalDate.now().plusDays(20);
+        LocalDate entrega = LocalDate.now(ZoneOffset.UTC).plusDays(20);
 
         Order order = Order.builder()
                 .id(orderId)
@@ -190,8 +193,9 @@ class OrderTest {
     void shouldProtectItemsCollectionImmutability() {
         Order order = Order.builder().build();
         OrderItem item = OrderItem.builder().descricao("Item Protegido").build();
+        List<OrderItem> items = order.getItems();
 
-        assertThatThrownBy(() -> order.getItems().add(item))
+        assertThatThrownBy(() -> items.add(item))
                 .isInstanceOf(UnsupportedOperationException.class);
     }
 

@@ -14,6 +14,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
 
@@ -43,8 +44,8 @@ class OrderItemRepositoryTest {
                 .clienteNome("Cliente Teste")
                 .canalAprovacao(ApprovalChannel.WHATSAPP)
                 .status(OrderStatus.AGUARDANDO_PRODUCAO)
-                .dataAprovacao(LocalDate.now())
-                .dataPrevisaoEntrega(LocalDate.now().plusDays(15))
+                .dataAprovacao(LocalDate.now(ZoneOffset.UTC))
+                .dataPrevisaoEntrega(LocalDate.now(ZoneOffset.UTC).plusDays(15))
                 .valorBruto(new BigDecimal("1000.00"))
                 .valorLiquido(new BigDecimal("1000.00"))
                 .ativo(true)

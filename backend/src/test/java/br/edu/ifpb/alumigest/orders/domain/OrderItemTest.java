@@ -4,6 +4,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -63,8 +64,9 @@ class OrderItemTest {
     void shouldProtectOptionsCollectionImmutability() {
         OrderItem item = OrderItem.builder().descricao("Item Teste").build();
         OrderItemOption option = OrderItemOption.builder().materialName("Opção").build();
+        List<OrderItemOption> options = item.getOptions();
 
-        assertThatThrownBy(() -> item.getOptions().add(option))
+        assertThatThrownBy(() -> options.add(option))
                 .isInstanceOf(UnsupportedOperationException.class);
     }
 }

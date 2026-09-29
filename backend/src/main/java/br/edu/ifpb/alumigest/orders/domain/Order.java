@@ -23,7 +23,6 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -66,7 +65,7 @@ public class Order {
     private ApprovalChannel canalAprovacao;
 
     @Column(name = "data_aprovacao", nullable = false)
-    private LocalDate dataAprovacao = LocalDate.now();
+    private LocalDate dataAprovacao = LocalDate.now(ZoneOffset.UTC);
 
     @Column(name = "data_previsao_entrega", nullable = false)
     private LocalDate dataPrevisaoEntrega;
@@ -126,7 +125,8 @@ public class Order {
         this.clienteEndereco = builder.clienteEndereco;
         this.status = builder.status != null ? builder.status : OrderStatus.AGUARDANDO_PRODUCAO;
         this.canalAprovacao = builder.canalAprovacao;
-        this.dataAprovacao = builder.dataAprovacao != null ? builder.dataAprovacao : LocalDate.now();
+        this.dataAprovacao = builder.dataAprovacao != null
+                ? builder.dataAprovacao : LocalDate.now(ZoneOffset.UTC);
         this.dataPrevisaoEntrega = builder.dataPrevisaoEntrega;
         this.dataConclusao = builder.dataConclusao;
         this.valorBruto = builder.valorBruto != null ? builder.valorBruto : BigDecimal.ZERO;
@@ -138,7 +138,7 @@ public class Order {
         this.observacoesPagamento = builder.observacoesPagamento;
         this.observacoes = builder.observacoes;
         this.justificativaCancelamento = builder.justificativaCancelamento;
-        this.ativo = builder.ativo != null ? builder.ativo : true;
+        this.ativo = !Boolean.FALSE.equals(builder.ativo);
     }
 
     public static Builder builder() {
@@ -150,7 +150,7 @@ public class Order {
         this.createdAt = OffsetDateTime.now(ZoneOffset.UTC);
         this.updatedAt = OffsetDateTime.now(ZoneOffset.UTC);
         if (this.dataAprovacao == null) {
-            this.dataAprovacao = LocalDate.now();
+            this.dataAprovacao = LocalDate.now(ZoneOffset.UTC);
         }
         if (this.dataPrevisaoEntrega == null) {
             this.dataPrevisaoEntrega = this.dataAprovacao.plusDays(15);
@@ -209,7 +209,7 @@ public class Order {
             throw new IllegalStateException("Apenas pedidos em produção podem ser concluídos.");
         }
         this.status = OrderStatus.CONCLUIDO;
-        this.dataConclusao = dataConclusao != null ? dataConclusao : LocalDate.now();
+        this.dataConclusao = dataConclusao != null ? dataConclusao : LocalDate.now(ZoneOffset.UTC);
     }
 
     /**
@@ -406,7 +406,7 @@ public class Order {
         private String clienteEndereco;
         private OrderStatus status = OrderStatus.AGUARDANDO_PRODUCAO;
         private ApprovalChannel canalAprovacao;
-        private LocalDate dataAprovacao = LocalDate.now();
+        private LocalDate dataAprovacao = LocalDate.now(ZoneOffset.UTC);
         private LocalDate dataPrevisaoEntrega;
         private LocalDate dataConclusao;
         private BigDecimal valorBruto = BigDecimal.ZERO;
