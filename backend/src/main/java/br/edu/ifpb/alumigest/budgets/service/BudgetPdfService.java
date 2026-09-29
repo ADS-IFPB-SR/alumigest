@@ -1527,16 +1527,7 @@ public class BudgetPdfService {
     }
 
     private void adicionarTipoPuxador(JsonNode node, List<String> linhas) {
-        String tipo = null;
-        if (node.hasNonNull(KEY_HANDLE_TYPE)) {
-            tipo = node.get(KEY_HANDLE_TYPE).asText();
-        } else if (node.hasNonNull("type")) {
-            tipo = node.get("type").asText();
-        } else if (node.hasNonNull("handle")) {
-            tipo = node.get("handle").asText();
-        } else if (node.hasNonNull("model")) {
-            tipo = node.get("model").asText();
-        }
+        String tipo = obterCampoTexto(node, KEY_HANDLE_TYPE, KEY_TYPE, KEY_HANDLE, KEY_MODEL);
         if (tipo != null) {
             String tipoTraduzido = traduzirTipoPuxadorTexto(tipo);
             linhas.add("Tipo: " + (tipoTraduzido != null ? tipoTraduzido : tipo.replace('_', ' ')));
@@ -1544,12 +1535,7 @@ public class BudgetPdfService {
     }
 
     private void adicionarFormatoPuxador(JsonNode node, List<String> linhas) {
-        String formato = null;
-        if (node.hasNonNull(KEY_FORMAT)) {
-            formato = node.get(KEY_FORMAT).asText();
-        } else if (node.hasNonNull("shape")) {
-            formato = node.get("shape").asText();
-        }
+        String formato = obterCampoTexto(node, KEY_FORMAT, KEY_SHAPE);
         if (formato != null) {
             String formatoTraduzido = traduzirFormatoTexto(formato);
             if (formatoTraduzido != null) {
@@ -1559,14 +1545,7 @@ public class BudgetPdfService {
     }
 
     private void adicionarPosicaoPuxador(JsonNode node, List<String> linhas) {
-        String pos = null;
-        if (node.hasNonNull(KEY_POSITION)) {
-            pos = node.get(KEY_POSITION).asText();
-        } else if (node.hasNonNull("pos")) {
-            pos = node.get("pos").asText();
-        } else if (node.hasNonNull("side")) {
-            pos = node.get("side").asText();
-        }
+        String pos = obterCampoTexto(node, KEY_POSITION, KEY_POS, KEY_SIDE);
         if (pos != null) {
             String posTraduzida = traduzirPosicaoTexto(pos);
             if (posTraduzida != null) {
