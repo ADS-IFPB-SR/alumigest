@@ -112,6 +112,16 @@ public class BudgetPdfService {
     private static final String PREFIXO_POSICAO = "Posição: ";
     private static final String KEY_FORMAT = "format";
     private static final String KEY_HANDLE_TYPE = "handleType";
+    private static final String KEY_TYPE = "type";
+    private static final String KEY_HANDLE = "handle";
+    private static final String KEY_MODEL = "model";
+    private static final String KEY_SHAPE = "shape";
+    private static final String KEY_POS = "pos";
+    private static final String KEY_SIDE = "side";
+    private static final String LITERAL_MAX_AR = "MAX_AR";
+    private static final String LITERAL_MAX_AR_SPACE = "MAX AR";
+    private static final String LITERAL_MAXIM_AR = "MAXIM_AR";
+    private static final String LITERAL_MAXIM_AR_SPACE = "MAXIM AR";
     private static final String PADRAO = "Padrão";
     private static final String BADGE_PADRAO = "PADRÃO";
     private static final String NAO_INFORMADO = "Não informado";
@@ -792,25 +802,7 @@ public class BudgetPdfService {
 
         String raw = handleConfigRaw.trim();
         if (raw.startsWith("{")) {
-            try {
-                JsonNode node = objectMapper.readTree(raw);
-                JsonNode typeNode = node.get(KEY_HANDLE_TYPE);
-                if (typeNode == null || typeNode.isNull()) {
-                    typeNode = node.get("type");
-                }
-                if (typeNode == null || typeNode.isNull()) {
-                    typeNode = node.get("handle");
-                }
-                if (typeNode == null || typeNode.isNull()) {
-                    typeNode = node.get("model");
-                }
-                if (typeNode != null && !typeNode.isNull()) {
-                    return resolverDescricaoTipoPuxador(typeNode.asText());
-                }
-            } catch (Exception e) {
-                log.debug("Não foi possível parsear handleConfig como JSON: {}", e.getMessage());
-            }
-            return null;
+            return extrairTipoPuxadorJson(raw);
         }
 
         if ("NONE".equalsIgnoreCase(raw)) {
@@ -818,6 +810,28 @@ public class BudgetPdfService {
         }
         String traduzido = traduzirTipoPuxadorTexto(raw);
         return traduzido != null ? traduzido : raw;
+    }
+
+    private String extrairTipoPuxadorJson(String raw) {
+        try {
+            JsonNode node = objectMapper.readTree(raw);
+            String tipo = obterCampoTexto(node, KEY_HANDLE_TYPE, KEY_TYPE, KEY_HANDLE, KEY_MODEL);
+            if (tipo != null) {
+                return resolverDescricaoTipoPuxador(tipo);
+            }
+        } catch (Exception e) {
+            log.debug("Não foi possível parsear handleConfig como JSON: {}", e.getMessage());
+        }
+        return null;
+    }
+
+    private String obterCampoTexto(JsonNode node, String... chaves) {
+        for (String chave : chaves) {
+            if (node.hasNonNull(chave)) {
+                return node.get(chave).asText();
+            }
+        }
+        return null;
     }
 
     private String resolverDescricaoTipoPuxador(String tipoStr) {
@@ -1289,51 +1303,61 @@ public class BudgetPdfService {
             case "SLIDING_DOOR_4F", "SLIDING_4F", "SLIDING_4_LEAF", "SLIDING DOOR 4F", "SLIDING_WINDOW_4F", "SLIDING WINDOW 4F", "CORRER 4 FOLHAS" -> "TIPO: CORRER (4 FOLHAS)";
             case "SLIDING_DOOR", "SLIDING DOOR", TIPO_SLIDING, TIPO_CORRER, "PORTA_CORRER", "PORTA CORRER", "JANELA_CORRER", "JANELA CORRER" -> "TIPO: CORRER";
             case "AWNING_WINDOW", "AWNING WINDOW", "AWNING_WINDOW_1F", "AWNING WINDOW 1F", TIPO_AWNING,
-                 "MAX_AR_WINDOW_1_LEAF", "MAX_AR", "MAX AR", "MAXIM_AR_WINDOW", "MAXIM AR WINDOW",
-                 "MAXIM_AR", "MAXIM AR", "MAXIMAR", "TILT_WINDOW", "TILT WINDOW", "TILT", TIPO_BASCULANTE -> LABEL_TIPO_BASCULANTE;
+                 "MAX_AR_WINDOW_1_LEAF", LITERAL_MAX_AR, LITERAL_MAX_AR_SPACE, "MAXIM_AR_WINDOW", "MAXIM AR WINDOW",
+                 LITERAL_MAXIM_AR, LITERAL_MAXIM_AR_SPACE, "MAXIMAR", "TILT_WINDOW", "TILT WINDOW", "TILT", TIPO_BASCULANTE -> LABEL_TIPO_BASCULANTE;
             case "AWNING_WINDOW_1F_INV", "AWNING WINDOW 1F INV", "MAX_AR_WINDOW_INVERSE_1_LEAF",
                  "BASCULANTE INVERTIDO", "BASCULANTE_INVERTIDO", "MAXIM_AR_INVERTIDO", "MAXIM AR INVERTIDO" -> "TIPO: BASCULANTE INVERTIDO";
             case "FRONT_DRAWER", "FRONT DRAWER", "DRAWER_FRONT", "DRAWER FRONT", TIPO_DRAWER, TIPO_GAVETA, "FRENTE DE GAVETA", "FRENTE_DE_GAVETA" -> LABEL_TIPO_GAVETA;
             case "FIXED_PANEL", "FIXED PANEL", "FIXED_GLASS_FACADE", "FIXED GLASS FACADE", TIPO_FIXED, "FIXO" -> LABEL_TIPO_FIXO;
             case "GLASS_BOX_FRONTAL", "GLASS BOX FRONTAL", "BOX_FRONTAL", "BOX FRONTAL" -> "TIPO: BOX FRONTAL";
             case "GLASS_BOX_CORNER", "GLASS BOX CORNER", "BOX_DE_CANTO", "BOX DE CANTO" -> "TIPO: BOX DE CANTO";
-            default -> {
-                TemplateType parsed = TemplateType.parse(clean);
-                if (parsed == null && clean.contains(" ")) {
-                    parsed = TemplateType.parse(clean.replace(' ', '_'));
-                }
-                if (parsed != null) {
-                    yield switch (parsed) {
-                        case SWING_1_LEAF -> LABEL_TIPO_GIRO;
-                        case SWING_2_LEAF -> "TIPO: GIRO (2 FOLHAS)";
-                        case SLIDING_1_LEAF -> "TIPO: CORRER (1 FOLHA)";
-                        case SLIDING_2_LEAF -> "TIPO: CORRER (2 FOLHAS)";
-                        case SLIDING_3_LEAF -> "TIPO: CORRER (3 FOLHAS)";
-                        case SLIDING_4_LEAF -> "TIPO: CORRER (4 FOLHAS)";
-                        case MAX_AR_WINDOW_1_LEAF -> LABEL_TIPO_BASCULANTE;
-                        case MAX_AR_WINDOW_INVERSE_1_LEAF -> "TIPO: BASCULANTE INVERTIDO";
-                        case DRAWER_FRONT -> LABEL_TIPO_GAVETA;
-                        case FIXED_PANEL -> LABEL_TIPO_FIXO;
-                    };
-                }
-                if (clean.contains(TIPO_AWNING) || clean.contains("MAXIM") || clean.contains("MAX_AR") || clean.contains("MAX AR") || clean.contains(TIPO_BASCULANTE)) {
-                    yield LABEL_TIPO_BASCULANTE;
-                }
-                if (clean.contains(TIPO_SLIDING) || clean.contains(TIPO_CORRER)) {
-                    yield "TIPO: CORRER";
-                }
-                if (clean.contains(TIPO_SWING) || clean.contains("GIRO") || clean.contains("PIVOT")) {
-                    yield LABEL_TIPO_GIRO;
-                }
-                if (clean.contains(TIPO_DRAWER) || clean.contains(TIPO_GAVETA)) {
-                    yield LABEL_TIPO_GAVETA;
-                }
-                if (clean.contains(TIPO_FIXED) || clean.contains("FIXO")) {
-                    yield LABEL_TIPO_FIXO;
-                }
-                yield "TIPO: " + clean.replace('_', ' ');
-            }
+            default -> resolverTipoTemplateFallback(clean);
         };
+    }
+
+    private String resolverTipoTemplateFallback(String clean) {
+        TemplateType parsed = TemplateType.parse(clean);
+        if (parsed == null && clean.contains(" ")) {
+            parsed = TemplateType.parse(clean.replace(' ', '_'));
+        }
+        if (parsed != null) {
+            return formatarPorTemplateType(parsed);
+        }
+        return deduzirTipoTemplatePorPalavraChave(clean);
+    }
+
+    private String formatarPorTemplateType(TemplateType parsed) {
+        return switch (parsed) {
+            case SWING_1_LEAF -> LABEL_TIPO_GIRO;
+            case SWING_2_LEAF -> "TIPO: GIRO (2 FOLHAS)";
+            case SLIDING_1_LEAF -> "TIPO: CORRER (1 FOLHA)";
+            case SLIDING_2_LEAF -> "TIPO: CORRER (2 FOLHAS)";
+            case SLIDING_3_LEAF -> "TIPO: CORRER (3 FOLHAS)";
+            case SLIDING_4_LEAF -> "TIPO: CORRER (4 FOLHAS)";
+            case MAX_AR_WINDOW_1_LEAF -> LABEL_TIPO_BASCULANTE;
+            case MAX_AR_WINDOW_INVERSE_1_LEAF -> "TIPO: BASCULANTE INVERTIDO";
+            case DRAWER_FRONT -> LABEL_TIPO_GAVETA;
+            case FIXED_PANEL -> LABEL_TIPO_FIXO;
+        };
+    }
+
+    private String deduzirTipoTemplatePorPalavraChave(String clean) {
+        if (clean.contains(TIPO_AWNING) || clean.contains("MAXIM") || clean.contains(LITERAL_MAX_AR) || clean.contains(LITERAL_MAX_AR_SPACE) || clean.contains(TIPO_BASCULANTE)) {
+            return LABEL_TIPO_BASCULANTE;
+        }
+        if (clean.contains(TIPO_SLIDING) || clean.contains(TIPO_CORRER)) {
+            return "TIPO: CORRER";
+        }
+        if (clean.contains(TIPO_SWING) || clean.contains("GIRO") || clean.contains("PIVOT")) {
+            return LABEL_TIPO_GIRO;
+        }
+        if (clean.contains(TIPO_DRAWER) || clean.contains(TIPO_GAVETA)) {
+            return LABEL_TIPO_GAVETA;
+        }
+        if (clean.contains(TIPO_FIXED) || clean.contains("FIXO")) {
+            return LABEL_TIPO_FIXO;
+        }
+        return "TIPO: " + clean.replace('_', ' ');
     }
 
     private String extrairTipoFuracaoBadge(String templateType) {
@@ -1356,31 +1380,33 @@ public class BudgetPdfService {
                  "GLASS_BOX_FRONTAL", "GLASS BOX FRONTAL", "GLASS_BOX_CORNER", "GLASS BOX CORNER",
                  "CORRER (1 FOLHA)", "CORRER (2 FOLHAS)", "CORRER (3 FOLHAS)", "CORRER (4 FOLHAS)" -> "ROLDANAS";
             case "AWNING_WINDOW", "AWNING WINDOW", "AWNING_WINDOW_1F", "AWNING WINDOW 1F", "AWNING_WINDOW_1F_INV", "AWNING WINDOW 1F INV",
-                 TIPO_AWNING, "MAX_AR_WINDOW_1_LEAF", "MAX_AR_WINDOW_INVERSE_1_LEAF", "MAX_AR", "MAX AR",
-                 "MAXIM_AR_WINDOW", "MAXIM AR WINDOW", "MAXIM_AR", "MAXIM AR", "MAXIMAR",
+                 TIPO_AWNING, "MAX_AR_WINDOW_1_LEAF", "MAX_AR_WINDOW_INVERSE_1_LEAF", LITERAL_MAX_AR, LITERAL_MAX_AR_SPACE,
+                 "MAXIM_AR_WINDOW", "MAXIM AR WINDOW", LITERAL_MAXIM_AR, LITERAL_MAXIM_AR_SPACE, "MAXIMAR",
                  "TILT_WINDOW", "TILT WINDOW", "TILT", TIPO_BASCULANTE, "BASCULANTE INVERTIDO", "BASCULANTE_INVERTIDO" -> BADGE_DOBRADICA_PISTAO;
             case "FRONT_DRAWER", "FRONT DRAWER", "DRAWER_FRONT", "DRAWER FRONT", TIPO_DRAWER, TIPO_GAVETA, "FRENTE DE GAVETA", "FRENTE_DE_GAVETA" -> "FIXAÇÃO CAIXA";
             case "FIXED_PANEL", "FIXED PANEL", "FIXED_GLASS_FACADE", "FIXED GLASS FACADE", TIPO_FIXED, "FIXO" -> BADGE_PADRAO;
-            default -> {
-                TemplateType parsed = TemplateType.parse(clean);
-                if (parsed == null && clean.contains(" ")) {
-                    parsed = TemplateType.parse(clean.replace(' ', '_'));
-                }
-                if (parsed != null) {
-                    yield switch (parsed) {
-                        case SWING_1_LEAF, SWING_2_LEAF -> "DOBRADIÇAS";
-                        case SLIDING_1_LEAF, SLIDING_2_LEAF, SLIDING_3_LEAF, SLIDING_4_LEAF -> "ROLDANAS";
-                        case MAX_AR_WINDOW_1_LEAF, MAX_AR_WINDOW_INVERSE_1_LEAF -> BADGE_DOBRADICA_PISTAO;
-                        case DRAWER_FRONT -> "FIXAÇÃO CAIXA";
-                        case FIXED_PANEL -> BADGE_PADRAO;
-                    };
-                }
-                if (clean.contains(TIPO_AWNING) || clean.contains("MAXIM") || clean.contains("MAX_AR") || clean.contains("MAX AR") || clean.contains("TILT")) {
-                    yield BADGE_DOBRADICA_PISTAO;
-                }
-                yield BADGE_PADRAO;
-            }
+            default -> resolverTipoFuracaoBadgeFallback(clean);
         };
+    }
+
+    private String resolverTipoFuracaoBadgeFallback(String clean) {
+        TemplateType parsed = TemplateType.parse(clean);
+        if (parsed == null && clean.contains(" ")) {
+            parsed = TemplateType.parse(clean.replace(' ', '_'));
+        }
+        if (parsed != null) {
+            return switch (parsed) {
+                case SWING_1_LEAF, SWING_2_LEAF -> "DOBRADIÇAS";
+                case SLIDING_1_LEAF, SLIDING_2_LEAF, SLIDING_3_LEAF, SLIDING_4_LEAF -> "ROLDANAS";
+                case MAX_AR_WINDOW_1_LEAF, MAX_AR_WINDOW_INVERSE_1_LEAF -> BADGE_DOBRADICA_PISTAO;
+                case DRAWER_FRONT -> "FIXAÇÃO CAIXA";
+                case FIXED_PANEL -> BADGE_PADRAO;
+            };
+        }
+        if (clean.contains(TIPO_AWNING) || clean.contains("MAXIM") || clean.contains(LITERAL_MAX_AR) || clean.contains(LITERAL_MAX_AR_SPACE) || clean.contains("TILT")) {
+            return BADGE_DOBRADICA_PISTAO;
+        }
+        return BADGE_PADRAO;
     }
 
     private List<String> gerarLinhasFuracao(
