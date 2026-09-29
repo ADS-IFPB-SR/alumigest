@@ -4,10 +4,10 @@
 |---|---|
 | **Projeto** | AlumiGest — Sistema de Gestão para Vidraçaria e Esquadrias |
 | **Documento** | Registro Unificado de Bugs, Defeitos e Hotfixes (RBD) |
-| **Versão** | 2.3.0 (Atualizado com Catálogo do BUG-024 - Issue #348: Sincronização de Furação e Alerta NBR 10821 na Ficha Técnica) |
+| **Versão** | 2.4.0 (Atualizado com Catálogo do BUG-025 - Issue #345: Contenção de Cotas e Rótulo do Puxador na Ficha Técnica) |
 | **Data de Atualização** | 29/09/2026 |
 | **Responsável QA** | Herbert Carvalho dos Santos / Equipe de Engenharia AlumiGest |
-| **Branch** | `fix/348-inconsistencia-furacao-ficha-tecnica` |
+| **Branch** | `fix/345-cota-rotulo-puxador-cortados` |
 | **Padrão de Template** | Baseado em [`.github/ISSUE_TEMPLATE/bug_report.md`](../../../.github/ISSUE_TEMPLATE/bug_report.md) |
 | **Auditoria Técnica** | Análise estática SonarQube, Pipeline CI/CD GitHub Actions e Histórico Git |
 
@@ -52,6 +52,7 @@ Seguindo a governança do **Plano de Gerência de Configuração (PGC)** e do **
 | **[BUG-022](#bug-022)** | Itens do Orçamento Descartados na Criação via POST /api/budgets por Ausência de Campo no BudgetCreateRequest | Backend / Orçamentos | 🔴 Alta | Sprint 04 | ✅ Resolvido | Issue #300 / PR #293 |
 | **[BUG-023](#bug-023)** | Falta de Cotas Milimétricas Reais de Furação e Linha Divisória Cortando Texto do Puxador Duplo na Ficha Técnica | Backend / PDF | 🟡 Média | Sprint 05 | ✅ Resolvido | Issue #349 / Branch `fix/349-cotas-furacao-puxador-duplo` |
 | **[BUG-024](#bug-024)** | Inconsistência entre Texto de Furação e Desenho Técnico na Ficha Técnica (3 furos no texto vs 2 furos no desenho) | Backend / PDF | 🟡 Média | Sprint 05 | ✅ Resolvido | Issue #348 / Branch `fix/348-inconsistencia-furacao-ficha-tecnica` |
+| **[BUG-025](#bug-025)** | Cota e Rótulo do Puxador Cortados na Margem Lateral do Esquema Técnico de Usinagem | Backend / PDF | 🟡 Média | Sprint 05 | ✅ Resolvido | Issue #345 / Branch `fix/345-cota-rotulo-puxador-cortados` |
 
 ---
 
@@ -731,6 +732,40 @@ Na emissão da Ficha Técnica de Oficina (Ficha de Usinagem e Corte - US-11.2), 
 
 ---
 
+### BUG-025
+#### [BUG] [US-11.2] Cota e Rótulo do Puxador Cortados na Margem Lateral do Esquema Técnico de Usinagem (Issue #345)
+
+**Descrição do Problema:**
+No esquema técnico de usinagem e corte da Ficha Técnica (renderizado na coluna de usinagem do PDF), o texto contendo a identificação e a cota do puxador (ex.: `Puxador (600mm)` ou `Puxador (250mm)`) ficava colado na margem direita ou ultrapassava os limites do canvas de 126 pt, ficando parcialmente coberto pela linha de contorno da tabela ou truncado.
+Em esquadrias onde o puxador se posiciona na borda lateral direita da folha, a soma das larguras de deslocamento projetava o texto para fora do limite da célula, gerando risco de leitura truncada pelo operador na serralheria.
+
+**Passos para Reproduzir:**
+1. Criar ou emitir um orçamento contendo esquadria com puxador lateral externo longo (ex.: `Puxador (600mm)` em janela ou porta com folha na lateral direita).
+2. Gerar a Ficha Técnica de Oficina (Via Técnica em PDF).
+3. Inspecionar o quadrante gráfico de usinagem e corte:
+   - Observar a legenda do puxador encostando ou ultrapassando a linha de contorno perimetral da célula da tabela.
+   - Parênteses final ou unidade `mm` cortados pelo traço da borda.
+
+**Comportamento Esperado:**
+- O texto do puxador e sua máscara opaca de fundo (*pill background*) devem respeitar contenção estrita (*clamping*) dentro dos limites úteis do canvas (`[1.5f, totalWidth - 1.5f]`).
+- Quando o texto for extenso, aplicar quebra inteligente no delimitador de cota `" ("` e redução proporcional de fonte (até mín. `4.8f`), garantindo margem de respiro de pelo menos 1.5 pt em relação à borda perimetral.
+
+**Contexto / Ambiente:**
+- **Módulo Afetado:** `BudgetPdfDrawingHelper.java`.
+- **Severidade:** 🟡 Média / UX | **Sprint:** 05 | **Status:** ✅ Resolvido.
+- **Detecção / Correção:** Issue #345 / Branch `fix/345-cota-rotulo-puxador-cortados`.
+
+**Causa Raiz Técnica & Solução:**
+* **Causa Raiz:** O método `desenharRotuloPuxadorComMascara` calculava `boxX` e `textX` apenas pelo offset de posição do puxador, sem receber a largura total do canvas (`totalWidth`) e sem aplicar regras de contenção de borda.
+* **Solução:**
+  1. Propagada a largura `totalWidth` para `desenharRotuloPuxadorComMascara`.
+  2. Implementado método `ajustarCoordenadasParaLimites(boxX, boxW, textX, totalWidth)` para aplicar clamping rígido contra margens mínimas e máximas.
+  3. Modularizada a renderização em `renderizarRotuloLinhaUnica` e `renderizarRotuloDuasLinhas` com auto-ajuste de tamanho de fonte para textos extensos.
+  4. Testes automatizados unitários e de integração adicionados e aprovados.
+  5. Evidência em alta resolução gerada em `docs/projeto-001/003-teste/sprint-05/evidencias/evidencia-fix-345-ficha-tecnica.png`.
+
+---
+
 ## 4. 📈 Análise Categórica e Lições Aprendidas de Qualidade
 
 ### 4.1 Distribuição dos Defeitos por Camada
@@ -738,7 +773,7 @@ Na emissão da Ficha Técnica de Oficina (Ficha de Usinagem e Corte - US-11.2), 
 ```mermaid
 pie title "Origem dos Defeitos Identificados"
     "Frontend & UI/UX" : 9
-    "Backend & Regras de Negócio" : 8
+    "Backend & Regras de Negócio" : 9
     "Pipeline CI/CD & SonarQube" : 3
     "Infraestrutura & Docker" : 2
     "Governança & Git Flow" : 1

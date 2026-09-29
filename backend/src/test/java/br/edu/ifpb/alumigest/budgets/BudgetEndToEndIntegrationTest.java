@@ -718,7 +718,7 @@ class BudgetEndToEndIntegrationTest {
                     {
                       "type": "TUBULAR",
                       "position": "RIGHT",
-                      "lengthMm": 400.0
+                      "lengthMm": 600.0
                     }
                     """);
             BudgetItemOption optVidro1F = new BudgetItemOption();
@@ -798,6 +798,7 @@ class BudgetEndToEndIntegrationTest {
             assertTrue(pdfBytes.length > 0);
 
             java.nio.file.Files.createDirectories(java.nio.file.Path.of("target"));
+            java.nio.file.Files.write(java.nio.file.Path.of("target/amostra-ficha-tecnica-FIX-345.pdf"), pdfBytes);
             java.nio.file.Files.write(java.nio.file.Path.of("target/amostra-ficha-tecnica-FIX-348.pdf"), pdfBytes);
             java.nio.file.Files.write(java.nio.file.Path.of("target/amostra-ficha-tecnica-FIX-349.pdf"), pdfBytes);
 
@@ -818,7 +819,7 @@ class BudgetEndToEndIntegrationTest {
                         .contains("1050 mm")
                         .contains("1848 mm")
                         .contains("900 x 2100 mm")
-                        .contains("Puxador (400mm)")
+                        .contains("Puxador (600mm)")
                         .contains("1500 x 1200 mm")
                         .contains("800 x 600 mm")
                         .doesNotContain("Dist. Iguais")
