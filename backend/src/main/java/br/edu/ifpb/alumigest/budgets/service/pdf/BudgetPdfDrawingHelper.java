@@ -505,7 +505,10 @@ public final class BudgetPdfDrawingHelper {
                 fontSize = Math.max(4.8f, initialFontSize * (maxAvailable / labelWidth));
                 labelWidth = BASE_FONT_HELVETICA.getWidthPoint(label, fontSize);
             }
-            renderizarRotuloLinhaUnica(tpl, label, textX, centerY, align, fontSize, labelWidth, totalWidth);
+            RotuloRenderContext ctx = new RotuloRenderContext(
+                    tpl, textX, centerY, align, fontSize, totalWidth
+            );
+            renderizarRotuloLinhaUnica(ctx, label, labelWidth);
         } else {
             int splitIdx = label.contains(" (") ? label.indexOf(" (") : label.lastIndexOf(' ');
             String line1 = label.substring(0, splitIdx).trim();
@@ -522,90 +525,95 @@ public final class BudgetPdfDrawingHelper {
                 w2 = BASE_FONT_HELVETICA.getWidthPoint(line2, fontSize);
                 maxW = Math.max(w1, w2);
             }
-            renderizarRotuloDuasLinhas(tpl, line1, line2, textX, centerY, align, fontSize, maxW, totalWidth);
+            RotuloRenderContext ctx = new RotuloRenderContext(
+                    tpl, textX, centerY, align, fontSize, totalWidth
+            );
+            renderizarRotuloDuasLinhas(ctx, line1, line2, maxW);
         }
     }
 
-    private static void renderizarRotuloLinhaUnica(
+    /**
+     * Contexto com os parâmetros geométricos de renderização do rótulo do puxador.
+     */
+    private record RotuloRenderContext(
             PdfTemplate tpl,
-            String label,
             float textX,
             float centerY,
             int align,
             float fontSize,
-            float labelWidth,
             float totalWidth
+    ) {}
+
+    private static void renderizarRotuloLinhaUnica(
+            RotuloRenderContext ctx,
+            String label,
+            float labelWidth
     ) {
         float padX = 2.2f;
         float padY = 1.4f;
-        float textY = centerY - 1.5f;
+        float textY = ctx.centerY() - 1.5f;
         float boxW = labelWidth + (2 * padX);
         float boxH = 6.2f + (2 * padY);
 
-        float boxX = switch (align) {
-            case PdfContentByte.ALIGN_CENTER -> textX - (boxW / 2f);
-            case PdfContentByte.ALIGN_LEFT -> textX - padX;
-            default -> textX - labelWidth - padX;
+        float boxX = switch (ctx.align()) {
+            case PdfContentByte.ALIGN_CENTER -> ctx.textX() - (boxW / 2f);
+            case PdfContentByte.ALIGN_LEFT -> ctx.textX() - padX;
+            default -> ctx.textX() - labelWidth - padX;
         };
 
-        float[] ajustado = ajustarCoordenadasParaLimites(boxX, boxW, textX, totalWidth);
+        float[] ajustado = ajustarCoordenadasParaLimites(boxX, boxW, ctx.textX(), ctx.totalWidth());
         boxX = ajustado[0];
-        textX = ajustado[1];
+        float textX = ajustado[1];
         float boxY = textY - 1.4f - padY;
 
         // Máscara de proteção branca (pill background)
-        tpl.setColorFill(Color.WHITE);
-        tpl.roundRectangle(boxX, boxY, boxW, boxH, 1.8f);
-        tpl.fill();
+        ctx.tpl().setColorFill(Color.WHITE);
+        ctx.tpl().roundRectangle(boxX, boxY, boxW, boxH, 1.8f);
+        ctx.tpl().fill();
 
-        tpl.beginText();
-        tpl.setFontAndSize(BASE_FONT_HELVETICA, fontSize);
-        tpl.setColorFill(COLOR_PUXADOR);
-        tpl.showTextAligned(align, label, textX, textY, 0f);
-        tpl.endText();
+        ctx.tpl().beginText();
+        ctx.tpl().setFontAndSize(BASE_FONT_HELVETICA, ctx.fontSize());
+        ctx.tpl().setColorFill(COLOR_PUXADOR);
+        ctx.tpl().showTextAligned(ctx.align(), label, textX, textY, 0f);
+        ctx.tpl().endText();
     }
 
     private static void renderizarRotuloDuasLinhas(
-            PdfTemplate tpl,
+            RotuloRenderContext ctx,
             String line1,
             String line2,
-            float textX,
-            float centerY,
-            int align,
-            float fontSize,
-            float maxW,
-            float totalWidth
+            float maxW
     ) {
         float padX = 2.2f;
         float padY = 1.4f;
-        float yLine1 = centerY + 2.0f;
-        float yLine2 = centerY - 4.5f;
+        float yLine1 = ctx.centerY() + 2.0f;
+        float yLine2 = ctx.centerY() - 4.5f;
 
         float boxW = maxW + (2 * padX);
         float boxH = 12.8f + (2 * padY);
 
-        float boxX = switch (align) {
-            case PdfContentByte.ALIGN_CENTER -> textX - (boxW / 2f);
-            case PdfContentByte.ALIGN_LEFT -> textX - padX;
-            default -> textX - maxW - padX;
+        float boxX = switch (ctx.align()) {
+            case PdfContentByte.ALIGN_CENTER -> ctx.textX() - (boxW / 2f);
+            case PdfContentByte.ALIGN_LEFT -> ctx.textX() - padX;
+            default -> ctx.textX() - maxW - padX;
         };
 
-        float[] ajustado = ajustarCoordenadasParaLimites(boxX, boxW, textX, totalWidth);
+        float[] ajustado = ajustarCoordenadasParaLimites(boxX, boxW, ctx.textX(), ctx.totalWidth());
         boxX = ajustado[0];
-        textX = ajustado[1];
+        float textX = ajustado[1];
         float boxY = yLine2 - 1.4f - padY;
 
         // Máscara de proteção branca (pill background)
-        tpl.setColorFill(Color.WHITE);
-        tpl.roundRectangle(boxX, boxY, boxW, boxH, 1.8f);
-        tpl.fill();
+        ctx.tpl().setColorFill(Color.WHITE);
+        ctx.tpl().roundRectangle(boxX, boxY, boxW, boxH, 1.8f);
+        ctx.tpl().fill();
 
-        tpl.beginText();
-        tpl.setFontAndSize(BASE_FONT_HELVETICA, fontSize);
-        tpl.setColorFill(COLOR_PUXADOR);
-        tpl.showTextAligned(align, line1, textX, yLine1, 0f);
-        tpl.showTextAligned(align, line2, textX, yLine2, 0f);
-        tpl.endText();
+        ctx.tpl().beginText();
+        ctx.tpl().setFontAndSize(BASE_FONT_HELVETICA, ctx.fontSize());
+        ctx.tpl().setColorFill(COLOR_PUXADOR);
+        ctx.tpl().showTextAligned(ctx.align(), line1, textX, yLine1, 0f);
+        ctx.tpl().showTextAligned(ctx.align(), line2, textX, yLine2, 0f);
+        ctx.tpl().endText();
     }
 
     private static float[] ajustarCoordenadasParaLimites(
