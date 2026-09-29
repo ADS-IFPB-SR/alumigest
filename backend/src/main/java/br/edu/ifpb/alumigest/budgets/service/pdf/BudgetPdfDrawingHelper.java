@@ -183,7 +183,7 @@ public final class BudgetPdfDrawingHelper {
         }
 
         if (ctx.hasHandle()) {
-            desenharPuxadorTecnico(tpl, ctx.handle(), startX, startY, drawW, drawH, width);
+            desenharPuxadorTecnico(tpl, ctx, ctx.handle(), startX, startY, drawW, drawH, width);
         }
 
         return Image.getInstance(tpl);
@@ -203,11 +203,12 @@ public final class BudgetPdfDrawingHelper {
     private static float[] calcularMargensLaterais(TechnicalMachiningContext ctx) {
         boolean hasDrill = ctx.hasDrilling();
         boolean hasHandle = ctx.hasHandle();
+        boolean isDoubleSwing = ctx != null && ctx.isDoubleSwingDoor();
 
-        boolean handleOnRight = hasHandle && ctx.handle().onRightSide();
-        boolean handleOnLeft = hasHandle && !ctx.handle().onRightSide();
+        boolean handleOnRight = hasHandle && !isDoubleSwing && ctx.handle().onRightSide();
+        boolean handleOnLeft = hasHandle && !isDoubleSwing && !ctx.handle().onRightSide();
 
-        boolean drillOnLeft = hasDrill && (handleOnRight
+        boolean drillOnLeft = hasDrill && (handleOnRight || isDoubleSwing
                 || (!hasHandle && (ctx.isOpeningLeft() || ctx.openingDirection() == null)));
         boolean drillOnRight = hasDrill && !drillOnLeft;
 
@@ -266,8 +267,9 @@ public final class BudgetPdfDrawingHelper {
 
         int leaves = ctx != null ? ctx.getLeafCount() : 1;
         boolean sliding = ctx != null && ctx.isSliding();
+        boolean isDoubleSwing = ctx != null && ctx.isDoubleSwingDoor();
 
-        if (leaves <= 1 || !sliding) {
+        if (leaves <= 1 && !isDoubleSwing) {
             // Linha interna pontilhada de folga de usinagem (folha única)
             tpl.setColorStroke(COLOR_MOLDURA_INTERNA);
             tpl.setLineWidth(0.6f);
@@ -275,6 +277,32 @@ public final class BudgetPdfDrawingHelper {
             tpl.rectangle(x + INNER_OFFSET, y + INNER_OFFSET, w - (2 * INNER_OFFSET), h - (2 * INNER_OFFSET));
             tpl.stroke();
             tpl.setLineDash(0f);
+        } else if (isDoubleSwing) {
+            // Divisão de folhas para porta de giro duplo (2 folhas com montante central de encontro)
+            float innerOffset = INNER_OFFSET;
+            float innerX = x + innerOffset;
+            float innerY = y + innerOffset;
+            float innerW = w - (2 * innerOffset);
+            float innerH = h - (2 * innerOffset);
+            float leafW = innerW / 2f;
+
+            for (int i = 0; i < 2; i++) {
+                float fx = innerX + (i * leafW);
+
+                // Caixilho sólido da folha
+                tpl.setColorStroke(COLOR_MOLDURA_EXTERNA);
+                tpl.setLineWidth(0.85f);
+                tpl.rectangle(fx, innerY, leafW, innerH);
+                tpl.stroke();
+
+                // Folga interna pontilhada de usinagem
+                tpl.setColorStroke(COLOR_MOLDURA_INTERNA);
+                tpl.setLineWidth(0.5f);
+                tpl.setLineDash(1.5f, 1.5f, 0f);
+                tpl.rectangle(fx + 1.5f, innerY + 1.5f, leafW - 3f, innerH - 3f);
+                tpl.stroke();
+                tpl.setLineDash(0f);
+            }
         } else {
             // Divisão de folhas para tipologias de correr multifolhas (2F, 3F, 4F) - Task #342
             float innerOffset = INNER_OFFSET;
@@ -375,13 +403,12 @@ public final class BudgetPdfDrawingHelper {
 
     private static void desenharPuxadorTecnico(
             PdfTemplate tpl,
+            TechnicalMachiningContext ctx,
             TechnicalHandle puxador,
             float startX, float startY, float drawW, float drawH,
             float totalWidth
     ) {
-        float px = puxador.onRightSide()
-                ? (startX + drawW - INNER_OFFSET - 2.5f)
-                : (startX + INNER_OFFSET + 2.5f);
+        boolean isDoubleSwing = ctx != null && ctx.isDoubleSwingDoor();
 
         float hDisponivel = drawH - (2 * INNER_OFFSET);
         float handleLen = Math.max(12f, hDisponivel * puxador.lengthRatio());
@@ -389,45 +416,145 @@ public final class BudgetPdfDrawingHelper {
         float py1 = centerY - (handleLen / 2f);
         float py2 = centerY + (handleLen / 2f);
 
-        // Barra do puxador
         tpl.setColorStroke(COLOR_PUXADOR);
-        tpl.setLineWidth(2.2f);
-        tpl.moveTo(px, py1);
-        tpl.lineTo(px, py2);
-        tpl.stroke();
 
-        // Suportes / fixações do puxador
-        tpl.setLineWidth(0.8f);
-        tpl.moveTo(px - 2f, py1);
-        tpl.lineTo(px + 2f, py1);
-        tpl.moveTo(px - 2f, py2);
-        tpl.lineTo(px + 2f, py2);
-        tpl.stroke();
+        float textX;
+        int align;
 
-        // Texto do puxador cotado
-        float textX = puxador.onRightSide() ? (startX + drawW + 3.5f) : (startX - 3.5f);
-        int align = puxador.onRightSide() ? PdfContentByte.ALIGN_LEFT : PdfContentByte.ALIGN_RIGHT;
+        if (isDoubleSwing) {
+            float centroX = startX + (drawW / 2f);
+            float offsetPuxador = 3.0f;
 
-        String label = puxador.label();
-        float maxAvailable = puxador.onRightSide()
-                ? (totalWidth - textX - 1.5f)
-                : (textX - 1.5f);
+            // Barra esquerda do puxador duplo central
+            tpl.setLineWidth(1.8f);
+            tpl.moveTo(centroX - offsetPuxador, py1);
+            tpl.lineTo(centroX - offsetPuxador, py2);
+            tpl.stroke();
+
+            // Suportes da barra esquerda
+            tpl.setLineWidth(0.7f);
+            tpl.moveTo(centroX - offsetPuxador - 1.5f, py1);
+            tpl.lineTo(centroX - offsetPuxador + 1.5f, py1);
+            tpl.moveTo(centroX - offsetPuxador - 1.5f, py2);
+            tpl.lineTo(centroX - offsetPuxador + 1.5f, py2);
+            tpl.stroke();
+
+            // Barra direita do puxador duplo central
+            tpl.setLineWidth(1.8f);
+            tpl.moveTo(centroX + offsetPuxador, py1);
+            tpl.lineTo(centroX + offsetPuxador, py2);
+            tpl.stroke();
+
+            // Suportes da barra direita
+            tpl.setLineWidth(0.7f);
+            tpl.moveTo(centroX + offsetPuxador - 1.5f, py1);
+            tpl.lineTo(centroX + offsetPuxador + 1.5f, py1);
+            tpl.moveTo(centroX + offsetPuxador - 1.5f, py2);
+            tpl.lineTo(centroX + offsetPuxador + 1.5f, py2);
+            tpl.stroke();
+
+            textX = centroX;
+            align = PdfContentByte.ALIGN_CENTER;
+            desenharRotuloPuxadorComMascara(tpl, puxador.label(), textX, py1 - 7.0f, align, totalWidth, drawW, true);
+        } else {
+            float px = puxador.onRightSide()
+                    ? (startX + drawW - INNER_OFFSET - 2.5f)
+                    : (startX + INNER_OFFSET + 2.5f);
+
+            // Barra do puxador
+            tpl.setLineWidth(2.2f);
+            tpl.moveTo(px, py1);
+            tpl.lineTo(px, py2);
+            tpl.stroke();
+
+            // Suportes / fixações do puxador
+            tpl.setLineWidth(0.8f);
+            tpl.moveTo(px - 2f, py1);
+            tpl.lineTo(px + 2f, py1);
+            tpl.moveTo(px - 2f, py2);
+            tpl.lineTo(px + 2f, py2);
+            tpl.stroke();
+
+            // Texto do puxador cotado na lateral
+            textX = puxador.onRightSide() ? (startX + drawW + 3.5f) : (startX - 3.5f);
+            align = puxador.onRightSide() ? PdfContentByte.ALIGN_LEFT : PdfContentByte.ALIGN_RIGHT;
+            desenharRotuloPuxadorComMascara(tpl, puxador.label(), textX, centerY, align, totalWidth, drawW, false);
+        }
+    }
+
+    private static void desenharRotuloPuxadorComMascara(
+            PdfTemplate tpl,
+            String label,
+            float textX,
+            float centerY,
+            int align,
+            float totalWidth,
+            float drawW,
+            boolean isCentered
+    ) {
+        float maxAvailable = isCentered
+                ? Math.max(drawW - 4.0f, 38.0f)
+                : (align == PdfContentByte.ALIGN_LEFT ? (totalWidth - textX - 1.5f) : (textX - 1.5f));
 
         float labelWidth = BASE_FONT_HELVETICA.getWidthPoint(label, 5.5f);
+        boolean singleLine = labelWidth <= maxAvailable || !label.contains(" ");
 
-        tpl.beginText();
-        tpl.setFontAndSize(BASE_FONT_HELVETICA, 5.5f);
-        tpl.setColorFill(COLOR_PUXADOR);
+        float padX = 2.2f;
+        float padY = 1.4f;
 
-        if (labelWidth <= maxAvailable || !label.contains(" ")) {
-            tpl.showTextAligned(align, label, textX, centerY - 1.5f, 0f);
+        if (singleLine) {
+            float textY = centerY - 1.5f;
+            float boxW = labelWidth + (2 * padX);
+            float boxH = 6.2f + (2 * padY);
+            float boxX = switch (align) {
+                case PdfContentByte.ALIGN_CENTER -> textX - (boxW / 2f);
+                case PdfContentByte.ALIGN_LEFT -> textX - padX;
+                default -> textX - labelWidth - padX;
+            };
+            float boxY = textY - 1.4f - padY;
+
+            // Máscara de proteção branca (pill background)
+            tpl.setColorFill(Color.WHITE);
+            tpl.roundRectangle(boxX, boxY, boxW, boxH, 1.8f);
+            tpl.fill();
+
+            tpl.beginText();
+            tpl.setFontAndSize(BASE_FONT_HELVETICA, 5.5f);
+            tpl.setColorFill(COLOR_PUXADOR);
+            tpl.showTextAligned(align, label, textX, textY, 0f);
+            tpl.endText();
         } else {
             int splitIdx = label.contains(" (") ? label.indexOf(" (") : label.lastIndexOf(' ');
             String line1 = label.substring(0, splitIdx).trim();
             String line2 = label.substring(splitIdx).trim();
-            tpl.showTextAligned(align, line1, textX, centerY + 2.0f, 0f);
-            tpl.showTextAligned(align, line2, textX, centerY - 4.5f, 0f);
+
+            float w1 = BASE_FONT_HELVETICA.getWidthPoint(line1, 5.5f);
+            float w2 = BASE_FONT_HELVETICA.getWidthPoint(line2, 5.5f);
+            float maxW = Math.max(w1, w2);
+
+            float yLine1 = centerY + 2.0f;
+            float yLine2 = centerY - 4.5f;
+
+            float boxW = maxW + (2 * padX);
+            float boxH = 12.8f + (2 * padY);
+            float boxX = switch (align) {
+                case PdfContentByte.ALIGN_CENTER -> textX - (boxW / 2f);
+                case PdfContentByte.ALIGN_LEFT -> textX - padX;
+                default -> textX - maxW - padX;
+            };
+            float boxY = yLine2 - 1.4f - padY;
+
+            // Máscara de proteção branca (pill background)
+            tpl.setColorFill(Color.WHITE);
+            tpl.roundRectangle(boxX, boxY, boxW, boxH, 1.8f);
+            tpl.fill();
+
+            tpl.beginText();
+            tpl.setFontAndSize(BASE_FONT_HELVETICA, 5.5f);
+            tpl.setColorFill(COLOR_PUXADOR);
+            tpl.showTextAligned(align, line1, textX, yLine1, 0f);
+            tpl.showTextAligned(align, line2, textX, yLine2, 0f);
+            tpl.endText();
         }
-        tpl.endText();
     }
 }

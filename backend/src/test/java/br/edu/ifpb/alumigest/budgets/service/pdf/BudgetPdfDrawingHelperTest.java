@@ -156,6 +156,22 @@ class BudgetPdfDrawingHelperTest {
     }
 
     @Test
+    @DisplayName("US-11.2 / Issue #349: desenharEsquemaUsinagem para porta de giro 2 folhas (SWING_DOOR_2F) com puxador central e máscara")
+    void deveDesenharEsquemaUsinagemParaPortaDeGiro2Folhas() {
+        BudgetItem itemGiro2F = new BudgetItem();
+        itemGiro2F.setTemplateType("SWING_DOOR_2F");
+        itemGiro2F.setWidthMm(new BigDecimal("1600"));
+        itemGiro2F.setHeightMm(new BigDecimal("2100"));
+        itemGiro2F.setDrillingConfig("{\"mode\": \"EQUIDISTANT\", \"holesCount\": 3}");
+        itemGiro2F.setHandleConfig("{\"type\": \"TUBULAR\", \"lengthMm\": 250.0, \"position\": \"RIGHT\"}");
+
+        Image img = BudgetPdfDrawingHelper.desenharEsquemaUsinagem(writer, itemGiro2F, 126f, 96f);
+        assertNotNull(img);
+        assertTrue(img.getWidth() > 0);
+        assertTrue(img.getHeight() > 0);
+    }
+
+    @Test
     @DisplayName("US-11.2: desenharEsquemaUsinagem lança IllegalArgumentException com parâmetros inválidos")
     void deveLancarExcecaoQuandoWriterOuDimensoesInvalidas() {
         BudgetItem item = new BudgetItem();

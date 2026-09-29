@@ -632,6 +632,197 @@ class BudgetEndToEndIntegrationTest {
         }
 
         @Test
+        @DisplayName("US-11.2 / Issue #349: Emissão da Ficha Técnica com Porta de Giro 2 Folhas e Cotas Reais em mm")
+        void deveGerarFichaTecnicaComPortaDeGiroDuploECotasReaisIssue349() throws IOException {
+            Client cliente = new Client();
+            cliente.setId(UUID.randomUUID());
+            cliente.setFullName("Alumiportas Esquadrias Finas");
+            cliente.setPhone("83999998888");
+            cliente.setCity("Sousa");
+            cliente.setState("PB");
+
+            Budget budget = new Budget();
+            budget.setId(UUID.randomUUID());
+            budget.setCode("ORC-2026-FIX349");
+            budget.setClient(cliente);
+            budget.setStatus(BudgetStatus.APPROVED);
+            budget.setCreatedAt(OffsetDateTime.now());
+
+            BudgetItem porta2F = new BudgetItem();
+            porta2F.setId(UUID.randomUUID());
+            porta2F.setProductName("Porta de Giro Duplo Linha Gold");
+            porta2F.setTemplateType("SWING_DOOR_2F");
+            porta2F.setWidthMm(new BigDecimal("1600"));
+            porta2F.setHeightMm(new BigDecimal("2100"));
+            porta2F.setQuantity(1);
+            porta2F.setLaborCost(new BigDecimal("350.00"));
+            porta2F.setTemplateConfig("""
+                    {
+                      "openingDirection": "CENTER_TO_SIDES",
+                      "aluminumColor": "Preto Fosco",
+                      "line": "Linha Gold"
+                    }
+                    """);
+            porta2F.setDrillingConfig("""
+                    {
+                      "mode": "EQUIDISTANT",
+                      "holesCount": 3
+                    }
+                    """);
+            porta2F.setHandleConfig("""
+                    {
+                      "type": "TUBULAR",
+                      "position": "RIGHT",
+                      "lengthMm": 250.0
+                    }
+                    """);
+
+            BudgetItemOption optVidro = new BudgetItemOption();
+            optVidro.setId(UUID.randomUUID());
+            optVidro.setMaterialName("Vidro Laminado 8mm Incolor");
+            optVidro.setCategoryType(MaterialCategoryType.GLASS);
+            optVidro.setUnitPrice(new BigDecimal("320.00"));
+            optVidro.setQuantity(new BigDecimal("3.36"));
+            optVidro.setTotalPrice(new BigDecimal("1075.20"));
+
+            BudgetItemOption optPerfil = new BudgetItemOption();
+            optPerfil.setId(UUID.randomUUID());
+            optPerfil.setMaterialName("Perfil Linha Gold Preto");
+            optPerfil.setCategoryType(MaterialCategoryType.PROFILE);
+            porta2F.setOptions(List.of(optVidro, optPerfil));
+            porta2F.setSubtotal(new BigDecimal("1425.20"));
+
+            // Item 2: Porta de Giro 1 Folha com puxador lateral 400mm
+            BudgetItem porta1F = new BudgetItem();
+            porta1F.setId(UUID.randomUUID());
+            porta1F.setProductName("Porta de Giro Simples Suprema");
+            porta1F.setTemplateType("SWING_DOOR_1F");
+            porta1F.setWidthMm(new BigDecimal("900"));
+            porta1F.setHeightMm(new BigDecimal("2100"));
+            porta1F.setQuantity(1);
+            porta1F.setLaborCost(new BigDecimal("200.00"));
+            porta1F.setTemplateConfig("""
+                    {
+                      "openingDirection": "LEFT_TO_RIGHT",
+                      "aluminumColor": "Branco",
+                      "line": "Linha Suprema"
+                    }
+                    """);
+            porta1F.setDrillingConfig("""
+                    {
+                      "mode": "EQUIDISTANT",
+                      "holesCount": 3
+                    }
+                    """);
+            porta1F.setHandleConfig("""
+                    {
+                      "type": "TUBULAR",
+                      "position": "RIGHT",
+                      "lengthMm": 400.0
+                    }
+                    """);
+            BudgetItemOption optVidro1F = new BudgetItemOption();
+            optVidro1F.setId(UUID.randomUUID());
+            optVidro1F.setMaterialName("Vidro Temperado 6mm Incolor");
+            optVidro1F.setCategoryType(MaterialCategoryType.GLASS);
+            BudgetItemOption optPerfil1F = new BudgetItemOption();
+            optPerfil1F.setId(UUID.randomUUID());
+            optPerfil1F.setMaterialName("Perfil Linha Suprema Branco");
+            optPerfil1F.setCategoryType(MaterialCategoryType.PROFILE);
+            porta1F.setOptions(List.of(optVidro1F, optPerfil1F));
+            porta1F.setSubtotal(new BigDecimal("850.00"));
+
+            // Item 3: Janela de Correr 2 Folhas com Fecho Concha
+            BudgetItem janelaCorrer = new BudgetItem();
+            janelaCorrer.setId(UUID.randomUUID());
+            janelaCorrer.setProductName("Janela de Correr 2 Folhas");
+            janelaCorrer.setTemplateType("SLIDING_WINDOW_2F");
+            janelaCorrer.setWidthMm(new BigDecimal("1500"));
+            janelaCorrer.setHeightMm(new BigDecimal("1200"));
+            janelaCorrer.setQuantity(1);
+            janelaCorrer.setLaborCost(new BigDecimal("180.00"));
+            janelaCorrer.setTemplateConfig("""
+                    {
+                      "openingDirection": "LEFT_TO_RIGHT",
+                      "aluminumColor": "Fosco",
+                      "line": "Linha 25"
+                    }
+                    """);
+            janelaCorrer.setHandleConfig("""
+                    {
+                      "type": "FECHO_CONCHA",
+                      "position": "CENTER"
+                    }
+                    """);
+            BudgetItemOption optVidroJanela = new BudgetItemOption();
+            optVidroJanela.setId(UUID.randomUUID());
+            optVidroJanela.setMaterialName("Vidro Canelado 4mm");
+            optVidroJanela.setCategoryType(MaterialCategoryType.GLASS);
+            janelaCorrer.setOptions(List.of(optVidroJanela));
+            janelaCorrer.setSubtotal(new BigDecimal("620.00"));
+
+            // Item 4: Janela Maxim-Ar com Fecho Alavanca
+            BudgetItem maximAr = new BudgetItem();
+            maximAr.setId(UUID.randomUUID());
+            maximAr.setProductName("Janela Maxim-Ar Banheiro");
+            maximAr.setTemplateType("AWNING_WINDOW");
+            maximAr.setWidthMm(new BigDecimal("800"));
+            maximAr.setHeightMm(new BigDecimal("600"));
+            maximAr.setQuantity(1);
+            maximAr.setLaborCost(new BigDecimal("90.00"));
+            maximAr.setTemplateConfig("""
+                    {
+                      "aluminumColor": "Preto",
+                      "line": "Linha Suprema"
+                    }
+                    """);
+            maximAr.setHandleConfig("""
+                    {
+                      "type": "FECHO_ALAVANCA",
+                      "position": "CENTER"
+                    }
+                    """);
+            BudgetItemOption optVidroMaxim = new BudgetItemOption();
+            optVidroMaxim.setId(UUID.randomUUID());
+            optVidroMaxim.setMaterialName("Vidro Mini Boreal 4mm");
+            optVidroMaxim.setCategoryType(MaterialCategoryType.GLASS);
+            maximAr.setOptions(List.of(optVidroMaxim));
+            maximAr.setSubtotal(new BigDecimal("380.00"));
+
+            budget.setItems(List.of(porta2F, porta1F, janelaCorrer, maximAr));
+            budget.setSubtotal(new BigDecimal("3275.20"));
+            budget.setTotal(new BigDecimal("3275.20"));
+
+            byte[] pdfBytes = budgetPdfService.gerarPdfTecnico(budget);
+            assertNotNull(pdfBytes);
+            assertTrue(pdfBytes.length > 0);
+
+            java.nio.file.Files.createDirectories(java.nio.file.Path.of("target"));
+            java.nio.file.Files.write(java.nio.file.Path.of("target/amostra-ficha-tecnica-FIX-349.pdf"), pdfBytes);
+
+            try (PdfReader reader = new PdfReader(pdfBytes)) {
+                PdfTextExtractor extractor = new PdfTextExtractor(reader);
+                String textContent = extractor.getTextFromPage(1);
+
+                assertThat(textContent)
+                        .contains("FICHA DE USINAGEM E CORTE")
+                        .contains("TIPO: GIRO (2 FOLHAS)")
+                        .contains("1600 x 2100 mm")
+                        .contains("Puxador (250mm)")
+                        .contains("252 mm")
+                        .contains("1050 mm")
+                        .contains("1848 mm")
+                        .contains("900 x 2100 mm")
+                        .contains("Puxador (400mm)")
+                        .contains("1500 x 1200 mm")
+                        .contains("800 x 600 mm")
+                        .doesNotContain("Dist. Iguais")
+                        .doesNotContain("160,0 x 210,0 cm")
+                        .doesNotContain("Puxado (250mm)");
+            }
+        }
+
+        @Test
         @DisplayName("Deve garantir paginação multipágina consistente na Ficha Técnica com múltiplos itens")
         void deveGarantirPaginacaoMultipaginaCorretaParaFichaTecnicaComMuitosItens() throws IOException {
             Budget budget = new Budget();

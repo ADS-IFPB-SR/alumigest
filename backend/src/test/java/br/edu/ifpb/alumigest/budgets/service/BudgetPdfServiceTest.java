@@ -787,7 +787,7 @@ class BudgetPdfServiceTest {
         }
 
         @Test
-        @DisplayName("Deve exibir especificações técnicas com dimensões nominais em cm e opções de materiais")
+        @DisplayName("Deve exibir especificações técnicas com dimensões nominais em mm e opções de materiais")
         void deveExibirEspecificacoesTecnicas() throws IOException {
             Budget budget = criarBudgetPadrao(true);
 
@@ -796,9 +796,9 @@ class BudgetPdfServiceTest {
             try (PdfReader reader = new PdfReader(pdfBytes)) {
                 String textContent = extrairStreamsDeTexto(reader);
 
-                // 906mm -> 90,6 cm x 541mm -> 54,1 cm
+                // 906mm x 541mm
                 assertThat(textContent)
-                        .contains("90,6 x 54,1 cm")
+                        .contains("906 x 541 mm")
                         .contains("060")
                         .contains("Fosco")
                         .contains("Espelho")
@@ -1158,20 +1158,20 @@ class BudgetPdfServiceTest {
             try (PdfReader reader = new PdfReader(pdfBytes)) {
                 String textoExtraido = extrairStreamsDeTexto(reader);
 
-                // Dimensões em cm (900mm → 90,0cm × 2100mm → 210,0cm)
+                // Dimensões em mm (900mm × 2100mm)
                 assertThat(textoExtraido)
                         .as("Dimensões da Porta de Giro devem estar no PDF técnico")
-                        .contains("90,0 x 210,0 cm");
+                        .contains("900 x 2100 mm");
 
-                // Dimensões da Janela de Correr (1800mm → 180,0cm × 1200mm → 120,0cm)
+                // Dimensões da Janela de Correr (1800mm × 1200mm)
                 assertThat(textoExtraido)
                         .as("Dimensões da Janela de Correr devem estar no PDF técnico")
-                        .contains("180,0 x 120,0 cm");
+                        .contains("1800 x 1200 mm");
 
-                // Dimensões da Frente de Gaveta (600mm → 60,0cm × 200mm → 20,0cm)
+                // Dimensões da Frente de Gaveta (600mm × 200mm)
                 assertThat(textoExtraido)
                         .as("Dimensões da Frente de Gaveta devem estar no PDF técnico")
-                        .contains("60,0 x 20,0 cm");
+                        .contains("600 x 200 mm");
 
                 // Materiais e acabamentos
                 assertThat(textoExtraido)
