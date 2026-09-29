@@ -4,10 +4,10 @@
 |---|---|
 | **Projeto** | AlumiGest — Sistema de Gestão para Vidraçaria e Esquadrias |
 | **Documento** | Registro Unificado de Bugs, Defeitos e Hotfixes (RBD) |
-| **Versão** | 2.4.0 (Atualizado com Catálogo do BUG-025 - Issue #345: Contenção de Cotas e Rótulo do Puxador na Ficha Técnica) |
+| **Versão** | 2.5.0 (Atualizado com Catálogo do BUG-026 - Issue #344: Tradução de Termos em Inglês no PDF Técnico e Comercial) |
 | **Data de Atualização** | 29/09/2026 |
 | **Responsável QA** | Herbert Carvalho dos Santos / Equipe de Engenharia AlumiGest |
-| **Branch** | `fix/345-cota-rotulo-puxador-cortados` |
+| **Branch** | `fix/344-termos-ingles-detalhamento-pdf` |
 | **Padrão de Template** | Baseado em [`.github/ISSUE_TEMPLATE/bug_report.md`](../../../.github/ISSUE_TEMPLATE/bug_report.md) |
 | **Auditoria Técnica** | Análise estática SonarQube, Pipeline CI/CD GitHub Actions e Histórico Git |
 
@@ -53,6 +53,7 @@ Seguindo a governança do **Plano de Gerência de Configuração (PGC)** e do **
 | **[BUG-023](#bug-023)** | Falta de Cotas Milimétricas Reais de Furação e Linha Divisória Cortando Texto do Puxador Duplo na Ficha Técnica | Backend / PDF | 🟡 Média | Sprint 05 | ✅ Resolvido | Issue #349 / Branch `fix/349-cotas-furacao-puxador-duplo` |
 | **[BUG-024](#bug-024)** | Inconsistência entre Texto de Furação e Desenho Técnico na Ficha Técnica (3 furos no texto vs 2 furos no desenho) | Backend / PDF | 🟡 Média | Sprint 05 | ✅ Resolvido | Issue #348 / Branch `fix/348-inconsistencia-furacao-ficha-tecnica` |
 | **[BUG-025](#bug-025)** | Cota e Rótulo do Puxador Cortados na Margem Lateral do Esquema Técnico de Usinagem | Backend / PDF | 🟡 Média | Sprint 05 | ✅ Resolvido | Issue #345 / Branch `fix/345-cota-rotulo-puxador-cortados` |
+| **[BUG-026](#bug-026)** | Termos em Inglês Exibidos no Detalhamento de Usinagem, Puxadores e Tipologias do PDF Técnico | Backend / PDF | 🟡 Média | Sprint 05 | ✅ Resolvido | Issue #344 / Branch `fix/344-termos-ingles-detalhamento-pdf` |
 
 ---
 
@@ -763,6 +764,45 @@ Em esquadrias onde o puxador se posiciona na borda lateral direita da folha, a s
   3. Modularizada a renderização em `renderizarRotuloLinhaUnica` e `renderizarRotuloDuasLinhas` com auto-ajuste de tamanho de fonte para textos extensos.
   4. Testes automatizados unitários e de integração adicionados e aprovados.
   5. Evidência em alta resolução gerada em `docs/projeto-001/003-teste/sprint-05/evidencias/evidencia-fix-345-ficha-tecnica.png`.
+
+---
+
+### BUG-026: Termos em Inglês Exibidos no Detalhamento de Usinagem, Puxadores e Tipologias do PDF Técnico
+
+**Descrição do Problema:**  
+Tanto na Ficha Técnica de Oficina (US-11.2) quanto no PDF Comercial do orçamento, identificou-se que determinados valores brutos de enums e nomenclaturas em inglês (ex.: `TUBULAR`, `SHELL_LOCK`, `HANDLE`, `RIGHT`, `LEFT`, `BOTH`, `AWNING WINDOW`, `SLIDING DOOR`, `SWING DOOR`, `CUSTOM_DISTANCES`) eram exibidos sem tradução vernácula para o Português do Brasil (pt-BR).
+
+Isso gerava inconsistência de linguagem para o cliente final e dificultava a identificação imediata na bancada de corte e montagem da serralheria/vidraçaria.
+
+**Passos para Reproduzir:**
+1. Criar um orçamento contendo itens com tipologias variadas (ex.: `AWNING WINDOW`, `SLIDING DOOR`) ou configurações de puxador/furação com termos em inglês (`TUBULAR`, `SHELL_LOCK`, `HANDLE`, `RIGHT`, `BOTH`, `CUSTOM_DISTANCES`).
+2. Emitir o PDF Comercial do orçamento e a Ficha Técnica de Oficina.
+3. Observar na coluna de especificação técnica e na coluna de detalhamento de usinagem/puxador:
+   - Exibição de `Tipo: TUBULAR` em vez de `Tipo: Tubular`.
+   - Exibição de `Tipo: SHELL_LOCK` em vez de `Tipo: Fecho Concha`.
+   - Exibição de `Posição: RIGHT` em vez de `Posição: Direita`.
+   - Exibição de `Posição: BOTH` em vez de `Posição: Ambos os Lados`.
+   - Exibição de `TIPO: AWNING WINDOW` em vez de `TIPO: BASCULANTE`.
+
+**Comportamento Esperado:**
+- Todos os termos técnicos, tipos de puxador, posições, formatos, esquemas de furação e nomenclaturas de tipologias devem ser traduzidos e padronizados em Português do Brasil (pt-BR) de forma resiliente tanto no PDF Comercial quanto na Ficha Técnica.
+- Termos com espaços (ex.: `AWNING WINDOW`, `SLIDING DOOR`) devem ser normalizados para suas tipologias equivalentes (`BASCULANTE`, `CORRER`).
+
+**Contexto / Ambiente:**
+- **Módulo Afetado:** `BudgetPdfService.java`.
+- **Severidade:** 🟡 Média / I18n & UX | **Sprint:** 05 | **Status:** ✅ Resolvido.
+- **Detecção / Correção:** Issue #344 / Branch `fix/344-termos-ingles-detalhamento-pdf`.
+
+**Causa Raiz Técnica & Solução:**
+* **Causa Raiz:**
+  1. No PDF Comercial, `extrairDescricaoPuxador` retornava `raw` sem traduzir quando o valor não iniciava com `{` (ex.: `"TUBULAR"`), ou falhava no enum `HandleType.valueOf` para termos que não existiam no enum estrito.
+  2. Na Ficha Técnica, `formatarTipoTemplate` só aceitava underscores (`_`); entradas com espaço caíam no fallback e eram exibidas cruas com prefixo `TIPO: `.
+  3. Métodos auxiliares de usinagem (`traduzirPosicaoTexto`, `traduzirFormatoTexto`, `traduzirTipoPuxadorTexto`) não mapeavam variantes como `BOTH`, `TUBULAR`, `CUSTOM`, `HANDLE`.
+* **Solução:**
+  1. Centralizado o dicionário de tradução resiliente em `BudgetPdfService.java` cobrindo tipos de puxador (`Tubular`, `Fecho Concha`, `Alavanca`, `Puxador Convencional`, `Embutido`), posições (`Direita`, `Esquerda`, `Central`, `Ambos os Lados`, `Superior`, `Inferior`), formatos (`Tubular`, `Redondo`, `Quadrado`, `Retangular`, `Chato`) e furação (`Distâncias personalizadas conforme gabarito`).
+  2. Implementada normalização resiliente de tipologias com espaços (`AWNING WINDOW` -> `BASCULANTE`, `SLIDING DOOR` -> `CORRER`, `SWING DOOR` -> `GIRO`).
+  3. Adicionados testes automatizados unitários e integrados cobrindo todas as variantes e proibindo termos em inglês com asserções `doesNotContain`.
+  4. Gerada evidência visual em 300 DPI em `docs/projeto-001/003-teste/sprint-05/evidencias/evidencia-fix-344-ficha-tecnica.png`.
 
 ---
 
