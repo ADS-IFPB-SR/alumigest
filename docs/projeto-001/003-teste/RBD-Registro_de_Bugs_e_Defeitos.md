@@ -4,10 +4,10 @@
 |---|---|
 | **Projeto** | AlumiGest — Sistema de Gestão para Vidraçaria e Esquadrias |
 | **Documento** | Registro Unificado de Bugs, Defeitos e Hotfixes (RBD) |
-| **Versão** | 2.1.0 (Atualizado com Catálogo do BUG-022 e Métricas de 242 Testes Unitários) |
-| **Data de Atualização** | 24/09/2026 |
+| **Versão** | 2.2.0 (Atualizado com Catálogo do BUG-023 - Issue #349 e Padronização em mm da Ficha Técnica) |
+| **Data de Atualização** | 29/09/2026 |
 | **Responsável QA** | Herbert Carvalho dos Santos / Equipe de Engenharia AlumiGest |
-| **Branch** | `planejamento` |
+| **Branch** | `fix/349-cotas-furacao-puxador-duplo` |
 | **Padrão de Template** | Baseado em [`.github/ISSUE_TEMPLATE/bug_report.md`](../../../.github/ISSUE_TEMPLATE/bug_report.md) |
 | **Auditoria Técnica** | Análise estática SonarQube, Pipeline CI/CD GitHub Actions e Histórico Git |
 
@@ -49,7 +49,8 @@ Seguindo a governança do **Plano de Gerência de Configuração (PGC)** e do **
 | **[BUG-019](#bug-019)** | Falha de Compilação e DI por Inconsistência na `MaterialCalculatorFactory` | Backend / Motor | 🔴 Alta | Sprint 03 | ✅ Resolvido | Commit `9cbf957` |
 | **[BUG-020](#bug-020)** | Funções Não Utilizadas no Cypress Violando Linting Estrito no Pipeline | Frontend / QA | 🟢 Baixa | Sprint 03 | ✅ Resolvido | Commit `6a48859` |
 | **[BUG-021](#bug-021)** | Perda de Insumos da Ficha Técnica em Produtos Estáticos e Ocultação de Templates na Categoria Janela | Frontend / Catálogo & Orçamentos | 🔴 Alta | Sprint 03 | ✅ Resolvido | Issue #235 / Branch `fix/products-static-items-and-window-category` |
-| **[BUG-022](#bug-022)** | Itens do Orçamento Descartados na Criação via POST /api/budgets por Ausência de Campo no BudgetCreateRequest | Backend / Orçamentos | 🔴 Alta | Sprint 04 | 🟡 Em Correção | Issue #300 / PR #293 |
+| **[BUG-022](#bug-022)** | Itens do Orçamento Descartados na Criação via POST /api/budgets por Ausência de Campo no BudgetCreateRequest | Backend / Orçamentos | 🔴 Alta | Sprint 04 | ✅ Resolvido | Issue #300 / PR #293 |
+| **[BUG-023](#bug-023)** | Falta de Cotas Milimétricas Reais de Furação e Linha Divisória Cortando Texto do Puxador Duplo na Ficha Técnica | Backend / PDF | 🟡 Média | Sprint 05 | ✅ Resolvido | Issue #349 / Branch `fix/349-cotas-furacao-puxador-duplo` |
 
 ---
 
@@ -648,6 +649,45 @@ O endpoint `POST /api/budgets` deve receber opcionalmente a lista de itens (`ite
 **Causa Raiz Técnica & Solução:**
 * **Causa Raiz:** O record `BudgetCreateRequest` foi modelado preliminarmente sem a propriedade `List<BudgetItemRequestDTO> items`. O endpoint criava apenas a capa do orçamento assumindo que itens seriam adicionados exclusivamente de forma avulsa via sub-recurso.
 * **Solução:** Adicionado o campo opcional `List<BudgetItemRequestDTO> items` com `@Valid` ao record `BudgetCreateRequest` (mantendo construtor de compatibilidade), e atualizado o método `BudgetService.create` para iterar sobre os itens recebidos, invocar `budgetMapper.toEntity`, associar os itens e chamar o recálculo automático de quantitativos e preços.
+
+---
+
+### BUG-023
+#### [BUG/UX] [US-11.2] Falta de Cotas Milimétricas Reais de Furação e Linha Divisória Cortando Texto do Puxador Duplo na Ficha Técnica de Oficina (Issue #349)
+
+**Descrição do Problema:**
+Na emissão da Ficha Técnica de Usinagem e Corte (Ficha de Oficina - US-11.2), foram identificadas inconsistências funcionais e de UX no esquema cotado:
+1. As furações de dobradiças exibiam o texto genérico `"Dist. Iguais"`, sem fornecer as medidas nominais exatas em milímetros a partir da base inferior da folha, obrigando o serralheiro a calcular manualmente o espaçamento.
+2. Em esquadrias de giro duplo (`SWING_DOOR_2F`), a linha divisória vertical de encontro das folhas cortava o texto da legenda do puxador duplo central, e a legenda estava sobreposta ao centro das barras verticais do puxador, dividindo-as visualmente ao meio.
+3. As dimensões nominais da peça nas Especificações Técnicas e a cota do puxador estavam expressas em centímetros (`cm`), em desacordo com as práticas de fábrica e normas técnicas de esquadrias (ABNT NBR 10821), onde toda a usinagem e corte é realizada estritamente em milímetros (`mm`).
+
+**Passos para Reproduzir:**
+1. Acessar um orçamento contendo porta de giro duplo (`SWING_DOOR_2F`) com medidas 1600 x 2100 mm, puxador tubular duplo central e 3 dobradiças equidistantes.
+2. Clicar em "Via Técnica" para gerar a Ficha de Usinagem e Corte em PDF.
+3. Observar no esquema técnico:
+   - Presença do rótulo `"Dist. Iguais"` ao invés de cotas acumuladas reais em mm.
+   - O texto `"Puxador (25cm)"` cortando as hastes do puxador no centro e a linha divisória vertical atravessando a legenda.
+   - Especificações técnicas exibindo `"160,0 x 210,0 cm"` ao invés de milímetros.
+
+**Comportamento Esperado:**
+- Cotas milimétricas exatas calculadas a partir da base (`252 mm`, `1050 mm`, `1848 mm`).
+- Desenho de moldura com 2 folhas simétricas e caixilho/montante central.
+- Puxador duplo centralizado com barras contínuas e sem cortes, com a legenda posicionada abaixo do desenho (`py1 - 7.0f`) protegida por máscara branca opaca (*pill background*), sem nenhum caractere fatiado.
+- Todas as dimensões de esquadria e componentes formatadas em milímetros (`1600 x 2100 mm`, `Puxador (250mm)`).
+
+**Contexto / Ambiente:**
+- **Módulo Afetado:** `BudgetPdfDrawingHelper.java`, `TechnicalMachiningResolver.java`, `TechnicalMachiningContext.java`, `BudgetPdfService.java`.
+- **Severidade:** 🟡 Média / UX | **Sprint:** 05 | **Status:** ✅ Resolvido.
+- **Detecção / Correção:** Issue #349 / Branch `fix/349-cotas-furacao-puxador-duplo`.
+
+**Causa Raiz Técnica & Solução:**
+* **Causa Raiz:** O resolver técnico emitia rótulo estático `"Dist. Iguais"` quando o modo de furação era `EQUIDISTANT`; a moldura técnica não diferenciava `SWING_DOOR_2F` de `SWING_DOOR_1F`; o texto da legenda era desenhado em `centerY` sem offset vertical e sem fundo opaco; e as dimensões da peça foram indevidamente convertidas dividindo por 10 (`cm`).
+* **Solução:**
+  1. Propagado `heightMm` em `TechnicalMachiningResolver.gerarPontosEquidistantes` para calcular `distMm = Math.round(heightMm * yRatio)` e formatar cotas reais (`%.0f mm`).
+  2. Implementado `isDoubleSwingDoor()` e suporte a 2 folhas com montante central e puxador duplo centralizado em `BudgetPdfDrawingHelper`.
+  3. Reposicionado o rótulo do puxador para `py1 - 7.0f` (abaixo do desenho do puxador) e adicionado `desenharRotuloPuxadorComMascara` com retângulo arredondado branco opaco (*pill background*).
+  4. Padronizadas as dimensões em milímetros (`mm`) nas Especificações Técnicas (`formatarDimensaoMm`) e no rótulo do puxador.
+  5. Evidência visual gerada com 4 itens demonstrativos em `docs/projeto-001/003-teste/sprint-05/evidencias/evidencia-fix-349-ficha-tecnica.png`.
 
 ---
 
