@@ -4,10 +4,10 @@
 |---|---|
 | **Projeto** | AlumiGest — Sistema de Gestão para Vidraçaria e Esquadrias |
 | **Documento** | Registro Unificado de Bugs, Defeitos e Hotfixes (RBD) |
-| **Versão** | 2.5.0 (Atualizado com Catálogo do BUG-026 - Issue #344: Tradução de Termos em Inglês no PDF Técnico e Comercial) |
+| **Versão** | 2.6.0 (Catálogo de Bugs BUG-027 a BUG-031 da US-10 e BUG-024 a BUG-026 da US-11.2 na Sprint 05) |
 | **Data de Atualização** | 29/09/2026 |
-| **Responsável QA** | Herbert Carvalho dos Santos / Equipe de Engenharia AlumiGest |
-| **Branch** | `fix/344-termos-ingles-detalhamento-pdf` |
+| **Responsável QA / SM** | Herbert Carvalho dos Santos / Júlio Kennedy dos Santos Silva / Equipe de Engenharia AlumiGest |
+| **Branch** | `develop` |
 | **Padrão de Template** | Baseado em [`.github/ISSUE_TEMPLATE/bug_report.md`](../../../.github/ISSUE_TEMPLATE/bug_report.md) |
 | **Auditoria Técnica** | Análise estática SonarQube, Pipeline CI/CD GitHub Actions e Histórico Git |
 
@@ -54,6 +54,11 @@ Seguindo a governança do **Plano de Gerência de Configuração (PGC)** e do **
 | **[BUG-024](#bug-024)** | Inconsistência entre Texto de Furação e Desenho Técnico na Ficha Técnica (3 furos no texto vs 2 furos no desenho) | Backend / PDF | 🟡 Média | Sprint 05 | ✅ Resolvido | Issue #348 / Branch `fix/348-inconsistencia-furacao-ficha-tecnica` |
 | **[BUG-025](#bug-025)** | Cota e Rótulo do Puxador Cortados na Margem Lateral do Esquema Técnico de Usinagem | Backend / PDF | 🟡 Média | Sprint 05 | ✅ Resolvido | Issue #345 / Branch `fix/345-cota-rotulo-puxador-cortados` |
 | **[BUG-026](#bug-026)** | Termos em Inglês Exibidos no Detalhamento de Usinagem, Puxadores e Tipologias do PDF Técnico | Backend / PDF | 🟡 Média | Sprint 05 | ✅ Resolvido | Issue #344 / Branch `fix/344-termos-ingles-detalhamento-pdf` |
+| **[BUG-027](#bug-027)** | Divergência de Cálculo de Mão de Obra (`laborCost`) entre Frontend e Backend com Múltiplas Quantidades (`quantity > 1`) | Motor de Orçamentos / Backend & UI | 🔴 Alta | Sprint 05 | 🟡 Em Aberto | Issue #372 / US-10 |
+| **[BUG-028](#bug-028)** | Falha da Clipboard API em Ambientes HTTP e Ausência de Link Direto para WhatsApp (`api.whatsapp.com/send`) | Frontend / Ações | 🟡 Média | Sprint 05 | 🟡 Em Aberto | Issue #373 / US-10 |
+| **[BUG-029](#bug-029)** | Cálculo Incorreto de Dias de Validade no Rodapé do PDF com Sobrescrita Indevida para 15 Dias | Backend / PDF | 🟡 Média | Sprint 05 | 🟡 Em Aberto | Issue #374 / US-10 |
+| **[BUG-030](#bug-030)** | Razão Social da Empresa Hardcodada no Resumo para WhatsApp Ignorando `CompanyProperties` | Backend / WhatsApp | 🟢 Baixa | Sprint 05 | 🟡 Em Aberto | Issue #375 / US-10 |
+| **[BUG-031](#bug-031)** | Resposta de Erro Empacotada como Blob sem Tratamento de Mensagem no Download de PDF Comercial | Frontend / API | 🟡 Média | Sprint 05 | 🟡 Em Aberto | Issue #376 / US-10 |
 
 ---
 
@@ -650,7 +655,6 @@ O endpoint `POST /api/budgets` deve receber opcionalmente a lista de itens (`ite
 - **Detecção / Correção:** Issue #300 / PR #293 (Refs: US-10).
 
 **Causa Raiz Técnica & Solução:**
-* **Causa Raiz:** O record `BudgetCreateRequest` foi modelado preliminarmente sem a propriedade `List<BudgetItemRequestDTO> items`. O endpoint criava apenas a capa do orçamento assumindo que itens seriam adicionados exclusivamente de forma avulsa via sub-recurso.
 * **Solução:** Adicionado o campo opcional `List<BudgetItemRequestDTO> items` com `@Valid` ao record `BudgetCreateRequest` (mantendo construtor de compatibilidade), e atualizado o método `BudgetService.create` para iterar sobre os itens recebidos, invocar `budgetMapper.toEntity`, associar os itens e chamar o recálculo automático de quantitativos e preços.
 
 ---
@@ -806,14 +810,228 @@ Isso gerava inconsistência de linguagem para o cliente final e dificultava a id
 
 ---
 
+
+### BUG-027
+#### [BUG] Divergência de Cálculo de Mão de Obra (`laborCost`) entre Frontend e Backend com Múltiplas Quantidades (`quantity > 1`)
+
+**Descrição do Problema:**
+Existe uma divergência semântica crítica na fórmula de composição do valor de mão de obra (`laborCost`) e subtotal entre o Backend e o Frontend:
+- No backend (`BudgetPricingService.java`, linhas 50-58), a mão de obra é somada fixamente uma única vez por linha de item:
+  $$\text{itemSubtotal} = (\text{itemMaterialsSubtotal} \times \text{quantity}) + \text{itemLaborCost}$$
+- Na geração do PDF comercial (`BudgetPdfService.java`, linhas 511-525), a mão de obra total é acumulada somando apenas `item.getLaborCost()` direto, sem multiplicar pela quantidade.
+- No entanto, na tela de detalhes do frontend (`BudgetDetailPage.tsx`, linhas 89-91), o cálculo do resumo totaliza a mão de obra multiplicando pelo número de peças:
+  ```typescript
+  const totalLaborCost = (budget.items ?? []).reduce((sum, item) => {
+    return sum + ((item.laborCost ?? 0) * (item.quantity ?? 1));
+  }, 0);
+  ```
+Quando o usuário orça 2 ou mais unidades de uma esquadria com mão de obra atribuída (ex: 2 janelas com R$ 150,00 de mão de obra cada):
+1. O backend calcula o subtotal como $(\text{materiais} \times 2) + 150,00$.
+2. O PDF comercial lista R$ 150,00 de mão de obra.
+3. A página de detalhes no frontend projeta R$ 300,00 de mão de obra. Ao tentar abater isso para apresentar o valor líquido dos insumos, os valores de tela tornam-se inconsistentes com o PDF e o banco de dados.
+
+**Passos para Reproduzir:**
+1. Acessar `/orcamentos/novo` e adicionar 1 item com quantidade = `2`.
+2. Definir o custo de mão de obra do item como `R$ 150,00`.
+3. Salvar o orçamento e acessar a tela de detalhes (`/orcamentos/{id}`).
+4. Observar a mão de obra exibida no card financeiro do frontend versus o total discriminado no PDF comercial baixado.
+
+**Comportamento Esperado:**
+O modelo de domínio e cálculo deve ser unificado: ou a mão de obra é sempre unitária e multiplicada pela quantidade em todas as camadas ($\text{subtotal} = (\text{materiais} + \text{laborCost}) \times \text{quantity}$), ou é global por item e tratada de forma idêntica tanto no frontend quanto no backend e PDF.
+
+**Contexto / Ambiente:**
+- **Navegador / Sistema:** Spring Boot 3.4 / React 19 / Vite.
+- **Módulo Afetado:** Motor de Orçamentos e Precificação / PDF Comercial (`BudgetPricingService.java`, `BudgetPdfService.java`, `BudgetDetailPage.tsx`).
+- **Severidade:** 🔴 Alta (P2) | **Sprint:** 05 | **Status:** 🟡 Em Aberto.
+- **Detecção / Origem:** Issue #372 / Auditoria de Regra de Negócio da US-10 (#134).
+
+**Causa Raiz Técnica & Solução Recomendada:**
+* **Causa Raiz:** Ausência de alinhamento no contrato DTO e na regra matemática do `BudgetPricingService` em relação ao caráter unitário ou global de `laborCost` ao iterar itens com `quantity > 1`.
+* **Solução Recomendada:** 
+  1. No `BudgetPricingService.java`, alinhar a fórmula de precificação para `itemSubtotal = (itemMaterialsSubtotal.add(itemLaborCost)).multiply(BigDecimal.valueOf(itemQty))`.
+  2. No `BudgetPdfService.java`, acumular a mão de obra total ponderando pela quantidade: `totalMaoDeObra = totalMaoDeObra.add(item.getLaborCost().multiply(BigDecimal.valueOf(item.getQuantity())))`.
+  3. Manter a paridade exata com o redutor do `BudgetDetailPage.tsx`.
+
+---
+
+### BUG-028
+#### [BUG] Falha da Clipboard API em Ambientes HTTP e Ausência de Link Direto para WhatsApp (`api.whatsapp.com/send`)
+
+**Descrição do Problema:**
+O botão "Copiar para WhatsApp" em `BudgetDetailActions.tsx` invoca diretamente `navigator.clipboard.writeText(text)` sem verificar se o objeto `navigator.clipboard` está disponível no contexto de execução do navegador.
+Conforme especificação da W3C, a Clipboard API é uma *Secure Context feature*, estando disponível exclusivamente sob HTTPS ou `localhost`. Em vidraçarias e oficinas onde a aplicação web/PWA é acessada pelo IP da rede local (ex: `http://192.168.1.50:5173`), `navigator.clipboard` é `undefined`. Ao clicar no botão, ocorre a exceção `TypeError: Cannot read properties of undefined (reading 'writeText')` e a mensagem de erro padrão é disparada.
+Adicionalmente, a sub-tarefa **US-10.10** especifica expressamente a disponibilização de link direto para envio via WhatsApp (`https://api.whatsapp.com/send?text=...`), o qual não foi fornecido na interface (apenas o botão de cópia isolado foi implementado).
+
+**Passos para Reproduzir:**
+1. Acessar a aplicação através de um endereço de IP de rede local via HTTP (`http://<ip-servidor>:5173/orcamentos/<id>`) em um dispositivo móvel ou aba sem SSL.
+2. Clicar no botão "Copiar para WhatsApp".
+3. Observar o erro no console: `Uncaught (in promise) TypeError: Cannot read properties of undefined (reading 'writeText')` e o toast `'Erro ao gerar ou copiar o resumo para o WhatsApp.'`.
+4. Observar a inexistência de um botão ou link para abertura direta da conversa no aplicativo WhatsApp com o texto pré-carregado.
+
+**Comportamento Esperado:**
+1. A cópia para a área de transferência deve possuir mecanismo de contingência (*fallback*) baseado em elemento `<textarea>` temporário com `document.execCommand('copy')` caso `navigator.clipboard` não esteja disponível.
+2. Deve existir opção na interface para abertura direta do link `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}` (ou `https://wa.me/?text=...`), permitindo ao vendedor disparar a mensagem sem precisar alternar manualmente de app.
+
+**Contexto / Ambiente:**
+- **Navegador / Sistema:** Google Chrome / Firefox / Safari (Mobile PWA & HTTP).
+- **Módulo Afetado:** Frontend — Ações de Orçamento (`BudgetDetailActions.tsx`, `BudgetDetailPage.tsx`).
+- **Severidade:** 🟡 Média (P3) | **Sprint:** 05 | **Status:** 🟡 Em Aberto.
+- **Detecção / Origem:** Issue #373 / Auditoria US-10.10 (US-10 #134).
+
+**Causa Raiz Técnica & Solução Recomendada:**
+* **Causa Raiz:** Dependência irrestrita de API moderna restrita a contextos criptografados (HTTPS) e implementação parcial dos requisitos descritos na issue US-10.10.
+* **Solução Recomendada:**
+  1. Implementar função utilitária `copyToClipboard(text: string): Promise<boolean>` com fallback gracioso para `document.execCommand('copy')`.
+  2. Adicionar menu drop-down ou botão secundário "Abrir no WhatsApp" que codifica a mensagem com `encodeURIComponent(text)` e invoca `window.open('https://api.whatsapp.com/send?text=' + encoded, '_blank')`.
+
+---
+
+### BUG-029
+#### [BUG] Cálculo Incorreto de Dias de Validade no Rodapé do PDF com Sobrescrita Indevida para 15 Dias
+
+**Descrição do Problema:**
+Na emissão do PDF Comercial (`BudgetPdfService.java`, linhas 604-617), o texto de validade da proposta comercial tenta exibir o número de dias corridos até a expiração:
+```java
+if (budget.getValidUntil() != null) {
+    long diasValidade = 15;
+    if (budget.getCreatedAt() != null) {
+        diasValidade = Duration.between(budget.getCreatedAt(), budget.getValidUntil()).toDays();
+        if (diasValidade <= 0) {
+            diasValidade = 15;
+        }
+    }
+    document.add(new Paragraph("- Orçamento válido até " + formatarData(budget.getValidUntil())
+            + " (" + diasValidade + " dias a partir da emissão).", FONTE_PEQUENA));
+}
+```
+`Duration.between(...).toDays()` calcula intervalos inteiros de 24 horas. Se um orçamento for emitido com prazo curto (ex: 1 dia) ou criado às 16:00 com validade para o dia seguinte às 10:00 (intervalo de 18h), `toDays()` retorna `0`.
+A verificação `if (diasValidade <= 0)` trata esse valor como erro e sobrescreve a variável com o valor padrão `15`. O documento impresso apresenta uma contradição de termos comercialmente gravíssima:
+`- Orçamento válido até 30/09/2026 (15 dias a partir da emissão).` (quando a emissão foi no dia 29/09/2026).
+
+**Passos para Reproduzir:**
+1. Criar um orçamento informando validade para o dia seguinte (1 dia de validade).
+2. Emitir o PDF Comercial chamando `GET /api/v1/budgets/{id}/pdf/comercial`.
+3. Inspecionar o bloco "Informações Complementares" no final do documento.
+4. O texto exibe a data de amanhã com "(15 dias a partir da emissão)".
+
+**Comportamento Esperado:**
+O cálculo de dias corridos deve considerar a diferença entre as datas de calendário (`ChronoUnit.DAYS.between(createdAt.toLocalDate(), validUntil.toLocalDate())`), exibindo o número exato de dias (ex: "1 dia a partir da emissão").
+
+**Contexto / Ambiente:**
+- **Navegador / Sistema:** OpenPDF / Java 21 / Spring Boot 3.4.
+- **Módulo Afetado:** Backend — Serviço de PDF (`BudgetPdfService.java`).
+- **Severidade:** 🟡 Média (P3) | **Sprint:** 05 | **Status:** 🟡 Em Aberto.
+- **Detecção / Origem:** Issue #374 / Análise de Regras de Negócio e Testes de Validade (US-10 #134).
+
+**Causa Raiz Técnica & Solução Recomendada:**
+* **Causa Raiz:** Utilização de `Duration` (baseada em segundos/horas absolutas) em vez de `ChronoUnit.DAYS` ou `Period` sobre datas locais (`LocalDate`), associada a um fallback que força `15` para qualquer intervalo que resulte em 0 dias.
+* **Solução Recomendada:**
+  Substituir o cálculo por:
+  ```java
+  LocalDate dataCriacao = budget.getCreatedAt() != null ? budget.getCreatedAt().toLocalDate() : LocalDate.now();
+  LocalDate dataValidade = budget.getValidUntil().toLocalDate();
+  long diasValidade = java.time.temporal.ChronoUnit.DAYS.between(dataCriacao, dataValidade);
+  if (diasValidade < 0) diasValidade = 0;
+  ```
+
+---
+
+### BUG-030
+#### [BUG] Razão Social da Empresa Hardcodada no Resumo para WhatsApp Ignorando `CompanyProperties`
+
+**Descrição do Problema:**
+O serviço de geração do resumo comercial para WhatsApp (`BudgetPdfService.java`, linha 231) encerra a mensagem com uma assinatura fixa:
+```java
+sb.append("_Alumiportas - Vidraçaria e Esquadrias_");
+```
+A classe `BudgetPdfService` já recebe via injeção de dependência o bean `CompanyProperties companyProps`, o qual contém a razão social e o nome fantasia configurados dinamicamente no `application.yml` da instalação do AlumiGest.
+Ao hardcodar "Alumiportas", qualquer cliente corporativo ou vidraçaria parceira que personalize sua instância terá suas propostas de WhatsApp enviadas com a marca de terceiros.
+
+**Passos para Reproduzir:**
+1. Configurar no `application.yml` a propriedade `app.company.razao-social=Vidraçaria Modelo LTDA`.
+2. Gerar o resumo para WhatsApp via endpoint `GET /api/v1/budgets/{id}/resumo-whatsapp`.
+3. Inspecionar o rodapé do texto retornado.
+4. O rodapé termina com `_Alumiportas - Vidraçaria e Esquadrias_` em vez de `_Vidraçaria Modelo LTDA_`.
+
+**Comportamento Esperado:**
+O resumo para WhatsApp deve extrair o nome da empresa de `companyProps.getRazaoSocial()` (com fallback seguro apenas se a propriedade for nula ou vazia).
+
+**Contexto / Ambiente:**
+- **Navegador / Sistema:** Spring Boot 3.4 / UTF-8 Text.
+- **Módulo Afetado:** Backend — Resumo WhatsApp (`BudgetPdfService.java`).
+- **Severidade:** 🟢 Baixa (P4) | **Sprint:** 05 | **Status:** 🟡 Em Aberto.
+- **Detecção / Origem:** Issue #375 / Análise Estática de Código da US-10.3 / US-10.5 (#134).
+
+**Causa Raiz Técnica & Solução Recomendada:**
+* **Causa Raiz:** Uso de string literal estática em vez de referenciar o atributo `this.companyProps.getRazaoSocial()`.
+* **Solução Recomendada:**
+  Alterar a linha 231 para:
+  ```java
+  String nomeEmpresa = (companyProps.getRazaoSocial() != null && !companyProps.getRazaoSocial().isBlank())
+          ? companyProps.getRazaoSocial().trim()
+          : "AlumiGest";
+  sb.append("_").append(nomeEmpresa).append("_");
+  ```
+
+---
+
+### BUG-031
+#### [BUG] Resposta de Erro Empacotada como Blob sem Tratamento de Mensagem no Download de PDF Comercial
+
+**Descrição do Problema:**
+Ao solicitar o download do PDF comercial pelo frontend, a função `budgetsApi.downloadCommercialPdf` configura a chamada Axios com `responseType: 'blob'`:
+```typescript
+downloadCommercialPdf: async (id: string, code: string): Promise<void> => {
+  const response = await api.get<Blob>(`/api/orcamentos/${id}/pdf/comercial`, {
+    baseURL: '',
+    responseType: 'blob',
+  });
+  // ...
+}
+```
+Caso o servidor retorne um erro semântico de negócio, como status `422 Unprocessable Entity` ("Não é possível gerar o PDF de um orçamento cancelado") ou `404 Not Found`, a biblioteca Axios encapsula o JSON de erro do Spring Boot dentro de um objeto `Blob`.
+No manipulador de eventos da interface (`BudgetDetailActions.tsx`), o bloco de captura genérico apenas dispara:
+```typescript
+toast.error('Erro ao gerar o PDF Comercial.');
+```
+Isso oculta a causa real da falha (orçamento cancelado, problema de permissão ou inexistência de itens), impedindo o operador de tomar a ação corretiva correta.
+
+**Passos para Reproduzir:**
+1. Localizar um orçamento com status `CANCELLED`.
+2. Na página de detalhes do orçamento, acionar o botão "PDF Comercial".
+3. O backend rejeita a requisição com HTTP 422 e payload `{"status": 422, "message": "Não é possível gerar o PDF de um orçamento cancelado."}`.
+4. A tela exibe apenas o toast genérico "Erro ao gerar o PDF Comercial.", sem detalhar que orçamentos cancelados não podem ser emitidos.
+
+**Comportamento Esperado:**
+Ao interceptar erros em requisições de download com `responseType: 'blob'`, o cliente de API deve converter o Blob em texto (`await error.response.data.text()`), parsear o JSON de erro e exibir na notificação toast a mensagem exata retornada pela API.
+
+**Contexto / Ambiente:**
+- **Navegador / Sistema:** Axios 1.x / React 19 / Browser Blob API.
+- **Módulo Afetado:** Frontend — Serviço de Orçamentos e Feedback UI (`budgetsApi.ts`, `BudgetDetailActions.tsx`).
+- **Severidade:** 🟡 Média (P3) | **Sprint:** 05 | **Status:** 🟡 Em Aberto.
+- **Detecção / Origem:** Issue #376 / Auditoria de UX e Robustez de Tratamento de Erros da US-10.8 (#134).
+
+**Causa Raiz Técnica & Solução Recomendada:**
+* **Causa Raiz:** Ausência de conversor de erro para respostas do tipo binário no Axios e captura de erro sem extração de payload no componente React.
+* **Solução Recomendada:**
+  No `catch` da função ou em um interceptor:
+  ```typescript
+  if (error.response?.data instanceof Blob) {
+    const errorJson = JSON.parse(await error.response.data.text());
+    toast.error(errorJson.message || 'Erro ao gerar o PDF Comercial.');
+  }
+  ```
+
+---
+
 ## 4. 📈 Análise Categórica e Lições Aprendidas de Qualidade
 
 ### 4.1 Distribuição dos Defeitos por Camada
 
 ```mermaid
 pie title "Origem dos Defeitos Identificados"
-    "Frontend & UI/UX" : 9
-    "Backend & Regras de Negócio" : 9
+    "Frontend & UI/UX" : 11
+    "Backend & Regras de Negócio" : 14
     "Pipeline CI/CD & SonarQube" : 3
     "Infraestrutura & Docker" : 2
     "Governança & Git Flow" : 1
@@ -823,9 +1041,9 @@ pie title "Origem dos Defeitos Identificados"
 
 | Categoria | Ocorrências | Ação Preventiva Definitiva Adotada |
 |---|:---:|---|
-| **Incompatibilidade de Contratos (DTOs / Types)** | 6 | Adoção de contratos OpenAPI sincronizados e tipagens estritas no TypeScript. |
-| **Limitações de Ambiente (HTTP vs HTTPS / Docker)** | 3 | Uso de fallbacks nativos (`Math.random`) e parametrização com variáveis de ambiente `.env`. |
-| **Erros de Validação e Feedback ao Usuário** | 3 | Padronização dos formulários com **React Hook Form + Zod** em todos os modais. |
+| **Incompatibilidade de Contratos (DTOs / Types)** | 7 | Adoção de contratos OpenAPI sincronizados e tipagens estritas no TypeScript. |
+| **Limitações de Ambiente (HTTP vs HTTPS / Docker)** | 4 | Uso de fallbacks nativos (`document.execCommand`, `Math.random`) e SSL obrigatório. |
+| **Erros de Validação e Feedback ao Usuário** | 4 | Padronização dos formulários com **React Hook Form + Zod** e deserialização de erros Blob. |
 | **Regressão por Refatoração** | 4 | Ampliação da suíte para **242 testes JUnit 5** e **24 suítes Cypress E2E** no pipeline obrigatório. |
 | **Configuração de CI/CD e Build Tools** | 4 | Adição do Quality Gate no SonarQube bloqueando merges caso haja regressão ou falha de plugin. |
 | **Desvio de Git Flow / Merge Prematuro** | 1 | Configuração de Rulesets protegendo `main` e `develop` contra merges diretos sem aprovação de PR. |
@@ -833,3 +1051,4 @@ pie title "Origem dos Defeitos Identificados"
 ---
 
 *Documento mantido e auditado pelo Time de Engenharia e QA — AlumiGest — Setembro/2026*
+
