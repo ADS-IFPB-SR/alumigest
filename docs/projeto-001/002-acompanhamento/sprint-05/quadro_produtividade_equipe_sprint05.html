@@ -1,0 +1,303 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quadro de Produtividade da Equipe — Sprint 05 — AlumiGest</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', -apple-system, sans-serif; }
+    body { background-color: #080c14; background-image: radial-gradient(at 0% 0%, rgba(16, 185, 129, 0.10) 0px, transparent 50%), radial-gradient(at 100% 0%, rgba(59, 130, 246, 0.10) 0px, transparent 50%), radial-gradient(at 50% 100%, rgba(139, 92, 246, 0.10) 0px, transparent 50%); color: #f8fafc; min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 32px; }
+    .dashboard-container { width: 1500px; max-width: 1500px; background: rgba(13, 19, 33, 0.92); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.07); border-radius: 24px; padding: 36px 40px; box-shadow: 0 30px 60px -15px rgba(0,0,0,0.7); }
+    .header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 24px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .header-left { display: flex; align-items: center; gap: 16px; }
+    .logo-badge { width: 48px; height: 48px; border-radius: 14px; background: linear-gradient(135deg, #10b981 0%, #3b82f6 100%); display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 800; color: #fff; box-shadow: 0 8px 16px -4px rgba(16,185,129,0.45); }
+    .header-title-wrap h1 { font-size: 22px; font-weight: 700; color: #fff; letter-spacing: -0.02em; margin-bottom: 4px; }
+    .header-title-wrap p { font-size: 13px; color: #94a3b8; font-weight: 500; }
+    .header-badges { display: flex; gap: 10px; align-items: center; }
+    .header-badge { display: flex; align-items: center; gap: 8px; background: rgba(37,99,235,0.12); border: 1px solid rgba(59,130,246,0.3); padding: 8px 16px; border-radius: 9999px; font-size: 13px; font-weight: 600; color: #60a5fa; }
+    .header-badge.release { background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.35); color: #34d399; }
+    .header-badge .dot { width: 8px; height: 8px; background: #3b82f6; border-radius: 50%; box-shadow: 0 0 10px #3b82f6; animation: pulse 2s infinite; }
+    .header-badge.release .dot { background: #10b981; box-shadow: 0 0 10px #10b981; }
+    @keyframes pulse { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:0.6; transform:scale(0.85); } }
+    .sprint-banner { margin: 22px 0 28px 0; background: linear-gradient(135deg, rgba(16,185,129,0.08) 0%, rgba(59,130,246,0.08) 100%); border: 1px solid rgba(16,185,129,0.2); border-radius: 14px; padding: 16px 22px; display: flex; align-items: center; justify-content: space-between; }
+    .sprint-banner-left { display: flex; align-items: center; gap: 14px; }
+    .sprint-icon { font-size: 28px; line-height: 1; }
+    .sprint-banner-title { font-size: 15px; font-weight: 700; color: #f0fdf4; margin-bottom: 3px; }
+    .sprint-banner-sub { font-size: 12px; color: #6ee7b7; font-weight: 500; }
+    .sprint-banner-right { display: flex; gap: 24px; }
+    .sprint-stat { text-align: right; }
+    .sprint-stat-val { font-family: 'JetBrains Mono', monospace; font-size: 20px; font-weight: 700; color: #34d399; }
+    .sprint-stat-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: #64748b; margin-top: 2px; }
+    .kpi-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-bottom: 32px; }
+    .kpi-card { background: rgba(18,26,45,0.6); border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 20px 22px; position: relative; overflow: hidden; }
+    .kpi-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; border-radius: 16px 16px 0 0; }
+    .kpi-card.blue::before { background: linear-gradient(90deg, #3b82f6, #6366f1); }
+    .kpi-card.green::before { background: linear-gradient(90deg, #10b981, #34d399); }
+    .kpi-card.cyan::before { background: linear-gradient(90deg, #06b6d4, #38bdf8); }
+    .kpi-card.amber::before { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+    .kpi-card.purple::before { background: linear-gradient(90deg, #8b5cf6, #a78bfa); }
+    .kpi-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #818cf8; margin-bottom: 10px; }
+    .kpi-value { font-size: 30px; font-weight: 800; letter-spacing: -0.03em; color: #fff; margin-bottom: 6px; }
+    .kpi-value.green { color: #34d399; } .kpi-value.cyan { color: #38bdf8; } .kpi-value.amber { color: #fbbf24; } .kpi-value.purple { color: #a78bfa; }
+    .kpi-subtext { font-size: 11.5px; color: #64748b; font-weight: 500; }
+    .table-container { width: 100%; overflow-x: auto; }
+    .section-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #475569; margin-bottom: 14px; }
+    table { width: 100%; border-collapse: collapse; text-align: left; }
+    thead th { padding: 12px 10px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; border-bottom: 1px solid rgba(255,255,255,0.08); white-space: nowrap; }
+    thead th.center, tbody td.center { text-align: center; }
+    thead th.right, tbody td.right { text-align: right; }
+    tbody tr { border-bottom: 1px solid rgba(255,255,255,0.04); transition: background-color 0.15s ease; }
+    tbody tr:hover { background-color: rgba(255,255,255,0.02); }
+    tbody td { padding: 13px 10px; font-size: 13px; vertical-align: middle; color: #cbd5e1; }
+    .dev-cell { display: flex; align-items: center; gap: 12px; }
+    .avatar { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; flex-shrink: 0; }
+    .avatar.nc { background: linear-gradient(135deg, #f59e0b, #d97706); }
+    .avatar.is { background: linear-gradient(135deg, #10b981, #059669); }
+    .avatar.ms { background: linear-gradient(135deg, #0ea5e9, #0284c7); }
+    .avatar.hc { background: linear-gradient(135deg, #8b5cf6, #6d28d9); }
+    .avatar.jc { background: linear-gradient(135deg, #ec4899, #db2777); }
+    .avatar.gs { background: linear-gradient(135deg, #14b8a6, #0d9488); }
+    .avatar.gk { background: linear-gradient(135deg, #f97316, #ea580c); }
+    .avatar.jg { background: linear-gradient(135deg, #64748b, #475569); color: #e2e8f0; }
+    .avatar.jk { background: linear-gradient(135deg, #ef4444, #dc2626); }
+    .avatar.total { background: linear-gradient(135deg, #10b981, #3b82f6); }
+    .dev-info .dev-name { font-weight: 700; color: #f8fafc; font-size: 13.5px; margin-bottom: 2px; }
+    .dev-info .dev-role { font-size: 11px; color: #64748b; font-weight: 500; }
+    .mono-num { font-family: 'JetBrains Mono', monospace; font-weight: 600; }
+    .num-added { color: #34d399; font-family: 'JetBrains Mono', monospace; font-weight: 600; }
+    .num-deleted { color: #f87171; font-family: 'JetBrains Mono', monospace; font-weight: 600; }
+    .num-net { color: #38bdf8; font-family: 'JetBrains Mono', monospace; font-weight: 700; }
+    .num-net-neg { color: #fb923c; font-family: 'JetBrains Mono', monospace; font-weight: 700; }
+    .num-total-commits { color: #f8fafc; font-family: 'JetBrains Mono', monospace; font-weight: 700; }
+    .num-pts { color: #a78bfa; font-family: 'JetBrains Mono', monospace; font-weight: 700; }
+    .badge-status { display: inline-flex; align-items: center; gap: 5px; padding: 5px 11px; border-radius: 9999px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+    .badge-core { background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.35); color: #fbbf24; }
+    .badge-high { background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.35); color: #34d399; }
+    .badge-medium { background: rgba(234,179,8,0.12); border: 1px solid rgba(234,179,8,0.35); color: #facc15; }
+    .badge-low { background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.35); color: #f87171; }
+    .badge-inactive { background: rgba(100,116,139,0.12); border: 1px solid rgba(100,116,139,0.3); color: #94a3b8; }
+    .delivery-pills { display: flex; flex-wrap: wrap; gap: 4px; }
+    .pill { display: inline-block; padding: 3px 8px; border-radius: 6px; font-size: 10.5px; font-weight: 600; white-space: nowrap; }
+    .pill-us { background: rgba(59,130,246,0.15); color: #93c5fd; border: 1px solid rgba(59,130,246,0.25); }
+    .pill-bug { background: rgba(239,68,68,0.12); color: #fca5a5; border: 1px solid rgba(239,68,68,0.2); }
+    .pill-qa { background: rgba(16,185,129,0.12); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.2); }
+    .pill-doc { background: rgba(139,92,246,0.12); color: #c4b5fd; border: 1px solid rgba(139,92,246,0.2); }
+    tr.total-row { background: rgba(30,41,59,0.4); border-top: 2px solid rgba(255,255,255,0.1); border-bottom: none; }
+    tr.total-row td { padding: 16px 10px; font-weight: 700; }
+    .audit-note { font-size: 10px; color: #334155; font-style: italic; margin-top: 3px; }
+    .footer { display: flex; justify-content: space-between; align-items: center; margin-top: 28px; padding-top: 18px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 11.5px; color: #64748b; }
+  </style>
+</head>
+<body>
+  <div class="dashboard-container">
+    <header class="header">
+      <div class="header-left">
+        <div class="logo-badge">AG</div>
+        <div class="header-title-wrap">
+          <h1>Quadro de Produtividade da Equipe &mdash; Sprint 05</h1>
+          <p>AlumiGest &mdash; Sistema de Gest&atilde;o para Vidra&ccedil;aria e Esquadrias &middot; IFPB Engenharia de Software &middot; <strong style="color:#34d399">Dados Reais: git log --after=2026-09-14 --before=2026-09-29</strong></p>
+        </div>
+      </div>
+      <div class="header-badges">
+        <div class="header-badge release"><span class="dot"></span> &#128640; Release 1 (v1.0.0) Entregue</div>
+        <div class="header-badge"><span class="dot"></span> Auditoria Git: label sprint-05</div>
+      </div>
+    </header>
+
+    <div class="sprint-banner">
+      <div class="sprint-banner-left">
+        <div class="sprint-icon">&#127937;</div>
+        <div>
+          <div class="sprint-banner-title">Sprint 05 &mdash; Fechamento da Release 1 (v1.0.0)</div>
+          <div class="sprint-banner-sub">Per&iacute;odo: 15/09/2026 a 28/09/2026 &middot; US-09 (fechamento), US-10 PDF Via Comercial, US-11 PDF Via T&eacute;cnica de Oficina, Homologa&ccedil;&atilde;o QA-02 &amp; QA-04</div>
+        </div>
+      </div>
+      <div class="sprint-banner-right">
+        <div class="sprint-stat"><div class="sprint-stat-val">~30 pts</div><div class="sprint-stat-label">Entregues</div></div>
+        <div class="sprint-stat"><div class="sprint-stat-val">83%</div><div class="sprint-stat-label">Taxa Conclus&atilde;o</div></div>
+        <div class="sprint-stat"><div class="sprint-stat-val">6</div><div class="sprint-stat-label">BUGs Corrigidos</div></div>
+        <div class="sprint-stat"><div class="sprint-stat-val">14 dias</div><div class="sprint-stat-label">Dura&ccedil;&atilde;o</div></div>
+      </div>
+    </div>
+
+    <section class="kpi-grid">
+      <div class="kpi-card blue"><div class="kpi-label">TOTAL DE COMMITS</div><div class="kpi-value">232</div><div class="kpi-subtext">152 diretos &middot; 80 merges</div></div>
+      <div class="kpi-card green"><div class="kpi-label">LINHAS ADICIONADAS (+)</div><div class="kpi-value green">+88.800</div><div class="kpi-subtext">C&oacute;digo bruto &mdash; todas as branches</div></div>
+      <div class="kpi-card cyan"><div class="kpi-label">SALDO L&Iacute;QUIDO (NET LOC)</div><div class="kpi-value cyan">55.625</div><div class="kpi-subtext">Linhas efetivas no reposit&oacute;rio</div></div>
+      <div class="kpi-card amber"><div class="kpi-label">STORY POINTS ENTREGUES</div><div class="kpi-value amber">~30 pts</div><div class="kpi-subtext">de 36 pts planejados (83%)</div></div>
+      <div class="kpi-card purple"><div class="kpi-label">MEMBROS COM COMMITS</div><div class="kpi-value purple">9</div><div class="kpi-subtext">de 9 membros com atividade no per&iacute;odo</div></div>
+    </section>
+
+    <div class="table-container">
+      <div class="section-title">&#128202; Contribui&ccedil;&otilde;es Individuais &mdash; Sprint 05 &middot; Dados Reais: git log --all --no-merges --numstat (15/09 a 28/09/2026)</div>
+      <table>
+        <thead>
+          <tr>
+            <th>DESENVOLVEDOR / PAPEL</th>
+            <th class="center">COMMITS DIRETOS</th>
+            <th class="center">MERGES</th>
+            <th class="center">TOTAL COMMITS</th>
+            <th class="right">LINHAS (+)</th>
+            <th class="right">LINHAS (-)</th>
+            <th class="right">SALDO L&Iacute;QUIDO</th>
+            <th class="center">STORY PTS</th>
+            <th class="center">ENTREGAS PRINCIPAIS</th>
+            <th class="center">ENGAJAMENTO</th>
+          </tr>
+        </thead>
+        <tbody>
+
+          <!-- Ítalo: 49 commits (italo520) + 24 (noreply) = 73 total | merges: 10+24=34 | diretos: 39 | LOC: 46.881 / 25.403 / 21.478 -->
+          <tr>
+            <td><div class="dev-cell"><div class="avatar is">IS</div><div class="dev-info"><div class="dev-name">&#205;talo Jefferson Santos</div><div class="dev-role">Tech Lead &amp; Engenharia &middot; italo520@gmail.com</div><div class="audit-note">italo520@gmail.com + 105856889+Italo520@noreply</div></div></div></td>
+            <td class="center mono-num">39</td>
+            <td class="center mono-num">34</td>
+            <td class="center num-total-commits">73</td>
+            <td class="right num-added">+46.881</td>
+            <td class="right num-deleted">-25.403</td>
+            <td class="right num-net">21.478</td>
+            <td class="center num-pts">17 pts</td>
+            <td><div class="delivery-pills"><span class="pill pill-us">US-10 PDF</span><span class="pill pill-us">US-11 Via T&eacute;c.</span><span class="pill pill-bug">BUG #342</span><span class="pill pill-bug">BUG #347</span><span class="pill pill-doc">PIT/RAP</span></div></td>
+            <td class="center"><span class="badge-status badge-core">&#128293; Muito Alto (Core)</span></td>
+          </tr>
+
+          <!-- Nichollas: 49 total | merges: 5 | diretos: 44 | LOC: 21.334 / 3.484 / 17.850 -->
+          <tr>
+            <td><div class="dev-cell"><div class="avatar nc">NC</div><div class="dev-info"><div class="dev-name">Nichollas Cavalcante</div><div class="dev-role">Frontend &amp; UI &middot; nichollascavalcante@gmail.com</div></div></div></td>
+            <td class="center mono-num">44</td>
+            <td class="center mono-num">5</td>
+            <td class="center num-total-commits">49</td>
+            <td class="right num-added">+21.334</td>
+            <td class="right num-deleted">-3.484</td>
+            <td class="right num-net">17.850</td>
+            <td class="center num-pts">9 pts</td>
+            <td><div class="delivery-pills"><span class="pill pill-us">US-09 Fechamento</span><span class="pill pill-us">BudgetDetailPage</span><span class="pill pill-bug">BUG #343</span><span class="pill pill-bug">BUG #344</span></div></td>
+            <td class="center"><span class="badge-status badge-core">&#128293; Muito Alto (Core)</span></td>
+          </tr>
+
+          <!-- Joseph: 31 total | merges: 28 | diretos: 3 | LOC: 308 / 3.350 / -3.042 (merges/rebases) -->
+          <tr>
+            <td><div class="dev-cell"><div class="avatar jc">JC</div><div class="dev-info"><div class="dev-name">Joseph Cavalcante</div><div class="dev-role">QA Lead &amp; Backend &middot; josephcavalcante (GitHub)</div><div class="audit-note">64551271+josephcavalcante@noreply &middot; 28 merges de PR (Scrum Master)</div></div></div></td>
+            <td class="center mono-num">3</td>
+            <td class="center mono-num">28</td>
+            <td class="center num-total-commits">31</td>
+            <td class="right num-added">+308</td>
+            <td class="right num-deleted">-3.350</td>
+            <td class="right num-net-neg">-3.042</td>
+            <td class="center num-pts">4 pts</td>
+            <td><div class="delivery-pills"><span class="pill pill-qa">QA-04 #340</span><span class="pill pill-bug">BUG #345</span><span class="pill pill-bug">BUG #346</span><span class="pill pill-doc">RTE-QA-04</span></div></td>
+            <td class="center"><span class="badge-status badge-high">&#129001; Alto / Consistente</span></td>
+          </tr>
+
+          <!-- Herbert: 14 (pessoal) + 5 (noreply) = 19 total | merges: 1+5=6 | diretos: 13 | LOC: 7.886/1.044/6.842 -->
+          <tr>
+            <td><div class="dev-cell"><div class="avatar hc">HC</div><div class="dev-info"><div class="dev-name">Herbert Carvalho</div><div class="dev-role">QA &amp; Testes &middot; herbertcarvalhoxxi@gmail.com</div><div class="audit-note">herbertcarvalhoxxi@gmail.com + 132937612+HerbertCarvalhoxxi@noreply</div></div></div></td>
+            <td class="center mono-num">13</td>
+            <td class="center mono-num">6</td>
+            <td class="center num-total-commits">19</td>
+            <td class="right num-added">+7.886</td>
+            <td class="right num-deleted">-1.044</td>
+            <td class="right num-net">6.842</td>
+            <td class="center num-pts">&mdash;</td>
+            <td><div class="delivery-pills"><span class="pill pill-qa">QA-02 #72</span><span class="pill pill-doc">RET Sprint 05</span><span class="pill pill-doc">RTE-QA-02</span></div></td>
+            <td class="center"><span class="badge-status badge-high">&#129001; Alto / Consistente</span></td>
+          </tr>
+
+          <!-- Júlio Kennedy: 14 total | merges: 1 | diretos: 13 | LOC: 3.886/664/3.222 -->
+          <tr>
+            <td><div class="dev-cell"><div class="avatar jk">JK</div><div class="dev-info"><div class="dev-name">J&uacute;lio Kennedy</div><div class="dev-role">Backend &middot; kennedyy.devv@gmail.com</div></div></div></td>
+            <td class="center mono-num">13</td>
+            <td class="center mono-num">1</td>
+            <td class="center num-total-commits">14</td>
+            <td class="right num-added">+3.886</td>
+            <td class="right num-deleted">-664</td>
+            <td class="right num-net">3.222</td>
+            <td class="center num-pts">&mdash;</td>
+            <td><div class="delivery-pills"><span class="pill pill-us">US-09 Support</span><span class="pill pill-bug">Corr. Backend</span></div></td>
+            <td class="center"><span class="badge-status badge-medium">&#128993; M&eacute;dio / Pontual</span></td>
+          </tr>
+
+          <!-- Guilherme Kauã: 14 total | merges: 1 | diretos: 13 | LOC: 2.188/114/2.074 -->
+          <tr>
+            <td><div class="dev-cell"><div class="avatar gk">GK</div><div class="dev-info"><div class="dev-name">Guilherme Kau&atilde;</div><div class="dev-role">Frontend &middot; guilherme.kaua.matos@gmail.com</div></div></div></td>
+            <td class="center mono-num">13</td>
+            <td class="center mono-num">1</td>
+            <td class="center num-total-commits">14</td>
+            <td class="right num-added">+2.188</td>
+            <td class="right num-deleted">-114</td>
+            <td class="right num-net">2.074</td>
+            <td class="center num-pts">&mdash;</td>
+            <td><div class="delivery-pills"><span class="pill pill-us">Frontend UI</span><span class="pill pill-bug">Corr. Frontend</span></div></td>
+            <td class="center"><span class="badge-status badge-medium">&#128993; M&eacute;dio / Pontual</span></td>
+          </tr>
+
+          <!-- José Guylherme: 13+1=14 total | merges: 1 | diretos: 13 | LOC: 5.497/1.417/4.080 -->
+          <tr>
+            <td><div class="dev-cell"><div class="avatar jg">JG</div><div class="dev-info"><div class="dev-name">Jos&eacute; Guylherme</div><div class="dev-role">Backend &middot; santos2209244@gmail.com</div><div class="audit-note">santos2209244@gmail.com + santos220924@gmail.com</div></div></div></td>
+            <td class="center mono-num">13</td>
+            <td class="center mono-num">1</td>
+            <td class="center num-total-commits">14</td>
+            <td class="right num-added">+5.497</td>
+            <td class="right num-deleted">-1.417</td>
+            <td class="right num-net">4.080</td>
+            <td class="center num-pts">&mdash;</td>
+            <td><div class="delivery-pills"><span class="pill pill-qa">QA-04 Support</span><span class="pill pill-bug">BUG #348/#349</span></div></td>
+            <td class="center"><span class="badge-status badge-medium">&#128993; M&eacute;dio / Pontual</span></td>
+          </tr>
+
+          <!-- Maylson: 3+8=11 total | merges: 2 | diretos: 9 | LOC: 1.080/98/982 -->
+          <tr>
+            <td><div class="dev-cell"><div class="avatar ms">MS</div><div class="dev-info"><div class="dev-name">Maylson Rodrigues</div><div class="dev-role">Frontend &middot; maylsons274@gmail.com</div><div class="audit-note">maylsons274@gmail.com + 162899551+MaylsonS@noreply</div></div></div></td>
+            <td class="center mono-num">9</td>
+            <td class="center mono-num">2</td>
+            <td class="center num-total-commits">11</td>
+            <td class="right num-added">+1.080</td>
+            <td class="right num-deleted">-98</td>
+            <td class="right num-net">982</td>
+            <td class="center num-pts">&mdash;</td>
+            <td><div class="delivery-pills"><span class="pill pill-us">Frontend PR</span></div></td>
+            <td class="center"><span class="badge-status badge-low">&#128308; Baixo</span></td>
+          </tr>
+
+          <!-- Gabriel: 3 total | merges: 1 | diretos: 2 | LOC: 125/6/119 -->
+          <tr>
+            <td><div class="dev-cell"><div class="avatar gs">GS</div><div class="dev-info"><div class="dev-name">Gabriel Souza</div><div class="dev-role">Backend &middot; gabriel.souza.ext@synchro.com.br</div><div class="audit-note">gabriel.souza.ext@synchro.com.br + gabrielsndev@gmail.com</div></div></div></td>
+            <td class="center mono-num">2</td>
+            <td class="center mono-num">1</td>
+            <td class="center num-total-commits">3</td>
+            <td class="right num-added">+125</td>
+            <td class="right num-deleted">-6</td>
+            <td class="right num-net">119</td>
+            <td class="center num-pts">&mdash;</td>
+            <td><div class="delivery-pills"><span class="pill pill-bug">Hotfix pontual</span></div></td>
+            <td class="center"><span class="badge-status badge-inactive">&#9898; M&iacute;nimo</span></td>
+          </tr>
+
+          <!-- Total Row -->
+          <tr class="total-row">
+            <td><div class="dev-cell"><div class="avatar total">&Sigma;</div><div class="dev-info"><div class="dev-name" style="color:#fff;font-size:14.5px">TOTAL &mdash; SPRINT 05</div><div class="dev-role" style="color:#94a3b8">9 membros com commits &middot; Release 1 (v1.0.0) Homologada &middot; <strong style="color:#34d399">Dados 100% Reais (git log)</strong></div></div></div></td>
+            <td class="center mono-num" style="color:#fff;font-size:14px">152</td>
+            <td class="center mono-num" style="color:#fff;font-size:14px">80</td>
+            <td class="center mono-num" style="color:#38bdf8;font-size:15px">232</td>
+            <td class="right num-added" style="font-size:14px">+88.800</td>
+            <td class="right num-deleted" style="font-size:14px">-35.580</td>
+            <td class="right num-net" style="font-size:15px">55.625</td>
+            <td class="center num-pts" style="font-size:14px">~30 pts</td>
+            <td><div class="delivery-pills"><span class="pill pill-us">US-09 &#10003;</span><span class="pill pill-us">US-10 &#10003;</span><span class="pill pill-us">US-11 &#10003;</span><span class="pill pill-qa">QA-02 &#10003;</span><span class="pill pill-qa">QA-04 &#10003;</span><span class="pill pill-bug">6 BUGs &#10003;</span></div></td>
+            <td class="center"><span class="badge-status badge-high" style="font-size:12px;padding:6px 14px">&#128640; Sprint 05 &mdash; Release 1</span></td>
+          </tr>
+
+        </tbody>
+      </table>
+    </div>
+
+    <footer class="footer">
+      <div>Fonte: <code>git log --all --after="2026-09-14" --before="2026-09-29" --no-merges --numstat</code> &middot; Contas consolidadas por pessoa (email pessoal + noreply GitHub) &middot; AlumiGest IFPB</div>
+      <div>Auditado em 29/09/2026 &middot; Sprint 05 &mdash; Release 1 (v1.0.0)</div>
+    </footer>
+  </div>
+</body>
+</html>
