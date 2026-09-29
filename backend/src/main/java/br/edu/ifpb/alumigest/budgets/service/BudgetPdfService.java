@@ -1109,9 +1109,7 @@ public class BudgetPdfService {
         String badgeTipo = formatarTipoTemplate(item.getTemplateType());
         cell.addElement(criarBadgePdf(badgeTipo, false));
 
-        BigDecimal wCm = item.getWidthMm() != null ? item.getWidthMm().divide(BigDecimal.TEN, 1, RoundingMode.HALF_UP) : BigDecimal.ZERO;
-        BigDecimal hCm = item.getHeightMm() != null ? item.getHeightMm().divide(BigDecimal.TEN, 1, RoundingMode.HALF_UP) : BigDecimal.ZERO;
-        String dimStr = String.format(PT_BR, "%.1f x %.1f cm", wCm.doubleValue(), hCm.doubleValue());
+        String dimStr = formatarDimensaoMm(item.getWidthMm()) + " x " + formatarDimensaoMm(item.getHeightMm()) + " mm";
 
         Paragraph pDim = new Paragraph(dimStr, FONTE_TECNICA_DIMENSAO);
         pDim.setLeading(12f);

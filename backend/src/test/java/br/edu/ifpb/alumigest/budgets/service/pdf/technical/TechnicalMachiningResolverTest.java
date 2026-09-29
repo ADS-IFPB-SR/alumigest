@@ -46,7 +46,7 @@ class TechnicalMachiningResolverTest {
     }
 
     @Test
-    @DisplayName("US-11.2: resolve extrai furação EQUIDISTANT com quantidade configurada")
+    @DisplayName("US-11.2 / Issue #349: resolve extrai furação EQUIDISTANT com cotas milimétricas reais a partir da base")
     void deveResolverFuracoesEquidistantes() {
         BudgetItem item = new BudgetItem();
         item.setHeightMm(new BigDecimal("2000"));
@@ -56,9 +56,9 @@ class TechnicalMachiningResolverTest {
 
         assertTrue(ctx.hasDrilling());
         assertEquals(3, ctx.drillingHoles().size());
-        assertEquals("Dist. Iguais", ctx.drillingHoles().get(0).label());
-        assertEquals("Dist. Iguais", ctx.drillingHoles().get(1).label());
-        assertEquals("Dist. Iguais", ctx.drillingHoles().get(2).label());
+        assertEquals("240 mm", ctx.drillingHoles().get(0).label());
+        assertEquals("1000 mm", ctx.drillingHoles().get(1).label());
+        assertEquals("1760 mm", ctx.drillingHoles().get(2).label());
     }
 
     @Test
@@ -126,7 +126,7 @@ class TechnicalMachiningResolverTest {
     }
 
     @Test
-    @DisplayName("US-11.2: resolve furação fallback quando templateType é SWING_DOOR_1F e config ausente")
+    @DisplayName("US-11.2 / Issue #349: resolve furação fallback quando templateType é SWING_DOOR_1F com cotas milimétricas")
     void deveResolverFuracaoFallbackParaSwingDoor() {
         BudgetItem item = new BudgetItem();
         item.setTemplateType("SWING_DOOR_1F");
@@ -136,7 +136,9 @@ class TechnicalMachiningResolverTest {
 
         assertTrue(ctx.hasDrilling());
         assertEquals(3, ctx.drillingHoles().size());
-        assertEquals("Dist. Iguais", ctx.drillingHoles().get(0).label());
+        assertEquals("252 mm", ctx.drillingHoles().get(0).label());
+        assertEquals("1050 mm", ctx.drillingHoles().get(1).label());
+        assertEquals("1848 mm", ctx.drillingHoles().get(2).label());
     }
 
     @Test
@@ -152,7 +154,7 @@ class TechnicalMachiningResolverTest {
         TechnicalHandle handle = ctx.handle();
         assertNotNull(handle);
         assertTrue(handle.onRightSide());
-        assertEquals("Puxador (40cm)", handle.label());
+        assertEquals("Puxador (400mm)", handle.label());
         assertEquals(0.50f, handle.centerYRatio(), 0.001f);
     }
 
@@ -216,6 +218,32 @@ class TechnicalMachiningResolverTest {
         TechnicalMachiningContext ctxGiro = TechnicalMachiningResolver.resolve(itemGiro);
         assertFalse(ctxGiro.isSliding());
         assertEquals(1, ctxGiro.getLeafCount());
+        assertFalse(ctxGiro.isDoubleSwingDoor());
+
+        BudgetItem itemGiro2F = new BudgetItem();
+        itemGiro2F.setTemplateType("SWING_DOOR_2F");
+        TechnicalMachiningContext ctxGiro2F = TechnicalMachiningResolver.resolve(itemGiro2F);
+        assertFalse(ctxGiro2F.isSliding());
+        assertEquals(2, ctxGiro2F.getLeafCount());
+        assertTrue(ctxGiro2F.isDoubleSwingDoor());
+    }
+
+    @Test
+    @DisplayName("US-11.2 / Issue #349: furações equidistantes não contêm 'Dist. Iguais' e são precisas")
+    void deveEliminarDistIguaisEFormatarMilimetrosReais() {
+        BudgetItem item = new BudgetItem();
+        item.setHeightMm(new BigDecimal("2100"));
+        item.setDrillingConfig("{\"mode\": \"EQUIDISTANT\", \"holesCount\": 3}");
+
+        TechnicalMachiningContext ctx = TechnicalMachiningResolver.resolve(item);
+
+        for (DrillingHolePoint hole : ctx.drillingHoles()) {
+            assertFalse(hole.label().contains("Dist. Iguais"), "Rótulo não deve conter 'Dist. Iguais'");
+            assertTrue(hole.label().endsWith("mm"), "Rótulo deve terminar com 'mm'");
+        }
+        assertEquals("252 mm", ctx.drillingHoles().get(0).label());
+        assertEquals("1050 mm", ctx.drillingHoles().get(1).label());
+        assertEquals("1848 mm", ctx.drillingHoles().get(2).label());
     }
 
     @Test

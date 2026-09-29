@@ -82,4 +82,21 @@ public record TechnicalMachiningContext(
     public int getLeafCount() {
         return leafCount;
     }
+
+    /**
+     * Indica se a esquadria é uma porta ou esquadria de giro duplo (2 folhas de abrir).
+     */
+    public boolean isDoubleSwingDoor() {
+        if (sliding) {
+            return false;
+        }
+        if (leafCount != 2) {
+            return false;
+        }
+        if (templateType == null) {
+            return true;
+        }
+        String upper = templateType.toUpperCase(java.util.Locale.ROOT);
+        return upper.contains("SWING") || upper.contains("GIRO") || upper.contains("2F") || upper.contains("2_LEAF");
+    }
 }

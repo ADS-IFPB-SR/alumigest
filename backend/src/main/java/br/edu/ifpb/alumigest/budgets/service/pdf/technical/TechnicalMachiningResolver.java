@@ -37,6 +37,7 @@ public final class TechnicalMachiningResolver {
     private static final float RAIO_PADRAO_MM = 10.0f;
     private static final float DEFAULT_HANDLE_LENGTH_MM = 250.0f;
     private static final float DEFAULT_HEIGHT_MM = 2100.0f;
+    private static final String FORMAT_MM = "%.0f mm";
 
     private TechnicalMachiningResolver() {
         throw new UnsupportedOperationException("Classe utilitária não pode ser instanciada.");
@@ -104,7 +105,7 @@ public final class TechnicalMachiningResolver {
         String raw = item.getDrillingConfig();
         List<DrillingHolePoint> pontos = parseDrillingJson(raw, heightMm);
         if (pontos.isEmpty() && (raw == null || raw.isBlank()) && templateType != null) {
-            pontos.addAll(fallbackFuracoesPorTemplate(templateType));
+            pontos.addAll(fallbackFuracoesPorTemplate(templateType, heightMm));
         }
         return pontos;
     }
@@ -134,7 +135,7 @@ public final class TechnicalMachiningResolver {
             if (isCustom && distNode != null) {
                 pontos.addAll(parseCustomDistances(distNode, heightMm));
             } else {
-                pontos.addAll(parseEquidistantHoles(node));
+                pontos.addAll(parseEquidistantHoles(node, heightMm));
             }
         } catch (Exception ex) {
             log.debug("Falha ao parsear drillingConfig: {}", ex.getMessage());
@@ -152,13 +153,13 @@ public final class TechnicalMachiningResolver {
             for (JsonNode dNode : distances) {
                 float dist = (float) dNode.asDouble();
                 float yRatio = Math.clamp(dist / h, 0.08f, 0.92f);
-                pontos.add(new DrillingHolePoint(yRatio, RAIO_PADRAO_MM, String.format(Locale.ROOT, "%.0f mm", dist)));
+                pontos.add(new DrillingHolePoint(yRatio, RAIO_PADRAO_MM, String.format(Locale.ROOT, FORMAT_MM, dist)));
             }
         }
         return pontos;
     }
 
-    private static List<DrillingHolePoint> parseEquidistantHoles(JsonNode node) {
+    private static List<DrillingHolePoint> parseEquidistantHoles(JsonNode node, BigDecimal heightMm) {
         int count = 3;
         JsonNode countNode = node.get(FIELD_HOLES_COUNT);
         if (countNode == null) {
@@ -170,25 +171,30 @@ public final class TechnicalMachiningResolver {
         if (countNode != null && !countNode.isNull()) {
             count = Math.clamp(countNode.asInt(), 1, 6);
         }
-        return gerarPontosEquidistantes(count);
+        return gerarPontosEquidistantes(count, heightMm);
     }
 
-    private static List<DrillingHolePoint> fallbackFuracoesPorTemplate(String templateType) {
+    private static List<DrillingHolePoint> fallbackFuracoesPorTemplate(String templateType, BigDecimal heightMm) {
         String upper = templateType.toUpperCase(Locale.ROOT);
         if (upper.contains("GIRO") || upper.contains("PIVOT") || upper.contains("PORTA")
                 || upper.contains("DOOR") || upper.contains("SWING")) {
-            return gerarPontosEquidistantes(3);
+            return gerarPontosEquidistantes(3, heightMm);
         }
         if (upper.contains("MAXIM") || upper.contains("BASCULANTE") || upper.contains("AWNING")) {
-            return gerarPontosEquidistantes(2);
+            return gerarPontosEquidistantes(2, heightMm);
         }
         return List.of();
     }
 
-    private static List<DrillingHolePoint> gerarPontosEquidistantes(int count) {
+    static List<DrillingHolePoint> gerarPontosEquidistantes(int count, BigDecimal heightMm) {
         List<DrillingHolePoint> pontos = new ArrayList<>();
+        float h = heightMm != null && heightMm.compareTo(BigDecimal.ZERO) > 0
+                ? heightMm.floatValue()
+                : DEFAULT_HEIGHT_MM;
+
         if (count <= 1) {
-            pontos.add(new DrillingHolePoint(0.50f, RAIO_PADRAO_MM, "Furo Central"));
+            float distMm = Math.round(h * 0.50f);
+            pontos.add(new DrillingHolePoint(0.50f, RAIO_PADRAO_MM, String.format(Locale.ROOT, FORMAT_MM, distMm)));
             return pontos;
         }
 
@@ -198,9 +204,14 @@ public final class TechnicalMachiningResolver {
 
         for (int i = 0; i < count; i++) {
             float y = yMin + (i * step);
-            pontos.add(new DrillingHolePoint(y, RAIO_PADRAO_MM, "Dist. Iguais"));
+            float distMm = Math.round(h * y);
+            pontos.add(new DrillingHolePoint(y, RAIO_PADRAO_MM, String.format(Locale.ROOT, FORMAT_MM, distMm)));
         }
         return pontos;
+    }
+
+    static List<DrillingHolePoint> gerarPontosEquidistantes(int count) {
+        return gerarPontosEquidistantes(count, null);
     }
 
     private static TechnicalHandle extrairPuxador(BudgetItem item, BigDecimal heightMm, OpeningDirection direction) {
@@ -268,12 +279,6 @@ public final class TechnicalMachiningResolver {
     }
 
     private static String formatHandleLabel(float lengthMm) {
-        if (lengthMm >= 1000f) {
-            return String.format(Locale.ROOT, "Puxador (%.1fm)", lengthMm / 1000f);
-        }
-        if (lengthMm % 10 == 0) {
-            return String.format(Locale.ROOT, "Puxador (%.0fcm)", lengthMm / 10f);
-        }
         return String.format(Locale.ROOT, "Puxador (%.0fmm)", lengthMm);
     }
 
