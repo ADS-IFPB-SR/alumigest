@@ -3,8 +3,8 @@
 | Campo | Valor |
 |---|---|
 | **Projeto** | AlumiGest — Sistema de Gestão para Vidraçaria e Esquadrias |
-| **Versão** | 3.0 (Homologado com Mitigações de Sigilo de Produção, Subdimensionamento e Quality Gate) |
-| **Data** | 24/09/2026 |
+| **Versão** | 4.0 (Adição de R14 — Encoding PDF e R15 — Esquema Usinagem Multifolhas — Sprint 05) |
+| **Data** | 29/09/2026 |
 | **Governança** | Docs-as-Code — Oficial de Governança (`alumigest-doc-governor`) |
 
 ---
@@ -17,6 +17,7 @@
 | 12/08/2026 | 1.1 | Adição dos riscos R07 e R08 na Sprint 2 | Equipe AlumiGest |
 | 31/08/2026 | 2.0 | Revisão pós-Sprint 3 com adição dos riscos R09 e R10 e mitigação de fórmulas | Equipe AlumiGest (Scrum Master: Italo Santos) |
 | 24/09/2026 | 3.0 | Atualização de mitigação de R10 e adição de R11 (Sigilo Comercial de Oficina), R12 (Subdimensionamento Físico) e R13 (Quality Gate SonarQube) | Equipe AlumiGest (Tech Lead: Ítalo Jefferson) |
+| 29/09/2026 | 4.0 | Adição de R14 (Encoding Corrompido no Nome do Arquivo PDF) e R15 (Inconsistência Visual no Esquema de Usinagem Multifolhas) — Sprint 05 | Equipe AlumiGest (Tech Lead: Ítalo Jefferson / Joseph Cavalcante) |
 
 ---
 
@@ -253,15 +254,50 @@
 
 ---
 
-## 3. Resumo da Matriz de Riscos (Versão 3.0)
+### 🆕 R14 — Encoding Corrompido no Nome do Arquivo PDF Emitido
+
+| Campo | Valor |
+|---|---|
+| **Probabilidade** | Alta |
+| **Impacto** | Médio |
+| **Classificação** | 🟠 Significativo |
+| **Descrição** | O download de PDFs com nomes em codificação UTF-8 via Spring `ContentDisposition` pode gerar nomes de arquivo corrompidos contendo a codificação MIME literal da RFC 5987 (`=_UTF-8_Q_..._=`), impedindo a abertura do arquivo por duplo clique no sistema operacional. |
+| **Causa** | Uso de `ContentDisposition.builder("attachment").filename(name, StandardCharsets.UTF_8)` para nomes de arquivo puramente ASCII, provocando geração de header `filename*=UTF-8''...` ou MIME words interpretados literalmente por alguns navegadores. |
+| **Consequência** | Arquivo salvo com extensão corrompida; usuário incapaz de abrir o PDF diretamente; degradação da experiência de emissão de documentos. |
+| **Estratégia** | Corrigir / Mitigar |
+| **Ações Executadas** | 1. Backend: Ajuste de `ContentDisposition.builder("attachment").filename(name).build()` sem charset forçado para nomes ASCII puros. 2. Frontend: Implementação da função utilitária `extractFilenameFromContentDisposition(header, fallback)` em `budgetsApi.ts` para limpeza de escapes RFC 5987 e extração do nome limpo. |
+| **Responsável** | Tech Lead / Backend & Frontend (Issue #343 — Sprint 05) |
+| **Status** | 🟢 Materializado e Mitigado (Sprint 05) |
+
+---
+
+### 🆕 R15 — Inconsistência Visual no Esquema Técnico de Usinagem para Tipologias Multifolhas
+
+| Campo | Valor |
+|---|---|
+| **Probabilidade** | Alta |
+| **Impacto** | Alto |
+| **Classificação** | 🔴 Crítico |
+| **Descrição** | O motor vetorial de usinagem da Ficha Técnica de Oficina pode renderizar uma moldura genérica de folha única para esquadrias de tipologias complexas (Giro 2F, Correr 2F/4F, Basculante/Maxim-Ar, Frente de Gaveta), contrariando a representação real da cinemática de abertura e induzindo erros de fabricação no chão de fábrica. |
+| **Causa** | Lógica de divisão de folhas no `TechnicalMachiningFrameRenderer` condicionada exclusivamente a `isSliding()`, ignorando as demais tipologias do catálogo de esquadrias. |
+| **Consequência** | Serralheiro recebe Ficha Técnica com representação visual incorreta da esquadria; risco de posicionamento errado de dobradiças, puxadores e furação; retrabalho e sucata de matéria-prima. |
+| **Estratégia** | Corrigir / Mitigar |
+| **Ações Executadas** | 1. Refatoração do `TechnicalMachiningFrameRenderer` com suporte a todas as tipologias: `SWING_2F` (puxadores duplos centrais e arcos opostos), `SLIDING_2F/4F` (N caixilhos proporcionais com setas de deslizamento), `AWNING_WINDOW` (fecho concha inferior), `DRAWER` (painel horizontal), `FIXED` (traço em X). 2. Testes unitários de regressão em `BudgetPdfDrawingHelperTest`. (Issues #342, #347 — Sprint 05). |
+| **Responsável** | Tech Lead / Backend — Joseph Cavalcante (Sprint 05) |
+| **Status** | 🟢 Materializado e Mitigado (Sprint 05) |
+
+---
+
+## 3. Resumo da Matriz de Riscos (Versão 4.0)
 
 | Classificação | Quantidade | IDs |
 |---|:---:|---|
-| 🔴 **Crítico** | **2** | R02, R12 |
-| 🟠 **Significativo** | **5** | R01, R03, R05, R08, R11 |
+| 🔴 **Crítico** | **3** | R02, R12, R15 |
+| 🟠 **Significativo** | **6** | R01, R03, R05, R08, R11, R14 |
 | 🟡 **Moderado** | **6** | R04, R06, R07, R09, R10, R13 |
 | 🟢 **Baixo** | **0** | — |
-| **Total de Riscos Mapeados** | **13** | (9 mitigados com sucesso, 4 sob monitoramento contínuo) |
+| **Total de Riscos Mapeados** | **15** | (13 mitigados com sucesso, 2 sob monitoramento contínuo) |
 
 ---
-*Documento homologado pelo Oficial de Governança Técnica (`alumigest-doc-governor`) em 24/09/2026.*
+*Documento homologado pelo Oficial de Governança Técnica (`alumigest-doc-governor`) em 29/09/2026.*
+

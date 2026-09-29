@@ -4,9 +4,9 @@
 |---|---|
 | **Projeto** | AlumiGest — Sistema de Gestão para Vidraçaria e Esquadrias |
 | **Documento** | Registro Unificado de Bugs, Defeitos e Hotfixes (RBD) |
-| **Versão** | 2.1.0 (Atualizado com Catálogo do BUG-022 e Métricas de 242 Testes Unitários) |
-| **Data de Atualização** | 24/09/2026 |
-| **Responsável QA** | Herbert Carvalho dos Santos / Equipe de Engenharia AlumiGest |
+| **Versão** | 3.0.0 (Atualizado com BUGs da Sprint 05 — Via Técnica de Oficina — Issues #342–#349) |
+| **Data de Atualização** | 29/09/2026 |
+| **Responsável QA** | Herbert Carvalho dos Santos / Joseph Cavalcante / Equipe de Engenharia AlumiGest |
 | **Branch** | `planejamento` |
 | **Padrão de Template** | Baseado em [`.github/ISSUE_TEMPLATE/bug_report.md`](../../../.github/ISSUE_TEMPLATE/bug_report.md) |
 | **Auditoria Técnica** | Análise estática SonarQube, Pipeline CI/CD GitHub Actions e Histórico Git |
@@ -49,7 +49,16 @@ Seguindo a governança do **Plano de Gerência de Configuração (PGC)** e do **
 | **[BUG-019](#bug-019)** | Falha de Compilação e DI por Inconsistência na `MaterialCalculatorFactory` | Backend / Motor | 🔴 Alta | Sprint 03 | ✅ Resolvido | Commit `9cbf957` |
 | **[BUG-020](#bug-020)** | Funções Não Utilizadas no Cypress Violando Linting Estrito no Pipeline | Frontend / QA | 🟢 Baixa | Sprint 03 | ✅ Resolvido | Commit `6a48859` |
 | **[BUG-021](#bug-021)** | Perda de Insumos da Ficha Técnica em Produtos Estáticos e Ocultação de Templates na Categoria Janela | Frontend / Catálogo & Orçamentos | 🔴 Alta | Sprint 03 | ✅ Resolvido | Issue #235 / Branch `fix/products-static-items-and-window-category` |
-| **[BUG-022](#bug-022)** | Itens do Orçamento Descartados na Criação via POST /api/budgets por Ausência de Campo no BudgetCreateRequest | Backend / Orçamentos | 🔴 Alta | Sprint 04 | 🟡 Em Correção | Issue #300 / PR #293 |
+| **[BUG-022](#bug-022)** | Itens do Orçamento Descartados na Criação via POST /api/budgets por Ausência de Campo no BudgetCreateRequest | Backend / Orçamentos | 🔴 Alta | Sprint 04 | ✅ Resolvido | Issue #300 / PR #293 |
+| **[BUG-023](#bug-023)** | Motor de Usinagem Técnico Renderiza Moldura Genérica de Folha Única para Todas as Tipologias | Backend / PDF Técnico | 🔴 Alta | Sprint 05 | ✅ Resolvido | Issue #342 / Branch `fix/342-esquema-usinagem-correr-multifolhas` |
+| **[BUG-024](#bug-024)** | Nome do Arquivo PDF Baixado Corrompido com Encoding MIME Literal (`=_UTF-8_Q_..._=`) | Backend & Frontend / PDF | 🔴 Alta | Sprint 05 | ✅ Resolvido | Issue #343 / Branch `feat/us-11-emitir-orcamento-pdf-via-tecnica-oficina` |
+| **[BUG-025](#bug-025)** | Termos em Inglês Exibidos nos Badges de Puxador, Posição e Tipologia no PDF Técnico | Backend / PDF Técnico | 🟡 Média | Sprint 05 | ✅ Resolvido | Issue #344 / Dicionário pt-BR em `FormatadorValoresPdf` |
+| **[BUG-026](#bug-026)** | Cota e Rótulo do Puxador Cortados na Margem Lateral do Esquema Técnico de Usinagem | Backend / PDF Técnico | 🔴 Alta | Sprint 05 | ✅ Resolvido | Issue #345 / Canvas redimensionado para 126×96 pt |
+| **[BUG-027](#bug-027)** | Sigla Ambígua "Mont." no Checklist de Produção e Montagem da Ficha Técnica | Backend / PDF Técnico | 🟢 Baixa | Sprint 05 | ✅ Resolvido | Issue #346 / Expandida para "Montagem" |
+| **[BUG-028](#bug-028)** | Esquema Técnico de Usinagem Desenha Moldura de Folha Única para Esquadrias de Correr 2F/4F | Backend / PDF Técnico | 🔴 Alta | Sprint 05 | ✅ Resolvido | Issue #347 / `TechnicalMachiningFrameRenderer` com suporte multifolhas |
+| **[BUG-029](#bug-029)** | Inconsistência entre Texto de Furação (3 furos) e Desenho Técnico (2 furos) na Ficha Técnica | Backend / PDF Técnico | 🟡 Média | Sprint 05 | ⏳ Em Observação | Issue #348 / Chave `holesCount` vs `holeCount` no fallback |
+| **[BUG-030](#bug-030)** | Falta de Cotas Milimétricas Reais de Furação e Linha Divisória Cortando Texto do Puxador Duplo | Backend / PDF Técnico | 🟡 Média | Sprint 05 | ⏳ Em Observação | Issue #349 / `TechnicalMachiningResolver` sem posições absolutas em mm |
+
 
 ---
 
@@ -648,6 +657,143 @@ O endpoint `POST /api/budgets` deve receber opcionalmente a lista de itens (`ite
 **Causa Raiz Técnica & Solução:**
 * **Causa Raiz:** O record `BudgetCreateRequest` foi modelado preliminarmente sem a propriedade `List<BudgetItemRequestDTO> items`. O endpoint criava apenas a capa do orçamento assumindo que itens seriam adicionados exclusivamente de forma avulsa via sub-recurso.
 * **Solução:** Adicionado o campo opcional `List<BudgetItemRequestDTO> items` com `@Valid` ao record `BudgetCreateRequest` (mantendo construtor de compatibilidade), e atualizado o método `BudgetService.create` para iterar sobre os itens recebidos, invocar `budgetMapper.toEntity`, associar os itens e chamar o recálculo automático de quantitativos e preços.
+
+---
+
+### BUG-023
+
+**Título:** Motor de Usinagem Técnico Renderiza Moldura Genérica de Folha Única para Todas as Tipologias (Giro 2F, Basculante, Gaveta, Fixo)
+
+**Descrição:** O renderizador técnico (`TechnicalMachiningFrameRenderer`) renderizava sempre uma moldura retangular genérica de folha única para qualquer tipologia — Giro 2 Folhas, Basculante/Maxim-Ar, Frente de Gaveta e Fixo —, omitindo a representação fiel da cinemática real de abertura da esquadria.
+
+**Contexto / Ambiente:**
+- **Módulo Afetado:** `backend/.../budgets/service/pdf/TechnicalMachiningFrameRenderer.java`
+- **Severidade:** 🔴 Alta | **Sprint:** 05 | **Status:** ✅ Resolvido.
+- **Detecção / Correção:** Issue #342 / Branch `fix/342-esquema-usinagem-correr-multifolhas`.
+
+**Causa Raiz Técnica & Solução:**
+* **Causa Raiz:** Condição de divisão de folhas limitada a `if (ctx.isSliding() && leaves > 1)`, ignorando tipologias de giro, basculante e gaveta.
+* **Solução:** Refatoração do `TechnicalMachiningFrameRenderer` com suporte a `SWING_2F` (puxadores duplos centrais), `SLIDING_2F/4F` (N caixilhos proporcionais), `AWNING_WINDOW` (fecho concha inferior), `DRAWER` (painel horizontal), `FIXED` (traço em X).
+
+---
+
+### BUG-024
+
+**Título:** Nome do Arquivo PDF Baixado Corrompido com Encoding MIME Literal (`=_UTF-8_Q_..._=`)
+
+**Descrição:** Ao solicitar o download da Via Técnica de Oficina, o arquivo era salvo com nome corrompido contendo a codificação MIME literal da RFC 5987, como `=_UTF-8_Q_ORC-2026-0002-tecnico.pdf_=`, impedindo a abertura com duplo clique.
+
+**Contexto / Ambiente:**
+- **Módulo Afetado:** `BudgetController.java` (Backend) e `budgetsApi.ts` (Frontend)
+- **Severidade:** 🔴 Alta | **Sprint:** 05 | **Status:** ✅ Resolvido.
+- **Detecção / Correção:** Issue #343 / Branch `feat/us-11-emitir-orcamento-pdf-via-tecnica-oficina`.
+
+**Causa Raiz Técnica & Solução:**
+* **Causa Raiz:** `ContentDisposition.builder("attachment").filename(name, StandardCharsets.UTF_8).build()` gerava header `filename*=UTF-8''...` interpretado literalmente por alguns navegadores.
+* **Solução:** Backend ajustado para `.filename(name).build()` sem charset forçado; Frontend implementou `extractFilenameFromContentDisposition(header, fallback)` em `budgetsApi.ts`.
+
+---
+
+### BUG-025
+
+**Título:** Termos em Inglês Exibidos nos Badges de Puxador, Posição e Tipologia no PDF Técnico
+
+**Descrição:** Valores de enums como `TUBULAR`, `RIGHT`, `LEFT`, `AWNING_WINDOW`, `SLIDING_DOOR` eram exibidos diretamente nas tabelas e esquemas da Ficha Técnica sem tradução para pt-BR.
+
+**Contexto / Ambiente:**
+- **Módulo Afetado:** `BudgetPdfDrawingHelper.java`, `FormatadorValoresPdf.java`
+- **Severidade:** 🟡 Média | **Sprint:** 05 | **Status:** ✅ Resolvido.
+- **Detecção / Correção:** Issue #344 / Branch `feat/us-11-emitir-orcamento-pdf-via-tecnica-oficina`.
+
+**Causa Raiz Técnica & Solução:**
+* **Causa Raiz:** Valores de enums repassados diretamente ao OpenPDF sem camada de i18n.
+* **Solução:** Dicionário de tradução centralizado no `FormatadorValoresPdf`: `TUBULAR → Tubular`, `SHELL_LOCK → Fecho Concha`, `RIGHT → Direita`, `AWNING_WINDOW → Janela Maxim-Ar`, `SLIDING_DOOR → Porta de Correr`.
+
+---
+
+### BUG-026
+
+**Título:** Cota e Rótulo do Puxador Cortados na Margem Lateral do Esquema Técnico de Usinagem
+
+**Descrição:** O texto da cota do puxador (ex.: `Puxador (60cm)`) ultrapassava os limites do canvas do esquema técnico, ficando parcialmente coberto pela linha de contorno da tabela ou truncado.
+
+**Contexto / Ambiente:**
+- **Módulo Afetado:** `BudgetPdfDrawingHelper.java` / `TechnicalMachiningDrawingUtils.java`
+- **Severidade:** 🔴 Alta | **Sprint:** 05 | **Status:** ✅ Resolvido.
+- **Detecção / Correção:** Issue #345 / Branch `feat/us-11-emitir-orcamento-pdf-via-tecnica-oficina`.
+
+**Causa Raiz Técnica & Solução:**
+* **Causa Raiz:** Canvas fixo de $105 \times 105$ pt com margens simétricas de $20$ pt insuficientes para rótulos longos.
+* **Solução:** Redimensionamento para $126 \times 96$ pt com `marginLeft = 32f` e `marginRight = 44f`; fallback de quebra de linha quando largura do texto > $38$ pt.
+
+---
+
+### BUG-027
+
+**Título:** Sigla Ambígua "Mont." no Checklist de Produção e Montagem da Ficha Técnica
+
+**Descrição:** A coluna de checklist `[ ] Corte [ ] Usin. [ ] Mont. [ ] Vidro [ ] Emb.` usava abreviação "Mont." causando ambiguidade entre Montagem, Montante ou instalador/montador.
+
+**Contexto / Ambiente:**
+- **Módulo Afetado:** `BudgetPdfService.java` — geração do checklist da Ficha Técnica
+- **Severidade:** 🟢 Baixa | **Sprint:** 05 | **Status:** ✅ Resolvido.
+- **Detecção / Correção:** Issue #346 / Branch `feat/us-11-emitir-orcamento-pdf-via-tecnica-oficina`.
+
+**Causa Raiz Técnica & Solução:**
+* **Causa Raiz:** Limitação de espaço de coluna sem legenda explicativa.
+* **Solução:** Expandida para "Montagem" com ajuste tipográfico de `fontSize` ou inclusão de legenda no rodapé da Ficha Técnica.
+
+---
+
+### BUG-028
+
+**Título:** Esquema Técnico de Usinagem Desenha Moldura de Folha Única para Esquadrias de Correr (2F / 4F)
+
+**Descrição:** O motor gráfico renderizava moldura retangular genérica mesmo para esquadrias de correr com 2 ou 4 folhas, contrariando a representação real dos caixilhos móveis e fixos.
+
+**Contexto / Ambiente:**
+- **Módulo Afetado:** `TechnicalMachiningFrameRenderer.java`
+- **Severidade:** 🔴 Alta | **Sprint:** 05 | **Status:** ✅ Resolvido.
+- **Detecção / Correção:** Issue #347 / Branch `fix/342-esquema-usinagem-correr-multifolhas`.
+
+**Causa Raiz Técnica & Solução:**
+* **Causa Raiz:** Flag `isSliding()` não era corretamente ativado para `SLIDING_WINDOW_2F/4F` no contexto do motor técnico.
+* **Solução:** Extração de `leafCount` do `templateType` com divisão geométrica `leafW = availW / leafCount` e setas indicativas de deslizamento.
+
+---
+
+### BUG-029
+
+**Título:** Inconsistência entre Texto de Furação (3 furos no card) e Desenho Técnico (2 furos no canvas) na Ficha Técnica
+
+**Descrição:** O texto descritivo do card de furação exibia `• 3 furos para dobradiças.` enquanto o esquema gráfico ao lado renderizava apenas 2 furos, criando instrução conflitante para o serralheiro.
+
+**Contexto / Ambiente:**
+- **Módulo Afetado:** `BudgetPdfService.java` — método `extrairLinhasFuracaoJson` / `obterLinhasFuracaoFallback`
+- **Severidade:** 🟡 Média | **Sprint:** 05 | **Status:** ⏳ Em Observação.
+- **Detecção / Correção:** Issue #348 — não bloqueou a homologação da Release 1.
+
+**Causa Raiz Técnica & Solução Proposta:**
+* **Causa Raiz:** `extrairLinhasFuracaoJson` busca a chave `holesCount` (plural), mas o payload salvo usa `holeCount` (singular). Não encontrando, aciona o fallback que retorna fixo `3 furos para dobradiças`.
+* **Solução Proposta:** Sincronizar `extrairLinhasFuracaoJson` para ler `holeCount`, `holesCount` e `quantity` como aliases.
+
+---
+
+### BUG-030
+
+**Título:** Falta de Cotas Milimétricas Reais de Furação e Linha Divisória Cortando Texto do Puxador Duplo
+
+**Descrição:** 1) As dobradiças são indicadas com rótulo genérico `Dist. Iguais` sem cotas numéricas (ex: `200 mm`, `1075 mm`). 2) Em portas `SWING_DOOR_2F`, a linha divisória vertical das folhas trunca o rótulo `Puxador (25cm)`.
+
+**Contexto / Ambiente:**
+- **Módulo Afetado:** `TechnicalMachiningResolver.java`, `TechnicalMachiningDrawingUtils.drawDoubleCentralHandles`
+- **Severidade:** 🟡 Média | **Sprint:** 05 | **Status:** ⏳ Em Observação.
+- **Detecção / Correção:** Issue #349 — não bloqueou a homologação da Release 1.
+
+**Causa Raiz Técnica & Solução Proposta:**
+* **Causa 1:** Posições relativas (`yRatio`) não convertidas para mm absolutos via `heightMm * yRatio`.
+* **Causa 2:** Linha divisória sem verificação de colisão com o bbox do rótulo do puxador.
+* **Solução Proposta:** Calcular posições absolutas e desenhar pill background (retângulo branco) atrás do rótulo em `drawDoubleCentralHandles`.
 
 ---
 
