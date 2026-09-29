@@ -14,8 +14,8 @@
 
 | ID | Issue | Tarefa | Duração | Pré-requisito / Bloqueado por | Status |
 |---|:---:|---|:---:|---|:---:|
-| **US-13.1** | [#355](https://github.com/ADS-IFPB-SR/alumigest/issues/355) | [US-13.1](issues/US-13.1-scaffolding-e-infraestrutura-do-modulo-orders/issue.md) Scaffolding e Infraestrutura do Módulo de Pedidos (Migration Flyway V19, pacotes, enums, entidades JPA base e repositórios) | ~1h | *Nenhum* (Ponto de partida / Root) | 🔲 Aberta |
-| **US-13.2** | [#356](https://github.com/ADS-IFPB-SR/alumigest/issues/356) | [US-13.2](issues/US-13.2-conversao-de-orcamento-em-pedido-backend-core/issue.md) Conversão de Orçamento em Pedido de Venda no Backend Core (OrderCodeGenerator PED-YYYY-NNNN, OrderService atômico, DTOs, mappers, endpoint POST e testes unitários) | ~4h | Bloqueado por **#355** (US-13.1) | 🔲 Aberta |
+| **US-13.1** | [#355](https://github.com/ADS-IFPB-SR/alumigest/issues/355) | [US-13.1](issues/US-13.1-scaffolding-e-infraestrutura-do-modulo-orders/issue.md) Scaffolding e Infraestrutura do Módulo de Pedidos (Migration Flyway V19, pacotes, enums, entidades JPA base e repositórios) | ~1h | *Livre* (Ponto de partida / Root) | 🔲 Aberta |
+| **US-13.2** | [#356](https://github.com/ADS-IFPB-SR/alumigest/issues/356) | [US-13.2](issues/US-13.2-conversao-de-orcamento-em-pedido-backend-core/issue.md) Conversão de Orçamento em Pedido de Venda no Backend Core (OrderCodeGenerator PED-YYYY-NNNN, OrderService atômico, DTOs, mappers, endpoint POST e testes unitários) | ~4h | *Livre* (Pode iniciar em paralelo com US-13.1) | 🔲 Aberta |
 | **US-13.3** | [#357](https://github.com/ADS-IFPB-SR/alumigest/issues/357) | [US-13.3](issues/US-13.3-modal-aprovacao-e-conversao-frontend/issue.md) Modal de Aprovação e Ação de Conversão na Tela de Orçamento (Tipos TS, Schema Zod, orderApi, hook useConvertBudget, OrderApprovalModal e botão na BudgetDetailPage) | ~3h | Bloqueado por **#356** (US-13.2) | 🔲 Aberta |
 | **US-13.4** | [#358](https://github.com/ADS-IFPB-SR/alumigest/issues/358) | [US-13.4](issues/US-13.4-listagem-paginada-de-pedidos-fullstack/issue.md) Listagem Paginada de Pedidos de Venda com Filtros (Full-Stack: GET /api/orders paginado, OrderListPage, OrderStatusBadge, busca com debounce e filtros) | ~4h | Bloqueado por **#356** (US-13.2) | 🔲 Aberta |
 | **US-13.5** | [#359](https://github.com/ADS-IFPB-SR/alumigest/issues/359) | [US-13.5](issues/US-13.5-detalhamento-do-pedido-de-venda-fullstack/issue.md) Visualização Detalhada do Pedido de Venda (Full-Stack: GET /api/orders/{id}, OrderDetailPage com cards informativos, resumo financeiro e vínculo do orçamento) | ~3h | Bloqueado por **#356** (US-13.2) | 🔲 Aberta |
@@ -57,7 +57,9 @@
 
 ```mermaid
 graph TD
-    US131["#355: US-13.1 (Scaffolding / V19)"] --> US132["#356: US-13.2 (Conversão Core)"]
+    US131["#355: US-13.1 (Scaffolding / V19)"]
+    US132["#356: US-13.2 (Conversão Core & POST /orders)"]
+    
     US132 --> US133["#357: US-13.3 (Modal Aprovação UI)"]
     US132 --> US134["#358: US-13.4 (Listagem Pedidos)"]
     US132 --> US135["#359: US-13.5 (Detalhes do Pedido)"]
