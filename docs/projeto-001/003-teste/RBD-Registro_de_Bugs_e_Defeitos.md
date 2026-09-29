@@ -4,10 +4,10 @@
 |---|---|
 | **Projeto** | AlumiGest — Sistema de Gestão para Vidraçaria e Esquadrias |
 | **Documento** | Registro Unificado de Bugs, Defeitos e Hotfixes (RBD) |
-| **Versão** | 2.2.0 (Atualizado com Catálogo do BUG-023 - Issue #349 e Padronização em mm da Ficha Técnica) |
+| **Versão** | 2.3.0 (Atualizado com Catálogo do BUG-024 - Issue #348: Sincronização de Furação e Alerta NBR 10821 na Ficha Técnica) |
 | **Data de Atualização** | 29/09/2026 |
 | **Responsável QA** | Herbert Carvalho dos Santos / Equipe de Engenharia AlumiGest |
-| **Branch** | `fix/349-cotas-furacao-puxador-duplo` |
+| **Branch** | `fix/348-inconsistencia-furacao-ficha-tecnica` |
 | **Padrão de Template** | Baseado em [`.github/ISSUE_TEMPLATE/bug_report.md`](../../../.github/ISSUE_TEMPLATE/bug_report.md) |
 | **Auditoria Técnica** | Análise estática SonarQube, Pipeline CI/CD GitHub Actions e Histórico Git |
 
@@ -51,6 +51,7 @@ Seguindo a governança do **Plano de Gerência de Configuração (PGC)** e do **
 | **[BUG-021](#bug-021)** | Perda de Insumos da Ficha Técnica em Produtos Estáticos e Ocultação de Templates na Categoria Janela | Frontend / Catálogo & Orçamentos | 🔴 Alta | Sprint 03 | ✅ Resolvido | Issue #235 / Branch `fix/products-static-items-and-window-category` |
 | **[BUG-022](#bug-022)** | Itens do Orçamento Descartados na Criação via POST /api/budgets por Ausência de Campo no BudgetCreateRequest | Backend / Orçamentos | 🔴 Alta | Sprint 04 | ✅ Resolvido | Issue #300 / PR #293 |
 | **[BUG-023](#bug-023)** | Falta de Cotas Milimétricas Reais de Furação e Linha Divisória Cortando Texto do Puxador Duplo na Ficha Técnica | Backend / PDF | 🟡 Média | Sprint 05 | ✅ Resolvido | Issue #349 / Branch `fix/349-cotas-furacao-puxador-duplo` |
+| **[BUG-024](#bug-024)** | Inconsistência entre Texto de Furação e Desenho Técnico na Ficha Técnica (3 furos no texto vs 2 furos no desenho) | Backend / PDF | 🟡 Média | Sprint 05 | ✅ Resolvido | Issue #348 / Branch `fix/348-inconsistencia-furacao-ficha-tecnica` |
 
 ---
 
@@ -691,6 +692,45 @@ Na emissão da Ficha Técnica de Usinagem e Corte (Ficha de Oficina - US-11.2), 
 
 ---
 
+### BUG-024
+#### [BUG] [US-11.2] Inconsistência entre Texto de Furação e Desenho Técnico na Ficha Técnica (3 furos no texto vs 2 furos no desenho) (Issue #348)
+
+**Descrição do Problema:**
+Na emissão da Ficha Técnica de Oficina (Ficha de Usinagem e Corte - US-11.2), observou-se uma divergência direta e crítica para a produção fabril entre as informações textuais e gráficas de usinagem:
+1. No card de usinagem/furação, o texto descritivo afirmava fixamente: `"3 furos para dobradiças (10%, 50%, 90% da altura)."`, mesmo quando o item possuía apenas 2 dobradiças configuradas.
+2. No esquema gráfico adjacente, eram desenhados corretamente apenas 2 furos de dobradiça com suas respectivas cotas milimétricas.
+3. Essa discrepância entre o texto e o desenho causava dúvida operacional no chão de fábrica, com risco de furação indevida de perfis de alumínio.
+4. Adicionalmente, quando uma porta de giro com altura superior a 1800mm é configurada com menos de 3 dobradiças, a norma **ABNT NBR 10821** recomenda o uso de no mínimo 3 pontos de sustentação para mitigar empenamento e sobrecarga nas ferragens. O sistema não fornecia qualquer alerta normativo instrutivo ao operador.
+
+**Passos para Reproduzir:**
+1. Criar ou editar um orçamento adicionando uma porta de giro (ex: `SWING_DOOR_2F` com 2100mm de altura) configurada com 2 furos de dobradiça (`{"holeCount": 2, "divisionType": "EQUAL"}`).
+2. Gerar a Ficha Técnica de Oficina em PDF.
+3. Observar a seção de Usinagem e Furações do item:
+   - Texto descritivo exibe fixamente `"3 furos para dobradiças"`.
+   - Desenho técnico ao lado plota 2 furos de dobradiça cotados.
+
+**Comportamento Esperado:**
+- O texto do card descritivo e o desenho gráfico devem compartilhar estritamente a mesma fonte da verdade (`TechnicalMachiningContext`), reportando exatamente a quantidade configurada (ex: `"2 furos para dobradiças."`).
+- Suporte a múltiplos formatos e sinônimos no payload JSON de usinagem (`holeCount`, `holesCount`, `quantity`, `count`, `divisionType`, `drillingMode`).
+- Respeitar a escolha do usuário sem forçar furos adicionais no desenho nem no texto, mas caso seja uma porta de giro com altura > 1800mm e menos de 3 dobradiças, exibir uma linha em vermelho com aviso consultivo: `[!] NBR 10821: Recomendado mín. 3 dobradiças para altura > 1800mm`.
+
+**Contexto / Ambiente:**
+- **Módulo Afetado:** `BudgetPdfService.java`, `TechnicalMachiningResolver.java`, `TechnicalMachiningContext.java`.
+- **Severidade:** 🟡 Média / Funcional | **Sprint:** 05 | **Status:** ✅ Resolvido.
+- **Detecção / Correção:** Issue #348 / Branch `fix/348-inconsistencia-furacao-ficha-tecnica`.
+
+**Causa Raiz Técnica & Solução:**
+* **Causa Raiz:** O método `BudgetPdfService.gerarLinhasFuracao` continha strings hardcoded que assumiam invariavelmente 3 furos para dobradiças sem consultar o `TechnicalMachiningContext`. Além disso, o parser de furação no `TechnicalMachiningResolver` não tratava certas variações de chaves (`holesCount`, `divisionType`) que podiam ocorrer em orçamentos salvos.
+* **Solução:**
+  1. Adicionado suporte no `TechnicalMachiningResolver` para ler chaves flexíveis (`divisionType`, `drillingMode`, `holeCount`, `holesCount`, `quantity`, `count`, `holes`) e distâncias configuradas.
+  2. Implementados os métodos `isSwingDoor()` e `hasNbr10821Warning()` no `TechnicalMachiningContext` para identificar portas de giro com altura > 1800mm e furação < 3 dobradiças.
+  3. Atualizado o método `BudgetPdfService.criarCelulaDetalhamentoFuracao` para obter o `TechnicalMachiningContext` resolvido e passá-lo para `gerarLinhasFuracao`.
+  4. Método `gerarLinhasFuracao` atualizado para montar a descrição dinâmica baseada no número real de furos (`ctx.getPontoFuracaoList().size()`), adicionando a advertência da NBR 10821 em vermelho quando aplicável.
+  5. Atualizados testes unitários e de integração E2E com cobertura total (562 testes passando).
+  6. Gerada evidência visual em alta resolução em `docs/projeto-001/003-teste/sprint-05/evidencias/evidencia-fix-348-ficha-tecnica.png`.
+
+---
+
 ## 4. 📈 Análise Categórica e Lições Aprendidas de Qualidade
 
 ### 4.1 Distribuição dos Defeitos por Camada
@@ -698,7 +738,7 @@ Na emissão da Ficha Técnica de Usinagem e Corte (Ficha de Oficina - US-11.2), 
 ```mermaid
 pie title "Origem dos Defeitos Identificados"
     "Frontend & UI/UX" : 9
-    "Backend & Regras de Negócio" : 7
+    "Backend & Regras de Negócio" : 8
     "Pipeline CI/CD & SonarQube" : 3
     "Infraestrutura & Docker" : 2
     "Governança & Git Flow" : 1

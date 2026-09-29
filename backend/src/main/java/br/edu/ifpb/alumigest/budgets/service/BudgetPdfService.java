@@ -9,6 +9,8 @@ import br.edu.ifpb.alumigest.budgets.domain.BudgetStatus;
 import br.edu.ifpb.alumigest.budgets.service.pdf.BudgetPdfDrawingHelper;
 import br.edu.ifpb.alumigest.budgets.service.pdf.BudgetPdfPageEvent;
 import br.edu.ifpb.alumigest.budgets.service.pdf.TechnicalPdfPageEvent;
+import br.edu.ifpb.alumigest.budgets.service.pdf.technical.TechnicalMachiningContext;
+import br.edu.ifpb.alumigest.budgets.service.pdf.technical.TechnicalMachiningResolver;
 import br.edu.ifpb.alumigest.catalog.domain.HandleType;
 import br.edu.ifpb.alumigest.catalog.domain.MaterialCategoryType;
 import br.edu.ifpb.alumigest.clients.domain.Client;
@@ -1146,14 +1148,27 @@ public class BudgetPdfService {
         cell.setPadding(6f);
         cell.setVerticalAlignment(Element.ALIGN_TOP);
 
-        String tipoFuracao = extrairTipoFuracaoBadge(item.getTemplateType());
+        TechnicalMachiningContext ctx = TechnicalMachiningResolver.resolve(item);
+
+        String tipoFuracao = extrairTipoFuracaoBadge(item != null ? item.getTemplateType() : null);
         cell.addElement(criarBadgePdf("FURAÇÃO (" + tipoFuracao + ")", true));
 
-        List<String> linhasFuracao = gerarLinhasFuracao(item);
+        List<String> linhasFuracao = gerarLinhasFuracao(item, ctx, tipoFuracao);
         for (String linha : linhasFuracao) {
             Paragraph p = new Paragraph("• " + linha, FONTE_TECNICA_TEXTO_SEC);
             p.setLeading(9f);
             cell.addElement(p);
+        }
+
+        if (ctx.hasNbr10821Warning()) {
+            Font fontAlerta = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 7.5f, COR_TECNICA_DANGER);
+            Paragraph pAviso = new Paragraph(
+                    "[!] NBR 10821: Recomendado mín. 3 dobradiças para altura > 1800mm",
+                    fontAlerta
+            );
+            pAviso.setLeading(8.5f);
+            pAviso.setSpacingBefore(3f);
+            cell.addElement(pAviso);
         }
 
         Paragraph pEspaco = new Paragraph(" ", FontFactory.getFont(FontFactory.HELVETICA, 3));
@@ -1336,11 +1351,71 @@ public class BudgetPdfService {
     }
 
     private List<String> gerarLinhasFuracao(BudgetItem item) {
-        List<String> linhas = extrairLinhasFuracaoJson(item.getDrillingConfig());
-        if (linhas.isEmpty()) {
-            linhas.addAll(obterLinhasFuracaoFallback(item.getTemplateType()));
+        TechnicalMachiningContext ctx = TechnicalMachiningResolver.resolve(item);
+        String tipoFuracao = extrairTipoFuracaoBadge(item != null ? item.getTemplateType() : null);
+        return gerarLinhasFuracao(item, ctx, tipoFuracao);
+    }
+
+    private List<String> gerarLinhasFuracao(
+            BudgetItem item, TechnicalMachiningContext ctx, String tipoFuracao
+    ) {
+        List<String> linhas = new ArrayList<>();
+        String raw = item != null ? item.getDrillingConfig() : null;
+        if (raw != null && ("NONE".equalsIgnoreCase(raw.trim()) || "{}".equals(raw.trim()))) {
+            linhas.add("Sem furação prevista.");
+            return linhas;
         }
+
+        if (ctx != null && ctx.hasDrilling()) {
+            int count = ctx.drillingHoles().size();
+            String acessorio = mapearAcessorioFuracao(tipoFuracao, count);
+            linhas.add(count + " " + acessorio + ".");
+
+            boolean isCustom = raw != null && (raw.contains("CUSTOM") || raw.contains("customPositionsMm"));
+            if (isCustom) {
+                linhas.add("Distâncias personalizadas conforme cotas.");
+            } else {
+                linhas.add("Distância dividida por igual.");
+            }
+
+            if (raw != null && !raw.isBlank()) {
+                try {
+                    JsonNode node = objectMapper.readTree(raw.trim());
+                    if (node.has(KEY_DETAILS) && !node.get(KEY_DETAILS).isNull()) {
+                        linhas.add(traduzirDetalhesFuracao(node.get(KEY_DETAILS).asText()));
+                    }
+                    if (node.has(KEY_POSITION) && !node.get(KEY_POSITION).isNull()) {
+                        String pos = traduzirPosicaoTexto(node.get(KEY_POSITION).asText());
+                        if (pos != null) {
+                            linhas.add("Posição: " + pos);
+                        }
+                    }
+                } catch (Exception ignored) {
+                    // Ignora erro de JSON adicional pois a geometria principal foi resolvida
+                }
+            }
+            return linhas;
+        }
+
+        linhas.addAll(obterLinhasFuracaoFallback(item != null ? item.getTemplateType() : null));
         return linhas;
+    }
+
+    private String mapearAcessorioFuracao(String tipoFuracao, int count) {
+        String t = tipoFuracao != null ? tipoFuracao.toUpperCase(Locale.ROOT) : "";
+        if (t.contains("DOBRADIÇA")) {
+            return count == 1 ? "furo para dobradiça" : "furos para dobradiças";
+        }
+        if (t.contains("ROLDANA")) {
+            return count == 1 ? "roldana por folha" : "roldanas por folha";
+        }
+        if (t.contains("PISTÃO")) {
+            return count == 1 ? "furo para fixação/pistão" : "furos para fixação/pistão";
+        }
+        if (t.contains("FIXAÇÃO")) {
+            return count == 1 ? "furo para fixação caixa" : "furos para fixação caixa";
+        }
+        return count == 1 ? "furo previsto" : "furos previstos";
     }
 
     private List<String> extrairLinhasFuracaoJson(String raw) {
@@ -1357,8 +1432,22 @@ public class BudgetPdfService {
             if (node.has(KEY_DETAILS) && !node.get(KEY_DETAILS).isNull()) {
                 linhas.add(traduzirDetalhesFuracao(node.get(KEY_DETAILS).asText()));
             }
-            if (node.has(KEY_HOLES_COUNT) && !node.get(KEY_HOLES_COUNT).isNull()) {
-                linhas.add(node.get(KEY_HOLES_COUNT).asInt() + " furos previstos.");
+            JsonNode countNode = node.get(KEY_HOLES_COUNT);
+            if (countNode == null) {
+                countNode = node.get("holeCount");
+            }
+            if (countNode == null) {
+                countNode = node.get("quantity");
+            }
+            if (countNode == null) {
+                countNode = node.get("count");
+            }
+            if (countNode == null) {
+                countNode = node.get("holes");
+            }
+            if (countNode != null && !countNode.isNull()) {
+                int count = countNode.asInt();
+                linhas.add(count + (count == 1 ? " furo previsto." : " furos previstos."));
             }
             if (node.has(KEY_POSITION) && !node.get(KEY_POSITION).isNull()) {
                 String pos = traduzirPosicaoTexto(node.get(KEY_POSITION).asText());

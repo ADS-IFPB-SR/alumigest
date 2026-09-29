@@ -1312,6 +1312,28 @@ class BudgetPdfServiceTest {
                         .contains("9 PEÇAS"); // 2+3+4 = 9
             }
         }
+
+        @Test
+        @DisplayName("US-11.2 / Issue #348: Deve renderizar 2 furos no texto e alerta NBR 10821 para porta de giro com holeCount: 2")
+        void deveRenderizarFichaTecnicaComConsistenciaDeFuracaoEAlertaNbr10821() throws IOException {
+            Budget budget = criarBudgetPadrao(true);
+            BudgetItem item = budget.getItems().get(0);
+            item.setTemplateType("SWING_DOOR_2F");
+            item.setHeightMm(new BigDecimal("2100"));
+            item.setWidthMm(new BigDecimal("1600"));
+            item.setDrillingConfig("{\"holeCount\": 2, \"divisionType\": \"EQUAL\"}");
+
+            byte[] pdfBytes = budgetPdfService.gerarPdfTecnico(budget);
+
+            try (PdfReader reader = new PdfReader(pdfBytes)) {
+                String texto = extrairStreamsDeTexto(reader);
+
+                assertThat(texto).contains("2 furos para dobradiças.");
+                assertThat(texto).doesNotContain("3 furos para dobradiças.");
+                assertThat(texto).contains("NBR 10821: Recomendado");
+                assertThat(texto).contains("dobradiças para altura > 1800mm");
+            }
+        }
     }
 
     // =========================================================================
