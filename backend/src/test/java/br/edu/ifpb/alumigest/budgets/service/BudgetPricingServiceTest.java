@@ -69,7 +69,7 @@ class BudgetPricingServiceTest {
     }
 
     @Test
-    @DisplayName("Deve somar corretamente múltiplos materiais e mão de obra (Sem Desconto)")
+    @DisplayName("[Particionamento de Equivalência] Deve calcular materiais no item e consolidar mão de obra no budgetSubtotal sem desconto")
     void calculatePricing_Success_WithoutDiscount() {
         // Arrange
         when(materialRepository.findById(material1.getId())).thenReturn(Optional.of(material1));
@@ -81,8 +81,10 @@ class BudgetPricingServiceTest {
         // Assert
         // Material 1: 2 * 50 = 100
         // Material 2: 4 * 10.50 = 42
-        // Labor Cost: 150
-        // Total esperado: 292.00
+        // Subtotal estrito do item (apenas materiais): 142.00
+        // Labor Cost: 150.00
+        // Subtotal bruto do orçamento: 142 + 150 = 292.00
+        assertEquals(new BigDecimal("142.00"), item.getSubtotal());
         assertEquals(new BigDecimal("292.00"), budget.getSubtotal());
         assertEquals(new BigDecimal("0.00"), budget.getDiscountValue());
         assertEquals(new BigDecimal("292.00"), budget.getTotal());
@@ -93,7 +95,7 @@ class BudgetPricingServiceTest {
     }
 
     @Test
-    @DisplayName("Deve calcular exato desconto de 15% aplicando arredondamento HALF_UP")
+    @DisplayName("[Análise de Valor Limite] Deve calcular exato desconto de 15% aplicando arredondamento HALF_UP")
     void calculatePricing_Success_With15PercentDiscount() {
         // Arrange
         when(materialRepository.findById(material1.getId())).thenReturn(Optional.of(material1));
@@ -105,16 +107,88 @@ class BudgetPricingServiceTest {
         budgetPricingService.calculatePricing(budget);
 
         // Assert
-        // Subtotal = 292.00
+        // Item Subtotal (materiais): 142.00
+        // Subtotal Geral = 292.00
         // Desconto = 292 * 0.15 = 43.80
         // Total = 292 - 43.80 = 248.20
+        assertEquals(new BigDecimal("142.00"), item.getSubtotal());
         assertEquals(new BigDecimal("292.00"), budget.getSubtotal());
         assertEquals(new BigDecimal("43.80"), budget.getDiscountValue());
         assertEquals(new BigDecimal("248.20"), budget.getTotal());
     }
 
     @Test
-    @DisplayName("Deve lançar IllegalArgumentException se o desconto for maior que 100%")
+    @DisplayName("[Regressão Bug #333] Deve isolar mão de obra do subtotal do item e calcular totais corretamente (Cenário Issue #333)")
+    void calculatePricing_ShouldNotEmbedLaborCostInItemSubtotal_Issue333Scenario() {
+        // Arrange - Cenário fiel da issue #333:
+        // Item: R$ 4.840,18 em materiais
+        // Mão de Obra: R$ 2.000,00
+        // Desconto: 11%
+        // Esperado: item.subtotal = 4.840,18, budget.subtotal = 6.840,18, desconto = 752,42, total = 6.087,76
+        Budget customBudget = new Budget();
+        BudgetItem customItem = new BudgetItem();
+        customItem.setLaborCost(new BigDecimal("2000.00"));
+        customItem.setQuantity(1);
+
+        Material mat = new Material();
+        mat.setId(UUID.randomUUID());
+        mat.setSalePrice(new BigDecimal("4840.18"));
+
+        BudgetItemOption opt = new BudgetItemOption();
+        opt.setMaterial(mat);
+        opt.setQuantity(new BigDecimal("1.00"));
+        customItem.addOption(opt);
+        customBudget.addItem(customItem);
+        customBudget.setDiscountPercent(new BigDecimal("11.00"));
+
+        when(materialRepository.findById(mat.getId())).thenReturn(Optional.of(mat));
+
+        // Act
+        budgetPricingService.calculatePricing(customBudget);
+
+        // Assert
+        assertEquals(new BigDecimal("4840.18"), customItem.getSubtotal(),
+                "O subtotal do item deve conter estritamente os materiais sem embutir mão de obra");
+        assertEquals(new BigDecimal("6840.18"), customBudget.getSubtotal(),
+                "O subtotal do orçamento deve consolidar materiais + mão de obra");
+        assertEquals(new BigDecimal("752.42"), customBudget.getDiscountValue(),
+                "O desconto de 11% deve incidir sobre R$ 6.840,18 resultando em R$ 752,42");
+        assertEquals(new BigDecimal("6087.76"), customBudget.getTotal(),
+                "O total final líquido deve ser exatamente R$ 6.087,76");
+    }
+
+    @Test
+    @DisplayName("[Particionamento de Equivalência] Deve multiplicar materiais pela quantidade de esquadrias sem multiplicar mão de obra unitária fixa")
+    void calculatePricing_ShouldMultiplyMaterialsByItemQuantity() {
+        // Arrange: 2 esquadrias com materiais = 100.00 cada (total materiais = 200.00) e MO fixa = 50.00
+        Budget multiQtyBudget = new Budget();
+        BudgetItem multiItem = new BudgetItem();
+        multiItem.setQuantity(2);
+        multiItem.setLaborCost(new BigDecimal("50.00"));
+
+        Material mat = new Material();
+        mat.setId(UUID.randomUUID());
+        mat.setSalePrice(new BigDecimal("100.00"));
+
+        BudgetItemOption opt = new BudgetItemOption();
+        opt.setMaterial(mat);
+        opt.setQuantity(new BigDecimal("1.00"));
+        multiItem.addOption(opt);
+        multiQtyBudget.addItem(multiItem);
+
+        when(materialRepository.findById(mat.getId())).thenReturn(Optional.of(mat));
+
+        // Act
+        budgetPricingService.calculatePricing(multiQtyBudget);
+
+        // Assert
+        assertEquals(new BigDecimal("200.00"), multiItem.getSubtotal());
+        assertEquals(new BigDecimal("250.00"), multiQtyBudget.getSubtotal());
+        assertEquals(new BigDecimal("250.00"), multiQtyBudget.getTotal());
+    }
+
+    @Test
+    @DisplayName("[Análise de Valor Limite] Deve lançar IllegalArgumentException se o desconto for maior que 100%")
     void calculatePricing_ThrowsException_WhenDiscountExceeds100() {
         // Arrange
         when(materialRepository.findById(material1.getId())).thenReturn(Optional.of(material1));
@@ -131,7 +205,7 @@ class BudgetPricingServiceTest {
     }
 
     @Test
-    @DisplayName("Deve lançar ResourceNotFoundException se o material não for encontrado no repositório")
+    @DisplayName("[Tratamento de Exceção] Deve lançar ResourceNotFoundException se o material não for encontrado no repositório")
     void calculatePricing_ThrowsException_WhenMaterialNotFound() {
         // Arrange
         when(materialRepository.findById(material1.getId())).thenReturn(Optional.empty()); // Banco de dados não achou

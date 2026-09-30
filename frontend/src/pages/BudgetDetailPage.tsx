@@ -97,8 +97,12 @@ export function BudgetDetailPage() {
   const freightCost = budget.freightCost ?? 0;
   const installationCost = budget.installationCost ?? 0;
   
+  const itemsSubtotal = (budget.items ?? []).reduce((sum, item) => {
+    return sum + (item.subtotal ?? 0);
+  }, 0);
+
   const totalLaborCost = (budget.items ?? []).reduce((sum, item) => {
-    return sum + ((item.laborCost ?? 0) * (item.quantity ?? 1));
+    return sum + (item.laborCost ?? 0);
   }, 0);
 
   const total = budget.total ?? 0;
@@ -374,6 +378,7 @@ export function BudgetDetailPage() {
                 {/* ── CARD DE FECHAMENTO FINANCEIRO ISOLADO ────────────────── */}
                 <div className="break-inside-avoid">
                   <BudgetFinancialSummaryCard
+                    itemsSubtotal={itemsSubtotal}
                     subtotal={subtotal}
                     totalLaborCost={totalLaborCost}
                     freightCost={freightCost}

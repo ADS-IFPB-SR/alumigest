@@ -50,12 +50,12 @@ public class BudgetPricingService {
             int itemQty = (item.getQuantity() != null && item.getQuantity() > 0) ? item.getQuantity() : 1;
             BigDecimal itemSubtotal = itemMaterialsSubtotal.multiply(BigDecimal.valueOf(itemQty));
 
-            // A mão de obra (laborCost) já vem preenchida do frontend (graças a nossa correção no DTO)
-            BigDecimal itemLaborCost = item.getLaborCost() != null ? item.getLaborCost() : BigDecimal.ZERO;
-            itemSubtotal = itemSubtotal.add(itemLaborCost);
-
+            // Define o subtotal estrito dos materiais da esquadria (sem embutir mão de obra)
             item.setSubtotal(itemSubtotal);
-            budgetSubtotal = budgetSubtotal.add(itemSubtotal);
+
+            // A mão de obra é consolidada no subtotal bruto do orçamento
+            BigDecimal itemLaborCost = item.getLaborCost() != null ? item.getLaborCost() : BigDecimal.ZERO;
+            budgetSubtotal = budgetSubtotal.add(itemSubtotal).add(itemLaborCost);
         }
 
         budget.setSubtotal(budgetSubtotal);
