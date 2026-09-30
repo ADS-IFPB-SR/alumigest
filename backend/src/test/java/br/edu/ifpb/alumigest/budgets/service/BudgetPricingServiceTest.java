@@ -143,4 +143,66 @@ class BudgetPricingServiceTest {
 
         assertTrue(exception.getMessage().contains("Material não encontrado"));
     }
+
+    @Test
+    @DisplayName("[Partição de Equivalência] Deve precificar esquadria sem ferragem (#335)")
+    void calculatePricing_Success_WithoutHardware() {
+        Budget b = new Budget();
+        BudgetItem esquadria = new BudgetItem();
+        esquadria.setLaborCost(new BigDecimal("200.00"));
+
+        // Apenas Vidro (material1) e Perfil (material2), sem nenhuma opção de ferragem
+        BudgetItemOption vidro = new BudgetItemOption();
+        vidro.setMaterial(material1);
+        vidro.setQuantity(new BigDecimal("3.00")); // 3 * 50 = 150
+
+        BudgetItemOption perfil = new BudgetItemOption();
+        perfil.setMaterial(material2);
+        perfil.setQuantity(new BigDecimal("5.00")); // 5 * 10.50 = 52.50
+
+        esquadria.addOption(vidro);
+        esquadria.addOption(perfil);
+        b.addItem(esquadria);
+
+        when(materialRepository.findById(material1.getId())).thenReturn(Optional.of(material1));
+        when(materialRepository.findById(material2.getId())).thenReturn(Optional.of(material2));
+
+        budgetPricingService.calculatePricing(b);
+
+        assertEquals(new BigDecimal("402.50"), esquadria.getSubtotal());
+        assertEquals(new BigDecimal("402.50"), b.getSubtotal());
+        assertEquals(new BigDecimal("402.50"), b.getTotal());
+    }
+
+    @Test
+    @DisplayName("[Análise de Valor Limite] Deve aceitar ferragem com quantidade zero (#335)")
+    void calculatePricing_Success_WithZeroQuantityHardware() {
+        Budget b = new Budget();
+        BudgetItem esquadria = new BudgetItem();
+        esquadria.setLaborCost(new BigDecimal("100.00"));
+
+        // Vidro com valor normal
+        BudgetItemOption vidro = new BudgetItemOption();
+        vidro.setMaterial(material1);
+        vidro.setQuantity(new BigDecimal("2.00")); // 2 * 50 = 100
+
+        // Ferragem com quantidade zero
+        BudgetItemOption ferragemZero = new BudgetItemOption();
+        ferragemZero.setMaterial(material2);
+        ferragemZero.setQuantity(BigDecimal.ZERO); // 0 * 10.50 = 0
+
+        esquadria.addOption(vidro);
+        esquadria.addOption(ferragemZero);
+        b.addItem(esquadria);
+
+        when(materialRepository.findById(material1.getId())).thenReturn(Optional.of(material1));
+        when(materialRepository.findById(material2.getId())).thenReturn(Optional.of(material2));
+
+        budgetPricingService.calculatePricing(b);
+
+        assertEquals(new BigDecimal("0.00"), ferragemZero.getTotalPrice());
+        assertEquals(new BigDecimal("200.00"), esquadria.getSubtotal());
+        assertEquals(new BigDecimal("200.00"), b.getSubtotal());
+        assertEquals(new BigDecimal("200.00"), b.getTotal());
+    }
 }
