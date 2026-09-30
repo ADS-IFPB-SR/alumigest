@@ -171,11 +171,11 @@ describe('BudgetDetailPage - Testes Unitários', () => {
     // Abre o dropdown
     fireEvent.click(whatsAppButton);
 
-    const sendTextOption = screen.getByRole('button', { name: /enviar resumo de texto/i });
+    const sendTextOption = screen.getByRole('button', { name: /personalizar resumo/i });
     expect(sendTextOption).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /enviar pdf comercial/i })).toBeInTheDocument();
 
-    // Clica em "Enviar Resumo de Texto"
+    // Clica em "Personalizar Resumo"
     fireEvent.click(sendTextOption);
 
     // Modal deve estar aberto com o título característico
