@@ -59,6 +59,7 @@ Seguindo a governança do **Plano de Gerência de Configuração (PGC)** e do **
 | **[BUG-029](#bug-029)** | Cálculo Incorreto de Dias de Validade no Rodapé do PDF com Sobrescrita Indevida para 15 Dias | Backend / PDF | 🟡 Média | Sprint 05 | 🟡 Em Aberto | Issue #374 / US-10 |
 | **[BUG-030](#bug-030)** | Razão Social da Empresa Hardcodada no Resumo para WhatsApp Ignorando `CompanyProperties` | Backend / WhatsApp | 🟢 Baixa | Sprint 05 | 🟡 Em Aberto | Issue #375 / US-10 |
 | **[BUG-031](#bug-031)** | Resposta de Erro Empacotada como Blob sem Tratamento de Mensagem no Download de PDF Comercial | Frontend / API | 🟡 Média | Sprint 05 | 🟡 Em Aberto | Issue #376 / US-10 |
+| **[BUG-032](#bug-032)** | Duplicação de Mão de Obra e Inconsistência nos Totais do Orçamento | Backend & Frontend / Orçamentos | 🔴 Alta | Sprint 05 | ✅ Resolvido | Issue #333 / Branch `fix/333-duplicacao-mao-de-obra-totais-orcamento` |
 
 ---
 
@@ -1021,6 +1022,38 @@ Ao interceptar erros em requisições de download com `responseType: 'blob'`, o 
     toast.error(errorJson.message || 'Erro ao gerar o PDF Comercial.');
   }
   ```
+
+---
+
+### BUG-032
+#### [BUG] Duplicação de Mão de Obra e Inconsistência nos Totais do Orçamento
+
+**Descrição do Problema:**
+O cálculo de precificação do orçamento embutia indevidamente o valor da mão de obra (`laborCost`) diretamente no `subtotal` individual de cada item (`BudgetItem`). Isso causava inconsistência visual na tela de detalhes (exibindo a esquadria com a mão de obra embutida e somando visualmente uma segunda vez na linha de Mão de Obra) e duplicação matemática na tela de edição do orçamento (ao recarregar o item e salvar, a mão de obra era reaplicada, inflando o total).
+
+**Passos para Reproduzir:**
+1. Criar um orçamento com 1 item (materiais de R$ 4.840,18), Mão de Obra de R$ 2.000,00 e Desconto de 11%.
+2. Acessar a tela de detalhes do orçamento: o item exibia R$ 6.840,18 e a linha de mão de obra exibia + R$ 2.000,00 (soma visual daria R$ 8.087,76 contra o total correto de R$ 6.087,76).
+3. Acessar a tela de edição e salvar sem alterar nada: o total final inflava para R$ 7.867,76 devido à duplicação da mão de obra.
+
+**Comportamento Esperado:**
+- `BudgetItem.subtotal` deve conter estritamente o valor dos materiais (insumos × quantidade de esquadrias).
+- `Budget.subtotal` consolida o Subtotal Bruto (materiais + mão de obra), sobre o qual o desconto comercial é aplicado.
+- No frontend, os cards de fechamento financeiro exibem discriminadamente "Esquadrias / Materiais", "Mão de Obra" e "Subtotal Bruto", garantindo que a soma visual bata exatamente com o total líquido.
+- Ao salvar na edição, os totais permanecem idênticos.
+
+**Contexto / Ambiente:**
+- **Módulo Afetado:** Backend (`BudgetPricingService.java`) e Frontend (`BudgetFinancialSummaryCard.tsx`, `BudgetDetailPage.tsx`, `calculations.ts`, `BudgetProposalItemCard.tsx`).
+- **Severidade:** 🔴 Alta (P2) | **Sprint:** 05 | **Status:** ✅ Resolvido.
+- **Detecção / Origem:** Issue #333 / Alinhamento de homologação da US-09.
+
+**Causa Raiz Técnica & Solução Adotada:**
+* **Causa Raiz:** Em `BudgetPricingService.java`, a instrução `itemSubtotal = itemSubtotal.add(itemLaborCost)` somava a mão de obra antes de chamar `item.setSubtotal(itemSubtotal)`. Além disso, componentes de UI no frontend não exibiam a linha isolada de insumos vs mão de obra.
+* **Solução Adotada:**
+  1. No backend (`BudgetPricingService.java`), removeu-se a soma de `itemLaborCost` do `item.setSubtotal(itemSubtotal)`, mantendo a mão de obra consolidada apenas em `budgetSubtotal = budgetSubtotal.add(itemSubtotal).add(itemLaborCost)`.
+  2. Ajustou-se `BudgetControllerIntegrationTest` e adicionou-se teste unitário com reprodução fiel do cenário da Issue #333 em `BudgetPricingServiceTest.java`.
+  3. No frontend, atualizou-se `calcItemSubtotal` em `calculations.ts` e alinhou-se `BudgetFinancialSummaryCard.tsx` com `BudgetFinancialSummary.tsx`, discriminando materiais, mão de obra e subtotal bruto.
+  4. Adicionou-se teste de regressão ponta a ponta no Vitest (`BudgetDetailPage.test.tsx`).
 
 ---
 
