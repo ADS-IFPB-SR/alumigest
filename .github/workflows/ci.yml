@@ -202,6 +202,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Trigger Coolify Deployment
+        continue-on-error: true
         run: |
           echo "Disparando deploy automatico da branch develop no Coolify..."
           RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}" -X POST \
@@ -217,7 +218,10 @@ jobs:
           if [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 300 ]; then
             echo "Deploy disparado com sucesso no Coolify (HTTP $HTTP_STATUS)!"
           else
+            echo "::warning title=Falha no Deploy Coolify::Erro ao disparar deploy no Coolify (HTTP $HTTP_STATUS): $HTTP_BODY. Verifique se o COOLIFY_TOKEN possui a permissão 'deploy'."
             echo "Erro ao disparar deploy no Coolify (HTTP $HTTP_STATUS)!"
             exit 1
           fi
+
+
 
