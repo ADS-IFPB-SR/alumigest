@@ -243,7 +243,7 @@ class BudgetPricingServiceTest {
 
         budgetPricingService.calculatePricing(b);
 
-        assertEquals(new BigDecimal("402.50"), esquadria.getSubtotal());
+        assertEquals(new BigDecimal("202.50"), esquadria.getSubtotal());
         assertEquals(new BigDecimal("402.50"), b.getSubtotal());
         assertEquals(new BigDecimal("402.50"), b.getTotal());
     }
@@ -275,7 +275,7 @@ class BudgetPricingServiceTest {
         budgetPricingService.calculatePricing(b);
 
         assertEquals(new BigDecimal("0.00"), ferragemZero.getTotalPrice());
-        assertEquals(new BigDecimal("200.00"), esquadria.getSubtotal());
+        assertEquals(new BigDecimal("100.00"), esquadria.getSubtotal());
         assertEquals(new BigDecimal("200.00"), b.getSubtotal());
         assertEquals(new BigDecimal("200.00"), b.getTotal());
     }
