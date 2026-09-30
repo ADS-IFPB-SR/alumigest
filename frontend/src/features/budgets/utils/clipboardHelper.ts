@@ -14,11 +14,7 @@ export async function copyToClipboard(text: string): Promise<boolean> {
   if (!text) return false;
 
   // 1. Tenta a API moderna em Secure Context (HTTPS / localhost)
-  if (
-    typeof navigator !== 'undefined' &&
-    navigator.clipboard &&
-    typeof navigator.clipboard.writeText === 'function'
-  ) {
+  if (typeof navigator !== 'undefined' && navigator?.clipboard?.writeText) {
     try {
       await navigator.clipboard.writeText(text);
       return true;
@@ -54,14 +50,12 @@ export async function copyToClipboard(text: string): Promise<boolean> {
       textArea.select();
       textArea.setSelectionRange(0, text.length);
 
-      const successful = typeof document.execCommand === 'function' && document.execCommand('copy');
+      const successful = typeof document.execCommand === 'function' && document.execCommand('copy'); // NOSONAR typescript:S1874
       return Boolean(successful);
     } catch {
       return false;
     } finally {
-      if (textArea && textArea.parentNode) {
-        textArea.parentNode.removeChild(textArea);
-      }
+      textArea?.remove();
     }
   }
 
