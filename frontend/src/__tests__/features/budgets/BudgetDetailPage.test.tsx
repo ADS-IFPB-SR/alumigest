@@ -255,4 +255,67 @@ describe('BudgetDetailPage - Testes Unitários', () => {
     const btnViaTecnica = screen.getByTitle('Emitir Via Técnica (Oficina)');
     expect(btnViaTecnica).toBeInTheDocument();
   });
+
+  it('[Regressão Bug #333] deve exibir os totais financeiros e subtotal de itens de forma consistente sem duplicar mão de obra', () => {
+    // Cenário fiel da Issue #333:
+    // Item: R$ 4.840,18 em materiais
+    // Mão de Obra: R$ 2.000,00
+    // Subtotal Bruto: R$ 6.840,18
+    // Desconto 11%: R$ 752,42
+    // Total Líquido a Pagar: R$ 6.087,76
+    const issue333Budget = {
+      id: 'b-333',
+      code: 'ORC-2026-333',
+      status: 'PENDING',
+      createdAt: '2026-09-26T10:00:00Z',
+      validUntil: '2026-10-26',
+      subtotal: 6840.18,
+      discountPercent: 11,
+      discountValue: 752.42,
+      freightCost: 0,
+      installationCost: 0,
+      total: 6087.76,
+      customer: {
+        id: 'c1',
+        name: 'Cliente Bug 333',
+      },
+      items: [
+        {
+          id: 'i-333',
+          productId: 'p-333',
+          productName: 'Janela 4 Folhas Suprema',
+          templateType: 'SLIDING_DOOR_2F',
+          width: 2000,
+          height: 1200,
+          quantity: 1,
+          laborCost: 2000,
+          subtotal: 4840.18,
+          options: [],
+        },
+      ],
+    };
+
+    vi.spyOn(budgetsHooks, 'useBudget').mockReturnValue({
+      data: issue333Budget,
+      isLoading: false,
+      isError: false,
+    } as any);
+
+    renderWithRouter('b-333');
+
+    // 1. O item individual na lista deve exibir seu subtotal estrito de materiais
+    expect(screen.getAllByText(/Janela 4 Folhas Suprema/i).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText(/4\.840,18/).length).toBeGreaterThanOrEqual(1);
+
+    // 2. A tag de mão de obra do item deve exibir R$ 2.000,00
+    expect(screen.getByText(/MO:\s*R\$\s*2\.000,00/i)).toBeInTheDocument();
+
+    // 3. O fechamento financeiro deve exibir separadamente Materiais, Mão de Obra e Subtotal Bruto
+    expect(screen.getByText(/Esquadrias \/ Materiais:/i)).toBeInTheDocument();
+    expect(screen.getByText(/Mão de Obra:/i)).toBeInTheDocument();
+    expect(screen.getByText(/Subtotal Bruto:/i)).toBeInTheDocument();
+
+    // 4. O total líquido final exibido deve ser exatamente R$ 6.087,76
+    expect(screen.getByText(/6\.087,76/)).toBeInTheDocument();
+  });
 });
