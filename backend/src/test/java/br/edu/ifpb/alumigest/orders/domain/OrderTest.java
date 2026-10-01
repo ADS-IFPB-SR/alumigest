@@ -1,5 +1,6 @@
 package br.edu.ifpb.alumigest.orders.domain;
 
+import br.edu.ifpb.alumigest.common.exception.BusinessException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -134,7 +135,7 @@ class OrderTest {
                 .build();
 
         assertThatThrownBy(() -> order.cancelar("Perfis já foram cortados na fábrica"))
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("Não é possível cancelar um pedido no status IN_PRODUCTION");
     }
 
@@ -146,7 +147,7 @@ class OrderTest {
                 .build();
 
         assertThatThrownBy(() -> order.cancelar("Tentativa de cancelamento de pedido já entregue"))
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("Não é possível cancelar um pedido no status COMPLETED");
     }
 
@@ -170,7 +171,7 @@ class OrderTest {
                 .build();
 
         assertThatThrownBy(order::iniciarProducao)
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("Apenas pedidos aguardando produção podem entrar em produção.");
     }
 

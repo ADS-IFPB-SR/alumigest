@@ -1,6 +1,7 @@
 package br.edu.ifpb.alumigest.orders.domain;
 
 import br.edu.ifpb.alumigest.clients.domain.Client;
+import br.edu.ifpb.alumigest.common.exception.BusinessException;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -180,7 +181,7 @@ public class Order {
      */
     public void cancelar(String justificativa) {
         if (!this.status.canCancel()) {
-            throw new IllegalStateException("Não é possível cancelar um pedido no status " + this.status);
+            throw new BusinessException("Não é possível cancelar um pedido no status " + this.status);
         }
         if (justificativa == null || justificativa.trim().length() < 10) {
             throw new IllegalArgumentException("A justificativa de cancelamento deve ter pelo menos 10 caracteres.");
@@ -194,7 +195,7 @@ public class Order {
      */
     public void iniciarProducao() {
         if (this.status != OrderStatus.WAITING_PRODUCTION) {
-            throw new IllegalStateException("Apenas pedidos aguardando produção podem entrar em produção.");
+            throw new BusinessException("Apenas pedidos aguardando produção podem entrar em produção.");
         }
         this.status = OrderStatus.IN_PRODUCTION;
     }
@@ -206,7 +207,7 @@ public class Order {
      */
     public void concluir(LocalDate dataConclusao) {
         if (this.status != OrderStatus.IN_PRODUCTION) {
-            throw new IllegalStateException("Apenas pedidos em produção podem ser concluídos.");
+            throw new BusinessException("Apenas pedidos em produção podem ser concluídos.");
         }
         this.status = OrderStatus.COMPLETED;
         this.dataConclusao = dataConclusao != null ? dataConclusao : LocalDate.now(ZoneOffset.UTC);

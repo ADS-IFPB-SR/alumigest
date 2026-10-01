@@ -63,9 +63,9 @@ export interface OrderItem {
   ferragens?: string | null;
   valorUnitario: number;
   valorTotal: number;
-  templateConfig?: Record<string, unknown> | null;
-  handleConfig?: Record<string, unknown> | null;
-  drillingConfig?: Record<string, unknown> | null;
+  templateConfig?: Record<string, unknown> | string | null;
+  handleConfig?: Record<string, unknown> | string | null;
+  drillingConfig?: Record<string, unknown> | string | null;
   ordem: number;
   options?: OrderItemOption[];
 }
