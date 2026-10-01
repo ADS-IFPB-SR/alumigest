@@ -127,7 +127,7 @@ class OrderServiceImplTest {
         assertThat(result).isNotNull();
         assertThat(result.codigo()).isEqualTo("PED-2026-0001");
         assertThat(result.orcamentoId()).isEqualTo(budgetId);
-        assertThat(result.status()).isEqualTo(OrderStatus.AGUARDANDO_PRODUCAO);
+        assertThat(result.status()).isEqualTo(OrderStatus.WAITING_PRODUCTION);
 
         verify(orderRepository).save(any(Order.class));
         verify(orderCodeGenerator).generateNextCode();
@@ -349,7 +349,7 @@ class OrderServiceImplTest {
         given(orderMapper.toResponse(order)).willReturn(expectedResponse);
 
         // Act
-        OrderResponse result = orderService.findById(orderId);
+        OrderResponse result = orderService.findDetailedById(orderId);
 
         // Assert
         assertThat(result).isNotNull();
@@ -365,7 +365,7 @@ class OrderServiceImplTest {
         given(orderRepository.findByIdWithDetails(unknownId)).willReturn(Optional.empty());
 
         // Act & Assert
-        assertThatThrownBy(() -> orderService.findById(unknownId))
+        assertThatThrownBy(() -> orderService.findDetailedById(unknownId))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
@@ -409,7 +409,7 @@ class OrderServiceImplTest {
                 .orcamentoId(budgetId)
                 .clienteNome("Empresa XPTO Ltda")
                 .canalAprovacao(ApprovalChannel.WHATSAPP)
-                .status(OrderStatus.AGUARDANDO_PRODUCAO)
+                .status(OrderStatus.WAITING_PRODUCTION)
                 .dataPrevisaoEntrega(request.dataPrevisaoEntrega())
                 .valorBruto(budget.getSubtotal())
                 .valorDesconto(budget.getDiscountValue())
@@ -421,7 +421,7 @@ class OrderServiceImplTest {
         return new OrderResponse(
                 orderId, "PED-2026-0001", budgetId, null,
                 "Empresa XPTO Ltda", null, null,
-                OrderStatus.AGUARDANDO_PRODUCAO, "Aguardando Produção",
+                OrderStatus.WAITING_PRODUCTION, "Aguardando Produção",
                 ApprovalChannel.WHATSAPP, "WhatsApp",
                 LocalDate.now(ZoneOffset.UTC), request.dataPrevisaoEntrega(), null,
                 budget.getSubtotal(), budget.getDiscountValue(), BigDecimal.ZERO, BigDecimal.ZERO,

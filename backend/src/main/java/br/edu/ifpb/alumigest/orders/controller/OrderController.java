@@ -5,6 +5,8 @@ import br.edu.ifpb.alumigest.orders.dto.OrderResponse;
 import br.edu.ifpb.alumigest.orders.service.OrderService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -21,13 +23,12 @@ import java.net.URI;
 import java.util.UUID;
 
 /**
- * Controlador REST para o módulo de Pedidos de Venda.
- * Expõe os endpoints de conversão de orçamento e consulta de pedidos (SRP).
+ * Controller REST para consulta e ciclo de vida de Pedidos de Venda.
  * Depende da abstração {@link OrderService}, nunca da implementação concreta (DIP).
  */
 @RestController
-@RequestMapping({"/api/v1/orders", "/api/orders"})
-@Tag(name = "Pedidos de Venda", description = "Endpoints para gerenciamento de Pedidos de Venda")
+@RequestMapping("/api/v1/orders")
+@Tag(name = "Pedidos de Venda", description = "Endpoints para consulta e ciclo de vida de pedidos de venda")
 public class OrderController {
 
     private final OrderService orderService;
@@ -42,7 +43,7 @@ public class OrderController {
     }
 
     /**
-     * Converte um orçamento em pedido de venda.
+     * Converte um orçamento elegível em pedido de venda.
      *
      * <p>Regras de negócio aplicadas no service:
      * <ul>
@@ -63,13 +64,18 @@ public class OrderController {
                     + " promovendo o status para APPROVED, gerando código sequencial PED-YYYY-NNNN"
                     + " e snapshot imutável dos itens (lock de preços)."
     )
-    @ApiResponse(responseCode = "201", description = "Pedido de venda criado com sucesso")
+    @ApiResponse(
+            responseCode = "201",
+            description = "Pedido de venda criado com sucesso",
+            content = @Content(schema = @Schema(implementation = OrderResponse.class))
+    )
     @ApiResponse(responseCode = "400", description = "Dados de entrada inválidos")
     @ApiResponse(responseCode = "404", description = "Orçamento não encontrado")
     @ApiResponse(responseCode = "409", description = "Já existe pedido para este orçamento")
     @ApiResponse(responseCode = "422", description = "Orçamento em status inválido (CANCELLED ou REJECTED) ou sem itens")
     public ResponseEntity<OrderResponse> convertBudgetToOrder(
-            @Parameter(description = "ID do orçamento aprovado") @PathVariable UUID budgetId,
+            @Parameter(description = "Identificador único (UUID) do orçamento", required = true)
+            @PathVariable UUID budgetId,
             @RequestBody @Valid OrderConvertRequest request) {
 
         OrderResponse response = orderService.convertBudgetToOrder(budgetId, request);
@@ -81,23 +87,28 @@ public class OrderController {
     }
 
     /**
-     * Busca o pedido de venda pelo seu ID.
+     * Recupera os detalhes completos do pedido de venda pelo seu ID.
      *
-     * @param id ID do pedido
-     * @return 200 OK com o DTO detalhado do pedido
+     * @param id Identificador único (UUID) do pedido
+     * @return 200 OK com o DTO detalhado do pedido e seus itens congelados
      */
     @GetMapping("/{id}")
     @Operation(
-            summary = "Buscar pedido de venda por ID",
-            description = "Retorna os detalhes completos do pedido de venda, incluindo itens e resumo financeiro."
+            summary = "Obter detalhes do pedido de venda",
+            description = "Recupera os detalhes completos do pedido pelo ID com lock imutável de itens e status fabril."
     )
-    @ApiResponse(responseCode = "200", description = "Pedido encontrado")
+    @ApiResponse(
+            responseCode = "200",
+            description = "Pedido recuperado com sucesso",
+            content = @Content(schema = @Schema(implementation = OrderResponse.class))
+    )
     @ApiResponse(responseCode = "400", description = "ID inválido")
     @ApiResponse(responseCode = "404", description = "Pedido não encontrado")
     public ResponseEntity<OrderResponse> findById(
-            @Parameter(description = "ID do pedido de venda") @PathVariable UUID id) {
+            @Parameter(description = "Identificador único (UUID) do pedido", required = true)
+            @PathVariable UUID id) {
 
-        OrderResponse response = orderService.findById(id);
+        OrderResponse response = orderService.findDetailedById(id);
         return ResponseEntity.ok(response);
     }
 }

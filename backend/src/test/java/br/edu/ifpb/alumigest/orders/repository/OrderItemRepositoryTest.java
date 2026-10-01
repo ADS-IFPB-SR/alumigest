@@ -43,7 +43,7 @@ class OrderItemRepositoryTest {
                 .orcamentoId(UUID.randomUUID())
                 .clienteNome("Cliente Teste")
                 .canalAprovacao(ApprovalChannel.WHATSAPP)
-                .status(OrderStatus.AGUARDANDO_PRODUCAO)
+                .status(OrderStatus.WAITING_PRODUCTION)
                 .dataAprovacao(LocalDate.now(ZoneOffset.UTC))
                 .dataPrevisaoEntrega(LocalDate.now(ZoneOffset.UTC).plusDays(15))
                 .valorBruto(new BigDecimal("1000.00"))

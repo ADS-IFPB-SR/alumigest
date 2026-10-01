@@ -44,10 +44,10 @@ public class OrderServiceImpl implements OrderService {
     /**
      * Injeção de dependência via construtor (DIP / testabilidade).
      *
-     * @param orderRepository   repositório de pedidos
-     * @param budgetRepository  repositório de orçamentos
+     * @param orderRepository    repositório de pedidos
+     * @param budgetRepository   repositório de orçamentos
      * @param orderCodeGenerator gerador de código sequencial
-     * @param orderMapper       mapper MapStruct
+     * @param orderMapper        mapper MapStruct
      */
     public OrderServiceImpl(
             OrderRepository orderRepository,
@@ -120,7 +120,7 @@ public class OrderServiceImpl implements OrderService {
      */
     @Override
     @Transactional(readOnly = true)
-    public OrderResponse findById(UUID id) {
+    public OrderResponse findDetailedById(UUID id) {
         Order order = orderRepository.findByIdWithDetails(id)
                 .orElseThrow(() -> new ResourceNotFoundException(RESOURCE_PEDIDO, id.toString()));
         return orderMapper.toResponse(order);
@@ -271,7 +271,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     /**
-     * Retorna o nome do cliente a partir do orçamento, priorizando o campo snapshot.
+     * Retorna o nome do cliente a partir do orçamento.
      *
      * @param budget orçamento de origem
      * @return nome do cliente ou valor padrão se não disponível

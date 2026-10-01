@@ -20,12 +20,12 @@ public interface OrderMapper {
   @Mapping(target = "clienteId", source = "cliente.id")
   @Mapping(
       target = "statusDescricao",
-      expression = "java(order.getStatus() != null ? order.getStatus().getDescricao() : null)"
+      expression = "java(order.getStatus() != null ? order.getStatus().getDescription() : null)"
   )
   @Mapping(
       target = "canalAprovacaoDescricao",
       expression = "java(order.getCanalAprovacao() != null"
-          + " ? order.getCanalAprovacao().getDescricao() : null)"
+          + " ? order.getCanalAprovacao().getDescription() : null)"
   )
   @Mapping(target = "items", source = "items")
   OrderResponse toResponse(Order order);
@@ -41,12 +41,12 @@ public interface OrderMapper {
 
   @Mapping(
       target = "statusDescricao",
-      expression = "java(order.getStatus() != null ? order.getStatus().getDescricao() : null)"
+      expression = "java(order.getStatus() != null ? order.getStatus().getDescription() : null)"
   )
   @Mapping(
       target = "canalAprovacaoDescricao",
       expression = "java(order.getCanalAprovacao() != null"
-          + " ? order.getCanalAprovacao().getDescricao() : null)"
+          + " ? order.getCanalAprovacao().getDescription() : null)"
   )
   @Mapping(
       target = "quantidadeItens",
