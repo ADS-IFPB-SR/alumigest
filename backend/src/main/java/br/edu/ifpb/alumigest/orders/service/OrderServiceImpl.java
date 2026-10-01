@@ -275,7 +275,7 @@ public class OrderServiceImpl implements OrderService {
         if (c.getState() != null) {
             sb.append("/").append(c.getState());
         }
-        return sb.length() > 0 ? sb.toString() : null;
+        return !sb.isEmpty() ? sb.toString() : null;
     }
 
     /**
