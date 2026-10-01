@@ -1,6 +1,7 @@
 package br.edu.ifpb.alumigest.orders.domain;
 
 import br.edu.ifpb.alumigest.clients.domain.Client;
+import br.edu.ifpb.alumigest.common.exception.BusinessException;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -58,7 +59,7 @@ public class Order {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 25)
-    private OrderStatus status = OrderStatus.AGUARDANDO_PRODUCAO;
+    private OrderStatus status = OrderStatus.WAITING_PRODUCTION;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "canal_aprovacao", nullable = false, length = 20)
@@ -123,7 +124,7 @@ public class Order {
         this.clienteNome = builder.clienteNome;
         this.clienteTelefone = builder.clienteTelefone;
         this.clienteEndereco = builder.clienteEndereco;
-        this.status = builder.status != null ? builder.status : OrderStatus.AGUARDANDO_PRODUCAO;
+        this.status = builder.status != null ? builder.status : OrderStatus.WAITING_PRODUCTION;
         this.canalAprovacao = builder.canalAprovacao;
         this.dataAprovacao = builder.dataAprovacao != null
                 ? builder.dataAprovacao : LocalDate.now(ZoneOffset.UTC);
@@ -156,7 +157,7 @@ public class Order {
             this.dataPrevisaoEntrega = this.dataAprovacao.plusDays(15);
         }
         if (this.status == null) {
-            this.status = OrderStatus.AGUARDANDO_PRODUCAO;
+            this.status = OrderStatus.WAITING_PRODUCTION;
         }
         if (this.ativo == null) {
             this.ativo = true;
@@ -174,29 +175,29 @@ public class Order {
 
     /**
      * Cancela o pedido de venda com justificativa obrigatória.
-     * Somente permitido nos status CRIADO e AGUARDANDO_PRODUCAO.
+     * Somente permitido nos status CREATED e WAITING_PRODUCTION.
      *
      * @param justificativa texto explicando o cancelamento (mínimo 10 caracteres)
      */
     public void cancelar(String justificativa) {
-        if (!this.status.podeCancelar()) {
-            throw new IllegalStateException("Não é possível cancelar um pedido no status " + this.status);
+        if (!this.status.canCancel()) {
+            throw new BusinessException("Não é possível cancelar um pedido no status " + this.status);
         }
         if (justificativa == null || justificativa.trim().length() < 10) {
             throw new IllegalArgumentException("A justificativa de cancelamento deve ter pelo menos 10 caracteres.");
         }
-        this.status = OrderStatus.CANCELADO;
+        this.status = OrderStatus.CANCELLED;
         this.justificativaCancelamento = justificativa.trim();
     }
 
     /**
-     * Transita o pedido para o status de fabricação (EM_PRODUCAO).
+     * Transita o pedido para o status de fabricação (IN_PRODUCTION).
      */
     public void iniciarProducao() {
-        if (this.status != OrderStatus.AGUARDANDO_PRODUCAO) {
-            throw new IllegalStateException("Apenas pedidos aguardando produção podem entrar em produção.");
+        if (this.status != OrderStatus.WAITING_PRODUCTION) {
+            throw new BusinessException("Apenas pedidos aguardando produção podem entrar em produção.");
         }
-        this.status = OrderStatus.EM_PRODUCAO;
+        this.status = OrderStatus.IN_PRODUCTION;
     }
 
     /**
@@ -205,10 +206,10 @@ public class Order {
      * @param dataConclusao data de entrega ou conclusão dos serviços
      */
     public void concluir(LocalDate dataConclusao) {
-        if (this.status != OrderStatus.EM_PRODUCAO) {
-            throw new IllegalStateException("Apenas pedidos em produção podem ser concluídos.");
+        if (this.status != OrderStatus.IN_PRODUCTION) {
+            throw new BusinessException("Apenas pedidos em produção podem ser concluídos.");
         }
-        this.status = OrderStatus.CONCLUIDO;
+        this.status = OrderStatus.COMPLETED;
         this.dataConclusao = dataConclusao != null ? dataConclusao : LocalDate.now(ZoneOffset.UTC);
     }
 
@@ -404,7 +405,7 @@ public class Order {
         private String clienteNome;
         private String clienteTelefone;
         private String clienteEndereco;
-        private OrderStatus status = OrderStatus.AGUARDANDO_PRODUCAO;
+        private OrderStatus status = OrderStatus.WAITING_PRODUCTION;
         private ApprovalChannel canalAprovacao;
         private LocalDate dataAprovacao = LocalDate.now(ZoneOffset.UTC);
         private LocalDate dataPrevisaoEntrega;

@@ -14,7 +14,7 @@ CREATE TABLE tb_orders (
     cliente_nome VARCHAR(200) NOT NULL,
     cliente_telefone VARCHAR(20),
     cliente_endereco TEXT,
-    status VARCHAR(25) NOT NULL DEFAULT 'AGUARDANDO_PRODUCAO',
+    status VARCHAR(25) NOT NULL DEFAULT 'WAITING_PRODUCTION',
     canal_aprovacao VARCHAR(20) NOT NULL,
     data_aprovacao DATE NOT NULL DEFAULT CURRENT_DATE,
     data_previsao_entrega DATE NOT NULL,
