@@ -28,7 +28,7 @@ class OrderTest {
         order.onCreate();
 
         assertThat(order.getAtivo()).isTrue();
-        assertThat(order.getStatus()).isEqualTo(OrderStatus.AGUARDANDO_PRODUCAO);
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.WAITING_PRODUCTION);
         assertThat(order.getDataAprovacao()).isEqualTo(LocalDate.now(ZoneOffset.UTC));
         assertThat(order.getDataPrevisaoEntrega())
                 .isEqualTo(LocalDate.now(ZoneOffset.UTC).plusDays(15));
@@ -76,7 +76,7 @@ class OrderTest {
     @DisplayName("[Análise de Valor Limite] Deve rejeitar cancelamento quando justificativa tiver 9 caracteres (fronteira inferior inválida)")
     void shouldRejectCancellationWhenJustificationHasNineCharacters() {
         Order order = Order.builder()
-                .status(OrderStatus.AGUARDANDO_PRODUCAO)
+                .status(OrderStatus.WAITING_PRODUCTION)
                 .build();
 
         // 9 caracteres: "123456789"
@@ -89,13 +89,13 @@ class OrderTest {
     @DisplayName("[Análise de Valor Limite] Deve aceitar cancelamento quando justificativa tiver exatamente 10 caracteres (fronteira inferior válida)")
     void shouldAcceptCancellationWhenJustificationHasTenCharacters() {
         Order order = Order.builder()
-                .status(OrderStatus.AGUARDANDO_PRODUCAO)
+                .status(OrderStatus.WAITING_PRODUCTION)
                 .build();
 
         // 10 caracteres exatos: "1234567890"
         order.cancelar("1234567890");
 
-        assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELADO);
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELLED);
         assertThat(order.getJustificativaCancelamento()).isEqualTo("1234567890");
     }
 
@@ -103,7 +103,7 @@ class OrderTest {
     @DisplayName("[Partição de Equivalência] Deve rejeitar cancelamento com justificativa nula ou em branco")
     void shouldRejectCancellationWhenJustificationIsNullOrBlank() {
         Order order = Order.builder()
-                .status(OrderStatus.CRIADO)
+                .status(OrderStatus.CREATED)
                 .build();
 
         assertThatThrownBy(() -> order.cancelar(null))
@@ -114,59 +114,59 @@ class OrderTest {
     }
 
     @Test
-    @DisplayName("[Transição de Estados] Deve permitir cancelamento a partir do estado CRIADO")
+    @DisplayName("[Transição de Estados] Deve permitir cancelamento a partir do estado CREATED")
     void shouldAllowCancellationFromCriadoStatus() {
         Order order = Order.builder()
-                .status(OrderStatus.CRIADO)
+                .status(OrderStatus.CREATED)
                 .build();
 
         order.cancelar("Cliente desistiu da compra antes da produção");
 
-        assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELADO);
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELLED);
         assertThat(order.getJustificativaCancelamento()).isEqualTo("Cliente desistiu da compra antes da produção");
     }
 
     @Test
-    @DisplayName("[Transição de Estados] Deve rejeitar cancelamento quando o pedido já estiver em EM_PRODUCAO")
+    @DisplayName("[Transição de Estados] Deve rejeitar cancelamento quando o pedido já estiver em IN_PRODUCTION")
     void shouldRejectCancellationWhenInProduction() {
         Order order = Order.builder()
-                .status(OrderStatus.EM_PRODUCAO)
+                .status(OrderStatus.IN_PRODUCTION)
                 .build();
 
         assertThatThrownBy(() -> order.cancelar("Perfis já foram cortados na fábrica"))
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("Não é possível cancelar um pedido no status EM_PRODUCAO");
+                .hasMessageContaining("Não é possível cancelar um pedido no status IN_PRODUCTION");
     }
 
     @Test
-    @DisplayName("[Transição de Estados] Deve rejeitar cancelamento quando o pedido já estiver em CONCLUIDO")
+    @DisplayName("[Transição de Estados] Deve rejeitar cancelamento quando o pedido já estiver em COMPLETED")
     void shouldRejectCancellationWhenCompleted() {
         Order order = Order.builder()
-                .status(OrderStatus.CONCLUIDO)
+                .status(OrderStatus.COMPLETED)
                 .build();
 
         assertThatThrownBy(() -> order.cancelar("Tentativa de cancelamento de pedido já entregue"))
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("Não é possível cancelar um pedido no status CONCLUIDO");
+                .hasMessageContaining("Não é possível cancelar um pedido no status COMPLETED");
     }
 
     @Test
-    @DisplayName("[Transição de Estados] Deve transitar para EM_PRODUCAO com sucesso quando status atual for AGUARDANDO_PRODUCAO")
+    @DisplayName("[Transição de Estados] Deve transitar para IN_PRODUCTION com sucesso quando status atual for WAITING_PRODUCTION")
     void shouldTransitionToEmProducao() {
         Order order = Order.builder()
-                .status(OrderStatus.AGUARDANDO_PRODUCAO)
+                .status(OrderStatus.WAITING_PRODUCTION)
                 .build();
 
         order.iniciarProducao();
 
-        assertThat(order.getStatus()).isEqualTo(OrderStatus.EM_PRODUCAO);
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.IN_PRODUCTION);
     }
 
     @Test
-    @DisplayName("[Transição de Estados] Deve rejeitar transição para EM_PRODUCAO quando não estiver AGUARDANDO_PRODUCAO")
+    @DisplayName("[Transição de Estados] Deve rejeitar transição para IN_PRODUCTION quando não estiver WAITING_PRODUCTION")
     void shouldRejectTransitionToEmProducaoFromInvalidState() {
         Order order = Order.builder()
-                .status(OrderStatus.CONCLUIDO)
+                .status(OrderStatus.COMPLETED)
                 .build();
 
         assertThatThrownBy(order::iniciarProducao)
@@ -175,16 +175,16 @@ class OrderTest {
     }
 
     @Test
-    @DisplayName("[Transição de Estados] Deve concluir pedido com sucesso a partir de EM_PRODUCAO")
+    @DisplayName("[Transição de Estados] Deve concluir pedido com sucesso a partir de IN_PRODUCTION")
     void shouldConcludeOrderFromEmProducao() {
         Order order = Order.builder()
-                .status(OrderStatus.EM_PRODUCAO)
+                .status(OrderStatus.IN_PRODUCTION)
                 .build();
 
         LocalDate dataEntrega = LocalDate.of(2026, 10, 10);
         order.concluir(dataEntrega);
 
-        assertThat(order.getStatus()).isEqualTo(OrderStatus.CONCLUIDO);
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.COMPLETED);
         assertThat(order.getDataConclusao()).isEqualTo(dataEntrega);
     }
 
