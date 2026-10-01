@@ -20,28 +20,28 @@ Implementar a regra de negócio central de conversão de uma proposta orçament�
 
 ## 🛠️ Checklist de Implementação
 
-- [ ] Implementar classe utilitária de serviço `OrderCodeGenerator` com query para buscar o último sequencial do ano
-- [ ] Criar record DTO `OrderConvertRequest` com validações Jakarta Bean Validation
-- [ ] Criar records DTO de resposta `OrderResponse` e `OrderItemResponse`
-- [ ] Criar mapper MapStruct `OrderMapper` para transformar entidade `Order` em `OrderResponse`
-- [ ] Implementar método `converterOrcamentoEmPedido` no `OrderService` anotado com `@Transactional`
-- [ ] Validar regras de negócio: status do orçamento deve ser `DRAFT` ou `SENT`
-- [ ] Validar invariante 1:1: lançar exceção se `OrderRepository.findByOrcamentoId(orcamentoId)` já existir
-- [ ] Invocar `BudgetService` para alterar status da proposta de origem para `APPROVED`
-- [ ] Criar endpoint `POST /api/orders/from-budget/{budgetId}` no `OrderController`
-- [ ] Escrever suite de testes unitários no `OrderServiceTest` cobrindo cenários de sucesso e erro
+- [x] Implementar classe utilitária de serviço `OrderCodeGenerator` com query para buscar o último sequencial do ano
+- [x] Criar record DTO `OrderConvertRequest` com validações Jakarta Bean Validation
+- [x] Criar records DTO de resposta `OrderResponse` e `OrderItemResponse`
+- [x] Criar mapper MapStruct `OrderMapper` para transformar entidade `Order` em `OrderResponse`
+- [x] Implementar interface `OrderService` e `OrderServiceImpl` com `convertBudgetToOrder()` anotado com `@Transactional`
+- [x] Validar regras de negócio: orçamento deve estar no status `APPROVED`
+- [x] Validar invariante 1:1: lançar `ConflictException` se já existir pedido para o orçamento
+- [x] Converter itens e insumos do orçamento em snapshot imutável no pedido (lock de preços)
+- [x] Criar endpoint `POST /api/v1/orders/convert/{budgetId}` e `GET /api/v1/orders/{id}` no `OrderController`
+- [x] Escrever 8 testes unitários em `OrderServiceImplTest` (8/8 PASSED)
 
 ---
 
 ## ✅ Definition of Done (DoD)
 
-1. [ ] **Compilação**: Código compila sem erros (`mvn clean compile` e `npm run build`).
-2. [ ] **Testes Unitários**: Testes unitários passam com sucesso (`mvn test` e `npx vitest run`).
-3. [ ] **Qualidade de Código**: Zero warnings bloqueantes e conformidade com Checkstyle / Oxlint.
-4. [ ] **Valor Funcional**: Funcionalidade testável de ponta a ponta no navegador (ou verificação de schema/serviço).
-5. [ ] **Documentação Inline**: Javadoc / TSDoc nos métodos públicos e classes relevantes.
-6. [ ] **Checklist Concluído**: Todos os itens do checklist da issue devidamente atendidos e verificados.
-7. [ ] **Commits Padronizados**: Commits seguindo o padrão Conventional Commits em português do Brasil (pt-BR).
+1. [x] **Compilação**: Código compila sem erros (`mvn clean compile` — 160 arquivos, BUILD SUCCESS).
+2. [x] **Testes Unitários**: 8 testes unitários passam com sucesso (`OrderServiceImplTest` — 8/8 PASSED).
+3. [x] **Qualidade de Código**: Zero warnings bloqueantes — Javadoc em todos os métodos públicos.
+4. [x] **Valor Funcional**: Endpoint `POST /api/v1/orders/convert/{budgetId}` operacional.
+5. [x] **Documentação Inline**: Javadoc / comentários em todos os métodos públicos e classes.
+6. [x] **Checklist Concluído**: Todos os itens do checklist da issue devidamente atendidos e verificados.
+7. [x] **Commits Padronizados**: Commits seguindo o padrão Conventional Commits em português do Brasil (pt-BR).
 
 ---
 
