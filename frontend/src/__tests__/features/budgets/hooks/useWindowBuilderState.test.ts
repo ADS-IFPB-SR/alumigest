@@ -35,13 +35,23 @@ const mockProductsData = {
 }
 
 const emptyData = { content: [] }
+const mockHardwaresData = {
+  content: [
+    {
+      id: 'hw-1',
+      name: 'Puxador Tubular Inox 40cm',
+      salePrice: 120,
+      unitMeasure: 'un',
+    },
+  ],
+}
 
 // Mock dos hooks de catálogo com retornos estáveis
 vi.mock('../../../../features/catalog/hooks/useCatalog', () => ({
   useProducts: () => ({ data: mockProductsData, isLoading: false }),
   useGlasses: () => ({ data: emptyData, isLoading: false }),
   useProfiles: () => ({ data: emptyData, isLoading: false }),
-  useHardwares: () => ({ data: emptyData, isLoading: false }),
+  useHardwares: () => ({ data: mockHardwaresData, isLoading: false }),
   useFilms: () => ({ data: emptyData, isLoading: false }),
 }))
 
@@ -166,5 +176,93 @@ describe('useWindowBuilderState (Hook do Studio CAD)', () => {
     })
 
     expect(result.current.currentStep).toBe(1)
+  })
+
+  it('[Transição de Estados] deve transitar puxador para NONE quando a ferragem for removida (#335)', () => {
+    const { result } = renderHook(() =>
+      useWindowBuilderState({
+        isOpen: true,
+        onAddItem,
+        onClose,
+      })
+    )
+
+    // O template inicial prod-1 possui HARDWARE nos categoryRequirements
+    const hardwareSel = result.current.state.materialSelections.find(
+      (s) => s.categoryType === 'HARDWARE'
+    )
+    expect(hardwareSel).toBeDefined()
+    expect(hardwareSel?.isOptional).toBe(true)
+
+    // Ao remover o insumo de ferragem via handleRemoveMaterial
+    act(() => {
+      result.current.handleRemoveMaterial(hardwareSel!.requirementId)
+    })
+
+    // A ferragem deve ter sido eliminada de materialSelections
+    expect(
+      result.current.state.materialSelections.find((s) => s.categoryType === 'HARDWARE')
+    ).toBeUndefined()
+
+    // O puxador deve transitar automaticamente para 'NONE'
+    expect(result.current.state.handleConfig.handleType).toBe('NONE')
+  })
+
+  it('[Transição de Estados] deve adicionar ferragem à lista ao selecionar puxador que a exige após ter sido removida (#335)', () => {
+    const { result } = renderHook(() =>
+      useWindowBuilderState({
+        isOpen: true,
+        onAddItem,
+        onClose,
+      })
+    )
+
+    const hardwareSel = result.current.state.materialSelections.find(
+      (s) => s.categoryType === 'HARDWARE'
+    )
+    if (hardwareSel) {
+      act(() => {
+        result.current.handleRemoveMaterial(hardwareSel.requirementId)
+      })
+    }
+
+    expect(result.current.state.handleConfig.handleType).toBe('NONE')
+
+    // Usuário no Step 3 decide escolher puxador Tubular
+    act(() => {
+      result.current.handleHandleTypeChange('BAR_TUBULAR')
+    })
+
+    expect(result.current.state.handleConfig.handleType).toBe('BAR_TUBULAR')
+    const addedHw = result.current.state.materialSelections.find(
+      (s) => s.categoryType === 'HARDWARE'
+    )
+    expect(addedHw).toBeDefined()
+    expect(addedHw?.materialId).toBe('hw-1')
+  })
+
+  it('[Análise de Valor Limite] deve permitir quantidade 0 de ferragem com flexibilidade (#335)', () => {
+    const { result } = renderHook(() =>
+      useWindowBuilderState({
+        isOpen: true,
+        onAddItem,
+        onClose,
+      })
+    )
+
+    const hardwareSel = result.current.state.materialSelections.find(
+      (s) => s.categoryType === 'HARDWARE'
+    )
+    expect(hardwareSel).toBeDefined()
+
+    act(() => {
+      result.current.handleMaterialQtyChange(hardwareSel!.requirementId, '0')
+    })
+
+    const updatedHw = result.current.state.materialSelections.find(
+      (s) => s.requirementId === hardwareSel!.requirementId
+    )
+    expect(updatedHw?.quantity).toBe(0)
+    expect(updatedHw?.totalPrice).toBe(0)
   })
 })

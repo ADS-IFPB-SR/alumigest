@@ -144,6 +144,7 @@ export const Step2Materials: React.FC<Step2MaterialsProps> = ({
               const familyVariants = currentCatalogItem?.familyCode
                 ? categoryItems.filter((item) => item.familyCode === currentCatalogItem.familyCode)
                 : [];
+              const isRemovable = sel.isOptional || categoryType === 'HARDWARE' || categoryType === 'FILM';
 
               return (
                 <div
@@ -158,7 +159,9 @@ export const Step2Materials: React.FC<Step2MaterialsProps> = ({
                     <div className="flex items-center gap-xs min-w-0">
                       <span className="material-symbols-outlined text-[18px] text-primary">{iconName}</span>
                       <span className="text-sm font-label font-semibold text-on-surface truncate">
-                        {sel.label}{' '}{sel.isOptional && <span className="text-on-surface-variant font-normal text-xs">(Opcional)</span>}
+                        {sel.label}{' '}{isRemovable && (
+                          <span className="text-on-surface-variant font-normal text-xs">(Opcional)</span>
+                        )}
                       </span>
                       {currentCatalogItem?.familyCode && (
                         <span className="text-[10px] uppercase font-data-mono px-1.5 py-0.5 rounded bg-surface border border-outline-variant text-secondary font-medium tracking-wide">
@@ -170,12 +173,12 @@ export const Step2Materials: React.FC<Step2MaterialsProps> = ({
                       <span className="font-data-mono font-bold text-primary text-sm sm:text-base">
                         {formatMaterialDisplayPrice(categoryPrice, sel.materialId, sel.unitPrice, unitMeasure)}
                       </span>
-                      {sel.isOptional && (
+                      {isRemovable && (
                         <button
                           type="button"
                           onClick={() => onRemoveMaterial(reqId)}
                           className="p-1 text-on-surface-variant hover:text-error hover:bg-error/10 rounded transition-colors cursor-pointer"
-                          title="Remover este insumo adicional"
+                          title={`Remover ${sel.label}`}
                           aria-label={`Remover ${sel.label}`}
                         >
                           <span className="material-symbols-outlined text-[18px]">close</span>

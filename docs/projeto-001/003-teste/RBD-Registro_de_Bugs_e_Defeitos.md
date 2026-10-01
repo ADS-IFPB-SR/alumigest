@@ -60,6 +60,7 @@ Seguindo a governança do **Plano de Gerência de Configuração (PGC)** e do **
 | **[BUG-030](#bug-030)** | Razão Social da Empresa Hardcodada no Resumo para WhatsApp Ignorando `CompanyProperties` | Backend / WhatsApp | 🟢 Baixa | Sprint 05 | 🟡 Em Aberto | Issue #375 / US-10 |
 | **[BUG-031](#bug-031)** | Resposta de Erro Empacotada como Blob sem Tratamento de Mensagem no Download de PDF Comercial | Frontend / API | 🟡 Média | Sprint 05 | 🟡 Em Aberto | Issue #376 / US-10 |
 | **[BUG-032](#bug-032)** | Duplicação de Mão de Obra e Inconsistência nos Totais do Orçamento | Backend & Frontend / Orçamentos | 🔴 Alta | Sprint 05 | ✅ Resolvido | Issue #333 / Branch `fix/333-duplicacao-mao-de-obra-totais-orcamento` |
+| **[BUG-033](#bug-033)** | Impossibilidade de Criar Esquadria sem Ferragem / Acessório no Construtor de Orçamentos | Frontend / Orçamentos | 🟡 Média | Sprint 05 | ✅ Resolvido | Issue #335 / Branch `fix/335-esquadria-sem-ferragem` |
 
 ---
 
@@ -1054,6 +1055,41 @@ O cálculo de precificação do orçamento embutia indevidamente o valor da mão
   2. Ajustou-se `BudgetControllerIntegrationTest` e adicionou-se teste unitário com reprodução fiel do cenário da Issue #333 em `BudgetPricingServiceTest.java`.
   3. No frontend, atualizou-se `calcItemSubtotal` em `calculations.ts` e alinhou-se `BudgetFinancialSummaryCard.tsx` com `BudgetFinancialSummary.tsx`, discriminando materiais, mão de obra e subtotal bruto.
   4. Adicionou-se teste de regressão ponta a ponta no Vitest (`BudgetDetailPage.test.tsx`).
+
+---
+
+### BUG-033
+#### [BUG] Impossibilidade de Criar Esquadria sem Ferragem / Acessório no Construtor de Orçamentos
+
+**Descrição do Problema:**
+No Studio CAD / Construtor de Esquadrias (`WindowBuilderModal`), todas as seleções de insumos originadas de `categoryRequirements` dos produtos (incluindo `HARDWARE`) eram configuradas com `isOptional: false`. Isso impedia a remoção da ferragem (botão `X` de exclusão oculto) e bloqueava a navegação caso o usuário não selecionasse um material de ferragem. O orçamentista era obrigado a contornar o problema digitando quantidade 0 na ferragem para conseguir salvar a esquadria sem acessórios.
+
+**Passos para Reproduzir:**
+1. Acessar a tela de criar um novo orçamento ou edição de proposta.
+2. Clicar em "Adicionar Esquadria", selecionando um modelo de esquadria do catálogo (ex: Porta de Correr 2 Folhas).
+3. No Passo 2 (Composição de Insumos), tentar avançar ou criar a esquadria sem selecionar ou incluir ferragens/acessórios.
+4. Notar que o card de ferragem não exibia o botão `X` de remoção e a validação do wizard bloqueava o avanço.
+
+**Comportamento Esperado:**
+O usuário deve poder excluir a ferragem livremente pelo botão `X` no Passo 2. Ao remover a ferragem, o tipo de puxador no Passo 3 deve transitar automaticamente para "Sem Puxador" (`NONE`) e a esquadria deve poder ser concluída e salva sem nenhum insumo de ferragem, com valores de materiais e totais coerentes.
+
+**Contexto / Ambiente:**
+- **Navegador / Sistema:** Frontend SPA React / TypeScript / Vite / TailWindCSS.
+- **Módulo Afetado:** Construtor de Esquadrias (`Step2Materials.tsx`, `useMaterialSync.ts`, `useWindowBuilderState.ts`).
+- **Severidade:** 🟡 Média (P3) | **Sprint:** 05 | **Status:** ✅ Resolvido.
+- **Detecção / Origem:** Issue #335 / Branch `fix/335-esquadria-sem-ferragem`.
+
+**Causa Raiz Técnica & Solução:**
+* **Causa Raiz:** Flag `isOptional: false` atribuída indistintamente a todos os requisitos de insumo gerados por `useMaterialSync.ts` e `useWindowBuilderState.ts`, associada à regra no `Step2Materials.tsx` que só exibia o botão `X` se `sel.isOptional === true`.
+* **Solução:**
+  1. Habilitado o botão de remoção `X` para `HARDWARE` e `FILM` no `Step2Materials.tsx` (`sel.isOptional || categoryType === 'HARDWARE' || categoryType === 'FILM'`).
+  2. Definido `isOptional: true` por padrão para `HARDWARE` e `FILM` ao instanciar seleções de templates e fallbacks em `useMaterialSync.ts` e `useWindowBuilderState.ts`.
+  3. Atualizado `handleRemoveMaterial` no `useWindowBuilderState.ts` para transitar automaticamente o formato de puxador para `NONE` ("Sem Puxador") quando não houver ferragens remanescentes.
+  4. Atualizado `handleHandleTypeChange` para reativar e incluir automaticamente a ferragem na lista de insumos caso o usuário selecione um puxador que a exija no Passo 3.
+  5. Adicionados testes formais de QA no Frontend (`WindowBuilderModal.test.tsx`, `useWindowBuilderState.test.ts`) e Backend (`BudgetPricingServiceTest.java`).
+  6. Evidência visual da resolução capturada diretamente no sistema em execução real (`http://localhost:5173`) em alta definição em [`docs/projeto-001/003-teste/sprint-05/evidencias/evidencia-fix-335-esquadria-sem-ferragem.png`](sprint-05/evidencias/evidencia-fix-335-esquadria-sem-ferragem.png) e detalhada no [RRF-QA-08](sprint-05/RRF-QA-08-Resolucao_Bug_335_Esquadria_Sem_Ferragem.md).
+
+![Evidência Visual da Resolução do Bug #335 em Localhost](sprint-05/evidencias/evidencia-fix-335-esquadria-sem-ferragem.png)
 
 ---
 
