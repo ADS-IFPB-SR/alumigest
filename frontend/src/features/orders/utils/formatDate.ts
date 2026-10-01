@@ -9,7 +9,7 @@ export function formatDate(val?: string | null): string {
   }
   try {
     const d = new Date(val);
-    if (isNaN(d.getTime())) return val;
+    if (Number.isNaN(d.getTime())) return val;
     return d.toLocaleDateString('pt-BR');
   } catch {
     return val;
