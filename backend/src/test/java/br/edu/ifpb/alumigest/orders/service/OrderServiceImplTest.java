@@ -112,7 +112,7 @@ class OrderServiceImplTest {
     void shouldConvertApprovedBudgetToOrderSuccessfully() {
         // Arrange
         Order savedOrder = buildSavedOrder();
-        OrderResponse expectedResponse = buildOrderResponse(savedOrder);
+        OrderResponse expectedResponse = buildOrderResponse();
 
         given(budgetRepository.findByIdWithDetails(budgetId)).willReturn(Optional.of(budget));
         given(orderRepository.existsByOrcamentoId(budgetId)).willReturn(false);
@@ -139,7 +139,7 @@ class OrderServiceImplTest {
         // Arrange
         budget.setStatus(BudgetStatus.DRAFT);
         Order savedOrder = buildSavedOrder();
-        OrderResponse expectedResponse = buildOrderResponse(savedOrder);
+        OrderResponse expectedResponse = buildOrderResponse();
 
         given(budgetRepository.findByIdWithDetails(budgetId)).willReturn(Optional.of(budget));
         given(orderRepository.existsByOrcamentoId(budgetId)).willReturn(false);
@@ -163,7 +163,7 @@ class OrderServiceImplTest {
         // Arrange
         budget.setStatus(BudgetStatus.SENT);
         Order savedOrder = buildSavedOrder();
-        OrderResponse expectedResponse = buildOrderResponse(savedOrder);
+        OrderResponse expectedResponse = buildOrderResponse();
 
         given(budgetRepository.findByIdWithDetails(budgetId)).willReturn(Optional.of(budget));
         given(orderRepository.existsByOrcamentoId(budgetId)).willReturn(false);
@@ -192,7 +192,7 @@ class OrderServiceImplTest {
         budget.setItems(List.of(item));
 
         Order savedOrder = buildSavedOrder();
-        OrderResponse expectedResponse = buildOrderResponse(savedOrder);
+        OrderResponse expectedResponse = buildOrderResponse();
 
         given(budgetRepository.findByIdWithDetails(budgetId)).willReturn(Optional.of(budget));
         given(orderRepository.existsByOrcamentoId(budgetId)).willReturn(false);
@@ -231,7 +231,7 @@ class OrderServiceImplTest {
         budget.setItems(List.of(item));
 
         Order savedOrder = buildSavedOrder();
-        OrderResponse expectedResponse = buildOrderResponse(savedOrder);
+        OrderResponse expectedResponse = buildOrderResponse();
 
         given(budgetRepository.findByIdWithDetails(budgetId)).willReturn(Optional.of(budget));
         given(orderRepository.existsByOrcamentoId(budgetId)).willReturn(false);
@@ -304,6 +304,22 @@ class OrderServiceImplTest {
     }
 
     @Test
+    @DisplayName("[Regra de Negócio] Deve lançar BusinessException quando orçamento está com validade expirada")
+    void shouldThrowBusinessExceptionWhenBudgetIsExpired() {
+        // Arrange
+        budget.setStatus(BudgetStatus.SENT);
+        budget.setValidUntil(OffsetDateTime.now(ZoneOffset.UTC).minusDays(1));
+        given(budgetRepository.findByIdWithDetails(budgetId)).willReturn(Optional.of(budget));
+
+        // Act & Assert
+        assertThatThrownBy(() -> orderService.convertBudgetToOrder(budgetId, request))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("expirada");
+
+        verify(orderRepository, never()).save(any());
+    }
+
+    @Test
     @DisplayName("[Análise de Valor Limite] Deve lançar BusinessException quando orçamento não possui itens")
     void shouldThrowBusinessExceptionWhenBudgetHasNoItems() {
         // Arrange
@@ -343,7 +359,7 @@ class OrderServiceImplTest {
     void shouldReturnOrderWhenFindByIdExists() {
         // Arrange
         Order order = buildSavedOrder();
-        OrderResponse expectedResponse = buildOrderResponse(order);
+        OrderResponse expectedResponse = buildOrderResponse();
 
         given(orderRepository.findByIdWithDetails(orderId)).willReturn(Optional.of(order));
         given(orderMapper.toResponse(order)).willReturn(expectedResponse);
@@ -417,7 +433,7 @@ class OrderServiceImplTest {
                 .build();
     }
 
-    private OrderResponse buildOrderResponse(Order order) {
+    private OrderResponse buildOrderResponse() {
         return new OrderResponse(
                 orderId, "PED-2026-0001", budgetId, null,
                 "Empresa XPTO Ltda", null, null,

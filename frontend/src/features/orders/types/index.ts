@@ -49,6 +49,8 @@ export interface OrderItemOption {
   totalPrice: number;
 }
 
+export type JsonConfig = Record<string, unknown> | string | null;
+
 export interface OrderItem {
   id: string;
   orderId: string;
@@ -63,9 +65,9 @@ export interface OrderItem {
   ferragens?: string | null;
   valorUnitario: number;
   valorTotal: number;
-  templateConfig?: Record<string, unknown> | string | null;
-  handleConfig?: Record<string, unknown> | string | null;
-  drillingConfig?: Record<string, unknown> | string | null;
+  templateConfig?: JsonConfig;
+  handleConfig?: JsonConfig;
+  drillingConfig?: JsonConfig;
   ordem: number;
   options?: OrderItemOption[];
 }

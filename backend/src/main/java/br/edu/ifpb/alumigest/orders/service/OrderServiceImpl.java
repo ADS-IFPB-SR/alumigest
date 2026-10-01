@@ -146,6 +146,10 @@ public class OrderServiceImpl implements OrderService {
      * @throws BusinessException se o status não for elegível para conversão
      */
     private void validarElegibilidadeOrcamento(Budget budget) {
+        if (budget.isExpired()) {
+            throw new BusinessException(
+                    "Orçamento com validade expirada não pode ser convertido em pedido de venda.");
+        }
         if (!STATUS_ELEGIVEIS.contains(budget.getStatus())) {
             String statusDesc = budget.getStatus() != null
                     ? budget.getStatus().getDescricao()
