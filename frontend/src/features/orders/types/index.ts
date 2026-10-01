@@ -4,26 +4,26 @@
  */
 
 export type OrderStatus =
-  | 'CRIADO'
-  | 'AGUARDANDO_PRODUCAO'
-  | 'EM_PRODUCAO'
-  | 'CONCLUIDO'
-  | 'CANCELADO';
+  | 'CREATED'
+  | 'WAITING_PRODUCTION'
+  | 'IN_PRODUCTION'
+  | 'COMPLETED'
+  | 'CANCELLED';
 
 export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
-  CRIADO: 'Criado',
-  AGUARDANDO_PRODUCAO: 'Aguardando Produção',
-  EM_PRODUCAO: 'Em Produção',
-  CONCLUIDO: 'Concluído',
-  CANCELADO: 'Cancelado',
+  CREATED: 'Criado',
+  WAITING_PRODUCTION: 'Aguardando Produção',
+  IN_PRODUCTION: 'Em Produção',
+  COMPLETED: 'Concluído',
+  CANCELLED: 'Cancelado',
 };
 
 export const ORDER_STATUS_COLORS: Record<OrderStatus, { bg: string; text: string; border: string }> = {
-  CRIADO: { bg: 'bg-slate-100', text: 'text-slate-800', border: 'border-slate-300' },
-  AGUARDANDO_PRODUCAO: { bg: 'bg-amber-100', text: 'text-amber-800', border: 'border-amber-300' },
-  EM_PRODUCAO: { bg: 'bg-blue-100', text: 'text-blue-800', border: 'border-blue-300' },
-  CONCLUIDO: { bg: 'bg-emerald-100', text: 'text-emerald-800', border: 'border-emerald-300' },
-  CANCELADO: { bg: 'bg-rose-100', text: 'text-rose-800', border: 'border-rose-300' },
+  CREATED: { bg: 'bg-slate-100', text: 'text-slate-800', border: 'border-slate-300' },
+  WAITING_PRODUCTION: { bg: 'bg-amber-100', text: 'text-amber-800', border: 'border-amber-300' },
+  IN_PRODUCTION: { bg: 'bg-blue-100', text: 'text-blue-800', border: 'border-blue-300' },
+  COMPLETED: { bg: 'bg-emerald-100', text: 'text-emerald-800', border: 'border-emerald-300' },
+  CANCELLED: { bg: 'bg-rose-100', text: 'text-rose-800', border: 'border-rose-300' },
 };
 
 export type ApprovalChannel = 'WHATSAPP' | 'PRESENCIAL' | 'TELEFONE' | 'EMAIL';
