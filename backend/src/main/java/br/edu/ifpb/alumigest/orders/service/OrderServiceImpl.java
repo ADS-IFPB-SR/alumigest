@@ -19,7 +19,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -62,10 +65,12 @@ public class OrderServiceImpl implements OrderService {
      *
      * <p>Fluxo atômico de conversão:
      * <ol>
-     *   <li>Valida existência e status APPROVED do orçamento.</li>
+     *   <li>Valida existência e elegibilidade do orçamento (DRAFT, SENT ou APPROVED).</li>
+     *   <li>Verifica que o orçamento possui itens.</li>
      *   <li>Verifica idempotência — impede duplicação de pedido para o mesmo orçamento.</li>
+     *   <li>Promove o status do orçamento para APPROVED atomicamente (se ainda não estiver).</li>
      *   <li>Constrói o {@link Order} com snapshot financeiro imutável (lock de preços).</li>
-     *   <li>Converte cada {@link BudgetItem} em {@link OrderItem} preservando os insumos.</li>
+     *   <li>Converte cada {@link BudgetItem} em {@link OrderItem} com cálculo correto de valorUnitario.</li>
      *   <li>Persiste o pedido e retorna o DTO detalhado.</li>
      * </ol>
      */
@@ -75,8 +80,15 @@ public class OrderServiceImpl implements OrderService {
         Budget budget = budgetRepository.findByIdWithDetails(budgetId)
                 .orElseThrow(() -> new ResourceNotFoundException(RESOURCE_ORCAMENTO, budgetId.toString()));
 
-        validarOrcamentoAprovado(budget);
+        validarElegibilidadeOrcamento(budget);
+        validarOrcamentoComItens(budget);
         validarIdempotencia(budgetId);
+
+        // Promove status para APPROVED de forma atômica caso ainda seja DRAFT ou SENT
+        if (budget.getStatus() != BudgetStatus.APPROVED) {
+            budget.setStatus(BudgetStatus.APPROVED);
+            budgetRepository.save(budget);
+        }
 
         String codigo = orderCodeGenerator.generateNextCode();
 
@@ -119,19 +131,41 @@ public class OrderServiceImpl implements OrderService {
     // =========================================================================
 
     /**
-     * Valida que o orçamento está no status APPROVED para ser convertido.
+     * Status elegíveis para conversão em pedido de venda.
+     * DRAFT e SENT são promovidos para APPROVED atomicamente durante a conversão.
+     * APPROVED é aceito para tolerar reprocessamento idempotente.
+     */
+    private static final Set<BudgetStatus> STATUS_ELEGIVEIS =
+            EnumSet.of(BudgetStatus.DRAFT, BudgetStatus.SENT, BudgetStatus.APPROVED);
+
+    /**
+     * Valida que o orçamento está em um status elegível para conversão.
+     * Aceita DRAFT, SENT e APPROVED. Rejeita CANCELLED, REJECTED e EXPIRED.
      *
      * @param budget orçamento a ser validado
-     * @throws BusinessException se o status não for APPROVED
+     * @throws BusinessException se o status não for elegível para conversão
      */
-    private void validarOrcamentoAprovado(Budget budget) {
-        if (budget.getStatus() != BudgetStatus.APPROVED) {
+    private void validarElegibilidadeOrcamento(Budget budget) {
+        if (!STATUS_ELEGIVEIS.contains(budget.getStatus())) {
             String statusDesc = budget.getStatus() != null
                     ? budget.getStatus().getDescricao()
                     : "Indefinido";
             throw new BusinessException(
-                    "Apenas orçamentos com status 'Aprovado' podem ser convertidos em pedido de venda."
-                    + " Status atual: " + statusDesc + ".");
+                    "Orçamento com status '" + statusDesc + "' não pode ser convertido em pedido de venda."
+                    + " São aceitos: Rascunho, Enviado ou Aprovado.");
+        }
+    }
+
+    /**
+     * Valida que o orçamento possui ao menos um item antes de gerar o pedido.
+     *
+     * @param budget orçamento a ser validado
+     * @throws BusinessException se o orçamento não possuir itens
+     */
+    private void validarOrcamentoComItens(Budget budget) {
+        if (budget.getItems() == null || budget.getItems().isEmpty()) {
+            throw new BusinessException(
+                    "Não é possível converter um orçamento sem itens em pedido de venda.");
         }
     }
 
@@ -171,6 +205,15 @@ public class OrderServiceImpl implements OrderService {
     /**
      * Constrói um {@link OrderItem} a partir de um {@link BudgetItem} via Builder Pattern.
      *
+     * <p><strong>Regra financeira:</strong> {@code budgetItem.getSubtotal()} já representa o
+     * total do item (preço unitário × quantidade), conforme calculado pelo
+     * {@code BudgetPricingService}. Portanto:
+     * <ul>
+     *   <li>{@code valorTotal} = subtotal do item (congelado do orçamento)</li>
+     *   <li>{@code valorUnitario} = valorTotal / quantidade (derivado por divisão)</li>
+     * </ul>
+     * Isso evita a multiplicação dupla da quantidade (qty²).
+     *
      * @param budgetItem item do orçamento original
      * @param ordem      posição sequencial do item no pedido
      * @return item do pedido com snapshot dos dados técnicos e financeiros
@@ -178,9 +221,11 @@ public class OrderServiceImpl implements OrderService {
     private OrderItem construirOrderItem(BudgetItem budgetItem, int ordem) {
         int largura = budgetItem.getWidthMm() != null ? budgetItem.getWidthMm().intValue() : 0;
         int altura = budgetItem.getHeightMm() != null ? budgetItem.getHeightMm().intValue() : 0;
-        BigDecimal valorUnitario = orZero(budgetItem.getSubtotal());
-        int qty = budgetItem.getQuantity() != null ? budgetItem.getQuantity() : 1;
-        BigDecimal valorTotal = valorUnitario.multiply(BigDecimal.valueOf(qty));
+        int qty = (budgetItem.getQuantity() != null && budgetItem.getQuantity() > 0)
+                ? budgetItem.getQuantity() : 1;
+        // valorTotal é o subtotal já calculado (qty × preço unitário) — não multiplicar qty novamente
+        BigDecimal valorTotal = orZero(budgetItem.getSubtotal());
+        BigDecimal valorUnitario = valorTotal.divide(BigDecimal.valueOf(qty), 2, RoundingMode.HALF_UP);
 
         return OrderItem.builder()
                 .product(budgetItem.getProduct())

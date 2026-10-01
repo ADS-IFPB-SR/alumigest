@@ -42,11 +42,13 @@ public class OrderController {
     }
 
     /**
-     * Converte um orçamento aprovado em pedido de venda.
+     * Converte um orçamento em pedido de venda.
      *
      * <p>Regras de negócio aplicadas no service:
      * <ul>
-     *   <li>O orçamento deve existir e estar no status APPROVED.</li>
+     *   <li>O orçamento deve existir e estar em status DRAFT, SENT ou APPROVED.</li>
+     *   <li>O orçamento deve possuir ao menos um item.</li>
+     *   <li>O status do orçamento é promovido para APPROVED atomicamente (se não estiver).</li>
      *   <li>Não pode haver pedido já criado para o mesmo orçamento (idempotência).</li>
      * </ul>
      *
@@ -54,17 +56,18 @@ public class OrderController {
      * @param request  dados da aprovação (canal, previsão de entrega, observações)
      * @return 201 Created com o pedido gerado no corpo
      */
-    @PostMapping("/convert/{budgetId}")
+    @PostMapping({"/convert/{budgetId}", "/from-budget/{budgetId}"})
     @Operation(
-            summary = "Converter orçamento aprovado em pedido de venda",
-            description = "Converte um orçamento com status APPROVED em Pedido de Venda,"
-                    + " gerando código sequencial PED-YYYY-NNNN e snapshot imutável dos itens."
+            summary = "Converter orçamento em pedido de venda",
+            description = "Converte um orçamento (DRAFT, SENT ou APPROVED) em Pedido de Venda,"
+                    + " promovendo o status para APPROVED, gerando código sequencial PED-YYYY-NNNN"
+                    + " e snapshot imutável dos itens (lock de preços)."
     )
     @ApiResponse(responseCode = "201", description = "Pedido de venda criado com sucesso")
     @ApiResponse(responseCode = "400", description = "Dados de entrada inválidos")
     @ApiResponse(responseCode = "404", description = "Orçamento não encontrado")
     @ApiResponse(responseCode = "409", description = "Já existe pedido para este orçamento")
-    @ApiResponse(responseCode = "422", description = "Orçamento não está no status APPROVED")
+    @ApiResponse(responseCode = "422", description = "Orçamento em status inválido (CANCELLED ou REJECTED) ou sem itens")
     public ResponseEntity<OrderResponse> convertBudgetToOrder(
             @Parameter(description = "ID do orçamento aprovado") @PathVariable UUID budgetId,
             @RequestBody @Valid OrderConvertRequest request) {

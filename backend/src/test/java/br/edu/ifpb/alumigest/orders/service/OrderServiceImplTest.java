@@ -1,14 +1,18 @@
 package br.edu.ifpb.alumigest.orders.service;
 
 import br.edu.ifpb.alumigest.budgets.domain.Budget;
+import br.edu.ifpb.alumigest.budgets.domain.BudgetItem;
+import br.edu.ifpb.alumigest.budgets.domain.BudgetItemOption;
 import br.edu.ifpb.alumigest.budgets.domain.BudgetStatus;
 import br.edu.ifpb.alumigest.budgets.repository.BudgetRepository;
+import br.edu.ifpb.alumigest.catalog.domain.Product;
 import br.edu.ifpb.alumigest.clients.domain.Client;
 import br.edu.ifpb.alumigest.common.exception.BusinessException;
 import br.edu.ifpb.alumigest.common.exception.ConflictException;
 import br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException;
 import br.edu.ifpb.alumigest.orders.domain.ApprovalChannel;
 import br.edu.ifpb.alumigest.orders.domain.Order;
+import br.edu.ifpb.alumigest.orders.domain.OrderItem;
 import br.edu.ifpb.alumigest.orders.domain.OrderStatus;
 import br.edu.ifpb.alumigest.orders.dto.OrderConvertRequest;
 import br.edu.ifpb.alumigest.orders.dto.OrderResponse;
@@ -18,6 +22,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -26,7 +31,9 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -86,7 +93,8 @@ class OrderServiceImplTest {
         budget.setSubtotal(new BigDecimal("5000.00"));
         budget.setDiscountValue(new BigDecimal("500.00"));
         budget.setTotal(new BigDecimal("4500.00"));
-        budget.setItems(Collections.emptyList());
+        // Por padrão: lista com 1 item para satisfazer validação de "não vazio"
+        budget.setItems(criarBudgetItemList(1));
 
         request = new OrderConvertRequest(
                 ApprovalChannel.WHATSAPP,
@@ -103,30 +111,8 @@ class OrderServiceImplTest {
     @DisplayName("[Partição de Equivalência] Deve converter orçamento APPROVED em pedido com sucesso")
     void shouldConvertApprovedBudgetToOrderSuccessfully() {
         // Arrange
-        Order savedOrder = Order.builder()
-                .id(orderId)
-                .codigo("PED-2026-0001")
-                .orcamentoId(budgetId)
-                .clienteNome("Empresa XPTO Ltda")
-                .canalAprovacao(ApprovalChannel.WHATSAPP)
-                .status(OrderStatus.AGUARDANDO_PRODUCAO)
-                .dataPrevisaoEntrega(request.dataPrevisaoEntrega())
-                .valorBruto(budget.getSubtotal())
-                .valorDesconto(budget.getDiscountValue())
-                .valorLiquido(budget.getTotal())
-                .build();
-
-        OrderResponse expectedResponse = new OrderResponse(
-                orderId, "PED-2026-0001", budgetId, null,
-                "Empresa XPTO Ltda", null, null,
-                OrderStatus.AGUARDANDO_PRODUCAO, "Aguardando Produção",
-                ApprovalChannel.WHATSAPP, "WhatsApp",
-                LocalDate.now(ZoneOffset.UTC), request.dataPrevisaoEntrega(), null,
-                budget.getSubtotal(), budget.getDiscountValue(), BigDecimal.ZERO, BigDecimal.ZERO,
-                budget.getTotal(), null, null, null, null,
-                OffsetDateTime.now(ZoneOffset.UTC), OffsetDateTime.now(ZoneOffset.UTC), true,
-                Collections.emptyList()
-        );
+        Order savedOrder = buildSavedOrder();
+        OrderResponse expectedResponse = buildOrderResponse(savedOrder);
 
         given(budgetRepository.findByIdWithDetails(budgetId)).willReturn(Optional.of(budget));
         given(orderRepository.existsByOrcamentoId(budgetId)).willReturn(false);
@@ -147,6 +133,129 @@ class OrderServiceImplTest {
         verify(orderCodeGenerator).generateNextCode();
     }
 
+    @Test
+    @DisplayName("[Regra de Negócio] Deve aceitar orçamento em DRAFT, promovê-lo para APPROVED e criar pedido")
+    void shouldAcceptDraftBudgetAndPromoteToApproved() {
+        // Arrange
+        budget.setStatus(BudgetStatus.DRAFT);
+        Order savedOrder = buildSavedOrder();
+        OrderResponse expectedResponse = buildOrderResponse(savedOrder);
+
+        given(budgetRepository.findByIdWithDetails(budgetId)).willReturn(Optional.of(budget));
+        given(orderRepository.existsByOrcamentoId(budgetId)).willReturn(false);
+        given(orderCodeGenerator.generateNextCode()).willReturn("PED-2026-0001");
+        given(budgetRepository.save(budget)).willReturn(budget);
+        given(orderRepository.save(any(Order.class))).willReturn(savedOrder);
+        given(orderMapper.toResponse(savedOrder)).willReturn(expectedResponse);
+
+        // Act
+        orderService.convertBudgetToOrder(budgetId, request);
+
+        // Assert: orçamento deve ter sido atualizado para APPROVED antes de salvar o pedido
+        assertThat(budget.getStatus()).isEqualTo(BudgetStatus.APPROVED);
+        verify(budgetRepository).save(budget);
+        verify(orderRepository).save(any(Order.class));
+    }
+
+    @Test
+    @DisplayName("[Regra de Negócio] Deve aceitar orçamento em SENT, promovê-lo para APPROVED e criar pedido")
+    void shouldAcceptSentBudgetAndPromoteToApproved() {
+        // Arrange
+        budget.setStatus(BudgetStatus.SENT);
+        Order savedOrder = buildSavedOrder();
+        OrderResponse expectedResponse = buildOrderResponse(savedOrder);
+
+        given(budgetRepository.findByIdWithDetails(budgetId)).willReturn(Optional.of(budget));
+        given(orderRepository.existsByOrcamentoId(budgetId)).willReturn(false);
+        given(orderCodeGenerator.generateNextCode()).willReturn("PED-2026-0001");
+        given(budgetRepository.save(budget)).willReturn(budget);
+        given(orderRepository.save(any(Order.class))).willReturn(savedOrder);
+        given(orderMapper.toResponse(savedOrder)).willReturn(expectedResponse);
+
+        // Act
+        orderService.convertBudgetToOrder(budgetId, request);
+
+        // Assert
+        assertThat(budget.getStatus()).isEqualTo(BudgetStatus.APPROVED);
+        verify(budgetRepository).save(budget);
+    }
+
+    @Test
+    @DisplayName("[Snapshot / Lock de Preços] Deve calcular valorUnitario sem duplicar quantidade (sem qty²)")
+    void shouldCalculateItemValuesWithoutDoubleCountingQuantity() {
+        // Arrange: item com 3 esquadrias de R$ 500 cada → subtotal no orçamento já é R$ 1.500
+        int quantidade = 3;
+        BigDecimal subtotalNoOrcamento = new BigDecimal("1500.00");
+        BigDecimal valorUnitarioEsperado = new BigDecimal("500.00"); // 1500 / 3
+
+        BudgetItem item = criarBudgetItem(quantidade, subtotalNoOrcamento);
+        budget.setItems(List.of(item));
+
+        Order savedOrder = buildSavedOrder();
+        OrderResponse expectedResponse = buildOrderResponse(savedOrder);
+
+        given(budgetRepository.findByIdWithDetails(budgetId)).willReturn(Optional.of(budget));
+        given(orderRepository.existsByOrcamentoId(budgetId)).willReturn(false);
+        given(orderCodeGenerator.generateNextCode()).willReturn("PED-2026-0001");
+        given(orderRepository.save(any(Order.class))).willReturn(savedOrder);
+        given(orderMapper.toResponse(savedOrder)).willReturn(expectedResponse);
+
+        // Captura o Order salvo para inspecionar os itens gerados
+        ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
+
+        // Act
+        orderService.convertBudgetToOrder(budgetId, request);
+
+        // Assert — verifica que o OrderItem foi gerado com os valores corretos
+        verify(orderRepository).save(orderCaptor.capture());
+        Order orderSalvo = orderCaptor.getValue();
+
+        assertThat(orderSalvo.getItems()).hasSize(1);
+        OrderItem itemGerado = orderSalvo.getItems().getFirst();
+
+        assertThat(itemGerado.getQuantidade()).isEqualTo(quantidade);
+        assertThat(itemGerado.getValorTotal()).isEqualByComparingTo(subtotalNoOrcamento);
+        assertThat(itemGerado.getValorUnitario()).isEqualByComparingTo(valorUnitarioEsperado);
+        // Invariante: valorTotal = valorUnitario × quantidade (sem multiplicação dupla)
+        assertThat(itemGerado.getValorUnitario().multiply(BigDecimal.valueOf(quantidade)))
+                .isEqualByComparingTo(itemGerado.getValorTotal());
+    }
+
+    @Test
+    @DisplayName("[Snapshot / Lock de Preços] Deve congelar largura, altura e opções de insumo do BudgetItem")
+    void shouldFreezeItemDimensionsAndOptionsFromBudgetItem() {
+        // Arrange
+        BudgetItem item = criarBudgetItem(2, new BigDecimal("1000.00"));
+        BudgetItemOption opcao = criarBudgetItemOption(item);
+        item.getOptions().add(opcao);
+        budget.setItems(List.of(item));
+
+        Order savedOrder = buildSavedOrder();
+        OrderResponse expectedResponse = buildOrderResponse(savedOrder);
+
+        given(budgetRepository.findByIdWithDetails(budgetId)).willReturn(Optional.of(budget));
+        given(orderRepository.existsByOrcamentoId(budgetId)).willReturn(false);
+        given(orderCodeGenerator.generateNextCode()).willReturn("PED-2026-0001");
+        given(orderRepository.save(any(Order.class))).willReturn(savedOrder);
+        given(orderMapper.toResponse(savedOrder)).willReturn(expectedResponse);
+
+        ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
+
+        // Act
+        orderService.convertBudgetToOrder(budgetId, request);
+
+        // Assert
+        verify(orderRepository).save(orderCaptor.capture());
+        Order orderSalvo = orderCaptor.getValue();
+
+        OrderItem itemGerado = orderSalvo.getItems().getFirst();
+        assertThat(itemGerado.getLarguraMm()).isEqualTo(1200);
+        assertThat(itemGerado.getAlturaMm()).isEqualTo(900);
+        assertThat(itemGerado.getDescricao()).isEqualTo("Janela 2 Folhas");
+        assertThat(itemGerado.getOptions()).hasSize(1);
+        assertThat(itemGerado.getOptions().getFirst().getMaterialName()).isEqualTo("Perfil Alumínio");
+    }
+
     // =========================================================================
     // convertBudgetToOrder — cenários de erro (Tabela de Decisão)
     // =========================================================================
@@ -165,21 +274,6 @@ class OrderServiceImplTest {
     }
 
     @Test
-    @DisplayName("[Partição de Equivalência] Deve lançar BusinessException quando orçamento está em DRAFT")
-    void shouldThrowBusinessExceptionWhenBudgetIsDraft() {
-        // Arrange
-        budget.setStatus(BudgetStatus.DRAFT);
-        given(budgetRepository.findByIdWithDetails(budgetId)).willReturn(Optional.of(budget));
-
-        // Act & Assert
-        assertThatThrownBy(() -> orderService.convertBudgetToOrder(budgetId, request))
-                .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("Rascunho");
-
-        verify(orderRepository, never()).save(any());
-    }
-
-    @Test
     @DisplayName("[Tabela de Decisão] Deve lançar BusinessException quando orçamento está CANCELLED")
     void shouldThrowBusinessExceptionWhenBudgetIsCancelled() {
         // Arrange
@@ -189,13 +283,13 @@ class OrderServiceImplTest {
         // Act & Assert
         assertThatThrownBy(() -> orderService.convertBudgetToOrder(budgetId, request))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("Aprovado");
+                .hasMessageContaining("Cancelado");
 
         verify(orderRepository, never()).save(any());
     }
 
     @Test
-    @DisplayName("[Partição de Equivalência] Deve lançar BusinessException quando orçamento está REJECTED")
+    @DisplayName("[Tabela de Decisão] Deve lançar BusinessException quando orçamento está REJECTED")
     void shouldThrowBusinessExceptionWhenBudgetIsRejected() {
         // Arrange
         budget.setStatus(BudgetStatus.REJECTED);
@@ -205,6 +299,21 @@ class OrderServiceImplTest {
         assertThatThrownBy(() -> orderService.convertBudgetToOrder(budgetId, request))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("Rejeitado");
+
+        verify(orderRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("[Análise de Valor Limite] Deve lançar BusinessException quando orçamento não possui itens")
+    void shouldThrowBusinessExceptionWhenBudgetHasNoItems() {
+        // Arrange
+        budget.setItems(Collections.emptyList());
+        given(budgetRepository.findByIdWithDetails(budgetId)).willReturn(Optional.of(budget));
+
+        // Act & Assert
+        assertThatThrownBy(() -> orderService.convertBudgetToOrder(budgetId, request))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("sem itens");
 
         verify(orderRepository, never()).save(any());
     }
@@ -233,26 +342,8 @@ class OrderServiceImplTest {
     @DisplayName("[Partição de Equivalência] Deve retornar pedido ao buscar por ID existente")
     void shouldReturnOrderWhenFindByIdExists() {
         // Arrange
-        Order order = Order.builder()
-                .id(orderId)
-                .codigo("PED-2026-0001")
-                .orcamentoId(budgetId)
-                .clienteNome("Empresa XPTO Ltda")
-                .canalAprovacao(ApprovalChannel.WHATSAPP)
-                .dataPrevisaoEntrega(request.dataPrevisaoEntrega())
-                .build();
-
-        OrderResponse expectedResponse = new OrderResponse(
-                orderId, "PED-2026-0001", budgetId, null,
-                "Empresa XPTO Ltda", null, null,
-                OrderStatus.AGUARDANDO_PRODUCAO, "Aguardando Produção",
-                ApprovalChannel.WHATSAPP, "WhatsApp",
-                LocalDate.now(ZoneOffset.UTC), request.dataPrevisaoEntrega(), null,
-                BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO,
-                null, null, null, null,
-                OffsetDateTime.now(ZoneOffset.UTC), OffsetDateTime.now(ZoneOffset.UTC), true,
-                Collections.emptyList()
-        );
+        Order order = buildSavedOrder();
+        OrderResponse expectedResponse = buildOrderResponse(order);
 
         given(orderRepository.findByIdWithDetails(orderId)).willReturn(Optional.of(order));
         given(orderMapper.toResponse(order)).willReturn(expectedResponse);
@@ -276,5 +367,67 @@ class OrderServiceImplTest {
         // Act & Assert
         assertThatThrownBy(() -> orderService.findById(unknownId))
                 .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    // =========================================================================
+    // Helpers de construção de fixtures
+    // =========================================================================
+
+    private List<BudgetItem> criarBudgetItemList(int quantidade) {
+        List<BudgetItem> items = new ArrayList<>();
+        items.add(criarBudgetItem(quantidade, new BigDecimal("1000.00")));
+        return items;
+    }
+
+    private BudgetItem criarBudgetItem(int quantidade, BigDecimal subtotal) {
+        BudgetItem item = new BudgetItem();
+        Product product = new Product();
+        item.setProduct(product);
+        item.setProductName("Janela 2 Folhas");
+        item.setWidthMm(new BigDecimal("1200"));
+        item.setHeightMm(new BigDecimal("900"));
+        item.setQuantity(quantidade);
+        item.setSubtotal(subtotal);
+        return item;
+    }
+
+    private BudgetItemOption criarBudgetItemOption(BudgetItem budgetItem) {
+        BudgetItemOption opcao = new BudgetItemOption();
+        opcao.setBudgetItem(budgetItem);
+        opcao.setMaterialName("Perfil Alumínio");
+        opcao.setUnitMeasure("m²");
+        opcao.setQuantity(new BigDecimal("2.50"));
+        opcao.setUnitPrice(new BigDecimal("80.00"));
+        opcao.setTotalPrice(new BigDecimal("200.00"));
+        return opcao;
+    }
+
+    private Order buildSavedOrder() {
+        return Order.builder()
+                .id(orderId)
+                .codigo("PED-2026-0001")
+                .orcamentoId(budgetId)
+                .clienteNome("Empresa XPTO Ltda")
+                .canalAprovacao(ApprovalChannel.WHATSAPP)
+                .status(OrderStatus.AGUARDANDO_PRODUCAO)
+                .dataPrevisaoEntrega(request.dataPrevisaoEntrega())
+                .valorBruto(budget.getSubtotal())
+                .valorDesconto(budget.getDiscountValue())
+                .valorLiquido(budget.getTotal())
+                .build();
+    }
+
+    private OrderResponse buildOrderResponse(Order order) {
+        return new OrderResponse(
+                orderId, "PED-2026-0001", budgetId, null,
+                "Empresa XPTO Ltda", null, null,
+                OrderStatus.AGUARDANDO_PRODUCAO, "Aguardando Produção",
+                ApprovalChannel.WHATSAPP, "WhatsApp",
+                LocalDate.now(ZoneOffset.UTC), request.dataPrevisaoEntrega(), null,
+                budget.getSubtotal(), budget.getDiscountValue(), BigDecimal.ZERO, BigDecimal.ZERO,
+                budget.getTotal(), null, null, null, null,
+                OffsetDateTime.now(ZoneOffset.UTC), OffsetDateTime.now(ZoneOffset.UTC), true,
+                Collections.emptyList()
+        );
     }
 }
