@@ -68,6 +68,16 @@
 | **US-11.4** | Adicionar botão "Via Técnica" na `BudgetDetailPage` com feedback visual `isPending` e download direto | ✅ Concluída |
 | **US-11.5** | Criar testes no frontend com Vitest cobrindo fluxo de emissão da ficha técnica de oficina | ✅ Concluída |
 
+### 🐞 Bugs e Não-Conformidades da US-11 (Quadro Kanban / Backlog de Correções)
+Documento de detalhamento técnico: [`../../projeto-001/003-teste/sprint-05/RBD-Registro_de_Bugs_US11_Sprint05.md`](../../projeto-001/003-teste/sprint-05/RBD-Registro_de_Bugs_US11_Sprint05.md)
+
+| ID | Issue | Card Kanban | Camada | Severidade | Status Kanban |
+|:---:|:---:|---|:---:|:---:|:---:|
+| **BUG-034** | [#383](https://github.com/ADS-IFPB-SR/alumigest/issues/383) | [BUG-034] Prevenção de NPE por quantidade nula no cabeçalho do PDF técnico | Backend / PDF | 🔴 P2 (Alta) | 📋 Ready |
+| **BUG-035** | [#384](https://github.com/ADS-IFPB-SR/alumigest/issues/384) | [BUG-035] Correção de "• Tipo: NONE" e fallback de puxador inexistente na Ficha Técnica | Backend / PDF & I18N | 🟡 P3 (Média) | 📋 Ready |
+| **BUG-036** | [#385](https://github.com/ADS-IFPB-SR/alumigest/issues/385) | [BUG-036] Tratamento de erro Blob em downloadPdfTecnico no Frontend | Frontend / API & Hooks | 🟡 P3 (Média) | 📋 Ready |
+| **BUG-037** | [#386](https://github.com/ADS-IFPB-SR/alumigest/issues/386) | [BUG-037] Adicionar alias de rota /technical-pdf no BudgetController | Backend / Controller | 🟢 P4 (Baixa) | 📋 Ready |
+
 ---
 
 ## 📦 Transição para Sprint 06 (Pedidos de Venda)

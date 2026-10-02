@@ -60,6 +60,10 @@ Seguindo a governança do **Plano de Gerência de Configuração (PGC)** e do **
 | **[BUG-030](#bug-030)** | Razão Social da Empresa Hardcodada no Resumo para WhatsApp Ignorando `CompanyProperties` | Backend / WhatsApp | 🟢 Baixa | Sprint 05 | 🟡 Em Aberto | Issue #375 / US-10 |
 | **[BUG-031](#bug-031)** | Resposta de Erro Empacotada como Blob sem Tratamento de Mensagem no Download de PDF Comercial | Frontend / API | 🟡 Média | Sprint 05 | 🟡 Em Aberto | Issue #376 / US-10 |
 | **[BUG-032](#bug-032)** | Duplicação de Mão de Obra e Inconsistência nos Totais do Orçamento | Backend & Frontend / Orçamentos | 🔴 Alta | Sprint 05 | ✅ Resolvido | Issue #333 / Branch `fix/333-duplicacao-mao-de-obra-totais-orcamento` |
+| **[BUG-034](#bug-034)** | Risco de `NullPointerException` (HTTP 500) por Unboxing de `BudgetItem.quantity` Nulo no Card de Produção | Backend / PDF | 🔴 Alta | Sprint 05 | 🟡 Em Aberto | Issue [#383](https://github.com/ADS-IFPB-SR/alumigest/issues/383) / US-11 |
+| **[BUG-035](#bug-035)** | Impressão de `"• Tipo: NONE"` e Contradição Visual de Puxador quando Esquadria Não Possui Puxador | Backend / PDF & I18N | 🟡 Média | Sprint 05 | 🟡 Em Aberto | Issue [#384](https://github.com/ADS-IFPB-SR/alumigest/issues/384) / US-11 |
+| **[BUG-036](#bug-036)** | Resposta de Erro Empacotada como Blob sem Tratamento de Mensagem em `downloadPdfTecnico` | Frontend / API & Hooks | 🟡 Média | Sprint 05 | 🟡 Em Aberto | Issue [#385](https://github.com/ADS-IFPB-SR/alumigest/issues/385) / US-11 |
+| **[BUG-037](#bug-037)** | Ausência do Alias de Rota `/technical-pdf` Mapeado no `BudgetController` | Backend / Controller | 🟢 Baixa | Sprint 05 | 🟡 Em Aberto | Issue [#386](https://github.com/ADS-IFPB-SR/alumigest/issues/386) / US-11.2 |
 
 ---
 
@@ -1054,6 +1058,103 @@ O cálculo de precificação do orçamento embutia indevidamente o valor da mão
   2. Ajustou-se `BudgetControllerIntegrationTest` e adicionou-se teste unitário com reprodução fiel do cenário da Issue #333 em `BudgetPricingServiceTest.java`.
   3. No frontend, atualizou-se `calcItemSubtotal` em `calculations.ts` e alinhou-se `BudgetFinancialSummaryCard.tsx` com `BudgetFinancialSummary.tsx`, discriminando materiais, mão de obra e subtotal bruto.
   4. Adicionou-se teste de regressão ponta a ponta no Vitest (`BudgetDetailPage.test.tsx`).
+
+---
+
+### BUG-034
+#### [BUG] Risco de `NullPointerException` (HTTP 500) por Unboxing de `BudgetItem.quantity` Nulo no Card de Produção
+
+**Descrição do Problema:**
+Na geração do PDF técnico (`gerarPdfTecnico`), a agregação de volume do pedido no card de produção da oficina calcula `budget.getItems().stream().mapToInt(BudgetItem::getQuantity).sum()`. Como o atributo `quantity` em `BudgetItem` é do tipo `Integer` (nullable), caso um orçamento contenha um item com quantidade nula (por exemplo, clonagem parcial, migração ou rascunho em edição), o Java força unboxing implícito para o primitivo `int`, disparando `NullPointerException` fatal (HTTP 500) e impedindo a emissão da Ficha Técnica.
+
+**Passos para Reproduzir:**
+1. Instanciar um `Budget` contendo um `BudgetItem` com `quantity == null`.
+2. Executar `budgetPdfService.gerarPdfTecnico(budget)`.
+3. Observar o estouro de `java.lang.NullPointerException` na execução do stream.
+
+**Comportamento Esperado:**
+O total de peças deve aplicar fallback defensivo para `1` peça caso `item.getQuantity()` seja nulo, garantindo resiliência matemática na geração do cabeçalho da oficina.
+
+**Contexto / Ambiente:**
+- **Módulo Afetado:** Backend / PDF (`BudgetPdfService.java`).
+- **Severidade:** 🔴 Alta (P2) | **Sprint:** 05 | **Status:** 🟡 Em Aberto (Refs: US-11).
+
+**Causa Raiz Técnica & Solução:**
+* **Causa Raiz:** Ausência de null-check antes do unboxing de `Integer` para `int` no stream da linha 976.
+* **Solução:** Mapear `i -> i.getQuantity() != null ? i.getQuantity() : 1` no `mapToInt()`.
+
+---
+
+### BUG-035
+#### [BUG] Impressão de `"• Tipo: NONE"` e Contradição Visual de Puxador quando Esquadria Não Possui Puxador
+
+**Descrição do Problema:**
+Ao gerar a Ficha Técnica de Oficina para esquadrias que não possuem puxador externo (ex: esquadria sem ferragem configurada na Issue #335):
+1. Se `handleConfig` contiver `{"handleType":"NONE"}`, o método `adicionarTipoPuxador` imprime literalmente o termo em inglês `"• Tipo: NONE"`, violando as diretrizes de localização e sigilo.
+2. Se `handleConfig` for `"NONE"` ou `{}` ou vazio, `extrairLinhasPuxadorJson` retorna lista vazia e o código aciona o fallback padrão `obterLinhasPuxadorFallback`, gerando o texto `"• Formato: Padrão do modelo."` e `"• Posição: Lado de abertura."`. O desenho CAD técnico exibe a folha limpa sem puxador, gerando contradição direta entre o desenho e a descrição textual na oficina.
+
+**Passos para Reproduzir:**
+1. Criar esquadria sem ferragem/puxador (`handleType = NONE`).
+2. Emitir o PDF técnico da oficina (`/api/budgets/{id}/pdf/tecnico`).
+3. Analisar a coluna "Detalhamento Furação / Puxador": observa-se o texto "• Tipo: NONE" ou texto indicando formato padrão do modelo.
+
+**Comportamento Esperado:**
+Para esquadrias sem puxador, o PDF técnico deve omitir termos em inglês e indicar de forma limpa e inequívoca: `"• Sem puxador previsto."` (ou folha limpa).
+
+**Contexto / Ambiente:**
+- **Módulo Afetado:** Backend / PDF (`BudgetPdfService.java`).
+- **Severidade:** 🟡 Média (P3) | **Sprint:** 05 | **Status:** 🟡 Em Aberto (Refs: US-11).
+
+**Causa Raiz Técnica & Solução:**
+* **Causa Raiz:** Em `adicionarTipoPuxador`, `traduzirTipoPuxadorTexto("NONE")` retorna `null`, fazendo o ternário cair no fallback de imprimir a chave bruta `NONE`. Em `gerarLinhasPuxador`, listas vazias invocam `obterLinhasPuxadorFallback` em vez de sinalizar ausência de puxador.
+* **Solução:** Tratar `NONE` no método `gerarLinhasPuxador` retornando `List.of("Sem puxador previsto.")`.
+
+---
+
+### BUG-036
+#### [BUG] Resposta de Erro Empacotada como Blob sem Tratamento de Mensagem em `downloadPdfTecnico`
+
+**Descrição do Problema:**
+A requisição Axios de download da Via Técnica (`budgetsApi.downloadPdfTecnico`) é configurada com `responseType: 'blob'`. Quando a chamada falha (ex.: HTTP 422 ao tentar emitir PDF técnico de orçamento cancelado), o payload `ErrorResponse` em JSON é retornado empacotado como uma instância de `Blob`. No hook `useDownloadPdfTecnico`, a tentativa de ler `err?.response?.data?.message` falha (`undefined`), exibindo o toast genérico `"Erro ao gerar o PDF técnico."` e ocultando a orientação real de negócio.
+
+**Passos para Reproduzir:**
+1. Acessar a tela de detalhes de um orçamento com status `CANCELLED`.
+2. Disparar a ação de emissão de via técnica.
+3. Observar o toast exibido: mensagem genérica sem informar que o orçamento cancelado não pode ter PDF técnico gerado.
+
+**Comportamento Esperado:**
+O cliente frontend deve desserializar o `Blob` de erro assincronamente via `await error.response.data.text()`, parsear o JSON e repassar a mensagem real do backend ao toast do usuário.
+
+**Contexto / Ambiente:**
+- **Módulo Afetado:** Frontend / API (`budgetsApi.ts`, `useBudgets.ts`, `BudgetDetailActions.tsx`).
+- **Severidade:** 🟡 Média (P3) | **Sprint:** 05 | **Status:** 🟡 Em Aberto (Refs: US-11).
+
+**Causa Raiz Técnica & Solução:**
+* **Causa Raiz:** Respostas Axios com `responseType: 'blob'` encapsulam corpos de erro HTTP como `Blob`.
+* **Solução:** Adicionar deserializador defensivo de `Blob` no `onError` do hook `useDownloadPdfTecnico`.
+
+---
+
+### BUG-037
+#### [BUG] Ausência do Alias de Rota `/technical-pdf` Mapeado no `BudgetController`
+
+**Descrição do Problema:**
+A especificação formal da sub-tarefa técnica `US-11.2` prescreveu o endpoint `GET /api/budgets/{id}/technical-pdf`. No entanto, o `BudgetController.java` mapeou exclusivamente o caminho em português `/{id}/pdf/tecnico`. Qualquer cliente externo, documentação OpenAPI ou teste de automação que envie requisição para `/technical-pdf` recebe `404 Not Found`.
+
+**Passos para Reproduzir:**
+1. Enviar requisição `GET /api/budgets/{id}/technical-pdf`.
+2. Observar resposta HTTP 404 Not Found.
+
+**Comportamento Esperado:**
+O endpoint deve responder com 200 OK tanto em `/api/budgets/{id}/pdf/tecnico` quanto em `/api/budgets/{id}/technical-pdf`.
+
+**Contexto / Ambiente:**
+- **Módulo Afetado:** Backend / Controller (`BudgetController.java`).
+- **Severidade:** 🟢 Baixa (P4) | **Sprint:** 05 | **Status:** 🟡 Em Aberto (Refs: US-11.2).
+
+**Causa Raiz Técnica & Solução:**
+* **Causa Raiz:** Mapeamento unívoco no `@GetMapping` ignorando o alias especificado na tarefa.
+* **Solução:** Configurar array de caminhos `@GetMapping({"/{id}/pdf/tecnico", "/{id}/technical-pdf"})`.
 
 ---
 
