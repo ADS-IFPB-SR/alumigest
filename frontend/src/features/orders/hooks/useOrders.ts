@@ -3,6 +3,8 @@ import toast from 'react-hot-toast';
 import { ordersApi } from '../services/ordersApi';
 import type { OrderCancelRequest, OrderFilterParams } from '../types';
 
+export { useConvertBudget } from './useConvertBudget';
+
 /**
  * Hook para carregar os detalhes completos de um pedido pelo ID (US-13.5).
  */

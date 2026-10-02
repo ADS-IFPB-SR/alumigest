@@ -15,6 +15,7 @@ import { BudgetFinancialSummaryCard } from '../features/budgets/components/Budge
 import { BudgetDetailActions } from '../features/budgets/components/BudgetDetailActions';
 import { BudgetProposalItemCard } from '../features/budgets/components/BudgetProposalItemCard';
 import { BudgetRomaneioView } from '../features/budgets/components/BudgetRomaneioView';
+import { OrderApprovalModal } from '../features/orders/components/OrderApprovalModal';
 
 export function BudgetDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -32,6 +33,7 @@ export function BudgetDetailPage() {
   };
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showApprovalModal, setShowApprovalModal] = useState(false);
   const [activeTab, setActiveTab] = useState<'proposta' | 'romaneio'>('proposta');
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
   
@@ -147,6 +149,7 @@ export function BudgetDetailPage() {
           onDeleteClick={() => setShowDeleteModal(true)}
           onDownloadPdfTecnico={downloadPdfTecnico}
           isDownloadingPdfTecnico={isDownloadingPdf}
+          onApproveClick={() => setShowApprovalModal(true)}
         />
       </header>
 
@@ -431,6 +434,21 @@ export function BudgetDetailPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Modal de aprovação e conversão em pedido (US-13.3) */}
+      {showApprovalModal && (
+        <OrderApprovalModal
+          isOpen={showApprovalModal}
+          onClose={() => setShowApprovalModal(false)}
+          budgetId={budget.id}
+          budgetCode={budget.code}
+          customerName={budget.customer?.name}
+          onSuccess={(order) => {
+            setShowApprovalModal(false);
+            navigate(`/pedidos/${order.id}`);
+          }}
+        />
       )}
     </div>
   );

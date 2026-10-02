@@ -6,5 +6,7 @@
 export * from './types';
 export * from './schemas';
 export * from './services/ordersApi';
+export * from './services/orderApi';
 export * from './hooks/useOrders';
+export * from './hooks/useConvertBudget';
 export * from './components';

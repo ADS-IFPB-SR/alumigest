@@ -18,6 +18,7 @@ interface BudgetDetailActionsProps {
   readonly onDeleteClick: () => void;
   readonly onDownloadPdfTecnico?: () => void;
   readonly isDownloadingPdfTecnico?: boolean;
+  readonly onApproveClick?: () => void;
 }
 
 export function BudgetDetailActions({
@@ -29,9 +30,15 @@ export function BudgetDetailActions({
   onDeleteClick,
   onDownloadPdfTecnico,
   isDownloadingPdfTecnico,
+  onApproveClick,
 }: BudgetDetailActionsProps) {
   const navigate = useNavigate();
   const { mutate: updateStatus } = useUpdateBudgetStatus();
+
+  const currentStatus = (status ?? budgetStatus ?? 'DRAFT') as BudgetStatus;
+  const isApproved = currentStatus === 'APPROVED';
+  const isCancelledOrRejected = currentStatus === 'CANCELLED' || currentStatus === 'REJECTED';
+  const isApprovalDisabled = isApproved || isCancelledOrRejected;
 
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const [showWhatsAppMenu, setShowWhatsAppMenu] = useState(false);
@@ -283,7 +290,27 @@ export function BudgetDetailActions({
         </span>
       </button>
 
-      {/* ── 4º Duplicar ─────────────────────────────────────────────────── */}
+      {/* ── 4º Aprovar e Gerar Pedido (US-13.3) ─────────────────────────── */}
+      <Button
+        type="button"
+        variant="primary"
+        icon="check_circle"
+        data-testid="btn-approve-budget"
+        onClick={onApproveClick}
+        disabled={isApprovalDisabled || !onApproveClick}
+        className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs py-1.5 px-3 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shrink-0"
+        title={
+          isApproved
+            ? 'Este orçamento já foi aprovado e convertido em pedido.'
+            : isCancelledOrRejected
+            ? 'Orçamentos cancelados ou rejeitados não podem ser aprovados.'
+            : 'Aprovar este orçamento e convertê-lo em Pedido de Venda'
+        }
+      >
+        <span className="whitespace-nowrap">Aprovar e Gerar Pedido</span>
+      </Button>
+
+      {/* ── 5º Duplicar ─────────────────────────────────────────────────── */}
       <button
         type="button"
         onClick={handleDuplicateBudget}
