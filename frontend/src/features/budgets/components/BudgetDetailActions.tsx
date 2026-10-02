@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '../../../components/ui/Button';
 import { budgetsApi } from '../services/budgetsApi';
@@ -41,16 +42,36 @@ export function BudgetDetailActions({
   const isDownloadingTecnico = isDownloadingPdfTecnico ?? localDownloadingPdfTecnico;
 
   const whatsAppMenuRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
 
-  // Fecha o dropdown do WhatsApp ao clicar fora
+  // Calcula a posição exata do botão na tela ao abrir o menu do WhatsApp
+  const handleToggleWhatsAppMenu = () => {
+    if (!showWhatsAppMenu && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setMenuPosition({
+        top: rect.bottom + window.scrollY + 4,
+        left: rect.left + window.scrollX,
+      });
+    }
+    setShowWhatsAppMenu((prev) => !prev);
+  };
+
+  // Fecha o dropdown do WhatsApp ao clicar fora ou rolar a página
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (whatsAppMenuRef.current && !whatsAppMenuRef.current.contains(event.target as Node)) {
+      if (
+        whatsAppMenuRef.current && 
+        !whatsAppMenuRef.current.contains(event.target as Node) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(event.target as Node)
+      ) {
         setShowWhatsAppMenu(false);
       }
     }
     if (showWhatsAppMenu) {
       document.addEventListener('mousedown', handleClickOutside);
+      window.addEventListener('scroll', () => setShowWhatsAppMenu(false), { once: true });
     }
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
@@ -161,10 +182,11 @@ export function BudgetDetailActions({
   return (
     <div className="flex items-center gap-xs sm:gap-sm flex-wrap shrink-0 w-full pb-1">
       {/* ── 1º WhatsApp (Dropdown: Resumo em Texto / PDF Comercial) ──────── */}
-      <div className="relative shrink-0" ref={whatsAppMenuRef}>
+      <div className="relative shrink-0">
         <button
+          ref={buttonRef}
           type="button"
-          onClick={() => setShowWhatsAppMenu((prev) => !prev)}
+          onClick={handleToggleWhatsAppMenu}
           disabled={status === 'CANCELLED' || budgetStatus === 'CANCELLED'}
           aria-haspopup="true"
           aria-expanded={showWhatsAppMenu}
@@ -185,8 +207,12 @@ export function BudgetDetailActions({
           </span>
         </button>
 
-        {showWhatsAppMenu && (
-          <div className="absolute left-0 mt-1 w-56 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-lg z-50 py-1 animate-fadeIn">
+        {showWhatsAppMenu && createPortal(
+          <div 
+            ref={whatsAppMenuRef}
+            style={{ top: `${menuPosition.top}px`, left: `${menuPosition.left}px` }}
+            className="absolute w-56 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-2xl z-[99999] py-1 animate-fadeIn"
+          >
             <button
               type="button"
               onClick={() => {
@@ -215,7 +241,8 @@ export function BudgetDetailActions({
                 <p className="text-[10px] text-on-surface-variant">Enviar link direto para o cliente</p>
               </div>
             </button>
-          </div>
+          </div>,
+          document.body
         )}
       </div>
 
