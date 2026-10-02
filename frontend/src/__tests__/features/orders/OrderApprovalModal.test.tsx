@@ -60,7 +60,7 @@ describe('OrderApprovalModal — [US-13.3] Modal de Aprovação e Conversão', (
     // Data padrão preenchida (+15 dias)
     const dateInput = screen.getByTestId('input-data-entrega') as HTMLInputElement;
     expect(dateInput.value).toBeTruthy();
-    expect(dateInput.value.length).toBe(10); // YYYY-MM-DD
+    expect(dateInput.value).toHaveLength(10); // YYYY-MM-DD
   });
 
   it('deve permitir alterar o canal de aprovação pelos cartões', async () => {

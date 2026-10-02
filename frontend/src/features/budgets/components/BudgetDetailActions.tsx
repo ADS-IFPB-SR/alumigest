@@ -40,6 +40,13 @@ export function BudgetDetailActions({
   const isCancelledOrRejected = currentStatus === 'CANCELLED' || currentStatus === 'REJECTED';
   const isApprovalDisabled = isApproved || isCancelledOrRejected;
 
+  let approvalButtonTooltip = 'Aprovar este orçamento e convertê-lo em Pedido de Venda';
+  if (isApproved) {
+    approvalButtonTooltip = 'Este orçamento já foi aprovado e convertido em pedido.';
+  } else if (isCancelledOrRejected) {
+    approvalButtonTooltip = 'Orçamentos cancelados ou rejeitados não podem ser aprovados.';
+  }
+
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const [showWhatsAppMenu, setShowWhatsAppMenu] = useState(false);
   const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
@@ -299,13 +306,7 @@ export function BudgetDetailActions({
         onClick={onApproveClick}
         disabled={isApprovalDisabled || !onApproveClick}
         className="text-xs py-1.5 px-3 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shrink-0"
-        title={
-          isApproved
-            ? 'Este orçamento já foi aprovado e convertido em pedido.'
-            : isCancelledOrRejected
-            ? 'Orçamentos cancelados ou rejeitados não podem ser aprovados.'
-            : 'Aprovar este orçamento e convertê-lo em Pedido de Venda'
-        }
+        title={approvalButtonTooltip}
       >
         <span className="whitespace-nowrap">Aprovar e Gerar Pedido</span>
       </Button>

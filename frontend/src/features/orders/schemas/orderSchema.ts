@@ -68,5 +68,4 @@ export const cancelOrderSchema = z.object({
 });
 
 export type ConvertOrderFormData = z.infer<typeof convertOrderSchema>;
-export type OrderConvertFormData = ConvertOrderFormData;
 export type CancelOrderFormData = z.infer<typeof cancelOrderSchema>;

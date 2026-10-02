@@ -7,7 +7,7 @@ import {
   orderConvertSchema,
   getDefaultDeliveryDate,
   getMinDeliveryDate,
-  type OrderConvertFormData,
+  type ConvertOrderFormData,
 } from '../schemas/orderSchema';
 import { useConvertBudget } from '../hooks/useConvertBudget';
 import type { ApprovalChannel, Order } from '../types';
@@ -20,7 +20,7 @@ export interface OrderApprovalModalProps {
   budgetCode: string;
   customerName?: string;
   onSuccess?: (order: Order) => void;
-  onConfirm?: (data: OrderConvertFormData) => Promise<void> | void;
+  onConfirm?: (data: ConvertOrderFormData) => Promise<void> | void;
   isSubmitting?: boolean;
 }
 
@@ -50,7 +50,7 @@ export const OrderApprovalModal: React.FC<OrderApprovalModalProps> = ({
     watch,
     setValue,
     formState: { errors },
-  } = useForm<OrderConvertFormData>({
+  } = useForm<ConvertOrderFormData>({
     resolver: zodResolver(orderConvertSchema),
     defaultValues: {
       canalAprovacao: 'WHATSAPP',
@@ -97,7 +97,7 @@ export const OrderApprovalModal: React.FC<OrderApprovalModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleFormSubmit = async (data: OrderConvertFormData) => {
+  const handleFormSubmit = async (data: ConvertOrderFormData) => {
     if (onConfirm) {
       await onConfirm(data);
       return;
