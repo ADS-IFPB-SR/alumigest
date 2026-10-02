@@ -972,13 +972,14 @@ public class BudgetPdfService {
         card.setSpacingBefore(2f);
         card.setSpacingAfter(12f);
 
-        int totalPecas = calcularTotalPecas(budget);
+        int totalPecas = calcularTotalPecas(budget.getItems());
 
-        String nomeCliente = (budget.getClient() != null && budget.getClient().getFullName() != null)
-                ? budget.getClient().getFullName().toUpperCase(PT_BR)
+        Client client = budget.getClient();
+        String nomeCliente = (client != null && client.getFullName() != null)
+                ? client.getFullName().toUpperCase(PT_BR)
                 : NAO_INFORMADO_UPPER;
 
-        String contato = extrairContatoCliente(budget.getClient());
+        String contato = extrairContatoCliente(client);
 
         String volume = totalPecas == 1 ? "1 PEÇA" : totalPecas + " PEÇAS";
 
@@ -989,11 +990,11 @@ public class BudgetPdfService {
         document.add(card);
     }
 
-    private int calcularTotalPecas(Budget budget) {
-        if (budget == null || budget.getItems() == null) {
+    private int calcularTotalPecas(List<BudgetItem> items) {
+        if (items == null) {
             return 0;
         }
-        return budget.getItems().stream()
+        return items.stream()
                 .mapToInt(this::obterQuantidadeItem)
                 .sum();
     }
