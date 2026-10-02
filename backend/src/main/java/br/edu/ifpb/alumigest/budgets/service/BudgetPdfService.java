@@ -972,11 +972,7 @@ public class BudgetPdfService {
         card.setSpacingBefore(2f);
         card.setSpacingAfter(12f);
 
-        int totalPecas = budget.getItems() != null
-                ? budget.getItems().stream()
-                        .mapToInt(i -> (i != null && i.getQuantity() != null && i.getQuantity() > 0) ? i.getQuantity() : 1)
-                        .sum()
-                : 0;
+        int totalPecas = calcularTotalPecas(budget);
 
         String nomeCliente = (budget.getClient() != null && budget.getClient().getFullName() != null)
                 ? budget.getClient().getFullName().toUpperCase(PT_BR)
@@ -991,6 +987,22 @@ public class BudgetPdfService {
         card.addCell(criarSubCelulaCardCliente("Volume do Pedido", volume, true));
 
         document.add(card);
+    }
+
+    private int calcularTotalPecas(Budget budget) {
+        if (budget == null || budget.getItems() == null) {
+            return 0;
+        }
+        return budget.getItems().stream()
+                .mapToInt(this::obterQuantidadeItem)
+                .sum();
+    }
+
+    private int obterQuantidadeItem(BudgetItem item) {
+        if (item == null || item.getQuantity() == null || item.getQuantity() <= 0) {
+            return 1;
+        }
+        return item.getQuantity();
     }
 
     private String extrairContatoCliente(Client client) {
@@ -1078,7 +1090,7 @@ public class BudgetPdfService {
         pNum.setLeading(14f);
         cell.addElement(pNum);
 
-        int qtd = (item != null && item.getQuantity() != null && item.getQuantity() > 0) ? item.getQuantity() : 1;
+        int qtd = obterQuantidadeItem(item);
         String qtdStr = qtd > 1 ? "Qtd: " + qtd + " conj." : "Qtd: 1";
         Paragraph pQtd = new Paragraph(qtdStr, FONTE_TECNICA_ITEM_QTD);
         pQtd.setAlignment(Element.ALIGN_CENTER);
