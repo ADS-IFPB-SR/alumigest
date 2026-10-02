@@ -973,7 +973,9 @@ public class BudgetPdfService {
         card.setSpacingAfter(12f);
 
         int totalPecas = budget.getItems() != null
-                ? budget.getItems().stream().mapToInt(BudgetItem::getQuantity).sum()
+                ? budget.getItems().stream()
+                        .mapToInt(i -> (i != null && i.getQuantity() != null && i.getQuantity() > 0) ? i.getQuantity() : 1)
+                        .sum()
                 : 0;
 
         String nomeCliente = (budget.getClient() != null && budget.getClient().getFullName() != null)
@@ -1076,7 +1078,7 @@ public class BudgetPdfService {
         pNum.setLeading(14f);
         cell.addElement(pNum);
 
-        int qtd = item.getQuantity() != null ? item.getQuantity() : 1;
+        int qtd = (item != null && item.getQuantity() != null && item.getQuantity() > 0) ? item.getQuantity() : 1;
         String qtdStr = qtd > 1 ? "Qtd: " + qtd + " conj." : "Qtd: 1";
         Paragraph pQtd = new Paragraph(qtdStr, FONTE_TECNICA_ITEM_QTD);
         pQtd.setAlignment(Element.ALIGN_CENTER);
