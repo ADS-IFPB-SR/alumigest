@@ -2,9 +2,16 @@ import { describe, it, expect } from 'vitest';
 import { customerSchema } from '@/features/customers/schemas/customerSchema';
 
 describe('customerSchema Validation', () => {
-  describe('Técnica: Análise do Valor Limite (BVA) - Comprimento do Nome Completo', () => {
+  const validBasePayload = {
+    nomeCompleto: 'João da Silva',
+    cpfCnpj: '123.456.789-00',
+    telefone: '(83) 99999-0000',
+  };
+
+  describe('Técnica: Análise do Valor Limite (BVA) - Nome Completo', () => {
     it('Limite Inferior Inválido: nome com 2 caracteres deve falhar', () => {
       const result = customerSchema.safeParse({
+        ...validBasePayload,
         nomeCompleto: 'Al',
       });
 
@@ -16,28 +23,114 @@ describe('customerSchema Validation', () => {
 
     it('Limite Inferior Válido: nome com exatamente 3 caracteres deve passar', () => {
       const result = customerSchema.safeParse({
+        ...validBasePayload,
         nomeCompleto: 'Ana',
       });
 
       expect(result.success).toBe(true);
     });
+
+    it('Nome com caracteres especiais inválidos deve falhar', () => {
+      const result = customerSchema.safeParse({
+        ...validBasePayload,
+        nomeCompleto: 'João @@@ Silva 123',
+      });
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.issues[0].message).toContain('não pode conter caracteres especiais');
+      }
+    });
   });
 
-  describe('Técnica: Particionamento em Classes de Equivalência (EP) - Telefone e E-mail', () => {
-    it('Telefone: válido com 8 ou mais dígitos, ou aceita string vazia/null', () => {
-      expect(customerSchema.safeParse({ nomeCompleto: 'Cliente Teste', telefone: '12345678' }).success).toBe(true);
-      expect(customerSchema.safeParse({ nomeCompleto: 'Cliente Teste', telefone: '' }).success).toBe(true);
-      expect(customerSchema.safeParse({ nomeCompleto: 'Cliente Teste', telefone: null }).success).toBe(true);
-      expect(customerSchema.safeParse({ nomeCompleto: 'Cliente Teste', telefone: '12345' }).success).toBe(false);
+  describe('Regra de Negócio: Obrigatoriedade de CPF/CNPJ', () => {
+    it('CPF/CNPJ vazio deve falhar', () => {
+      const result = customerSchema.safeParse({
+        ...validBasePayload,
+        cpfCnpj: '',
+      });
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.issues[0].message).toBe('O CPF ou CNPJ é obrigatório.');
+      }
     });
 
-    it('E-mail: formato válido vs formato inválido vs opcional', () => {
-      expect(customerSchema.safeParse({ nomeCompleto: 'Cliente Teste', email: 'contato@empresa.com' }).success).toBe(true);
-      expect(customerSchema.safeParse({ nomeCompleto: 'Cliente Teste', email: '' }).success).toBe(true);
-      expect(customerSchema.safeParse({ nomeCompleto: 'Cliente Teste', email: 'invalido-sem-arroba' }).success).toBe(false);
+    it('CPF/CNPJ em formato inválido deve falhar', () => {
+      const result = customerSchema.safeParse({
+        ...validBasePayload,
+        cpfCnpj: '12345',
+      });
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.issues[0].message).toContain('Documento com formato inválido');
+      }
     });
 
-    it('deve aceitar payload completo com todos os campos de endereço', () => {
+    it('CPF válido com ou sem pontuação deve passar', () => {
+      expect(customerSchema.safeParse({ ...validBasePayload, cpfCnpj: '12345678901' }).success).toBe(true);
+      expect(customerSchema.safeParse({ ...validBasePayload, cpfCnpj: '123.456.789-01' }).success).toBe(true);
+    });
+
+    it('CNPJ válido com ou sem pontuação deve passar', () => {
+      expect(customerSchema.safeParse({ ...validBasePayload, cpfCnpj: '12345678000199' }).success).toBe(true);
+      expect(customerSchema.safeParse({ ...validBasePayload, cpfCnpj: '12.345.678/0001-99' }).success).toBe(true);
+    });
+  });
+
+  describe('Regra de Negócio: Obrigatoriedade de Telefone', () => {
+    it('Telefone vazio deve falhar', () => {
+      const result = customerSchema.safeParse({
+        ...validBasePayload,
+        telefone: '',
+      });
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.issues[0].message).toBe('O telefone é obrigatório.');
+      }
+    });
+
+    it('Telefone com menos de 8 dígitos ou letras deve falhar', () => {
+      expect(customerSchema.safeParse({ ...validBasePayload, telefone: '123' }).success).toBe(false);
+      expect(customerSchema.safeParse({ ...validBasePayload, telefone: 'telefone-invalido' }).success).toBe(false);
+    });
+
+    it('Telefone com formato válido deve passar', () => {
+      expect(customerSchema.safeParse({ ...validBasePayload, telefone: '(83) 99999-0000' }).success).toBe(true);
+      expect(customerSchema.safeParse({ ...validBasePayload, telefone: '83999990000' }).success).toBe(true);
+      expect(customerSchema.safeParse({ ...validBasePayload, telefone: '32180000' }).success).toBe(true);
+    });
+  });
+
+  describe('Controle de Entradas: Município (Cidade)', () => {
+    it('Cidade com caracteres especiais deve falhar', () => {
+      const result = customerSchema.safeParse({
+        ...validBasePayload,
+        cidade: 'Santa Rita @#$ 123',
+      });
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.issues[0].message).toBe('O nome do município não pode conter caracteres especiais ou números.');
+      }
+    });
+
+    it('Cidade vazia ou não informada deve passar (campo opcional de endereço)', () => {
+      expect(customerSchema.safeParse({ ...validBasePayload, cidade: '' }).success).toBe(true);
+      expect(customerSchema.safeParse({ ...validBasePayload, cidade: undefined }).success).toBe(true);
+    });
+
+    it('Cidade com caracteres válidos (acentos, hífens, apóstrofos) deve passar', () => {
+      expect(customerSchema.safeParse({ ...validBasePayload, cidade: 'Santa Rita' }).success).toBe(true);
+      expect(customerSchema.safeParse({ ...validBasePayload, cidade: 'São Paulo' }).success).toBe(true);
+      expect(customerSchema.safeParse({ ...validBasePayload, cidade: "Olho-d'Água do Borges" }).success).toBe(true);
+    });
+  });
+
+  describe('Validação Completa', () => {
+    it('deve aceitar payload completo com todos os campos de endereço preenchidos corretamente', () => {
       const result = customerSchema.safeParse({
         nomeCompleto: 'Construtora Horizonte Ltda',
         cpfCnpj: '12.345.678/0001-90',

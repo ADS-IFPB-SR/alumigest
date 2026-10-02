@@ -152,5 +152,36 @@ describe('CustomerQuickCreateModal Component [Joseph Nichollas]', () => {
     fireEvent.click(submitBtn);
 
     expect(handleSubmit).not.toHaveBeenCalled();
+    expect(screen.getByText('O nome deve ter pelo menos 3 letras.')).toBeInTheDocument();
+    expect(screen.getByText('O CPF ou CNPJ é obrigatório.')).toBeInTheDocument();
+    expect(screen.getByText('O telefone é obrigatório.')).toBeInTheDocument();
+  });
+
+  it('deve exibir erro no campo Cidade ao preencher município com caracteres especiais', () => {
+    const handleSubmit = vi.fn();
+
+    render(
+      <CustomerQuickCreateModal
+        isOpen={true}
+        initialName="Cliente Válido"
+        onClose={vi.fn()}
+        onSubmit={handleSubmit}
+        isLoading={false}
+      />
+    );
+
+    const getById = (id: string) => document.getElementById(id) as HTMLInputElement;
+
+    fireEvent.change(getById('cqc-doc'), { target: { value: '123.456.789-00' } });
+    fireEvent.change(getById('cqc-tel'), { target: { value: '(83) 99999-0000' } });
+    fireEvent.change(getById('cqc-cidade'), { target: { value: 'Santa Rita @#$% 123' } });
+
+    const submitBtn = screen.getByRole('button', { name: /cadastrar cliente/i });
+    fireEvent.click(submitBtn);
+
+    expect(handleSubmit).not.toHaveBeenCalled();
+    expect(
+      screen.getByText('O nome do município não pode conter caracteres especiais ou números.')
+    ).toBeInTheDocument();
   });
 });
