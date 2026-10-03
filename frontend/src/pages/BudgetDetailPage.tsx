@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link, useParams, useLocation, useNavigate } from 'react-router-dom';
 import {
   useBudget,
@@ -68,7 +68,21 @@ export function BudgetDetailPage() {
     updateStatus({ id: budget.id, status: newStatus });
   };
 
-  
+  const isBudgetExpired = Boolean(
+    budget?.validUntil && new Date(budget.validUntil) < new Date(new Date().toDateString()),
+  );
+
+  const handleCloseApprovalModal = useCallback(() => {
+    setShowApprovalModal(false);
+  }, []);
+
+  const handleApprovalSuccess = useCallback(
+    (order: import('../features/orders/types').Order) => {
+      setShowApprovalModal(false);
+      navigate(`/pedidos/${order.id}`);
+    },
+    [navigate],
+  );
 
   if (isLoading) {
     return (
@@ -150,6 +164,7 @@ export function BudgetDetailPage() {
           onDownloadPdfTecnico={downloadPdfTecnico}
           isDownloadingPdfTecnico={isDownloadingPdf}
           onApproveClick={() => setShowApprovalModal(true)}
+          isExpired={isBudgetExpired}
         />
       </header>
 
@@ -440,14 +455,11 @@ export function BudgetDetailPage() {
       {showApprovalModal && (
         <OrderApprovalModal
           isOpen={showApprovalModal}
-          onClose={() => setShowApprovalModal(false)}
+          onClose={handleCloseApprovalModal}
           budgetId={budget.id}
           budgetCode={budget.code}
           customerName={budget.customer?.name}
-          onSuccess={(order) => {
-            setShowApprovalModal(false);
-            navigate(`/pedidos/${order.id}`);
-          }}
+          onSuccess={handleApprovalSuccess}
         />
       )}
     </div>

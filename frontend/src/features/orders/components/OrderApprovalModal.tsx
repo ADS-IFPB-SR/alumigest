@@ -192,12 +192,14 @@ export const OrderApprovalModal: React.FC<OrderApprovalModalProps> = ({
               })}
             </div>
 
-            {/* Select oculto ou acessível para formulários/testes */}
+            {/* Select oculto visualmente — mantido no DOM para react-hook-form e testes (sr-only) */}
             <select
               id="canalAprovacao"
               data-testid="input-canal-aprovacao"
               {...register('canalAprovacao')}
-              className="w-full text-xs font-medium rounded-lg border border-outline-variant bg-surface px-3 py-2 text-on-surface focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="sr-only"
+              tabIndex={-1}
+              aria-hidden="true"
             >
               {CHANNELS.map(({ value, label }) => (
                 <option key={value} value={value}>

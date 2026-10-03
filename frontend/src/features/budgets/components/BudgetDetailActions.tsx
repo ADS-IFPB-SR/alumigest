@@ -15,6 +15,7 @@ interface BudgetDetailActionsProps {
   readonly customerPhone?: string | null;
   readonly status?: BudgetStatus;
   readonly budgetStatus?: string;
+  readonly isExpired?: boolean;
   readonly onDeleteClick: () => void;
   readonly onDownloadPdfTecnico?: () => void;
   readonly isDownloadingPdfTecnico?: boolean;
@@ -27,6 +28,7 @@ export function BudgetDetailActions({
   customerPhone,
   status,
   budgetStatus,
+  isExpired = false,
   onDeleteClick,
   onDownloadPdfTecnico,
   isDownloadingPdfTecnico,
@@ -38,13 +40,15 @@ export function BudgetDetailActions({
   const currentStatus = (status ?? budgetStatus ?? 'DRAFT') as BudgetStatus;
   const isApproved = currentStatus === 'APPROVED';
   const isCancelledOrRejected = currentStatus === 'CANCELLED' || currentStatus === 'REJECTED';
-  const isApprovalDisabled = isApproved || isCancelledOrRejected;
+  const isApprovalDisabled = isApproved || isCancelledOrRejected || isExpired;
 
   let approvalButtonTooltip = 'Aprovar este orçamento e convertê-lo em Pedido de Venda';
   if (isApproved) {
     approvalButtonTooltip = 'Este orçamento já foi aprovado e convertido em pedido.';
   } else if (isCancelledOrRejected) {
     approvalButtonTooltip = 'Orçamentos cancelados ou rejeitados não podem ser aprovados.';
+  } else if (isExpired) {
+    approvalButtonTooltip = 'Orçamentos com validade expirada não podem ser aprovados.';
   }
 
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
