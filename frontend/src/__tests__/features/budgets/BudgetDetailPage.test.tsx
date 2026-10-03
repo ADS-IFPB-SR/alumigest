@@ -49,8 +49,8 @@ const mockBudgetDetail = {
       width: 2000,
       height: 2100,
       quantity: 2,
-      laborCost: 150, // 150 * 2 = 300 de MO agregada
-      subtotal: 1500,
+      laborCost: 150, // MO fixa da linha (não multiplica pela quantidade)
+      subtotal: 1350, // materiais (1350) + MO (150) = subtotal bruto (1500)
       options: [],
     },
   ],
@@ -317,5 +317,41 @@ describe('BudgetDetailPage - Testes Unitários', () => {
 
     // 4. O total líquido final exibido deve ser exatamente R$ 6.087,76
     expect(screen.getByText(/6\.087,76/)).toBeInTheDocument();
+  });
+
+  it('[Regressão #372] deve somar a mão de obra das linhas sem multiplicar pela quantidade (paridade com BudgetPricingService e PDF)', () => {
+    // Item A: 2 esquadrias, MO da linha R$ 150 | Item B: 3 esquadrias, MO da linha R$ 100
+    // MO esperada = 150 + 100 = 250 (e não 2×150 + 3×100 = 600)
+    const multiItemBudget = {
+      ...mockBudgetDetail,
+      subtotal: 950,
+      discountPercent: 0,
+      discountValue: 0,
+      freightCost: 0,
+      installationCost: 0,
+      total: 950,
+      items: [
+        { ...mockBudgetDetail.items[0], id: 'i-a', quantity: 2, laborCost: 150, subtotal: 400 },
+        { ...mockBudgetDetail.items[0], id: 'i-b', productName: 'Janela Maxim-Ar', quantity: 3, laborCost: 100, subtotal: 300 },
+      ],
+    };
+
+    vi.spyOn(budgetsHooks, 'useBudget').mockReturnValue({
+      data: multiItemBudget,
+      isLoading: false,
+      isError: false,
+    } as any);
+
+    renderWithRouter();
+
+    const maoDeObraValor = screen.getByText('Mão de Obra:').nextElementSibling;
+    expect(maoDeObraValor?.textContent).toMatch(/250,00/);
+    expect(maoDeObraValor?.textContent).not.toMatch(/600,00/);
+
+    const materiaisValor = screen.getByText('Esquadrias / Materiais:').nextElementSibling;
+    expect(materiaisValor?.textContent).toMatch(/700,00/);
+
+    const subtotalBrutoValor = screen.getByText('Subtotal Bruto:').nextElementSibling;
+    expect(subtotalBrutoValor?.textContent).toMatch(/950,00/);
   });
 });

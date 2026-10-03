@@ -126,7 +126,7 @@ class BudgetEndToEndIntegrationTest {
             boxItem.setWidthMm(new BigDecimal("1400"));
             boxItem.setHeightMm(new BigDecimal("1900"));
             boxItem.setQuantity(2);
-            boxItem.setLaborCost(new BigDecimal("120.00")); // Mão de obra R$ 120 por unidade
+            boxItem.setLaborCost(new BigDecimal("120.00")); // Mão de obra fixa da linha: R$ 120 (não multiplica pela quantidade)
 
             // 5. Selecionar Vidro 8mm Incolor, Perfis Linha Box Branco e Kit Ferragens Standard
             boxItem.setTemplateConfig("""
@@ -207,15 +207,14 @@ class BudgetEndToEndIntegrationTest {
 
             boxItem.setOptions(options);
 
-            // Subtotal do item = soma das opções + mão de obra (2 * 120 = 240)
+            // Subtotal do item = soma das opções (estritamente materiais); a MO da linha é consolidada no orçamento
             BigDecimal subtotalInsumos = options.stream()
                     .map(BudgetItemOption::getTotalPrice)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
-            BigDecimal totalMaoDeObraItem = boxItem.getLaborCost().multiply(BigDecimal.valueOf(boxItem.getQuantity()));
-            boxItem.setSubtotal(subtotalInsumos.add(totalMaoDeObraItem));
+            boxItem.setSubtotal(subtotalInsumos);
 
             budget.setItems(List.of(boxItem));
-            budget.setSubtotal(boxItem.getSubtotal());
+            budget.setSubtotal(boxItem.getSubtotal().add(boxItem.getLaborCost()));
 
             // 7. Aplicar 5% de desconto comercial e salvar orçamento
             budget.setDiscountPercent(new BigDecimal("5.00"));
@@ -335,7 +334,7 @@ class BudgetEndToEndIntegrationTest {
             budget.setItems(itens);
 
             BigDecimal subtotalTotal = itens.stream()
-                    .map(BudgetItem::getSubtotal)
+                    .map(item -> item.getSubtotal().add(item.getLaborCost()))
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
             budget.setSubtotal(subtotalTotal);
 
@@ -454,8 +453,7 @@ class BudgetEndToEndIntegrationTest {
             item.setOptions(opts);
 
             BigDecimal subtotalOpts = opts.stream().map(BudgetItemOption::getTotalPrice).reduce(BigDecimal.ZERO, BigDecimal::add);
-            BigDecimal totalMo = item.getLaborCost().multiply(BigDecimal.valueOf(qty));
-            item.setSubtotal(subtotalOpts.add(totalMo));
+            item.setSubtotal(subtotalOpts);
 
             return item;
         }
