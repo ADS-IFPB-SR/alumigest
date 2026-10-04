@@ -12,6 +12,7 @@ import { SeparateSalePage } from './pages/SeparateSalePage';
 import { ProductTab as ProductsPage } from './pages/ProductsPage';
 import { ProductBuilderPage } from './pages/ProductBuilderPage';
 import { OrderListPage } from './pages/OrderListPage';
+import { OrderDetailPage } from './pages/OrderDetailPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -33,6 +34,7 @@ export function AppRoutes() {
         <Route path="orcamentos/:id" element={<BudgetDetailPage />} />
         <Route path="orcamentos/:id/editar" element={<BudgetEditor />} />
         <Route path="pedidos" element={<OrderListPage />} />
+        <Route path="pedidos/:id" element={<OrderDetailPage />} />
 
         <Route
           path="dashboard"

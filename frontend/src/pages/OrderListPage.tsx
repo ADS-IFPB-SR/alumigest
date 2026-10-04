@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { useOrders } from '../features/orders/hooks/useOrders';
 import { OrderStatusBadge } from '../features/orders/components/OrderStatusBadge';
 import { formatBRL } from '../features/budgets/utils/calculations';
+// Adicionado os imports dos Labels
+import { ORDER_STATUS_LABELS, APPROVAL_CHANNEL_LABELS } from '../features/orders/types';
 
 export function OrderListPage() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -61,6 +63,7 @@ export function OrderListPage() {
                 />
               </div>
 
+              {/* Filtro de Status Corrigido */}
               <select
                 value={statusFilter}
                 onChange={(e) => {
@@ -70,14 +73,14 @@ export function OrderListPage() {
                 className="w-full sm:w-auto px-3 py-2 bg-surface border border-outline-variant rounded-md text-[13px] text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary cursor-pointer"
               >
                 <option value="">Todos os Status</option>
-                <option value="CRIADO">🔵 Criado</option>
-                <option value="AGUARDANDO_PRODUCAO">🟠 Aguardando Produção</option>
-                <option value="EM_PRODUCAO">🟡 Em Produção</option>
-                <option value="CONCLUIDO">🟢 Concluído</option>
-                <option value="CANCELADO">🔴 Cancelado</option>
+                {Object.entries(ORDER_STATUS_LABELS).map(([key, label]) => (
+                  <option key={key} value={key}>
+                    {label}
+                  </option>
+                ))}
               </select>
 
-              {/* Novo Dropdown de Canais idêntico ao protótipo */}
+              {/* Filtro de Canais Corrigido */}
               <select
                 value={channelFilter}
                 onChange={(e) => {
@@ -87,9 +90,11 @@ export function OrderListPage() {
                 className="w-full sm:w-auto px-3 py-2 bg-surface border border-outline-variant rounded-md text-[13px] text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary cursor-pointer"
               >
                 <option value="">Todos os Canais</option>
-                <option value="WHATSAPP">WhatsApp</option>
-                <option value="PRESENCIAL">Presencial (Loja)</option>
-                <option value="EMAIL">E-mail</option>
+                {Object.entries(APPROVAL_CHANNEL_LABELS).map(([key, label]) => (
+                  <option key={key} value={key}>
+                    {label}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -161,7 +166,6 @@ export function OrderListPage() {
                         <OrderStatusBadge status={order.status} />
                       </td>
 
-                      {/* Botões de Ação Atualizados conforme o Protótipo */}
                       <td className="px-5 py-3.5 text-right">
                         <div className="flex items-center justify-end gap-2">
                           <Link

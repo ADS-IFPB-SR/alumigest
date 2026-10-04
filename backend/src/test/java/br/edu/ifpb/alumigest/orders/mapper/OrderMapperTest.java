@@ -41,7 +41,7 @@ class OrderMapperTest {
                 .cliente(client)
                 .clienteNome("João das Neves")
                 .clienteTelefone("83999991234")
-                .status(OrderStatus.AGUARDANDO_PRODUCAO)
+                .status(OrderStatus.WAITING_PRODUCTION)
                 .canalAprovacao(ApprovalChannel.WHATSAPP)
                 .dataAprovacao(LocalDate.of(2026, 9, 29))
                 .dataPrevisaoEntrega(LocalDate.of(2026, 10, 14))
@@ -80,7 +80,7 @@ class OrderMapperTest {
         assertThat(response.id()).isEqualTo(orderId);
         assertThat(response.codigo()).isEqualTo("PED-2026-0010");
         assertThat(response.clienteId()).isEqualTo(clientId);
-        assertThat(response.status()).isEqualTo(OrderStatus.AGUARDANDO_PRODUCAO);
+        assertThat(response.status()).isEqualTo(OrderStatus.WAITING_PRODUCTION);
         assertThat(response.statusDescricao()).isEqualTo("Aguardando Produção");
         assertThat(response.canalAprovacao()).isEqualTo(ApprovalChannel.WHATSAPP);
         assertThat(response.canalAprovacaoDescricao()).isEqualTo("WhatsApp");
@@ -97,7 +97,7 @@ class OrderMapperTest {
                 .codigo("PED-2026-0011")
                 .orcamentoId(UUID.randomUUID())
                 .clienteNome("Maria Bonita")
-                .status(OrderStatus.EM_PRODUCAO)
+                .status(OrderStatus.IN_PRODUCTION)
                 .canalAprovacao(ApprovalChannel.PRESENCIAL)
                 .valorLiquido(new BigDecimal("3500.00"))
                 .build();

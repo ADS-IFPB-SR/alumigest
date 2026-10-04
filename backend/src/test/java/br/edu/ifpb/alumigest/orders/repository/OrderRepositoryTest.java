@@ -80,7 +80,7 @@ class OrderRepositoryTest {
     @Test
     @DisplayName("[Partição de Equivalência] Deve persistir pedido com itens e recuperar por código e ID")
     void shouldPersistAndRetrieveOrderByCodeAndId() {
-        Order order = buildOrder("PED-2026-0001", UUID.randomUUID(), OrderStatus.AGUARDANDO_PRODUCAO);
+        Order order = buildOrder("PED-2026-0001", UUID.randomUUID(), OrderStatus.WAITING_PRODUCTION);
 
         OrderItem item = OrderItem.builder()
                 .descricao("Janela Correr 2F")
@@ -108,10 +108,10 @@ class OrderRepositoryTest {
     void shouldEnforceUniqueBudgetConstraint() {
         UUID orcamentoId = UUID.randomUUID();
 
-        Order order1 = buildOrder("PED-2026-0001", orcamentoId, OrderStatus.AGUARDANDO_PRODUCAO);
+        Order order1 = buildOrder("PED-2026-0001", orcamentoId, OrderStatus.WAITING_PRODUCTION);
         orderRepository.saveAndFlush(order1);
 
-        Order order2 = buildOrder("PED-2026-0002", orcamentoId, OrderStatus.AGUARDANDO_PRODUCAO);
+        Order order2 = buildOrder("PED-2026-0002", orcamentoId, OrderStatus.WAITING_PRODUCTION);
 
         assertThatThrownBy(() -> orderRepository.saveAndFlush(order2))
                 .isInstanceOf(DataIntegrityViolationException.class);
@@ -120,10 +120,10 @@ class OrderRepositoryTest {
     @Test
     @DisplayName("[Restrição de Integridade] Deve lançar DataIntegrityViolationException ao duplicar codigo")
     void shouldEnforceUniqueCodigoConstraint() {
-        Order order1 = buildOrder("PED-2026-0001", UUID.randomUUID(), OrderStatus.AGUARDANDO_PRODUCAO);
+        Order order1 = buildOrder("PED-2026-0001", UUID.randomUUID(), OrderStatus.WAITING_PRODUCTION);
         orderRepository.saveAndFlush(order1);
 
-        Order order2 = buildOrder("PED-2026-0001", UUID.randomUUID(), OrderStatus.AGUARDANDO_PRODUCAO);
+        Order order2 = buildOrder("PED-2026-0001", UUID.randomUUID(), OrderStatus.WAITING_PRODUCTION);
 
         assertThatThrownBy(() -> orderRepository.saveAndFlush(order2))
                 .isInstanceOf(DataIntegrityViolationException.class);
@@ -132,13 +132,13 @@ class OrderRepositoryTest {
     @Test
     @DisplayName("[Partição de Equivalência] Deve filtrar pedidos ativos por status e busca textual")
     void shouldFilterActiveOrdersByStatusAndSearchTerm() {
-        Order order1 = buildOrder("PED-2026-0001", UUID.randomUUID(), OrderStatus.AGUARDANDO_PRODUCAO, "Carlos Eduardo");
+        Order order1 = buildOrder("PED-2026-0001", UUID.randomUUID(), OrderStatus.WAITING_PRODUCTION, "Carlos Eduardo");
         orderRepository.save(order1);
 
-        Order order2 = buildOrder("PED-2026-0002", UUID.randomUUID(), OrderStatus.EM_PRODUCAO, "Ana Paula");
+        Order order2 = buildOrder("PED-2026-0002", UUID.randomUUID(), OrderStatus.IN_PRODUCTION, "Ana Paula");
         orderRepository.save(order2);
 
-        Order order3 = buildOrder("PED-2026-0003", UUID.randomUUID(), OrderStatus.AGUARDANDO_PRODUCAO, "Bruna Costa");
+        Order order3 = buildOrder("PED-2026-0003", UUID.randomUUID(), OrderStatus.WAITING_PRODUCTION, "Bruna Costa");
         orderRepository.save(order3);
 
         entityManager.flush();
@@ -146,7 +146,7 @@ class OrderRepositoryTest {
 
         // Filtro por status
         Page<Order> aguardando = orderRepository.findAllWithFilters(
-                OrderStatus.AGUARDANDO_PRODUCAO, null, PageRequest.of(0, 10));
+                OrderStatus.WAITING_PRODUCTION, null, PageRequest.of(0, 10));
         assertThat(aguardando.getContent()).hasSize(2);
 
         // Filtro por busca textual no nome do cliente
@@ -165,9 +165,9 @@ class OrderRepositoryTest {
     @Test
     @DisplayName("[Partição de Equivalência] Deve encontrar o pedido com código mais recente para prefixo anual")
     void shouldFindTopOrderByCodePrefix() {
-        orderRepository.save(buildOrder("PED-2026-0001", UUID.randomUUID(), OrderStatus.AGUARDANDO_PRODUCAO));
-        orderRepository.save(buildOrder("PED-2026-0005", UUID.randomUUID(), OrderStatus.AGUARDANDO_PRODUCAO));
-        orderRepository.save(buildOrder("PED-2026-0002", UUID.randomUUID(), OrderStatus.AGUARDANDO_PRODUCAO));
+        orderRepository.save(buildOrder("PED-2026-0001", UUID.randomUUID(), OrderStatus.WAITING_PRODUCTION));
+        orderRepository.save(buildOrder("PED-2026-0005", UUID.randomUUID(), OrderStatus.WAITING_PRODUCTION));
+        orderRepository.save(buildOrder("PED-2026-0002", UUID.randomUUID(), OrderStatus.WAITING_PRODUCTION));
 
         entityManager.flush();
         entityManager.clear();

@@ -4,33 +4,42 @@ package br.edu.ifpb.alumigest.orders.domain;
  * Estados do ciclo de vida de um Pedido de Venda.
  */
 public enum OrderStatus {
-    CRIADO("Criado"),
-    AGUARDANDO_PRODUCAO("Aguardando Produção"),
-    EM_PRODUCAO("Em Produção"),
-    CONCLUIDO("Concluído"),
-    CANCELADO("Cancelado");
+  CREATED("Criado"),
+  WAITING_PRODUCTION("Aguardando Produção"),
+  IN_PRODUCTION("Em Produção"),
+  COMPLETED("Concluído"),
+  CANCELLED("Cancelado");
 
-    private final String descricao;
+  private final String description;
 
-    OrderStatus(String descricao) {
-        this.descricao = descricao;
-    }
+  OrderStatus(String description) {
+    this.description = description;
+  }
 
-    public String getDescricao() {
-        return descricao;
-    }
+  public String getDescription() {
+    return description;
+  }
 
-    public String getLabel() {
-        return descricao;
-    }
+  public String getDescricao() {
+    return description;
+  }
 
-    /**
-     * Verifica se o pedido no estado atual pode ser cancelado.
-     * Somente pedidos nos estados CRIADO e AGUARDANDO_PRODUCAO permitem cancelamento.
-     *
-     * @return true se permitido o cancelamento, false caso contrário
-     */
-    public boolean podeCancelar() {
-        return this == CRIADO || this == AGUARDANDO_PRODUCAO;
-    }
+  public String getLabel() {
+    return description;
+  }
+
+  /**
+   * Verifica se o pedido no estado atual pode ser cancelado.
+   * Somente pedidos nos estados CREATED e WAITING_PRODUCTION permitem cancelamento.
+   *
+   * @return true se permitido o cancelamento, false caso contrário
+   */
+  public boolean canCancel() {
+    return this == CREATED || this == WAITING_PRODUCTION;
+  }
+
+  public boolean podeCancelar() {
+    return canCancel();
+  }
 }
+
