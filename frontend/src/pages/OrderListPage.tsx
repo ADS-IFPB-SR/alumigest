@@ -53,9 +53,10 @@ export function OrderListPage() {
                   search
                 </span>
 
-                <label className="w-full">
+                <label htmlFor="search-orders" className="w-full">
                   <span className="sr-only">Buscar pedidos</span>
                   <input
+                    id="search-orders"
                     type="text"
                     placeholder="Buscar por código, cliente ou orçamento..."
                     value={searchTerm}
@@ -65,9 +66,10 @@ export function OrderListPage() {
                 </label>
               </div>
 
-              <label className="w-full sm:w-auto">
+              <label htmlFor="status-filter" className="w-full sm:w-auto">
                 <span className="sr-only">Filtrar por status</span>
                 <select
+                  id="status-filter"
                   value={statusFilter}
                   onChange={(e) => {
                     setStatusFilter(e.target.value);
@@ -84,9 +86,10 @@ export function OrderListPage() {
                 </select>
               </label>
 
-              <label className="w-full sm:w-auto">
+              <label htmlFor="channel-filter" className="w-full sm:w-auto">
                 <span className="sr-only">Filtrar por canal de aprovação</span>
                 <select
+                  id="channel-filter"
                   value={channelFilter}
                   onChange={(e) => {
                     setChannelFilter(e.target.value);
