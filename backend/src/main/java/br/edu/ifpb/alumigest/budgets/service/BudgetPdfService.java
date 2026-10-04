@@ -283,7 +283,7 @@ public class BudgetPdfService {
 
         String nomeEmpresa = (companyProps.getRazaoSocial() != null && !companyProps.getRazaoSocial().isBlank())
         ? companyProps.getRazaoSocial().trim()
-        : "Erro ao ler razão social";
+        : "Alumiportas - Vidraçaria e Esquadrias";
 
         sb.append("_").append(nomeEmpresa).append("_");
     }
