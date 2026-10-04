@@ -84,8 +84,18 @@ export function BudgetDetailActions({
       setIsDownloadingPdf(true);
       await budgetsApi.downloadCommercialPdf(budgetId, budgetCode);
       toast.success(`PDF Comercial do orçamento ${budgetCode} gerado com sucesso!`);
-    } catch {
-      toast.error('Erro ao gerar o PDF Comercial.');
+    } catch (error: any) {
+      if (error.response?.data instanceof Blob) {
+        try {
+          const errorText = await error.response.data.text();
+          const errorJson = JSON.parse(errorText);
+          toast.error(errorJson.message || 'Erro ao gerar o PDF Comercial.');
+        } catch {
+          toast.error('Erro ao gerar o PDF Comercial.');
+        }
+      } else {
+        toast.error(error.response?.data?.message || 'Erro ao gerar o PDF Comercial.');
+      }
     } finally {
       setIsDownloadingPdf(false);
     }
@@ -122,8 +132,18 @@ export function BudgetDetailActions({
       setLocalDownloadingPdfTecnico(true);
       await budgetsApi.downloadPdfTecnico(budgetId, budgetCode);
       toast.success('PDF da Ficha Técnica baixado com sucesso!');
-    } catch {
-      toast.error('Erro ao gerar o PDF técnico.');
+    } catch (error: any) {
+      if (error.response?.data instanceof Blob) {
+        try {
+          const errorText = await error.response.data.text();
+          const errorJson = JSON.parse(errorText);
+          toast.error(errorJson.message || 'Erro ao gerar o PDF técnico.');
+        } catch {
+          toast.error('Erro ao gerar o PDF técnico.');
+        }
+      } else {
+        toast.error(error.response?.data?.message || 'Erro ao gerar o PDF técnico.');
+      }
     } finally {
       setLocalDownloadingPdfTecnico(false);
     }
