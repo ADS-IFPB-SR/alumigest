@@ -972,15 +972,14 @@ public class BudgetPdfService {
         card.setSpacingBefore(2f);
         card.setSpacingAfter(12f);
 
-        int totalPecas = budget.getItems() != null
-                ? budget.getItems().stream().mapToInt(BudgetItem::getQuantity).sum()
-                : 0;
+        int totalPecas = calcularTotalPecas(budget.getItems());
 
-        String nomeCliente = (budget.getClient() != null && budget.getClient().getFullName() != null)
-                ? budget.getClient().getFullName().toUpperCase(PT_BR)
+        Client client = budget.getClient();
+        String nomeCliente = (client != null && client.getFullName() != null)
+                ? client.getFullName().toUpperCase(PT_BR)
                 : NAO_INFORMADO_UPPER;
 
-        String contato = extrairContatoCliente(budget.getClient());
+        String contato = extrairContatoCliente(client);
 
         String volume = totalPecas == 1 ? "1 PEÇA" : totalPecas + " PEÇAS";
 
@@ -989,6 +988,22 @@ public class BudgetPdfService {
         card.addCell(criarSubCelulaCardCliente("Volume do Pedido", volume, true));
 
         document.add(card);
+    }
+
+    private int calcularTotalPecas(List<BudgetItem> items) {
+        if (items == null) {
+            return 0;
+        }
+        return items.stream()
+                .mapToInt(this::obterQuantidadeItem)
+                .sum();
+    }
+
+    private int obterQuantidadeItem(BudgetItem item) {
+        if (item == null || item.getQuantity() == null || item.getQuantity() <= 0) {
+            return 1;
+        }
+        return item.getQuantity();
     }
 
     private String extrairContatoCliente(Client client) {
@@ -1076,7 +1091,7 @@ public class BudgetPdfService {
         pNum.setLeading(14f);
         cell.addElement(pNum);
 
-        int qtd = item.getQuantity() != null ? item.getQuantity() : 1;
+        int qtd = obterQuantidadeItem(item);
         String qtdStr = qtd > 1 ? "Qtd: " + qtd + " conj." : "Qtd: 1";
         Paragraph pQtd = new Paragraph(qtdStr, FONTE_TECNICA_ITEM_QTD);
         pQtd.setAlignment(Element.ALIGN_CENTER);

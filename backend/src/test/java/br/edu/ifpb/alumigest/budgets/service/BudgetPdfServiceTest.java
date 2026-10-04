@@ -1420,6 +1420,61 @@ class BudgetPdfServiceTest {
                 assertThat(texto).contains("dobradiças para altura > 1800mm");
             }
         }
+
+        @Test
+        @DisplayName("US-11.1 / Issue #383 (BUG-034): Deve emitir PDF técnico com fallback para 1 peça quando BudgetItem.quantity for nulo")
+        void deveEmitirPdfTecnicoComSucessoQuandoItemPossuirQuantityNulo() throws IOException {
+            Budget budget = criarBudgetPadrao(true);
+            budget.getItems().get(0).setQuantity(null);
+
+            byte[] pdfBytes = budgetPdfService.gerarPdfTecnico(budget);
+
+            assertThat(pdfBytes).isNotNull().isNotEmpty();
+            try (PdfReader reader = new PdfReader(pdfBytes)) {
+                String texto = extrairStreamsDeTexto(reader);
+                assertThat(texto).contains("VOLUME DO PEDIDO");
+                assertThat(texto).contains("1 PEÇA");
+                assertThat(texto).contains("Qtd: 1");
+            }
+        }
+
+        @Test
+        @DisplayName("US-11.1 / Issue #383 (BUG-034): Deve somar volume do pedido defensivamente quando houver mix de itens com e sem quantity")
+        void deveSomarTotalPecasComFallbackQuandoHouverMixDeItensComESemQuantity() throws IOException {
+            Budget budget = criarBudgetPadrao(true);
+            BudgetItem item1 = budget.getItems().get(0);
+            item1.setQuantity(2);
+
+            BudgetItem item2 = new BudgetItem();
+            item2.setId(UUID.randomUUID());
+            item2.setProductName("Janela Basculante");
+            item2.setWidthMm(new BigDecimal("600"));
+            item2.setHeightMm(new BigDecimal("600"));
+            item2.setQuantity(null); // NULO (fallback defensivo = 1)
+            item2.setSubtotal(new BigDecimal("300.00"));
+            item2.setBudget(budget);
+
+            BudgetItem item3 = new BudgetItem();
+            item3.setId(UUID.randomUUID());
+            item3.setProductName("Porta de Correr 2F");
+            item3.setWidthMm(new BigDecimal("1200"));
+            item3.setHeightMm(new BigDecimal("2100"));
+            item3.setQuantity(3);
+            item3.setSubtotal(new BigDecimal("900.00"));
+            item3.setBudget(budget);
+
+            budget.setItems(new ArrayList<>(List.of(item1, item2, item3)));
+
+            byte[] pdfBytes = budgetPdfService.gerarPdfTecnico(budget);
+
+            assertThat(pdfBytes).isNotNull().isNotEmpty();
+            try (PdfReader reader = new PdfReader(pdfBytes)) {
+                String texto = extrairStreamsDeTexto(reader);
+                assertThat(texto).contains("VOLUME DO PEDIDO");
+                // 2 + 1 (fallback) + 3 = 6 peças
+                assertThat(texto).contains("6 PEÇAS");
+            }
+        }
     }
 
     // =========================================================================
