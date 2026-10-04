@@ -37,7 +37,7 @@ export function OrderListPage() {
     <div className="flex-1 flex flex-col min-w-0 bg-surface">
 
       <div className="px-6 py-8 sm:px-8">
-        <h2 className="text-xl sm:text-2xl font-bold text-on-surface tracking-tight">Pedidos de Venda</h2>
+        <h2 id="page-title" className="text-xl sm:text-2xl font-bold text-on-surface tracking-tight">Pedidos de Venda</h2>
         <p className="text-sm text-on-surface-variant mt-1 font-body">
           Acompanhe e gerencie a fila de pedidos confirmados para produção e entrega.
         </p>
@@ -49,62 +49,53 @@ export function OrderListPage() {
           <div className="p-4 bg-surface-container-low/30 border-b border-outline-variant flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="flex items-center gap-3 w-full sm:w-auto flex-wrap">
               <div className="relative w-full sm:w-[280px]">
-                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]" aria-hidden="true">
+                <span id="search-icon" className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]" aria-hidden="true">
                   search
                 </span>
 
-                <label htmlFor="search-orders" className="w-full">
-                  <span className="sr-only">Buscar pedidos</span>
-                  <input
-                    id="search-orders"
-                    type="text"
-                    placeholder="Buscar por código, cliente ou orçamento..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 bg-surface border border-outline-variant rounded-md text-[13px] text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
-                  />
-                </label>
+                <input
+                  type="text"
+                  aria-labelledby="search-icon"
+                  placeholder="Buscar por código, cliente ou orçamento..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2 bg-surface border border-outline-variant rounded-md text-[13px] text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+                />
               </div>
 
-              <label htmlFor="status-filter" className="w-full sm:w-auto">
-                <span className="sr-only">Filtrar por status</span>
-                <select
-                  id="status-filter"
-                  value={statusFilter}
-                  onChange={(e) => {
-                    setStatusFilter(e.target.value);
-                    setPage(0);
-                  }}
-                  className="w-full px-3 py-2 bg-surface border border-outline-variant rounded-md text-[13px] text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary cursor-pointer"
-                >
-                  <option value="">Todos os Status</option>
-                  {Object.entries(ORDER_STATUS_LABELS).map(([key, label]) => (
-                    <option key={key} value={key}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <select
+                aria-labelledby="page-title"
+                value={statusFilter}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value);
+                  setPage(0);
+                }}
+                className="w-full sm:w-auto px-3 py-2 bg-surface border border-outline-variant rounded-md text-[13px] text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary cursor-pointer"
+              >
+                <option value="">Todos os Status</option>
+                {Object.entries(ORDER_STATUS_LABELS).map(([key, label]) => (
+                  <option key={key} value={key}>
+                    {label}
+                  </option>
+                ))}
+              </select>
 
-              <label htmlFor="channel-filter" className="w-full sm:w-auto">
-                <span className="sr-only">Filtrar por canal de aprovação</span>
-                <select
-                  id="channel-filter"
-                  value={channelFilter}
-                  onChange={(e) => {
-                    setChannelFilter(e.target.value);
-                    setPage(0);
-                  }}
-                  className="w-full px-3 py-2 bg-surface border border-outline-variant rounded-md text-[13px] text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary cursor-pointer"
-                >
-                  <option value="">Todos os Canais</option>
-                  {Object.entries(APPROVAL_CHANNEL_LABELS).map(([key, label]) => (
-                    <option key={key} value={key}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <select
+                aria-labelledby="page-title"
+                value={channelFilter}
+                onChange={(e) => {
+                  setChannelFilter(e.target.value);
+                  setPage(0);
+                }}
+                className="w-full sm:w-auto px-3 py-2 bg-surface border border-outline-variant rounded-md text-[13px] text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary cursor-pointer"
+              >
+                <option value="">Todos os Canais</option>
+                {Object.entries(APPROVAL_CHANNEL_LABELS).map(([key, label]) => (
+                  <option key={key} value={key}>
+                    {label}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="text-[13px] text-on-surface-variant font-body whitespace-nowrap">
