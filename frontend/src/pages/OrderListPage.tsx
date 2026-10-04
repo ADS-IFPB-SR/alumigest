@@ -49,12 +49,14 @@ export function OrderListPage() {
           <div className="p-4 bg-surface-container-low/30 border-b border-outline-variant flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="flex items-center gap-3 w-full sm:w-auto flex-wrap">
               <div className="relative w-full sm:w-[280px]">
-                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]">
+                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]" aria-hidden="true">
                   search
                 </span>
+
+                <label htmlFor="search-orders" className="sr-only">Buscar pedidos</label>
                 <input
+                  id="search-orders"
                   type="text"
-                  aria-label="Buscar pedidos"
                   placeholder="Buscar por código, cliente ou orçamento..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -62,8 +64,9 @@ export function OrderListPage() {
                 />
               </div>
 
+              <label htmlFor="status-filter" className="sr-only">Filtrar por status</label>
               <select
-                aria-label="Filtrar por status"
+                id="status-filter"
                 value={statusFilter}
                 onChange={(e) => {
                   setStatusFilter(e.target.value);
@@ -79,8 +82,9 @@ export function OrderListPage() {
                 ))}
               </select>
 
+              <label htmlFor="channel-filter" className="sr-only">Filtrar por canal de aprovação</label>
               <select
-                aria-label="Filtrar por canal de aprovação"
+                id="channel-filter"
                 value={channelFilter}
                 onChange={(e) => {
                   setChannelFilter(e.target.value);
