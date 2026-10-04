@@ -3,14 +3,13 @@ import { Link } from 'react-router-dom';
 import { useOrders } from '../features/orders/hooks/useOrders';
 import { OrderStatusBadge } from '../features/orders/components/OrderStatusBadge';
 import { formatBRL } from '../features/budgets/utils/calculations';
-// Adicionado os imports dos Labels
 import { ORDER_STATUS_LABELS, APPROVAL_CHANNEL_LABELS } from '../features/orders/types';
 
 export function OrderListPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('');
-  const [channelFilter, setChannelFilter] = useState<string>(''); // Novo estado para o dropdown de canais
+  const [channelFilter, setChannelFilter] = useState<string>('');
   const [page, setPage] = useState(0);
   const size = 10;
 
@@ -27,7 +26,6 @@ export function OrderListPage() {
     size,
     busca: debouncedSearch,
     status: statusFilter ? (statusFilter as any) : undefined,
-    // channelFilter omitido da requisição pois o backend ainda não suporta
   });
 
   const totalElements = data?.page.totalElements || 0;
@@ -56,6 +54,7 @@ export function OrderListPage() {
                 </span>
                 <input
                   type="text"
+                  aria-label="Buscar pedidos"
                   placeholder="Buscar por código, cliente ou orçamento..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -63,8 +62,8 @@ export function OrderListPage() {
                 />
               </div>
 
-              {/* Filtro de Status Corrigido */}
               <select
+                aria-label="Filtrar por status"
                 value={statusFilter}
                 onChange={(e) => {
                   setStatusFilter(e.target.value);
@@ -80,8 +79,8 @@ export function OrderListPage() {
                 ))}
               </select>
 
-              {/* Filtro de Canais Corrigido */}
               <select
+                aria-label="Filtrar por canal de aprovação"
                 value={channelFilter}
                 onChange={(e) => {
                   setChannelFilter(e.target.value);
@@ -165,7 +164,6 @@ export function OrderListPage() {
                       <td className="px-5 py-3.5">
                         <OrderStatusBadge status={order.status} />
                       </td>
-
                       <td className="px-5 py-3.5 text-right">
                         <div className="flex items-center justify-end gap-2">
                           <Link
