@@ -57,6 +57,7 @@ export function BudgetDetailActions({
     setShowWhatsAppMenu((prev) => !prev);
   };
 
+ 
   // Fecha o dropdown do WhatsApp ao clicar fora ou rolar a página
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {

@@ -143,10 +143,24 @@ export const useDownloadPdfTecnico = () => {
     onSuccess: () => {
       toast.success('PDF da Ficha Técnica baixado com sucesso!');
     },
-    onError: (error: unknown) => {
-      const err = error as { response?: { data?: { message?: string } } };
-      const message = err?.response?.data?.message || 'Erro ao gerar o PDF técnico.';
-      toast.error(message);
+    onError: async (error: unknown) => {
+      const err = error as any;
+      
+      // Verifica se o erro foi retornado como Blob (padrão quando responseType é 'blob')
+      if (err?.response?.data instanceof Blob) {
+        try {
+          const errorText = await err.response.data.text();
+          const errorJson = JSON.parse(errorText);
+          toast.error(errorJson.message || 'Erro ao gerar o PDF técnico.');
+        } catch {
+          // Fallback caso falhe ao ler o texto ou parsear o JSON
+          toast.error('Erro ao gerar o PDF técnico.');
+        }
+      } else {
+        // Tratamento padrão para quando não é Blob
+        const message = err?.response?.data?.message || 'Erro ao gerar o PDF técnico.';
+        toast.error(message);
+      }
     },
   });
 };
