@@ -281,7 +281,11 @@ public class BudgetPdfService {
                 : "A Combinar";
         sb.append("💳 Pagamento: ").append(condicaoPgto).append("\n\n");
 
-        sb.append("_Alumiportas - Vidraçaria e Esquadrias_");
+        String nomeEmpresa = (companyProps.getRazaoSocial() != null && !companyProps.getRazaoSocial().isBlank())
+        ? companyProps.getRazaoSocial().trim()
+        : "Erro ao ler razão social";
+
+        sb.append("_").append(nomeEmpresa).append("_");
     }
 
     private void adicionarDescontoWhatsApp(StringBuilder sb, Budget budget) {
