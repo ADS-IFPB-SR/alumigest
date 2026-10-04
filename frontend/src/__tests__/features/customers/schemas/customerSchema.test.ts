@@ -33,13 +33,23 @@ describe('customerSchema Validation', () => {
     it('Nome com caracteres especiais inválidos deve falhar', () => {
       const result = customerSchema.safeParse({
         ...validBasePayload,
-        nomeCompleto: 'João @@@ Silva 123',
+        nomeCompleto: 'João @@@ Silva %¨*',
       });
 
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.error.issues[0].message).toContain('não pode conter caracteres especiais');
+        expect(result.error.issues[0].message).toContain('contém caracteres inválidos');
       }
+    });
+
+    it('Deve aceitar Razão Social / Nome de Pessoa Jurídica com algarismos e símbolos comerciais', () => {
+      expect(customerSchema.safeParse({ ...validBasePayload, nomeCompleto: '3M do Brasil Ltda' }).success).toBe(true);
+      expect(customerSchema.safeParse({ ...validBasePayload, nomeCompleto: 'Construtora 1000 Ltda' }).success).toBe(true);
+      expect(customerSchema.safeParse({ ...validBasePayload, nomeCompleto: 'Posto BR 101' }).success).toBe(true);
+      expect(customerSchema.safeParse({ ...validBasePayload, nomeCompleto: 'Esquadrias Silva S/A' }).success).toBe(true);
+      expect(customerSchema.safeParse({ ...validBasePayload, nomeCompleto: 'Sousa & Filhos Ltda' }).success).toBe(true);
+      expect(customerSchema.safeParse({ ...validBasePayload, nomeCompleto: 'M&M Vidros' }).success).toBe(true);
+      expect(customerSchema.safeParse({ ...validBasePayload, nomeCompleto: 'Silva, Santos & Cia Ltda' }).success).toBe(true);
     });
   });
 
@@ -101,6 +111,12 @@ describe('customerSchema Validation', () => {
       expect(customerSchema.safeParse({ ...validBasePayload, telefone: '(83) 99999-0000' }).success).toBe(true);
       expect(customerSchema.safeParse({ ...validBasePayload, telefone: '83999990000' }).success).toBe(true);
       expect(customerSchema.safeParse({ ...validBasePayload, telefone: '32180000' }).success).toBe(true);
+    });
+
+    it('Telefone com espaço no nono dígito ou com código do país deve passar', () => {
+      expect(customerSchema.safeParse({ ...validBasePayload, telefone: '(83) 9 9999-0000' }).success).toBe(true);
+      expect(customerSchema.safeParse({ ...validBasePayload, telefone: '+55 83 99999-0000' }).success).toBe(true);
+      expect(customerSchema.safeParse({ ...validBasePayload, telefone: '+55 (83) 99999-0000' }).success).toBe(true);
     });
   });
 

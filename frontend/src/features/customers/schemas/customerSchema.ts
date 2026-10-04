@@ -6,14 +6,14 @@ export const customerSchema = z.object({
     .trim()
     .min(3, 'O nome deve ter pelo menos 3 letras.')
     .max(150, 'O nome deve ter no máximo 150 caracteres.')
-    .regex(/^[\p{L}\s'.-]+$/u, 'O nome completo não pode conter caracteres especiais ou números.'),
+    .regex(/^[\p{L}\p{N}\s'.,&/-]+$/u, 'O nome completo ou razão social contém caracteres inválidos.'),
 
   cpfCnpj: z
     .string({ message: 'O CPF ou CNPJ é obrigatório.' })
     .trim()
     .min(1, 'O CPF ou CNPJ é obrigatório.')
     .regex(
-      /^(?:\d{11}|\d{14}|\d{3}\.\d{3}\.\d{3}-\d{2}|\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2})$/,
+      /^\d{11}(\d{3})?$|^\d{3}\.\d{3}\.\d{3}-\d{2}$|^\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}$/,
       'Documento com formato inválido (deve ser CPF ou CNPJ).'
     ),
 
@@ -22,14 +22,14 @@ export const customerSchema = z.object({
     .trim()
     .min(1, 'O telefone é obrigatório.')
     .regex(
-      /^(?:\+?55\s?)?(?:\(?\d{2}\)?[\s-]?)?(?:9?\d{4})[\s-]?\d{4}$|^\d{8,13}$/,
+      /^(?:\+?55\s?)?(?:\(\d{2}\)|\d{2})?\s?(?:9\s?)?\d{4}[\s-]?\d{4}$|^\d{8,13}$/,
       'Informe um telefone válido.'
     ),
 
   email: z
     .string()
     .trim()
-    .email({ message: 'E-mail inválido.' })
+    .email('E-mail inválido.')
     .or(z.literal(''))
     .optional()
     .nullable(),

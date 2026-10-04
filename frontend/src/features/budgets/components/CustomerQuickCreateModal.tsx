@@ -72,9 +72,9 @@ export const CustomerQuickCreateModal: React.FC<CustomerQuickCreateModalProps> =
     });
   };
 
-  const validate = () => {
+  const handleSubmit = (e?: React.SyntheticEvent) => {
+    e?.preventDefault();
     const parsed = customerSchema.safeParse(form);
-    
     if (!parsed.success) {
       const errs: Record<string, string> = {};
       parsed.error.issues.forEach((err) => {
@@ -84,20 +84,10 @@ export const CustomerQuickCreateModal: React.FC<CustomerQuickCreateModalProps> =
         }
       });
       setErrors(errs);
-      return false;
+      return;
     }
-    
     setErrors({});
-    return true;
-  };
-
-  const handleSubmit = (e?: React.SyntheticEvent) => {
-    e?.preventDefault();
-    if (!validate()) return;
-    onSubmit({
-      ...form,
-      nomeCompleto: form.nomeCompleto.trim(),
-    });
+    onSubmit(parsed.data as CustomerRequest);
   };
 
   if (!isOpen) return null;

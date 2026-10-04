@@ -323,4 +323,57 @@ class ClientControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.ativo").value(false));
     }
+
+    @Test
+    @DisplayName("Deve retornar 201 CREATED ao cadastrar Razão Social contendo números e símbolos comerciais")
+    void create_ShouldReturn201_WhenCompanyNameContainsNumbersAndCommercialSymbols() throws Exception {
+        // Arrange
+        UUID id = UUID.randomUUID();
+        ClientRequestDTO request = new ClientRequestDTO(
+                "3M do Brasil, Sousa & Filhos S/A",
+                PersonType.JURIDICA,
+                "12.345.678/0001-90",
+                "(83) 3218-0000",
+                "contato@3m.com.br",
+                "58000-000",
+                "Av Principal",
+                "100",
+                null,
+                "Centro",
+                "João Pessoa",
+                "PB",
+                null
+        );
+
+        ClientResponseDTO response = new ClientResponseDTO(
+                id,
+                "3M do Brasil, Sousa & Filhos S/A",
+                PersonType.JURIDICA,
+                "12345678000190",
+                "(83) 3218-0000",
+                "contato@3m.com.br",
+                "58000-000",
+                "Av Principal",
+                "100",
+                null,
+                "Centro",
+                "João Pessoa",
+                "PB",
+                null,
+                true,
+                OffsetDateTime.now(ZoneOffset.UTC),
+                OffsetDateTime.now(ZoneOffset.UTC)
+        );
+
+        when(clientService.create(any(ClientRequestDTO.class))).thenReturn(response);
+
+        // Act & Assert
+        mockMvc.perform(post("/api/clientes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(id.toString()))
+                .andExpect(jsonPath("$.nomeCompleto").value("3M do Brasil, Sousa & Filhos S/A"))
+                .andExpect(jsonPath("$.personType").value("JURIDICA"));
+    }
 }
