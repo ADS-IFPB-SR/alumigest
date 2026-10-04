@@ -1,7 +1,11 @@
 package br.edu.ifpb.alumigest.orders.service;
 
+import br.edu.ifpb.alumigest.common.dto.PageResponse;
+import br.edu.ifpb.alumigest.orders.domain.OrderStatus;
 import br.edu.ifpb.alumigest.orders.dto.OrderConvertRequest;
 import br.edu.ifpb.alumigest.orders.dto.OrderResponse;
+import br.edu.ifpb.alumigest.orders.dto.OrderSummaryResponse;
+import org.springframework.data.domain.Pageable;
 
 import java.util.UUID;
 
@@ -32,4 +36,6 @@ public interface OrderService {
      * @throws br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException se não encontrado
      */
     OrderResponse findDetailedById(UUID id);
+
+    PageResponse<OrderSummaryResponse> findAll(OrderStatus status, String busca, Pageable pageable);
 }

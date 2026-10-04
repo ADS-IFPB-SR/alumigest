@@ -5,16 +5,21 @@ import br.edu.ifpb.alumigest.budgets.domain.BudgetItem;
 import br.edu.ifpb.alumigest.budgets.domain.BudgetItemOption;
 import br.edu.ifpb.alumigest.budgets.domain.BudgetStatus;
 import br.edu.ifpb.alumigest.budgets.repository.BudgetRepository;
+import br.edu.ifpb.alumigest.common.dto.PageResponse;
 import br.edu.ifpb.alumigest.common.exception.BusinessException;
 import br.edu.ifpb.alumigest.common.exception.ConflictException;
 import br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException;
 import br.edu.ifpb.alumigest.orders.domain.Order;
 import br.edu.ifpb.alumigest.orders.domain.OrderItem;
 import br.edu.ifpb.alumigest.orders.domain.OrderItemOption;
+import br.edu.ifpb.alumigest.orders.domain.OrderStatus;
 import br.edu.ifpb.alumigest.orders.dto.OrderConvertRequest;
 import br.edu.ifpb.alumigest.orders.dto.OrderResponse;
+import br.edu.ifpb.alumigest.orders.dto.OrderSummaryResponse;
 import br.edu.ifpb.alumigest.orders.mapper.OrderMapper;
 import br.edu.ifpb.alumigest.orders.repository.OrderRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,11 +30,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-/**
- * Implementação concreta do contrato {@link OrderService}.
- * Concentra a lógica de negócio da conversão de orçamento em pedido de venda (SRP).
- * Depende de abstrações — nunca de implementações concretas (DIP).
- */
 @Service
 public class OrderServiceImpl implements OrderService {
 
@@ -41,14 +41,6 @@ public class OrderServiceImpl implements OrderService {
     private final OrderCodeGenerator orderCodeGenerator;
     private final OrderMapper orderMapper;
 
-    /**
-     * Injeção de dependência via construtor (DIP / testabilidade).
-     *
-     * @param orderRepository    repositório de pedidos
-     * @param budgetRepository   repositório de orçamentos
-     * @param orderCodeGenerator gerador de código sequencial
-     * @param orderMapper        mapper MapStruct
-     */
     public OrderServiceImpl(
             OrderRepository orderRepository,
             BudgetRepository budgetRepository,
@@ -60,20 +52,14 @@ public class OrderServiceImpl implements OrderService {
         this.orderMapper = orderMapper;
     }
 
-    /**
-     * {@inheritDoc}
-     *
-     * <p>Fluxo atômico de conversão:
-     * <ol>
-     *   <li>Valida existência e elegibilidade do orçamento (DRAFT, SENT ou APPROVED).</li>
-     *   <li>Verifica que o orçamento possui itens.</li>
-     *   <li>Verifica idempotência — impede duplicação de pedido para o mesmo orçamento.</li>
-     *   <li>Promove o status do orçamento para APPROVED atomicamente (se ainda não estiver).</li>
-     *   <li>Constrói o {@link Order} com snapshot financeiro imutável (lock de preços).</li>
-     *   <li>Converte cada {@link BudgetItem} em {@link OrderItem} com cálculo correto de valorUnitario.</li>
-     *   <li>Persiste o pedido e retorna o DTO detalhado.</li>
-     * </ol>
-     */
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<OrderSummaryResponse> findAll(OrderStatus status, String busca, Pageable pageable) {
+        Page<Order> orderPage = orderRepository.findAllWithFilters(status, busca, pageable);
+        Page<OrderSummaryResponse> dtoPage = orderPage.map(orderMapper::toSummaryResponse);
+        return PageResponse.of(dtoPage);
+    }
+
     @Override
     @Transactional
     public OrderResponse convertBudgetToOrder(UUID budgetId, OrderConvertRequest request) {
@@ -84,7 +70,6 @@ public class OrderServiceImpl implements OrderService {
         validarOrcamentoComItens(budget);
         validarIdempotencia(budgetId);
 
-        // Promove status para APPROVED de forma atômica caso ainda seja DRAFT ou SENT
         if (budget.getStatus() != BudgetStatus.APPROVED) {
             budget.setStatus(BudgetStatus.APPROVED);
             budgetRepository.save(budget);
@@ -115,9 +100,6 @@ public class OrderServiceImpl implements OrderService {
         return orderMapper.toResponse(order);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @Transactional(readOnly = true)
     public OrderResponse findDetailedById(UUID id) {
@@ -127,24 +109,12 @@ public class OrderServiceImpl implements OrderService {
     }
 
     // =========================================================================
-    // Métodos privados de suporte (SRP — separação de responsabilidades internas)
+    // Métodos privados de suporte (SRP)
     // =========================================================================
 
-    /**
-     * Status elegíveis para conversão em pedido de venda.
-     * DRAFT e SENT são promovidos para APPROVED atomicamente durante a conversão.
-     * APPROVED é aceito para tolerar reprocessamento idempotente.
-     */
     private static final Set<BudgetStatus> STATUS_ELEGIVEIS =
             EnumSet.of(BudgetStatus.DRAFT, BudgetStatus.SENT, BudgetStatus.APPROVED);
 
-    /**
-     * Valida que o orçamento está em um status elegível para conversão.
-     * Aceita DRAFT, SENT e APPROVED. Rejeita CANCELLED, REJECTED e EXPIRED.
-     *
-     * @param budget orçamento a ser validado
-     * @throws BusinessException se o status não for elegível para conversão
-     */
     private void validarElegibilidadeOrcamento(Budget budget) {
         if (budget.isExpired()) {
             throw new BusinessException(
@@ -156,16 +126,10 @@ public class OrderServiceImpl implements OrderService {
                     : "Indefinido";
             throw new BusinessException(
                     "Orçamento com status '" + statusDesc + "' não pode ser convertido em pedido de venda."
-                    + " São aceitos: Rascunho, Enviado ou Aprovado.");
+                            + " São aceitos: Rascunho, Enviado ou Aprovado.");
         }
     }
 
-    /**
-     * Valida que o orçamento possui ao menos um item antes de gerar o pedido.
-     *
-     * @param budget orçamento a ser validado
-     * @throws BusinessException se o orçamento não possuir itens
-     */
     private void validarOrcamentoComItens(Budget budget) {
         if (budget.getItems() == null || budget.getItems().isEmpty()) {
             throw new BusinessException(
@@ -173,12 +137,6 @@ public class OrderServiceImpl implements OrderService {
         }
     }
 
-    /**
-     * Garante idempotência: um orçamento só pode gerar um único pedido de venda.
-     *
-     * @param budgetId ID do orçamento
-     * @throws ConflictException se já existir pedido para o orçamento informado
-     */
     private void validarIdempotencia(UUID budgetId) {
         if (orderRepository.existsByOrcamentoId(budgetId)) {
             throw new ConflictException(
@@ -186,12 +144,6 @@ public class OrderServiceImpl implements OrderService {
         }
     }
 
-    /**
-     * Converte todos os itens do orçamento em itens do pedido (snapshot / lock de preços).
-     *
-     * @param budget orçamento de origem
-     * @param order  pedido destino
-     */
     private void converterItens(Budget budget, Order order) {
         List<BudgetItem> budgetItems = budget.getItems();
         if (budgetItems == null || budgetItems.isEmpty()) {
@@ -206,28 +158,12 @@ public class OrderServiceImpl implements OrderService {
         }
     }
 
-    /**
-     * Constrói um {@link OrderItem} a partir de um {@link BudgetItem} via Builder Pattern.
-     *
-     * <p><strong>Regra financeira:</strong> {@code budgetItem.getSubtotal()} já representa o
-     * total do item (preço unitário × quantidade), conforme calculado pelo
-     * {@code BudgetPricingService}. Portanto:
-     * <ul>
-     *   <li>{@code valorTotal} = subtotal do item (congelado do orçamento)</li>
-     *   <li>{@code valorUnitario} = valorTotal / quantidade (derivado por divisão)</li>
-     * </ul>
-     * Isso evita a multiplicação dupla da quantidade (qty²).
-     *
-     * @param budgetItem item do orçamento original
-     * @param ordem      posição sequencial do item no pedido
-     * @return item do pedido com snapshot dos dados técnicos e financeiros
-     */
     private OrderItem construirOrderItem(BudgetItem budgetItem, int ordem) {
         int largura = budgetItem.getWidthMm() != null ? budgetItem.getWidthMm().intValue() : 0;
         int altura = budgetItem.getHeightMm() != null ? budgetItem.getHeightMm().intValue() : 0;
         int qty = (budgetItem.getQuantity() != null && budgetItem.getQuantity() > 0)
                 ? budgetItem.getQuantity() : 1;
-        // valorTotal é o subtotal já calculado (qty × preço unitário) — não multiplicar qty novamente
+
         BigDecimal valorTotal = orZero(budgetItem.getSubtotal());
         BigDecimal valorUnitario = valorTotal.divide(BigDecimal.valueOf(qty), 2, RoundingMode.HALF_UP);
 
@@ -246,12 +182,6 @@ public class OrderServiceImpl implements OrderService {
                 .build();
     }
 
-    /**
-     * Converte as opções de insumo de um item do orçamento em opções do item do pedido.
-     *
-     * @param budgetItem item do orçamento de origem
-     * @param orderItem  item do pedido destino
-     */
     private void converterOpcoes(BudgetItem budgetItem, OrderItem orderItem) {
         List<BudgetItemOption> opcoes = budgetItem.getOptions();
         if (opcoes == null || opcoes.isEmpty()) {
@@ -274,12 +204,6 @@ public class OrderServiceImpl implements OrderService {
         }
     }
 
-    /**
-     * Retorna o nome do cliente a partir do orçamento.
-     *
-     * @param budget orçamento de origem
-     * @return nome do cliente ou valor padrão se não disponível
-     */
     private String resolverNomeCliente(Budget budget) {
         if (budget.getClient() != null && budget.getClient().getFullName() != null) {
             return budget.getClient().getFullName();
@@ -287,12 +211,6 @@ public class OrderServiceImpl implements OrderService {
         return "Cliente não informado";
     }
 
-    /**
-     * Retorna o telefone do cliente a partir do objeto de domínio Client.
-     *
-     * @param budget orçamento de origem
-     * @return telefone do cliente ou null
-     */
     private String resolverTelefoneCliente(Budget budget) {
         if (budget.getClient() != null) {
             return budget.getClient().getPhone();
@@ -300,12 +218,6 @@ public class OrderServiceImpl implements OrderService {
         return null;
     }
 
-    /**
-     * Compõe o endereço do cliente a partir dos campos individuais (street, number, city, state).
-     *
-     * @param budget orçamento de origem
-     * @return endereço formatado ou null
-     */
     private String resolverEnderecoCliente(Budget budget) {
         if (budget.getClient() == null) {
             return null;
@@ -327,12 +239,6 @@ public class OrderServiceImpl implements OrderService {
         return !sb.isEmpty() ? sb.toString() : null;
     }
 
-    /**
-     * Retorna a condição de pagamento como String a partir do enum PaymentCondition do orçamento.
-     *
-     * @param budget orçamento de origem
-     * @return nome do enum ou null
-     */
     private String resolverCondicaoPagamento(Budget budget) {
         if (budget.getPaymentCondition() != null) {
             return budget.getPaymentCondition().name();
@@ -340,12 +246,6 @@ public class OrderServiceImpl implements OrderService {
         return null;
     }
 
-    /**
-     * Garante que um BigDecimal nunca seja null, retornando ZERO nesse caso.
-     *
-     * @param value valor potencialmente nulo
-     * @return valor original ou BigDecimal.ZERO
-     */
     private BigDecimal orZero(BigDecimal value) {
         return value != null ? value : BigDecimal.ZERO;
     }

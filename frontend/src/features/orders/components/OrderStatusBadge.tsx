@@ -9,7 +9,7 @@ interface OrderStatusBadgeProps {
 
 export const OrderStatusBadge: React.FC<OrderStatusBadgeProps> = ({ status, className = '' }) => {
   const label = ORDER_STATUS_LABELS[status] || status;
-  const colors = ORDER_STATUS_COLORS[status] || {
+  const { bg, text, border } = ORDER_STATUS_COLORS[status] || ORDER_STATUS_COLORS.CREATED || {
     bg: 'bg-slate-100',
     text: 'text-slate-800',
     border: 'border-slate-300',
@@ -17,7 +17,7 @@ export const OrderStatusBadge: React.FC<OrderStatusBadgeProps> = ({ status, clas
 
   return (
     <span
-      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${colors.bg} ${colors.text} ${colors.border} ${className}`}
+      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-label font-bold border ${bg} ${text} ${border} whitespace-nowrap ${className}`}
       data-testid="order-status-badge"
     >
       {label}
