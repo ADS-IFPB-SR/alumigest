@@ -53,52 +53,55 @@ export function OrderListPage() {
                   search
                 </span>
 
-                <label htmlFor="search-orders" className="sr-only">Buscar pedidos</label>
-                <input
-                  id="search-orders"
-                  type="text"
-                  placeholder="Buscar por código, cliente ou orçamento..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 bg-surface border border-outline-variant rounded-md text-[13px] text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
-                />
+                <label className="w-full">
+                  <span className="sr-only">Buscar pedidos</span>
+                  <input
+                    type="text"
+                    placeholder="Buscar por código, cliente ou orçamento..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2 bg-surface border border-outline-variant rounded-md text-[13px] text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+                  />
+                </label>
               </div>
 
-              <label htmlFor="status-filter" className="sr-only">Filtrar por status</label>
-              <select
-                id="status-filter"
-                value={statusFilter}
-                onChange={(e) => {
-                  setStatusFilter(e.target.value);
-                  setPage(0);
-                }}
-                className="w-full sm:w-auto px-3 py-2 bg-surface border border-outline-variant rounded-md text-[13px] text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary cursor-pointer"
-              >
-                <option value="">Todos os Status</option>
-                {Object.entries(ORDER_STATUS_LABELS).map(([key, label]) => (
-                  <option key={key} value={key}>
-                    {label}
-                  </option>
-                ))}
-              </select>
+              <label className="w-full sm:w-auto">
+                <span className="sr-only">Filtrar por status</span>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => {
+                    setStatusFilter(e.target.value);
+                    setPage(0);
+                  }}
+                  className="w-full px-3 py-2 bg-surface border border-outline-variant rounded-md text-[13px] text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary cursor-pointer"
+                >
+                  <option value="">Todos os Status</option>
+                  {Object.entries(ORDER_STATUS_LABELS).map(([key, label]) => (
+                    <option key={key} value={key}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </label>
 
-              <label htmlFor="channel-filter" className="sr-only">Filtrar por canal de aprovação</label>
-              <select
-                id="channel-filter"
-                value={channelFilter}
-                onChange={(e) => {
-                  setChannelFilter(e.target.value);
-                  setPage(0);
-                }}
-                className="w-full sm:w-auto px-3 py-2 bg-surface border border-outline-variant rounded-md text-[13px] text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary cursor-pointer"
-              >
-                <option value="">Todos os Canais</option>
-                {Object.entries(APPROVAL_CHANNEL_LABELS).map(([key, label]) => (
-                  <option key={key} value={key}>
-                    {label}
-                  </option>
-                ))}
-              </select>
+              <label className="w-full sm:w-auto">
+                <span className="sr-only">Filtrar por canal de aprovação</span>
+                <select
+                  value={channelFilter}
+                  onChange={(e) => {
+                    setChannelFilter(e.target.value);
+                    setPage(0);
+                  }}
+                  className="w-full px-3 py-2 bg-surface border border-outline-variant rounded-md text-[13px] text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary cursor-pointer"
+                >
+                  <option value="">Todos os Canais</option>
+                  {Object.entries(APPROVAL_CHANNEL_LABELS).map(([key, label]) => (
+                    <option key={key} value={key}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </label>
             </div>
 
             <div className="text-[13px] text-on-surface-variant font-body whitespace-nowrap">
