@@ -51,9 +51,6 @@ public class BudgetController {
     @ApiResponse(responseCode = "400", description = "Dados inválidos")
     @ApiResponse(responseCode = "404", description = "Cliente não encontrado")
     public ResponseEntity<BudgetResponseDTO> create(@RequestBody @Valid BudgetCreateRequest request) {
-        // Caso o seu BudgetService espere o BudgetRequestDTO legado, 
-        // você pode mapear o BudgetCreateRequest para o BudgetRequestDTO ou ajustar o service.
-        // Assumindo que o service receba o novo DTO ou que seja adaptado:
         BudgetResponseDTO response = budgetService.create(request);
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}")
@@ -126,6 +123,7 @@ public class BudgetController {
         BudgetResponseDTO response = budgetService.aplicarDesconto(id, request);
         return ResponseEntity.ok(response);
     }
+    
     @PostMapping({"/{id}/items", "/{id}/itens"})
     @Operation(summary = "Adicionar item ao orçamento",
                description = "Adiciona incrementalmente um item avulso ao orçamento DRAFT e recalcula valores.")
@@ -168,7 +166,8 @@ public class BudgetController {
                 .body(pdfDto.bytes());
     }
 
-    @GetMapping("/{id}/pdf/tecnico")
+
+    @GetMapping({"/{id}/pdf/tecnico", "/{id}/technical-pdf"})
     @Operation(
             summary = "Exportar PDF técnico (Ficha de Oficina) do orçamento",
             description = "Gera e exporta a ficha de corte e usinagem da oficina em formato PDF A4 para download."
@@ -190,7 +189,6 @@ public class BudgetController {
                 .contentLength(pdfDto.bytes().length)
                 .body(pdfDto.bytes());
     }
-
 
     @PostMapping("/{id}/recalcular")
     @Operation(summary = "Forçar recálculo", description = "Força o recálculo de quantidades e preços de um orçamento DRAFT.")
@@ -218,7 +216,6 @@ public class BudgetController {
         budgetService.delete(id);
         return ResponseEntity.noContent().build();
     }
-
 
     @GetMapping(value = "/{id}/resumo-whatsapp", produces = MediaType.TEXT_PLAIN_VALUE + ";charset=UTF-8")
     @Operation( summary = "Obter resumo do orçamento para WhatsApp", description = "Gera e retorna o texto formatado com os dados do orçamento para envio via WhatsApp.")
