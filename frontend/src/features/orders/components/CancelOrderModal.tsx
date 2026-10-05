@@ -78,7 +78,7 @@ export const CancelOrderModal: React.FC<CancelOrderModalProps> = ({
         <div className="flex items-center justify-between px-6 py-4 border-b border-outline-variant bg-surface-container-high/30">
           <div className="flex items-center gap-2 text-rose-600 font-semibold text-lg">
             <AlertCircle className="w-5 h-5" />
-            <span>Cancelar Pedido</span>
+            <span>Cancelar Ordem de Serviço</span>
           </div>
           <button
             type="button"
@@ -91,8 +91,8 @@ export const CancelOrderModal: React.FC<CancelOrderModalProps> = ({
 
         <form onSubmit={handleSubmit(handleFormSubmit)} className="p-6 space-y-4">
           <p className="text-sm text-on-surface-variant">
-            Você está cancelando o pedido <strong className="text-on-surface">{orderCodigo}</strong>.
-            Esta ação formaliza o encerramento do pedido antes da fabricação física.
+            Você está cancelando a ordem de serviço <strong className="text-on-surface">{orderCodigo}</strong>.
+            Esta ação formaliza o encerramento da ordem de serviço antes da fabricação física.
           </p>
 
           <div>

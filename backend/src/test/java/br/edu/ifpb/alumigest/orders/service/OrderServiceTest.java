@@ -49,7 +49,7 @@ class OrderServiceTest {
       UUID orderId = UUID.randomUUID();
       Order order = Order.builder()
           .id(orderId)
-          .codigo("PED-2026-0001")
+          .codigo("OS-2026-0001")
           .clienteNome("Construtora Silva")
           .status(OrderStatus.WAITING_PRODUCTION)
           .canalAprovacao(ApprovalChannel.WHATSAPP)
@@ -59,7 +59,7 @@ class OrderServiceTest {
 
       OrderResponse expectedResponse = new OrderResponse(
           orderId,
-          "PED-2026-0001",
+          "OS-2026-0001",
           UUID.randomUUID(),
           null,
           "Construtora Silva",
@@ -94,7 +94,7 @@ class OrderServiceTest {
 
       assertThat(actual).isNotNull();
       assertThat(actual.id()).isEqualTo(orderId);
-      assertThat(actual.codigo()).isEqualTo("PED-2026-0001");
+      assertThat(actual.codigo()).isEqualTo("OS-2026-0001");
       assertThat(actual.status()).isEqualTo(OrderStatus.WAITING_PRODUCTION);
       assertThat(actual.clienteNome()).isEqualTo("Construtora Silva");
       verify(orderRepository).findByIdWithDetails(orderId);

@@ -36,7 +36,7 @@ class OrderMapperTest {
 
         Order order = Order.builder()
                 .id(orderId)
-                .codigo("PED-2026-0010")
+                .codigo("OS-2026-0010")
                 .orcamentoId(orcamentoId)
                 .cliente(client)
                 .clienteNome("João das Neves")
@@ -78,7 +78,7 @@ class OrderMapperTest {
 
         assertThat(response).isNotNull();
         assertThat(response.id()).isEqualTo(orderId);
-        assertThat(response.codigo()).isEqualTo("PED-2026-0010");
+        assertThat(response.codigo()).isEqualTo("OS-2026-0010");
         assertThat(response.clienteId()).isEqualTo(clientId);
         assertThat(response.status()).isEqualTo(OrderStatus.WAITING_PRODUCTION);
         assertThat(response.statusDescricao()).isEqualTo("Aguardando Produção");
@@ -94,7 +94,7 @@ class OrderMapperTest {
     void shouldMapOrderToOrderSummaryResponse() {
         Order order = Order.builder()
                 .id(UUID.randomUUID())
-                .codigo("PED-2026-0011")
+                .codigo("OS-2026-0011")
                 .orcamentoId(UUID.randomUUID())
                 .clienteNome("Maria Bonita")
                 .status(OrderStatus.IN_PRODUCTION)
@@ -108,7 +108,7 @@ class OrderMapperTest {
         OrderSummaryResponse summary = orderMapper.toSummaryResponse(order);
 
         assertThat(summary).isNotNull();
-        assertThat(summary.codigo()).isEqualTo("PED-2026-0011");
+        assertThat(summary.codigo()).isEqualTo("OS-2026-0011");
         assertThat(summary.statusDescricao()).isEqualTo("Em Produção");
         assertThat(summary.canalAprovacaoDescricao()).isEqualTo("Presencial");
         assertThat(summary.quantidadeItens()).isEqualTo(2);

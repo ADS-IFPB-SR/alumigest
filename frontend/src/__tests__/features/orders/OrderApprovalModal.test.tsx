@@ -117,7 +117,7 @@ describe('OrderApprovalModal — [US-13.3] Modal de Aprovação e Conversão', (
   it('deve converter via ordersApi e disparar onSuccess', async () => {
     const mockCreatedOrder: Partial<Order> = {
       id: 'ord-888',
-      codigo: 'PED-2026-0888',
+      codigo: 'OS-2026-0888',
       status: 'CREATED',
     };
     vi.mocked(ordersApi.convertBudget).mockResolvedValue(mockCreatedOrder as Order);

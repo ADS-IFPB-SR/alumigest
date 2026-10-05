@@ -4,6 +4,7 @@ import br.edu.ifpb.alumigest.orders.domain.ApprovalChannel;
 import br.edu.ifpb.alumigest.orders.domain.Order;
 import br.edu.ifpb.alumigest.orders.domain.OrderItem;
 import br.edu.ifpb.alumigest.orders.domain.OrderStatus;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,11 +36,17 @@ class OrderItemRepositoryTest {
     @Autowired
     private TestEntityManager entityManager;
 
+    @BeforeEach
+    void setUp() {
+        orderItemRepository.deleteAll();
+        orderRepository.deleteAll();
+    }
+
     @Test
     @DisplayName("[Partição de Equivalência] Deve recuperar itens de um pedido ordenados pela coluna ordem ASC")
     void shouldFindItemsByOrderIdOrdered() {
         Order order = Order.builder()
-                .codigo("PED-2026-0001")
+                .codigo("OS-2026-0001")
                 .orcamentoId(UUID.randomUUID())
                 .clienteNome("Cliente Teste")
                 .canalAprovacao(ApprovalChannel.WHATSAPP)

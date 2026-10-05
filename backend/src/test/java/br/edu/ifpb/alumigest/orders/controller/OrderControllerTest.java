@@ -55,7 +55,7 @@ class OrderControllerTest {
       UUID budgetId = UUID.randomUUID();
       OrderSummaryResponse summary = new OrderSummaryResponse(
           orderId,
-          "PED-2026-0001",
+          "OS-2026-0001",
           budgetId,
           "Cliente Teste",
           "(83) 98888-7777",
@@ -79,7 +79,7 @@ class OrderControllerTest {
               .contentType(MediaType.APPLICATION_JSON))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.content[0].id").value(orderId.toString()))
-          .andExpect(jsonPath("$.content[0].codigo").value("PED-2026-0001"))
+          .andExpect(jsonPath("$.content[0].codigo").value("OS-2026-0001"))
           .andExpect(jsonPath("$.content[0].clienteNome").value("Cliente Teste"))
           .andExpect(jsonPath("$.content[0].status").value("WAITING_PRODUCTION"))
           .andExpect(jsonPath("$.content[0].canalAprovacao").value("WHATSAPP"))
@@ -139,7 +139,7 @@ class OrderControllerTest {
       UUID orderId = UUID.randomUUID();
       OrderResponse response = new OrderResponse(
           orderId,
-          "PED-2026-0001",
+          "OS-2026-0001",
           UUID.randomUUID(),
           null,
           "Cliente Teste",
@@ -173,7 +173,7 @@ class OrderControllerTest {
               .contentType(MediaType.APPLICATION_JSON))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.id").value(orderId.toString()))
-          .andExpect(jsonPath("$.codigo").value("PED-2026-0001"))
+          .andExpect(jsonPath("$.codigo").value("OS-2026-0001"))
           .andExpect(jsonPath("$.clienteNome").value("Cliente Teste"))
           .andExpect(jsonPath("$.status").value("WAITING_PRODUCTION"))
           .andExpect(jsonPath("$.valorLiquido").value(2500.00));

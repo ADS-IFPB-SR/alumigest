@@ -348,9 +348,9 @@ export function BudgetDetailActions({
           data-testid="btn-view-work-order"
           onClick={() => {
             if (linkedOrder?.id) {
-              navigate(`/work-orders/${linkedOrder.id}`);
+              navigate(`/ordens-servico/${linkedOrder.id}`);
             } else {
-              navigate(`/work-orders?search=${encodeURIComponent(budgetCode)}`);
+              navigate(`/ordens-servico?search=${encodeURIComponent(budgetCode)}`);
             }
           }}
           className="text-xs py-1.5 px-3 whitespace-nowrap cursor-pointer shrink-0"
