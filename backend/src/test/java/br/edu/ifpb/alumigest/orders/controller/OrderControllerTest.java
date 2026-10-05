@@ -1,19 +1,26 @@
 package br.edu.ifpb.alumigest.orders.controller;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import br.edu.ifpb.alumigest.common.dto.PageResponse;
 import br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException;
 import br.edu.ifpb.alumigest.orders.domain.ApprovalChannel;
 import br.edu.ifpb.alumigest.orders.domain.OrderStatus;
 import br.edu.ifpb.alumigest.orders.dto.OrderResponse;
+import br.edu.ifpb.alumigest.orders.dto.OrderSummaryResponse;
 import br.edu.ifpb.alumigest.orders.service.OrderService;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -21,6 +28,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -35,6 +43,91 @@ class OrderControllerTest {
 
   @MockitoBean
   private OrderService orderService;
+
+  @Nested
+  @DisplayName("GET /api/v1/orders - Listar Pedidos Paginados (US-13.4)")
+  class FindAllEndpointTests {
+
+    @Test
+    @DisplayName("Deve retornar status 200 OK e lista paginada de pedidos sumarizados")
+    void shouldReturn200AndPageOfSummarizedOrders() throws Exception {
+      UUID orderId = UUID.randomUUID();
+      UUID budgetId = UUID.randomUUID();
+      OrderSummaryResponse summary = new OrderSummaryResponse(
+          orderId,
+          "PED-2026-0001",
+          budgetId,
+          "Cliente Teste",
+          "(83) 98888-7777",
+          OrderStatus.WAITING_PRODUCTION,
+          "Aguardando Produção",
+          ApprovalChannel.WHATSAPP,
+          "WhatsApp",
+          LocalDate.now(),
+          LocalDate.now().plusDays(10),
+          new BigDecimal("1500.00"),
+          2,
+          OffsetDateTime.now()
+      );
+
+      PageResponse<OrderSummaryResponse> pageResponse = PageResponse.of(new PageImpl<>(List.of(summary)));
+      when(orderService.findAll(any(), any(), any(), any())).thenReturn(pageResponse);
+
+      mockMvc.perform(get("/api/v1/orders")
+              .param("page", "0")
+              .param("size", "10")
+              .contentType(MediaType.APPLICATION_JSON))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.content[0].id").value(orderId.toString()))
+          .andExpect(jsonPath("$.content[0].codigo").value("PED-2026-0001"))
+          .andExpect(jsonPath("$.content[0].clienteNome").value("Cliente Teste"))
+          .andExpect(jsonPath("$.content[0].status").value("WAITING_PRODUCTION"))
+          .andExpect(jsonPath("$.content[0].canalAprovacao").value("WHATSAPP"))
+          .andExpect(jsonPath("$.content[0].valorLiquido").value(1500.00));
+    }
+
+    @Test
+    @DisplayName("Deve repassar filtros de status, canal e search para o service")
+    void shouldPassFiltersToService() throws Exception {
+      PageResponse<OrderSummaryResponse> emptyResponse = PageResponse.of(new PageImpl<>(Collections.emptyList()));
+      when(orderService.findAll(any(), any(), any(), any())).thenReturn(emptyResponse);
+
+      mockMvc.perform(get("/api/v1/orders")
+              .param("status", "WAITING_PRODUCTION")
+              .param("channel", "WHATSAPP")
+              .param("search", "ORC-2026")
+              .param("page", "1")
+              .param("size", "20")
+              .contentType(MediaType.APPLICATION_JSON))
+          .andExpect(status().isOk());
+
+      verify(orderService).findAll(
+          eq(OrderStatus.WAITING_PRODUCTION),
+          eq(ApprovalChannel.WHATSAPP),
+          eq("ORC-2026"),
+          any()
+      );
+    }
+
+    @Test
+    @DisplayName("Deve aceitar alias 'busca' como fallback para busca textual")
+    void shouldSupportBuscaAlias() throws Exception {
+      PageResponse<OrderSummaryResponse> emptyResponse = PageResponse.of(new PageImpl<>(Collections.emptyList()));
+      when(orderService.findAll(any(), any(), any(), any())).thenReturn(emptyResponse);
+
+      mockMvc.perform(get("/api/v1/orders")
+              .param("busca", "Empresa Silva")
+              .contentType(MediaType.APPLICATION_JSON))
+          .andExpect(status().isOk());
+
+      verify(orderService).findAll(
+          isNull(),
+          isNull(),
+          eq("Empresa Silva"),
+          any()
+      );
+    }
+  }
 
   @Nested
   @DisplayName("GET /api/v1/orders/{id}")
@@ -98,4 +191,4 @@ class OrderControllerTest {
           .andExpect(status().isNotFound());
     }
   }
-}
+}

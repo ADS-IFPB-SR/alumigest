@@ -15,6 +15,10 @@ export interface PageResponse<T> {
     totalElements: number;
     totalPages: number;
   };
+  totalElements?: number;
+  totalPages?: number;
+  size?: number;
+  number?: number;
 }
 
 export const ordersApi = {
@@ -39,8 +43,14 @@ export const ordersApi = {
       size: params?.size ?? 10,
     };
 
-    if (params?.busca && params.busca.trim().length >= 2) {
-      queryParams.busca = params.busca.trim();
+    const search = params?.search ?? params?.busca;
+    if (search && search.trim().length >= 2) {
+      queryParams.search = search.trim();
+    }
+
+    const channel = params?.channel ?? params?.canal;
+    if (channel) {
+      queryParams.channel = channel;
     }
 
     if (params?.status) {
@@ -51,14 +61,24 @@ export const ordersApi = {
       params: queryParams,
     });
 
+    const data = response.data || {};
+    const pageNumber = data.page?.number ?? data.number ?? (typeof data.page === 'number' ? data.page : queryParams.page);
+    const pageSize = data.page?.size ?? data.size ?? queryParams.size;
+    const totalElements = data.page?.totalElements ?? data.totalElements ?? 0;
+    const totalPages = data.page?.totalPages ?? data.totalPages ?? 1;
+
     return {
-      content: response.data.content || [],
+      content: data.content || [],
       page: {
-        size: response.data.page?.size ?? response.data.size ?? queryParams.size,
-        number: response.data.page?.number ?? response.data.number ?? queryParams.page,
-        totalElements: response.data.page?.totalElements ?? response.data.totalElements ?? 0,
-        totalPages: response.data.page?.totalPages ?? response.data.totalPages ?? 1,
-      }
+        size: Number(pageSize),
+        number: Number(pageNumber),
+        totalElements: Number(totalElements),
+        totalPages: Number(totalPages),
+      },
+      totalElements: Number(totalElements),
+      totalPages: Number(totalPages),
+      size: Number(pageSize),
+      number: Number(pageNumber),
     };
-  }
+  },
 };

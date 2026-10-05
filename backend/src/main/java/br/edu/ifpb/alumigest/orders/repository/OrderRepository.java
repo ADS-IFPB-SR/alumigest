@@ -1,5 +1,6 @@
 package br.edu.ifpb.alumigest.orders.repository;
 
+import br.edu.ifpb.alumigest.orders.domain.ApprovalChannel;
 import br.edu.ifpb.alumigest.orders.domain.Order;
 import br.edu.ifpb.alumigest.orders.domain.OrderStatus;
 import java.util.Optional;
@@ -48,14 +49,17 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
   @Query("""
         SELECT o FROM Order o
         WHERE (:status IS NULL OR o.status = :status)
-          AND (CAST(:busca AS string) IS NULL OR :busca = ''
-               OR LOWER(o.codigo) LIKE LOWER(CONCAT('%', CAST(:busca AS string), '%'))
-               OR LOWER(o.clienteNome) LIKE LOWER(CONCAT('%', CAST(:busca AS string), '%')))
+          AND (:channel IS NULL OR o.canalAprovacao = :channel)
+          AND (CAST(:search AS string) IS NULL OR :search = ''
+               OR LOWER(o.codigo) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%'))
+               OR LOWER(o.clienteNome) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%'))
+               OR o.orcamentoId IN (SELECT b.id FROM Budget b WHERE LOWER(b.code) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%'))))
           AND o.ativo = true
       """)
   Page<Order> findAllWithFilters(
       @Param("status") OrderStatus status,
-      @Param("busca") String busca,
+      @Param("channel") ApprovalChannel channel,
+      @Param("search") String search,
       Pageable pageable
   );
 }
