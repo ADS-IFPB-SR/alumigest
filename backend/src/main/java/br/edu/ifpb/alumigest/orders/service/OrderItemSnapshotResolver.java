@@ -3,6 +3,7 @@ package br.edu.ifpb.alumigest.orders.service;
 import br.edu.ifpb.alumigest.budgets.domain.BudgetItem;
 import br.edu.ifpb.alumigest.budgets.domain.BudgetItemOption;
 import br.edu.ifpb.alumigest.catalog.domain.MaterialCategoryType;
+import br.edu.ifpb.alumigest.catalog.domain.Product;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -36,27 +37,39 @@ public final class OrderItemSnapshotResolver {
             return null;
         }
 
-        // 1. Prioridade: Opções de insumo com categoria PROFILE
-        if (item.getOptions() != null) {
-            for (BudgetItemOption opt : item.getOptions()) {
-                if (opt.getCategoryType() == MaterialCategoryType.PROFILE) {
-                    if (opt.getSelectedColor() != null && !opt.getSelectedColor().isBlank()) {
-                        return opt.getSelectedColor();
-                    }
-                }
-            }
+        String colorFromOption = extractAluminumColorFromOptions(item.getOptions());
+        if (colorFromOption != null) {
+            return colorFromOption;
         }
 
-        // 2. Prioridade: Configuração paramétrica de template do produto
-        if (item.getProduct() != null && item.getProduct().getTemplateConfig() != null) {
-            String color = item.getProduct().getTemplateConfig().getAluminumColor();
-            if (color != null && !color.isBlank()) {
-                return color;
-            }
+        String colorFromProduct = extractAluminumColorFromProduct(item.getProduct());
+        if (colorFromProduct != null) {
+            return colorFromProduct;
         }
 
-        // 3. Prioridade: Campo aluminumColor dentro do JSON templateConfig
         return extractJsonValue(item.getTemplateConfig(), "aluminumColor");
+    }
+
+    private static String extractAluminumColorFromOptions(List<BudgetItemOption> options) {
+        if (options == null) {
+            return null;
+        }
+        for (BudgetItemOption opt : options) {
+            if (opt.getCategoryType() == MaterialCategoryType.PROFILE
+                    && opt.getSelectedColor() != null
+                    && !opt.getSelectedColor().isBlank()) {
+                return opt.getSelectedColor();
+            }
+        }
+        return null;
+    }
+
+    private static String extractAluminumColorFromProduct(Product product) {
+        if (product == null || product.getTemplateConfig() == null) {
+            return null;
+        }
+        String color = product.getTemplateConfig().getAluminumColor();
+        return (color != null && !color.isBlank()) ? color : null;
     }
 
     /**
@@ -70,30 +83,53 @@ public final class OrderItemSnapshotResolver {
             return null;
         }
 
-        // 1. Prioridade: Opções de insumo com categoria GLASS ou menção a vidro/película
-        if (item.getOptions() != null) {
-            for (BudgetItemOption opt : item.getOptions()) {
-                if (isGlassOption(opt)) {
-                    if (opt.getSelectedType() != null && !opt.getSelectedType().isBlank()) {
-                        return opt.getSelectedType();
-                    }
-                    if (opt.getMaterialName() != null && !opt.getMaterialName().isBlank()) {
-                        return opt.getMaterialName();
-                    }
+        String glassFromOption = extractGlassFromOptions(item.getOptions());
+        if (glassFromOption != null) {
+            return glassFromOption;
+        }
+
+        String glassFromProduct = extractGlassFromProduct(item.getProduct());
+        if (glassFromProduct != null) {
+            return glassFromProduct;
+        }
+
+        return extractGlassFromJson(item.getTemplateConfig());
+    }
+
+    private static String extractGlassFromOptions(List<BudgetItemOption> options) {
+        if (options == null) {
+            return null;
+        }
+        for (BudgetItemOption opt : options) {
+            if (isGlassOption(opt)) {
+                String desc = resolveGlassDescription(opt);
+                if (desc != null) {
+                    return desc;
                 }
             }
         }
+        return null;
+    }
 
-        // 2. Prioridade: Configuração paramétrica do produto
-        if (item.getProduct() != null && item.getProduct().getTemplateConfig() != null) {
-            String glassColor = item.getProduct().getTemplateConfig().getGlassColor();
-            if (glassColor != null && !glassColor.isBlank()) {
-                return glassColor;
-            }
+    private static String resolveGlassDescription(BudgetItemOption opt) {
+        if (opt.getSelectedType() != null && !opt.getSelectedType().isBlank()) {
+            return opt.getSelectedType();
         }
+        if (opt.getMaterialName() != null && !opt.getMaterialName().isBlank()) {
+            return opt.getMaterialName();
+        }
+        return null;
+    }
 
-        // 3. Prioridade: Campos do JSON templateConfig
-        String jsonConfig = item.getTemplateConfig();
+    private static String extractGlassFromProduct(Product product) {
+        if (product == null || product.getTemplateConfig() == null) {
+            return null;
+        }
+        String glassColor = product.getTemplateConfig().getGlassColor();
+        return (glassColor != null && !glassColor.isBlank()) ? glassColor : null;
+    }
+
+    private static String extractGlassFromJson(String jsonConfig) {
         String glassFinish = extractJsonValue(jsonConfig, "glassFinish");
         if (glassFinish != null && !glassFinish.isBlank()) {
             return glassFinish;
@@ -138,30 +174,40 @@ public final class OrderItemSnapshotResolver {
         }
 
         List<String> ferragensList = new ArrayList<>();
+        appendHandleModel(item.getHandleConfig(), ferragensList);
+        collectHardwareFromOptions(item.getOptions(), ferragensList);
 
-        // 1. Extração do handleConfig (puxadores)
-        String handleModel = extractJsonValue(item.getHandleConfig(), "model");
+        return ferragensList.isEmpty() ? null : String.join(", ", ferragensList);
+    }
+
+    private static void appendHandleModel(String handleConfig, List<String> list) {
+        String handleModel = extractJsonValue(handleConfig, "model");
         if (handleModel != null && !handleModel.isBlank()) {
-            ferragensList.add("Puxador " + handleModel);
+            list.add("Puxador " + handleModel);
         }
+    }
 
-        // 2. Insumos com categoria HARDWARE / ROLLERS
-        if (item.getOptions() != null) {
-            for (BudgetItemOption opt : item.getOptions()) {
-                if (isHardwareOrComponent(opt)) {
-                    String desc = opt.getMaterialName();
-                    if (opt.getQuantity() != null && opt.getUnitMeasure() != null) {
-                        desc += " (" + opt.getQuantity().stripTrailingZeros().toPlainString()
-                                + " " + opt.getUnitMeasure() + ")";
-                    }
-                    if (!ferragensList.contains(desc)) {
-                        ferragensList.add(desc);
-                    }
+    private static void collectHardwareFromOptions(List<BudgetItemOption> options, List<String> list) {
+        if (options == null) {
+            return;
+        }
+        for (BudgetItemOption opt : options) {
+            if (isHardwareOrComponent(opt)) {
+                String desc = formatHardwareDescription(opt);
+                if (!list.contains(desc)) {
+                    list.add(desc);
                 }
             }
         }
+    }
 
-        return ferragensList.isEmpty() ? null : String.join(", ", ferragensList);
+    private static String formatHardwareDescription(BudgetItemOption opt) {
+        String desc = opt.getMaterialName();
+        if (opt.getQuantity() != null && opt.getUnitMeasure() != null) {
+            return desc + " (" + opt.getQuantity().stripTrailingZeros().toPlainString()
+                    + " " + opt.getUnitMeasure() + ")";
+        }
+        return desc;
     }
 
     private static boolean isGlassOption(BudgetItemOption opt) {
