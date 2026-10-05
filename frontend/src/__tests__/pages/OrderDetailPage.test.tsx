@@ -68,7 +68,7 @@ describe('OrderDetailPage — [US-13.5] Visualização Detalhada do Pedido de Ve
     } as any);
   });
 
-  it('deve exibir indicador de carregamento enquanto busca dados do pedido', () => {
+  it('deve exibir indicador de carregamento enquanto busca dados da ordem de serviço', () => {
     vi.spyOn(useOrdersModule, 'useOrder').mockReturnValue({
       data: undefined,
       isLoading: true,
@@ -76,9 +76,9 @@ describe('OrderDetailPage — [US-13.5] Visualização Detalhada do Pedido de Ve
     } as any);
 
     render(
-      <MemoryRouter initialEntries={['/pedidos/order-uuid-1']}>
+      <MemoryRouter initialEntries={['/work-orders/order-uuid-1']}>
         <Routes>
-          <Route path="/pedidos/:id" element={<OrderDetailPage />} />
+          <Route path="/work-orders/:id" element={<OrderDetailPage />} />
         </Routes>
       </MemoryRouter>
     );
@@ -86,7 +86,7 @@ describe('OrderDetailPage — [US-13.5] Visualização Detalhada do Pedido de Ve
     expect(screen.getByTestId('order-detail-loading')).toBeInTheDocument();
   });
 
-  it('deve exibir estado de erro caso o pedido não seja encontrado', () => {
+  it('deve exibir estado de erro caso a ordem de serviço não seja encontrada', () => {
     vi.spyOn(useOrdersModule, 'useOrder').mockReturnValue({
       data: undefined,
       isLoading: false,
@@ -95,15 +95,15 @@ describe('OrderDetailPage — [US-13.5] Visualização Detalhada do Pedido de Ve
     } as any);
 
     render(
-      <MemoryRouter initialEntries={['/pedidos/order-uuid-inexistente']}>
+      <MemoryRouter initialEntries={['/work-orders/order-uuid-inexistente']}>
         <Routes>
-          <Route path="/pedidos/:id" element={<OrderDetailPage />} />
+          <Route path="/work-orders/:id" element={<OrderDetailPage />} />
         </Routes>
       </MemoryRouter>
     );
 
     expect(screen.getByTestId('order-detail-error')).toBeInTheDocument();
-    expect(screen.getByText(/pedido não encontrado/i)).toBeInTheDocument();
+    expect(screen.getByText(/ordem de serviço não encontrada/i)).toBeInTheDocument();
   });
 
   it('deve renderizar os detalhes completos do pedido com lock imutável, financeiro e itens', () => {
@@ -114,15 +114,15 @@ describe('OrderDetailPage — [US-13.5] Visualização Detalhada do Pedido de Ve
     } as any);
 
     render(
-      <MemoryRouter initialEntries={['/pedidos/order-uuid-1']}>
+      <MemoryRouter initialEntries={['/work-orders/order-uuid-1']}>
         <Routes>
-          <Route path="/pedidos/:id" element={<OrderDetailPage />} />
+          <Route path="/work-orders/:id" element={<OrderDetailPage />} />
         </Routes>
       </MemoryRouter>
     );
 
     expect(screen.getByTestId('order-detail-page')).toBeInTheDocument();
-    expect(screen.getByText('PED-2026-0001')).toBeInTheDocument();
+    expect(screen.getByText('#OS-2026-0001')).toBeInTheDocument();
     expect(screen.getAllByText('Construtora Horizonte').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByTestId('order-status-badge')).toHaveTextContent('Aguardando Produção');
     expect(screen.getByText('Porta de Giro 1 Folha')).toBeInTheDocument();
@@ -149,9 +149,9 @@ describe('OrderDetailPage — [US-13.5] Visualização Detalhada do Pedido de Ve
     } as any);
 
     render(
-      <MemoryRouter initialEntries={['/pedidos/order-uuid-1']}>
+      <MemoryRouter initialEntries={['/work-orders/order-uuid-1']}>
         <Routes>
-          <Route path="/pedidos/:id" element={<OrderDetailPage />} />
+          <Route path="/work-orders/:id" element={<OrderDetailPage />} />
         </Routes>
       </MemoryRouter>
     );
@@ -175,9 +175,9 @@ describe('OrderDetailPage — [US-13.5] Visualização Detalhada do Pedido de Ve
     } as any);
 
     render(
-      <MemoryRouter initialEntries={['/pedidos/order-uuid-1']}>
+      <MemoryRouter initialEntries={['/work-orders/order-uuid-1']}>
         <Routes>
-          <Route path="/pedidos/:id" element={<OrderDetailPage />} />
+          <Route path="/work-orders/:id" element={<OrderDetailPage />} />
         </Routes>
       </MemoryRouter>
     );

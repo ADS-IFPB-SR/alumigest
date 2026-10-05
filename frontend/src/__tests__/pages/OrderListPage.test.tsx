@@ -62,7 +62,7 @@ describe('OrderListPage — [US-13.4] Listagem Paginada de Pedidos de Venda', ()
       </MemoryRouter>
     );
 
-    expect(screen.getByText(/Carregando pedidos\.\.\./i)).toBeInTheDocument();
+    expect(screen.getByText(/Carregando ordens de serviço\.\.\./i)).toBeInTheDocument();
   });
 
   it('deve exibir mensagem de erro quando isError for true', () => {
@@ -78,7 +78,7 @@ describe('OrderListPage — [US-13.4] Listagem Paginada de Pedidos de Venda', ()
       </MemoryRouter>
     );
 
-    expect(screen.getByText(/Erro ao carregar a lista de pedidos/i)).toBeInTheDocument();
+    expect(screen.getByText(/Erro ao carregar a lista de ordens de serviço/i)).toBeInTheDocument();
   });
 
   it('deve renderizar a tabela com os pedidos retornados com dados formatados', () => {
@@ -106,14 +106,14 @@ describe('OrderListPage — [US-13.4] Listagem Paginada de Pedidos de Venda', ()
 
     const table = screen.getByRole('table');
     expect(table).toBeInTheDocument();
-    expect(screen.getByText('PED-2026-0001')).toBeInTheDocument();
+    expect(screen.getByText('#OS-2026-0001')).toBeInTheDocument();
     expect(screen.getByText('Construtora Horizonte')).toBeInTheDocument();
     expect(screen.getByText('ORC-2026-0001')).toBeInTheDocument();
     expect(screen.getByText('01/10/2026')).toBeInTheDocument();
     expect(screen.getByText('16/10/2026')).toBeInTheDocument();
     expect(screen.getAllByText('WhatsApp').length).toBeGreaterThanOrEqual(1);
 
-    expect(screen.getByText('PED-2026-0002')).toBeInTheDocument();
+    expect(screen.getByText('#OS-2026-0002')).toBeInTheDocument();
     expect(screen.getByText('Vidraçaria Silva')).toBeInTheDocument();
     expect(screen.getAllByText('Presencial').length).toBeGreaterThanOrEqual(1);
   });
@@ -141,7 +141,7 @@ describe('OrderListPage — [US-13.4] Listagem Paginada de Pedidos de Venda', ()
       </MemoryRouter>
     );
 
-    expect(screen.getByText(/Nenhum pedido encontrado/i)).toBeInTheDocument();
+    expect(screen.getByText(/Nenhuma ordem de serviço encontrada/i)).toBeInTheDocument();
   });
 
   it('deve atualizar busca com debounce ao digitar no campo de pesquisa', async () => {
@@ -186,7 +186,7 @@ describe('OrderListPage — [US-13.4] Listagem Paginada de Pedidos de Venda', ()
       </MemoryRouter>
     );
 
-    const statusSelect = screen.getByLabelText(/Filtrar por status do pedido/i);
+    const statusSelect = screen.getByLabelText(/Filtrar por status/i);
     fireEvent.change(statusSelect, { target: { value: 'WAITING_PRODUCTION' } });
 
     const channelSelect = screen.getByLabelText(/Filtrar por canal de aprovação/i);

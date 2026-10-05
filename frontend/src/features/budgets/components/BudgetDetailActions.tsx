@@ -7,6 +7,7 @@ import { useUpdateBudgetStatus } from '../hooks/useBudgets';
 import type { CreateBudgetPayload, BudgetStatus } from '../types';
 import { WhatsAppSummaryModal } from './WhatsAppSummaryModal';
 import { shareCommercialPdfLink } from '../utils/whatsappHelper';
+import { useOrders } from '../../orders/hooks/useOrders';
 import toast from 'react-hot-toast';
 
 interface BudgetDetailActionsProps {
@@ -42,9 +43,14 @@ export function BudgetDetailActions({
   const isCancelledOrRejected = currentStatus === 'CANCELLED' || currentStatus === 'REJECTED';
   const isApprovalDisabled = isApproved || isCancelledOrRejected || isExpired;
 
-  let approvalButtonTooltip = 'Aprovar este orçamento e convertê-lo em Pedido de Venda';
+  const { data: linkedOrders } = useOrders(
+    isApproved ? { search: budgetCode, size: 1 } : undefined
+  );
+  const linkedOrder = isApproved ? linkedOrders?.content?.[0] : undefined;
+
+  let approvalButtonTooltip = 'Aprovar este orçamento e convertê-lo em Ordem de Serviço';
   if (isApproved) {
-    approvalButtonTooltip = 'Este orçamento já foi aprovado e convertido em pedido.';
+    approvalButtonTooltip = 'Este orçamento já foi aprovado e convertido em ordem de serviço.';
   } else if (isCancelledOrRejected) {
     approvalButtonTooltip = 'Orçamentos cancelados ou rejeitados não podem ser aprovados.';
   } else if (isExpired) {
@@ -301,19 +307,39 @@ export function BudgetDetailActions({
         </span>
       </button>
 
-      {/* ── 4º Aprovar e Gerar Pedido (US-13.3) ─────────────────────────── */}
-      <Button
-        type="button"
-        variant="success"
-        icon="check_circle"
-        data-testid="btn-approve-budget"
-        onClick={onApproveClick}
-        disabled={isApprovalDisabled || !onApproveClick}
-        className="text-xs py-1.5 px-3 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shrink-0"
-        title={approvalButtonTooltip}
-      >
-        <span className="whitespace-nowrap">Aprovar e Gerar Pedido</span>
-      </Button>
+      {/* ── 4º Aprovar ou Ver Ordem de Serviço (US-13.3) ─────────────────── */}
+      {isApproved ? (
+        <Button
+          type="button"
+          variant="primary"
+          icon="assignment"
+          data-testid="btn-view-work-order"
+          onClick={() => {
+            if (linkedOrder?.id) {
+              navigate(`/work-orders/${linkedOrder.id}`);
+            } else {
+              navigate(`/work-orders?search=${encodeURIComponent(budgetCode)}`);
+            }
+          }}
+          className="text-xs py-1.5 px-3 whitespace-nowrap cursor-pointer shrink-0"
+          title="Ver Ordem de Serviço vinculada a este orçamento"
+        >
+          <span className="whitespace-nowrap">Ver Ordem de Serviço</span>
+        </Button>
+      ) : (
+        <Button
+          type="button"
+          variant="success"
+          icon="check_circle"
+          data-testid="btn-approve-budget"
+          onClick={onApproveClick}
+          disabled={isApprovalDisabled || !onApproveClick}
+          className="text-xs py-1.5 px-3 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shrink-0"
+          title={approvalButtonTooltip}
+        >
+          <span className="whitespace-nowrap">Aprovar e Gerar O.S.</span>
+        </Button>
+      )}
 
       {/* ── 5º Duplicar ─────────────────────────────────────────────────── */}
       <button

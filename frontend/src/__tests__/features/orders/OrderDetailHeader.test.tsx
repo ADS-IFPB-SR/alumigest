@@ -40,7 +40,7 @@ describe('OrderDetailHeader', () => {
     );
 
     const advanceBtn = screen.getByRole('button', { name: /avançar para produção/i });
-    const cancelBtn = screen.getByRole('button', { name: /cancelar pedido/i });
+    const cancelBtn = screen.getByRole('button', { name: /cancelar (pedido|ordem de serviço)/i });
 
     expect(advanceBtn).toBeInTheDocument();
     expect(cancelBtn).toBeInTheDocument();

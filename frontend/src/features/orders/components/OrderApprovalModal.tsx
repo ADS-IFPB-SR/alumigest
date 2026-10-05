@@ -137,7 +137,7 @@ export const OrderApprovalModal: React.FC<OrderApprovalModalProps> = ({
         <div className="flex items-center justify-between px-6 py-4 border-b border-outline-variant bg-surface-container-high/30">
           <div className="flex items-center gap-2.5 text-emerald-600 font-semibold text-lg">
             <CheckCircle2 className="w-5 h-5" />
-            <span id="approval-modal-title">Aprovar Orçamento e Gerar Pedido</span>
+            <span id="approval-modal-title">Aprovar Orçamento e Gerar Ordem de Serviço</span>
           </div>
           <button
             type="button"
@@ -157,7 +157,7 @@ export const OrderApprovalModal: React.FC<OrderApprovalModalProps> = ({
             <p>
               Ao aprovar o orçamento <strong className="font-semibold">{budgetCode}</strong>
               {customerName ? <> para o cliente <strong className="font-semibold">{customerName}</strong></> : null},
-              um novo <strong>Pedido de Venda</strong> será formalizado com lock de preços e código sequencial automático.
+              uma nova <strong>Ordem de Serviço</strong> será formalizada com lock de preços e código sequencial automático.
             </p>
           </div>
 
@@ -312,12 +312,12 @@ export const OrderApprovalModal: React.FC<OrderApprovalModalProps> = ({
               {isPending ? (
                 <>
                   <span className="inline-block w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  <span>Gerando Pedido...</span>
+                  <span>Gerando Ordem de Serviço...</span>
                 </>
               ) : (
                 <>
                   <CheckCircle2 className="w-4 h-4" />
-                  <span>Confirmar e Gerar Pedido</span>
+                  <span>Confirmar e Gerar Ordem de Serviço</span>
                 </>
               )}
             </button>

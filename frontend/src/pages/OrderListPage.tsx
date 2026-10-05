@@ -48,16 +48,16 @@ export function OrderListPage() {
         <nav className="flex items-center gap-1.5 text-xs font-body text-on-surface-variant" aria-label="Breadcrumb">
           <span>Início</span>
           <span className="material-symbols-outlined text-[14px]" aria-hidden="true">chevron_right</span>
-          <span className="text-primary font-semibold">Pedidos de Venda</span>
+          <span className="text-primary font-semibold">Ordens de Serviço</span>
         </nav>
 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mt-1">
           <div>
             <h2 id="page-title" className="text-xl sm:text-2xl font-bold text-on-surface tracking-tight">
-              Pedidos de Venda
+              Ordens de Serviço
             </h2>
             <p className="text-xs sm:text-sm text-on-surface-variant mt-0.5 font-body">
-              Acompanhe e gerencie a fila de pedidos confirmados para produção e entrega.
+              Acompanhe e gerencie a fila de ordens de serviço confirmadas para produção e entrega.
             </p>
           </div>
         </div>
@@ -72,7 +72,7 @@ export function OrderListPage() {
               search
             </span>
 
-            <label htmlFor="order-search-input" className="sr-only">Buscar pedidos</label>
+            <label htmlFor="order-search-input" className="sr-only">Buscar ordens de serviço</label>
             <input
               id="order-search-input"
               type="text"
@@ -85,7 +85,7 @@ export function OrderListPage() {
 
           {/* Filtro de Status Fabril */}
           <label htmlFor="filter-status-select" className="w-full sm:w-auto">
-            <span className="sr-only">Filtrar por status do pedido</span>
+            <span className="sr-only">Filtrar por status da ordem de serviço</span>
             <select
               id="filter-status-select"
               value={statusFilter}
@@ -127,7 +127,7 @@ export function OrderListPage() {
         </div>
 
         <div className="text-[13px] text-on-surface-variant font-body whitespace-nowrap">
-          Total: <strong className="text-on-surface font-semibold">{totalElements}</strong> pedidos
+          Total: <strong className="text-on-surface font-semibold">{totalElements}</strong> ordens de serviço
         </div>
       </div>
 
@@ -144,7 +144,7 @@ export function OrderListPage() {
           <table className="w-full text-left border-collapse min-w-[760px]">
             <thead className="sticky top-0 z-10 border-b border-outline-variant">
               <tr className="bg-surface-container-low">
-                <th scope="col" className="px-2.5 py-2 text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider whitespace-nowrap bg-surface-container-low">Nº Pedido</th>
+                <th scope="col" className="px-2.5 py-2 text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider whitespace-nowrap bg-surface-container-low">Nº O.S.</th>
                 <th scope="col" className="px-2.5 py-2 text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider whitespace-nowrap bg-surface-container-low">Orçamento</th>
                 <th scope="col" className="px-2.5 py-2 text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider whitespace-nowrap bg-surface-container-low">Cliente</th>
                 <th scope="col" className="px-2.5 py-2 text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider whitespace-nowrap bg-surface-container-low">Aprovação</th>
@@ -158,27 +158,27 @@ export function OrderListPage() {
             <tbody className={`divide-y divide-outline-variant text-[13px] transition-opacity duration-150 ${isFetching ? 'opacity-75' : 'opacity-100'}`}>
               {isLoading ? (
                 <tr>
-                  <td colSpan={9} aria-label="Carregando pedidos" className="p-8 text-center text-on-surface-variant">
+                  <td colSpan={9} aria-label="Carregando ordens de serviço" className="p-8 text-center text-on-surface-variant">
                     <div className="flex items-center justify-center gap-2">
                       <span className="material-symbols-outlined animate-spin text-[20px]" aria-hidden="true">progress_activity</span>
-                      <span>Carregando pedidos...</span>
+                      <span>Carregando ordens de serviço...</span>
                     </div>
                   </td>
                 </tr>
               ) : isError ? (
                 <tr>
-                  <td colSpan={9} className="p-8 text-center text-error">Erro ao carregar a lista de pedidos.</td>
+                  <td colSpan={9} className="p-8 text-center text-error">Erro ao carregar a lista de ordens de serviço.</td>
                 </tr>
               ) : data?.content.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="p-10 text-center text-on-surface-variant">Nenhum pedido encontrado.</td>
+                  <td colSpan={9} className="p-10 text-center text-on-surface-variant">Nenhuma ordem de serviço encontrada.</td>
                 </tr>
               ) : (
                 data?.content.map((order) => (
                   <tr key={order.id} className="hover:bg-surface-container-low/30 transition-colors">
                     <td className="px-2.5 py-2 whitespace-nowrap">
-                      <Link to={`/pedidos/${order.id}`} className="font-semibold text-primary hover:underline text-xs">
-                        {order.codigo}
+                      <Link to={`/work-orders/${order.id}`} className="font-semibold text-primary hover:underline text-xs">
+                        #{order.codigo.replace('PED-', 'OS-')}
                       </Link>
                     </td>
                     <td className="px-2.5 py-2 font-data-mono text-on-surface-variant text-xs whitespace-nowrap">
@@ -205,10 +205,10 @@ export function OrderListPage() {
                     <td className="px-2.5 py-2 text-right whitespace-nowrap">
                       <div className="flex items-center justify-end gap-1">
                         <Link
-                          to={`/pedidos/${order.id}`}
+                          to={`/work-orders/${order.id}`}
                           className="flex items-center gap-1 px-2 py-0.5 border border-outline-variant rounded text-xs font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors bg-surface"
                           title="Ver Detalhes"
-                          aria-label={`Ver detalhes do pedido ${order.codigo}`}
+                          aria-label={`Ver detalhes da ordem de serviço ${order.codigo}`}
                         >
                           <span className="material-symbols-outlined text-[14px]" aria-hidden="true">visibility</span>
                           Ver
@@ -218,7 +218,7 @@ export function OrderListPage() {
                           disabled
                           className="flex items-center justify-center p-0.5 border border-outline-variant rounded text-on-surface-variant bg-surface opacity-50 cursor-not-allowed select-none"
                           title="Impressão em PDF disponível na US-16.1"
-                          aria-label={`Impressão em PDF disponível na US-16.1 (Pedido ${order.codigo})`}
+                          aria-label={`Impressão em PDF disponível na US-16.1 (Ordem de Serviço ${order.codigo})`}
                         >
                           <span className="material-symbols-outlined text-[14px]" aria-hidden="true">print</span>
                         </button>
@@ -234,7 +234,7 @@ export function OrderListPage() {
         {/* Rodapé Fixo de Paginação com Seletor de Tamanho */}
         <div className="flex-none px-4 py-2.5 border-t border-outline-variant bg-surface-container-lowest flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-3 text-[13px] text-on-surface-variant">
-            <span>Exibindo {startItem}-{endItem} de {totalElements} pedidos</span>
+            <span>Exibindo {startItem}-{endItem} de {totalElements} ordens de serviço</span>
             <div className="flex items-center gap-1.5 border-l border-outline-variant pl-3">
               <label htmlFor="page-size-select" className="text-xs text-on-surface-variant">Por página:</label>
               <select

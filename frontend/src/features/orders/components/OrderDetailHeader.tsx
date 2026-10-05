@@ -29,16 +29,16 @@ export const OrderDetailHeader: React.FC<OrderDetailHeaderProps> = ({
     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-outline-variant">
       <div className="flex items-center gap-4">
         <Link
-          to="/pedidos"
+          to="/work-orders"
           className="p-2 rounded-lg border border-outline-variant hover:bg-surface-container-high transition-colors text-on-surface-variant hover:text-on-surface"
-          aria-label="Voltar para a lista de pedidos"
+          aria-label="Voltar para a lista de ordens de serviço"
         >
           <ArrowLeft className="w-5 h-5" />
         </Link>
         <div>
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold tracking-tight text-on-surface font-headline">
-              {order.codigo}
+              #{order.codigo.replace('PED-', 'OS-')}
             </h1>
             <OrderStatusBadge status={order.status} />
           </div>
@@ -57,7 +57,7 @@ export const OrderDetailHeader: React.FC<OrderDetailHeaderProps> = ({
             className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-lg border border-rose-200 transition-colors"
           >
             <Ban className="w-4 h-4" />
-            Cancelar Pedido
+            Cancelar Ordem de Serviço
           </button>
         )}
 

@@ -49,7 +49,7 @@ describe('OrderApprovalModal — [US-13.3] Modal de Aprovação e Conversão', (
     renderWithClient(<OrderApprovalModal {...defaultProps} />);
 
     expect(screen.getByTestId('order-approval-modal')).toBeInTheDocument();
-    expect(screen.getByText(/Aprovar Orçamento e Gerar Pedido/i)).toBeInTheDocument();
+    expect(screen.getByText(/Aprovar Orçamento e Gerar (Pedido|Ordem de Serviço)/i)).toBeInTheDocument();
     expect(screen.getByText('ORC-2026-001')).toBeInTheDocument();
     expect(screen.getByText('Vidraçaria Silva')).toBeInTheDocument();
 
@@ -165,7 +165,7 @@ describe('OrderApprovalModal — [US-13.3] Modal de Aprovação e Conversão', (
   it('deve exibir estado de loading e desabilitar botões quando isSubmitting for true', () => {
     renderWithClient(<OrderApprovalModal {...defaultProps} isSubmitting={true} />);
 
-    expect(screen.getByText(/Gerando Pedido.../i)).toBeInTheDocument();
+    expect(screen.getByText(/Gerando (Pedido|Ordem de Serviço)\.\.\./i)).toBeInTheDocument();
     expect(screen.getByTestId('btn-confirm-approval')).toBeDisabled();
     expect(screen.getByTestId('btn-cancel-approval')).toBeDisabled();
   });
