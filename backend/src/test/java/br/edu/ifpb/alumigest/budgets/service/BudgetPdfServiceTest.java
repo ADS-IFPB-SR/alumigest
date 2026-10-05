@@ -21,7 +21,10 @@ import org.junit.jupiter.params.provider.ValueSource;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -436,8 +439,8 @@ class BudgetPdfServiceTest {
         }
 
         @Test
-        @DisplayName("Limite de Validade: validUntil menor ou igual a createdAt (dias <= 0) deve aplicar fallback de 15 dias")
-        void dadoValidUntilMenorOuIgualACreatedAt_deveAplicarFallbackDe15Dias() throws IOException {
+        @DisplayName("Limite de Validade: validUntil anterior a createdAt deve exibir 0 dias, sem fallback artificial de 15 dias (BUG-025)")
+        void dadoValidUntilAnteriorACreatedAt_deveExibirZeroDiasSemFallback() throws IOException {
             Budget budget = criarBudgetPadrao(false);
             OffsetDateTime agora = OffsetDateTime.now();
             budget.setCreatedAt(agora);
@@ -448,7 +451,9 @@ class BudgetPdfServiceTest {
             assertThat(pdfBytes).isNotNull();
             try (PdfReader reader = new PdfReader(pdfBytes)) {
                 String conteudo = extrairStreamsDeTexto(reader);
-                assertThat(conteudo).contains("15 dias a partir da emissão");
+                assertThat(conteudo)
+                        .contains("(0 dias a partir da emissão)")
+                        .doesNotContain("15 dias a partir da emissão");
             }
         }
 
@@ -466,6 +471,131 @@ class BudgetPdfServiceTest {
             try (PdfReader reader = new PdfReader(pdfBytes)) {
                 String conteudo = extrairStreamsDeTexto(reader);
                 assertThat(conteudo).contains("30 dias a partir da emissão");
+            }
+        }
+    }
+
+    // =========================================================================
+    // 3.1 BUG-025 — DIAS DE VALIDADE POR DATAS DE CALENDÁRIO NO PDF COMERCIAL
+    // =========================================================================
+    @Nested
+    @DisplayName("3.1 BUG-025 - Dias de validade por datas de calendário no PDF Comercial")
+    class DiasValidadeBug025Test {
+
+        private static final ZoneOffset OFFSET_BRT = ZoneOffset.ofHours(-3);
+        private static final ZoneId ZONA_PADRAO = ZoneId.of("America/Sao_Paulo");
+
+        private OffsetDateTime dataHora(int ano, int mes, int dia, int hora, int minuto) {
+            return OffsetDateTime.of(ano, mes, dia, hora, minuto, 0, 0, OFFSET_BRT);
+        }
+
+        @ParameterizedTest(name = "[{index}] {0} -> {1} = {2} dia(s)")
+        @CsvSource({
+                // Cenário A (bug original): menos de 24h, mas no dia seguinte
+                "2026-09-29T16:00:00-03:00, 2026-09-30T10:00:00-03:00, 1",
+                "2026-09-29T08:00:00-03:00, 2026-09-30T08:01:00-03:00, 1",
+                "2026-09-29T23:59:00-03:00, 2026-09-30T00:01:00-03:00, 1",
+                // Cenário B: vários dias
+                "2026-09-29T00:00:00-03:00, 2026-10-04T00:00:00-03:00, 5",
+                "2026-09-29T18:00:00-03:00, 2026-10-04T09:00:00-03:00, 5",
+                // Cenário C: mesma data
+                "2026-09-29T08:00:00-03:00, 2026-09-29T23:00:00-03:00, 0",
+                "2026-09-29T00:00:00-03:00, 2026-09-29T00:00:00-03:00, 0",
+                // Cenário E: validade anterior à emissão é travada em 0
+                "2026-09-29T08:00:00-03:00, 2026-09-27T08:00:00-03:00, 0"
+        })
+        @DisplayName("Deve calcular a diferença em dias de calendário, ignorando horas")
+        void deveCalcularDiferencaEmDiasDeCalendario(OffsetDateTime createdAt, OffsetDateTime validUntil, long esperado) {
+            assertThat(BudgetPdfService.calcularDiasValidade(createdAt, validUntil)).isEqualTo(esperado);
+        }
+
+        @Test
+        @DisplayName("Cenário D: createdAt nulo deve usar a data atual (America/Sao_Paulo) sem lançar exceção")
+        void dadoCreatedAtNulo_deveUsarDataAtualSemExcecao() {
+            LocalDate hoje = LocalDate.now(ZONA_PADRAO);
+            OffsetDateTime validadeEmTresDias = hoje.plusDays(3).atTime(12, 0).atOffset(OFFSET_BRT);
+            OffsetDateTime validadeVencida = hoje.minusDays(3).atTime(12, 0).atOffset(OFFSET_BRT);
+
+            assertThat(BudgetPdfService.calcularDiasValidade(null, validadeEmTresDias)).isEqualTo(3);
+            assertThat(BudgetPdfService.calcularDiasValidade(null, validadeVencida)).isZero();
+        }
+
+        @ParameterizedTest(name = "{0} -> ''{1}''")
+        @CsvSource({
+                "0, 0 dias",
+                "1, 1 dia",
+                "2, 2 dias",
+                "15, 15 dias"
+        })
+        @DisplayName("Deve aplicar singular/plural corretamente na quantidade de dias")
+        void deveFormatarQuantidadeDiasComConcordancia(long dias, String esperado) {
+            assertThat(BudgetPdfService.formatarQuantidadeDias(dias)).isEqualTo(esperado);
+        }
+
+        @Test
+        @DisplayName("Cenário F: validade no dia seguinte (< 24h) deve imprimir '1 dia', nunca '1 dias' nem '15 dias'")
+        void dadoValidadeNoDiaSeguinte_deveImprimirUmDiaNoPdf() throws IOException {
+            Budget budget = criarBudgetPadrao(false);
+            budget.setCreatedAt(dataHora(2026, 9, 29, 16, 0));
+            budget.setValidUntil(dataHora(2026, 9, 30, 10, 0));
+
+            byte[] pdfBytes = budgetPdfService.gerarPdfComercial(budget);
+
+            try (PdfReader reader = new PdfReader(pdfBytes)) {
+                String conteudo = extrairStreamsDeTexto(reader);
+                assertThat(conteudo)
+                        .contains("Orçamento válido até 30/09/2026 (1 dia a partir da emissão).")
+                        .doesNotContain("1 dias a partir da emissão")
+                        .doesNotContain("15 dias a partir da emissão");
+            }
+        }
+
+        @Test
+        @DisplayName("Cenário C no PDF: validade na mesma data da emissão deve imprimir '0 dias'")
+        void dadoValidadeNaMesmaData_deveImprimirZeroDiasNoPdf() throws IOException {
+            Budget budget = criarBudgetPadrao(false);
+            budget.setCreatedAt(dataHora(2026, 9, 29, 8, 0));
+            budget.setValidUntil(dataHora(2026, 9, 29, 23, 0));
+
+            byte[] pdfBytes = budgetPdfService.gerarPdfComercial(budget);
+
+            try (PdfReader reader = new PdfReader(pdfBytes)) {
+                String conteudo = extrairStreamsDeTexto(reader);
+                assertThat(conteudo)
+                        .contains("Orçamento válido até 29/09/2026 (0 dias a partir da emissão).")
+                        .doesNotContain("15 dias a partir da emissão");
+            }
+        }
+
+        @Test
+        @DisplayName("Cenário B no PDF: validade de vários dias deve imprimir o plural")
+        void dadoValidadeDeVariosDias_deveImprimirPluralNoPdf() throws IOException {
+            Budget budget = criarBudgetPadrao(false);
+            budget.setCreatedAt(dataHora(2026, 9, 29, 9, 0));
+            budget.setValidUntil(dataHora(2026, 10, 4, 9, 0));
+
+            byte[] pdfBytes = budgetPdfService.gerarPdfComercial(budget);
+
+            try (PdfReader reader = new PdfReader(pdfBytes)) {
+                String conteudo = extrairStreamsDeTexto(reader);
+                assertThat(conteudo).contains("Orçamento válido até 04/10/2026 (5 dias a partir da emissão).");
+            }
+        }
+
+        @Test
+        @DisplayName("Cenário D no PDF: createdAt nulo deve gerar o PDF sem NullPointerException")
+        void dadoCreatedAtNulo_deveGerarPdfSemExcecao() throws IOException {
+            Budget budget = criarBudgetPadrao(false);
+            budget.setCreatedAt(null);
+            budget.setValidUntil(LocalDate.now(ZONA_PADRAO).plusDays(1).atTime(12, 0).atOffset(OFFSET_BRT));
+
+            byte[] pdfBytes = budgetPdfService.gerarPdfComercial(budget);
+
+            try (PdfReader reader = new PdfReader(pdfBytes)) {
+                String conteudo = extrairStreamsDeTexto(reader);
+                assertThat(conteudo)
+                        .contains("(1 dia a partir da emissão)")
+                        .doesNotContain("15 dias a partir da emissão");
             }
         }
     }
