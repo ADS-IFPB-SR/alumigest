@@ -1532,11 +1532,41 @@ public class BudgetPdfService {
         if (item == null) {
             return List.of("Sem puxador previsto.");
         }
-        List<String> linhas = extrairLinhasPuxadorJson(item.getHandleConfig());
+
+        String handleConfig = item.getHandleConfig();
+        if (isSemPuxador(handleConfig)) {
+            return List.of("Sem puxador previsto.");
+        }
+
+        List<String> linhas = extrairLinhasPuxadorJson(handleConfig);
         if (linhas.isEmpty()) {
             linhas.addAll(obterLinhasPuxadorFallback(item));
         }
         return linhas;
+    }
+
+    private boolean isSemPuxador(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return true;
+        }
+
+        String trimmed = raw.trim();
+        if ("{}".equals(trimmed) || "NONE".equalsIgnoreCase(trimmed)) {
+            return true;
+        }
+
+        try {
+            JsonNode node = objectMapper.readTree(trimmed);
+            return isNoneHandleType(node, KEY_HANDLE_TYPE) || isNoneHandleType(node, "type");
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private boolean isNoneHandleType(JsonNode node, String key) {
+        return node != null
+                && node.hasNonNull(key)
+                && "NONE".equalsIgnoreCase(node.get(key).asText().trim());
     }
 
     private List<String> extrairLinhasPuxadorJson(String raw) {
