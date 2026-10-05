@@ -22,27 +22,27 @@ Fornecer interface amigável para o vendedor aprovar o orçamento, escolher o ca
 
 ## 🛠️ Checklist de Implementação
 
-- [ ] Criar arquivo de tipos `frontend/src/features/orders/types/order.ts` com tipos de entrada e saída
-- [ ] Criar schema de validação Zod `orderConvertSchema` garantindo canal obrigatório e data válida
-- [ ] Criar serviço de API Axios `orderApi.ts` com chamada para `POST /api/orders/from-budget/${budgetId}`
-- [ ] Criar hook React Query `useConvertBudget` tratando loading, toasts de notificação e redirecionamento
-- [ ] Construir componente `OrderApprovalModal.tsx` com acessibilidade, design Tailwind e feedback de erro
-- [ ] Adicionar cálculo da data padrão `hoje + 15 dias corridos` na inicialização do formulário
-- [ ] Integrar o botão 'Aprovar e Gerar Pedido' no cabeçalho de ações da `BudgetDetailPage.tsx`
-- [ ] Desabilitar o botão se o orçamento já estiver aprovado, cancelado ou rejeitado
-- [ ] Criar testes de componente com Vitest em `OrderApprovalModal.test.tsx`
+- [x] Criar arquivo de tipos `frontend/src/features/orders/types/order.ts` com tipos de entrada e saída
+- [x] Criar schema de validação Zod `orderConvertSchema` garantindo canal obrigatório e data válida
+- [x] Criar serviço de API Axios `orderApi.ts` com chamada para `POST /api/orders/from-budget/${budgetId}`
+- [x] Criar hook React Query `useConvertBudget` tratando loading, toasts de notificação e redirecionamento
+- [x] Construir componente `OrderApprovalModal.tsx` com acessibilidade, design Tailwind e feedback de erro
+- [x] Adicionar cálculo da data padrão `hoje + 15 dias corridos` na inicialização do formulário
+- [x] Integrar o botão 'Aprovar e Gerar Pedido' no cabeçalho de ações da `BudgetDetailPage.tsx`
+- [x] Desabilitar o botão se o orçamento já estiver aprovado, cancelado ou rejeitado
+- [x] Criar testes de componente com Vitest em `OrderApprovalModal.test.tsx`
 
 ---
 
 ## ✅ Definition of Done (DoD)
 
-1. [ ] **Compilação**: Código compila sem erros (`mvn clean compile` e `npm run build`).
-2. [ ] **Testes Unitários**: Testes unitários passam com sucesso (`mvn test` e `npx vitest run`).
-3. [ ] **Qualidade de Código**: Zero warnings bloqueantes e conformidade com Checkstyle / Oxlint.
-4. [ ] **Valor Funcional**: Funcionalidade testável de ponta a ponta no navegador (ou verificação de schema/serviço).
-5. [ ] **Documentação Inline**: Javadoc / TSDoc nos métodos públicos e classes relevantes.
-6. [ ] **Checklist Concluído**: Todos os itens do checklist da issue devidamente atendidos e verificados.
-7. [ ] **Commits Padronizados**: Commits seguindo o padrão Conventional Commits em português do Brasil (pt-BR).
+1. [x] **Compilação**: Código compila sem erros (`mvn clean compile` e `npm run build`).
+2. [x] **Testes Unitários**: Testes unitários passam com sucesso (`mvn test` e `npx vitest run`).
+3. [x] **Qualidade de Código**: Zero warnings bloqueantes e conformidade com Checkstyle / Oxlint.
+4. [x] **Valor Funcional**: Funcionalidade testável de ponta a ponta no navegador (ou verificação de schema/serviço).
+5. [x] **Documentação Inline**: Javadoc / TSDoc nos métodos públicos e classes relevantes.
+6. [x] **Checklist Concluído**: Todos os itens do checklist da issue devidamente atendidos e verificados.
+7. [x] **Commits Padronizados**: Commits seguindo o padrão Conventional Commits em português do Brasil (pt-BR).
 
 ---
 

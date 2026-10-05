@@ -2,11 +2,18 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
-import { useOrder, useOrders, useCancelOrder } from '../../../features/orders/hooks/useOrders';
+import { useOrder, useOrders, useCancelOrder, useConvertBudget } from '../../../features/orders/hooks/useOrders';
 import { ordersApi } from '../../../features/orders/services/ordersApi';
 import type { Order } from '../../../features/orders/types';
+import toast from 'react-hot-toast';
 
 vi.mock('../../../features/orders/services/ordersApi');
+vi.mock('react-hot-toast', () => ({
+  default: {
+    success: vi.fn(),
+    error: vi.fn(),
+  },
+}));
 
 const createWrapper = () => {
   const queryClient = new QueryClient({
@@ -84,5 +91,90 @@ describe('useOrders hooks', () => {
     expect(result.current.data?.totalElements).toBe(0);
     expect(ordersApi.getOrders).toHaveBeenCalledWith({ page: 0, size: 10 });
   });
-});
 
+  describe('useConvertBudget (US-13.3)', () => {
+    it('deve converter orçamento em pedido com sucesso quando budgetId é informado no hook', async () => {
+      const mockOrder: Partial<Order> = {
+        id: 'order-10',
+        codigo: 'PED-2026-0010',
+        orcamentoId: 'b-123',
+        status: 'CREATED',
+      };
+
+      vi.mocked(ordersApi.convertBudget).mockResolvedValue(mockOrder as Order);
+
+      const { result } = renderHook(() => useConvertBudget('b-123'), {
+        wrapper: createWrapper(),
+      });
+
+      result.current.mutate({
+        canalAprovacao: 'WHATSAPP',
+        dataPrevisaoEntrega: '2026-10-20',
+        observacoes: 'Urgente',
+      });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+      expect(ordersApi.convertBudget).toHaveBeenCalledWith('b-123', {
+        canalAprovacao: 'WHATSAPP',
+        dataPrevisaoEntrega: '2026-10-20',
+        observacoes: 'Urgente',
+      });
+      expect(toast.success).toHaveBeenCalledWith(
+        expect.stringContaining('PED-2026-0010')
+      );
+    });
+
+    it('deve permitir converter passando budgetId no payload da mutação', async () => {
+      const mockOrder: Partial<Order> = {
+        id: 'order-11',
+        codigo: 'PED-2026-0011',
+        orcamentoId: 'b-456',
+        status: 'CREATED',
+      };
+
+      vi.mocked(ordersApi.convertBudget).mockResolvedValue(mockOrder as Order);
+
+      const { result } = renderHook(() => useConvertBudget(), {
+        wrapper: createWrapper(),
+      });
+
+      result.current.mutate({
+        budgetId: 'b-456',
+        data: {
+          canalAprovacao: 'PRESENCIAL',
+          dataPrevisaoEntrega: '2026-10-25',
+        },
+      });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+      expect(ordersApi.convertBudget).toHaveBeenCalledWith('b-456', {
+        canalAprovacao: 'PRESENCIAL',
+        dataPrevisaoEntrega: '2026-10-25',
+      });
+    });
+
+    it('deve exibir toast de erro com mensagem da API em caso de falha', async () => {
+      const errorResponse = {
+        response: {
+          data: {
+            message: 'Já existe pedido para este orçamento.',
+          },
+        },
+      };
+
+      vi.mocked(ordersApi.convertBudget).mockRejectedValue(errorResponse);
+
+      const { result } = renderHook(() => useConvertBudget('b-999'), {
+        wrapper: createWrapper(),
+      });
+
+      result.current.mutate({
+        canalAprovacao: 'WHATSAPP',
+        dataPrevisaoEntrega: '2026-10-20',
+      });
+
+      await waitFor(() => expect(result.current.isError).toBe(true));
+      expect(toast.error).toHaveBeenCalledWith('Já existe pedido para este orçamento.');
+    });
+  });
+});

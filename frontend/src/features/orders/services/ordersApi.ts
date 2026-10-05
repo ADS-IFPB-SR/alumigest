@@ -21,12 +21,18 @@ export interface PageResponse<T> {
   number?: number;
 }
 
+export type OrderPageResponse = PageResponse<OrderSummary>;
+
 export const ordersApi = {
   async getOrderById(id: string): Promise<Order> {
     const response = await api.get<Order>(`/orders/${id}`);
     return response.data;
   },
 
+  /**
+   * Converte um orçamento aprovado em pedido de venda (US-13.2 / US-13.3).
+   * Chama o endpoint backend POST /api/v1/orders/convert/{budgetId}.
+   */
   async convertBudget(budgetId: string, data: OrderConvertRequest): Promise<Order> {
     const response = await api.post<Order>(`/orders/convert/${budgetId}`, data);
     return response.data;
@@ -37,6 +43,9 @@ export const ordersApi = {
     return response.data;
   },
 
+  /**
+   * Lista pedidos de venda com paginação e filtros dinâmicos (US-13.4).
+   */
   async getOrders(params?: OrderFilterParams): Promise<PageResponse<OrderSummary>> {
     const queryParams: Record<string, string | number> = {
       page: params?.page ?? 0,
@@ -82,3 +91,5 @@ export const ordersApi = {
     };
   },
 };
+
+export const orderApi = ordersApi;

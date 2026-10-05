@@ -6,3 +6,4 @@ export * from './OrderDeliveryTimelineCard';
 export * from './OrderFinancialSummaryCard';
 export * from './OrderItemList';
 export * from './CancelOrderModal';
+export * from './OrderApprovalModal';
