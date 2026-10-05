@@ -268,18 +268,46 @@ class BudgetPdfServiceTest {
             }
         }
 
-        @Test
-        @DisplayName("Dado handleConfig 'NONE' ou 'none', não deve exibir tag de puxador")
-        void dadoHandleConfigNone_deveOcultarTagDePuxador() throws IOException {
+        @ParameterizedTest
+        @ValueSource(strings = {
+                "NONE",
+                "{}",
+                "{\"handleType\":\"NONE\"}",
+                "{\"type\":\"NONE\"}"
+        })
+        @DisplayName("Dado handleConfig sem puxador, deve informar ausência sem usar fallback")
+        void dadoHandleConfigSemPuxador_deveInformarAusencia(String handleConfig) throws IOException {
             Budget budget = criarBudgetPadrao(false);
-            budget.getItems().getFirst().setHandleConfig("NONE");
+            budget.getItems().getFirst().setHandleConfig(handleConfig);
 
-            byte[] pdfBytes = budgetPdfService.gerarPdfComercial(budget);
+            byte[] pdfBytes = budgetPdfService.gerarPdfTecnico(budget);
 
             assertThat(pdfBytes).isNotNull();
             try (PdfReader reader = new PdfReader(pdfBytes)) {
                 String conteudo = extrairStreamsDeTexto(reader);
-                assertThat(conteudo).doesNotContain("NONE");
+                assertThat(conteudo)
+                        .contains("Sem puxador previsto.")
+                        .doesNotContain("NONE")
+                        .doesNotContain("Formato: Padrão do modelo.")
+                        .doesNotContain("Posição: Lado de abertura.");
+            }
+        }
+
+        @Test
+        @DisplayName("Dado handleConfig vazio, deve informar ausência sem usar fallback")
+        void dadoHandleConfigVazio_deveInformarAusencia() throws IOException {
+            Budget budget = criarBudgetPadrao(false);
+            budget.getItems().getFirst().setHandleConfig(" ");
+
+            byte[] pdfBytes = budgetPdfService.gerarPdfTecnico(budget);
+
+            assertThat(pdfBytes).isNotNull();
+            try (PdfReader reader = new PdfReader(pdfBytes)) {
+                String conteudo = extrairStreamsDeTexto(reader);
+                assertThat(conteudo)
+                        .contains("Sem puxador previsto.")
+                        .doesNotContain("Formato: Padrão do modelo.")
+                        .doesNotContain("Posição: Lado de abertura.");
             }
         }
 
