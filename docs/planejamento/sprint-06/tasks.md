@@ -27,7 +27,7 @@
 
 | ID | Tarefa | Duração | Tipo | Status |
 |---|---|:---:|---|:---:|
-| **US-14.1** | [US-14.1](issues/US-14.1-snapshot-imutavel-lock-precos-deep-copy/issue.md) Snapshot Imutável, Lock de Preços e Tabela de Itens Congelados (Full-Stack: Deep copy em 3 níveis, snapshots JSONB, OrderItemsTable no front e testes unitários de blindagem contra reajuste do catálogo) | ~4h | Fatia Vertical Full-Stack | 🔲 Aberta |
+| **US-14.1** | [US-14.1](issues/US-14.1-snapshot-imutavel-lock-precos-deep-copy/issue.md) Snapshot Imutável, Lock de Preços e Tabela de Itens Congelados (Full-Stack: Deep copy em 3 níveis, snapshots JSONB, OrderItemsTable no front e testes unitários de blindagem contra reajuste do catálogo) | ~4h | Fatia Vertical Full-Stack | ✅ Concluída |
 
 ---
 

@@ -15,33 +15,33 @@ Blindar financeiramente a fábrica executando clonagem profunda (deep copy) em 3
     - Clonagem profunda dos itens: `BudgetItem` ➔ `OrderItem` com replicação de `largura_mm`, `altura_mm`, modelo, cores, vidro, ferragens, `valor_unitario` e `valor_total`.
     - Clonagem das opções: `BudgetItemOption` ➔ `OrderItemOption`.
     - Cálculos estritamente realizados com `BigDecimal` e arredondamento `RoundingMode.HALF_EVEN`.
-- **Frontend (Tabela de Itens)**:
-  - `frontend/src/features/orders/components/OrderItemsTable.tsx`: Tabela rica de esquadrias contratadas com dimensões, acabamento, quantidade, valores unitários e subtotais, com badge 'Lock de Preço Ativo'.
-  - Integração da `OrderItemsTable` na `OrderDetailPage.tsx`.
+- **Frontend (Listagem Limpa de Itens de Produção)**:
+  - `frontend/src/features/orders/components/OrderItemList.tsx`: Exibição limpa e discreta das esquadrias contratadas com dimensões, acabamento e valores unitários/totais já congelados pelo backend, sem ruído visual ou selos desnecessários de snapshot na UI (decisão refinada via `/grill-me`).
+  - Integração limpa do `OrderItemList` na `OrderDetailPage.tsx`.
 
 ---
 
 ## 🛠️ Checklist de Implementação
 
-- [ ] Mapear entidade JPA `OrderItemOption` e colunas JSONB na `OrderItem`
-- [ ] Implementar algoritmo de deep copy em 3 níveis no método `converterOrcamentoEmPedido`
-- [ ] Garantir que todos os valores monetários usam `BigDecimal` com escala 2 e `HALF_EVEN`
-- [ ] Escrever teste unitário de blindagem contra reajuste futuro do catálogo no backend
-- [ ] Criar componente `OrderItemsTable.tsx` no frontend com layout moderno e colunas detalhadas
-- [ ] Incluir indicativo visual (badge ou tooltip) de 'Snapshot Imutável' nos preços dos itens
-- [ ] Embarcar a `OrderItemsTable` na tela de detalhes `OrderDetailPage.tsx`
-- [ ] Escrever testes de componente Vitest para a tabela de itens
+- [x] Mapear entidade JPA `OrderItemOption` e colunas JSONB na `OrderItem`
+- [x] Implementar algoritmo de deep copy em 3 níveis no método `convertBudgetToOrder`
+- [x] Extração resiliente de acabamentos (cor alumínio, vidro, abertura, ferragens) em `OrderItemSnapshotResolver`
+- [x] Garantir que todos os valores monetários usam `BigDecimal` com escala 2 e `HALF_EVEN`
+- [x] Escrever teste unitário de blindagem contra reajuste futuro do catálogo no backend (`OrderSnapshotLockTest`)
+- [x] Escrever testes formais com técnicas de BVA e EP em `OrderItemSnapshotResolverTest`
+- [x] Integrar `OrderItemList.tsx` limpo na tela de detalhes `OrderDetailPage.tsx`
+- [x] Validar que 100% dos testes unitários e de componentes do frontend (`OrderItemList.test.tsx` e `OrderDetailPage.test.tsx`) passam com sucesso
 
 ---
 
 ## ✅ Definition of Done (DoD)
 
-1. [ ] **Compilação**: Código compila sem erros (`mvn clean compile` e `npm run build`).
-2. [ ] **Testes Unitários**: Testes unitários passam com sucesso (`mvn test` e `npx vitest run`).
-3. [ ] **Qualidade de Código**: Zero warnings bloqueantes e conformidade com Checkstyle / Oxlint.
-4. [ ] **Valor Funcional**: Funcionalidade testável de ponta a ponta no navegador (ou verificação de schema/serviço).
-5. [ ] **Documentação Inline**: Javadoc / TSDoc nos métodos públicos e classes relevantes.
-6. [ ] **Checklist Concluído**: Todos os itens do checklist da issue devidamente atendidos e verificados.
+1. [x] **Compilação**: Código compila sem erros (`mvn clean compile` e `npm run build`).
+2. [x] **Testes Unitários**: Testes unitários passam com sucesso (`mvn test` e `npx vitest run`).
+3. [x] **Qualidade de Código**: Zero warnings bloqueantes e conformidade com Checkstyle / Oxlint.
+4. [x] **Valor Funcional**: Funcionalidade testável de ponta a ponta no navegador (ou verificação de schema/serviço).
+5. [x] **Documentação Inline**: Javadoc / TSDoc nos métodos públicos e classes relevantes.
+6. [x] **Checklist Concluído**: Todos os itens do checklist da issue devidamente atendidos e verificados.
 7. [ ] **Commits Padronizados**: Commits seguindo o padrão Conventional Commits em português do Brasil (pt-BR).
 
 ---
