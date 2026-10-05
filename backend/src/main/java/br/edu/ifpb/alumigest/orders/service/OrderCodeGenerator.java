@@ -34,12 +34,24 @@ public class OrderCodeGenerator {
         int currentYear = Year.now(ZoneOffset.UTC).getValue();
         String prefix = String.format("PED-%d-", currentYear);
 
-        return orderRepository.findTopByCodigoStartingWithOrderByCodigoDesc(prefix)
+        int nextNumber = orderRepository.findTopByCodigoStartingWithOrderByCodigoDesc(prefix)
                 .map(lastOrder -> {
                     String lastCode = lastOrder.getCodigo();
-                    int lastNumber = Integer.parseInt(lastCode.substring(prefix.length()));
-                    return String.format("%s%04d", prefix, lastNumber + 1);
+                    try {
+                        int lastNumber = Integer.parseInt(lastCode.substring(prefix.length()));
+                        return lastNumber + 1;
+                    } catch (NumberFormatException e) {
+                        return 1;
+                    }
                 })
-                .orElse(prefix + "0001");
+                .orElse(1);
+
+        String candidateCode = String.format("%s%04d", prefix, nextNumber);
+        while (orderRepository.existsByCodigo(candidateCode)) {
+            nextNumber++;
+            candidateCode = String.format("%s%04d", prefix, nextNumber);
+        }
+
+        return candidateCode;
     }
 }
