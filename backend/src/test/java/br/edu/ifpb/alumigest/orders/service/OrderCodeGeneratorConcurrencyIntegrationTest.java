@@ -7,6 +7,7 @@ import br.edu.ifpb.alumigest.orders.domain.ApprovalChannel;
 import br.edu.ifpb.alumigest.orders.domain.Order;
 import br.edu.ifpb.alumigest.orders.domain.OrderStatus;
 import br.edu.ifpb.alumigest.orders.repository.OrderRepository;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -14,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,6 +46,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @ActiveProfiles("test")
 @Import(OrderCodeGenerator.class)
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @DisplayName("Testes de Integração Concorrente: OrderCodeGenerator (Issue #408 / CA-3)")
 class OrderCodeGeneratorConcurrencyIntegrationTest {
 
@@ -70,6 +73,12 @@ class OrderCodeGeneratorConcurrencyIntegrationTest {
         client.setPhone("83999990000");
         client.setEmail("concorrencia@example.com");
         client = clientRepository.save(client);
+    }
+
+    @AfterEach
+    void tearDown() {
+        orderRepository.deleteAll();
+        clientRepository.deleteAll();
     }
 
     @Test

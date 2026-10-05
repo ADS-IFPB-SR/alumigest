@@ -47,6 +47,9 @@ class OrderRepositoryTest {
 
     @BeforeEach
     void setUp() {
+        orderRepository.deleteAll();
+        clientRepository.deleteAll();
+
         client = new Client();
         client.setFullName("Maria Oliveira");
         client.setPersonType(PersonType.FISICA);
