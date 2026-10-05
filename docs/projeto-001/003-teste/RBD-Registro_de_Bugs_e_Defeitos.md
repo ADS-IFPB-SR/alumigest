@@ -4,10 +4,10 @@
 |---|---|
 | **Projeto** | AlumiGest — Sistema de Gestão para Vidraçaria e Esquadrias |
 | **Documento** | Registro Unificado de Bugs, Defeitos e Hotfixes (RBD) |
-| **Versão** | 2.2.0 (Atualizado com Catálogo do BUG-023 - Issue #349 e Padronização em mm da Ficha Técnica) |
-| **Data de Atualização** | 29/09/2026 |
+| **Versão** | 2.3.0 (Atualizado com Catálogo dos BUG-024, BUG-025 e BUG-026 da US-13 / Sprint 06) |
+| **Data de Atualização** | 05/10/2026 |
 | **Responsável QA** | Herbert Carvalho dos Santos / Equipe de Engenharia AlumiGest |
-| **Branch** | `fix/349-cotas-furacao-puxador-duplo` |
+| **Branch** | `fix/us-13-correcoes-bugs-408-411-412` |
 | **Padrão de Template** | Baseado em [`.github/ISSUE_TEMPLATE/bug_report.md`](../../../.github/ISSUE_TEMPLATE/bug_report.md) |
 | **Auditoria Técnica** | Análise estática SonarQube, Pipeline CI/CD GitHub Actions e Histórico Git |
 
@@ -20,7 +20,7 @@ Este documento consolida o **catálogo histórico e investigativo de todos os bu
 Seguindo a governança do **Plano de Gerência de Configuração (PGC)** e do **Plano Geral de Testes (PLT)**:
 1. Todos os relatos respeitam estritamente a estrutura formal do template [`.github/ISSUE_TEMPLATE/bug_report.md`](../../../.github/ISSUE_TEMPLATE/bug_report.md).
 2. Cada defeito é rastreado com sua severidade, passos de reprodução, comportamento esperado, ambiente afetado e **análise técnica de causa raiz e solução aplicada**.
-3. O monitoramento contínuo aplica a filosofia **Clean as You Code**, suportada pela suíte de **242 testes automatizados JUnit 5**, **24 suítes E2E Cypress**, **Oxlint** e **SonarQube Community Edition**.
+3. O monitoramento contínuo aplica a filosofia **Clean as You Code**, suportada pela suíte de **626 testes automatizados JUnit 5**, **658 testes Vitest**, **24 suítes E2E Cypress**, **Oxlint** e **SonarQube Community Edition**.
 
 ---
 
@@ -51,6 +51,9 @@ Seguindo a governança do **Plano de Gerência de Configuração (PGC)** e do **
 | **[BUG-021](#bug-021)** | Perda de Insumos da Ficha Técnica em Produtos Estáticos e Ocultação de Templates na Categoria Janela | Frontend / Catálogo & Orçamentos | 🔴 Alta | Sprint 03 | ✅ Resolvido | Issue #235 / Branch `fix/products-static-items-and-window-category` |
 | **[BUG-022](#bug-022)** | Itens do Orçamento Descartados na Criação via POST /api/budgets por Ausência de Campo no BudgetCreateRequest | Backend / Orçamentos | 🔴 Alta | Sprint 04 | ✅ Resolvido | Issue #300 / PR #293 |
 | **[BUG-023](#bug-023)** | Falta de Cotas Milimétricas Reais de Furação e Linha Divisória Cortando Texto do Puxador Duplo na Ficha Técnica | Backend / PDF | 🟡 Média | Sprint 05 | ✅ Resolvido | Issue #349 / Branch `fix/349-cotas-furacao-puxador-duplo` |
+| **[BUG-024](#bug-024)** | Condição de Corrida Pode Gerar Códigos Duplicados em Conversões Simultâneas | Backend / Concorrência | 🔴 Alta | Sprint 06 | ✅ Resolvido | Issue #408 / PR #414 |
+| **[BUG-025](#bug-025)** | Interface Troca Código Oficial PED por OS e Quebra Busca pelo Identificador Exibido | Fullstack / Contratos | 🔴 Alta | Sprint 06 | ✅ Resolvido | Issue #411 / PR #414 |
+| **[BUG-026](#bug-026)** | Paginação Exibe Apenas Páginas 1–5 e Perde a Janela da Página Atual | Frontend / Paginação | 🟡 Média | Sprint 06 | ✅ Resolvido | Issue #412 / PR #414 |
 
 ---
 
@@ -691,14 +694,103 @@ Na emissão da Ficha Técnica de Usinagem e Corte (Ficha de Oficina - US-11.2), 
 
 ---
 
+### BUG-024
+#### [BUG] [US-13.2] Condição de Corrida Pode Gerar Códigos Duplicados em Conversões Simultâneas (Issue #408)
+
+**Descrição do Problema:**
+Durante testes de concorrência ou conversões de múltiplos orçamentos no mesmo milissegundo, ocorria uma condição de corrida no gerador de código `OrderCodeGenerator`. Duas threads liam simultaneamente o mesmo código mais recente no banco de dados (ex: `OS-2026-0005`) antes de realizar o commit, tentando persistir ambas a ordem subsequente com o mesmo identificador (`OS-2026-0006`). Isso disparava `DataIntegrityViolationException` devido à restrição de unicidade `uk_orders_codigo` no PostgreSQL.
+
+**Passos para Reproduzir:**
+1. Disparar simultaneamente duas requisições `POST /api/v1/orders/from-budget/{budgetId}` para orçamentos distintos aprovados.
+2. Observar que ambas as transações leem o mesmo `max(codigo)`.
+3. Uma das transações comita com sucesso e a segunda é abortada com erro HTTP 500 / `DataIntegrityViolationException`.
+
+**Comportamento Esperado:**
+O gerador de código deve garantir exclusão mútua na geração de sequenciais, e o serviço transacional deve contar com política de retry automático e verificação defensiva contra colisões.
+
+**Contexto / Ambiente:**
+- **Módulo Afetado:** Backend / Módulo Orders (`OrderCodeGenerator.java`, `OrderServiceImpl.java`, `AlumiGestApplication.java`).
+- **Severidade:** 🔴 Alta | **Sprint:** 06 | **Status:** ✅ Resolvido.
+- **Detecção / Correção:** Issue #408 / PR #414.
+
+**Causa Raiz Técnica & Solução:**
+* **Causa Raiz:** O método `generateNextCode()` não possuía sincronização (`synchronized`) para exclusão mútua em nível de JVM e não checava se o código gerado já existia antes de devolvê-lo, somado à ausência de política de reprocessamento em caso de colisão de commit.
+* **Solução:**
+  1. Tornou-se o método `generateNextCode()` thread-safe (`public synchronized String generateNextCode()`) e adicionou-se verificação defensiva em loop `while (orderRepository.existsByCodigo(candidateCode))` saltando códigos já alocados.
+  2. Adicionada a dependência `spring-retry` com `@EnableRetry` na aplicação.
+  3. O método transacional `convertBudgetToOrder` foi anotado com `@Retryable(retryFor = DataIntegrityViolationException.class, maxAttempts = 3, backoff = @Backoff(delay = 100, multiplier = 1.5))`.
+  4. Suíte de testes unitários `OrderCodeGeneratorTest.java` adicionada cobrindo geração inicial, incremento, fallback de formato e salto de códigos pré-existentes.
+
+---
+
+### BUG-025
+#### [BUG] [US-13.3/13.4/13.5] Interface Troca Código Oficial PED por OS e Quebra Busca pelo Identificador Exibido (Issue #411)
+
+**Descrição do Problema:**
+O frontend exibia a identificação da ordem substituindo cosmetica e artificialmente o código retornado pela API via `.replace('PED-', 'OS-')`. No entanto, o banco de dados persistia nativamente o identificador com prefixo `PED-YYYY-NNNN`. Ao utilizar o campo de busca textual na listagem de ordens de serviço (`OrderListPage.tsx`) ou via API `GET /api/v1/orders?search=OS-2026-0001`, a consulta SQL `LOWER(o.codigo) LIKE %...%` não encontrava nenhuma linha, pois os códigos no banco começavam com `PED-`.
+
+**Passos para Reproduzir:**
+1. Converter um orçamento em ordem de serviço.
+2. Na listagem de ordens de serviço (`/work-orders`), visualizar o código exibido como `#OS-2026-0001`.
+3. Digitar `OS-2026-0001` no campo de pesquisa textual.
+4. Observar mensagem de "Nenhuma ordem de serviço encontrada", embora a ordem exista.
+
+**Comportamento Esperado:**
+O identificador oficial de mercado deve ser unificado e nativo em todas as camadas (Banco de Dados, Backend Core, APIs REST e Frontend), permitindo busca textual direta e consistente.
+
+**Contexto / Ambiente:**
+- **Módulo Afetado:** Fullstack / Módulo Orders (`OrderCodeGenerator.java`, `OrderListPage.tsx`, `OrderDetailHeader.tsx`, `api-orders.md`).
+- **Severidade:** 🔴 Alta | **Sprint:** 06 | **Status:** ✅ Resolvido.
+- **Detecção / Correção:** Issue #411 / PR #414.
+
+**Causa Raiz Técnica & Solução:**
+* **Causa Raiz:** Decisão de design na UI de renomear para "Ordem de Serviço" sem migrar o gerador do backend e o contrato oficial, causando descompasso entre o dado persistido e a visualização.
+* **Solução:**
+  1. O prefixo no gerador `OrderCodeGenerator.java` foi unificado para `OS-%d-` nativo.
+  2. Removidas todas as chamadas `.replace('PED-', 'OS-')` nos componentes `OrderListPage.tsx` e `OrderDetailHeader.tsx`, exibindo diretamente `#{order.codigo}`.
+  3. Contratos de API em `api-orders.md` e documentações OpenAPI atualizados para `OS-YYYY-NNNN`.
+  4. Suíte de testes do frontend e backend adaptada para validar `OS-2026-`.
+
+---
+
+### BUG-026
+#### [BUG] [US-13.4] Paginação Exibe Apenas Páginas 1–5 e Perde a Janela da Página Atual (Issue #412)
+
+**Descrição do Problema:**
+Na tela de listagem de ordens de serviço (`OrderListPage.tsx`), a barra de paginação utilizava `Array.from({ length: Math.min(totalPages, 5) })` para renderizar os botões de página. Quando o total de ordens gerava mais de 5 páginas (ex: 70 itens com tamanho 10 geram 7 páginas), as páginas 6 em diante nunca eram exibidas como botões, e ao navegar via botão "Próximo" para a página 6, a barra deixava de indicar qualquer botão ativo, perdendo o contexto de navegação.
+
+**Passos para Reproduzir:**
+1. Ter mais de 50 ordens de serviço cadastradas na base.
+2. Acessar `/work-orders` com tamanho de página 10 (gerando 6 ou mais páginas).
+3. Verificar que são renderizados apenas os botões de 1 a 5.
+4. Clicar no botão "Próximo" até a página 6 e observar que nenhum botão fica destacado.
+
+**Comportamento Esperado:**
+A paginação deve implementar navegação com janela deslizante e reticências (`…`) dinamicamente centralizadas na página atual, suportando qualquer quantidade de páginas no mesmo padrão de `BudgetsPagination.tsx`.
+
+**Contexto / Ambiente:**
+- **Módulo Afetado:** Frontend / Módulo Orders (`OrderListPage.tsx`, `OrderListPage.test.tsx`).
+- **Severidade:** 🟡 Média | **Sprint:** 06 | **Status:** ✅ Resolvido.
+- **Detecção / Correção:** Issue #412 / PR #414.
+
+**Causa Raiz Técnica & Solução:**
+* **Causa Raiz:** Lógica estática de renderização de botões limitada pelo hardcoding `Math.min(totalPages, 5)`.
+* **Solução:**
+  1. Implementada a função `getVisiblePages()` com algoritmo de janela móvel e reticências quando `totalPages > 7`.
+  2. Renderização de botões e spans de reticências acessíveis com marcação semântica (`aria-current="page"`).
+  3. Adicionados testes automatizados no `OrderListPage.test.tsx` cobrindo totalPages > 7 e navegação.
+
+---
+
 ## 4. 📈 Análise Categórica e Lições Aprendidas de Qualidade
 
 ### 4.1 Distribuição dos Defeitos por Camada
 
 ```mermaid
 pie title "Origem dos Defeitos Identificados"
-    "Frontend & UI/UX" : 9
-    "Backend & Regras de Negócio" : 7
+    "Frontend & UI/UX" : 10
+    "Backend & Regras de Negócio" : 8
+    "Incompatibilidade de Contratos / Fullstack" : 7
     "Pipeline CI/CD & SonarQube" : 3
     "Infraestrutura & Docker" : 2
     "Governança & Git Flow" : 1
@@ -708,13 +800,15 @@ pie title "Origem dos Defeitos Identificados"
 
 | Categoria | Ocorrências | Ação Preventiva Definitiva Adotada |
 |---|:---:|---|
-| **Incompatibilidade de Contratos (DTOs / Types)** | 6 | Adoção de contratos OpenAPI sincronizados e tipagens estritas no TypeScript. |
+| **Incompatibilidade de Contratos (DTOs / Types)** | 7 | Adoção de contratos OpenAPI sincronizados e tipagens estritas no TypeScript. |
 | **Limitações de Ambiente (HTTP vs HTTPS / Docker)** | 3 | Uso de fallbacks nativos (`Math.random`) e parametrização com variáveis de ambiente `.env`. |
 | **Erros de Validação e Feedback ao Usuário** | 3 | Padronização dos formulários com **React Hook Form + Zod** em todos os modais. |
-| **Regressão por Refatoração** | 4 | Ampliação da suíte para **242 testes JUnit 5** e **24 suítes Cypress E2E** no pipeline obrigatório. |
+| **Regressão por Refatoração** | 4 | Ampliação da suíte para **626 testes JUnit 5**, **658 testes Vitest** e **24 suítes Cypress E2E** no pipeline obrigatório. |
 | **Configuração de CI/CD e Build Tools** | 4 | Adição do Quality Gate no SonarQube bloqueando merges caso haja regressão ou falha de plugin. |
 | **Desvio de Git Flow / Merge Prematuro** | 1 | Configuração de Rulesets protegendo `main` e `develop` contra merges diretos sem aprovação de PR. |
+| **Concorrência e Condição de Corrida** | 1 | Sincronização explícita, verificação defensiva em loop e política de retry com Spring Retry. |
+| **Limitação de Paginação e Navegação** | 1 | Adoção de janela móvel deslizante com reticências para qualquer paginação com totalPages > 7. |
 
 ---
 
-*Documento mantido e auditado pelo Time de Engenharia e QA — AlumiGest — Setembro/2026*
+*Documento mantido e auditado pelo Time de Engenharia e QA — AlumiGest — Outubro/2026*
