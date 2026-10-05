@@ -354,4 +354,21 @@ describe('BudgetDetailPage - Testes Unitários', () => {
     const subtotalBrutoValor = screen.getByText('Subtotal Bruto:').nextElementSibling;
     expect(subtotalBrutoValor?.textContent).toMatch(/950,00/);
   });
+
+  it('[Regressão #372] deve exibir no card do item a MO fixa da linha, sem multiplicar pela quantidade', () => {
+    // mockBudgetDetail: 1 item com quantity = 2 e laborCost = 150 (MO fixa da linha).
+    // O card (BudgetProposalItemCard) deve mostrar R$ 150,00, em paridade com a
+    // precificação, o PDF e o resumo financeiro (e não 2 × 150 = R$ 300,00).
+    vi.spyOn(budgetsHooks, 'useBudget').mockReturnValue({
+      data: mockBudgetDetail,
+      isLoading: false,
+      isError: false,
+    } as any);
+
+    renderWithRouter();
+
+    expect(screen.getByText('2 unidades')).toBeInTheDocument();
+    expect(screen.getByText(/MO:\s*R\$\s*150,00/)).toBeInTheDocument();
+    expect(screen.queryByText(/MO:\s*R\$\s*300,00/)).not.toBeInTheDocument();
+  });
 });
