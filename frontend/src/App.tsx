@@ -33,6 +33,8 @@ export function AppRoutes() {
         <Route path="orcamentos/novo" element={<BudgetNewPage />} />
         <Route path="orcamentos/:id" element={<BudgetDetailPage />} />
         <Route path="orcamentos/:id/editar" element={<BudgetEditor />} />
+        <Route path="pedidos" element={<OrderListPage />} />
+        <Route path="pedidos/:id" element={<OrderDetailPage />} />
         <Route path="work-orders" element={<OrderListPage />} />
         <Route path="work-orders/:id" element={<OrderDetailPage />} />
 

@@ -1,10 +1,10 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 
 const navItems = [
   { path: '/dashboard', label: 'Dashboard', icon: 'dashboard' },
   { path: '/kanban', label: 'Kanban', icon: 'view_kanban' },
   { path: '/orcamentos', label: 'Orçamentos', icon: 'receipt_long' },
-  { path: '/work-orders', label: 'Ordens de Serviço', icon: 'assignment' },
+  { path: '/pedidos', label: 'Pedidos de Venda', icon: 'shopping_bag' },
   { path: '/', label: 'Catálogo de Materiais', icon: 'inventory_2' },
   { path: '/estoque', label: 'Estoque', icon: 'inventory' },
   { path: '/produtos', label: 'Produtos', icon: 'category' },
@@ -19,6 +19,17 @@ interface SidebarProps {
 }
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
+  const location = useLocation();
+
+  const isItemActive = (itemPath: string, isNavLinkActive: boolean) => {
+    if (itemPath === '/') {
+      return location.pathname === '/';
+    }
+    if (itemPath === '/pedidos') {
+      return isNavLinkActive || location.pathname.startsWith('/pedidos') || location.pathname.startsWith('/work-orders');
+    }
+    return isNavLinkActive || location.pathname.startsWith(itemPath);
+  };
 
   return (
     <>
@@ -61,13 +72,16 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
               key={item.path}
               to={item.path} 
               onClick={onClose}
-              className={({isActive}) => `
+              className={({isActive}) => {
+                const active = isItemActive(item.path, isActive);
+                return `
                 flex items-center gap-sm px-sm py-sm rounded-md transition-all duration-200 ease-in-out font-medium text-xs sm:text-body-sm
-                ${isActive 
+                ${active 
                   ? 'bg-primary text-on-primary shadow-xs font-semibold' 
                   : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'
                 }
-              `}
+              `;
+              }}
             >
               <span className="material-symbols-outlined text-[20px]">{item.icon}</span>
               <span className="font-body">{item.label}</span>
