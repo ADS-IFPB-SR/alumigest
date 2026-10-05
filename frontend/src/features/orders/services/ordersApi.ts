@@ -52,12 +52,12 @@ export const ordersApi = {
       size: params?.size ?? 10,
     };
 
-    const search = params?.search ?? params?.busca;
+    const search = params?.search;
     if (search && search.trim().length >= 2) {
       queryParams.search = search.trim();
     }
 
-    const channel = params?.channel ?? params?.canal;
+    const channel = params?.channel;
     if (channel) {
       queryParams.channel = channel;
     }

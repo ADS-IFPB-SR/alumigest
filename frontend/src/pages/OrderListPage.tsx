@@ -41,6 +41,90 @@ export function OrderListPage() {
   const endItem = Math.min((page + 1) * size, totalElements);
   const totalPages = data?.totalPages ?? data?.page?.totalPages ?? 1;
 
+  const renderTableContent = () => {
+    if (isLoading) {
+      return (
+        <tr>
+          <td colSpan={9} aria-label="Carregando ordens de serviço" className="p-8 text-center text-on-surface-variant">
+            <div className="flex items-center justify-center gap-2">
+              <span className="material-symbols-outlined animate-spin text-[20px]" aria-hidden="true">progress_activity</span>
+              <span>Carregando ordens de serviço...</span>
+            </div>
+          </td>
+        </tr>
+      );
+    }
+
+    if (isError) {
+      return (
+        <tr>
+          <td colSpan={9} className="p-8 text-center text-error">Erro ao carregar a lista de ordens de serviço.</td>
+        </tr>
+      );
+    }
+
+    if (!data?.content || data.content.length === 0) {
+      return (
+        <tr>
+          <td colSpan={9} className="p-10 text-center text-on-surface-variant">Nenhuma ordem de serviço encontrada.</td>
+        </tr>
+      );
+    }
+
+    return data.content.map((order) => (
+      <tr key={order.id} className="hover:bg-surface-container-low/30 transition-colors">
+        <td className="px-2.5 py-2 whitespace-nowrap">
+          <Link to={`/work-orders/${order.id}`} className="font-semibold text-primary hover:underline text-xs">
+            #{order.codigo.replace('PED-', 'OS-')}
+          </Link>
+        </td>
+        <td className="px-2.5 py-2 font-data-mono text-on-surface-variant text-xs whitespace-nowrap">
+          {order.orcamentoCodigo || order.orcamentoId.split('-')[0].toUpperCase()}
+        </td>
+        <td className="px-2.5 py-2 max-w-[170px] truncate" title={order.clienteNome}>
+          <strong className="font-medium text-on-surface text-xs">{order.clienteNome}</strong>
+        </td>
+        <td className="px-2.5 py-2 text-on-surface-variant font-data-mono text-xs whitespace-nowrap">
+          {formatDate(order.dataAprovacao)}
+        </td>
+        <td className="px-2.5 py-2 text-on-surface-variant font-data-mono text-xs whitespace-nowrap">
+          {formatDate(order.dataPrevisaoEntrega)}
+        </td>
+        <td className="px-2.5 py-2 text-on-surface-variant text-xs whitespace-nowrap">
+          {order.canalAprovacaoDescricao || APPROVAL_CHANNEL_LABELS[order.canalAprovacao] || order.canalAprovacao}
+        </td>
+        <td className="px-2.5 py-2 whitespace-nowrap">
+          <strong className="font-data-mono font-medium text-on-surface text-xs">{formatBRL(order.valorLiquido)}</strong>
+        </td>
+        <td className="px-2.5 py-2 whitespace-nowrap">
+          <OrderStatusBadge status={order.status} />
+        </td>
+        <td className="px-2.5 py-2 text-right whitespace-nowrap">
+          <div className="flex items-center justify-end gap-1">
+            <Link
+              to={`/work-orders/${order.id}`}
+              className="flex items-center gap-1 px-2 py-0.5 border border-outline-variant rounded text-xs font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors bg-surface"
+              title="Ver Detalhes"
+              aria-label={`Ver detalhes da ordem de serviço ${order.codigo}`}
+            >
+              <span className="material-symbols-outlined text-[14px]" aria-hidden="true">visibility</span>
+              <span>Ver</span>
+            </Link>
+            <button
+              type="button"
+              disabled
+              className="flex items-center justify-center p-0.5 border border-outline-variant rounded text-on-surface-variant bg-surface opacity-50 cursor-not-allowed select-none"
+              title="Impressão em PDF disponível na US-16.1"
+              aria-label={`Impressão em PDF disponível na US-16.1 (Ordem de Serviço ${order.codigo})`}
+            >
+              <span className="material-symbols-outlined text-[14px]" aria-hidden="true">print</span>
+            </button>
+          </div>
+        </td>
+      </tr>
+    ));
+  };
+
   return (
     <div className="flex-1 flex flex-col h-full min-h-0 overflow-hidden">
       {/* Cabeçalho com Breadcrumb e Título */}
@@ -156,77 +240,7 @@ export function OrderListPage() {
               </tr>
             </thead>
             <tbody className={`divide-y divide-outline-variant text-[13px] transition-opacity duration-150 ${isFetching ? 'opacity-75' : 'opacity-100'}`}>
-              {isLoading ? (
-                <tr>
-                  <td colSpan={9} aria-label="Carregando ordens de serviço" className="p-8 text-center text-on-surface-variant">
-                    <div className="flex items-center justify-center gap-2">
-                      <span className="material-symbols-outlined animate-spin text-[20px]" aria-hidden="true">progress_activity</span>
-                      <span>Carregando ordens de serviço...</span>
-                    </div>
-                  </td>
-                </tr>
-              ) : isError ? (
-                <tr>
-                  <td colSpan={9} className="p-8 text-center text-error">Erro ao carregar a lista de ordens de serviço.</td>
-                </tr>
-              ) : data?.content.length === 0 ? (
-                <tr>
-                  <td colSpan={9} className="p-10 text-center text-on-surface-variant">Nenhuma ordem de serviço encontrada.</td>
-                </tr>
-              ) : (
-                data?.content.map((order) => (
-                  <tr key={order.id} className="hover:bg-surface-container-low/30 transition-colors">
-                    <td className="px-2.5 py-2 whitespace-nowrap">
-                      <Link to={`/work-orders/${order.id}`} className="font-semibold text-primary hover:underline text-xs">
-                        #{order.codigo.replace('PED-', 'OS-')}
-                      </Link>
-                    </td>
-                    <td className="px-2.5 py-2 font-data-mono text-on-surface-variant text-xs whitespace-nowrap">
-                      {order.orcamentoCodigo || order.orcamentoId.split('-')[0].toUpperCase()}
-                    </td>
-                    <td className="px-2.5 py-2 max-w-[170px] truncate" title={order.clienteNome}>
-                      <strong className="font-medium text-on-surface text-xs">{order.clienteNome}</strong>
-                    </td>
-                    <td className="px-2.5 py-2 text-on-surface-variant font-data-mono text-xs whitespace-nowrap">
-                      {formatDate(order.dataAprovacao)}
-                    </td>
-                    <td className="px-2.5 py-2 text-on-surface-variant font-data-mono text-xs whitespace-nowrap">
-                      {formatDate(order.dataPrevisaoEntrega)}
-                    </td>
-                    <td className="px-2.5 py-2 text-on-surface-variant text-xs whitespace-nowrap">
-                      {order.canalAprovacaoDescricao || APPROVAL_CHANNEL_LABELS[order.canalAprovacao] || order.canalAprovacao}
-                    </td>
-                    <td className="px-2.5 py-2 whitespace-nowrap">
-                      <strong className="font-data-mono font-medium text-on-surface text-xs">{formatBRL(order.valorLiquido)}</strong>
-                    </td>
-                    <td className="px-2.5 py-2 whitespace-nowrap">
-                      <OrderStatusBadge status={order.status} />
-                    </td>
-                    <td className="px-2.5 py-2 text-right whitespace-nowrap">
-                      <div className="flex items-center justify-end gap-1">
-                        <Link
-                          to={`/work-orders/${order.id}`}
-                          className="flex items-center gap-1 px-2 py-0.5 border border-outline-variant rounded text-xs font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors bg-surface"
-                          title="Ver Detalhes"
-                          aria-label={`Ver detalhes da ordem de serviço ${order.codigo}`}
-                        >
-                          <span className="material-symbols-outlined text-[14px]" aria-hidden="true">visibility</span>
-                          Ver
-                        </Link>
-                        <button
-                          type="button"
-                          disabled
-                          className="flex items-center justify-center p-0.5 border border-outline-variant rounded text-on-surface-variant bg-surface opacity-50 cursor-not-allowed select-none"
-                          title="Impressão em PDF disponível na US-16.1"
-                          aria-label={`Impressão em PDF disponível na US-16.1 (Ordem de Serviço ${order.codigo})`}
-                        >
-                          <span className="material-symbols-outlined text-[14px]" aria-hidden="true">print</span>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
+              {renderTableContent()}
             </tbody>
           </table>
         </div>
@@ -255,6 +269,7 @@ export function OrderListPage() {
 
           <div className="flex items-center gap-1.5">
             <button
+              type="button"
               onClick={() => setPage(p => Math.max(0, p - 1))}
               disabled={page === 0}
               className="px-2.5 py-1 text-xs border border-outline-variant bg-surface rounded-md disabled:opacity-40 disabled:cursor-not-allowed hover:bg-surface-container transition-colors text-on-surface font-medium"
@@ -268,6 +283,7 @@ export function OrderListPage() {
               return (
                 <button
                   key={pageNumber}
+                  type="button"
                   onClick={() => setPage(pageNumber)}
                   className={`w-7 h-7 flex items-center justify-center text-xs rounded-md border transition-colors ${
                     page === pageNumber
@@ -283,6 +299,7 @@ export function OrderListPage() {
             })}
 
             <button
+              type="button"
               onClick={() => setPage(p => p + 1)}
               disabled={page >= totalPages - 1}
               className="px-2.5 py-1 text-xs border border-outline-variant bg-surface rounded-md disabled:opacity-40 disabled:cursor-not-allowed hover:bg-surface-container transition-colors text-on-surface font-medium"

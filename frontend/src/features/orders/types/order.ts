@@ -135,8 +135,4 @@ export interface OrderFilterParams {
   status?: OrderStatus;
   search?: string;
   channel?: ApprovalChannel;
-  /** @deprecated Utilize search para alinhamento com padrões REST em inglês */
-  busca?: string;
-  /** @deprecated Utilize channel para alinhamento com padrões REST em inglês */
-  canal?: ApprovalChannel;
 }
