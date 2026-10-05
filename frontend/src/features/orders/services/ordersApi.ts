@@ -25,10 +25,11 @@ export const ordersApi = {
   },
 
   /**
-   * Converte um orçamento aprovado em pedido de venda (US-13.1).
+   * Converte um orçamento aprovado em pedido de venda (US-13.2 / US-13.3).
+   * Chama o endpoint backend POST /api/v1/orders/convert/{budgetId}.
    */
   async convertBudget(budgetId: string, data: OrderConvertRequest): Promise<Order> {
-    const response = await api.post<Order>(`/budgets/${budgetId}/approve-and-order`, data);
+    const response = await api.post<Order>(`/orders/convert/${budgetId}`, data);
     return response.data;
   },
 
@@ -41,10 +42,12 @@ export const ordersApi = {
   },
 
   /**
-   * Lista pedidos de venda com paginação e filtros.
+   * Lista pedidos de venda com paginação e filtros (US-13.4).
    */
   async getOrders(params?: OrderFilterParams): Promise<OrderPageResponse> {
     const response = await api.get<OrderPageResponse>('/orders', { params });
     return response.data;
   },
 };
+
+export const orderApi = ordersApi;

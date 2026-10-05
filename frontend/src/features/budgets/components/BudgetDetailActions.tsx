@@ -15,9 +15,11 @@ interface BudgetDetailActionsProps {
   readonly customerPhone?: string | null;
   readonly status?: BudgetStatus;
   readonly budgetStatus?: string;
+  readonly isExpired?: boolean;
   readonly onDeleteClick: () => void;
   readonly onDownloadPdfTecnico?: () => void;
   readonly isDownloadingPdfTecnico?: boolean;
+  readonly onApproveClick?: () => void;
 }
 
 export function BudgetDetailActions({
@@ -26,12 +28,28 @@ export function BudgetDetailActions({
   customerPhone,
   status,
   budgetStatus,
+  isExpired = false,
   onDeleteClick,
   onDownloadPdfTecnico,
   isDownloadingPdfTecnico,
+  onApproveClick,
 }: BudgetDetailActionsProps) {
   const navigate = useNavigate();
   const { mutate: updateStatus } = useUpdateBudgetStatus();
+
+  const currentStatus = (status ?? budgetStatus ?? 'DRAFT') as BudgetStatus;
+  const isApproved = currentStatus === 'APPROVED';
+  const isCancelledOrRejected = currentStatus === 'CANCELLED' || currentStatus === 'REJECTED';
+  const isApprovalDisabled = isApproved || isCancelledOrRejected || isExpired;
+
+  let approvalButtonTooltip = 'Aprovar este orçamento e convertê-lo em Pedido de Venda';
+  if (isApproved) {
+    approvalButtonTooltip = 'Este orçamento já foi aprovado e convertido em pedido.';
+  } else if (isCancelledOrRejected) {
+    approvalButtonTooltip = 'Orçamentos cancelados ou rejeitados não podem ser aprovados.';
+  } else if (isExpired) {
+    approvalButtonTooltip = 'Orçamentos com validade expirada não podem ser aprovados.';
+  }
 
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const [showWhatsAppMenu, setShowWhatsAppMenu] = useState(false);
@@ -283,7 +301,21 @@ export function BudgetDetailActions({
         </span>
       </button>
 
-      {/* ── 4º Duplicar ─────────────────────────────────────────────────── */}
+      {/* ── 4º Aprovar e Gerar Pedido (US-13.3) ─────────────────────────── */}
+      <Button
+        type="button"
+        variant="success"
+        icon="check_circle"
+        data-testid="btn-approve-budget"
+        onClick={onApproveClick}
+        disabled={isApprovalDisabled || !onApproveClick}
+        className="text-xs py-1.5 px-3 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shrink-0"
+        title={approvalButtonTooltip}
+      >
+        <span className="whitespace-nowrap">Aprovar e Gerar Pedido</span>
+      </Button>
+
+      {/* ── 5º Duplicar ─────────────────────────────────────────────────── */}
       <button
         type="button"
         onClick={handleDuplicateBudget}
