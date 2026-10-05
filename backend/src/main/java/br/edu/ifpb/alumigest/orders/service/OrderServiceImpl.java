@@ -77,9 +77,9 @@ public class OrderServiceImpl implements OrderService {
         Budget budget = budgetRepository.findByIdWithDetails(budgetId)
                 .orElseThrow(() -> new ResourceNotFoundException(RESOURCE_ORCAMENTO, budgetId.toString()));
 
-        validarElegibilidadeOrcamento(budget);
-        validarOrcamentoComItens(budget);
-        validarIdempotencia(budgetId);
+        validateBudgetEligibility(budget);
+        validateBudgetHasItems(budget);
+        validateIdempotency(budgetId);
 
         if (budget.getStatus() != BudgetStatus.APPROVED) {
             budget.setStatus(BudgetStatus.APPROVED);
@@ -92,20 +92,20 @@ public class OrderServiceImpl implements OrderService {
                 .codigo(codigo)
                 .orcamentoId(budgetId)
                 .cliente(budget.getClient())
-                .clienteNome(resolverNomeCliente(budget))
-                .clienteTelefone(resolverTelefoneCliente(budget))
-                .clienteEndereco(resolverEnderecoCliente(budget))
+                .clienteNome(resolveCustomerName(budget))
+                .clienteTelefone(resolveCustomerPhone(budget))
+                .clienteEndereco(resolveCustomerAddress(budget))
                 .canalAprovacao(request.canalAprovacao())
                 .dataPrevisaoEntrega(request.dataPrevisaoEntrega())
-                .valorBruto(budget.getSubtotal())
-                .valorDesconto(orZero(budget.getDiscountValue()))
-                .valorLiquido(orZero(budget.getTotal()))
-                .condicaoPagamento(resolverCondicaoPagamento(budget))
+                .valorBruto(orZero(budget.getSubtotal()).setScale(2, RoundingMode.HALF_EVEN))
+                .valorDesconto(orZero(budget.getDiscountValue()).setScale(2, RoundingMode.HALF_EVEN))
+                .valorLiquido(orZero(budget.getTotal()).setScale(2, RoundingMode.HALF_EVEN))
+                .condicaoPagamento(resolvePaymentCondition(budget))
                 .observacoesPagamento(budget.getPaymentNotes())
                 .observacoes(request.observacoes())
                 .build();
 
-        converterItens(budget, order);
+        convertItems(budget, order);
 
         order = orderRepository.save(order);
         return orderMapper.toResponse(order);
@@ -141,7 +141,7 @@ public class OrderServiceImpl implements OrderService {
      * @param budget orçamento a ser validado
      * @throws BusinessException se o status não for elegível para conversão
      */
-    private void validarElegibilidadeOrcamento(Budget budget) {
+    private void validateBudgetEligibility(Budget budget) {
         if (budget.isExpired()) {
             throw new BusinessException(
                     "Orçamento com validade expirada não pode ser convertido em pedido de venda.");
@@ -162,7 +162,7 @@ public class OrderServiceImpl implements OrderService {
      * @param budget orçamento a ser validado
      * @throws BusinessException se o orçamento não possuir itens
      */
-    private void validarOrcamentoComItens(Budget budget) {
+    private void validateBudgetHasItems(Budget budget) {
         if (budget.getItems() == null || budget.getItems().isEmpty()) {
             throw new BusinessException(
                     "Não é possível converter um orçamento sem itens em pedido de venda.");
@@ -175,7 +175,7 @@ public class OrderServiceImpl implements OrderService {
      * @param budgetId ID do orçamento
      * @throws ConflictException se já existir pedido para o orçamento informado
      */
-    private void validarIdempotencia(UUID budgetId) {
+    private void validateIdempotency(UUID budgetId) {
         if (orderRepository.existsByOrcamentoId(budgetId)) {
             throw new ConflictException(
                     "Já existe um pedido de venda gerado para o orçamento com ID " + budgetId + ".");
@@ -188,7 +188,7 @@ public class OrderServiceImpl implements OrderService {
      * @param budget orçamento de origem
      * @param order  pedido destino
      */
-    private void converterItens(Budget budget, Order order) {
+    private void convertItems(Budget budget, Order order) {
         List<BudgetItem> budgetItems = budget.getItems();
         if (budgetItems == null || budgetItems.isEmpty()) {
             return;
@@ -196,8 +196,8 @@ public class OrderServiceImpl implements OrderService {
 
         for (int i = 0; i < budgetItems.size(); i++) {
             BudgetItem budgetItem = budgetItems.get(i);
-            OrderItem orderItem = construirOrderItem(budgetItem, i);
-            converterOpcoes(budgetItem, orderItem);
+            OrderItem orderItem = buildOrderItem(budgetItem, i);
+            convertOptions(budgetItem, orderItem);
             order.addItem(orderItem);
         }
     }
@@ -218,14 +218,15 @@ public class OrderServiceImpl implements OrderService {
      * @param ordem      posição sequencial do item no pedido
      * @return item do pedido com snapshot dos dados técnicos e financeiros
      */
-    private OrderItem construirOrderItem(BudgetItem budgetItem, int ordem) {
+    private OrderItem buildOrderItem(BudgetItem budgetItem, int ordem) {
         int largura = budgetItem.getWidthMm() != null ? budgetItem.getWidthMm().intValue() : 0;
         int altura = budgetItem.getHeightMm() != null ? budgetItem.getHeightMm().intValue() : 0;
         int qty = (budgetItem.getQuantity() != null && budgetItem.getQuantity() > 0)
                 ? budgetItem.getQuantity() : 1;
 
-        BigDecimal valorTotal = orZero(budgetItem.getSubtotal());
-        BigDecimal valorUnitario = valorTotal.divide(BigDecimal.valueOf(qty), 2, RoundingMode.HALF_UP);
+        BigDecimal valorTotal = orZero(budgetItem.getSubtotal()).setScale(2, RoundingMode.HALF_EVEN);
+        BigDecimal valorUnitario = valorTotal.divide(
+                BigDecimal.valueOf(qty), 2, RoundingMode.HALF_EVEN);
 
         return OrderItem.builder()
                 .product(budgetItem.getProduct())
@@ -233,6 +234,10 @@ public class OrderServiceImpl implements OrderService {
                 .larguraMm(largura)
                 .alturaMm(altura)
                 .quantidade(qty)
+                .corAluminio(OrderItemSnapshotResolver.extractAluminumColor(budgetItem))
+                .tipoVidro(OrderItemSnapshotResolver.extractGlassType(budgetItem))
+                .orientacaoAbertura(OrderItemSnapshotResolver.extractOpeningDirection(budgetItem))
+                .ferragens(OrderItemSnapshotResolver.extractHardware(budgetItem))
                 .valorUnitario(valorUnitario)
                 .valorTotal(valorTotal)
                 .templateConfig(budgetItem.getTemplateConfig())
@@ -248,12 +253,16 @@ public class OrderServiceImpl implements OrderService {
      * @param budgetItem item do orçamento de origem
      * @param orderItem  item do pedido destino
      */
-    private void converterOpcoes(BudgetItem budgetItem, OrderItem orderItem) {
+    private void convertOptions(BudgetItem budgetItem, OrderItem orderItem) {
         List<BudgetItemOption> opcoes = budgetItem.getOptions();
         if (opcoes == null || opcoes.isEmpty()) {
             return;
         }
         for (BudgetItemOption opcao : opcoes) {
+            BigDecimal qty = orZero(opcao.getQuantity()).setScale(2, RoundingMode.HALF_EVEN);
+            BigDecimal unitPrice = orZero(opcao.getUnitPrice()).setScale(2, RoundingMode.HALF_EVEN);
+            BigDecimal totalPrice = orZero(opcao.getTotalPrice()).setScale(2, RoundingMode.HALF_EVEN);
+
             OrderItemOption orderOption = OrderItemOption.builder()
                     .material(opcao.getMaterial())
                     .materialName(opcao.getMaterialName())
@@ -262,9 +271,9 @@ public class OrderServiceImpl implements OrderService {
                             ? opcao.getCategoryType().name() : null)
                     .selectedType(opcao.getSelectedType())
                     .selectedColor(opcao.getSelectedColor())
-                    .quantity(orZero(opcao.getQuantity()))
-                    .unitPrice(orZero(opcao.getUnitPrice()))
-                    .totalPrice(orZero(opcao.getTotalPrice()))
+                    .quantity(qty)
+                    .unitPrice(unitPrice)
+                    .totalPrice(totalPrice)
                     .build();
             orderItem.addOption(orderOption);
         }
@@ -276,7 +285,7 @@ public class OrderServiceImpl implements OrderService {
      * @param budget orçamento de origem
      * @return nome do cliente ou valor padrão se não disponível
      */
-    private String resolverNomeCliente(Budget budget) {
+    private String resolveCustomerName(Budget budget) {
         if (budget.getClient() != null && budget.getClient().getFullName() != null) {
             return budget.getClient().getFullName();
         }
@@ -289,7 +298,7 @@ public class OrderServiceImpl implements OrderService {
      * @param budget orçamento de origem
      * @return telefone do cliente ou null
      */
-    private String resolverTelefoneCliente(Budget budget) {
+    private String resolveCustomerPhone(Budget budget) {
         if (budget.getClient() != null) {
             return budget.getClient().getPhone();
         }
@@ -302,7 +311,7 @@ public class OrderServiceImpl implements OrderService {
      * @param budget orçamento de origem
      * @return endereço formatado ou null
      */
-    private String resolverEnderecoCliente(Budget budget) {
+    private String resolveCustomerAddress(Budget budget) {
         if (budget.getClient() == null) {
             return null;
         }
@@ -329,7 +338,7 @@ public class OrderServiceImpl implements OrderService {
      * @param budget orçamento de origem
      * @return nome do enum ou null
      */
-    private String resolverCondicaoPagamento(Budget budget) {
+    private String resolvePaymentCondition(Budget budget) {
         if (budget.getPaymentCondition() != null) {
             return budget.getPaymentCondition().name();
         }

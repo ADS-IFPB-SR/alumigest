@@ -123,7 +123,7 @@ export function OrderDetailPage() {
 
         {/* Conteúdo Principal em Grade Responsiva */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* Coluna Esquerda: Itens do Pedido (Lock de Preços & Especificações Fabris) */}
+          {/* Coluna Esquerda: Itens do Pedido */}
           <div className="lg:col-span-8 space-y-6">
             <OrderItemList items={order.items} />
           </div>

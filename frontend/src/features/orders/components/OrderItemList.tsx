@@ -27,9 +27,6 @@ export const OrderItemList: React.FC<OrderItemListProps> = ({ items = [] }) => {
           <Layers className="w-5 h-5 text-primary" />
           Itens de Produção ({items.length})
         </h3>
-        <span className="text-xs text-on-surface-variant bg-surface-container-high px-2 py-1 rounded-md font-medium">
-          Lock de Preços & Especificações
-        </span>
       </div>
 
       <div className="overflow-x-auto border border-outline-variant rounded-xl bg-surface-container-lowest shadow-xs">
