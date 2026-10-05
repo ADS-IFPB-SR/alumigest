@@ -11,7 +11,7 @@ vi.mock('../../features/budgets/hooks/useBudgets');
 
 const mockOrder: Order = {
   id: 'order-uuid-1',
-  codigo: 'PED-2026-0001',
+  codigo: 'OS-2026-0001',
   orcamentoId: 'budget-uuid-1',
   orcamentoCodigo: 'ORC-2026-0001',
   clienteId: 'client-uuid-1',

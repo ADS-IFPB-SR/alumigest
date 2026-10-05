@@ -10,7 +10,7 @@ vi.mock('../../features/orders/hooks/useOrders');
 const mockSummaries: OrderSummary[] = [
   {
     id: 'order-1',
-    codigo: 'PED-2026-0001',
+    codigo: 'OS-2026-0001',
     orcamentoId: 'budget-1',
     orcamentoCodigo: 'ORC-2026-0001',
     clienteNome: 'Construtora Horizonte',
@@ -27,7 +27,7 @@ const mockSummaries: OrderSummary[] = [
   },
   {
     id: 'order-2',
-    codigo: 'PED-2026-0002',
+    codigo: 'OS-2026-0002',
     orcamentoId: 'budget-2',
     orcamentoCodigo: 'ORC-2026-0002',
     clienteNome: 'Vidraçaria Silva',
@@ -220,6 +220,71 @@ describe('OrderListPage — [US-13.4] Listagem Paginada de Pedidos de Venda', ()
       expect.objectContaining({
         size: 20,
         page: 0,
+      })
+    );
+  });
+
+  it('deve renderizar janela de paginação deslizante e reticências quando totalPages for maior que 7', () => {
+    vi.spyOn(useOrdersModule, 'useOrders').mockReturnValue({
+      data: {
+        content: mockSummaries,
+        totalElements: 100,
+        totalPages: 10,
+        page: {
+          totalElements: 100,
+          totalPages: 10,
+          size: 10,
+          number: 0,
+        },
+      },
+      isLoading: false,
+      isError: false,
+    } as any);
+
+    render(
+      <MemoryRouter>
+        <OrderListPage />
+      </MemoryRouter>
+    );
+
+    // Deve conter página 1
+    expect(screen.getByRole('button', { name: 'Ir para página 1' })).toBeInTheDocument();
+    // Deve conter reticências
+    expect(screen.getByText('…')).toBeInTheDocument();
+    // Deve conter última página (10)
+    expect(screen.getByRole('button', { name: 'Ir para página 10' })).toBeInTheDocument();
+  });
+
+  it('deve navegar para próxima página ao clicar no botão Próximo', () => {
+    const useOrdersSpy = vi.spyOn(useOrdersModule, 'useOrders').mockReturnValue({
+      data: {
+        content: mockSummaries,
+        totalElements: 30,
+        totalPages: 3,
+        page: {
+          totalElements: 30,
+          totalPages: 3,
+          size: 10,
+          number: 0,
+        },
+      },
+      isLoading: false,
+      isError: false,
+    } as any);
+
+    render(
+      <MemoryRouter>
+        <OrderListPage />
+      </MemoryRouter>
+    );
+
+    const nextBtn = screen.getByRole('button', { name: /Próxima página/i });
+    expect(nextBtn).toBeEnabled();
+    fireEvent.click(nextBtn);
+
+    expect(useOrdersSpy).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        page: 1,
       })
     );
   });

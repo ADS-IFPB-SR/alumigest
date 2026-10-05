@@ -122,7 +122,7 @@ class OrderServiceImplTest {
 
         given(budgetRepository.findByIdWithDetails(budgetId)).willReturn(Optional.of(budget));
         given(orderRepository.existsByOrcamentoId(budgetId)).willReturn(false);
-        given(orderCodeGenerator.generateNextCode()).willReturn("PED-2026-0001");
+        given(orderCodeGenerator.generateNextCode()).willReturn("OS-2026-0001");
         given(orderRepository.save(any(Order.class))).willReturn(savedOrder);
         given(orderMapper.toResponse(savedOrder)).willReturn(expectedResponse);
 
@@ -131,7 +131,7 @@ class OrderServiceImplTest {
 
         // Assert
         assertThat(result).isNotNull();
-        assertThat(result.codigo()).isEqualTo("PED-2026-0001");
+        assertThat(result.codigo()).isEqualTo("OS-2026-0001");
         assertThat(result.orcamentoId()).isEqualTo(budgetId);
         assertThat(result.status()).isEqualTo(OrderStatus.WAITING_PRODUCTION);
 
@@ -149,7 +149,7 @@ class OrderServiceImplTest {
 
         given(budgetRepository.findByIdWithDetails(budgetId)).willReturn(Optional.of(budget));
         given(orderRepository.existsByOrcamentoId(budgetId)).willReturn(false);
-        given(orderCodeGenerator.generateNextCode()).willReturn("PED-2026-0001");
+        given(orderCodeGenerator.generateNextCode()).willReturn("OS-2026-0001");
         given(budgetRepository.save(budget)).willReturn(budget);
         given(orderRepository.save(any(Order.class))).willReturn(savedOrder);
         given(orderMapper.toResponse(savedOrder)).willReturn(expectedResponse);
@@ -173,7 +173,7 @@ class OrderServiceImplTest {
 
         given(budgetRepository.findByIdWithDetails(budgetId)).willReturn(Optional.of(budget));
         given(orderRepository.existsByOrcamentoId(budgetId)).willReturn(false);
-        given(orderCodeGenerator.generateNextCode()).willReturn("PED-2026-0001");
+        given(orderCodeGenerator.generateNextCode()).willReturn("OS-2026-0001");
         given(budgetRepository.save(budget)).willReturn(budget);
         given(orderRepository.save(any(Order.class))).willReturn(savedOrder);
         given(orderMapper.toResponse(savedOrder)).willReturn(expectedResponse);
@@ -202,7 +202,7 @@ class OrderServiceImplTest {
 
         given(budgetRepository.findByIdWithDetails(budgetId)).willReturn(Optional.of(budget));
         given(orderRepository.existsByOrcamentoId(budgetId)).willReturn(false);
-        given(orderCodeGenerator.generateNextCode()).willReturn("PED-2026-0001");
+        given(orderCodeGenerator.generateNextCode()).willReturn("OS-2026-0001");
         given(orderRepository.save(any(Order.class))).willReturn(savedOrder);
         given(orderMapper.toResponse(savedOrder)).willReturn(expectedResponse);
 
@@ -241,7 +241,7 @@ class OrderServiceImplTest {
 
         given(budgetRepository.findByIdWithDetails(budgetId)).willReturn(Optional.of(budget));
         given(orderRepository.existsByOrcamentoId(budgetId)).willReturn(false);
-        given(orderCodeGenerator.generateNextCode()).willReturn("PED-2026-0001");
+        given(orderCodeGenerator.generateNextCode()).willReturn("OS-2026-0001");
         given(orderRepository.save(any(Order.class))).willReturn(savedOrder);
         given(orderMapper.toResponse(savedOrder)).willReturn(expectedResponse);
 
@@ -376,7 +376,7 @@ class OrderServiceImplTest {
         // Assert
         assertThat(result).isNotNull();
         assertThat(result.id()).isEqualTo(orderId);
-        assertThat(result.codigo()).isEqualTo("PED-2026-0001");
+        assertThat(result.codigo()).isEqualTo("OS-2026-0001");
     }
 
     @Test
@@ -432,7 +432,7 @@ class OrderServiceImplTest {
         Page<Order> orderPage = new PageImpl<>(List.of(savedOrder), pageable, 1);
 
         OrderSummaryResponse summaryDto = new OrderSummaryResponse(
-                orderId, "PED-2026-0001", budgetId, "Empresa XPTO Ltda", "83988880000",
+                orderId, "OS-2026-0001", budgetId, "Empresa XPTO Ltda", "83988880000",
                 OrderStatus.WAITING_PRODUCTION, "Aguardando Produção",
                 ApprovalChannel.WHATSAPP, "WhatsApp",
                 LocalDate.now(ZoneOffset.UTC), request.dataPrevisaoEntrega(),
@@ -449,7 +449,7 @@ class OrderServiceImplTest {
 
         assertThat(result).isNotNull();
         assertThat(result.content()).hasSize(1);
-        assertThat(result.content().get(0).codigo()).isEqualTo("PED-2026-0001");
+        assertThat(result.content().get(0).codigo()).isEqualTo("OS-2026-0001");
         assertThat(result.content().get(0).clienteNome()).isEqualTo("Empresa XPTO Ltda");
         assertThat(result.totalElements()).isEqualTo(1L);
         assertThat(result.page()).isZero();
@@ -459,7 +459,7 @@ class OrderServiceImplTest {
     private Order buildSavedOrder() {
         return Order.builder()
                 .id(orderId)
-                .codigo("PED-2026-0001")
+                .codigo("OS-2026-0001")
                 .orcamentoId(budgetId)
                 .clienteNome("Empresa XPTO Ltda")
                 .canalAprovacao(ApprovalChannel.WHATSAPP)
@@ -473,7 +473,7 @@ class OrderServiceImplTest {
 
     private OrderResponse buildOrderResponse() {
         return new OrderResponse(
-                orderId, "PED-2026-0001", budgetId, null,
+                orderId, "OS-2026-0001", budgetId, null,
                 "Empresa XPTO Ltda", null, null,
                 OrderStatus.WAITING_PRODUCTION, "Aguardando Produção",
                 ApprovalChannel.WHATSAPP, "WhatsApp",

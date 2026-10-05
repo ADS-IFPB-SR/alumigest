@@ -38,7 +38,7 @@ export const OrderDetailHeader: React.FC<OrderDetailHeaderProps> = ({
         <div>
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold tracking-tight text-on-surface font-headline">
-              #{order.codigo.replace('PED-', 'OS-')}
+              #{order.codigo}
             </h1>
             <OrderStatusBadge status={order.status} />
           </div>

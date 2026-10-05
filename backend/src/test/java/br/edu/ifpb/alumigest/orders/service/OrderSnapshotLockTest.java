@@ -147,7 +147,7 @@ class OrderSnapshotLockTest {
         // Arrange
         given(budgetRepository.findByIdWithDetails(budgetId)).willReturn(Optional.of(budget));
         given(orderRepository.existsByOrcamentoId(budgetId)).willReturn(false);
-        given(orderCodeGenerator.generateNextCode()).willReturn("PED-2026-0001");
+        given(orderCodeGenerator.generateNextCode()).willReturn("OS-2026-0001");
         given(orderRepository.save(any(Order.class))).willAnswer(inv -> inv.getArgument(0));
 
         // Act - Conversão no momento da venda (Dia D)
@@ -205,7 +205,7 @@ class OrderSnapshotLockTest {
         // Arrange
         given(budgetRepository.findByIdWithDetails(budgetId)).willReturn(Optional.of(budget));
         given(orderRepository.existsByOrcamentoId(budgetId)).willReturn(false);
-        given(orderCodeGenerator.generateNextCode()).willReturn("PED-2026-0002");
+        given(orderCodeGenerator.generateNextCode()).willReturn("OS-2026-0002");
         given(orderRepository.save(any(Order.class))).willAnswer(inv -> inv.getArgument(0));
 
         // Act
@@ -216,7 +216,7 @@ class OrderSnapshotLockTest {
         Order orderSalvo = orderCaptor.getValue();
 
         // Nível 1: Order
-        assertThat(orderSalvo.getCodigo()).isEqualTo("PED-2026-0002");
+        assertThat(orderSalvo.getCodigo()).isEqualTo("OS-2026-0002");
         assertThat(orderSalvo.getClienteNome()).isEqualTo("Construtora Horizonte");
         assertThat(orderSalvo.getCanalAprovacao()).isEqualTo(ApprovalChannel.WHATSAPP);
 
@@ -248,7 +248,7 @@ class OrderSnapshotLockTest {
 
         given(budgetRepository.findByIdWithDetails(budgetId)).willReturn(Optional.of(budget));
         given(orderRepository.existsByOrcamentoId(budgetId)).willReturn(false);
-        given(orderCodeGenerator.generateNextCode()).willReturn("PED-2026-0003");
+        given(orderCodeGenerator.generateNextCode()).willReturn("OS-2026-0003");
         given(orderRepository.save(any(Order.class))).willAnswer(inv -> inv.getArgument(0));
 
         // Act

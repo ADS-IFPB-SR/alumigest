@@ -24,7 +24,7 @@
 **Regras de Negócio**:
 - Orçamento deve estar em status válido (`DRAFT` ou `SENT`).
 - Atualiza o status do orçamento para `APPROVED`.
-- Gera código único anual `PED-YYYY-NNNN`.
+- Gera código único anual `OS-YYYY-NNNN`.
 - Realiza clonagem profunda (*deep copy*) dos itens do orçamento para `OrderItem` (lock de preços).
 - Se já existir pedido ativo para esse orçamento, retorna `409 Conflict` ou `422 Unprocessable Entity`.
 
@@ -36,7 +36,7 @@
 - `page` (int, default: 0)
 - `size` (int, default: 20)
 - `status` (string, optional): `CRIADO`, `AGUARDANDO_PRODUCAO`, `EM_PRODUCAO`, `CONCLUIDO`, `CANCELADO`
-- `busca` (string, optional): Código (`PED-YYYY-NNNN`) ou nome do cliente
+- `busca` (string, optional): Código (`OS-YYYY-NNNN`) ou nome do cliente
 
 **Response** (200 OK): `PageResponse<OrderSummaryResponse>`
 
@@ -69,7 +69,7 @@
 
 **Response** (200 OK):
 - `Content-Type: application/pdf`
-- `Content-Disposition: attachment; filename="PED-2026-0001-comprovante.pdf"`
+- `Content-Disposition: attachment; filename="OS-2026-0001-comprovante.pdf"`
 
 ---
 
@@ -79,7 +79,7 @@
 ```json
 {
   "id": 1,
-  "codigo": "PED-2026-0001",
+  "codigo": "OS-2026-0001",
   "orcamentoId": 1,
   "orcamentoCodigo": "ORC-2026-0001",
   "clienteNome": "João Silva",
@@ -124,7 +124,7 @@
 ```json
 {
   "id": 1,
-  "codigo": "PED-2026-0001",
+  "codigo": "OS-2026-0001",
   "clienteNome": "João Silva",
   "dataAprovacao": "2026-09-29",
   "dataPrevisaoEntrega": "2026-10-14",

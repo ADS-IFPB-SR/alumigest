@@ -19,8 +19,11 @@ import br.edu.ifpb.alumigest.orders.dto.OrderResponse;
 import br.edu.ifpb.alumigest.orders.dto.OrderSummaryResponse;
 import br.edu.ifpb.alumigest.orders.mapper.OrderMapper;
 import br.edu.ifpb.alumigest.orders.repository.OrderRepository;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -72,6 +75,11 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    @Retryable(
+            retryFor = {DataIntegrityViolationException.class},
+            maxAttempts = 3,
+            backoff = @Backoff(delay = 100, multiplier = 1.5)
+    )
     @Transactional
     public OrderResponse convertBudgetToOrder(UUID budgetId, OrderConvertRequest request) {
         Budget budget = budgetRepository.findByIdWithDetails(budgetId)
@@ -295,63 +303,60 @@ public class OrderServiceImpl implements OrderService {
     /**
      * Retorna o telefone do cliente a partir do objeto de domínio Client.
      *
-     * @param budget orçamento de origem
-     * @return telefone do cliente ou null
-     */
-    private String resolveCustomerPhone(Budget budget) {
-        if (budget.getClient() != null) {
-            return budget.getClient().getPhone();
-        }
-        return null;
+     * @param b  private String resolveCustomerPhone(Budget budget) {
+    if (budget.getClient() != null) {
+      return budget.getClient().getPhone();
     }
+    return null;
+  }
 
-    /**
-     * Compõe o endereço do cliente a partir dos campos individuais (street, number, city, state).
-     *
-     * @param budget orçamento de origem
-     * @return endereço formatado ou null
-     */
-    private String resolveCustomerAddress(Budget budget) {
-        if (budget.getClient() == null) {
-            return null;
-        }
-        var c = budget.getClient();
-        var sb = new StringBuilder();
-        if (c.getStreet() != null) {
-            sb.append(c.getStreet());
-        }
-        if (c.getNumber() != null) {
-            sb.append(", ").append(c.getNumber());
-        }
-        if (c.getCity() != null) {
-            sb.append(" - ").append(c.getCity());
-        }
-        if (c.getState() != null) {
-            sb.append("/").append(c.getState());
-        }
-        return !sb.isEmpty() ? sb.toString() : null;
+  /**
+   * Compõe o endereço do cliente a partir dos campos individuais (street, number, city, state).
+   *
+   * @param budget orçamento de origem
+   * @return endereço formatado ou null
+   */
+  private String resolveCustomerAddress(Budget budget) {
+    if (budget.getClient() == null) {
+      return null;
     }
+    var c = budget.getClient();
+    var sb = new StringBuilder();
+    if (c.getStreet() != null) {
+      sb.append(c.getStreet());
+    }
+    if (c.getNumber() != null) {
+      sb.append(", ").append(c.getNumber());
+    }
+    if (c.getCity() != null) {
+      sb.append(" - ").append(c.getCity());
+    }
+    if (c.getState() != null) {
+      sb.append("/").append(c.getState());
+    }
+    return !sb.isEmpty() ? sb.toString() : null;
+  }
 
-    /**
-     * Retorna a condição de pagamento como String a partir do enum PaymentCondition do orçamento.
-     *
-     * @param budget orçamento de origem
-     * @return nome do enum ou null
-     */
-    private String resolvePaymentCondition(Budget budget) {
-        if (budget.getPaymentCondition() != null) {
-            return budget.getPaymentCondition().name();
-        }
-        return null;
+  /**
+   * Retorna a condição de pagamento como String a partir do enum PaymentCondition do orçamento.
+   *
+   * @param budget orçamento de origem
+   * @return nome do enum ou null
+   */
+  private String resolvePaymentCondition(Budget budget) {
+    if (budget.getPaymentCondition() != null) {
+      return budget.getPaymentCondition().name();
     }
+    return null;
+  }
 
-    /**
-     * Garante que um BigDecimal nunca seja null, retornando ZERO nesse caso.
-     *
-     * @param value valor potencialmente nulo
-     * @return valor original ou BigDecimal.ZERO
-     */
-    private BigDecimal orZero(BigDecimal value) {
-        return value != null ? value : BigDecimal.ZERO;
-    }
+  /**
+   * Garante que um BigDecimal nunca seja null, retornando ZERO nesse caso.
+   *
+   * @param value valor potencialmente nulo
+   * @return valor original ou BigDecimal.ZERO
+   */
+  private BigDecimal orZero(BigDecimal value) {
+    return value != null ? value : BigDecimal.ZERO;
+  }
 }

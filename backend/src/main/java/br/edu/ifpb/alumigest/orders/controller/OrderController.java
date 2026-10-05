@@ -97,7 +97,7 @@ public class OrderController {
     @Operation(
             summary = "Converter orçamento em pedido de venda",
             description = "Converte um orçamento (DRAFT, SENT ou APPROVED) em Pedido de Venda,"
-                    + " promovendo o status para APPROVED, gerando código sequencial PED-YYYY-NNNN"
+                    + " promovendo o status para APPROVED, gerando código sequencial OS-YYYY-NNNN"
                     + " e snapshot imutável dos itens (lock de preços)."
     )
     @ApiResponse(

@@ -39,7 +39,7 @@ class OrderItemRepositoryTest {
     @DisplayName("[Partição de Equivalência] Deve recuperar itens de um pedido ordenados pela coluna ordem ASC")
     void shouldFindItemsByOrderIdOrdered() {
         Order order = Order.builder()
-                .codigo("PED-2026-0001")
+                .codigo("OS-2026-0001")
                 .orcamentoId(UUID.randomUUID())
                 .clienteNome("Cliente Teste")
                 .canalAprovacao(ApprovalChannel.WHATSAPP)

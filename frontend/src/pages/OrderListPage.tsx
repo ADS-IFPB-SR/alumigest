@@ -41,6 +41,33 @@ export function OrderListPage() {
   const endItem = Math.min((page + 1) * size, totalElements);
   const totalPages = data?.totalPages ?? data?.page?.totalPages ?? 1;
 
+  const getVisiblePages = (): (number | 'ellipsis-start' | 'ellipsis-end')[] => {
+    if (totalPages <= 7) {
+      return Array.from({ length: totalPages }, (_, i) => i);
+    }
+
+    const pages: (number | 'ellipsis-start' | 'ellipsis-end')[] = [0];
+
+    if (page > 2) {
+      pages.push('ellipsis-start');
+    }
+
+    const start = Math.max(1, page - 1);
+    const end = Math.min(totalPages - 2, page + 1);
+
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+
+    if (page < totalPages - 3) {
+      pages.push('ellipsis-end');
+    }
+
+    pages.push(totalPages - 1);
+
+    return pages;
+  };
+
   const renderTableContent = () => {
     if (isLoading) {
       return (
@@ -75,7 +102,7 @@ export function OrderListPage() {
       <tr key={order.id} className="hover:bg-surface-container-low/30 transition-colors">
         <td className="px-2.5 py-2 whitespace-nowrap">
           <Link to={`/work-orders/${order.id}`} className="font-semibold text-primary hover:underline text-xs">
-            #{order.codigo.replace('PED-', 'OS-')}
+            #{order.codigo}
           </Link>
         </td>
         <td className="px-2.5 py-2 font-data-mono text-on-surface-variant text-xs whitespace-nowrap">
@@ -278,8 +305,19 @@ export function OrderListPage() {
               &larr; Anterior
             </button>
 
-            {Array.from({ length: Math.min(totalPages, 5) }).map((_, idx) => {
-              const pageNumber = idx;
+            {getVisiblePages().map((pageItem) => {
+              if (typeof pageItem === 'string') {
+                return (
+                  <span
+                    key={pageItem}
+                    className="w-7 h-7 flex items-center justify-center text-xs text-on-surface-variant select-none"
+                    aria-hidden="true"
+                  >
+                    …
+                  </span>
+                );
+              }
+              const pageNumber = pageItem;
               return (
                 <button
                   key={pageNumber}
