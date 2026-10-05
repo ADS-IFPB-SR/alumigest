@@ -5,16 +5,22 @@ import br.edu.ifpb.alumigest.budgets.domain.BudgetItem;
 import br.edu.ifpb.alumigest.budgets.domain.BudgetItemOption;
 import br.edu.ifpb.alumigest.budgets.domain.BudgetStatus;
 import br.edu.ifpb.alumigest.budgets.repository.BudgetRepository;
+import br.edu.ifpb.alumigest.common.dto.PageResponse;
 import br.edu.ifpb.alumigest.common.exception.BusinessException;
 import br.edu.ifpb.alumigest.common.exception.ConflictException;
 import br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException;
+import br.edu.ifpb.alumigest.orders.domain.ApprovalChannel;
 import br.edu.ifpb.alumigest.orders.domain.Order;
 import br.edu.ifpb.alumigest.orders.domain.OrderItem;
 import br.edu.ifpb.alumigest.orders.domain.OrderItemOption;
+import br.edu.ifpb.alumigest.orders.domain.OrderStatus;
 import br.edu.ifpb.alumigest.orders.dto.OrderConvertRequest;
 import br.edu.ifpb.alumigest.orders.dto.OrderResponse;
+import br.edu.ifpb.alumigest.orders.dto.OrderSummaryResponse;
 import br.edu.ifpb.alumigest.orders.mapper.OrderMapper;
 import br.edu.ifpb.alumigest.orders.repository.OrderRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,9 +32,9 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Implementação concreta do contrato {@link OrderService}.
- * Concentra a lógica de negócio da conversão de orçamento em pedido de venda (SRP).
- * Depende de abstrações — nunca de implementações concretas (DIP).
+ * Implementação do serviço de gestão e ciclo de vida de Pedidos de Venda.
+ * Trata conversão atômica de orçamentos, congelamento de itens (lock de preços),
+ * consultas paginadas e invariantes de integridade do domínio.
  */
 @Service
 public class OrderServiceImpl implements OrderService {
@@ -41,14 +47,6 @@ public class OrderServiceImpl implements OrderService {
     private final OrderCodeGenerator orderCodeGenerator;
     private final OrderMapper orderMapper;
 
-    /**
-     * Injeção de dependência via construtor (DIP / testabilidade).
-     *
-     * @param orderRepository    repositório de pedidos
-     * @param budgetRepository   repositório de orçamentos
-     * @param orderCodeGenerator gerador de código sequencial
-     * @param orderMapper        mapper MapStruct
-     */
     public OrderServiceImpl(
             OrderRepository orderRepository,
             BudgetRepository budgetRepository,
@@ -60,20 +58,19 @@ public class OrderServiceImpl implements OrderService {
         this.orderMapper = orderMapper;
     }
 
-    /**
-     * {@inheritDoc}
-     *
-     * <p>Fluxo atômico de conversão:
-     * <ol>
-     *   <li>Valida existência e elegibilidade do orçamento (DRAFT, SENT ou APPROVED).</li>
-     *   <li>Verifica que o orçamento possui itens.</li>
-     *   <li>Verifica idempotência — impede duplicação de pedido para o mesmo orçamento.</li>
-     *   <li>Promove o status do orçamento para APPROVED atomicamente (se ainda não estiver).</li>
-     *   <li>Constrói o {@link Order} com snapshot financeiro imutável (lock de preços).</li>
-     *   <li>Converte cada {@link BudgetItem} em {@link OrderItem} com cálculo correto de valorUnitario.</li>
-     *   <li>Persiste o pedido e retorna o DTO detalhado.</li>
-     * </ol>
-     */
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<OrderSummaryResponse> findAll(
+            OrderStatus status,
+            ApprovalChannel channel,
+            String search,
+            Pageable pageable
+    ) {
+        Page<Order> orderPage = orderRepository.findAllWithFilters(status, channel, search, pageable);
+        Page<OrderSummaryResponse> dtoPage = orderPage.map(orderMapper::toSummaryResponse);
+        return PageResponse.of(dtoPage);
+    }
+
     @Override
     @Transactional
     public OrderResponse convertBudgetToOrder(UUID budgetId, OrderConvertRequest request) {
@@ -84,7 +81,6 @@ public class OrderServiceImpl implements OrderService {
         validarOrcamentoComItens(budget);
         validarIdempotencia(budgetId);
 
-        // Promove status para APPROVED de forma atômica caso ainda seja DRAFT ou SENT
         if (budget.getStatus() != BudgetStatus.APPROVED) {
             budget.setStatus(BudgetStatus.APPROVED);
             budgetRepository.save(budget);
@@ -156,7 +152,7 @@ public class OrderServiceImpl implements OrderService {
                     : "Indefinido";
             throw new BusinessException(
                     "Orçamento com status '" + statusDesc + "' não pode ser convertido em pedido de venda."
-                    + " São aceitos: Rascunho, Enviado ou Aprovado.");
+                            + " São aceitos: Rascunho, Enviado ou Aprovado.");
         }
     }
 
@@ -227,7 +223,7 @@ public class OrderServiceImpl implements OrderService {
         int altura = budgetItem.getHeightMm() != null ? budgetItem.getHeightMm().intValue() : 0;
         int qty = (budgetItem.getQuantity() != null && budgetItem.getQuantity() > 0)
                 ? budgetItem.getQuantity() : 1;
-        // valorTotal é o subtotal já calculado (qty × preço unitário) — não multiplicar qty novamente
+
         BigDecimal valorTotal = orZero(budgetItem.getSubtotal());
         BigDecimal valorUnitario = valorTotal.divide(BigDecimal.valueOf(qty), 2, RoundingMode.HALF_UP);
 

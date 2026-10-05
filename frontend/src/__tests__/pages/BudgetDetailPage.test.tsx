@@ -164,7 +164,7 @@ describe('BudgetDetailPage — [US-11.5] Botão Emitir Via Técnica (Oficina)', 
     fireEvent.click(approveBtn);
 
     expect(screen.getByTestId('order-approval-modal')).toBeInTheDocument();
-    expect(screen.getByText(/Aprovar Orçamento e Gerar Pedido/i)).toBeInTheDocument();
+    expect(screen.getByText(/Aprovar Orçamento e Gerar (Pedido|Ordem de Serviço)/i)).toBeInTheDocument();
   });
 });
 

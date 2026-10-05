@@ -146,18 +146,23 @@ class OrderRepositoryTest {
 
         // Filtro por status
         Page<Order> aguardando = orderRepository.findAllWithFilters(
-                OrderStatus.WAITING_PRODUCTION, null, PageRequest.of(0, 10));
+                OrderStatus.WAITING_PRODUCTION, null, null, PageRequest.of(0, 10));
         assertThat(aguardando.getContent()).hasSize(2);
+
+        // Filtro por canal de aprovação
+        Page<Order> canalWhatsapp = orderRepository.findAllWithFilters(
+                null, ApprovalChannel.WHATSAPP, null, PageRequest.of(0, 10));
+        assertThat(canalWhatsapp.getContent()).hasSize(3);
 
         // Filtro por busca textual no nome do cliente
         Page<Order> buscaNome = orderRepository.findAllWithFilters(
-                null, "Carlos", PageRequest.of(0, 10));
+                null, null, "Carlos", PageRequest.of(0, 10));
         assertThat(buscaNome.getContent()).hasSize(1);
         assertThat(buscaNome.getContent().get(0).getCodigo()).isEqualTo("PED-2026-0001");
 
         // Filtro por busca textual no código
         Page<Order> buscaCodigo = orderRepository.findAllWithFilters(
-                null, "PED-2026-0002", PageRequest.of(0, 10));
+                null, null, "PED-2026-0002", PageRequest.of(0, 10));
         assertThat(buscaCodigo.getContent()).hasSize(1);
         assertThat(buscaCodigo.getContent().get(0).getClienteNome()).isEqualTo("Ana Paula");
     }

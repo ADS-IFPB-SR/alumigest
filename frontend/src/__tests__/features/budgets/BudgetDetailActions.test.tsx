@@ -299,19 +299,17 @@ describe('BudgetDetailActions Component [Joseph Nichollas]', () => {
       expect(onApprove).toHaveBeenCalledTimes(1);
     });
 
-    it('deve estar desabilitado quando status for APPROVED', () => {
+    it('deve exibir botão Ver Ordem de Serviço habilitado quando status for APPROVED', () => {
       const onApprove = vi.fn();
       renderComponent({
         budgetStatus: 'APPROVED',
         onApproveClick: onApprove,
       });
 
-      const btn = screen.getByTestId('btn-approve-budget');
-      expect(btn).toBeDisabled();
-      expect(btn).toHaveAttribute(
-        'title',
-        expect.stringContaining('já foi aprovado')
-      );
+      const btn = screen.getByTestId('btn-view-work-order');
+      expect(btn).toBeInTheDocument();
+      expect(btn).toHaveTextContent('Ver Ordem de Serviço');
+      expect(btn).not.toBeDisabled();
     });
 
     it('deve estar desabilitado quando status for CANCELLED', () => {

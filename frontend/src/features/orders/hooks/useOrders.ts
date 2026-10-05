@@ -1,14 +1,25 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import toast from 'react-hot-toast';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { ordersApi } from '../services/ordersApi';
 import type { OrderCancelRequest, OrderFilterParams } from '../types';
 
 export { useConvertBudget } from './useConvertBudget';
 
 /**
- * Hook para carregar os detalhes completos de um pedido pelo ID (US-13.5).
+ * Hook para listar pedidos de venda paginados com filtros de busca, status e canal.
+ * Utiliza keepPreviousData para garantir navegação suave entre fatias da paginação lazy.
  */
-export const useOrder = (id: string | undefined) => {
+export const useOrders = (params?: OrderFilterParams) => {
+  return useQuery({
+    queryKey: ['orders', params],
+    queryFn: () => ordersApi.getOrders(params),
+    placeholderData: keepPreviousData,
+  });
+};
+
+/**
+ * Hook para buscar um pedido de venda específico por ID.
+ */
+export const useOrder = (id?: string) => {
   return useQuery({
     queryKey: ['order', id],
     queryFn: () => ordersApi.getOrderById(id!),
@@ -17,36 +28,18 @@ export const useOrder = (id: string | undefined) => {
 };
 
 /**
- * Hook para listagem paginada de pedidos com filtros (US-14.1).
+ * Hook de mutação para cancelar um pedido de venda com justificativa.
  */
-export const useOrders = (params?: OrderFilterParams) => {
-  return useQuery({
-    queryKey: ['orders', params],
-    queryFn: () => ordersApi.getOrders(params),
-    placeholderData: (previousData) => previousData,
-  });
-};
-
-/**
- * Hook de mutação para cancelamento de pedido de venda com justificativa (US-15.1).
- */
-export const useCancelOrder = (id: string | undefined) => {
+export const useCancelOrder = (id?: string) => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: OrderCancelRequest) => {
-      if (!id) throw new Error('ID do pedido não informado.');
-      return ordersApi.cancelOrder(id, data);
-    },
+    mutationFn: (data: OrderCancelRequest) => ordersApi.cancelOrder(id!, data),
     onSuccess: () => {
-      toast.success('Pedido cancelado com sucesso.');
-      queryClient.invalidateQueries({ queryKey: ['order', id] });
       queryClient.invalidateQueries({ queryKey: ['orders'] });
-    },
-    onError: (error: unknown) => {
-      const err = error as { response?: { data?: { message?: string } } };
-      const message = err?.response?.data?.message || 'Erro ao cancelar pedido. Tente novamente.';
-      toast.error(message);
+      if (id) {
+        queryClient.invalidateQueries({ queryKey: ['order', id] });
+      }
     },
   });
 };

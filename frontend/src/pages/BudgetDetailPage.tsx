@@ -79,7 +79,7 @@ export function BudgetDetailPage() {
   const handleApprovalSuccess = useCallback(
     (order: import('../features/orders/types').Order) => {
       setShowApprovalModal(false);
-      navigate(`/pedidos/${order.id}`);
+      navigate(`/work-orders/${order.id}`);
     },
     [navigate],
   );

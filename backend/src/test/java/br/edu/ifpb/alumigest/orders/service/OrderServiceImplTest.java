@@ -12,10 +12,12 @@ import br.edu.ifpb.alumigest.common.exception.ConflictException;
 import br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException;
 import br.edu.ifpb.alumigest.orders.domain.ApprovalChannel;
 import br.edu.ifpb.alumigest.orders.domain.Order;
+import br.edu.ifpb.alumigest.common.dto.PageResponse;
 import br.edu.ifpb.alumigest.orders.domain.OrderItem;
 import br.edu.ifpb.alumigest.orders.domain.OrderStatus;
 import br.edu.ifpb.alumigest.orders.dto.OrderConvertRequest;
 import br.edu.ifpb.alumigest.orders.dto.OrderResponse;
+import br.edu.ifpb.alumigest.orders.dto.OrderSummaryResponse;
 import br.edu.ifpb.alumigest.orders.mapper.OrderMapper;
 import br.edu.ifpb.alumigest.orders.repository.OrderRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,6 +28,10 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -416,6 +422,38 @@ class OrderServiceImplTest {
         opcao.setUnitPrice(new BigDecimal("80.00"));
         opcao.setTotalPrice(new BigDecimal("200.00"));
         return opcao;
+    }
+
+    @Test
+    @DisplayName("findAll: deve buscar pedidos com filtros e mapear para PageResponse de DTOs")
+    void dadoFiltrosEPageable_deveBuscarEMapearPedidos() {
+        Order savedOrder = buildSavedOrder();
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<Order> orderPage = new PageImpl<>(List.of(savedOrder), pageable, 1);
+
+        OrderSummaryResponse summaryDto = new OrderSummaryResponse(
+                orderId, "PED-2026-0001", budgetId, "Empresa XPTO Ltda", "83988880000",
+                OrderStatus.WAITING_PRODUCTION, "Aguardando Produção",
+                ApprovalChannel.WHATSAPP, "WhatsApp",
+                LocalDate.now(ZoneOffset.UTC), request.dataPrevisaoEntrega(),
+                budget.getTotal(), 1, OffsetDateTime.now(ZoneOffset.UTC)
+        );
+
+        given(orderRepository.findAllWithFilters(OrderStatus.WAITING_PRODUCTION, ApprovalChannel.WHATSAPP, "XPTO", pageable))
+                .willReturn(orderPage);
+        given(orderMapper.toSummaryResponse(savedOrder)).willReturn(summaryDto);
+
+        PageResponse<OrderSummaryResponse> result = orderService.findAll(
+                OrderStatus.WAITING_PRODUCTION, ApprovalChannel.WHATSAPP, "XPTO", pageable
+        );
+
+        assertThat(result).isNotNull();
+        assertThat(result.content()).hasSize(1);
+        assertThat(result.content().get(0).codigo()).isEqualTo("PED-2026-0001");
+        assertThat(result.content().get(0).clienteNome()).isEqualTo("Empresa XPTO Ltda");
+        assertThat(result.totalElements()).isEqualTo(1L);
+        assertThat(result.page()).isZero();
+        assertThat(result.size()).isEqualTo(10);
     }
 
     private Order buildSavedOrder() {

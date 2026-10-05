@@ -39,7 +39,7 @@ export function OrderDetailPage() {
   const handlePrintTechnicalPdf = () => {
     if (!order) return;
     if (!order.orcamentoId) {
-      toast.error('Pedido sem orçamento de origem vinculado.');
+      toast.error('Ordem de serviço sem orçamento de origem vinculado.');
       return;
     }
     downloadPdfTecnico({ id: order.orcamentoId, code: order.orcamentoCodigo || order.codigo });
@@ -63,7 +63,7 @@ export function OrderDetailPage() {
         data-testid="order-detail-loading"
       >
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        <p className="text-sm font-medium text-on-surface-variant">Carregando detalhes do pedido...</p>
+        <p className="text-sm font-medium text-on-surface-variant">Carregando detalhes da ordem de serviço...</p>
       </div>
     );
   }
@@ -78,9 +78,9 @@ export function OrderDetailPage() {
           <AlertCircle className="w-6 h-6" />
         </div>
         <div>
-          <h2 className="text-lg font-bold text-on-surface">Pedido não encontrado</h2>
+          <h2 className="text-lg font-bold text-on-surface">Ordem de Serviço não encontrada</h2>
           <p className="text-sm text-on-surface-variant mt-1">
-            Não foi possível carregar as informações do pedido solicitado. Ele pode ter sido removido ou o identificador é inválido.
+            Não foi possível carregar as informações da ordem de serviço solicitada. Ela pode ter sido removida ou o identificador é inválido.
           </p>
         </div>
         <div className="flex justify-center gap-3 pt-2">
@@ -92,11 +92,11 @@ export function OrderDetailPage() {
             Tentar Novamente
           </button>
           <Link
-            to="/pedidos"
+            to="/work-orders"
             className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-primary hover:bg-primary-dark rounded-lg transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            Voltar para Pedidos
+            Voltar para Ordens de Serviço
           </Link>
         </div>
       </div>

@@ -1,7 +1,12 @@
 package br.edu.ifpb.alumigest.orders.service;
 
+import br.edu.ifpb.alumigest.common.dto.PageResponse;
+import br.edu.ifpb.alumigest.orders.domain.ApprovalChannel;
+import br.edu.ifpb.alumigest.orders.domain.OrderStatus;
 import br.edu.ifpb.alumigest.orders.dto.OrderConvertRequest;
 import br.edu.ifpb.alumigest.orders.dto.OrderResponse;
+import br.edu.ifpb.alumigest.orders.dto.OrderSummaryResponse;
+import org.springframework.data.domain.Pageable;
 
 import java.util.UUID;
 
@@ -32,4 +37,20 @@ public interface OrderService {
      * @throws br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException se não encontrado
      */
     OrderResponse findDetailedById(UUID id);
+
+    /**
+     * Lista pedidos de venda de forma paginada com suporte a filtros dinâmicos.
+     *
+     * @param status   filtro opcional por status do pedido
+     * @param channel  filtro opcional por canal de aprovação
+     * @param search   termo para busca textual (código do pedido, cliente ou código do orçamento)
+     * @param pageable parâmetros de paginação e ordenação
+     * @return página de pedidos sumarizados
+     */
+    PageResponse<OrderSummaryResponse> findAll(
+            OrderStatus status,
+            ApprovalChannel channel,
+            String search,
+            Pageable pageable
+    );
 }

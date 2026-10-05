@@ -109,7 +109,9 @@ export interface OrderSummary {
   clienteNome: string;
   clienteTelefone?: string | null;
   status: OrderStatus;
+  statusDescricao?: string;
   canalAprovacao: ApprovalChannel;
+  canalAprovacaoDescricao?: string;
   dataAprovacao: string;
   dataPrevisaoEntrega: string;
   valorLiquido: number;
@@ -131,5 +133,6 @@ export interface OrderFilterParams {
   page?: number;
   size?: number;
   status?: OrderStatus;
-  busca?: string;
+  search?: string;
+  channel?: ApprovalChannel;
 }

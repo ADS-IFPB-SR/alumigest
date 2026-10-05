@@ -1,7 +1,11 @@
 package br.edu.ifpb.alumigest.orders.controller;
 
+import br.edu.ifpb.alumigest.common.dto.PageResponse;
+import br.edu.ifpb.alumigest.orders.domain.ApprovalChannel;
+import br.edu.ifpb.alumigest.orders.domain.OrderStatus;
 import br.edu.ifpb.alumigest.orders.dto.OrderConvertRequest;
 import br.edu.ifpb.alumigest.orders.dto.OrderResponse;
+import br.edu.ifpb.alumigest.orders.dto.OrderSummaryResponse;
 import br.edu.ifpb.alumigest.orders.service.OrderService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -10,12 +14,16 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
@@ -40,6 +48,34 @@ public class OrderController {
      */
     public OrderController(OrderService orderService) {
         this.orderService = orderService;
+    }
+
+    /**
+     * Lista pedidos de venda de forma paginada com suporte a filtros dinâmicos.
+     *
+     * @param status   filtro opcional por status do pedido
+     * @param channel  filtro opcional por canal de aprovação
+     * @param search   termo para busca textual (código do pedido, cliente ou código do orçamento)
+     * @param busca    alias retrocompatível para busca textual
+     * @param pageable parâmetros de paginação e ordenação
+     * @return 200 OK com página de pedidos sumarizados
+     */
+    @GetMapping
+    @Operation(summary = "Listar pedidos de venda", description = "Lista pedidos de forma paginada com suporte a busca textual, status e canal de aprovação.")
+    @ApiResponse(responseCode = "200", description = "Lista paginada de pedidos recuperada com sucesso")
+    public ResponseEntity<PageResponse<OrderSummaryResponse>> findAll(
+            @Parameter(description = "Filtro por status do pedido")
+            @RequestParam(required = false) OrderStatus status,
+            @Parameter(description = "Filtro por canal de aprovação")
+            @RequestParam(required = false) ApprovalChannel channel,
+            @Parameter(description = "Termo para busca textual (código do pedido, cliente ou código do orçamento)")
+            @RequestParam(name = "search", required = false) String search,
+            @RequestParam(name = "busca", required = false) String busca,
+            @ParameterObject @PageableDefault(size = 10, sort = "createdAt") Pageable pageable) {
+
+        String searchTerm = (search != null && !search.isBlank()) ? search : busca;
+        PageResponse<OrderSummaryResponse> response = orderService.findAll(status, channel, searchTerm, pageable);
+        return ResponseEntity.ok(response);
     }
 
     /**

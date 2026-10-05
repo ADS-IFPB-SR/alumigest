@@ -4,9 +4,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '../../../components/ui/Button';
 import { budgetsApi } from '../services/budgetsApi';
 import { useUpdateBudgetStatus } from '../hooks/useBudgets';
-import type { CreateBudgetPayload, BudgetStatus } from '../types';
+import type { CreateBudgetPayload, BudgetStatus, BudgetDetail } from '../types';
 import { WhatsAppSummaryModal } from './WhatsAppSummaryModal';
 import { shareCommercialPdfLink } from '../utils/whatsappHelper';
+import { useOrders } from '../../orders/hooks/useOrders';
 import toast from 'react-hot-toast';
 
 interface BudgetDetailActionsProps {
@@ -20,6 +21,99 @@ interface BudgetDetailActionsProps {
   readonly onDownloadPdfTecnico?: () => void;
   readonly isDownloadingPdfTecnico?: boolean;
   readonly onApproveClick?: () => void;
+}
+
+function getApprovalButtonTooltip(isApproved: boolean, isCancelledOrRejected: boolean, isExpired: boolean): string {
+  if (isApproved) {
+    return 'Este orçamento já foi aprovado e convertido em ordem de serviço.';
+  }
+  if (isCancelledOrRejected) {
+    return 'Orçamentos cancelados ou rejeitados não podem ser aprovados.';
+  }
+  if (isExpired) {
+    return 'Orçamentos com validade expirada não podem ser aprovados.';
+  }
+  return 'Aprovar este orçamento e convertê-lo em Ordem de Serviço';
+}
+
+function buildDuplicatePayload(currentBudget: BudgetDetail, budgetCode: string): CreateBudgetPayload {
+  const notes = currentBudget.notes
+    ? `${currentBudget.notes} (Cópia do orçamento ${budgetCode})`
+    : `Cópia do orçamento ${budgetCode}`;
+
+  return {
+    customerId: currentBudget.customerId ?? '',
+    discountPercent: currentBudget.discountPercent ?? 0,
+    notes,
+    commercialConditions: currentBudget.commercialConditions,
+    validUntil: currentBudget.validUntil,
+    items: (currentBudget.items ?? []).map((item) => ({
+      productId: item.productId,
+      templateType: item.templateType,
+      templateConfig: item.templateConfig,
+      handleConfig: item.handleConfig,
+      drillingConfig: item.drillingConfig,
+      width: item.width,
+      height: item.height,
+      quantity: item.quantity,
+      laborCost: item.laborCost,
+      notes: item.notes,
+      options: (item.options ?? []).map((opt) => ({
+        materialId: opt.materialId,
+        quantity: opt.quantity,
+        categoryType: opt.categoryType,
+      })),
+    })),
+  };
+}
+
+interface WhatsAppDropdownMenuProps {
+  readonly menuPosition: { top: number; left: number };
+  readonly menuRef: React.RefObject<HTMLDivElement | null>;
+  readonly onOpenSummaryModal: () => void;
+  readonly onSendCommercialPdf: () => void;
+}
+
+function WhatsAppDropdownMenu({
+  menuPosition,
+  menuRef,
+  onOpenSummaryModal,
+  onSendCommercialPdf,
+}: WhatsAppDropdownMenuProps) {
+  return createPortal(
+    <div
+      ref={menuRef}
+      style={{ top: `${menuPosition.top}px`, left: `${menuPosition.left}px` }}
+      className="absolute w-56 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-2xl z-[99999] py-1 animate-fadeIn"
+    >
+      <button
+        type="button"
+        onClick={onOpenSummaryModal}
+        className="w-full px-3 py-2 text-left text-xs font-label hover:bg-surface-container flex items-center gap-2 text-on-surface transition-colors cursor-pointer"
+      >
+        <span className="material-symbols-outlined text-[18px] text-emerald-600">chat</span>
+        <div>
+          <p className="font-semibold">Enviar Resumo de Texto</p>
+          <p className="text-[10px] text-on-surface-variant">Mensagem formatada com valores</p>
+        </div>
+      </button>
+
+      <button
+        type="button"
+        onClick={onSendCommercialPdf}
+        className="w-full px-3 py-2 text-left text-xs font-label hover:bg-surface-container flex items-center gap-2 text-on-surface transition-colors cursor-pointer border-t border-outline-variant/40"
+      >
+        <span className="material-symbols-outlined text-[18px] text-emerald-600">
+          picture_as_pdf
+        </span>
+        <div>
+          <p className="font-semibold">Enviar PDF Comercial</p>
+          <p className="text-[10px] text-on-surface-variant">Enviar link direto para o cliente</p>
+        </div>
+      </button>
+    </div>,
+    document.body
+  );
 }
 
 export function BudgetDetailActions({
@@ -42,14 +136,11 @@ export function BudgetDetailActions({
   const isCancelledOrRejected = currentStatus === 'CANCELLED' || currentStatus === 'REJECTED';
   const isApprovalDisabled = isApproved || isCancelledOrRejected || isExpired;
 
-  let approvalButtonTooltip = 'Aprovar este orçamento e convertê-lo em Pedido de Venda';
-  if (isApproved) {
-    approvalButtonTooltip = 'Este orçamento já foi aprovado e convertido em pedido.';
-  } else if (isCancelledOrRejected) {
-    approvalButtonTooltip = 'Orçamentos cancelados ou rejeitados não podem ser aprovados.';
-  } else if (isExpired) {
-    approvalButtonTooltip = 'Orçamentos com validade expirada não podem ser aprovados.';
-  }
+  const { data: linkedOrders } = useOrders(
+    isApproved ? { search: budgetCode, size: 1 } : undefined
+  );
+  const linkedOrder = isApproved ? linkedOrders?.content?.[0] : undefined;
+  const approvalButtonTooltip = getApprovalButtonTooltip(isApproved, isCancelledOrRejected, isExpired);
 
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const [showWhatsAppMenu, setShowWhatsAppMenu] = useState(false);
@@ -154,34 +245,7 @@ export function BudgetDetailActions({
       toast('Duplicando orçamento...');
 
       const currentBudget = await budgetsApi.getBudget(budgetId);
-
-      const payload: CreateBudgetPayload = {
-        customerId: currentBudget.customerId ?? '',
-        discountPercent: currentBudget.discountPercent ?? 0,
-        notes: currentBudget.notes 
-          ? `${currentBudget.notes} (Cópia do orçamento ${budgetCode})` 
-          : `Cópia do orçamento ${budgetCode}`,
-        commercialConditions: currentBudget.commercialConditions,
-        validUntil: currentBudget.validUntil,
-        items: (currentBudget.items ?? []).map((item) => ({
-          productId: item.productId,
-          templateType: item.templateType,
-          templateConfig: item.templateConfig,
-          handleConfig: item.handleConfig,
-          drillingConfig: item.drillingConfig,
-          width: item.width,
-          height: item.height,
-          quantity: item.quantity,
-          laborCost: item.laborCost,
-          notes: item.notes,
-          options: (item.options ?? []).map((opt) => ({
-            materialId: opt.materialId,
-            quantity: opt.quantity,
-            categoryType: opt.categoryType,
-          })),
-        })),
-      };
-
+      const payload = buildDuplicatePayload(currentBudget, budgetCode);
       const newBudget = await budgetsApi.createBudget(payload);
       toast.success('Orçamento duplicado com sucesso!');
 
@@ -225,42 +289,16 @@ export function BudgetDetailActions({
           </span>
         </button>
 
-        {showWhatsAppMenu && createPortal(
-          <div 
-            ref={whatsAppMenuRef}
-            style={{ top: `${menuPosition.top}px`, left: `${menuPosition.left}px` }}
-            className="absolute w-56 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-2xl z-[99999] py-1 animate-fadeIn"
-          >
-            <button
-              type="button"
-              onClick={() => {
-                setShowWhatsAppMenu(false);
-                setShowWhatsAppModal(true);
-              }}
-              className="w-full px-3 py-2 text-left text-xs font-label hover:bg-surface-container flex items-center gap-2 text-on-surface transition-colors cursor-pointer"
-            >
-              <span className="material-symbols-outlined text-[18px] text-emerald-600">chat</span>
-              <div>
-                <p className="font-semibold">Enviar Resumo de Texto</p>
-                <p className="text-[10px] text-on-surface-variant">Mensagem formatada com valores</p>
-              </div>
-            </button>
-
-            <button
-              type="button"
-              onClick={handleSendCommercialPdfViaWhatsApp}
-              className="w-full px-3 py-2 text-left text-xs font-label hover:bg-surface-container flex items-center gap-2 text-on-surface transition-colors cursor-pointer border-t border-outline-variant/40"
-            >
-              <span className="material-symbols-outlined text-[18px] text-emerald-600">
-                picture_as_pdf
-              </span>
-              <div>
-                <p className="font-semibold">Enviar PDF Comercial</p>
-                <p className="text-[10px] text-on-surface-variant">Enviar link direto para o cliente</p>
-              </div>
-            </button>
-          </div>,
-          document.body
+        {showWhatsAppMenu && (
+          <WhatsAppDropdownMenu
+            menuPosition={menuPosition}
+            menuRef={whatsAppMenuRef}
+            onOpenSummaryModal={() => {
+              setShowWhatsAppMenu(false);
+              setShowWhatsAppModal(true);
+            }}
+            onSendCommercialPdf={handleSendCommercialPdfViaWhatsApp}
+          />
         )}
       </div>
 
@@ -301,19 +339,39 @@ export function BudgetDetailActions({
         </span>
       </button>
 
-      {/* ── 4º Aprovar e Gerar Pedido (US-13.3) ─────────────────────────── */}
-      <Button
-        type="button"
-        variant="success"
-        icon="check_circle"
-        data-testid="btn-approve-budget"
-        onClick={onApproveClick}
-        disabled={isApprovalDisabled || !onApproveClick}
-        className="text-xs py-1.5 px-3 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shrink-0"
-        title={approvalButtonTooltip}
-      >
-        <span className="whitespace-nowrap">Aprovar e Gerar Pedido</span>
-      </Button>
+      {/* ── 4º Aprovar ou Ver Ordem de Serviço (US-13.3) ─────────────────── */}
+      {isApproved ? (
+        <Button
+          type="button"
+          variant="primary"
+          icon="assignment"
+          data-testid="btn-view-work-order"
+          onClick={() => {
+            if (linkedOrder?.id) {
+              navigate(`/work-orders/${linkedOrder.id}`);
+            } else {
+              navigate(`/work-orders?search=${encodeURIComponent(budgetCode)}`);
+            }
+          }}
+          className="text-xs py-1.5 px-3 whitespace-nowrap cursor-pointer shrink-0"
+          title="Ver Ordem de Serviço vinculada a este orçamento"
+        >
+          <span className="whitespace-nowrap">Ver Ordem de Serviço</span>
+        </Button>
+      ) : (
+        <Button
+          type="button"
+          variant="success"
+          icon="check_circle"
+          data-testid="btn-approve-budget"
+          onClick={onApproveClick}
+          disabled={isApprovalDisabled || !onApproveClick}
+          className="text-xs py-1.5 px-3 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shrink-0"
+          title={approvalButtonTooltip}
+        >
+          <span className="whitespace-nowrap">Aprovar e Gerar O.S.</span>
+        </Button>
+      )}
 
       {/* ── 5º Duplicar ─────────────────────────────────────────────────── */}
       <button
