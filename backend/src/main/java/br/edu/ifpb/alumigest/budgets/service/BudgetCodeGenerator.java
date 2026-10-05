@@ -15,7 +15,7 @@ public class BudgetCodeGenerator {
         this.budgetRepository = budgetRepository;
     }
 
-    public String generateNextCode() {
+    public synchronized String generateNextCode() {
         int currentYear = Year.now(ZoneOffset.UTC).getValue();
         String prefix = String.format("ORC-%d-", currentYear);
 

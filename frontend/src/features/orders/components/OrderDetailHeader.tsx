@@ -29,7 +29,7 @@ export const OrderDetailHeader: React.FC<OrderDetailHeaderProps> = ({
     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-outline-variant">
       <div className="flex items-center gap-4">
         <Link
-          to="/work-orders"
+          to="/ordens-servico"
           className="p-2 rounded-lg border border-outline-variant hover:bg-surface-container-high transition-colors text-on-surface-variant hover:text-on-surface"
           aria-label="Voltar para a lista de ordens de serviço"
         >

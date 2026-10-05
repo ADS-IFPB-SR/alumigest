@@ -23,10 +23,16 @@ public class OrderCodeGenerator {
         this.orderRepository = orderRepository;
     }
 
+    private static final int MAX_CANDIDATE_ATTEMPTS = 500;
+
+    private int cachedYear = -1;
+    private int lastAllocatedNumber = 0;
+
     /**
      * Gera o próximo código sequencial no formato OS-YYYY-NNNN.
-     * Consulta o último código do ano vigente para incrementar a sequência,
-     * garantindo exclusão mútua e avanço defensivo caso o código já exista.
+     * Consulta o último código do ano vigente no banco de dados e combina com o sequenciador
+     * em memória garantindo que threads concorrentes dentro da mesma JVM não gerem o mesmo
+     * identificador enquanto transações irmãs ainda não concluíram o commit físico.
      *
      * @return próximo código único da ordem de serviço
      */
@@ -34,7 +40,7 @@ public class OrderCodeGenerator {
         int currentYear = Year.now(ZoneOffset.UTC).getValue();
         String prefix = String.format("OS-%d-", currentYear);
 
-        int nextNumber = orderRepository.findTopByCodigoStartingWithOrderByCodigoDesc(prefix)
+        int dbNextNumber = orderRepository.findTopByCodigoStartingWithOrderByCodigoDesc(prefix)
                 .map(lastOrder -> {
                     String lastCode = lastOrder.getCodigo();
                     try {
@@ -46,12 +52,26 @@ public class OrderCodeGenerator {
                 })
                 .orElse(1);
 
+        if (currentYear != cachedYear) {
+            cachedYear = currentYear;
+            lastAllocatedNumber = 0;
+        }
+
+        int nextNumber = Math.max(dbNextNumber, lastAllocatedNumber + 1);
+
         String candidateCode = String.format("%s%04d", prefix, nextNumber);
+        int attempts = 0;
         while (orderRepository.existsByCodigo(candidateCode)) {
+            attempts++;
+            if (attempts > MAX_CANDIDATE_ATTEMPTS) {
+                throw new IllegalStateException(
+                        "Limite de tentativas para gerar código sequencial único atingido para o prefixo: " + prefix);
+            }
             nextNumber++;
             candidateCode = String.format("%s%04d", prefix, nextNumber);
         }
 
+        lastAllocatedNumber = nextNumber;
         return candidateCode;
     }
 }

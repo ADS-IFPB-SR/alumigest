@@ -12,6 +12,43 @@ import {
   type ApprovalChannel,
 } from '../features/orders/types';
 
+/**
+ * Calcula a lista de páginas e reticências a serem exibidas na janela de paginação deslizante.
+ * Mantém no máximo 7 elementos visíveis, ajustando início, meio e fim conforme a página ativa.
+ *
+ * @param page Página atual (0-indexed)
+ * @param totalPages Total de páginas disponíveis
+ */
+export const getVisiblePages = (
+  page: number,
+  totalPages: number
+): (number | 'ellipsis-start' | 'ellipsis-end')[] => {
+  if (totalPages <= 7) {
+    return Array.from({ length: totalPages }, (_, i) => i);
+  }
+
+  const pages: (number | 'ellipsis-start' | 'ellipsis-end')[] = [0];
+
+  if (page > 2) {
+    pages.push('ellipsis-start');
+  }
+
+  const start = Math.max(1, page - 1);
+  const end = Math.min(totalPages - 2, page + 1);
+
+  for (let i = start; i <= end; i++) {
+    pages.push(i);
+  }
+
+  if (page < totalPages - 3) {
+    pages.push('ellipsis-end');
+  }
+
+  pages.push(totalPages - 1);
+
+  return pages;
+};
+
 export function OrderListPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -40,33 +77,6 @@ export function OrderListPage() {
   const startItem = totalElements === 0 ? 0 : page * size + 1;
   const endItem = Math.min((page + 1) * size, totalElements);
   const totalPages = data?.totalPages ?? data?.page?.totalPages ?? 1;
-
-  const getVisiblePages = (): (number | 'ellipsis-start' | 'ellipsis-end')[] => {
-    if (totalPages <= 7) {
-      return Array.from({ length: totalPages }, (_, i) => i);
-    }
-
-    const pages: (number | 'ellipsis-start' | 'ellipsis-end')[] = [0];
-
-    if (page > 2) {
-      pages.push('ellipsis-start');
-    }
-
-    const start = Math.max(1, page - 1);
-    const end = Math.min(totalPages - 2, page + 1);
-
-    for (let i = start; i <= end; i++) {
-      pages.push(i);
-    }
-
-    if (page < totalPages - 3) {
-      pages.push('ellipsis-end');
-    }
-
-    pages.push(totalPages - 1);
-
-    return pages;
-  };
 
   const renderTableContent = () => {
     if (isLoading) {
@@ -101,7 +111,7 @@ export function OrderListPage() {
     return data.content.map((order) => (
       <tr key={order.id} className="hover:bg-surface-container-low/30 transition-colors">
         <td className="px-2.5 py-2 whitespace-nowrap">
-          <Link to={`/work-orders/${order.id}`} className="font-semibold text-primary hover:underline text-xs">
+          <Link to={`/ordens-servico/${order.id}`} className="font-semibold text-primary hover:underline text-xs">
             #{order.codigo}
           </Link>
         </td>
@@ -129,7 +139,7 @@ export function OrderListPage() {
         <td className="px-2.5 py-2 text-right whitespace-nowrap">
           <div className="flex items-center justify-end gap-1">
             <Link
-              to={`/work-orders/${order.id}`}
+              to={`/ordens-servico/${order.id}`}
               className="flex items-center gap-1 px-2 py-0.5 border border-outline-variant rounded text-xs font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors bg-surface"
               title="Ver Detalhes"
               aria-label={`Ver detalhes da ordem de serviço ${order.codigo}`}
@@ -305,7 +315,7 @@ export function OrderListPage() {
               &larr; Anterior
             </button>
 
-            {getVisiblePages().map((pageItem) => {
+            {getVisiblePages(page, totalPages).map((pageItem) => {
               if (typeof pageItem === 'string') {
                 return (
                   <span

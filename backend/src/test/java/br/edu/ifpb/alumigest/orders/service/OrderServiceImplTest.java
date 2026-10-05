@@ -123,7 +123,7 @@ class OrderServiceImplTest {
         given(budgetRepository.findByIdWithDetails(budgetId)).willReturn(Optional.of(budget));
         given(orderRepository.existsByOrcamentoId(budgetId)).willReturn(false);
         given(orderCodeGenerator.generateNextCode()).willReturn("OS-2026-0001");
-        given(orderRepository.save(any(Order.class))).willReturn(savedOrder);
+        given(orderRepository.saveAndFlush(any(Order.class))).willReturn(savedOrder);
         given(orderMapper.toResponse(savedOrder)).willReturn(expectedResponse);
 
         // Act
@@ -135,7 +135,7 @@ class OrderServiceImplTest {
         assertThat(result.orcamentoId()).isEqualTo(budgetId);
         assertThat(result.status()).isEqualTo(OrderStatus.WAITING_PRODUCTION);
 
-        verify(orderRepository).save(any(Order.class));
+        verify(orderRepository).saveAndFlush(any(Order.class));
         verify(orderCodeGenerator).generateNextCode();
     }
 
@@ -151,7 +151,7 @@ class OrderServiceImplTest {
         given(orderRepository.existsByOrcamentoId(budgetId)).willReturn(false);
         given(orderCodeGenerator.generateNextCode()).willReturn("OS-2026-0001");
         given(budgetRepository.save(budget)).willReturn(budget);
-        given(orderRepository.save(any(Order.class))).willReturn(savedOrder);
+        given(orderRepository.saveAndFlush(any(Order.class))).willReturn(savedOrder);
         given(orderMapper.toResponse(savedOrder)).willReturn(expectedResponse);
 
         // Act
@@ -160,7 +160,7 @@ class OrderServiceImplTest {
         // Assert: orçamento deve ter sido atualizado para APPROVED antes de salvar o pedido
         assertThat(budget.getStatus()).isEqualTo(BudgetStatus.APPROVED);
         verify(budgetRepository).save(budget);
-        verify(orderRepository).save(any(Order.class));
+        verify(orderRepository).saveAndFlush(any(Order.class));
     }
 
     @Test
@@ -175,7 +175,7 @@ class OrderServiceImplTest {
         given(orderRepository.existsByOrcamentoId(budgetId)).willReturn(false);
         given(orderCodeGenerator.generateNextCode()).willReturn("OS-2026-0001");
         given(budgetRepository.save(budget)).willReturn(budget);
-        given(orderRepository.save(any(Order.class))).willReturn(savedOrder);
+        given(orderRepository.saveAndFlush(any(Order.class))).willReturn(savedOrder);
         given(orderMapper.toResponse(savedOrder)).willReturn(expectedResponse);
 
         // Act
@@ -203,7 +203,7 @@ class OrderServiceImplTest {
         given(budgetRepository.findByIdWithDetails(budgetId)).willReturn(Optional.of(budget));
         given(orderRepository.existsByOrcamentoId(budgetId)).willReturn(false);
         given(orderCodeGenerator.generateNextCode()).willReturn("OS-2026-0001");
-        given(orderRepository.save(any(Order.class))).willReturn(savedOrder);
+        given(orderRepository.saveAndFlush(any(Order.class))).willReturn(savedOrder);
         given(orderMapper.toResponse(savedOrder)).willReturn(expectedResponse);
 
         // Captura o Order salvo para inspecionar os itens gerados
@@ -213,7 +213,7 @@ class OrderServiceImplTest {
         orderService.convertBudgetToOrder(budgetId, request);
 
         // Assert — verifica que o OrderItem foi gerado com os valores corretos
-        verify(orderRepository).save(orderCaptor.capture());
+        verify(orderRepository).saveAndFlush(orderCaptor.capture());
         Order orderSalvo = orderCaptor.getValue();
 
         assertThat(orderSalvo.getItems()).hasSize(1);
@@ -242,7 +242,7 @@ class OrderServiceImplTest {
         given(budgetRepository.findByIdWithDetails(budgetId)).willReturn(Optional.of(budget));
         given(orderRepository.existsByOrcamentoId(budgetId)).willReturn(false);
         given(orderCodeGenerator.generateNextCode()).willReturn("OS-2026-0001");
-        given(orderRepository.save(any(Order.class))).willReturn(savedOrder);
+        given(orderRepository.saveAndFlush(any(Order.class))).willReturn(savedOrder);
         given(orderMapper.toResponse(savedOrder)).willReturn(expectedResponse);
 
         ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
@@ -251,7 +251,7 @@ class OrderServiceImplTest {
         orderService.convertBudgetToOrder(budgetId, request);
 
         // Assert
-        verify(orderRepository).save(orderCaptor.capture());
+        verify(orderRepository).saveAndFlush(orderCaptor.capture());
         Order orderSalvo = orderCaptor.getValue();
 
         OrderItem itemGerado = orderSalvo.getItems().getFirst();
@@ -276,7 +276,7 @@ class OrderServiceImplTest {
         assertThatThrownBy(() -> orderService.convertBudgetToOrder(budgetId, request))
                 .isInstanceOf(ResourceNotFoundException.class);
 
-        verify(orderRepository, never()).save(any());
+        verify(orderRepository, never()).saveAndFlush(any());
     }
 
     @Test
@@ -291,7 +291,7 @@ class OrderServiceImplTest {
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("Cancelado");
 
-        verify(orderRepository, never()).save(any());
+        verify(orderRepository, never()).saveAndFlush(any());
     }
 
     @Test
@@ -306,7 +306,7 @@ class OrderServiceImplTest {
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("Rejeitado");
 
-        verify(orderRepository, never()).save(any());
+        verify(orderRepository, never()).saveAndFlush(any());
     }
 
     @Test
@@ -322,7 +322,7 @@ class OrderServiceImplTest {
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("expirada");
 
-        verify(orderRepository, never()).save(any());
+        verify(orderRepository, never()).saveAndFlush(any());
     }
 
     @Test
@@ -337,7 +337,7 @@ class OrderServiceImplTest {
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("sem itens");
 
-        verify(orderRepository, never()).save(any());
+        verify(orderRepository, never()).saveAndFlush(any());
     }
 
     @Test
@@ -352,7 +352,7 @@ class OrderServiceImplTest {
                 .isInstanceOf(ConflictException.class)
                 .hasMessageContaining(budgetId.toString());
 
-        verify(orderRepository, never()).save(any());
+        verify(orderRepository, never()).saveAndFlush(any());
         verify(orderCodeGenerator, never()).generateNextCode();
     }
 

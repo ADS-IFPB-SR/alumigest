@@ -76,9 +76,9 @@ describe('OrderDetailPage — [US-13.5] Visualização Detalhada do Pedido de Ve
     } as any);
 
     render(
-      <MemoryRouter initialEntries={['/work-orders/order-uuid-1']}>
+      <MemoryRouter initialEntries={['/ordens-servico/order-uuid-1']}>
         <Routes>
-          <Route path="/work-orders/:id" element={<OrderDetailPage />} />
+          <Route path="/ordens-servico/:id" element={<OrderDetailPage />} />
         </Routes>
       </MemoryRouter>
     );
@@ -95,9 +95,9 @@ describe('OrderDetailPage — [US-13.5] Visualização Detalhada do Pedido de Ve
     } as any);
 
     render(
-      <MemoryRouter initialEntries={['/work-orders/order-uuid-inexistente']}>
+      <MemoryRouter initialEntries={['/ordens-servico/order-uuid-inexistente']}>
         <Routes>
-          <Route path="/work-orders/:id" element={<OrderDetailPage />} />
+          <Route path="/ordens-servico/:id" element={<OrderDetailPage />} />
         </Routes>
       </MemoryRouter>
     );
@@ -114,9 +114,9 @@ describe('OrderDetailPage — [US-13.5] Visualização Detalhada do Pedido de Ve
     } as any);
 
     render(
-      <MemoryRouter initialEntries={['/work-orders/order-uuid-1']}>
+      <MemoryRouter initialEntries={['/ordens-servico/order-uuid-1']}>
         <Routes>
-          <Route path="/work-orders/:id" element={<OrderDetailPage />} />
+          <Route path="/ordens-servico/:id" element={<OrderDetailPage />} />
         </Routes>
       </MemoryRouter>
     );
@@ -149,9 +149,9 @@ describe('OrderDetailPage — [US-13.5] Visualização Detalhada do Pedido de Ve
     } as any);
 
     render(
-      <MemoryRouter initialEntries={['/work-orders/order-uuid-1']}>
+      <MemoryRouter initialEntries={['/ordens-servico/order-uuid-1']}>
         <Routes>
-          <Route path="/work-orders/:id" element={<OrderDetailPage />} />
+          <Route path="/ordens-servico/:id" element={<OrderDetailPage />} />
         </Routes>
       </MemoryRouter>
     );
@@ -175,9 +175,9 @@ describe('OrderDetailPage — [US-13.5] Visualização Detalhada do Pedido de Ve
     } as any);
 
     render(
-      <MemoryRouter initialEntries={['/work-orders/order-uuid-1']}>
+      <MemoryRouter initialEntries={['/ordens-servico/order-uuid-1']}>
         <Routes>
-          <Route path="/work-orders/:id" element={<OrderDetailPage />} />
+          <Route path="/ordens-servico/:id" element={<OrderDetailPage />} />
         </Routes>
       </MemoryRouter>
     );

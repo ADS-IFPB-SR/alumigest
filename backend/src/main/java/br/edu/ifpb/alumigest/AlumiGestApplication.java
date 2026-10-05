@@ -9,8 +9,12 @@ import org.springframework.retry.annotation.EnableRetry;
  * 
  * Projeto de Extensão / Prática Profissional — IFPB Campus Sousa
  * Parceiro Social: Alumiportas
+ * 
+ * O order = 0 no @EnableRetry garante que o interceptor de retry envolva o interceptor
+ * de transação (@Transactional), permitindo que falhas de integridade/concorrência
+ * abram uma nova transação limpa a cada tentativa de execução.
  */
-@EnableRetry
+@EnableRetry(order = 0)
 @SpringBootApplication
 public class AlumiGestApplication {
 

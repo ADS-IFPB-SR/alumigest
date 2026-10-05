@@ -148,13 +148,13 @@ class OrderSnapshotLockTest {
         given(budgetRepository.findByIdWithDetails(budgetId)).willReturn(Optional.of(budget));
         given(orderRepository.existsByOrcamentoId(budgetId)).willReturn(false);
         given(orderCodeGenerator.generateNextCode()).willReturn("OS-2026-0001");
-        given(orderRepository.save(any(Order.class))).willAnswer(inv -> inv.getArgument(0));
+        given(orderRepository.saveAndFlush(any(Order.class))).willAnswer(inv -> inv.getArgument(0));
 
         // Act - Conversão no momento da venda (Dia D)
         orderService.convertBudgetToOrder(budgetId, request);
 
         ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
-        verify(orderRepository).save(orderCaptor.capture());
+        verify(orderRepository).saveAndFlush(orderCaptor.capture());
         Order orderSalvo = orderCaptor.getValue();
 
         // Simulação do Reajuste do Catálogo no Dia D + 5:
@@ -206,13 +206,13 @@ class OrderSnapshotLockTest {
         given(budgetRepository.findByIdWithDetails(budgetId)).willReturn(Optional.of(budget));
         given(orderRepository.existsByOrcamentoId(budgetId)).willReturn(false);
         given(orderCodeGenerator.generateNextCode()).willReturn("OS-2026-0002");
-        given(orderRepository.save(any(Order.class))).willAnswer(inv -> inv.getArgument(0));
+        given(orderRepository.saveAndFlush(any(Order.class))).willAnswer(inv -> inv.getArgument(0));
 
         // Act
         orderService.convertBudgetToOrder(budgetId, request);
 
         ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
-        verify(orderRepository).save(orderCaptor.capture());
+        verify(orderRepository).saveAndFlush(orderCaptor.capture());
         Order orderSalvo = orderCaptor.getValue();
 
         // Nível 1: Order
@@ -249,13 +249,13 @@ class OrderSnapshotLockTest {
         given(budgetRepository.findByIdWithDetails(budgetId)).willReturn(Optional.of(budget));
         given(orderRepository.existsByOrcamentoId(budgetId)).willReturn(false);
         given(orderCodeGenerator.generateNextCode()).willReturn("OS-2026-0003");
-        given(orderRepository.save(any(Order.class))).willAnswer(inv -> inv.getArgument(0));
+        given(orderRepository.saveAndFlush(any(Order.class))).willAnswer(inv -> inv.getArgument(0));
 
         // Act
         orderService.convertBudgetToOrder(budgetId, request);
 
         ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
-        verify(orderRepository).save(orderCaptor.capture());
+        verify(orderRepository).saveAndFlush(orderCaptor.capture());
         OrderItem item = orderCaptor.getValue().getItems().get(0);
 
         // Assert: 100.00 / 3 com HALF_EVEN e escala 2 = 33.33

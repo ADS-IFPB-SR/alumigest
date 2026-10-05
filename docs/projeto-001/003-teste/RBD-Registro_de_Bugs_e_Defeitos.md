@@ -714,12 +714,13 @@ O gerador de código deve garantir exclusão mútua na geração de sequenciais,
 - **Detecção / Correção:** Issue #408 / PR #414.
 
 **Causa Raiz Técnica & Solução:**
-* **Causa Raiz:** O método `generateNextCode()` não possuía sincronização (`synchronized`) para exclusão mútua em nível de JVM e não checava se o código gerado já existia antes de devolvê-lo, somado à ausência de política de reprocessamento em caso de colisão de commit.
+* **Causa Raiz:** O método `generateNextCode()` não possuía sincronização (`synchronized`) para exclusão mútua em nível de JVM e não checava se o código gerado já existia antes de devolvê-lo, somado à ausência de política de reprocessamento em caso de colisão de commit e risco de colisão entre threads que consultavam o banco antes da transação irmã comitar.
 * **Solução:**
-  1. Tornou-se o método `generateNextCode()` thread-safe (`public synchronized String generateNextCode()`) e adicionou-se verificação defensiva em loop `while (orderRepository.existsByCodigo(candidateCode))` saltando códigos já alocados.
-  2. Adicionada a dependência `spring-retry` com `@EnableRetry` na aplicação.
-  3. O método transacional `convertBudgetToOrder` foi anotado com `@Retryable(retryFor = DataIntegrityViolationException.class, maxAttempts = 3, backoff = @Backoff(delay = 100, multiplier = 1.5))`.
+  1. Tornou-se o método `generateNextCode()` thread-safe (`public synchronized String generateNextCode()`), adicionando-se rastreamento sequencial em memória (`lastAllocatedNumber`) com atualização atômica e verificação defensiva em loop `while (orderRepository.existsByCodigo(candidateCode))` com limite de tentativas (`MAX_CANDIDATE_ATTEMPTS = 500`).
+  2. Adicionada a dependência `spring-retry` com `@EnableRetry(order = 0)` na aplicação, garantindo que o interceptor de retry envolva externamente o interceptor transacional (`@Transactional`).
+  3. O método transacional `convertBudgetToOrder` utiliza `orderRepository.saveAndFlush(order)` para materializar imediatamente a constraint UNIQUE no banco e foi anotado com `@Retryable(retryFor = {DataIntegrityViolationException.class, TransactionSystemException.class}, maxAttempts = 3, backoff = @Backoff(delay = 100, multiplier = 1.5))`.
   4. Suíte de testes unitários `OrderCodeGeneratorTest.java` adicionada cobrindo geração inicial, incremento, fallback de formato e salto de códigos pré-existentes.
+  5. Teste de integração concorrente real com 10 threads simultâneas e barreira `CountDownLatch` implementado em `OrderCodeGeneratorConcurrencyIntegrationTest.java`, comprovando 100% de unicidade e ausência de colisões sob concorrência direta (CA-3).
 
 ---
 
@@ -731,25 +732,27 @@ O frontend exibia a identificação da ordem substituindo cosmetica e artificial
 
 **Passos para Reproduzir:**
 1. Converter um orçamento em ordem de serviço.
-2. Na listagem de ordens de serviço (`/work-orders`), visualizar o código exibido como `#OS-2026-0001`.
+2. Na listagem de ordens de serviço (`/ordens-servico`), visualizar o código exibido como `#OS-2026-0001`.
 3. Digitar `OS-2026-0001` no campo de pesquisa textual.
 4. Observar mensagem de "Nenhuma ordem de serviço encontrada", embora a ordem exista.
 
 **Comportamento Esperado:**
-O identificador oficial de mercado deve ser unificado e nativo em todas as camadas (Banco de Dados, Backend Core, APIs REST e Frontend), permitindo busca textual direta e consistente.
+O identificador oficial de mercado deve ser unificado e nativo em todas as camadas (Banco de Dados, Backend Core, APIs REST e Frontend), permitindo busca textual direta e consistente, com migração de dados legados e rotas padronizadas em `/ordens-servico`.
 
 **Contexto / Ambiente:**
-- **Módulo Afetado:** Fullstack / Módulo Orders (`OrderCodeGenerator.java`, `OrderListPage.tsx`, `OrderDetailHeader.tsx`, `api-orders.md`).
+- **Módulo Afetado:** Fullstack / Módulo Orders (`OrderCodeGenerator.java`, `OrderListPage.tsx`, `OrderDetailHeader.tsx`, `OrderDetailPage.tsx`, `BudgetDetailPage.tsx`, `BudgetDetailActions.tsx`, `CancelOrderModal.tsx`, `useConvertBudget.ts`, `V20__migrate_order_codes_ped_to_os.sql`).
 - **Severidade:** 🔴 Alta | **Sprint:** 06 | **Status:** ✅ Resolvido.
 - **Detecção / Correção:** Issue #411 / PR #414.
 
 **Causa Raiz Técnica & Solução:**
-* **Causa Raiz:** Decisão de design na UI de renomear para "Ordem de Serviço" sem migrar o gerador do backend e o contrato oficial, causando descompasso entre o dado persistido e a visualização.
+* **Causa Raiz:** Decisão de design na UI de renomear para "Ordem de Serviço" sem migrar o gerador do backend, o banco legado e as rotas internas, causando descompasso entre o dado persistido, a busca textual e a navegação.
 * **Solução:**
   1. O prefixo no gerador `OrderCodeGenerator.java` foi unificado para `OS-%d-` nativo.
-  2. Removidas todas as chamadas `.replace('PED-', 'OS-')` nos componentes `OrderListPage.tsx` e `OrderDetailHeader.tsx`, exibindo diretamente `#{order.codigo}`.
-  3. Contratos de API em `api-orders.md` e documentações OpenAPI atualizados para `OS-YYYY-NNNN`.
-  4. Suíte de testes do frontend e backend adaptada para validar `OS-2026-`.
+  2. Criada a migração Flyway `V20__migrate_order_codes_ped_to_os.sql` atualizando dados legados (`UPDATE tb_orders SET codigo = REPLACE(codigo, 'PED-', 'OS-') WHERE codigo LIKE 'PED-%'`), blindando a continuidade do sequenciador e a integridade de dados.
+  3. Removidas todas as chamadas `.replace('PED-', 'OS-')` nos componentes `OrderListPage.tsx` e `OrderDetailHeader.tsx`, exibindo diretamente `#{order.codigo}`.
+  4. Padronizados todos os links internos e navegações programáticas de `/work-orders` para a rota canônica `/ordens-servico` em `OrderListPage.tsx`, `OrderDetailPage.tsx`, `OrderDetailHeader.tsx`, `BudgetDetailPage.tsx` e `BudgetDetailActions.tsx`.
+  5. Terminologia de mensagens toast e modais padronizada para "Ordem de Serviço" (`useConvertBudget.ts` e `CancelOrderModal.tsx`).
+  6. Suíte de testes do frontend e backend adaptada para validar `OS-2026-` e `/ordens-servico`.
 
 ---
 
@@ -761,7 +764,7 @@ Na tela de listagem de ordens de serviço (`OrderListPage.tsx`), a barra de pagi
 
 **Passos para Reproduzir:**
 1. Ter mais de 50 ordens de serviço cadastradas na base.
-2. Acessar `/work-orders` com tamanho de página 10 (gerando 6 ou mais páginas).
+2. Acessar `/ordens-servico` com tamanho de página 10 (gerando 6 ou mais páginas).
 3. Verificar que são renderizados apenas os botões de 1 a 5.
 4. Clicar no botão "Próximo" até a página 6 e observar que nenhum botão fica destacado.
 
@@ -776,9 +779,10 @@ A paginação deve implementar navegação com janela deslizante e reticências 
 **Causa Raiz Técnica & Solução:**
 * **Causa Raiz:** Lógica estática de renderização de botões limitada pelo hardcoding `Math.min(totalPages, 5)`.
 * **Solução:**
-  1. Implementada a função `getVisiblePages()` com algoritmo de janela móvel e reticências quando `totalPages > 7`.
+  1. Extraída e exportada a função pura `getVisiblePages(page, totalPages)` com algoritmo de janela móvel e reticências (`ellipsis-start` e `ellipsis-end`) quando `totalPages > 7`.
   2. Renderização de botões e spans de reticências acessíveis com marcação semântica (`aria-current="page"`).
-  3. Adicionados testes automatizados no `OrderListPage.test.tsx` cobrindo totalPages > 7 e navegação.
+  3. Adicionados testes unitários isolados para `getVisiblePages` cobrindo início, meio (`page = 5, totalPages = 10`) e fim.
+  4. Adicionado teste de integração no componente `OrderListPage.test.tsx` cobrindo explicitamente `page > 4` (navegação até página 6 em 10 páginas) conforme o critério de aceite CA-4 da Issue #412.
 
 ---
 

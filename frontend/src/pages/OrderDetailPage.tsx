@@ -92,7 +92,7 @@ export function OrderDetailPage() {
             Tentar Novamente
           </button>
           <Link
-            to="/work-orders"
+            to="/ordens-servico"
             className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-primary hover:bg-primary-dark rounded-lg transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />

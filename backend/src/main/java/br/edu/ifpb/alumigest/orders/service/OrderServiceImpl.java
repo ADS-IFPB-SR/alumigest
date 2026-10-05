@@ -25,6 +25,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.TransactionSystemException;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -74,9 +75,22 @@ public class OrderServiceImpl implements OrderService {
         return PageResponse.of(dtoPage);
     }
 
+    /**
+     * Converte um orçamento aprovado em Pedido de Venda (Ordem de Serviço) oficial.
+     * 
+     * Resiliência a Concorrência (Issue #408):
+     * A anotação @Retryable intercepta violações de unicidade (DataIntegrityViolationException
+     * e TransactionSystemException). Como o @EnableRetry possui precedência (order = 0), o
+     * interceptor de retry atua externamente ao interceptor de transação (@Transactional),
+     * garantindo que cada tentativa de retry execute dentro de uma NOVA transação limpa.
+     * O uso de orderRepository.saveAndFlush força a sincronização imediata dos comandos SQL
+     * com o banco de dados antes da conclusão do método, materializando a constraint UNIQUE
+     * (uk_orders_codigo) e disparando o retry caso outra transação concorrente tenha obtido
+     * o mesmo código no milissegundo de commit.
+     */
     @Override
     @Retryable(
-            retryFor = {DataIntegrityViolationException.class},
+            retryFor = {DataIntegrityViolationException.class, TransactionSystemException.class},
             maxAttempts = 3,
             backoff = @Backoff(delay = 100, multiplier = 1.5)
     )
@@ -115,7 +129,7 @@ public class OrderServiceImpl implements OrderService {
 
         convertItems(budget, order);
 
-        order = orderRepository.save(order);
+        order = orderRepository.saveAndFlush(order);
         return orderMapper.toResponse(order);
     }
 
