@@ -32,12 +32,12 @@ import java.net.URI;
 import java.util.UUID;
 
 /**
- * Controller REST para consulta e ciclo de vida de Pedidos de Venda.
+ * Controller REST para consulta e ciclo de vida de Ordens de Serviço / Pedidos de Venda.
  * Depende da abstração {@link OrderService}, nunca da implementação concreta (DIP).
  */
 @RestController
-@RequestMapping({"/api/v1/orders", "/api/orders", "/api/pedidos"})
-@Tag(name = "Pedidos de Venda", description = "Endpoints para consulta, criação, conversão e ciclo de vida de pedidos de venda")
+@RequestMapping({"/api/v1/orders", "/api/orders", "/api/ordens-servico", "/api/pedidos"})
+@Tag(name = "Ordens de Serviço", description = "Endpoints para consulta, criação, conversão e ciclo de vida de ordens de serviço (pedidos de venda)")
 public class OrderController {
 
     private final OrderService orderService;

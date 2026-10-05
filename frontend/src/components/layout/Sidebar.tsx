@@ -4,7 +4,7 @@ const navItems = [
   { path: '/dashboard', label: 'Dashboard', icon: 'dashboard' },
   { path: '/kanban', label: 'Kanban', icon: 'view_kanban' },
   { path: '/orcamentos', label: 'Orçamentos', icon: 'receipt_long' },
-  { path: '/pedidos', label: 'Pedidos de Venda', icon: 'shopping_bag' },
+  { path: '/ordens-servico', label: 'Ordens de Serviço', icon: 'assignment' },
   { path: '/', label: 'Catálogo de Materiais', icon: 'inventory_2' },
   { path: '/estoque', label: 'Estoque', icon: 'inventory' },
   { path: '/produtos', label: 'Produtos', icon: 'category' },
@@ -25,8 +25,8 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     if (itemPath === '/') {
       return location.pathname === '/';
     }
-    if (itemPath === '/pedidos') {
-      return isNavLinkActive || location.pathname.startsWith('/pedidos') || location.pathname.startsWith('/work-orders');
+    if (itemPath === '/ordens-servico') {
+      return isNavLinkActive || location.pathname.startsWith('/ordens-servico') || location.pathname.startsWith('/pedidos') || location.pathname.startsWith('/work-orders');
     }
     return isNavLinkActive || location.pathname.startsWith(itemPath);
   };
