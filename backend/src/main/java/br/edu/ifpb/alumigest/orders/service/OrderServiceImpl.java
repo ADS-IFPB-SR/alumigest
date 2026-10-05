@@ -303,12 +303,15 @@ public class OrderServiceImpl implements OrderService {
     /**
      * Retorna o telefone do cliente a partir do objeto de domínio Client.
      *
-     * @param b  private String resolveCustomerPhone(Budget budget) {
-    if (budget.getClient() != null) {
-      return budget.getClient().getPhone();
+     * @param budget orçamento de origem
+     * @return telefone do cliente ou null
+     */
+    private String resolveCustomerPhone(Budget budget) {
+        if (budget.getClient() != null) {
+            return budget.getClient().getPhone();
+        }
+        return null;
     }
-    return null;
-  }
 
   /**
    * Compõe o endereço do cliente a partir dos campos individuais (street, number, city, state).
