@@ -281,9 +281,10 @@ public class BudgetPdfService {
                 : "A Combinar";
         sb.append("💳 Pagamento: ").append(condicaoPgto).append("\n\n");
 
-        String nomeEmpresa = (companyProps.getRazaoSocial() != null && !companyProps.getRazaoSocial().isBlank())
-        ? companyProps.getRazaoSocial().trim()
-        : "Alumiportas - Vidraçaria e Esquadrias";
+        // Verificação contra NPE e fallback genérico para AlumiGest
+        String nomeEmpresa = (companyProps != null && companyProps.getRazaoSocial() != null && !companyProps.getRazaoSocial().isBlank())
+                ? companyProps.getRazaoSocial().trim()
+                : "AlumiGest";
 
         sb.append("_").append(nomeEmpresa).append("_");
     }
