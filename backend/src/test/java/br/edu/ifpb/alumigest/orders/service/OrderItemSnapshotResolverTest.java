@@ -132,6 +132,32 @@ class OrderItemSnapshotResolverTest {
     }
 
     @Test
+    @DisplayName("[Partição de Equivalência] Deve desduplicar ferragens idênticas preservando a ordem de inserção")
+    void shouldDeduplicateHardwarePreservingInsertionOrder() {
+        BudgetItem item = new BudgetItem();
+        item.setHandleConfig("{\"model\": \"Tubular Inox 40cm\"}");
+
+        BudgetItemOption fecho1 = new BudgetItemOption();
+        fecho1.setCategoryType(MaterialCategoryType.HARDWARE);
+        fecho1.setMaterialName("Fecho Concha Automático");
+        fecho1.setQuantity(new BigDecimal("1.00"));
+        fecho1.setUnitMeasure("UN");
+        item.addOption(fecho1);
+
+        BudgetItemOption fecho2 = new BudgetItemOption();
+        fecho2.setCategoryType(MaterialCategoryType.HARDWARE);
+        fecho2.setMaterialName("Fecho Concha Automático");
+        fecho2.setQuantity(new BigDecimal("1.00"));
+        fecho2.setUnitMeasure("UN");
+        item.addOption(fecho2);
+
+        String ferragens = OrderItemSnapshotResolver.extractHardware(item);
+
+        assertThat(ferragens)
+                .isEqualTo("Puxador Tubular Inox 40cm, Fecho Concha Automático (1 UN)");
+    }
+
+    @Test
     @DisplayName("[Análise de Valor Limite] Deve retornar null para ferragens quando item não possuir componentes")
     void shouldReturnNullForHardwareWhenEmpty() {
         BudgetItem item = new BudgetItem();

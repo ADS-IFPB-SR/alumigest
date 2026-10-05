@@ -7,9 +7,10 @@ import br.edu.ifpb.alumigest.catalog.domain.Product;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 /**
  * Resolvedor de extração resiliente de especificações físicas e técnicas para itens
@@ -173,30 +174,27 @@ public final class OrderItemSnapshotResolver {
             return null;
         }
 
-        List<String> ferragensList = new ArrayList<>();
-        appendHandleModel(item.getHandleConfig(), ferragensList);
-        collectHardwareFromOptions(item.getOptions(), ferragensList);
+        Set<String> ferragensSet = new LinkedHashSet<>();
+        appendHandleModel(item.getHandleConfig(), ferragensSet);
+        collectHardwareFromOptions(item.getOptions(), ferragensSet);
 
-        return ferragensList.isEmpty() ? null : String.join(", ", ferragensList);
+        return ferragensSet.isEmpty() ? null : String.join(", ", ferragensSet);
     }
 
-    private static void appendHandleModel(String handleConfig, List<String> list) {
+    private static void appendHandleModel(String handleConfig, Set<String> set) {
         String handleModel = extractJsonValue(handleConfig, "model");
         if (handleModel != null && !handleModel.isBlank()) {
-            list.add("Puxador " + handleModel);
+            set.add("Puxador " + handleModel);
         }
     }
 
-    private static void collectHardwareFromOptions(List<BudgetItemOption> options, List<String> list) {
+    private static void collectHardwareFromOptions(List<BudgetItemOption> options, Set<String> set) {
         if (options == null) {
             return;
         }
         for (BudgetItemOption opt : options) {
             if (isHardwareOrComponent(opt)) {
-                String desc = formatHardwareDescription(opt);
-                if (!list.contains(desc)) {
-                    list.add(desc);
-                }
+                set.add(formatHardwareDescription(opt));
             }
         }
     }
