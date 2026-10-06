@@ -64,7 +64,7 @@ class ClientServiceTest {
                 "Sem observações"
         );
 
-        when(clientRepository.existsByDocumentNumber("123.456.789-00")).thenReturn(false);
+        when(clientRepository.existsByDocumentNumber("12345678900")).thenReturn(false);
         when(clientRepository.save(any(Client.class))).thenAnswer(invocation -> {
             Client c = invocation.getArgument(0);
             c.setId(UUID.randomUUID());
@@ -79,7 +79,7 @@ class ClientServiceTest {
         assertThat(response.id()).isNotNull();
         assertThat(response.nomeCompleto()).isEqualTo("João da Silva");
         assertThat(response.personType()).isEqualTo(PersonType.FISICA);
-        assertThat(response.documento()).isEqualTo("123.456.789-00");
+        assertThat(response.documento()).isEqualTo("12345678900");
         assertThat(response.telefone()).isEqualTo("(83) 99999-0000");
         assertThat(response.email()).isEqualTo("joao@email.com");
         assertThat(response.cidade()).isEqualTo("Santa Rita");
@@ -109,7 +109,7 @@ class ClientServiceTest {
                 "Entrega direto na obra"
         );
 
-        when(clientRepository.existsByDocumentNumber("12.345.678/0001-90")).thenReturn(false);
+        when(clientRepository.existsByDocumentNumber("12345678000190")).thenReturn(false);
         when(clientRepository.save(any(Client.class))).thenAnswer(invocation -> {
             Client c = invocation.getArgument(0);
             c.setId(UUID.randomUUID());
@@ -123,7 +123,7 @@ class ClientServiceTest {
         assertThat(response).isNotNull();
         assertThat(response.nomeCompleto()).isEqualTo("Construtora Alumiportas LTDA");
         assertThat(response.personType()).isEqualTo(PersonType.JURIDICA);
-        assertThat(response.documento()).isEqualTo("12.345.678/0001-90");
+        assertThat(response.documento()).isEqualTo("12345678000190");
 
         verify(clientRepository, times(1)).save(any(Client.class));
     }
@@ -136,10 +136,10 @@ class ClientServiceTest {
                 "João da Silva",
                 PersonType.FISICA,
                 "123.456.789-00",
-                null, null, null, null, null, null, null, null, null, null
+                "(83) 99999-0000", null, null, null, null, null, null, null, null, null
         );
 
-        when(clientRepository.existsByDocumentNumber("123.456.789-00")).thenReturn(true);
+        when(clientRepository.existsByDocumentNumber("12345678900")).thenReturn(true);
 
         // Act & Assert
         assertThatThrownBy(() -> clientService.create(request))
@@ -147,6 +147,27 @@ class ClientServiceTest {
                 .hasMessageContaining("Já existe um cliente cadastrado com o documento");
 
         verify(clientRepository, never()).save(any(Client.class));
+    }
+
+    @Test
+    @DisplayName("Deve normalizar documento e detectar duplicidade mesmo com formatos diferentes (com e sem máscara)")
+    void create_ShouldNormalizeDocumentAndDetectDuplicate_WhenFormatDiffers() {
+        // Arrange - Cliente tenta se cadastrar com documento sem máscara
+        ClientRequestDTO unmaskedRequest = new ClientRequestDTO(
+                "João Unmasked",
+                PersonType.FISICA,
+                "12345678900",
+                "(83) 99999-0000", null, null, null, null, null, null, null, null, null
+        );
+
+        when(clientRepository.existsByDocumentNumber("12345678900")).thenReturn(true);
+
+        // Act & Assert
+        assertThatThrownBy(() -> clientService.create(unmaskedRequest))
+                .isInstanceOf(ConflictException.class)
+                .hasMessageContaining("Já existe um cliente cadastrado com o documento: 12345678900");
+
+        verify(clientRepository, times(1)).existsByDocumentNumber("12345678900");
     }
 
     @Test
@@ -259,7 +280,7 @@ class ClientServiceTest {
         );
 
         when(clientRepository.findById(id)).thenReturn(Optional.of(client));
-        when(clientRepository.existsByDocumentNumberAndIdNot("111.222.333-44", id)).thenReturn(false);
+        when(clientRepository.existsByDocumentNumberAndIdNot("11122233344", id)).thenReturn(false);
         when(clientRepository.save(any(Client.class))).thenReturn(client);
 
         // Act
@@ -280,7 +301,7 @@ class ClientServiceTest {
         Client client = Client.builder()
                 .fullName("Nome")
                 .personType(PersonType.FISICA)
-                .documentNumber("111.222.333-44")
+                .documentNumber("11122233344")
                 .build();
         client.setId(id);
 
@@ -288,11 +309,11 @@ class ClientServiceTest {
                 "Nome",
                 PersonType.FISICA,
                 "999.888.777-66",
-                null, null, null, null, null, null, null, null, null, null
+                "(83) 99999-0000", null, null, null, null, null, null, null, null, null
         );
 
         when(clientRepository.findById(id)).thenReturn(Optional.of(client));
-        when(clientRepository.existsByDocumentNumberAndIdNot("999.888.777-66", id)).thenReturn(true);
+        when(clientRepository.existsByDocumentNumberAndIdNot("99988877766", id)).thenReturn(true);
 
         // Act & Assert
         assertThatThrownBy(() -> clientService.update(id, updateRequest))
