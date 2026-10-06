@@ -281,7 +281,12 @@ public class BudgetPdfService {
                 : "A Combinar";
         sb.append("💳 Pagamento: ").append(condicaoPgto).append("\n\n");
 
-        sb.append("_Alumiportas - Vidraçaria e Esquadrias_");
+        // Verificação contra NPE e fallback genérico para AlumiGest
+        String nomeEmpresa = (companyProps != null && companyProps.getRazaoSocial() != null && !companyProps.getRazaoSocial().isBlank())
+                ? companyProps.getRazaoSocial().trim()
+                : "AlumiGest";
+
+        sb.append("_").append(nomeEmpresa).append("_");
     }
 
     private void adicionarDescontoWhatsApp(StringBuilder sb, Budget budget) {
