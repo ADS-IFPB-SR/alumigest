@@ -3,6 +3,7 @@ package br.edu.ifpb.alumigest.orders.service;
 import br.edu.ifpb.alumigest.common.dto.PageResponse;
 import br.edu.ifpb.alumigest.orders.domain.ApprovalChannel;
 import br.edu.ifpb.alumigest.orders.domain.OrderStatus;
+import br.edu.ifpb.alumigest.orders.dto.OrderCancelRequest;
 import br.edu.ifpb.alumigest.orders.dto.OrderConvertRequest;
 import br.edu.ifpb.alumigest.orders.dto.OrderResponse;
 import br.edu.ifpb.alumigest.orders.dto.OrderSummaryResponse;
@@ -28,6 +29,18 @@ public interface OrderService {
      * @throws br.edu.ifpb.alumigest.common.exception.ConflictException         se já existir pedido para o orçamento
      */
     OrderResponse convertBudgetToOrder(UUID budgetId, OrderConvertRequest request);
+
+    /**
+     * Cancela formalmente um pedido de venda / ordem de serviço mediante justificativa obrigatória.
+     * Somente permitido para pedidos nos status CREATED ou WAITING_PRODUCTION.
+     *
+     * @param id      identificador único (UUID) do pedido
+     * @param request payload contendo justificativa de cancelamento (mínimo 10 caracteres)
+     * @return DTO com dados atualizados do pedido com status CANCELLED
+     * @throws br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException se o pedido não for localizado
+     * @throws br.edu.ifpb.alumigest.common.exception.BusinessException         se o pedido estiver em status inelegível (ex: em produção ou concluído)
+     */
+    OrderResponse cancelOrder(UUID id, OrderCancelRequest request);
 
     /**
      * Recupera a visualização detalhada de um pedido de venda pelo seu identificador.

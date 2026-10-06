@@ -1,10 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { OrderDetailPage } from '../../pages/OrderDetailPage';
 import * as useOrdersModule from '../../features/orders/hooks/useOrders';
 import * as useBudgetsModule from '../../features/budgets/hooks/useBudgets';
 import type { Order } from '../../features/orders/types';
+
+vi.mock('react-hot-toast', () => ({
+  default: {
+    success: vi.fn(),
+    error: vi.fn(),
+  },
+}));
 
 vi.mock('../../features/orders/hooks/useOrders');
 vi.mock('../../features/budgets/hooks/useBudgets');
@@ -190,6 +198,114 @@ describe('OrderDetailPage — [US-13.5] Visualização Detalhada do Pedido de Ve
     expect(mockDownloadPdf).toHaveBeenCalledWith({
       id: 'budget-uuid-1',
       code: 'ORC-2026-0001',
+    });
+  });
+
+  it('deve abrir o modal de cancelamento ao clicar no botão "Cancelar Ordem de Serviço"', () => {
+    vi.spyOn(useOrdersModule, 'useOrder').mockReturnValue({
+      data: mockOrder,
+      isLoading: false,
+      isError: false,
+    } as any);
+
+    render(
+      <MemoryRouter initialEntries={['/ordens-servico/order-uuid-1']}>
+        <Routes>
+          <Route path="/ordens-servico/:id" element={<OrderDetailPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    const cancelBtn = screen.getByRole('button', { name: /cancelar ordem de serviço/i });
+    expect(cancelBtn).toBeInTheDocument();
+
+    fireEvent.click(cancelBtn);
+
+    expect(screen.getByTestId('cancel-order-modal')).toBeInTheDocument();
+  });
+
+  it('deve disparar cancelOrder e exibir toast de sucesso ao confirmar cancelamento com justificativa válida', async () => {
+    const mockMutate = vi.fn((_payload, options) => {
+      options?.onSuccess?.();
+    });
+
+    vi.spyOn(useOrdersModule, 'useOrder').mockReturnValue({
+      data: mockOrder,
+      isLoading: false,
+      isError: false,
+    } as any);
+
+    vi.spyOn(useOrdersModule, 'useCancelOrder').mockReturnValue({
+      mutate: mockMutate,
+      isPending: false,
+    } as any);
+
+    render(
+      <MemoryRouter initialEntries={['/ordens-servico/order-uuid-1']}>
+        <Routes>
+          <Route path="/ordens-servico/:id" element={<OrderDetailPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /cancelar ordem de serviço/i }));
+    expect(screen.getByTestId('cancel-order-modal')).toBeInTheDocument();
+
+    const textarea = screen.getByLabelText(/justificativa obrigatória/i);
+    fireEvent.change(textarea, {
+      target: { value: 'Cancelamento formal por desistência do cliente em obra.' },
+    });
+
+    const confirmBtn = screen.getByRole('button', { name: /confirmar cancelamento/i });
+    fireEvent.click(confirmBtn);
+
+    await waitFor(() => {
+      expect(mockMutate).toHaveBeenCalledWith(
+        { justificativa: 'Cancelamento formal por desistência do cliente em obra.' },
+        expect.any(Object)
+      );
+      expect(toast.success).toHaveBeenCalledWith('Ordem de serviço cancelada com sucesso.');
+    });
+  });
+
+  it('deve exibir toast de erro com a mensagem do backend caso a mutação de cancelamento falhe', async () => {
+    const mockMutate = vi.fn((_payload, options) => {
+      options?.onError?.({
+        response: { data: { message: 'Não é possível cancelar um pedido em produção.' } },
+      });
+    });
+
+    vi.spyOn(useOrdersModule, 'useOrder').mockReturnValue({
+      data: mockOrder,
+      isLoading: false,
+      isError: false,
+    } as any);
+
+    vi.spyOn(useOrdersModule, 'useCancelOrder').mockReturnValue({
+      mutate: mockMutate,
+      isPending: false,
+    } as any);
+
+    render(
+      <MemoryRouter initialEntries={['/ordens-servico/order-uuid-1']}>
+        <Routes>
+          <Route path="/ordens-servico/:id" element={<OrderDetailPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /cancelar ordem de serviço/i }));
+
+    const textarea = screen.getByLabelText(/justificativa obrigatória/i);
+    fireEvent.change(textarea, {
+      target: { value: 'Tentativa de cancelamento de pedido.' },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /confirmar cancelamento/i }));
+
+    await waitFor(() => {
+      expect(mockMutate).toHaveBeenCalled();
+      expect(toast.error).toHaveBeenCalledWith('Não é possível cancelar um pedido em produção.');
     });
   });
 });

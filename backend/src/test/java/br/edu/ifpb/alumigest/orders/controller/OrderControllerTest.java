@@ -6,13 +6,16 @@ import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import br.edu.ifpb.alumigest.common.dto.PageResponse;
+import br.edu.ifpb.alumigest.common.exception.BusinessException;
 import br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException;
 import br.edu.ifpb.alumigest.orders.domain.ApprovalChannel;
 import br.edu.ifpb.alumigest.orders.domain.OrderStatus;
+import br.edu.ifpb.alumigest.orders.dto.OrderCancelRequest;
 import br.edu.ifpb.alumigest.orders.dto.OrderResponse;
 import br.edu.ifpb.alumigest.orders.dto.OrderSummaryResponse;
 import br.edu.ifpb.alumigest.orders.service.OrderService;
@@ -189,6 +192,106 @@ class OrderControllerTest {
       mockMvc.perform(get("/api/v1/orders/{id}", orderId)
               .contentType(MediaType.APPLICATION_JSON))
           .andExpect(status().isNotFound());
+    }
+  }
+
+  @Nested
+  @DisplayName("PATCH /api/v1/orders/{id}/cancel - Cancelar Pedido (US-13.5)")
+  class CancelOrderEndpointTests {
+
+    @Test
+    @DisplayName("Deve retornar 200 OK e dados do pedido cancelado quando requisição for válida")
+    void shouldReturn200WhenCancelOrderSuccessfully() throws Exception {
+      UUID orderId = UUID.randomUUID();
+      OrderResponse response = new OrderResponse(
+          orderId,
+          "OS-2026-0001",
+          UUID.randomUUID(),
+          null,
+          "Cliente Teste",
+          "(83) 98888-7777",
+          "Av. Central, 500",
+          OrderStatus.CANCELLED,
+          "Cancelado",
+          ApprovalChannel.WHATSAPP,
+          "WhatsApp",
+          LocalDate.now(),
+          LocalDate.now().plusDays(15),
+          null,
+          new BigDecimal("2500.00"),
+          BigDecimal.ZERO,
+          BigDecimal.ZERO,
+          BigDecimal.ZERO,
+          new BigDecimal("2500.00"),
+          "A vista",
+          null,
+          "Sem observacoes",
+          "Cliente solicitou cancelamento comercial.",
+          OffsetDateTime.now(),
+          OffsetDateTime.now(),
+          true,
+          Collections.emptyList()
+      );
+
+      when(orderService.cancelOrder(eq(orderId), any(OrderCancelRequest.class))).thenReturn(response);
+
+      mockMvc.perform(patch("/api/v1/orders/{id}/cancel", orderId)
+              .contentType(MediaType.APPLICATION_JSON)
+              .content("{\"justificativa\":\"Cliente solicitou cancelamento comercial.\"}"))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.id").value(orderId.toString()))
+          .andExpect(jsonPath("$.status").value("CANCELLED"))
+          .andExpect(jsonPath("$.justificativaCancelamento").value("Cliente solicitou cancelamento comercial."));
+    }
+
+    @Test
+    @DisplayName("Deve retornar 400 BAD REQUEST quando a justificativa tiver menos de 10 caracteres")
+    void shouldReturn400WhenJustificativaIsTooShort() throws Exception {
+      UUID orderId = UUID.randomUUID();
+
+      mockMvc.perform(patch("/api/v1/orders/{id}/cancel", orderId)
+              .contentType(MediaType.APPLICATION_JSON)
+              .content("{\"justificativa\":\"Curto\"}"))
+          .andExpect(status().isBadRequest())
+          .andExpect(jsonPath("$.validationErrors[0].field").value("justificativa"));
+    }
+
+    @Test
+    @DisplayName("Deve retornar 400 BAD REQUEST quando a justificativa for em branco ou nula")
+    void shouldReturn400WhenJustificativaIsBlank() throws Exception {
+      UUID orderId = UUID.randomUUID();
+
+      mockMvc.perform(patch("/api/v1/orders/{id}/cancel", orderId)
+              .contentType(MediaType.APPLICATION_JSON)
+              .content("{\"justificativa\":\"   \"}"))
+          .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("Deve retornar 404 NOT FOUND quando a ordem de serviço não for encontrada")
+    void shouldReturn404WhenOrderNotFound() throws Exception {
+      UUID orderId = UUID.randomUUID();
+      when(orderService.cancelOrder(eq(orderId), any(OrderCancelRequest.class)))
+          .thenThrow(new ResourceNotFoundException("Pedido", orderId));
+
+      mockMvc.perform(patch("/api/v1/orders/{id}/cancel", orderId)
+              .contentType(MediaType.APPLICATION_JSON)
+              .content("{\"justificativa\":\"Cliente desistiu da compra por motivo financeiro.\"}"))
+          .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("Deve retornar 422 UNPROCESSABLE ENTITY quando status for inelegível para cancelamento")
+    void shouldReturn422WhenOrderStatusCannotCancel() throws Exception {
+      UUID orderId = UUID.randomUUID();
+      when(orderService.cancelOrder(eq(orderId), any(OrderCancelRequest.class)))
+          .thenThrow(new BusinessException("Não é possível cancelar um pedido no status Em Produção"));
+
+      mockMvc.perform(patch("/api/v1/orders/{id}/cancel", orderId)
+              .contentType(MediaType.APPLICATION_JSON)
+              .content("{\"justificativa\":\"Tentativa de cancelamento tardio pelo cliente.\"}"))
+          .andExpect(status().isUnprocessableEntity())
+          .andExpect(jsonPath("$.message").value("Não é possível cancelar um pedido no status Em Produção"));
     }
   }
 }
