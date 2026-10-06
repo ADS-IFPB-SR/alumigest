@@ -135,12 +135,12 @@ public class ClientMapper {
     }
 
     /**
-     * Normaliza a string de documento.
+     * Normaliza a string de documento, mantendo apenas os dígitos numéricos.
      */
-    private String cleanDocument(String document) {
+    public String cleanDocument(String document) {
         if (document == null || document.isBlank()) {
             return null;
         }
-        return document.trim();
+        return document.replaceAll("\\D", "");
     }
 }

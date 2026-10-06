@@ -44,11 +44,12 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URL;
 import java.text.NumberFormat;
-import java.time.Duration;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -667,15 +668,9 @@ public class BudgetPdfService {
 
         // Termo de validade dinâmico
         if (budget.getValidUntil() != null) {
-            long diasValidade = 15;
-            if (budget.getCreatedAt() != null) {
-                diasValidade = Duration.between(budget.getCreatedAt(), budget.getValidUntil()).toDays();
-                if (diasValidade <= 0) {
-                    diasValidade = 15;
-                }
-            }
+            long diasValidade = calcularDiasValidade(budget.getCreatedAt(), budget.getValidUntil());
             document.add(new Paragraph("- Orçamento válido até " + formatarData(budget.getValidUntil())
-                    + " (" + diasValidade + " dias a partir da emissão).", FONTE_PEQUENA));
+                    + " (" + formatarQuantidadeDias(diasValidade) + " a partir da emissão).", FONTE_PEQUENA));
         } else {
             document.add(new Paragraph("- Orçamento válido por 15 dias a partir da data de emissão.", FONTE_PEQUENA));
         }
@@ -684,6 +679,29 @@ public class BudgetPdfService {
         if (budget.getNotes() != null && !budget.getNotes().isBlank()) {
             document.add(new Paragraph("- Observações: " + budget.getNotes().trim(), FONTE_PEQUENA));
         }
+    }
+
+    /**
+     * Calcula os dias de validade do orçamento como diferença entre datas de calendário (BUG-025),
+     * ignorando horas/minutos, de forma coerente com as datas exibidas no PDF por {@link #formatarData}.
+     * Sem data de emissão, considera a data atual no fuso padrão. Validade anterior à emissão resulta em 0.
+     * Visibilidade de pacote para permitir testes unitários da regra.
+     *
+     * @param createdAt  data/hora de emissão do orçamento (pode ser nula)
+     * @param validUntil data/hora de validade do orçamento (não nula)
+     * @return quantidade de dias de calendário, nunca negativa
+     */
+    static long calcularDiasValidade(OffsetDateTime createdAt, OffsetDateTime validUntil) {
+        LocalDate dataEmissao = createdAt != null ? createdAt.toLocalDate() : LocalDate.now(TIME_ZONE_PADRAO);
+        LocalDate dataValidade = validUntil.toLocalDate();
+        return Math.max(0, ChronoUnit.DAYS.between(dataEmissao, dataValidade));
+    }
+
+    /**
+     * Formata a quantidade de dias com concordância de número (ex.: "1 dia", "0 dias", "15 dias").
+     */
+    static String formatarQuantidadeDias(long dias) {
+        return dias + (dias == 1 ? " dia" : " dias");
     }
 
     private String formatarMoeda(BigDecimal valor) {
@@ -972,15 +990,14 @@ public class BudgetPdfService {
         card.setSpacingBefore(2f);
         card.setSpacingAfter(12f);
 
-        int totalPecas = budget.getItems() != null
-                ? budget.getItems().stream().mapToInt(BudgetItem::getQuantity).sum()
-                : 0;
+        int totalPecas = calcularTotalPecas(budget.getItems());
 
-        String nomeCliente = (budget.getClient() != null && budget.getClient().getFullName() != null)
-                ? budget.getClient().getFullName().toUpperCase(PT_BR)
+        Client client = budget.getClient();
+        String nomeCliente = (client != null && client.getFullName() != null)
+                ? client.getFullName().toUpperCase(PT_BR)
                 : NAO_INFORMADO_UPPER;
 
-        String contato = extrairContatoCliente(budget.getClient());
+        String contato = extrairContatoCliente(client);
 
         String volume = totalPecas == 1 ? "1 PEÇA" : totalPecas + " PEÇAS";
 
@@ -989,6 +1006,22 @@ public class BudgetPdfService {
         card.addCell(criarSubCelulaCardCliente("Volume do Pedido", volume, true));
 
         document.add(card);
+    }
+
+    private int calcularTotalPecas(List<BudgetItem> items) {
+        if (items == null) {
+            return 0;
+        }
+        return items.stream()
+                .mapToInt(this::obterQuantidadeItem)
+                .sum();
+    }
+
+    private int obterQuantidadeItem(BudgetItem item) {
+        if (item == null || item.getQuantity() == null || item.getQuantity() <= 0) {
+            return 1;
+        }
+        return item.getQuantity();
     }
 
     private String extrairContatoCliente(Client client) {
@@ -1076,7 +1109,7 @@ public class BudgetPdfService {
         pNum.setLeading(14f);
         cell.addElement(pNum);
 
-        int qtd = item.getQuantity() != null ? item.getQuantity() : 1;
+        int qtd = obterQuantidadeItem(item);
         String qtdStr = qtd > 1 ? "Qtd: " + qtd + " conj." : "Qtd: 1";
         Paragraph pQtd = new Paragraph(qtdStr, FONTE_TECNICA_ITEM_QTD);
         pQtd.setAlignment(Element.ALIGN_CENTER);
@@ -1499,11 +1532,41 @@ public class BudgetPdfService {
         if (item == null) {
             return List.of("Sem puxador previsto.");
         }
-        List<String> linhas = extrairLinhasPuxadorJson(item.getHandleConfig());
+
+        String handleConfig = item.getHandleConfig();
+        if (isSemPuxador(handleConfig)) {
+            return List.of("Sem puxador previsto.");
+        }
+
+        List<String> linhas = extrairLinhasPuxadorJson(handleConfig);
         if (linhas.isEmpty()) {
             linhas.addAll(obterLinhasPuxadorFallback(item));
         }
         return linhas;
+    }
+
+    private boolean isSemPuxador(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return true;
+        }
+
+        String trimmed = raw.trim();
+        if ("{}".equals(trimmed) || "NONE".equalsIgnoreCase(trimmed)) {
+            return true;
+        }
+
+        try {
+            JsonNode node = objectMapper.readTree(trimmed);
+            return isNoneHandleType(node, KEY_HANDLE_TYPE) || isNoneHandleType(node, "type");
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private boolean isNoneHandleType(JsonNode node, String key) {
+        return node != null
+                && node.hasNonNull(key)
+                && "NONE".equalsIgnoreCase(node.get(key).asText().trim());
     }
 
     private List<String> extrairLinhasPuxadorJson(String raw) {
