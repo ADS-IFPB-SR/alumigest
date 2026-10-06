@@ -15,8 +15,8 @@ api.interceptors.request.use((config) => {
   //   config.headers.Authorization = `Bearer ${token}`;
   // }
   return config;
-}, (error) => {
-  return Promise.reject(error);
+}, async (error) => {
+  throw error; 
 });
 
 // Interceptor para extrair o campo "data" do ApiResponse do backend quando aplicável
@@ -37,7 +37,18 @@ api.interceptors.response.use(
     }
     return response;
   },
-  (error) => {
-    return Promise.reject(error);
+  async (error) => {
+    if (
+      error.response?.data instanceof Blob &&
+      error.response.data.type.includes('application/json')
+    ) {
+      try {
+        const text = await error.response.data.text();
+        error.response.data = JSON.parse(text);
+      } catch {
+        // Fallback: mantém o Blob intacto se não for possível parsear
+      }
+    }
+    throw error;
   }
 );

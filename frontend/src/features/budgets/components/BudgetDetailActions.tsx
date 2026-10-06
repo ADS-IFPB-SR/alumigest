@@ -66,8 +66,8 @@ export function BudgetDetailActions({
       setIsDownloadingPdf(true);
       await budgetsApi.downloadCommercialPdf(budgetId, budgetCode);
       toast.success(`PDF Comercial do orçamento ${budgetCode} gerado com sucesso!`);
-    } catch {
-      toast.error('Erro ao gerar o PDF Comercial.');
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || 'Erro ao gerar o PDF Comercial.');
     } finally {
       setIsDownloadingPdf(false);
     }
@@ -136,7 +136,6 @@ export function BudgetDetailActions({
           updateStatus({ id: budgetId, status: 'SENT' });
         }
       } else {
-        // Se a cópia automática falhar tanto por API quanto execCommand, abre modal para cópia manual
         setShowWhatsAppModal(true);
         toast.error('Não foi possível copiar automaticamente. Selecione e copie no modal.');
       }
@@ -157,8 +156,8 @@ export function BudgetDetailActions({
       setLocalDownloadingPdfTecnico(true);
       await budgetsApi.downloadPdfTecnico(budgetId, budgetCode);
       toast.success('PDF da Ficha Técnica baixado com sucesso!');
-    } catch {
-      toast.error('Erro ao gerar o PDF técnico.');
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || 'Erro ao gerar o PDF técnico.');
     } finally {
       setLocalDownloadingPdfTecnico(false);
     }
