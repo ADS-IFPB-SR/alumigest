@@ -154,7 +154,7 @@ public class OrderServiceImpl implements OrderService {
      * APPROVED é aceito para tolerar reprocessamento idempotente.
      */
     private static final Set<BudgetStatus> STATUS_ELEGIVEIS =
-            EnumSet.of(BudgetStatus.DRAFT, BudgetStatus.SENT, BudgetStatus.APPROVED);
+            EnumSet.of(BudgetStatus.DRAFT, BudgetStatus.SENT);
 
     /**
      * Valida que o orçamento está em um status elegível para conversão.
@@ -174,7 +174,7 @@ public class OrderServiceImpl implements OrderService {
                     : "Indefinido";
             throw new BusinessException(
                     "Orçamento com status '" + statusDesc + "' não pode ser convertido em pedido de venda."
-                            + " São aceitos: Rascunho, Enviado ou Aprovado.");
+                            + " São aceitos: Rascunho ou Enviado.");
         }
     }
 

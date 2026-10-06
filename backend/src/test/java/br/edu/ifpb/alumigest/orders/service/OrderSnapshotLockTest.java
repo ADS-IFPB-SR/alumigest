@@ -127,7 +127,7 @@ class OrderSnapshotLockTest {
         budget = new Budget();
         budget.setId(budgetId);
         budget.setClient(client);
-        budget.setStatus(BudgetStatus.APPROVED);
+        budget.setStatus(BudgetStatus.DRAFT);
         budget.setSubtotal(new BigDecimal("2190.00"));
         budget.setDiscountValue(new BigDecimal("190.00"));
         budget.setTotal(new BigDecimal("2000.00"));

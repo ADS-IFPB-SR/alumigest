@@ -110,7 +110,7 @@ public class OrderController {
     @PostMapping({"/convert/{budgetId}", "/from-budget/{budgetId}"})
     @Operation(
             summary = "Converter orçamento em pedido de venda",
-            description = "Converte um orçamento (DRAFT, SENT ou APPROVED) em Pedido de Venda,"
+            description = "Converte um orçamento elegível (DRAFT ou SENT) em Pedido de Venda,"
                     + " promovendo o status para APPROVED, gerando código sequencial OS-YYYY-NNNN"
                     + " e snapshot imutável dos itens (lock de preços)."
     )
@@ -136,7 +136,7 @@ public class OrderController {
     )
     @ApiResponse(
             responseCode = "422",
-            description = "Regra de negócio violada: orçamento cancelado, rejeitado ou sem itens cadastrados",
+            description = "Regra de negócio violada: orçamento aprovado, cancelado, rejeitado, expirado ou sem itens cadastrados",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class))
     )
     public ResponseEntity<OrderResponse> convertBudgetToOrder(

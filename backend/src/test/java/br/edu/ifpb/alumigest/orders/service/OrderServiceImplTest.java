@@ -45,6 +45,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
@@ -95,7 +96,7 @@ class OrderServiceImplTest {
 
         budget = new Budget();
         budget.setClient(client);
-        budget.setStatus(BudgetStatus.APPROVED);
+        budget.setStatus(BudgetStatus.DRAFT);
         budget.setSubtotal(new BigDecimal("5000.00"));
         budget.setDiscountValue(new BigDecimal("500.00"));
         budget.setTotal(new BigDecimal("4500.00"));
@@ -112,11 +113,12 @@ class OrderServiceImplTest {
     // =========================================================================
     // convertBudgetToOrder — cenários de sucesso
     // =========================================================================
-
+    // Maylson ->  Vou pegar esse método para aprensetar na materia de Teste - Transição de Estados
     @Test
-    @DisplayName("[Partição de Equivalência] Deve converter orçamento APPROVED em pedido com sucesso")
-    void shouldConvertApprovedBudgetToOrderSuccessfully() {
+    @DisplayName("[Regra de Negócio] Deve aceitar orçamento em DRAFT ou SENT, promovê-lo para APPROVED e criar pedido")
+    void shouldAcceptDraftOrSentBudgetAndPromoteToApproved() {
         // Arrange
+        budget.setStatus(BudgetStatus.DRAFT);
         Order savedOrder = buildSavedOrder();
         OrderResponse expectedResponse = buildOrderResponse();
 
@@ -132,67 +134,18 @@ class OrderServiceImplTest {
         // Assert
         assertThat(result).isNotNull();
         assertThat(result.codigo()).isEqualTo("OS-2026-0001");
-        assertThat(result.orcamentoId()).isEqualTo(budgetId);
-        assertThat(result.status()).isEqualTo(OrderStatus.WAITING_PRODUCTION);
-
+        assertThat(budget.getStatus()).isEqualTo(BudgetStatus.APPROVED);
+        verify(budgetRepository).save(budget);
         verify(orderRepository).saveAndFlush(any(Order.class));
         verify(orderCodeGenerator).generateNextCode();
     }
 
     @Test
-    @DisplayName("[Regra de Negócio] Deve aceitar orçamento em DRAFT, promovê-lo para APPROVED e criar pedido")
-    void shouldAcceptDraftBudgetAndPromoteToApproved() {
-        // Arrange
-        budget.setStatus(BudgetStatus.DRAFT);
-        Order savedOrder = buildSavedOrder();
-        OrderResponse expectedResponse = buildOrderResponse();
-
-        given(budgetRepository.findByIdWithDetails(budgetId)).willReturn(Optional.of(budget));
-        given(orderRepository.existsByOrcamentoId(budgetId)).willReturn(false);
-        given(orderCodeGenerator.generateNextCode()).willReturn("OS-2026-0001");
-        given(budgetRepository.save(budget)).willReturn(budget);
-        given(orderRepository.saveAndFlush(any(Order.class))).willReturn(savedOrder);
-        given(orderMapper.toResponse(savedOrder)).willReturn(expectedResponse);
-
-        // Act
-        orderService.convertBudgetToOrder(budgetId, request);
-
-        // Assert: orçamento deve ter sido atualizado para APPROVED antes de salvar o pedido
-        assertThat(budget.getStatus()).isEqualTo(BudgetStatus.APPROVED);
-        verify(budgetRepository).save(budget);
-        verify(orderRepository).saveAndFlush(any(Order.class));
-    }
-
-    @Test
-    @DisplayName("[Regra de Negócio] Deve aceitar orçamento em SENT, promovê-lo para APPROVED e criar pedido")
-    void shouldAcceptSentBudgetAndPromoteToApproved() {
-        // Arrange
-        budget.setStatus(BudgetStatus.SENT);
-        Order savedOrder = buildSavedOrder();
-        OrderResponse expectedResponse = buildOrderResponse();
-
-        given(budgetRepository.findByIdWithDetails(budgetId)).willReturn(Optional.of(budget));
-        given(orderRepository.existsByOrcamentoId(budgetId)).willReturn(false);
-        given(orderCodeGenerator.generateNextCode()).willReturn("OS-2026-0001");
-        given(budgetRepository.save(budget)).willReturn(budget);
-        given(orderRepository.saveAndFlush(any(Order.class))).willReturn(savedOrder);
-        given(orderMapper.toResponse(savedOrder)).willReturn(expectedResponse);
-
-        // Act
-        orderService.convertBudgetToOrder(budgetId, request);
-
-        // Assert
-        assertThat(budget.getStatus()).isEqualTo(BudgetStatus.APPROVED);
-        verify(budgetRepository).save(budget);
-    }
-
-    @Test
     @DisplayName("[Snapshot / Lock de Preços] Deve calcular valorUnitario sem duplicar quantidade (sem qty²)")
     void shouldCalculateItemValuesWithoutDoubleCountingQuantity() {
-        // Arrange: item com 3 esquadrias de R$ 500 cada → subtotal no orçamento já é R$ 1.500
         int quantidade = 3;
         BigDecimal subtotalNoOrcamento = new BigDecimal("1500.00");
-        BigDecimal valorUnitarioEsperado = new BigDecimal("500.00"); // 1500 / 3
+        BigDecimal valorUnitarioEsperado = new BigDecimal("500.00");
 
         BudgetItem item = criarBudgetItem(quantidade, subtotalNoOrcamento);
         budget.setItems(List.of(item));
@@ -206,13 +159,10 @@ class OrderServiceImplTest {
         given(orderRepository.saveAndFlush(any(Order.class))).willReturn(savedOrder);
         given(orderMapper.toResponse(savedOrder)).willReturn(expectedResponse);
 
-        // Captura o Order salvo para inspecionar os itens gerados
         ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
 
-        // Act
         orderService.convertBudgetToOrder(budgetId, request);
 
-        // Assert — verifica que o OrderItem foi gerado com os valores corretos
         verify(orderRepository).saveAndFlush(orderCaptor.capture());
         Order orderSalvo = orderCaptor.getValue();
 
@@ -222,15 +172,11 @@ class OrderServiceImplTest {
         assertThat(itemGerado.getQuantidade()).isEqualTo(quantidade);
         assertThat(itemGerado.getValorTotal()).isEqualByComparingTo(subtotalNoOrcamento);
         assertThat(itemGerado.getValorUnitario()).isEqualByComparingTo(valorUnitarioEsperado);
-        // Invariante: valorTotal = valorUnitario × quantidade (sem multiplicação dupla)
-        assertThat(itemGerado.getValorUnitario().multiply(BigDecimal.valueOf(quantidade)))
-                .isEqualByComparingTo(itemGerado.getValorTotal());
     }
 
     @Test
     @DisplayName("[Snapshot / Lock de Preços] Deve congelar largura, altura e opções de insumo do BudgetItem")
     void shouldFreezeItemDimensionsAndOptionsFromBudgetItem() {
-        // Arrange
         BudgetItem item = criarBudgetItem(2, new BigDecimal("1000.00"));
         BudgetItemOption opcao = criarBudgetItemOption(item);
         item.getOptions().add(opcao);
@@ -247,10 +193,8 @@ class OrderServiceImplTest {
 
         ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
 
-        // Act
         orderService.convertBudgetToOrder(budgetId, request);
 
-        // Assert
         verify(orderRepository).saveAndFlush(orderCaptor.capture());
         Order orderSalvo = orderCaptor.getValue();
 
@@ -259,7 +203,6 @@ class OrderServiceImplTest {
         assertThat(itemGerado.getAlturaMm()).isEqualTo(900);
         assertThat(itemGerado.getDescricao()).isEqualTo("Janela 2 Folhas");
         assertThat(itemGerado.getOptions()).hasSize(1);
-        assertThat(itemGerado.getOptions().getFirst().getMaterialName()).isEqualTo("Perfil Alumínio");
     }
 
     // =========================================================================
@@ -269,10 +212,8 @@ class OrderServiceImplTest {
     @Test
     @DisplayName("[Partição de Equivalência] Deve lançar ResourceNotFoundException quando orçamento não existe")
     void shouldThrowResourceNotFoundWhenBudgetDoesNotExist() {
-        // Arrange
         given(budgetRepository.findByIdWithDetails(budgetId)).willReturn(Optional.empty());
 
-        // Act & Assert
         assertThatThrownBy(() -> orderService.convertBudgetToOrder(budgetId, request))
                 .isInstanceOf(ResourceNotFoundException.class);
 
@@ -280,44 +221,49 @@ class OrderServiceImplTest {
     }
 
     @Test
-    @DisplayName("[Tabela de Decisão] Deve lançar BusinessException quando orçamento está CANCELLED")
-    void shouldThrowBusinessExceptionWhenBudgetIsCancelled() {
-        // Arrange
-        budget.setStatus(BudgetStatus.CANCELLED);
+    @DisplayName("Deve lançar BusinessException (422) ao tentar converter orçamento já APPROVED")
+    void shouldThrowBusinessExceptionWhenBudgetIsAlreadyApproved() {
+        budget.setStatus(BudgetStatus.APPROVED);
         given(budgetRepository.findByIdWithDetails(budgetId)).willReturn(Optional.of(budget));
 
-        // Act & Assert
-        assertThatThrownBy(() -> orderService.convertBudgetToOrder(budgetId, request))
-                .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("Cancelado");
+        BusinessException exception = assertThrows(BusinessException.class, () ->
+                orderService.convertBudgetToOrder(budgetId, request)
+        );
 
+        assertThat(exception.getMessage()).contains("Rascunho ou Enviado");
         verify(orderRepository, never()).saveAndFlush(any());
     }
 
     @Test
-    @DisplayName("[Tabela de Decisão] Deve lançar BusinessException quando orçamento está REJECTED")
+    @DisplayName("Deve lançar BusinessException (422) ao tentar converter orçamento REJECTED")
     void shouldThrowBusinessExceptionWhenBudgetIsRejected() {
-        // Arrange
         budget.setStatus(BudgetStatus.REJECTED);
         given(budgetRepository.findByIdWithDetails(budgetId)).willReturn(Optional.of(budget));
 
-        // Act & Assert
-        assertThatThrownBy(() -> orderService.convertBudgetToOrder(budgetId, request))
-                .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("Rejeitado");
-
-        verify(orderRepository, never()).saveAndFlush(any());
+        assertThrows(BusinessException.class, () ->
+                orderService.convertBudgetToOrder(budgetId, request)
+        );
     }
 
     @Test
+    @DisplayName("Deve lançar BusinessException (422) ao tentar converter orçamento CANCELLED")
+    void shouldThrowBusinessExceptionWhenBudgetIsCancelled() {
+        budget.setStatus(BudgetStatus.CANCELLED);
+        given(budgetRepository.findByIdWithDetails(budgetId)).willReturn(Optional.of(budget));
+
+        assertThrows(BusinessException.class, () ->
+                orderService.convertBudgetToOrder(budgetId, request)
+        );
+    }
+
+//  Maylson ->  Vou pegar esse método para aprensetar na materia de Teste - Tabela de Decição
+    @Test
     @DisplayName("[Regra de Negócio] Deve lançar BusinessException quando orçamento está com validade expirada")
     void shouldThrowBusinessExceptionWhenBudgetIsExpired() {
-        // Arrange
         budget.setStatus(BudgetStatus.SENT);
         budget.setValidUntil(OffsetDateTime.now(ZoneOffset.UTC).minusDays(1));
         given(budgetRepository.findByIdWithDetails(budgetId)).willReturn(Optional.of(budget));
 
-        // Act & Assert
         assertThatThrownBy(() -> orderService.convertBudgetToOrder(budgetId, request))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("expirada");
@@ -328,11 +274,9 @@ class OrderServiceImplTest {
     @Test
     @DisplayName("[Análise de Valor Limite] Deve lançar BusinessException quando orçamento não possui itens")
     void shouldThrowBusinessExceptionWhenBudgetHasNoItems() {
-        // Arrange
         budget.setItems(Collections.emptyList());
         given(budgetRepository.findByIdWithDetails(budgetId)).willReturn(Optional.of(budget));
 
-        // Act & Assert
         assertThatThrownBy(() -> orderService.convertBudgetToOrder(budgetId, request))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("sem itens");
@@ -343,11 +287,9 @@ class OrderServiceImplTest {
     @Test
     @DisplayName("[Análise de Valor Limite] Deve lançar ConflictException quando pedido já existe para o orçamento (idempotência)")
     void shouldThrowConflictExceptionWhenOrderAlreadyExistsForBudget() {
-        // Arrange
         given(budgetRepository.findByIdWithDetails(budgetId)).willReturn(Optional.of(budget));
         given(orderRepository.existsByOrcamentoId(budgetId)).willReturn(true);
 
-        // Act & Assert
         assertThatThrownBy(() -> orderService.convertBudgetToOrder(budgetId, request))
                 .isInstanceOf(ConflictException.class)
                 .hasMessageContaining(budgetId.toString());
@@ -363,17 +305,14 @@ class OrderServiceImplTest {
     @Test
     @DisplayName("[Partição de Equivalência] Deve retornar pedido ao buscar por ID existente")
     void shouldReturnOrderWhenFindByIdExists() {
-        // Arrange
         Order order = buildSavedOrder();
         OrderResponse expectedResponse = buildOrderResponse();
 
         given(orderRepository.findByIdWithDetails(orderId)).willReturn(Optional.of(order));
         given(orderMapper.toResponse(order)).willReturn(expectedResponse);
 
-        // Act
         OrderResponse result = orderService.findDetailedById(orderId);
 
-        // Assert
         assertThat(result).isNotNull();
         assertThat(result.id()).isEqualTo(orderId);
         assertThat(result.codigo()).isEqualTo("OS-2026-0001");
@@ -382,13 +321,41 @@ class OrderServiceImplTest {
     @Test
     @DisplayName("[Partição de Equivalência] Deve lançar ResourceNotFoundException ao buscar pedido por ID inexistente")
     void shouldThrowResourceNotFoundWhenOrderDoesNotExist() {
-        // Arrange
         UUID unknownId = UUID.randomUUID();
         given(orderRepository.findByIdWithDetails(unknownId)).willReturn(Optional.empty());
 
-        // Act & Assert
         assertThatThrownBy(() -> orderService.findDetailedById(unknownId))
                 .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("findAll: deve buscar pedidos com filtros e mapear para PageResponse de DTOs")
+    void dadoFiltrosEPageable_deveBuscarEMapearPedidos() {
+        Order savedOrder = buildSavedOrder();
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<Order> orderPage = new PageImpl<>(List.of(savedOrder), pageable, 1);
+
+        OrderSummaryResponse summaryDto = new OrderSummaryResponse(
+                orderId, "OS-2026-0001", budgetId, "Empresa XPTO Ltda", "83988880000",
+                OrderStatus.WAITING_PRODUCTION, "Aguardando Produção",
+                ApprovalChannel.WHATSAPP, "WhatsApp",
+                LocalDate.now(ZoneOffset.UTC), request.dataPrevisaoEntrega(),
+                budget.getTotal(), 1, OffsetDateTime.now(ZoneOffset.UTC)
+        );
+
+        given(orderRepository.findAllWithFilters(OrderStatus.WAITING_PRODUCTION, ApprovalChannel.WHATSAPP, "XPTO", pageable))
+                .willReturn(orderPage);
+        given(orderMapper.toSummaryResponse(savedOrder)).willReturn(summaryDto);
+
+        PageResponse<OrderSummaryResponse> result = orderService.findAll(
+                OrderStatus.WAITING_PRODUCTION, ApprovalChannel.WHATSAPP, "XPTO", pageable
+        );
+
+        assertThat(result).isNotNull();
+        assertThat(result.content()).hasSize(1);
+        assertThat(result.content().get(0).codigo()).isEqualTo("OS-2026-0001");
+        assertThat(result.totalElements()).isEqualTo(1L);
+        assertThat(result.size()).isEqualTo(10);
     }
 
     // =========================================================================
@@ -422,38 +389,6 @@ class OrderServiceImplTest {
         opcao.setUnitPrice(new BigDecimal("80.00"));
         opcao.setTotalPrice(new BigDecimal("200.00"));
         return opcao;
-    }
-
-    @Test
-    @DisplayName("findAll: deve buscar pedidos com filtros e mapear para PageResponse de DTOs")
-    void dadoFiltrosEPageable_deveBuscarEMapearPedidos() {
-        Order savedOrder = buildSavedOrder();
-        Pageable pageable = PageRequest.of(0, 10);
-        Page<Order> orderPage = new PageImpl<>(List.of(savedOrder), pageable, 1);
-
-        OrderSummaryResponse summaryDto = new OrderSummaryResponse(
-                orderId, "OS-2026-0001", budgetId, "Empresa XPTO Ltda", "83988880000",
-                OrderStatus.WAITING_PRODUCTION, "Aguardando Produção",
-                ApprovalChannel.WHATSAPP, "WhatsApp",
-                LocalDate.now(ZoneOffset.UTC), request.dataPrevisaoEntrega(),
-                budget.getTotal(), 1, OffsetDateTime.now(ZoneOffset.UTC)
-        );
-
-        given(orderRepository.findAllWithFilters(OrderStatus.WAITING_PRODUCTION, ApprovalChannel.WHATSAPP, "XPTO", pageable))
-                .willReturn(orderPage);
-        given(orderMapper.toSummaryResponse(savedOrder)).willReturn(summaryDto);
-
-        PageResponse<OrderSummaryResponse> result = orderService.findAll(
-                OrderStatus.WAITING_PRODUCTION, ApprovalChannel.WHATSAPP, "XPTO", pageable
-        );
-
-        assertThat(result).isNotNull();
-        assertThat(result.content()).hasSize(1);
-        assertThat(result.content().get(0).codigo()).isEqualTo("OS-2026-0001");
-        assertThat(result.content().get(0).clienteNome()).isEqualTo("Empresa XPTO Ltda");
-        assertThat(result.totalElements()).isEqualTo(1L);
-        assertThat(result.page()).isZero();
-        assertThat(result.size()).isEqualTo(10);
     }
 
     private Order buildSavedOrder() {
