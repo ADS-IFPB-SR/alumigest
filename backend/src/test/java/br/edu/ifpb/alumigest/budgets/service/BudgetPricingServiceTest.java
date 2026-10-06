@@ -10,6 +10,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -278,5 +280,85 @@ class BudgetPricingServiceTest {
         assertEquals(new BigDecimal("100.00"), esquadria.getSubtotal());
         assertEquals(new BigDecimal("200.00"), b.getSubtotal());
         assertEquals(new BigDecimal("200.00"), b.getTotal());
+    }
+
+    // =========================================================================
+    // REGRESSÃO #372 (BUG-023): laborCost é o valor fixo da linha do orçamento
+    // (rateio da MO geral feito pelo BudgetEditor) e NÃO é multiplicado pela
+    // quantidade de esquadrias — mesma regra do BudgetPdfService e do BudgetDetailPage.
+    // =========================================================================
+
+    @ParameterizedTest(name = "quantidade = {0}")
+    @ValueSource(ints = {1, 2, 5})
+    @DisplayName("[Regressão #372] Mão de obra da linha deve ser somada uma única vez, independentemente da quantidade")
+    void calculatePricing_ShouldAddLaborCostOncePerLine_RegardlessOfQuantity(int quantity) {
+        Budget b = new Budget();
+        BudgetItem esquadria = criarItemComMaterial(material1, quantity, new BigDecimal("150.00"));
+        b.addItem(esquadria);
+
+        when(materialRepository.findById(material1.getId())).thenReturn(Optional.of(material1));
+
+        budgetPricingService.calculatePricing(b);
+
+        BigDecimal materiaisEsperados = new BigDecimal("50.00").multiply(BigDecimal.valueOf(quantity));
+        assertEquals(materiaisEsperados, esquadria.getSubtotal(),
+                "O subtotal do item deve conter apenas materiais × quantidade");
+        assertEquals(materiaisEsperados.add(new BigDecimal("150.00")), b.getSubtotal(),
+                "A mão de obra (R$ 150) deve entrar uma única vez no subtotal bruto");
+        assertEquals(0, new BigDecimal("150.00").compareTo(b.getSubtotal().subtract(esquadria.getSubtotal())),
+                "A parcela de mão de obra do orçamento deve ser R$ 150, sem multiplicar pela quantidade");
+    }
+
+    @Test
+    @DisplayName("[Regressão #372] laborCost nulo deve ser tratado como zero sem lançar exceção")
+    void calculatePricing_ShouldTreatNullLaborCostAsZero() {
+        Budget b = new Budget();
+        BudgetItem esquadria = criarItemComMaterial(material1, 3, null);
+        b.addItem(esquadria);
+
+        when(materialRepository.findById(material1.getId())).thenReturn(Optional.of(material1));
+
+        assertDoesNotThrow(() -> budgetPricingService.calculatePricing(b));
+
+        assertEquals(new BigDecimal("150.00"), esquadria.getSubtotal());
+        assertEquals(new BigDecimal("150.00"), b.getSubtotal());
+        assertEquals(new BigDecimal("150.00"), b.getTotal());
+    }
+
+    @Test
+    @DisplayName("[Regressão #372] Múltiplos itens: mão de obra total deve ser a soma dos laborCost das linhas")
+    void calculatePricing_ShouldSumLaborCostPerLine_WithMultipleItems() {
+        // Item A: 2 esquadrias, MO da linha R$ 150 | Item B: 3 esquadrias, MO da linha R$ 100
+        Budget b = new Budget();
+        BudgetItem itemA = criarItemComMaterial(material1, 2, new BigDecimal("150.00")); // 2 × 50 = 100
+        BudgetItem itemB = criarItemComMaterial(material2, 3, new BigDecimal("100.00")); // 3 × 10.50 = 31.50
+        b.addItem(itemA);
+        b.addItem(itemB);
+
+        when(materialRepository.findById(material1.getId())).thenReturn(Optional.of(material1));
+        when(materialRepository.findById(material2.getId())).thenReturn(Optional.of(material2));
+
+        budgetPricingService.calculatePricing(b);
+
+        assertEquals(new BigDecimal("100.00"), itemA.getSubtotal());
+        assertEquals(new BigDecimal("31.50"), itemB.getSubtotal());
+
+        BigDecimal totalMaoDeObra = b.getSubtotal().subtract(itemA.getSubtotal()).subtract(itemB.getSubtotal());
+        assertEquals(0, new BigDecimal("250.00").compareTo(totalMaoDeObra),
+                "Mão de obra total deve ser 150 + 100 = 250 (e não 2×150 + 3×100 = 600)");
+        assertEquals(new BigDecimal("381.50"), b.getSubtotal());
+        assertEquals(new BigDecimal("381.50"), b.getTotal());
+    }
+
+    private BudgetItem criarItemComMaterial(Material material, int quantity, BigDecimal laborCost) {
+        BudgetItem esquadria = new BudgetItem();
+        esquadria.setQuantity(quantity);
+        esquadria.setLaborCost(laborCost);
+
+        BudgetItemOption opt = new BudgetItemOption();
+        opt.setMaterial(material);
+        opt.setQuantity(new BigDecimal("1.00"));
+        esquadria.addOption(opt);
+        return esquadria;
     }
 }

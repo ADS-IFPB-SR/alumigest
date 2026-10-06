@@ -6,7 +6,9 @@ import br.edu.ifpb.alumigest.budgets.domain.BudgetItem;
 import br.edu.ifpb.alumigest.budgets.domain.BudgetItemOption;
 import br.edu.ifpb.alumigest.budgets.domain.BudgetStatus;
 import br.edu.ifpb.alumigest.budgets.domain.PaymentCondition;
+import br.edu.ifpb.alumigest.catalog.domain.Material;
 import br.edu.ifpb.alumigest.catalog.domain.MaterialCategoryType;
+import br.edu.ifpb.alumigest.catalog.repository.MaterialRepository;
 import br.edu.ifpb.alumigest.clients.domain.Client;
 import com.lowagie.text.pdf.PdfReader;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,12 +31,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Suíte de testes unitários para {@link BudgetPdfService} [US-10.8] (#228).
@@ -1632,6 +1637,97 @@ class BudgetPdfServiceTest {
                 // 2 + 1 (fallback) + 3 = 6 peças
                 assertThat(texto).contains("6 PEÇAS");
             }
+        }
+    }
+
+    // =========================================================================
+    // PARIDADE DE MÃO DE OBRA: BudgetPricingService x BudgetPdfService (#372)
+    // =========================================================================
+
+    @Nested
+    @DisplayName("Paridade de Mão de Obra entre Precificação e PDF Comercial [Issue #372 / BUG-023]")
+    class ParidadeMaoDeObraPricingPdfTest {
+
+        @Test
+        @DisplayName("PDF comercial deve exibir a mesma mão de obra e o mesmo subtotal de produtos calculados pelo BudgetPricingService")
+        void deveExibirMaoDeObraESubtotalDeProdutosIdenticosAoCalculoDePrecificacao() throws IOException {
+            // Item A: 2 esquadrias × R$ 200 de materiais, MO da linha R$ 150
+            // Item B: 3 esquadrias × R$ 100 de materiais, MO da linha R$ 100
+            Material materialA = criarMaterial("200.00");
+            Material materialB = criarMaterial("100.00");
+
+            Budget budget = criarBudgetPadrao(false);
+            budget.setItems(new ArrayList<>());
+            budget.setDiscountPercent(BigDecimal.ZERO);
+            budget.addItem(criarItemPrecificavel("Janela de Correr 2 Folhas", materialA, 2, new BigDecimal("150.00")));
+            budget.addItem(criarItemPrecificavel("Porta de Giro 1 Folha", materialB, 3, new BigDecimal("100.00")));
+
+            MaterialRepository materialRepository = mock(MaterialRepository.class);
+            when(materialRepository.findById(materialA.getId())).thenReturn(Optional.of(materialA));
+            when(materialRepository.findById(materialB.getId())).thenReturn(Optional.of(materialB));
+
+            new BudgetPricingService(materialRepository).calculatePricing(budget);
+
+            BigDecimal somaSubtotaisItens = budget.getItems().stream()
+                    .map(BudgetItem::getSubtotal)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            BigDecimal maoDeObraPrecificacao = budget.getSubtotal().subtract(somaSubtotaisItens);
+
+            assertThat(somaSubtotaisItens).isEqualByComparingTo("700.00");
+            assertThat(maoDeObraPrecificacao)
+                    .as("A precificação deve consolidar 150 + 100 = 250 de mão de obra (sem multiplicar pela quantidade)")
+                    .isEqualByComparingTo("250.00");
+            assertThat(budget.getTotal()).isEqualByComparingTo("950.00");
+
+            byte[] pdfBytes = budgetPdfService.gerarPdfComercial(budget);
+
+            try (PdfReader reader = new PdfReader(pdfBytes)) {
+                String conteudo = extrairStreamsDeTexto(reader);
+
+                assertThat(conteudo)
+                        .contains("Subtotal de Produtos")
+                        .contains("Mão de Obra")
+                        .contains("TOTAL A PAGAR");
+
+                assertThat(conteudo)
+                        .as("Subtotal de Produtos no PDF deve ser igual à soma dos subtotais de itens da precificação (R$ 700,00)")
+                        .containsPattern("R\\$[\\s\\u00A0]700,00")
+                        .as("Mão de Obra no PDF deve ser igual à parcela de MO da precificação (R$ 250,00)")
+                        .containsPattern("R\\$[\\s\\u00A0]250,00")
+                        .as("Total a pagar no PDF deve ser igual ao total da precificação (R$ 950,00)")
+                        .containsPattern("R\\$[\\s\\u00A0]950,00");
+
+                assertThat(conteudo)
+                        .as("O PDF não pode multiplicar a MO pela quantidade (2×150 + 3×100 = R$ 600,00)")
+                        .doesNotContainPattern("R\\$[\\s\\u00A0]600,00")
+                        .as("O PDF não pode exibir subtotal de produtos derivado de MO multiplicada (950 − 600 = R$ 350,00)")
+                        .doesNotContainPattern("R\\$[\\s\\u00A0]350,00");
+            }
+        }
+
+        private Material criarMaterial(String salePrice) {
+            Material material = new Material();
+            material.setId(UUID.randomUUID());
+            material.setSalePrice(new BigDecimal(salePrice));
+            return material;
+        }
+
+        private BudgetItem criarItemPrecificavel(String nome, Material material, int quantity, BigDecimal laborCost) {
+            BudgetItem item = new BudgetItem();
+            item.setId(UUID.randomUUID());
+            item.setProductName(nome);
+            item.setWidthMm(new BigDecimal("1000"));
+            item.setHeightMm(new BigDecimal("1000"));
+            item.setQuantity(quantity);
+            item.setLaborCost(laborCost);
+
+            BudgetItemOption option = new BudgetItemOption();
+            option.setMaterial(material);
+            option.setCategoryType(MaterialCategoryType.PROFILE);
+            option.setMaterialName("Perfil Linha 25");
+            option.setQuantity(new BigDecimal("1.00"));
+            item.addOption(option);
+            return item;
         }
     }
 
