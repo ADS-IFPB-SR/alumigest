@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { ordersApi } from '../services/ordersApi';
+import toast from 'react-hot-toast';
 import type { OrderCancelRequest, OrderFilterParams } from '../types';
 
 export { useConvertBudget } from './useConvertBudget';
@@ -40,6 +41,25 @@ export const useCancelOrder = (id?: string) => {
       if (id) {
         queryClient.invalidateQueries({ queryKey: ['order', id] });
       }
+    },
+  });
+};
+
+/**
+ * Hook de mutação para baixar o comprovante oficial do Pedido de Venda em PDF.
+ * US-16.1 (#364) — utiliza o mesmo padrão de download Blob do useDownloadPdfTecnico (budgets).
+ */
+export const useDownloadComprovantePdf = () => {
+  return useMutation({
+    mutationFn: ({ id, codigo }: { id: string; codigo?: string }) =>
+      ordersApi.downloadComprovantePdf(id, codigo),
+    onSuccess: () => {
+      toast.success('Comprovante PDF baixado com sucesso!');
+    },
+    onError: (error: unknown) => {
+      const err = error as { response?: { data?: { message?: string } } };
+      const message = err?.response?.data?.message || 'Erro ao gerar o comprovante PDF.';
+      toast.error(message);
     },
   });
 };

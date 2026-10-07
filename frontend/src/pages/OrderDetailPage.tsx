@@ -6,6 +6,7 @@ import { useDownloadPdfTecnico } from '../features/budgets/hooks/useBudgets';
 import {
   useOrder,
   useCancelOrder,
+  useDownloadComprovantePdf,
   OrderDetailHeader,
   OrderCancelledAlert,
   OrderOriginBudgetCard,
@@ -21,6 +22,7 @@ export function OrderDetailPage() {
   const { data: order, isLoading, isError, refetch } = useOrder(id);
   const { mutate: cancelOrder, isPending: isCanceling } = useCancelOrder(id);
   const { mutate: downloadPdfTecnico, isPending: isDownloadingPdf } = useDownloadPdfTecnico();
+  const { mutate: downloadComprovante, isPending: isDownloadingComprovante } = useDownloadComprovantePdf();
 
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
 
@@ -43,6 +45,15 @@ export function OrderDetailPage() {
       return;
     }
     downloadPdfTecnico({ id: order.orcamentoId, code: order.orcamentoCodigo || order.codigo });
+  };
+
+  /**
+   * Inicia o download do Comprovante de Pedido de Venda em PDF (US-16.1 / #364).
+   * Delega ao hook useDownloadComprovantePdf que cuida do Blob, filename e toast.
+   */
+  const handleDownloadComprovante = () => {
+    if (!order) return;
+    downloadComprovante({ id: order.id, codigo: order.codigo });
   };
 
   const handleConfirmCancel = (data: CancelOrderFormData) => {
@@ -110,10 +121,12 @@ export function OrderDetailPage() {
         <OrderDetailHeader
           order={order}
           isDownloadingPdf={isDownloadingPdf}
+          isDownloadingComprovante={isDownloadingComprovante}
           onAdvanceProduction={handleAdvanceProduction}
           onCompleteProduction={handleCompleteProduction}
           onOpenCancelModal={() => setIsCancelModalOpen(true)}
           onPrintTechnicalPdf={handlePrintTechnicalPdf}
+          onDownloadComprovante={handleDownloadComprovante}
         />
 
         {/* Alerta de Cancelamento com Justificativa */}

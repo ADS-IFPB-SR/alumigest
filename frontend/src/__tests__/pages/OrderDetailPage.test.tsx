@@ -53,12 +53,18 @@ const mockOrder: Order = {
 
 describe('OrderDetailPage — [US-13.5] Visualização Detalhada do Pedido de Venda', () => {
   const mockDownloadPdf = vi.fn();
+  const mockDownloadComprovante = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
 
     vi.spyOn(useOrdersModule, 'useCancelOrder').mockReturnValue({
       mutate: vi.fn(),
+      isPending: false,
+    } as any);
+
+    vi.spyOn(useOrdersModule, 'useDownloadComprovantePdf').mockReturnValue({
+      mutate: mockDownloadComprovante,
       isPending: false,
     } as any);
 
@@ -190,6 +196,32 @@ describe('OrderDetailPage — [US-13.5] Visualização Detalhada do Pedido de Ve
     expect(mockDownloadPdf).toHaveBeenCalledWith({
       id: 'budget-uuid-1',
       code: 'ORC-2026-0001',
+    });
+  });
+
+  it('deve exibir o botão "Baixar Comprovante PDF" e acionar o download ao clicar (US-16.1 / AC-04)', () => {
+    vi.spyOn(useOrdersModule, 'useOrder').mockReturnValue({
+      data: mockOrder,
+      isLoading: false,
+      isError: false,
+    } as any);
+
+    render(
+      <MemoryRouter initialEntries={['/work-orders/order-uuid-1']}>
+        <Routes>
+          <Route path="/work-orders/:id" element={<OrderDetailPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    const comprovanteBtn = screen.getByRole('button', { name: /baixar comprovante pdf/i });
+    expect(comprovanteBtn).toBeInTheDocument();
+
+    fireEvent.click(comprovanteBtn);
+
+    expect(mockDownloadComprovante).toHaveBeenCalledWith({
+      id: 'order-uuid-1',
+      codigo: 'PED-2026-0001',
     });
   });
 });

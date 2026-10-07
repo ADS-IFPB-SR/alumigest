@@ -83,4 +83,56 @@ describe('OrderDetailHeader', () => {
     fireEvent.click(pdfBtn);
     expect(handlePdf).toHaveBeenCalledTimes(1);
   });
+
+  it('deve exibir o botão "Baixar Comprovante PDF" para pedidos não cancelados (US-16.1)', () => {
+    const handleComprovante = vi.fn();
+
+    render(
+      <MemoryRouter>
+        <OrderDetailHeader
+          order={baseOrder}
+          onDownloadComprovante={handleComprovante}
+        />
+      </MemoryRouter>
+    );
+
+    const comprovanteBtn = screen.getByRole('button', { name: /baixar comprovante pdf/i });
+    expect(comprovanteBtn).toBeInTheDocument();
+    expect(comprovanteBtn).not.toBeDisabled();
+
+    fireEvent.click(comprovanteBtn);
+    expect(handleComprovante).toHaveBeenCalledTimes(1);
+  });
+
+  it('deve exibir "Gerando PDF..." e desabilitar o botão de comprovante enquanto download está em andamento', () => {
+    render(
+      <MemoryRouter>
+        <OrderDetailHeader
+          order={baseOrder}
+          isDownloadingComprovante={true}
+          onDownloadComprovante={vi.fn()}
+        />
+      </MemoryRouter>
+    );
+
+    const comprovanteBtn = screen.getByRole('button', { name: /gerando pdf/i });
+    expect(comprovanteBtn).toBeDisabled();
+  });
+
+  it('deve ocultar o botão de comprovante quando o pedido estiver CANCELLED', () => {
+    const cancelledOrder: Order = { ...baseOrder, status: 'CANCELLED' };
+
+    render(
+      <MemoryRouter>
+        <OrderDetailHeader
+          order={cancelledOrder}
+          onDownloadComprovante={vi.fn()}
+        />
+      </MemoryRouter>
+    );
+
+    expect(
+      screen.queryByRole('button', { name: /baixar comprovante pdf/i })
+    ).not.toBeInTheDocument();
+  });
 });

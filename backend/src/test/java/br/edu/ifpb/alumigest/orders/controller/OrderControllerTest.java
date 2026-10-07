@@ -6,6 +6,8 @@ import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -13,6 +15,7 @@ import br.edu.ifpb.alumigest.common.dto.PageResponse;
 import br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException;
 import br.edu.ifpb.alumigest.orders.domain.ApprovalChannel;
 import br.edu.ifpb.alumigest.orders.domain.OrderStatus;
+import br.edu.ifpb.alumigest.orders.dto.OrderPdfDTO;
 import br.edu.ifpb.alumigest.orders.dto.OrderResponse;
 import br.edu.ifpb.alumigest.orders.dto.OrderSummaryResponse;
 import br.edu.ifpb.alumigest.orders.service.OrderService;
@@ -129,9 +132,9 @@ class OrderControllerTest {
     }
   }
 
-  @Nested
-  @DisplayName("GET /api/v1/orders/{id}")
-  class FindByIdEndpointTests {
+    @Nested
+    @DisplayName("GET /api/v1/orders/{id} - Detalhe do Pedido")
+    class FindByIdEndpointTests {
 
     @Test
     @DisplayName("Deve retornar status 200 OK e JSON do pedido com status WAITING_PRODUCTION")
@@ -188,6 +191,38 @@ class OrderControllerTest {
 
       mockMvc.perform(get("/api/v1/orders/{id}", orderId)
               .contentType(MediaType.APPLICATION_JSON))
+          .andExpect(status().isNotFound());
+    }
+  }
+
+  @Nested
+  @DisplayName("GET /api/v1/orders/{id}/pdf/comprovante — Download Comprovante PDF [US-16.1]")
+  class GerarPdfComprovanteTests {
+
+    @Test
+    @DisplayName("AC-01: Deve retornar 200 com Content-Type application/pdf para pedido existente")
+    void shouldReturn200AndPdfBytesForExistingOrder() throws Exception {
+      UUID orderId = UUID.randomUUID();
+      byte[] fakeBytes = "%PDF-1.4 fake content".getBytes();
+      OrderPdfDTO pdfDto = new OrderPdfDTO(fakeBytes, "comprovante-ped-2026-0001.pdf");
+
+      when(orderService.gerarComprovanteById(orderId)).thenReturn(pdfDto);
+
+      mockMvc.perform(get("/api/v1/orders/{id}/pdf/comprovante", orderId))
+          .andExpect(status().isOk())
+          .andExpect(content().contentType(MediaType.APPLICATION_PDF))
+          .andExpect(header().string("Content-Disposition",
+              org.hamcrest.Matchers.containsString("comprovante-ped-2026-0001.pdf")));
+    }
+
+    @Test
+    @DisplayName("AC-03: Deve retornar 404 quando o ID do pedido não existir")
+    void shouldReturn404WhenOrderNotFoundForPdf() throws Exception {
+      UUID orderId = UUID.randomUUID();
+      when(orderService.gerarComprovanteById(orderId))
+          .thenThrow(new ResourceNotFoundException("Pedido", orderId));
+
+      mockMvc.perform(get("/api/v1/orders/{id}/pdf/comprovante", orderId))
           .andExpect(status().isNotFound());
     }
   }

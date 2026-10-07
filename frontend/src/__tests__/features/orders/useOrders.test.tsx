@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
-import { useOrder, useOrders, useCancelOrder, useConvertBudget } from '../../../features/orders/hooks/useOrders';
+import { useOrder, useOrders, useCancelOrder, useConvertBudget, useDownloadComprovantePdf } from '../../../features/orders/hooks/useOrders';
 import { ordersApi } from '../../../features/orders/services/ordersApi';
 import type { Order } from '../../../features/orders/types';
 import toast from 'react-hot-toast';
@@ -175,6 +175,43 @@ describe('useOrders hooks', () => {
 
       await waitFor(() => expect(result.current.isError).toBe(true));
       expect(toast.error).toHaveBeenCalledWith('Já existe pedido para este orçamento.');
+    });
+  });
+
+  describe('useDownloadComprovantePdf (US-16.1)', () => {
+    it('deve chamar ordersApi.downloadComprovantePdf e exibir toast de sucesso', async () => {
+      vi.mocked(ordersApi.downloadComprovantePdf).mockResolvedValue(undefined);
+
+      const { result } = renderHook(() => useDownloadComprovantePdf(), {
+        wrapper: createWrapper(),
+      });
+
+      result.current.mutate({ id: 'order-1', codigo: 'PED-2026-0001' });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+      expect(ordersApi.downloadComprovantePdf).toHaveBeenCalledWith('order-1', 'PED-2026-0001');
+      expect(toast.success).toHaveBeenCalledWith('Comprovante PDF baixado com sucesso!');
+    });
+
+    it('deve exibir toast de erro com mensagem da API quando o download falha', async () => {
+      const errorResponse = {
+        response: {
+          data: {
+            message: 'Pedido não encontrado.',
+          },
+        },
+      };
+
+      vi.mocked(ordersApi.downloadComprovantePdf).mockRejectedValue(errorResponse);
+
+      const { result } = renderHook(() => useDownloadComprovantePdf(), {
+        wrapper: createWrapper(),
+      });
+
+      result.current.mutate({ id: 'order-inexistente' });
+
+      await waitFor(() => expect(result.current.isError).toBe(true));
+      expect(toast.error).toHaveBeenCalledWith('Pedido não encontrado.');
     });
   });
 });
