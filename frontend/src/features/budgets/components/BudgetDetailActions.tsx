@@ -112,7 +112,7 @@ function WhatsAppDropdownMenu({
       >
         <span className="material-symbols-outlined text-[18px] text-emerald-600">chat</span>
         <div>
-          <p className="font-semibold">Enviar Resumo de Texto</p>
+          <p className="font-semibold">Personalizar Resumo</p>
           <p className="text-[10px] text-on-surface-variant">Mensagem formatada com valores</p>
         </div>
       </button>
