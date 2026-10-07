@@ -74,19 +74,19 @@ O objetivo primordial desta sprint é garantir a formalização contratual da ve
 
 #### 🧪 Critérios de Aceitação (Dado que / Quando / Então)
 
-- [ ] **Cenário 1: Clonagem Profunda dos Itens do Orçamento (Deep Copy)**
+- [x] **Cenário 1: Clonagem Profunda dos Itens do Orçamento (Deep Copy)**
   - **Dado que** um orçamento com itens compostos de esquadria e itens avulsos é aprovado
   - **Quando** o pedido é gerado no banco de dados
   - **Então** cada `BudgetItem` gera um registro independente em `OrderItem`
   - **E** todas as medidas (largura, altura em mm), modelo/tipologia, cores, especificações de vidro, ferragens, preços unitários e subtotais são replicados em colunas próprias da tabela `order_items`.
 
-- [ ] **Cenário 2: Blindagem contra Reajuste Futuro de Preços no Catálogo**
+- [x] **Cenário 2: Blindagem contra Reajuste Futuro de Preços no Catálogo**
   - **Dado que** um pedido de venda foi criado no dia $D$ com valor total de R$ 3.500,00
   - **Quando** no dia $D + 5$ os preços dos perfis de alumínio e vidros forem reajustados em 20% no módulo de catálogo
   - **Então** o valor unitário e o valor total do pedido e de seus itens permanecem rigorosamente inalterados em R$ 3.500,00
   - **E** consultas e relatórios continuam exibindo o snapshot financeiro contratado.
 
-- [ ] **Cenário 3: Imutabilidade Cadastral das Esquadrias do Pedido**
+- [x] **Cenário 3: Imutabilidade Cadastral das Esquadrias do Pedido**
   - **Dado que** o pedido foi formalizado
   - **Quando** um usuário tenta editar medidas ou excluir itens diretamente no pedido aprovado
   - **Então** o sistema não permite a alteração direta de itens contratuais, exigindo cancelamento formal e renegociação em caso de mudanças de projeto.

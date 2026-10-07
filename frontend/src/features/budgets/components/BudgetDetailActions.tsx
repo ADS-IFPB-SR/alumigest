@@ -1,12 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '../../../components/ui/Button';
 import { budgetsApi } from '../services/budgetsApi';
 import { useUpdateBudgetStatus } from '../hooks/useBudgets';
-import type { CreateBudgetPayload, BudgetStatus } from '../types';
+import type { CreateBudgetPayload, BudgetStatus, BudgetDetail } from '../types';
 import { WhatsAppSummaryModal } from './WhatsAppSummaryModal';
 import { openWhatsAppChat, sanitizeWhatsAppText, shareCommercialPdfLink } from '../utils/whatsappHelper';
 import { copyToClipboard } from '../utils/clipboardHelper';
+import { useOrders } from '../../orders/hooks/useOrders';
 import toast from 'react-hot-toast';
 
 interface BudgetDetailActionsProps {
@@ -15,9 +17,122 @@ interface BudgetDetailActionsProps {
   readonly customerPhone?: string | null;
   readonly status?: BudgetStatus;
   readonly budgetStatus?: string;
+  readonly isExpired?: boolean;
   readonly onDeleteClick: () => void;
   readonly onDownloadPdfTecnico?: () => void;
   readonly isDownloadingPdfTecnico?: boolean;
+  readonly onApproveClick?: () => void;
+}
+
+function getApprovalButtonTooltip(isApproved: boolean, isCancelledOrRejected: boolean, isExpired: boolean): string {
+  if (isApproved) {
+    return 'Este orçamento já foi aprovado e convertido em ordem de serviço.';
+  }
+  if (isCancelledOrRejected) {
+    return 'Orçamentos cancelados ou rejeitados não podem ser aprovados.';
+  }
+  if (isExpired) {
+    return 'Orçamentos com validade expirada não podem ser aprovados.';
+  }
+  return 'Aprovar este orçamento e convertê-lo em Ordem de Serviço';
+}
+
+function buildDuplicatePayload(currentBudget: BudgetDetail, budgetCode: string): CreateBudgetPayload {
+  const notes = currentBudget.notes
+    ? `${currentBudget.notes} (Cópia do orçamento ${budgetCode})`
+    : `Cópia do orçamento ${budgetCode}`;
+
+  return {
+    customerId: currentBudget.customerId ?? '',
+    discountPercent: currentBudget.discountPercent ?? 0,
+    notes,
+    commercialConditions: currentBudget.commercialConditions,
+    validUntil: currentBudget.validUntil,
+    items: (currentBudget.items ?? []).map((item) => ({
+      productId: item.productId,
+      templateType: item.templateType,
+      templateConfig: item.templateConfig,
+      handleConfig: item.handleConfig,
+      drillingConfig: item.drillingConfig,
+      width: item.width,
+      height: item.height,
+      quantity: item.quantity,
+      laborCost: item.laborCost,
+      notes: item.notes,
+      options: (item.options ?? []).map((opt) => ({
+        materialId: opt.materialId,
+        quantity: opt.quantity,
+        categoryType: opt.categoryType,
+      })),
+    })),
+  };
+}
+
+interface WhatsAppDropdownMenuProps {
+  readonly menuPosition: { top: number; left: number };
+  readonly menuRef: React.RefObject<HTMLDivElement | null>;
+  readonly customerPhone?: string | null;
+  readonly isOpeningWhatsApp: boolean;
+  readonly isCopyingSummary: boolean;
+  readonly onOpenWhatsAppDirect: () => void;
+  readonly onCopyWhatsAppSummary: () => void;
+  readonly onOpenSummaryModal: () => void;
+  readonly onSendCommercialPdf: () => void;
+}
+
+function WhatsAppDropdownMenu({
+  menuPosition,
+  menuRef,
+  customerPhone,
+  isOpeningWhatsApp,
+  isCopyingSummary,
+  onOpenWhatsAppDirect,
+  onCopyWhatsAppSummary,
+  onOpenSummaryModal,
+  onSendCommercialPdf,
+}: WhatsAppDropdownMenuProps) {
+  return createPortal(
+    <div
+      ref={menuRef}
+      style={{ top: `${menuPosition.top}px`, left: `${menuPosition.left}px` }}
+      className="absolute w-56 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-2xl z-[99999] py-1 animate-fadeIn"
+    >
+      <button type="button" onClick={onOpenWhatsAppDirect} disabled={isOpeningWhatsApp} className="w-full px-3 py-2 text-left text-xs font-label hover:bg-surface-container flex items-center gap-2 text-on-surface transition-colors cursor-pointer">
+        <span className="material-symbols-outlined text-[18px] text-emerald-600">{isOpeningWhatsApp ? 'progress_activity' : 'send'}</span>
+        <div><p className="font-semibold">Abrir no WhatsApp</p><p className="text-[10px] text-on-surface-variant">{customerPhone ? `Conversa direta com ${customerPhone}` : 'Abrir app com texto pronto'}</p></div>
+      </button>
+      <button type="button" onClick={onCopyWhatsAppSummary} disabled={isCopyingSummary} className="w-full px-3 py-2 text-left text-xs font-label hover:bg-surface-container flex items-center gap-2 text-on-surface transition-colors cursor-pointer border-t border-outline-variant/40">
+        <span className="material-symbols-outlined text-[18px] text-emerald-600">{isCopyingSummary ? 'progress_activity' : 'content_copy'}</span>
+        <div><p className="font-semibold">Copiar Resumo</p><p className="text-[10px] text-on-surface-variant">Copiar texto para compartilhar</p></div>
+      </button>
+      <button
+        type="button"
+        onClick={onOpenSummaryModal}
+        className="w-full px-3 py-2 text-left text-xs font-label hover:bg-surface-container flex items-center gap-2 text-on-surface transition-colors cursor-pointer"
+      >
+        <span className="material-symbols-outlined text-[18px] text-emerald-600">chat</span>
+        <div>
+          <p className="font-semibold">Enviar Resumo de Texto</p>
+          <p className="text-[10px] text-on-surface-variant">Mensagem formatada com valores</p>
+        </div>
+      </button>
+
+      <button
+        type="button"
+        onClick={onSendCommercialPdf}
+        className="w-full px-3 py-2 text-left text-xs font-label hover:bg-surface-container flex items-center gap-2 text-on-surface transition-colors cursor-pointer border-t border-outline-variant/40"
+      >
+        <span className="material-symbols-outlined text-[18px] text-emerald-600">
+          picture_as_pdf
+        </span>
+        <div>
+          <p className="font-semibold">Enviar PDF Comercial</p>
+          <p className="text-[10px] text-on-surface-variant">Enviar link direto para o cliente</p>
+        </div>
+      </button>
+    </div>,
+    document.body
+  );
 }
 
 export function BudgetDetailActions({
@@ -26,12 +141,25 @@ export function BudgetDetailActions({
   customerPhone,
   status,
   budgetStatus,
+  isExpired = false,
   onDeleteClick,
   onDownloadPdfTecnico,
   isDownloadingPdfTecnico,
+  onApproveClick,
 }: BudgetDetailActionsProps) {
   const navigate = useNavigate();
   const { mutate: updateStatus } = useUpdateBudgetStatus();
+
+  const currentStatus = (status ?? budgetStatus ?? 'DRAFT') as BudgetStatus;
+  const isApproved = currentStatus === 'APPROVED';
+  const isCancelledOrRejected = currentStatus === 'CANCELLED' || currentStatus === 'REJECTED';
+  const isApprovalDisabled = isApproved || isCancelledOrRejected || isExpired;
+
+  const { data: linkedOrders } = useOrders(
+    isApproved ? { search: budgetCode, size: 1 } : undefined
+  );
+  const linkedOrder = isApproved ? linkedOrders?.content?.[0] : undefined;
+  const approvalButtonTooltip = getApprovalButtonTooltip(isApproved, isCancelledOrRejected, isExpired);
 
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const [showWhatsAppMenu, setShowWhatsAppMenu] = useState(false);
@@ -44,16 +172,36 @@ export function BudgetDetailActions({
   const isDownloadingTecnico = isDownloadingPdfTecnico ?? localDownloadingPdfTecnico;
 
   const whatsAppMenuRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
 
-  // Fecha o dropdown do WhatsApp ao clicar fora
+  // Calcula a posição exata do botão na tela ao abrir o menu do WhatsApp
+  const handleToggleWhatsAppMenu = () => {
+    if (!showWhatsAppMenu && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setMenuPosition({
+        top: rect.bottom + window.scrollY + 4,
+        left: rect.left + window.scrollX,
+      });
+    }
+    setShowWhatsAppMenu((prev) => !prev);
+  };
+
+  // Fecha o dropdown do WhatsApp ao clicar fora ou rolar a página
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (whatsAppMenuRef.current && !whatsAppMenuRef.current.contains(event.target as Node)) {
+      if (
+        whatsAppMenuRef.current &&
+        !whatsAppMenuRef.current.contains(event.target as Node) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(event.target as Node)
+      ) {
         setShowWhatsAppMenu(false);
       }
     }
     if (showWhatsAppMenu) {
       document.addEventListener('mousedown', handleClickOutside);
+      window.addEventListener('scroll', () => setShowWhatsAppMenu(false), { once: true });
     }
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
@@ -171,34 +319,7 @@ export function BudgetDetailActions({
       toast('Duplicando orçamento...');
 
       const currentBudget = await budgetsApi.getBudget(budgetId);
-
-      const payload: CreateBudgetPayload = {
-        customerId: currentBudget.customerId ?? '',
-        discountPercent: currentBudget.discountPercent ?? 0,
-        notes: currentBudget.notes 
-          ? `${currentBudget.notes} (Cópia do orçamento ${budgetCode})` 
-          : `Cópia do orçamento ${budgetCode}`,
-        commercialConditions: currentBudget.commercialConditions,
-        validUntil: currentBudget.validUntil,
-        items: (currentBudget.items ?? []).map((item) => ({
-          productId: item.productId,
-          templateType: item.templateType,
-          templateConfig: item.templateConfig,
-          handleConfig: item.handleConfig,
-          drillingConfig: item.drillingConfig,
-          width: item.width,
-          height: item.height,
-          quantity: item.quantity,
-          laborCost: item.laborCost,
-          notes: item.notes,
-          options: (item.options ?? []).map((opt) => ({
-            materialId: opt.materialId,
-            quantity: opt.quantity,
-            categoryType: opt.categoryType,
-          })),
-        })),
-      };
-
+      const payload = buildDuplicatePayload(currentBudget, budgetCode);
       const newBudget = await budgetsApi.createBudget(payload);
       toast.success('Orçamento duplicado com sucesso!');
 
@@ -216,11 +337,12 @@ export function BudgetDetailActions({
 
   return (
     <div className="flex items-center gap-xs sm:gap-sm flex-wrap shrink-0 w-full pb-1">
-      {/* ── 1º WhatsApp (Dropdown: Abrir Direto / Copiar / Personalizar / PDF) ─ */}
-      <div className="relative shrink-0" ref={whatsAppMenuRef}>
+      {/* ── 1º WhatsApp (Dropdown: Resumo em Texto / PDF Comercial) ──────── */}
+      <div className="relative shrink-0">
         <button
+          ref={buttonRef}
           type="button"
-          onClick={() => setShowWhatsAppMenu((prev) => !prev)}
+          onClick={handleToggleWhatsAppMenu}
           disabled={status === 'CANCELLED' || budgetStatus === 'CANCELLED'}
           aria-haspopup="true"
           aria-expanded={showWhatsAppMenu}
@@ -242,72 +364,20 @@ export function BudgetDetailActions({
         </button>
 
         {showWhatsAppMenu && (
-          <div className="absolute left-0 mt-1 w-60 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-lg z-50 py-1 animate-fadeIn">
-            {/* Abrir direto no WhatsApp */}
-            <button
-              type="button"
-              onClick={handleOpenWhatsAppDirect}
-              disabled={isOpeningWhatsApp}
-              className="w-full px-3 py-2 text-left text-xs font-label hover:bg-surface-container flex items-center gap-2 text-on-surface transition-colors cursor-pointer"
-            >
-              <span className="material-symbols-outlined text-[18px] text-emerald-600">
-                {isOpeningWhatsApp ? 'progress_activity' : 'send'}
-              </span>
-              <div>
-                <p className="font-semibold">Abrir no WhatsApp</p>
-                <p className="text-[10px] text-on-surface-variant">
-                  {customerPhone ? `Conversa direta com ${customerPhone}` : 'Abrir app com texto pronto'}
-                </p>
-              </div>
-            </button>
-
-            {/* Copiar Resumo (com fallback resiliente para HTTP) */}
-            <button
-              type="button"
-              onClick={handleCopyWhatsAppSummary}
-              disabled={isCopyingSummary}
-              className="w-full px-3 py-2 text-left text-xs font-label hover:bg-surface-container flex items-center gap-2 text-on-surface transition-colors cursor-pointer border-t border-outline-variant/40"
-            >
-              <span className="material-symbols-outlined text-[18px] text-emerald-600">
-                {isCopyingSummary ? 'progress_activity' : 'content_copy'}
-              </span>
-              <div>
-                <p className="font-semibold">Copiar Resumo</p>
-                <p className="text-[10px] text-on-surface-variant">Copiar texto (funciona em HTTP e rede local)</p>
-              </div>
-            </button>
-
-            {/* Personalizar Resumo no Modal */}
-            <button
-              type="button"
-              onClick={() => {
-                setShowWhatsAppMenu(false);
-                setShowWhatsAppModal(true);
-              }}
-              className="w-full px-3 py-2 text-left text-xs font-label hover:bg-surface-container flex items-center gap-2 text-on-surface transition-colors cursor-pointer border-t border-outline-variant/40"
-            >
-              <span className="material-symbols-outlined text-[18px] text-emerald-600">edit_note</span>
-              <div>
-                <p className="font-semibold">Personalizar Resumo</p>
-                <p className="text-[10px] text-on-surface-variant">Editar texto antes de enviar</p>
-              </div>
-            </button>
-
-            {/* Enviar Link do PDF Comercial */}
-            <button
-              type="button"
-              onClick={handleSendCommercialPdfViaWhatsApp}
-              className="w-full px-3 py-2 text-left text-xs font-label hover:bg-surface-container flex items-center gap-2 text-on-surface transition-colors cursor-pointer border-t border-outline-variant/40"
-            >
-              <span className="material-symbols-outlined text-[18px] text-emerald-600">
-                picture_as_pdf
-              </span>
-              <div>
-                <p className="font-semibold">Enviar PDF Comercial</p>
-                <p className="text-[10px] text-on-surface-variant">Enviar link direto para o cliente</p>
-              </div>
-            </button>
-          </div>
+          <WhatsAppDropdownMenu
+            menuPosition={menuPosition}
+            menuRef={whatsAppMenuRef}
+            customerPhone={customerPhone}
+            isOpeningWhatsApp={isOpeningWhatsApp}
+            isCopyingSummary={isCopyingSummary}
+            onOpenWhatsAppDirect={handleOpenWhatsAppDirect}
+            onCopyWhatsAppSummary={handleCopyWhatsAppSummary}
+            onOpenSummaryModal={() => {
+              setShowWhatsAppMenu(false);
+              setShowWhatsAppModal(true);
+            }}
+            onSendCommercialPdf={handleSendCommercialPdfViaWhatsApp}
+          />
         )}
       </div>
 
@@ -348,7 +418,41 @@ export function BudgetDetailActions({
         </span>
       </button>
 
-      {/* ── 4º Duplicar ─────────────────────────────────────────────────── */}
+      {/* ── 4º Aprovar ou Ver Ordem de Serviço (US-13.3) ─────────────────── */}
+      {isApproved ? (
+        <Button
+          type="button"
+          variant="primary"
+          icon="assignment"
+          data-testid="btn-view-work-order"
+          onClick={() => {
+            if (linkedOrder?.id) {
+              navigate(`/work-orders/${linkedOrder.id}`);
+            } else {
+              navigate(`/work-orders?search=${encodeURIComponent(budgetCode)}`);
+            }
+          }}
+          className="text-xs py-1.5 px-3 whitespace-nowrap cursor-pointer shrink-0"
+          title="Ver Ordem de Serviço vinculada a este orçamento"
+        >
+          <span className="whitespace-nowrap">Ver Ordem de Serviço</span>
+        </Button>
+      ) : (
+        <Button
+          type="button"
+          variant="success"
+          icon="check_circle"
+          data-testid="btn-approve-budget"
+          onClick={onApproveClick}
+          disabled={isApprovalDisabled || !onApproveClick}
+          className="text-xs py-1.5 px-3 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shrink-0"
+          title={approvalButtonTooltip}
+        >
+          <span className="whitespace-nowrap">Aprovar e Gerar O.S.</span>
+        </Button>
+      )}
+
+      {/* ── 5º Duplicar ─────────────────────────────────────────────────── */}
       <button
         type="button"
         onClick={handleDuplicateBudget}

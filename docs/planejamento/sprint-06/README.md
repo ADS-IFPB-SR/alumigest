@@ -27,9 +27,9 @@ Esta pasta contém o pacote completo de engenharia da **Sprint 06** do projeto *
 ### 📦 US-14: Snapshot Imutável e Lock de Preços do Pedido
 **Issue GitHub**: [#138](https://github.com/ADS-IFPB-SR/alumigest/issues/138) | **Prioridade**: P1
 
-| Sub-Task | Issue | Tarefa | Duração | Pré-requisito / Bloqueado por | Status |
-|---|:---:|---|:---:|---|:---:|
-| [US-14.1](issues/US-14.1-snapshot-imutavel-lock-precos-deep-copy/issue.md) | [#360](https://github.com/ADS-IFPB-SR/alumigest/issues/360) | Snapshot Imutável, Lock de Preços e Tabela de Itens Congelados (Full-Stack: Deep copy em 3 níveis, snapshots JSONB, OrderItemsTable no front e testes unitários de blindagem contra reajuste do catálogo) | ~4h | Bloqueado por **#359** (US-13.5) | 🔲 Aberta |
+| Sub-Task | Issue | Tarefa | Duração | Pré-requisito / Bloqueado por | Tipo | Status |
+|---|:---:|---|:---:|---|---|:---:|
+| [US-14.1](issues/US-14.1-snapshot-imutavel-lock-precos-deep-copy/issue.md) | [#360](https://github.com/ADS-IFPB-SR/alumigest/issues/360) | Snapshot Imutável, Lock de Preços e Tabela de Itens Congelados (Full-Stack: Deep copy em 3 níveis, snapshots JSONB, OrderItemsTable no front e testes unitários de blindagem contra reajuste do catálogo) | ~4h | Bloqueado por **#359** (US-13.5) | Fatia Vertical Full-Stack | ✅ Concluída |
 
 ---
 

@@ -12,22 +12,22 @@
 ## 📦 US-13: Aprovar Orçamento e Converter em Pedido de Venda
 **Issue GitHub**: [#137](https://github.com/ADS-IFPB-SR/alumigest/issues/137) | **Prioridade**: P1 (MVP)
 
-| ID | Issue | Tarefa | Duração | Pré-requisito / Bloqueado por | Status |
-|---|:---:|---|:---:|---|:---:|
-| **US-13.1** | [#355](https://github.com/ADS-IFPB-SR/alumigest/issues/355) | [US-13.1](issues/US-13.1-scaffolding-e-infraestrutura-do-modulo-orders/issue.md) Scaffolding e Infraestrutura do Módulo de Pedidos (Migration Flyway V19, pacotes, enums, entidades JPA base e repositórios) | ~1h | *Livre* (Ponto de partida / Root) | 🔲 Aberta |
-| **US-13.2** | [#356](https://github.com/ADS-IFPB-SR/alumigest/issues/356) | [US-13.2](issues/US-13.2-conversao-de-orcamento-em-pedido-backend-core/issue.md) Conversão de Orçamento em Pedido de Venda no Backend Core (OrderCodeGenerator PED-YYYY-NNNN, OrderService atômico, DTOs, mappers, endpoint POST e testes unitários) | ~4h | *Livre* (Pode iniciar em paralelo com US-13.1) | 🔲 Aberta |
-| **US-13.3** | [#357](https://github.com/ADS-IFPB-SR/alumigest/issues/357) | [US-13.3](issues/US-13.3-modal-aprovacao-e-conversao-frontend/issue.md) Modal de Aprovação e Ação de Conversão na Tela de Orçamento (Tipos TS, Schema Zod, orderApi, hook useConvertBudget, OrderApprovalModal e botão na BudgetDetailPage) | ~3h | Bloqueado por **#356** (US-13.2) | 🔲 Aberta |
-| **US-13.4** | [#358](https://github.com/ADS-IFPB-SR/alumigest/issues/358) | [US-13.4](issues/US-13.4-listagem-paginada-de-pedidos-fullstack/issue.md) Listagem Paginada de Pedidos de Venda com Filtros (Full-Stack: GET /api/orders paginado, OrderListPage, OrderStatusBadge, busca com debounce e filtros) | ~4h | Bloqueado por **#356** (US-13.2) | 🔲 Aberta |
-| **US-13.5** | [#359](https://github.com/ADS-IFPB-SR/alumigest/issues/359) | [US-13.5](issues/US-13.5-detalhamento-do-pedido-de-venda-fullstack/issue.md) Visualização Detalhada do Pedido de Venda (Full-Stack: GET /api/orders/{id}, OrderDetailPage com cards informativos, resumo financeiro e vínculo do orçamento) | ~3h | Bloqueado por **#356** (US-13.2) | 🔲 Aberta |
+| ID | Issue | Tarefa | Duração | Pré-requisito / Bloqueado por | Tipo | Status |
+|---|:---:|---|:---:|---|---|:---:|
+| **US-13.1** | [#355](https://github.com/ADS-IFPB-SR/alumigest/issues/355) | [US-13.1](issues/US-13.1-scaffolding-e-infraestrutura-do-modulo-orders/issue.md) Scaffolding e Infraestrutura do Módulo de Pedidos (Migration Flyway V19, pacotes, enums, entidades JPA base e repositórios) | ~1h | *Livre* (Ponto de partida / Root) | Scaffolding / Infra | 🔲 Aberta |
+| **US-13.2** | [#356](https://github.com/ADS-IFPB-SR/alumigest/issues/356) | [US-13.2](issues/US-13.2-conversao-de-orcamento-em-pedido-backend-core/issue.md) Conversão de Orçamento em Pedido de Venda no Backend Core (OrderCodeGenerator PED-YYYY-NNNN, OrderService atômico, DTOs, mappers, endpoint POST e testes unitários) | ~4h | *Livre* (Pode iniciar em paralelo com US-13.1) | Backend Core / Regras | 🔲 Aberta |
+| **US-13.3** | [#357](https://github.com/ADS-IFPB-SR/alumigest/issues/357) | [US-13.3](issues/US-13.3-modal-aprovacao-e-conversao-frontend/issue.md) Modal de Aprovação e Ação de Conversão na Tela de Orçamento (Tipos TS, Schema Zod, orderApi, hook useConvertBudget, OrderApprovalModal e botão na BudgetDetailPage) | ~3h | Bloqueado por **#356** (US-13.2) | Frontend UI / API | ✅ Concluída |
+| **US-13.4** | [#358](https://github.com/ADS-IFPB-SR/alumigest/issues/358) | [US-13.4](issues/US-13.4-listagem-paginada-de-pedidos-fullstack/issue.md) Listagem Paginada de Pedidos de Venda com Filtros (Full-Stack: GET /api/orders paginado, OrderListPage, OrderStatusBadge, busca com debounce e filtros) | ~4h | Bloqueado por **#356** (US-13.2) | Fatia Vertical Full-Stack | ✅ Concluída |
+| **US-13.5** | [#359](https://github.com/ADS-IFPB-SR/alumigest/issues/359) | [US-13.5](issues/US-13.5-detalhamento-do-pedido-de-venda-fullstack/issue.md) Visualização Detalhada do Pedido de Venda (Full-Stack: GET /api/orders/{id}, OrderDetailPage com cards informativos, resumo financeiro e vínculo do orçamento) | ~3h | Bloqueado por **#356** (US-13.2) | Fatia Vertical Full-Stack | 🔲 Aberta |
 
 ---
 
 ## 📦 US-14: Snapshot Imutável e Lock de Preços do Pedido
 **Issue GitHub**: [#138](https://github.com/ADS-IFPB-SR/alumigest/issues/138) | **Prioridade**: P1
 
-| ID | Issue | Tarefa | Duração | Pré-requisito / Bloqueado por | Status |
-|---|:---:|---|:---:|---|:---:|
-| **US-14.1** | [#360](https://github.com/ADS-IFPB-SR/alumigest/issues/360) | [US-14.1](issues/US-14.1-snapshot-imutavel-lock-precos-deep-copy/issue.md) Snapshot Imutável, Lock de Preços e Tabela de Itens Congelados (Full-Stack: Deep copy em 3 níveis, snapshots JSONB, OrderItemsTable no front e testes unitários de blindagem contra reajuste do catálogo) | ~4h | Bloqueado por **#359** (US-13.5) | 🔲 Aberta |
+| ID | Issue | Tarefa | Duração | Pré-requisito / Bloqueado por | Tipo | Status |
+|---|:---:|---|:---:|---|---|:---:|
+| **US-14.1** | [#360](https://github.com/ADS-IFPB-SR/alumigest/issues/360) | [US-14.1](issues/US-14.1-snapshot-imutavel-lock-precos-deep-copy/issue.md) Snapshot Imutável, Lock de Preços e Tabela de Itens Congelados (Full-Stack: Deep copy em 3 níveis, snapshots JSONB, OrderItemsTable no front e testes unitários de blindagem contra reajuste do catálogo) | ~4h | Bloqueado por **#359** (US-13.5) | Fatia Vertical Full-Stack | ✅ Concluída |
 
 ---
 
