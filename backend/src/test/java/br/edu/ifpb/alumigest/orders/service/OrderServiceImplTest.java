@@ -15,6 +15,7 @@ import br.edu.ifpb.alumigest.orders.domain.Order;
 import br.edu.ifpb.alumigest.common.dto.PageResponse;
 import br.edu.ifpb.alumigest.orders.domain.OrderItem;
 import br.edu.ifpb.alumigest.orders.domain.OrderStatus;
+import br.edu.ifpb.alumigest.orders.dto.OrderCancelRequest;
 import br.edu.ifpb.alumigest.orders.dto.OrderConvertRequest;
 import br.edu.ifpb.alumigest.orders.dto.OrderResponse;
 import br.edu.ifpb.alumigest.orders.dto.OrderSummaryResponse;
@@ -418,5 +419,95 @@ class OrderServiceImplTest {
                 OffsetDateTime.now(ZoneOffset.UTC), OffsetDateTime.now(ZoneOffset.UTC), true,
                 Collections.emptyList()
         );
+    }
+
+    // =========================================================================
+    // Testes de Cancelamento de Pedido / Ordem de Serviço (US-13.5 / US-15.1)
+    // =========================================================================
+
+    @Test
+    @DisplayName("Deve cancelar pedido com sucesso quando status for WAITING_PRODUCTION e justificativa válida")
+    void shouldCancelOrderSuccessfully() {
+        Order savedOrder = buildSavedOrder();
+        OrderCancelRequest cancelRequest = new OrderCancelRequest("Cliente desistiu por motivo de mudança de obra.");
+
+        given(orderRepository.findByIdWithDetails(orderId)).willReturn(Optional.of(savedOrder));
+        given(orderRepository.save(any(Order.class))).willAnswer(inv -> inv.getArgument(0));
+
+        OrderResponse expectedResponse = new OrderResponse(
+                orderId, "OS-2026-0001", budgetId, null,
+                "Empresa XPTO Ltda", null, null,
+                OrderStatus.CANCELLED, "Cancelado",
+                ApprovalChannel.WHATSAPP, "WhatsApp",
+                LocalDate.now(ZoneOffset.UTC), request.dataPrevisaoEntrega(), null,
+                budget.getSubtotal(), budget.getDiscountValue(), BigDecimal.ZERO, BigDecimal.ZERO,
+                budget.getTotal(), null, null, null, "Cliente desistiu por motivo de mudança de obra.",
+                OffsetDateTime.now(ZoneOffset.UTC), OffsetDateTime.now(ZoneOffset.UTC), true,
+                Collections.emptyList()
+        );
+        given(orderMapper.toResponse(any(Order.class))).willReturn(expectedResponse);
+
+        OrderResponse result = orderService.cancelOrder(orderId, cancelRequest);
+
+        assertThat(result).isNotNull();
+        assertThat(result.status()).isEqualTo(OrderStatus.CANCELLED);
+        assertThat(result.justificativaCancelamento()).isEqualTo("Cliente desistiu por motivo de mudança de obra.");
+
+        ArgumentCaptor<Order> captor = ArgumentCaptor.forClass(Order.class);
+        verify(orderRepository).save(captor.capture());
+        assertThat(captor.getValue().getStatus()).isEqualTo(OrderStatus.CANCELLED);
+        assertThat(captor.getValue().getJustificativaCancelamento()).isEqualTo("Cliente desistiu por motivo de mudança de obra.");
+    }
+
+    @Test
+    @DisplayName("Deve lançar ResourceNotFoundException ao tentar cancelar pedido inexistente")
+    void shouldThrowResourceNotFoundExceptionWhenOrderDoesNotExist() {
+        UUID nonExistentId = UUID.randomUUID();
+        OrderCancelRequest cancelRequest = new OrderCancelRequest("Justificativa válida com mais de 10 chars.");
+
+        given(orderRepository.findByIdWithDetails(nonExistentId)).willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> orderService.cancelOrder(nonExistentId, cancelRequest))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining(nonExistentId.toString());
+
+        verify(orderRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Deve lançar BusinessException ao tentar cancelar pedido que já está em produção")
+    void shouldThrowBusinessExceptionWhenOrderIsInProduction() {
+        Order inProdOrder = Order.builder()
+                .id(orderId)
+                .codigo("OS-2026-0001")
+                .orcamentoId(budgetId)
+                .clienteNome("Cliente Teste")
+                .status(OrderStatus.IN_PRODUCTION)
+                .canalAprovacao(ApprovalChannel.WHATSAPP)
+                .build();
+
+        OrderCancelRequest cancelRequest = new OrderCancelRequest("Tentativa de cancelamento enquanto fábrica corta perfis.");
+        given(orderRepository.findByIdWithDetails(orderId)).willReturn(Optional.of(inProdOrder));
+
+        assertThatThrownBy(() -> orderService.cancelOrder(orderId, cancelRequest))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("Não é possível cancelar um pedido no status IN_PRODUCTION");
+
+        verify(orderRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Deve lançar IllegalArgumentException ao tentar cancelar com justificativa menor que 10 caracteres")
+    void shouldThrowIllegalArgumentExceptionWhenJustificativaIsTooShort() {
+        Order savedOrder = buildSavedOrder();
+        OrderCancelRequest cancelRequest = new OrderCancelRequest("Curto");
+
+        given(orderRepository.findByIdWithDetails(orderId)).willReturn(Optional.of(savedOrder));
+
+        assertThatThrownBy(() -> orderService.cancelOrder(orderId, cancelRequest))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("pelo menos 10 caracteres");
+
+        verify(orderRepository, never()).save(any());
     }
 }

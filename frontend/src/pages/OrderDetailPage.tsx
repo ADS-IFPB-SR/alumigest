@@ -51,6 +51,13 @@ export function OrderDetailPage() {
       {
         onSuccess: () => {
           setIsCancelModalOpen(false);
+          toast.success('Ordem de serviço cancelada com sucesso.');
+        },
+        onError: (err: any) => {
+          const message =
+            err?.response?.data?.message ||
+            'Não foi possível cancelar a ordem de serviço. Verifique as regras do status atual.';
+          toast.error(message);
         },
       }
     );

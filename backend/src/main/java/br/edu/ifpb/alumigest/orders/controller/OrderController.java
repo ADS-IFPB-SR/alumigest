@@ -4,6 +4,7 @@ import br.edu.ifpb.alumigest.common.dto.ErrorResponse;
 import br.edu.ifpb.alumigest.common.dto.PageResponse;
 import br.edu.ifpb.alumigest.orders.domain.ApprovalChannel;
 import br.edu.ifpb.alumigest.orders.domain.OrderStatus;
+import br.edu.ifpb.alumigest.orders.dto.OrderCancelRequest;
 import br.edu.ifpb.alumigest.orders.dto.OrderConvertRequest;
 import br.edu.ifpb.alumigest.orders.dto.OrderResponse;
 import br.edu.ifpb.alumigest.orders.dto.OrderSummaryResponse;
@@ -20,6 +21,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -183,6 +185,48 @@ public class OrderController {
             @PathVariable UUID id) {
 
         OrderResponse response = orderService.findDetailedById(id);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Cancela formalmente um pedido de venda / ordem de serviço com justificativa obrigatória.
+     *
+     * @param id      identificador único do pedido
+     * @param request payload com justificativa válida (10 a 1000 caracteres)
+     * @return 200 OK com o pedido cancelado
+     */
+    @PatchMapping("/{id}/cancel")
+    @Operation(
+            summary = "Cancelar ordem de serviço / pedido de venda",
+            description = "Cancela o pedido de venda mediante justificativa formal obrigatória (mínimo 10 caracteres). "
+                    + "Permitido apenas quando o pedido estiver aguardando produção (CREATED ou WAITING_PRODUCTION)."
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Ordem de serviço cancelada com sucesso",
+            content = @Content(schema = @Schema(implementation = OrderResponse.class))
+    )
+    @ApiResponse(
+            responseCode = "400",
+            description = "Justificativa de cancelamento ausente ou inválida (menos de 10 caracteres)",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+    )
+    @ApiResponse(
+            responseCode = "404",
+            description = "Ordem de serviço não encontrada com o ID informado",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+    )
+    @ApiResponse(
+            responseCode = "422",
+            description = "Regra de negócio violada: pedido já está em produção ou concluído",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+    )
+    public ResponseEntity<OrderResponse> cancelOrder(
+            @Parameter(description = "Identificador único (UUID) do pedido", required = true)
+            @PathVariable UUID id,
+            @RequestBody @Valid OrderCancelRequest request) {
+
+        OrderResponse response = orderService.cancelOrder(id, request);
         return ResponseEntity.ok(response);
     }
 }
