@@ -163,7 +163,6 @@ public class OrderServiceImpl implements OrderService {
     // =========================================================================
     // Métodos privados de suporte (SRP — separação de responsabilidades internas)
     // =========================================================================
-
     /**
      * Status elegíveis para conversão em pedido de venda.
      * DRAFT e SENT são promovidos para APPROVED atomicamente durante a conversão.
@@ -392,4 +391,28 @@ public class OrderServiceImpl implements OrderService {
   private BigDecimal orZero(BigDecimal value) {
     return value != null ? value : BigDecimal.ZERO;
   }
+    @Override
+    @Transactional
+    public OrderResponse updateStatus(UUID id, OrderStatus targetStatus) {
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Pedido", id));
+
+        if (targetStatus == null) {
+            throw new IllegalArgumentException("O status de destino é obrigatório.");
+        }
+        try {
+            switch (targetStatus) {
+                case IN_PRODUCTION -> order.iniciarProducao();
+                case COMPLETED -> order.concluir(null);
+                default -> throw new ConflictException(
+                        "Não é permitida a transição para o status " + targetStatus + "."
+                );
+            }
+        } catch (BusinessException ex) {
+            throw new ConflictException(ex.getMessage());
+        }
+        Order savedOrder = orderRepository.save(order);
+        return orderMapper.toResponse(savedOrder);
+    }
+
 }

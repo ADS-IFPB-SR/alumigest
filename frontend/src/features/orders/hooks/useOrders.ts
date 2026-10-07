@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { ordersApi } from '../services/ordersApi';
-import type { OrderCancelRequest, OrderFilterParams } from '../types';
+import type { OrderCancelRequest, OrderFilterParams, OrderStatus } from '../types';
 
 export { useConvertBudget } from './useConvertBudget';
 
@@ -37,6 +37,23 @@ export const useCancelOrder = (id?: string) => {
     mutationFn: (data: OrderCancelRequest) => ordersApi.cancelOrder(id!, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
+      if (id) {
+        queryClient.invalidateQueries({ queryKey: ['order', id] });
+      }
+    },
+  });
+};
+
+export const useUpdateOrderStatus = (id?: string) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (status: OrderStatus) =>
+      ordersApi.updateStatus(id!, status),
+
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+
       if (id) {
         queryClient.invalidateQueries({ queryKey: ['order', id] });
       }

@@ -7,6 +7,7 @@ import {
   useOrder,
   useCancelOrder,
   OrderDetailHeader,
+  useUpdateOrderStatus,
   OrderCancelledAlert,
   OrderOriginBudgetCard,
   OrderDeliveryTimelineCard,
@@ -20,19 +21,30 @@ export function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { data: order, isLoading, isError, refetch } = useOrder(id);
   const { mutate: cancelOrder, isPending: isCanceling } = useCancelOrder(id);
+  const { mutate: updateOrderStatus, isPending: isUpdatingStatus } = useUpdateOrderStatus(id);
   const { mutate: downloadPdfTecnico, isPending: isDownloadingPdf } = useDownloadPdfTecnico();
 
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
 
   const handleAdvanceProduction = () => {
-    toast('Fluxo de avanço fabril será consolidado com a US-14.', {
-      icon: '🏭',
+    updateOrderStatus('IN_PRODUCTION', {
+      onSuccess: () => {
+        toast.success('Ordem de serviço avançada para produção.');
+      },
+      onError: () => {
+        toast.error('Não foi possível avançar a ordem para produção.');
+      },
     });
   };
 
   const handleCompleteProduction = () => {
-    toast('Fluxo de conclusão fabril será consolidado com a US-18.', {
-      icon: '🏁',
+    updateOrderStatus('COMPLETED', {
+      onSuccess: () => {
+        toast.success('Ordem de serviço concluída com sucesso.');
+      },
+      onError: () => {
+        toast.error('Não foi possível concluir a ordem de serviço.');
+      },
     });
   };
 
