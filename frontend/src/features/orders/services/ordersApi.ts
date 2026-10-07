@@ -1,4 +1,5 @@
 import { api } from '../../../lib/api';
+import { extractFilenameFromContentDisposition } from '../../budgets/services/budgetsApi';
 import type {
   Order,
   OrderCancelRequest,
@@ -41,6 +42,33 @@ export const ordersApi = {
   async cancelOrder(id: string, data: OrderCancelRequest): Promise<Order> {
     const response = await api.patch<Order>(`/orders/${id}/cancel`, data);
     return response.data;
+  },
+
+  /**
+   * Baixa o comprovante oficial do Pedido de Venda em PDF (US-16.1 / #364).
+   * Chama GET /api/v1/orders/{id}/pdf/comprovante e inicia o download via Blob.
+   */
+  async downloadComprovantePdf(id: string, codigo?: string): Promise<void> {
+    const response = await api.get(`/orders/${id}/pdf/comprovante`, {
+      responseType: 'blob',
+    });
+
+    const fallbackFilename = `comprovante-${codigo ?? id}.pdf`;
+    const disposition = (
+      response.headers?.['content-disposition'] ||
+      response.headers?.['Content-Disposition']
+    ) as string | undefined;
+    const filename = extractFilenameFromContentDisposition(disposition, fallbackFilename);
+
+    const blob = new Blob([response.data], { type: 'application/pdf' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
   },
 
   /**

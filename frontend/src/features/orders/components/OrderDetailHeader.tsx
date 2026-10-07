@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, Play, CheckCircle, Ban, FileText, Loader2 } from 'lucide-react';
+import { ArrowLeft, Play, CheckCircle, Ban, FileText, Download, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { Order } from '../types';
 import { OrderStatusBadge } from './OrderStatusBadge';
@@ -7,19 +7,23 @@ import { OrderStatusBadge } from './OrderStatusBadge';
 interface OrderDetailHeaderProps {
   order: Order;
   isDownloadingPdf?: boolean;
+  isDownloadingComprovante?: boolean;
   onAdvanceProduction?: () => void;
   onCompleteProduction?: () => void;
   onOpenCancelModal?: () => void;
   onPrintTechnicalPdf?: () => void;
+  onDownloadComprovante?: () => void;
 }
 
 export const OrderDetailHeader: React.FC<OrderDetailHeaderProps> = ({
   order,
   isDownloadingPdf = false,
+  isDownloadingComprovante = false,
   onAdvanceProduction,
   onCompleteProduction,
   onOpenCancelModal,
   onPrintTechnicalPdf,
+  onDownloadComprovante,
 }) => {
   const isAwaitingProduction = order.status === 'CREATED' || order.status === 'WAITING_PRODUCTION';
   const isInProduction = order.status === 'IN_PRODUCTION';
@@ -88,6 +92,24 @@ export const OrderDetailHeader: React.FC<OrderDetailHeaderProps> = ({
               <FileText className="w-4 h-4" />
             )}
             <span>{isDownloadingPdf ? 'Baixando Ficha...' : 'Ficha de Fabricação'}</span>
+          </button>
+        )}
+
+        {/* Comprovante de Pedido de Venda em PDF — US-16.1 (#364) */}
+        {order.status !== 'CANCELLED' && (
+          <button
+            type="button"
+            id="btn-download-comprovante-pdf"
+            onClick={onDownloadComprovante}
+            disabled={isDownloadingComprovante}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 disabled:opacity-50 rounded-lg border border-emerald-200 transition-colors cursor-pointer disabled:cursor-not-allowed"
+          >
+            {isDownloadingComprovante ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Download className="w-4 h-4" />
+            )}
+            <span>{isDownloadingComprovante ? 'Gerando PDF...' : 'Baixar Comprovante PDF'}</span>
           </button>
         )}
 

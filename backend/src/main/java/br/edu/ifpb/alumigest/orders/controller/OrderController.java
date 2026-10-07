@@ -5,6 +5,7 @@ import br.edu.ifpb.alumigest.common.dto.PageResponse;
 import br.edu.ifpb.alumigest.orders.domain.ApprovalChannel;
 import br.edu.ifpb.alumigest.orders.domain.OrderStatus;
 import br.edu.ifpb.alumigest.orders.dto.OrderConvertRequest;
+import br.edu.ifpb.alumigest.orders.dto.OrderPdfDTO;
 import br.edu.ifpb.alumigest.orders.dto.OrderResponse;
 import br.edu.ifpb.alumigest.orders.dto.OrderSummaryResponse;
 import br.edu.ifpb.alumigest.orders.service.OrderService;
@@ -18,6 +19,8 @@ import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -184,5 +187,44 @@ public class OrderController {
 
         OrderResponse response = orderService.findDetailedById(id);
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Gera e retorna o comprovante oficial do Pedido de Venda em PDF A4 para download.
+     * Utiliza os valores congelados no pedido (lock de preços). US-16.1 (#364).
+     *
+     * @param id Identificador único (UUID) do pedido
+     * @return PDF A4 do comprovante com Content-Disposition attachment
+     */
+    @GetMapping("/{id}/pdf/comprovante")
+    @Operation(
+            summary = "Baixar comprovante PDF do pedido de venda",
+            description = "Gera e exporta o comprovante oficial do Pedido de Venda em formato PDF A4 para download."
+                    + " Utiliza exclusivamente os valores congelados no pedido (lock de preços) — US-16.1."
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Comprovante PDF gerado com sucesso (binário)"
+    )
+    @ApiResponse(
+            responseCode = "404",
+            description = "Pedido não encontrado",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+    )
+    public ResponseEntity<byte[]> gerarPdfComprovante(
+            @Parameter(description = "Identificador único (UUID) do pedido", required = true)
+            @PathVariable UUID id) {
+
+        OrderPdfDTO pdfDto = orderService.gerarComprovanteById(id);
+
+        ContentDisposition contentDisposition = ContentDisposition.attachment()
+                .filename(pdfDto.filename())
+                .build();
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .headers(headers -> headers.setContentDisposition(contentDisposition))
+                .contentLength(pdfDto.bytes().length)
+                .body(pdfDto.bytes());
     }
 }

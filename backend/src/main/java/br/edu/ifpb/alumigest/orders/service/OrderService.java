@@ -4,6 +4,7 @@ import br.edu.ifpb.alumigest.common.dto.PageResponse;
 import br.edu.ifpb.alumigest.orders.domain.ApprovalChannel;
 import br.edu.ifpb.alumigest.orders.domain.OrderStatus;
 import br.edu.ifpb.alumigest.orders.dto.OrderConvertRequest;
+import br.edu.ifpb.alumigest.orders.dto.OrderPdfDTO;
 import br.edu.ifpb.alumigest.orders.dto.OrderResponse;
 import br.edu.ifpb.alumigest.orders.dto.OrderSummaryResponse;
 import org.springframework.data.domain.Pageable;
@@ -37,6 +38,16 @@ public interface OrderService {
      * @throws br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException se não encontrado
      */
     OrderResponse findDetailedById(UUID id);
+
+    /**
+     * Gera o comprovante oficial de Pedido de Venda em PDF A4.
+     * Utiliza os valores congelados no pedido (lock de preços).
+     *
+     * @param id Identificador único (UUID) do pedido
+     * @return DTO com os bytes do PDF e o nome do arquivo para download
+     * @throws br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException se o pedido não for encontrado
+     */
+    OrderPdfDTO gerarComprovanteById(UUID id);
 
     /**
      * Lista pedidos de venda de forma paginada com suporte a filtros dinâmicos.
