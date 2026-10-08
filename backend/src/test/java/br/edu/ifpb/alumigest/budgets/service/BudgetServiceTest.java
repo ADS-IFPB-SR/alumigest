@@ -441,9 +441,9 @@ class BudgetServiceTest {
     }
 
     @Test
-    @DisplayName("US-15.2: Deve permitir transição APPROVED para DRAFT quando pedido vinculado estiver cancelado")
-    void updateStatus_ShouldAllowApprovedToDraft_WhenLinkedOrderIsCancelled() {
-        budget.setStatus(BudgetStatus.APPROVED);
+    @DisplayName("US-15.2: Deve permitir transição CANCELLED para DRAFT quando pedido vinculado estiver cancelado")
+    void updateStatus_ShouldAllowCancelledToDraft_WhenLinkedOrderIsCancelled() {
+        budget.setStatus(BudgetStatus.CANCELLED);
         UUID budgetId = budget.getId();
         when(budgetRepository.findById(budgetId)).thenReturn(Optional.of(budget));
 
@@ -461,9 +461,9 @@ class BudgetServiceTest {
     }
 
     @Test
-    @DisplayName("US-15.2: Deve lançar ConflictException na transição APPROVED para DRAFT quando pedido vinculado não estiver cancelado")
+    @DisplayName("US-15.2: Deve lançar ConflictException na transição CANCELLED para DRAFT quando pedido vinculado não estiver cancelado")
     void updateStatus_ShouldThrowConflictException_WhenLinkedOrderIsNotCancelled() {
-        budget.setStatus(BudgetStatus.APPROVED);
+        budget.setStatus(BudgetStatus.CANCELLED);
         UUID budgetId = budget.getId();
         when(budgetRepository.findById(budgetId)).thenReturn(Optional.of(budget));
 
@@ -478,15 +478,15 @@ class BudgetServiceTest {
         assertThatThrownBy(() -> budgetService.updateStatus(budgetId, request))
                 .isInstanceOf(ConflictException.class)
                 .hasMessageContaining("OS-2026-0001")
-                .hasMessageContaining("não está cancelado");
+                .hasMessageContaining("não está cancelada");
 
         verify(budgetRepository, never()).save(budget);
     }
 
     @Test
-    @DisplayName("US-15.2: reabrirOrcamento deve reabrir para DRAFT quando orçamento estiver APPROVED e pedido cancelado")
-    void reabrirOrcamento_ShouldReopenBudgetToDraft_WhenBudgetIsApprovedAndOrderIsCancelled() {
-        budget.setStatus(BudgetStatus.APPROVED);
+    @DisplayName("US-15.2: reabrirOrcamento deve reabrir para DRAFT quando orçamento estiver CANCELLED e pedido cancelado")
+    void reabrirOrcamento_ShouldReopenBudgetToDraft_WhenBudgetIsCancelledAndOrderIsCancelled() {
+        budget.setStatus(BudgetStatus.CANCELLED);
         UUID budgetId = budget.getId();
         when(budgetRepository.findById(budgetId)).thenReturn(Optional.of(budget));
 
@@ -515,8 +515,8 @@ class BudgetServiceTest {
 
     @Test
     @DisplayName("US-15.2: reabrirOrcamento deve lançar ConflictException quando pedido vinculado não estiver cancelado")
-    void reabrirOrcamento_ShouldThrowConflictException_WhenBudgetIsApprovedAndOrderIsNotCancelled() {
-        budget.setStatus(BudgetStatus.APPROVED);
+    void reabrirOrcamento_ShouldThrowConflictException_WhenBudgetIsCancelledAndOrderIsNotCancelled() {
+        budget.setStatus(BudgetStatus.CANCELLED);
         UUID budgetId = budget.getId();
         when(budgetRepository.findById(budgetId)).thenReturn(Optional.of(budget));
 
@@ -529,21 +529,35 @@ class BudgetServiceTest {
         assertThatThrownBy(() -> budgetService.reabrirOrcamento(budgetId))
                 .isInstanceOf(ConflictException.class)
                 .hasMessageContaining("OS-2026-0001")
-                .hasMessageContaining("não está cancelado");
+                .hasMessageContaining("não está cancelada");
 
         verify(budgetRepository, never()).save(budget);
     }
 
     @Test
-    @DisplayName("US-15.2: reabrirOrcamento deve lançar BusinessException quando orçamento não estiver APPROVED")
-    void reabrirOrcamento_ShouldThrowBusinessException_WhenBudgetIsNotApproved() {
+    @DisplayName("US-15.2: reabrirOrcamento deve lançar BusinessException quando orçamento não estiver CANCELLED")
+    void reabrirOrcamento_ShouldThrowBusinessException_WhenBudgetIsNotCancelled() {
         budget.setStatus(BudgetStatus.SENT);
         UUID budgetId = budget.getId();
         when(budgetRepository.findById(budgetId)).thenReturn(Optional.of(budget));
 
         assertThatThrownBy(() -> budgetService.reabrirOrcamento(budgetId))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("Apenas orçamentos aprovados podem ser reabertos");
+                .hasMessageContaining("Apenas orçamentos cancelados podem ser reabertos");
+
+        verify(budgetRepository, never()).save(budget);
+    }
+
+    @Test
+    @DisplayName("US-15.2: reabrirOrcamento deve lançar BusinessException quando orçamento estiver APPROVED")
+    void reabrirOrcamento_ShouldThrowBusinessException_WhenBudgetIsApproved() {
+        budget.setStatus(BudgetStatus.APPROVED);
+        UUID budgetId = budget.getId();
+        when(budgetRepository.findById(budgetId)).thenReturn(Optional.of(budget));
+
+        assertThatThrownBy(() -> budgetService.reabrirOrcamento(budgetId))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("Apenas orçamentos cancelados podem ser reabertos");
 
         verify(budgetRepository, never()).save(budget);
     }

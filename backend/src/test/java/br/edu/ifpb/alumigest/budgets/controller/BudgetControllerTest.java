@@ -803,28 +803,28 @@ class BudgetControllerTest {
         UUID id = UUID.randomUUID();
 
         when(budgetService.reabrirOrcamento(id))
-                .thenThrow(new ConflictException("Não é possível reabrir o orçamento: o pedido de venda vinculado (OS-2026-0001) não está cancelado."));
+                .thenThrow(new ConflictException("Não é possível reabrir o orçamento: a ordem de serviço vinculada (OS-2026-0001) não está cancelada."));
 
         mockMvc.perform(post("/api/budgets/{id}/reopen", id))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.status").value(409))
-                .andExpect(jsonPath("$.message").value(containsString("não está cancelado")));
+                .andExpect(jsonPath("$.message").value(containsString("não está cancelada")));
 
         verify(budgetService).reabrirOrcamento(id);
     }
 
     @Test
-    @DisplayName("[US-15.2] Deve retornar 422 quando orçamento não estiver aprovado")
+    @DisplayName("[US-15.2] Deve retornar 422 quando orçamento não estiver cancelado")
     void reabrirOrcamento_DeveRetornar422_QuandoOrcamentoNaoEstiverAprovado() throws Exception {
         UUID id = UUID.randomUUID();
 
         when(budgetService.reabrirOrcamento(id))
-                .thenThrow(new BusinessException("Apenas orçamentos aprovados podem ser reabertos."));
+                .thenThrow(new BusinessException("Apenas orçamentos cancelados podem ser reabertos."));
 
         mockMvc.perform(post("/api/budgets/{id}/reopen", id))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.status").value(422))
-                .andExpect(jsonPath("$.message").value("Apenas orçamentos aprovados podem ser reabertos."));
+                .andExpect(jsonPath("$.message").value("Apenas orçamentos cancelados podem ser reabertos."));
 
         verify(budgetService).reabrirOrcamento(id);
     }

@@ -7,7 +7,7 @@ import { useUpdateBudgetStatus, useReopenBudget } from '../hooks/useBudgets';
 import type { CreateBudgetPayload, BudgetStatus, BudgetDetail } from '../types';
 import { WhatsAppSummaryModal } from './WhatsAppSummaryModal';
 import { shareCommercialPdfLink } from '../utils/whatsappHelper';
-import { useOrders } from '../../orders/hooks/useOrders';
+import type { Order } from '../../orders/types/order';
 import toast from 'react-hot-toast';
 
 interface BudgetDetailActionsProps {
@@ -21,6 +21,8 @@ interface BudgetDetailActionsProps {
   readonly onDownloadPdfTecnico?: () => void;
   readonly isDownloadingPdfTecnico?: boolean;
   readonly onApproveClick?: () => void;
+  readonly linkedOrder?: Order | { id: string; codigo?: string; status?: string } | null;
+  readonly isOrderCancelled?: boolean;
 }
 
 function getApprovalButtonTooltip(isApproved: boolean, isCancelledOrRejected: boolean, isExpired: boolean): string {
@@ -165,6 +167,7 @@ function useWhatsAppMenu() {
 
 interface BudgetApprovalOrOrderActionsProps {
   readonly isApproved: boolean;
+  readonly isCancelled: boolean;
   readonly linkedOrderId?: string;
   readonly isOrderCancelled: boolean;
   readonly budgetCode: string;
@@ -178,6 +181,7 @@ interface BudgetApprovalOrOrderActionsProps {
 
 function BudgetApprovalOrOrderActions({
   isApproved,
+  isCancelled,
   linkedOrderId,
   isOrderCancelled,
   budgetCode,
@@ -190,7 +194,7 @@ function BudgetApprovalOrOrderActions({
 }: BudgetApprovalOrOrderActionsProps) {
   const navigate = useNavigate();
 
-  if (isApproved) {
+  if ((isCancelled && isOrderCancelled) || isApproved) {
     const handleNavigate = () => {
       if (linkedOrderId) {
         navigate(`/ordens-servico/${linkedOrderId}`);
@@ -262,6 +266,8 @@ export function BudgetDetailActions({
   onDownloadPdfTecnico,
   isDownloadingPdfTecnico,
   onApproveClick,
+  linkedOrder,
+  isOrderCancelled,
 }: BudgetDetailActionsProps) {
   const navigate = useNavigate();
   const { mutate: updateStatus } = useUpdateBudgetStatus();
@@ -273,11 +279,7 @@ export function BudgetDetailActions({
   const isCancelledOrRejected = isCancelled || currentStatus === 'REJECTED';
   const isApprovalDisabled = isApproved || isCancelledOrRejected || isExpired;
 
-  const { data: linkedOrders } = useOrders(
-    isApproved ? { search: budgetCode, size: 1 } : undefined
-  );
-  const linkedOrder = isApproved ? linkedOrders?.content?.[0] : undefined;
-  const isOrderCancelled = linkedOrder?.status === 'CANCELLED';
+  const effectiveIsOrderCancelled = Boolean(isOrderCancelled ?? (linkedOrder?.status === 'CANCELLED'));
   const approvalButtonTooltip = getApprovalButtonTooltip(isApproved, isCancelledOrRejected, isExpired);
 
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
@@ -451,8 +453,9 @@ export function BudgetDetailActions({
       {/* ── 4º Aprovar ou Ver Ordem de Serviço (US-13.3 / US-15.2) ──────── */}
       <BudgetApprovalOrOrderActions
         isApproved={isApproved}
+        isCancelled={isCancelled}
         linkedOrderId={linkedOrder?.id}
-        isOrderCancelled={isOrderCancelled}
+        isOrderCancelled={effectiveIsOrderCancelled}
         budgetCode={budgetCode}
         budgetId={budgetId}
         isApprovalDisabled={isApprovalDisabled}

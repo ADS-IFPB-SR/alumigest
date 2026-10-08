@@ -215,8 +215,8 @@ public BudgetResponseDTO create(BudgetCreateRequest requestDTO) {
     }
 
     /**
-     * Reabre um orçamento aprovado de volta para o status DRAFT caso o pedido de venda vinculado
-     * tenha sido cancelado (US-15.2).
+     * Reabre um orçamento cancelado de volta para o status DRAFT caso a ordem de serviço vinculada
+     * tenha sido cancelada (US-15.2).
      *
      * @param id ID do orçamento a ser reaberto
      * @return DTO com os dados do orçamento atualizado em DRAFT
@@ -225,8 +225,8 @@ public BudgetResponseDTO create(BudgetCreateRequest requestDTO) {
     public BudgetResponseDTO reabrirOrcamento(UUID id) {
         Budget budget = getBudgetOrThrow(id);
 
-        if (budget.getStatus() != BudgetStatus.APPROVED) {
-            throw new BusinessException("Apenas orçamentos aprovados podem ser reabertos.");
+        if (budget.getStatus() != BudgetStatus.CANCELLED) {
+            throw new BusinessException("Apenas orçamentos cancelados podem ser reabertos.");
         }
 
         validateStatusTransition(budget, BudgetStatus.DRAFT);
@@ -403,17 +403,18 @@ public BudgetResponseDTO create(BudgetCreateRequest requestDTO) {
         BudgetStatus current = budget.getStatus();
         if (current == target) return;
 
-        if (current == BudgetStatus.APPROVED && target == BudgetStatus.DRAFT) {
+        // US-15.2: Transição condicional de CANCELLED para DRAFT
+        if (current == BudgetStatus.CANCELLED && target == BudgetStatus.DRAFT) {
             Optional<Order> orderOpt = orderRepository.findByOrcamentoId(budget.getId());
             if (orderOpt.isPresent()) {
                 Order order = orderOpt.get();
                 if (order.getStatus() == OrderStatus.CANCELLED) {
-                    return;
+                    return; // Transição autorizada!
                 }
-                throw new ConflictException("Não é possível reabrir o orçamento: o pedido de venda vinculado (" 
-                        + order.getCodigo() + ") não está cancelado.");
+                throw new ConflictException("Não é possível reabrir o orçamento: a ordem de serviço vinculada (" + order.getCodigo() + ") não está cancelada.");
             }
-            throw new InvalidBudgetStatusTransitionException(current, target);
+            // Se for orçamento cancelado sem O.S., também é permitida a reabertura
+            return;
         }
 
         validateStatusTransition(current, target);

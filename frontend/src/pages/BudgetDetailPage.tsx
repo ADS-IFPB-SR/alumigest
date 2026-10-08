@@ -382,11 +382,13 @@ export function BudgetDetailPage() {
   const { mutate: downloadPdf, isPending: isDownloadingPdf } = useDownloadPdfTecnico();
   const { mutate: reopenBudget, isPending: isReopening } = useReopenBudget();
 
+  const isCancelled = budget?.status === 'CANCELLED';
   const isApproved = budget?.status === 'APPROVED';
-  const orderSearchParams = isApproved && budget?.code ? { search: budget.code, size: 1 } : undefined;
+  const orderSearchParams = (isApproved || isCancelled) && budget?.code ? { search: budget.code, size: 1 } : undefined;
   const { data: linkedOrders } = useOrders(orderSearchParams);
-  const linkedOrder = isApproved ? linkedOrders?.content?.[0] : undefined;
+  const linkedOrder = (isApproved || isCancelled) ? linkedOrders?.content?.[0] : undefined;
   const isOrderCancelled = linkedOrder?.status === 'CANCELLED';
+  const canReopen = isCancelled && isOrderCancelled;
 
   const downloadPdfTecnico = () => {
     if (!budget || isDownloadingPdf || budget.status === 'CANCELLED') return;
@@ -527,6 +529,8 @@ export function BudgetDetailPage() {
           isDownloadingPdfTecnico={isDownloadingPdf}
           onApproveClick={() => setShowApprovalModal(true)}
           isExpired={isBudgetExpired}
+          linkedOrder={linkedOrder}
+          isOrderCancelled={isOrderCancelled}
         />
       </header>
 
@@ -541,7 +545,7 @@ export function BudgetDetailPage() {
           />
 
           <CancelledOrderBanner
-            isVisible={Boolean(isApproved && isOrderCancelled)}
+            isVisible={canReopen}
             linkedOrderCodigo={linkedOrder?.codigo}
             isReopening={isReopening}
             onReopen={() => reopenBudget(budget.id)}
