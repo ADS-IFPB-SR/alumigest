@@ -188,6 +188,14 @@ public class OrderController {
         return ResponseEntity.ok(response);
     }
 
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<OrderResponse> updateStatus(
+            @PathVariable UUID id,
+            @RequestParam OrderStatus status
+    ) {
+        return ResponseEntity.ok(orderService.updateStatus(id, status));
+    }
+
     /**
      * Cancela formalmente um pedido de venda / ordem de serviço com justificativa obrigatória.
      *

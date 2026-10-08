@@ -66,4 +66,7 @@ public interface OrderService {
             String search,
             Pageable pageable
     );
+
+    OrderResponse updateStatus(UUID id, OrderStatus status);
+
 }

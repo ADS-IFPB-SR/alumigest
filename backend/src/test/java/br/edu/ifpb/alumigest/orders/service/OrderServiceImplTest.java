@@ -422,6 +422,147 @@ class OrderServiceImplTest {
     }
 
     // =========================================================================
+    // updateStatus — Máquina de Estados [US-15.1]
+    // =========================================================================
+
+    @Test
+    @DisplayName("[US-15.1] Deve iniciar produção quando pedido está aguardando produção")
+    void shouldStartProductionWhenOrderIsWaitingProduction() {
+        // Arrange
+        Order order = buildSavedOrder();
+        OrderResponse expectedResponse = buildOrderResponse();
+
+        given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+        given(orderRepository.save(order)).willReturn(order);
+        given(orderMapper.toResponse(order)).willReturn(expectedResponse);
+
+        // Act
+        OrderResponse result = orderService.updateStatus(
+                orderId,
+                OrderStatus.IN_PRODUCTION
+        );
+
+        // Assert
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.IN_PRODUCTION);
+        assertThat(result).isEqualTo(expectedResponse);
+
+        verify(orderRepository).save(order);
+        verify(orderMapper).toResponse(order);
+    }
+
+    @Test
+    @DisplayName("[US-15.1] Deve concluir pedido quando está em produção")
+    void shouldCompleteOrderWhenOrderIsInProduction() {
+        // Arrange
+        Order order = buildSavedOrder();
+        order.iniciarProducao();
+
+        OrderResponse expectedResponse = buildOrderResponse();
+
+        given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+        given(orderRepository.save(order)).willReturn(order);
+        given(orderMapper.toResponse(order)).willReturn(expectedResponse);
+
+        // Act
+        OrderResponse result = orderService.updateStatus(
+                orderId,
+                OrderStatus.COMPLETED
+        );
+
+        // Assert
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.COMPLETED);
+        assertThat(order.getDataConclusao()).isNotNull();
+        assertThat(result).isEqualTo(expectedResponse);
+
+        verify(orderRepository).save(order);
+        verify(orderMapper).toResponse(order);
+    }
+
+    @Test
+    @DisplayName("[US-15.1] Deve lançar ResourceNotFoundException quando pedido não existe")
+    void shouldThrowResourceNotFoundWhenUpdatingStatusOfNonexistentOrder() {
+        // Arrange
+        given(orderRepository.findById(orderId)).willReturn(Optional.empty());
+
+        // Act & Assert
+        assertThatThrownBy(() ->
+                orderService.updateStatus(orderId, OrderStatus.IN_PRODUCTION)
+        )
+                .isInstanceOf(ResourceNotFoundException.class);
+
+        verify(orderRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("[US-15.1] Deve rejeitar destino de status não permitido")
+    void shouldThrowConflictExceptionWhenTargetStatusIsNotAllowed() {
+        // Arrange
+        Order order = buildSavedOrder();
+
+        given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+
+        // Act & Assert
+        assertThatThrownBy(() ->
+                orderService.updateStatus(orderId, OrderStatus.WAITING_PRODUCTION)
+        )
+                .isInstanceOf(ConflictException.class);
+
+        verify(orderRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("[US-15.1] Deve rejeitar conclusão quando pedido ainda não está em produção")
+    void shouldRejectCompletionWhenOrderIsNotInProduction() {
+        // Arrange
+        Order order = buildSavedOrder();
+
+        given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+
+        // Act & Assert
+        assertThatThrownBy(() ->
+                orderService.updateStatus(orderId, OrderStatus.COMPLETED)
+        )
+                .isInstanceOf(ConflictException.class);
+
+        verify(orderRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("[US-15.1] Deve rejeitar início de produção quando pedido já está concluído")
+    void shouldRejectStartingProductionWhenOrderIsAlreadyCompleted() {
+        // Arrange
+        Order order = buildSavedOrder();
+        order.iniciarProducao();
+        order.concluir(LocalDate.now(ZoneOffset.UTC));
+
+        given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+
+        // Act & Assert
+        assertThatThrownBy(() ->
+                orderService.updateStatus(orderId, OrderStatus.IN_PRODUCTION)
+        )
+                .isInstanceOf(ConflictException.class);
+
+        verify(orderRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("[US-15.1] Deve rejeitar status nulo")
+    void shouldRejectNullTargetStatus() {
+        // Arrange
+        given(orderRepository.findById(orderId)).willReturn(Optional.of(buildSavedOrder()));
+
+        // Act & Assert
+        assertThatThrownBy(() ->
+                orderService.updateStatus(orderId, null)
+        )
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("obrigatório");
+
+        verify(orderRepository, never()).save(any());
+    }
+
+    // =========================================================================
     // Testes de Cancelamento de Pedido / Ordem de Serviço (US-13.5 / US-15.1)
     // =========================================================================
 

@@ -4,6 +4,7 @@ import type {
   OrderCancelRequest,
   OrderConvertRequest,
   OrderFilterParams,
+  OrderStatus,
   OrderSummary,
 } from '../types';
 
@@ -40,6 +41,13 @@ export const ordersApi = {
 
   async cancelOrder(id: string, data: OrderCancelRequest): Promise<Order> {
     const response = await api.patch<Order>(`/orders/${id}/cancel`, data);
+    return response.data;
+  },
+
+  async updateStatus(id: string, status: OrderStatus): Promise<Order> {
+    const response = await api.patch<Order>(`/orders/${id}/status`, null, {
+      params: { status },
+    });
     return response.data;
   },
 
