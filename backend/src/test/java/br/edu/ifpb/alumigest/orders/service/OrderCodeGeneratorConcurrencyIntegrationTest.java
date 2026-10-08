@@ -78,8 +78,9 @@ class OrderCodeGeneratorConcurrencyIntegrationTest {
 
         assertThat(completed).as("Todas as threads devem concluir no tempo limite").isTrue();
         assertThat(errors).as("Nenhuma exceção deve ocorrer nas threads concorrentes").isEmpty();
-        assertThat(generatedCodes).as("Todos os códigos gerados devem ser únicos e totalizar %d", threadCount)
-                .hasSize(threadCount);
-        assertThat(generatedCodes).allMatch(code -> code.startsWith(expectedPrefix));
+        assertThat(generatedCodes)
+                .as("Todos os códigos gerados devem ser únicos e totalizar %d", threadCount)
+                .hasSize(threadCount)
+                .allMatch(code -> code.startsWith(expectedPrefix));
     }
 }
