@@ -5,7 +5,9 @@ import {
   useDeleteBudget,
   useUpdateBudgetStatus,
   useDownloadPdfTecnico,
+  useReopenBudget,
 } from '../features/budgets/hooks/useBudgets';
+import { useOrders } from '../features/orders/hooks/useOrders';
 import { Button } from '../components/ui/Button';
 import type { BudgetStatus } from '../features/budgets/types';
 import { formatBRL } from '../features/budgets/utils/calculations';
@@ -26,6 +28,14 @@ export function BudgetDetailPage() {
   const { mutate: deleteBudget, isPending: isDeleting } = useDeleteBudget();
   const { mutate: updateStatus, isPending: isUpdatingStatus } = useUpdateBudgetStatus();
   const { mutate: downloadPdf, isPending: isDownloadingPdf } = useDownloadPdfTecnico();
+  const { mutate: reopenBudget, isPending: isReopening } = useReopenBudget();
+
+  const isApproved = budget?.status === 'APPROVED';
+  const { data: linkedOrders } = useOrders(
+    isApproved && budget?.code ? { search: budget.code, size: 1 } : undefined
+  );
+  const linkedOrder = isApproved ? linkedOrders?.content?.[0] : undefined;
+  const isOrderCancelled = linkedOrder?.status === 'CANCELLED';
 
   const downloadPdfTecnico = () => {
     if (!budget || isDownloadingPdf || budget.status === 'CANCELLED') return;
@@ -191,6 +201,38 @@ export function BudgetDetailPage() {
               >
                 <span className="material-symbols-outlined text-[18px]">close</span>
               </button>
+            </div>
+          )}
+
+          {isApproved && isOrderCancelled && (
+            <div
+              data-testid="banner-order-cancelled"
+              className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-md flex items-center justify-between gap-sm animate-fadeIn"
+            >
+              <div className="flex items-center gap-sm">
+                <span className="material-symbols-outlined text-amber-600 text-[24px]">
+                  warning
+                </span>
+                <div>
+                  <p className="font-label font-bold text-on-surface text-sm">
+                    Ordem de Serviço Cancelada {linkedOrder?.codigo ? `(${linkedOrder.codigo})` : ''}
+                  </p>
+                  <p className="text-xs text-on-surface-variant font-body">
+                    A ordem de serviço vinculada a este orçamento foi cancelada. Você pode reabrir esta proposta como rascunho para renegociação com o cliente.
+                  </p>
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant="secondary"
+                icon="replay"
+                data-testid="btn-reopen-budget-banner"
+                onClick={() => budget && reopenBudget(budget.id)}
+                disabled={isReopening}
+                className="text-xs py-1.5 px-3 whitespace-nowrap shrink-0 border-amber-500/40 text-amber-700 dark:text-amber-300 hover:bg-amber-500/20 cursor-pointer"
+              >
+                {isReopening ? 'Reabrindo...' : 'Reabrir Orçamento'}
+              </Button>
             </div>
           )}
 

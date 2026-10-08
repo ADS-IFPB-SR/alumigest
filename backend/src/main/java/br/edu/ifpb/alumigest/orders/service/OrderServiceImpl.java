@@ -157,6 +157,16 @@ public class OrderServiceImpl implements OrderService {
         order.cancelar(request.justificativa());
         order = orderRepository.save(order);
 
+        // US-15.2: Ao cancelar o pedido de venda, reabre o orçamento vinculado (APPROVED -> DRAFT)
+        if (order.getOrcamentoId() != null) {
+            budgetRepository.findById(order.getOrcamentoId()).ifPresent(budget -> {
+                if (budget.getStatus() == BudgetStatus.APPROVED) {
+                    budget.setStatus(BudgetStatus.DRAFT);
+                    budgetRepository.save(budget);
+                }
+            });
+        }
+
         return orderMapper.toResponse(order);
     }
 

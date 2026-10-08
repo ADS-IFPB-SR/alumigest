@@ -480,4 +480,11 @@ export const budgetsApi = {
     });
     return response.data;
   },
+
+  reopenBudget: async (id: string): Promise<BudgetDetail> => {
+    const response = await api.post<any>(`/api/budgets/${id}/reopen`, {}, {
+      baseURL: '',
+    });
+    return mapBackendToBudgetDetail(response.data);
+  },
 };

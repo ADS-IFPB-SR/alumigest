@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '../../../components/ui/Button';
 import { budgetsApi } from '../services/budgetsApi';
-import { useUpdateBudgetStatus } from '../hooks/useBudgets';
+import { useUpdateBudgetStatus, useReopenBudget } from '../hooks/useBudgets';
 import type { CreateBudgetPayload, BudgetStatus, BudgetDetail } from '../types';
 import { WhatsAppSummaryModal } from './WhatsAppSummaryModal';
 import { shareCommercialPdfLink } from '../utils/whatsappHelper';
@@ -130,6 +130,7 @@ export function BudgetDetailActions({
 }: BudgetDetailActionsProps) {
   const navigate = useNavigate();
   const { mutate: updateStatus } = useUpdateBudgetStatus();
+  const { mutate: reopenBudget, isPending: isReopening } = useReopenBudget();
 
   const currentStatus = (status ?? budgetStatus ?? 'DRAFT') as BudgetStatus;
   const isApproved = currentStatus === 'APPROVED';
@@ -140,6 +141,7 @@ export function BudgetDetailActions({
     isApproved ? { search: budgetCode, size: 1 } : undefined
   );
   const linkedOrder = isApproved ? linkedOrders?.content?.[0] : undefined;
+  const isOrderCancelled = linkedOrder?.status === 'CANCELLED';
   const approvalButtonTooltip = getApprovalButtonTooltip(isApproved, isCancelledOrRejected, isExpired);
 
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
@@ -339,25 +341,46 @@ export function BudgetDetailActions({
         </span>
       </button>
 
-      {/* ── 4º Aprovar ou Ver Ordem de Serviço (US-13.3) ─────────────────── */}
+      {/* ── 4º Aprovar ou Ver Ordem de Serviço (US-13.3 / US-15.2) ──────── */}
       {isApproved ? (
-        <Button
-          type="button"
-          variant="primary"
-          icon="assignment"
-          data-testid="btn-view-work-order"
-          onClick={() => {
-            if (linkedOrder?.id) {
-              navigate(`/ordens-servico/${linkedOrder.id}`);
-            } else {
-              navigate(`/ordens-servico?search=${encodeURIComponent(budgetCode)}`);
-            }
-          }}
-          className="text-xs py-1.5 px-3 whitespace-nowrap cursor-pointer shrink-0"
-          title="Ver Ordem de Serviço vinculada a este orçamento"
-        >
-          <span className="whitespace-nowrap">Ver Ordem de Serviço</span>
-        </Button>
+        <div className="flex items-center gap-xs shrink-0">
+          <Button
+            type="button"
+            variant="primary"
+            icon="assignment"
+            data-testid="btn-view-work-order"
+            onClick={() => {
+              if (linkedOrder?.id) {
+                navigate(`/ordens-servico/${linkedOrder.id}`);
+              } else {
+                navigate(`/ordens-servico?search=${encodeURIComponent(budgetCode)}`);
+              }
+            }}
+            className="text-xs py-1.5 px-3 whitespace-nowrap cursor-pointer shrink-0"
+            title="Ver Ordem de Serviço vinculada a este orçamento"
+          >
+            <span className="whitespace-nowrap">
+              {isOrderCancelled ? 'Ver O.S. (Cancelada)' : 'Ver Ordem de Serviço'}
+            </span>
+          </Button>
+
+          {isOrderCancelled && (
+            <Button
+              type="button"
+              variant="secondary"
+              icon="replay"
+              data-testid="btn-reopen-budget"
+              onClick={() => reopenBudget(budgetId)}
+              disabled={isReopening}
+              className="text-xs py-1.5 px-3 whitespace-nowrap cursor-pointer shrink-0 border-amber-500/40 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10"
+              title="Reabrir orçamento como rascunho para renegociação após cancelamento do pedido"
+            >
+              <span className="whitespace-nowrap">
+                {isReopening ? 'Reabrindo...' : 'Reabrir Orçamento'}
+              </span>
+            </Button>
+          )}
+        </div>
       ) : (
         <Button
           type="button"

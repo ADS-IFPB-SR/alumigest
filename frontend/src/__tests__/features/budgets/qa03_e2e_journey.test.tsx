@@ -12,6 +12,7 @@ vi.mock('../../../features/budgets/hooks/useBudgets', () => ({
   useDeleteBudget: () => ({ mutate: vi.fn(), isPending: false }),
   useUpdateBudgetStatus: () => ({ mutate: vi.fn(), isPending: false }),
   useDownloadPdfTecnico: () => ({ mutate: vi.fn(), isPending: false }),
+  useReopenBudget: () => ({ mutate: vi.fn(), isPending: false }),
   useWhatsAppSummary: () => ({
     data: 'Resumo oficial mock para WhatsApp',
     isLoading: false,

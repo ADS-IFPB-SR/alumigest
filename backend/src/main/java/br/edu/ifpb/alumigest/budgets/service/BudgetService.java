@@ -13,8 +13,12 @@ import br.edu.ifpb.alumigest.clients.repository.ClientRepository;
 import br.edu.ifpb.alumigest.common.dto.PageResponse;
 import br.edu.ifpb.alumigest.common.exception.BudgetImmutableException;
 import br.edu.ifpb.alumigest.common.exception.BusinessException;
+import br.edu.ifpb.alumigest.common.exception.ConflictException;
 import br.edu.ifpb.alumigest.common.exception.InvalidBudgetStatusTransitionException;
 import br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException;
+import br.edu.ifpb.alumigest.orders.domain.Order;
+import br.edu.ifpb.alumigest.orders.domain.OrderStatus;
+import br.edu.ifpb.alumigest.orders.repository.OrderRepository;
 import org.hibernate.Hibernate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -29,6 +33,7 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -39,17 +44,19 @@ public class BudgetService {
     private final BudgetRepository budgetRepository;
     private final ClientRepository clientRepository;
     private final BudgetMapper budgetMapper;
+    private final OrderRepository orderRepository;
 
     private final BudgetQuantityService budgetQuantityService;
     private final BudgetPricingService budgetPricingService;
     private final BudgetCodeGenerator budgetCodeGenerator;
     private final BudgetPdfService budgetPdfService;
 
-    public BudgetService(BudgetRepository budgetRepository, ClientRepository clientRepository, BudgetMapper budgetMapper, BudgetQuantityService budgetQuantityService, BudgetPricingService budgetPricingService, BudgetCodeGenerator budgetCodeGenerator, BudgetPdfService budgetPdfService)
+    public BudgetService(BudgetRepository budgetRepository, ClientRepository clientRepository, BudgetMapper budgetMapper, OrderRepository orderRepository, BudgetQuantityService budgetQuantityService, BudgetPricingService budgetPricingService, BudgetCodeGenerator budgetCodeGenerator, BudgetPdfService budgetPdfService)
     {
         this.budgetRepository = budgetRepository;
         this.clientRepository = clientRepository;
         this.budgetMapper = budgetMapper;
+        this.orderRepository = orderRepository;
         this.budgetQuantityService = budgetQuantityService;
         this.budgetPricingService = budgetPricingService;
         this.budgetCodeGenerator = budgetCodeGenerator;
@@ -185,7 +192,7 @@ public BudgetResponseDTO create(BudgetCreateRequest requestDTO) {
 
         Budget budget = getBudgetOrThrow(id);
 
-        validateStatusTransition(budget.getStatus(), request.novoStatus());
+        validateStatusTransition(budget, request.novoStatus());
 
         budget.setStatus(request.novoStatus());
         budgetRepository.save(budget);
@@ -199,11 +206,33 @@ public BudgetResponseDTO create(BudgetCreateRequest requestDTO) {
 
         Budget budget = getBudgetOrThrow(id);
 
-        validateStatusTransition(budget.getStatus(), request.novoStatus());
+        validateStatusTransition(budget, request.novoStatus());
 
         budget.setStatus(request.novoStatus());
         budget = budgetRepository.save(budget);
         
+        return budgetMapper.toResponseDTO(budget);
+    }
+
+    /**
+     * Reabre um orçamento aprovado de volta para o status DRAFT caso o pedido de venda vinculado
+     * tenha sido cancelado (US-15.2).
+     *
+     * @param id ID do orçamento a ser reaberto
+     * @return DTO com os dados do orçamento atualizado em DRAFT
+     */
+    @Transactional
+    public BudgetResponseDTO reabrirOrcamento(UUID id) {
+        Budget budget = getBudgetOrThrow(id);
+
+        if (budget.getStatus() != BudgetStatus.APPROVED) {
+            throw new BusinessException("Apenas orçamentos aprovados podem ser reabertos.");
+        }
+
+        validateStatusTransition(budget, BudgetStatus.DRAFT);
+
+        budget.setStatus(BudgetStatus.DRAFT);
+        budget = budgetRepository.save(budget);
         return budgetMapper.toResponseDTO(budget);
     }
 
@@ -283,7 +312,7 @@ public BudgetResponseDTO create(BudgetCreateRequest requestDTO) {
     @Transactional
     public void delete(UUID id) {
         Budget budget = getBudgetOrThrow(id);
-        validateStatusTransition(budget.getStatus(), BudgetStatus.CANCELLED);
+        validateStatusTransition(budget, BudgetStatus.CANCELLED);
         budget.setStatus(BudgetStatus.CANCELLED);
 
         budgetRepository.save(budget);
@@ -368,6 +397,26 @@ public BudgetResponseDTO create(BudgetCreateRequest requestDTO) {
                 throw new BusinessException("A data de validade da proposta não pode ser anterior à data de hoje.");
             }
         }
+    }
+
+    private void validateStatusTransition(Budget budget, BudgetStatus target) {
+        BudgetStatus current = budget.getStatus();
+        if (current == target) return;
+
+        if (current == BudgetStatus.APPROVED && target == BudgetStatus.DRAFT) {
+            Optional<Order> orderOpt = orderRepository.findByOrcamentoId(budget.getId());
+            if (orderOpt.isPresent()) {
+                Order order = orderOpt.get();
+                if (order.getStatus() == OrderStatus.CANCELLED) {
+                    return;
+                }
+                throw new ConflictException("Não é possível reabrir o orçamento: o pedido de venda vinculado (" 
+                        + order.getCodigo() + ") não está cancelado.");
+            }
+            throw new InvalidBudgetStatusTransitionException(current, target);
+        }
+
+        validateStatusTransition(current, target);
     }
 
     private void validateStatusTransition(BudgetStatus current, BudgetStatus target) {

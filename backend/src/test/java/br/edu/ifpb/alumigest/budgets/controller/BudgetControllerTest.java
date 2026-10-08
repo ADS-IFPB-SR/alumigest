@@ -18,6 +18,7 @@ import br.edu.ifpb.alumigest.budgets.service.BudgetService;
 import br.edu.ifpb.alumigest.common.dto.PageResponse;
 import br.edu.ifpb.alumigest.common.exception.BudgetImmutableException;
 import br.edu.ifpb.alumigest.common.exception.BusinessException;
+import br.edu.ifpb.alumigest.common.exception.ConflictException;
 import br.edu.ifpb.alumigest.common.exception.GlobalExceptionHandler;
 import br.edu.ifpb.alumigest.common.exception.InvalidBudgetStatusTransitionException;
 import br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException;
@@ -769,5 +770,77 @@ class BudgetControllerTest {
         mockMvc.perform(get("/api/budgets/{id}/resumo-whatsapp", id))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404));
+    }
+
+    // ── Testes do endpoint POST /api/budgets/{id}/reopen [US-15.2] ──────────
+
+    @Test
+    @DisplayName("[US-15.2] Deve retornar 200 ao reabrir orçamento com sucesso")
+    void reabrirOrcamento_DeveRetornar200_QuandoReabertoComSucesso() throws Exception {
+        UUID id = UUID.randomUUID();
+        BudgetResponseDTO responseDTO = new BudgetResponseDTO(
+                id, "ORC-2026-001", UUID.randomUUID(), "Cliente Teste",
+                BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO,
+                PaymentCondition.A_VISTA_PIX, "À Vista", null,
+                BudgetStatus.DRAFT, "Rascunho", null,
+                null, null, null, false, Collections.emptyList()
+        );
+
+        when(budgetService.reabrirOrcamento(id)).thenReturn(responseDTO);
+
+        mockMvc.perform(post("/api/budgets/{id}/reopen", id))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(id.toString()))
+                .andExpect(jsonPath("$.status").value("DRAFT"))
+                .andExpect(jsonPath("$.code").value("ORC-2026-001"));
+
+        verify(budgetService).reabrirOrcamento(id);
+    }
+
+    @Test
+    @DisplayName("[US-15.2] Deve retornar 409 quando pedido de venda vinculado não estiver cancelado")
+    void reabrirOrcamento_DeveRetornar409_QuandoPedidoNaoEstiverCancelado() throws Exception {
+        UUID id = UUID.randomUUID();
+
+        when(budgetService.reabrirOrcamento(id))
+                .thenThrow(new ConflictException("Não é possível reabrir o orçamento: o pedido de venda vinculado (OS-2026-0001) não está cancelado."));
+
+        mockMvc.perform(post("/api/budgets/{id}/reopen", id))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value(409))
+                .andExpect(jsonPath("$.message").value(containsString("não está cancelado")));
+
+        verify(budgetService).reabrirOrcamento(id);
+    }
+
+    @Test
+    @DisplayName("[US-15.2] Deve retornar 422 quando orçamento não estiver aprovado")
+    void reabrirOrcamento_DeveRetornar422_QuandoOrcamentoNaoEstiverAprovado() throws Exception {
+        UUID id = UUID.randomUUID();
+
+        when(budgetService.reabrirOrcamento(id))
+                .thenThrow(new BusinessException("Apenas orçamentos aprovados podem ser reabertos."));
+
+        mockMvc.perform(post("/api/budgets/{id}/reopen", id))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.status").value(422))
+                .andExpect(jsonPath("$.message").value("Apenas orçamentos aprovados podem ser reabertos."));
+
+        verify(budgetService).reabrirOrcamento(id);
+    }
+
+    @Test
+    @DisplayName("[US-15.2] Deve retornar 404 quando orçamento não for encontrado")
+    void reabrirOrcamento_DeveRetornar404_QuandoOrcamentoNaoExiste() throws Exception {
+        UUID id = UUID.randomUUID();
+
+        when(budgetService.reabrirOrcamento(id))
+                .thenThrow(new ResourceNotFoundException("Orçamento", id.toString()));
+
+        mockMvc.perform(post("/api/budgets/{id}/reopen", id))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404));
+
+        verify(budgetService).reabrirOrcamento(id);
     }
 }

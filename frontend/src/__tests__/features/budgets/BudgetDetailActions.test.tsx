@@ -5,6 +5,8 @@ import { BudgetDetailActions } from '../../../features/budgets/components/Budget
 import { budgetsApi } from '../../../features/budgets/services/budgetsApi';
 import toast from 'react-hot-toast';
 
+import { useOrders } from '../../../features/orders/hooks/useOrders';
+
 vi.mock('../../../features/budgets/services/budgetsApi', () => ({
   budgetsApi: {
     downloadCommercialPdf: vi.fn(),
@@ -12,7 +14,15 @@ vi.mock('../../../features/budgets/services/budgetsApi', () => ({
     downloadPdfTecnico: vi.fn(),
     getBudget: vi.fn(),
     createBudget: vi.fn(),
+    reopenBudget: vi.fn(),
   },
+}));
+
+vi.mock('../../../features/orders/hooks/useOrders', () => ({
+  useOrders: vi.fn(() => ({
+    data: { content: [] },
+    isLoading: false,
+  })),
 }));
 
 vi.mock('react-hot-toast', () => {
@@ -336,6 +346,59 @@ describe('BudgetDetailActions Component [Joseph Nichollas]', () => {
 
       const btn = screen.getByTestId('btn-approve-budget');
       expect(btn).toBeDisabled();
+    });
+  });
+
+  describe('Reabertura de Orçamento após cancelamento de pedido [US-15.2]', () => {
+    it('deve exibir botão Reabrir Orçamento quando status for APPROVED e pedido vinculado estiver CANCELLED', async () => {
+      vi.mocked(useOrders).mockReturnValue({
+        data: {
+          content: [
+            { id: 'order-1', codigo: 'OS-2026-0001', status: 'CANCELLED' } as any,
+          ],
+        },
+      } as any);
+      vi.mocked(budgetsApi.reopenBudget).mockResolvedValueOnce({
+        id: 'budget-123',
+        status: 'DRAFT',
+      } as any);
+
+      renderComponent({
+        budgetStatus: 'APPROVED',
+      });
+
+      const reopenBtn = screen.getByTestId('btn-reopen-budget');
+      expect(reopenBtn).toBeInTheDocument();
+      expect(reopenBtn).toHaveTextContent('Reabrir Orçamento');
+
+      const viewOrderBtn = screen.getByTestId('btn-view-work-order');
+      expect(viewOrderBtn).toHaveTextContent('Ver O.S. (Cancelada)');
+
+      fireEvent.click(reopenBtn);
+
+      await waitFor(() => {
+        expect(budgetsApi.reopenBudget).toHaveBeenCalledWith('budget-123');
+        expect(toast.success).toHaveBeenCalledWith(
+          'Orçamento reaberto com sucesso como rascunho!'
+        );
+      });
+    });
+
+    it('não deve exibir botão Reabrir Orçamento quando pedido vinculado estiver ativo', () => {
+      vi.mocked(useOrders).mockReturnValue({
+        data: {
+          content: [
+            { id: 'order-1', codigo: 'OS-2026-0001', status: 'WAITING_PRODUCTION' } as any,
+          ],
+        },
+      } as any);
+
+      renderComponent({
+        budgetStatus: 'APPROVED',
+      });
+
+      expect(screen.queryByTestId('btn-reopen-budget')).not.toBeInTheDocument();
+      expect(screen.getByTestId('btn-view-work-order')).toHaveTextContent('Ver Ordem de Serviço');
     });
   });
 });
