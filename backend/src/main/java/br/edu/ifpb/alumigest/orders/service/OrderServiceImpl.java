@@ -395,7 +395,7 @@ public class OrderServiceImpl implements OrderService {
     @Transactional
     public OrderResponse updateStatus(UUID id, OrderStatus targetStatus) {
         Order order = orderRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Pedido", id));
+                .orElseThrow(() -> new ResourceNotFoundException(RESOURCE_PEDIDO, id));
 
         if (targetStatus == null) {
             throw new IllegalArgumentException("O status de destino é obrigatório.");

@@ -128,6 +128,7 @@ export function OrderDetailPage() {
         {/* Cabeçalho de Ações e Status */}
         <OrderDetailHeader
           order={order}
+          isUpdatingStatus={isUpdatingStatus}
           isDownloadingPdf={isDownloadingPdf}
           onAdvanceProduction={handleAdvanceProduction}
           onCompleteProduction={handleCompleteProduction}

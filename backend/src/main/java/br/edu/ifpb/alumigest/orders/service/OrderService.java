@@ -8,7 +8,6 @@ import br.edu.ifpb.alumigest.orders.dto.OrderConvertRequest;
 import br.edu.ifpb.alumigest.orders.dto.OrderResponse;
 import br.edu.ifpb.alumigest.orders.dto.OrderSummaryResponse;
 import org.springframework.data.domain.Pageable;
-import br.edu.ifpb.alumigest.orders.dto.OrderCancelRequest;
 
 import java.util.UUID;
 
