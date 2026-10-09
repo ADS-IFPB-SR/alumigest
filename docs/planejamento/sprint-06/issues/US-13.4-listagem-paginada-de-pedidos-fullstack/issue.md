@@ -23,26 +23,26 @@ Permitir que gerentes e vendedores consultem todos os pedidos de venda da fábri
 
 ## 🛠️ Checklist de Implementação
 
-- [ ] Criar record DTO `OrderSummaryResponse` com campos essenciais de visualização em lista
-- [ ] Implementar método com `Pageable` e filtros dinâmicos no `OrderRepository` e `OrderService`
-- [ ] Criar endpoint `GET /api/orders` no `OrderController` com parâmetros de paginação e filtro
-- [ ] Criar componente `OrderStatusBadge.tsx` com mapeamento semântico de cores para todos os status
-- [ ] Criar hook `useOrders` no frontend com cache e sincronização via TanStack Query
-- [ ] Criar página `OrderListPage.tsx` com tabela moderna, busca com debounce, filtros e paginação
-- [ ] Registrar a rota `/pedidos` no `frontend/src/App.tsx`
-- [ ] Escrever testes unitários no backend e frontend para a listagem
+- [x] Criar record DTO `OrderSummaryResponse` com campos essenciais de visualização em lista
+- [x] Implementar método com `Pageable` e filtros dinâmicos no `OrderRepository` e `OrderService`
+- [x] Criar endpoint `GET /api/orders` no `OrderController` com parâmetros de paginação e filtro
+- [x] Criar componente `OrderStatusBadge.tsx` com mapeamento semântico de cores para todos os status
+- [x] Criar hook `useOrders` no frontend com cache e sincronização via TanStack Query
+- [x] Criar página `OrderListPage.tsx` com tabela moderna, busca com debounce, filtros e paginação
+- [x] Registrar a rota `/pedidos` no `frontend/src/App.tsx`
+- [x] Escrever testes unitários no backend e frontend para a listagem
 
 ---
 
 ## ✅ Definition of Done (DoD)
 
-1. [ ] **Compilação**: Código compila sem erros (`mvn clean compile` e `npm run build`).
-2. [ ] **Testes Unitários**: Testes unitários passam com sucesso (`mvn test` e `npx vitest run`).
-3. [ ] **Qualidade de Código**: Zero warnings bloqueantes e conformidade com Checkstyle / Oxlint.
-4. [ ] **Valor Funcional**: Funcionalidade testável de ponta a ponta no navegador (ou verificação de schema/serviço).
-5. [ ] **Documentação Inline**: Javadoc / TSDoc nos métodos públicos e classes relevantes.
-6. [ ] **Checklist Concluído**: Todos os itens do checklist da issue devidamente atendidos e verificados.
-7. [ ] **Commits Padronizados**: Commits seguindo o padrão Conventional Commits em português do Brasil (pt-BR).
+1. [x] **Compilação**: Código compila sem erros (`mvn clean compile` e `npm run build`).
+2. [x] **Testes Unitários**: Testes unitários passam com sucesso (`mvn test` e `npx vitest run`).
+3. [x] **Qualidade de Código**: Zero warnings bloqueantes e conformidade com Checkstyle / Oxlint.
+4. [x] **Valor Funcional**: Funcionalidade testável de ponta a ponta no navegador (ou verificação de schema/serviço).
+5. [x] **Documentação Inline**: Javadoc / TSDoc nos métodos públicos e classes relevantes.
+6. [x] **Checklist Concluído**: Todos os itens do checklist da issue devidamente atendidos e verificados.
+7. [x] **Commits Padronizados**: Commits seguindo o padrão Conventional Commits em português do Brasil (pt-BR).
 
 ---
 

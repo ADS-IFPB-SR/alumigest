@@ -285,6 +285,9 @@ export interface BudgetSummary {
   paymentNotes?: string;
   isExpired?: boolean;
   expired?: boolean;
+  clientPhone?: string;
+  clientEmail?: string;
+  clientAddress?: string;
 }
 
 /**

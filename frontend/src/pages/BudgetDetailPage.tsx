@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link, useParams, useLocation, useNavigate } from 'react-router-dom';
 import {
   useBudget,
@@ -15,6 +15,7 @@ import { BudgetFinancialSummaryCard } from '../features/budgets/components/Budge
 import { BudgetDetailActions } from '../features/budgets/components/BudgetDetailActions';
 import { BudgetProposalItemCard } from '../features/budgets/components/BudgetProposalItemCard';
 import { BudgetRomaneioView } from '../features/budgets/components/BudgetRomaneioView';
+import { OrderApprovalModal } from '../features/orders/components/OrderApprovalModal';
 
 export function BudgetDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -32,6 +33,7 @@ export function BudgetDetailPage() {
   };
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showApprovalModal, setShowApprovalModal] = useState(false);
   const [activeTab, setActiveTab] = useState<'proposta' | 'romaneio'>('proposta');
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
   
@@ -66,7 +68,21 @@ export function BudgetDetailPage() {
     updateStatus({ id: budget.id, status: newStatus });
   };
 
-  
+  const isBudgetExpired = Boolean(
+    budget?.validUntil && new Date(budget.validUntil) < new Date(new Date().toDateString()),
+  );
+
+  const handleCloseApprovalModal = useCallback(() => {
+    setShowApprovalModal(false);
+  }, []);
+
+  const handleApprovalSuccess = useCallback(
+    (order: import('../features/orders/types').Order) => {
+      setShowApprovalModal(false);
+      navigate(`/ordens-servico/${order.id}`);
+    },
+    [navigate],
+  );
 
   if (isLoading) {
     return (
@@ -151,6 +167,8 @@ export function BudgetDetailPage() {
           onDeleteClick={() => setShowDeleteModal(true)}
           onDownloadPdfTecnico={downloadPdfTecnico}
           isDownloadingPdfTecnico={isDownloadingPdf}
+          onApproveClick={() => setShowApprovalModal(true)}
+          isExpired={isBudgetExpired}
         />
       </header>
 
@@ -436,6 +454,18 @@ export function BudgetDetailPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Modal de aprovação e conversão em pedido (US-13.3) */}
+      {showApprovalModal && (
+        <OrderApprovalModal
+          isOpen={showApprovalModal}
+          onClose={handleCloseApprovalModal}
+          budgetId={budget.id}
+          budgetCode={budget.code}
+          customerName={budget.customer?.name}
+          onSuccess={handleApprovalSuccess}
+        />
       )}
     </div>
   );

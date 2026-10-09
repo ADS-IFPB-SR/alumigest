@@ -77,6 +77,7 @@ describe('BudgetDetailActions Component [Joseph Nichollas]', () => {
     expect(screen.getByTestId('btn-download-pdf-tecnico')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Duplicar/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Excluir/i })).toBeInTheDocument();
+    expect(screen.getByTestId('btn-approve-budget')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Editar/i })).toHaveAttribute(
       'href',
       '/orcamentos/budget-123/editar'
@@ -316,4 +317,60 @@ describe('BudgetDetailActions Component [Joseph Nichollas]', () => {
       expect(onDelete).toHaveBeenCalledTimes(1);
     });
   });
+
+  describe('Botão Aprovar e Gerar Pedido (US-13.3)', () => {
+    it('deve disparar onApproveClick ao clicar quando habilitado em status SENT ou DRAFT', () => {
+      const onApprove = vi.fn();
+      renderComponent({
+        budgetStatus: 'SENT',
+        onApproveClick: onApprove,
+      });
+
+      const btn = screen.getByTestId('btn-approve-budget');
+      expect(btn).not.toBeDisabled();
+      fireEvent.click(btn);
+
+      expect(onApprove).toHaveBeenCalledTimes(1);
+    });
+
+    it('deve exibir botão Ver Ordem de Serviço habilitado quando status for APPROVED', () => {
+      const onApprove = vi.fn();
+      renderComponent({
+        budgetStatus: 'APPROVED',
+        onApproveClick: onApprove,
+      });
+
+      const btn = screen.getByTestId('btn-view-work-order');
+      expect(btn).toBeInTheDocument();
+      expect(btn).toHaveTextContent('Ver Ordem de Serviço');
+      expect(btn).not.toBeDisabled();
+    });
+
+    it('deve estar desabilitado quando status for CANCELLED', () => {
+      const onApprove = vi.fn();
+      renderComponent({
+        budgetStatus: 'CANCELLED',
+        onApproveClick: onApprove,
+      });
+
+      const btn = screen.getByTestId('btn-approve-budget');
+      expect(btn).toBeDisabled();
+      expect(btn).toHaveAttribute(
+        'title',
+        expect.stringContaining('cancelados ou rejeitados')
+      );
+    });
+
+    it('deve estar desabilitado quando status for REJECTED', () => {
+      const onApprove = vi.fn();
+      renderComponent({
+        budgetStatus: 'REJECTED',
+        onApproveClick: onApprove,
+      });
+
+      const btn = screen.getByTestId('btn-approve-budget');
+      expect(btn).toBeDisabled();
+    });
+  });
 });
+
