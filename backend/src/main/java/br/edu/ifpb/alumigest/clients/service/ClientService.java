@@ -93,18 +93,18 @@ public class ClientService implements IClientService {
 
     private void validateDocumentUniquenessOnCreate(String documento) {
         if (documento != null && !documento.isBlank()) {
-            String trimmed = documento.trim();
-            if (clientRepository.existsByDocumentNumber(trimmed)) {
-                throw new ConflictException("Já existe um cliente cadastrado com o documento: " + trimmed);
+            String cleaned = clientMapper.cleanDocument(documento);
+            if (clientRepository.existsByDocumentNumber(cleaned)) {
+                throw new ConflictException("Já existe um cliente cadastrado com o documento: " + documento.trim());
             }
         }
     }
 
     private void validateDocumentUniquenessOnUpdate(String documento, UUID clientId) {
         if (documento != null && !documento.isBlank()) {
-            String trimmed = documento.trim();
-            if (clientRepository.existsByDocumentNumberAndIdNot(trimmed, clientId)) {
-                throw new ConflictException("Já existe outro cliente cadastrado com o documento: " + trimmed);
+            String cleaned = clientMapper.cleanDocument(documento);
+            if (clientRepository.existsByDocumentNumberAndIdNot(cleaned, clientId)) {
+                throw new ConflictException("Já existe outro cliente cadastrado com o documento: " + documento.trim());
             }
         }
     }

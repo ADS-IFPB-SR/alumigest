@@ -302,12 +302,25 @@ module.exports = async function ({ github, context, core }) {
   const frontendTests = parseVitestReport(frontendSearchDirs);
   const frontendCov = parseVitestCoverage(frontendSearchDirs);
 
-  const [backendQG, frontendQG, backendIssues, frontendIssues] = await Promise.all([
+  let [backendQG, frontendQG, backendIssues, frontendIssues] = await Promise.all([
     fetchSonarQualityGate('alumigest-backend', sonarHostUrl, sonarToken),
     fetchSonarQualityGate('alumigest-frontend', sonarHostUrl, sonarToken),
     fetchSonarIssues('alumigest-backend', sonarHostUrl, sonarToken, 30),
     fetchSonarIssues('alumigest-frontend', sonarHostUrl, sonarToken, 30)
   ]);
+
+  // Filtra issues para considerar estritamente os arquivos existentes no workspace deste PR
+  // Evita falsos positivos de análises concorrentes de outras branches no mesmo projeto SonarQube
+  const filterIssuesByExistingFiles = (issues, projKey) => {
+    if (!issues || !Array.isArray(issues)) return [];
+    return issues.filter(issue => {
+      const fullPath = cleanComponentPath(issue.component, projKey);
+      return fs.existsSync(path.join(baseDir, fullPath));
+    });
+  };
+
+  backendIssues = filterIssuesByExistingFiles(backendIssues, 'alumigest-backend');
+  frontendIssues = filterIssuesByExistingFiles(frontendIssues, 'alumigest-frontend');
 
   const backendQGFailed = backendQG && backendQG.status === 'ERROR';
   const frontendQGFailed = frontendQG && frontendQG.status === 'ERROR';

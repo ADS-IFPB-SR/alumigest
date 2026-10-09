@@ -4,10 +4,10 @@
 |---|---|
 | **Projeto** | AlumiGest — Sistema de Gestão para Vidraçaria e Esquadrias |
 | **Documento** | Registro Unificado de Bugs, Defeitos e Hotfixes (RBD) |
-| **Versão** | 2.3.0 (Atualizado com Catálogo dos BUG-024, BUG-025 e BUG-026 da US-13 / Sprint 06) |
-| **Data de Atualização** | 05/10/2026 |
-| **Responsável QA** | Herbert Carvalho dos Santos / Equipe de Engenharia AlumiGest |
-| **Branch** | `fix/us-13-correcoes-bugs-408-411-412` |
+| **Versão** | 2.7.0 (Catálogo de Bugs BUG-024 a BUG-033 da Sprint 05 e BUG-034 a BUG-036 da US-13 / Sprint 06) |
+| **Data de Atualização** | 09/10/2026 |
+| **Responsável QA / SM** | Herbert Carvalho dos Santos / Júlio Kennedy dos Santos Silva / Equipe de Engenharia AlumiGest |
+| **Branch** | `feat/us-13-aprovar-orcamento-converter-pedido-venda` |
 | **Padrão de Template** | Baseado em [`.github/ISSUE_TEMPLATE/bug_report.md`](../../../.github/ISSUE_TEMPLATE/bug_report.md) |
 | **Auditoria Técnica** | Análise estática SonarQube, Pipeline CI/CD GitHub Actions e Histórico Git |
 
@@ -51,9 +51,22 @@ Seguindo a governança do **Plano de Gerência de Configuração (PGC)** e do **
 | **[BUG-021](#bug-021)** | Perda de Insumos da Ficha Técnica em Produtos Estáticos e Ocultação de Templates na Categoria Janela | Frontend / Catálogo & Orçamentos | 🔴 Alta | Sprint 03 | ✅ Resolvido | Issue #235 / Branch `fix/products-static-items-and-window-category` |
 | **[BUG-022](#bug-022)** | Itens do Orçamento Descartados na Criação via POST /api/budgets por Ausência de Campo no BudgetCreateRequest | Backend / Orçamentos | 🔴 Alta | Sprint 04 | ✅ Resolvido | Issue #300 / PR #293 |
 | **[BUG-023](#bug-023)** | Falta de Cotas Milimétricas Reais de Furação e Linha Divisória Cortando Texto do Puxador Duplo na Ficha Técnica | Backend / PDF | 🟡 Média | Sprint 05 | ✅ Resolvido | Issue #349 / Branch `fix/349-cotas-furacao-puxador-duplo` |
+<<<<<<< HEAD
 | **[BUG-024](#bug-024)** | Condição de Corrida Pode Gerar Códigos Duplicados em Conversões Simultâneas | Backend / Concorrência | 🔴 Alta | Sprint 06 | ✅ Resolvido | Issue #408 / PR #414 |
 | **[BUG-025](#bug-025)** | Interface Troca Código Oficial PED por OS e Quebra Busca pelo Identificador Exibido | Fullstack / Contratos | 🔴 Alta | Sprint 06 | ✅ Resolvido | Issue #411 / PR #414 |
 | **[BUG-026](#bug-026)** | Paginação Exibe Apenas Páginas 1–5 e Perde a Janela da Página Atual | Frontend / Paginação | 🟡 Média | Sprint 06 | ✅ Resolvido | Issue #412 / PR #414 |
+=======
+| **[BUG-024](#bug-024)** | Inconsistência entre Texto de Furação e Desenho Técnico na Ficha Técnica (3 furos no texto vs 2 furos no desenho) | Backend / PDF | 🟡 Média | Sprint 05 | ✅ Resolvido | Issue #348 / Branch `fix/348-inconsistencia-furacao-ficha-tecnica` |
+| **[BUG-025](#bug-025)** | Cota e Rótulo do Puxador Cortados na Margem Lateral do Esquema Técnico de Usinagem | Backend / PDF | 🟡 Média | Sprint 05 | ✅ Resolvido | Issue #345 / Branch `fix/345-cota-rotulo-puxador-cortados` |
+| **[BUG-026](#bug-026)** | Termos em Inglês Exibidos no Detalhamento de Usinagem, Puxadores e Tipologias do PDF Técnico | Backend / PDF | 🟡 Média | Sprint 05 | ✅ Resolvido | Issue #344 / Branch `fix/344-termos-ingles-detalhamento-pdf` |
+| **[BUG-027](#bug-027)** | Divergência de Cálculo de Mão de Obra (`laborCost`) entre Frontend e Backend com Múltiplas Quantidades (`quantity > 1`) | Motor de Orçamentos / Backend & UI | 🔴 Alta | Sprint 05 | 🟡 Em Aberto | Issue #372 / US-10 |
+| **[BUG-028](#bug-028)** | Falha da Clipboard API em Ambientes HTTP e Ausência de Link Direto para WhatsApp (`api.whatsapp.com/send`) | Frontend / Ações | 🟡 Média | Sprint 05 | 🟡 Em Aberto | Issue #373 / US-10 |
+| **[BUG-029](#bug-029)** | Cálculo Incorreto de Dias de Validade no Rodapé do PDF com Sobrescrita Indevida para 15 Dias | Backend / PDF | 🟡 Média | Sprint 05 | 🟡 Em Aberto | Issue #374 / US-10 |
+| **[BUG-030](#bug-030)** | Razão Social da Empresa Hardcodada no Resumo para WhatsApp Ignorando `CompanyProperties` | Backend / WhatsApp | 🟢 Baixa | Sprint 05 | 🟡 Em Aberto | Issue #375 / US-10 |
+| **[BUG-031](#bug-031)** | Resposta de Erro Empacotada como Blob sem Tratamento de Mensagem no Download de PDF Comercial | Frontend / API | 🟡 Média | Sprint 05 | 🟡 Em Aberto | Issue #376 / US-10 |
+| **[BUG-032](#bug-032)** | Duplicação de Mão de Obra e Inconsistência nos Totais do Orçamento | Backend & Frontend / Orçamentos | 🔴 Alta | Sprint 05 | ✅ Resolvido | Issue #333 / Branch `fix/333-duplicacao-mao-de-obra-totais-orcamento` |
+| **[BUG-033](#bug-033)** | Impossibilidade de Criar Esquadria sem Ferragem / Acessório no Construtor de Orçamentos | Frontend / Orçamentos | 🟡 Média | Sprint 05 | ✅ Resolvido | Issue #335 / Branch `fix/335-esquadria-sem-ferragem` |
+>>>>>>> origin/develop
 
 ---
 
@@ -650,7 +663,6 @@ O endpoint `POST /api/budgets` deve receber opcionalmente a lista de itens (`ite
 - **Detecção / Correção:** Issue #300 / PR #293 (Refs: US-10).
 
 **Causa Raiz Técnica & Solução:**
-* **Causa Raiz:** O record `BudgetCreateRequest` foi modelado preliminarmente sem a propriedade `List<BudgetItemRequestDTO> items`. O endpoint criava apenas a capa do orçamento assumindo que itens seriam adicionados exclusivamente de forma avulsa via sub-recurso.
 * **Solução:** Adicionado o campo opcional `List<BudgetItemRequestDTO> items` com `@Valid` ao record `BudgetCreateRequest` (mantendo construtor de compatibilidade), e atualizado o método `BudgetService.create` para iterar sobre os itens recebidos, invocar `budgetMapper.toEntity`, associar os itens e chamar o recálculo automático de quantitativos e preços.
 
 ---
@@ -695,6 +707,399 @@ Na emissão da Ficha Técnica de Usinagem e Corte (Ficha de Oficina - US-11.2), 
 ---
 
 ### BUG-024
+#### [BUG] [US-11.2] Inconsistência entre Texto de Furação e Desenho Técnico na Ficha Técnica (3 furos no texto vs 2 furos no desenho) (Issue #348)
+
+**Descrição do Problema:**
+Na emissão da Ficha Técnica de Oficina (Ficha de Usinagem e Corte - US-11.2), observou-se uma divergência direta e crítica para a produção fabril entre as informações textuais e gráficas de usinagem:
+1. No card de usinagem/furação, o texto descritivo afirmava fixamente: `"3 furos para dobradiças (10%, 50%, 90% da altura)."`, mesmo quando o item possuía apenas 2 dobradiças configuradas.
+2. No esquema gráfico adjacente, eram desenhados corretamente apenas 2 furos de dobradiça com suas respectivas cotas milimétricas.
+3. Essa discrepância entre o texto e o desenho causava dúvida operacional no chão de fábrica, com risco de furação indevida de perfis de alumínio.
+4. Adicionalmente, quando uma porta de giro com altura superior a 1800mm é configurada com menos de 3 dobradiças, a norma **ABNT NBR 10821** recomenda o uso de no mínimo 3 pontos de sustentação para mitigar empenamento e sobrecarga nas ferragens. O sistema não fornecia qualquer alerta normativo instrutivo ao operador.
+
+**Passos para Reproduzir:**
+1. Criar ou editar um orçamento adicionando uma porta de giro (ex: `SWING_DOOR_2F` com 2100mm de altura) configurada com 2 furos de dobradiça (`{"holeCount": 2, "divisionType": "EQUAL"}`).
+2. Gerar a Ficha Técnica de Oficina em PDF.
+3. Observar a seção de Usinagem e Furações do item:
+   - Texto descritivo exibe fixamente `"3 furos para dobradiças"`.
+   - Desenho técnico ao lado plota 2 furos de dobradiça cotados.
+
+**Comportamento Esperado:**
+- O texto do card descritivo e o desenho gráfico devem compartilhar estritamente a mesma fonte da verdade (`TechnicalMachiningContext`), reportando exatamente a quantidade configurada (ex: `"2 furos para dobradiças."`).
+- Suporte a múltiplos formatos e sinônimos no payload JSON de usinagem (`holeCount`, `holesCount`, `quantity`, `count`, `divisionType`, `drillingMode`).
+- Respeitar a escolha do usuário sem forçar furos adicionais no desenho nem no texto, mas caso seja uma porta de giro com altura > 1800mm e menos de 3 dobradiças, exibir uma linha em vermelho com aviso consultivo: `[!] NBR 10821: Recomendado mín. 3 dobradiças para altura > 1800mm`.
+
+**Contexto / Ambiente:**
+- **Módulo Afetado:** `BudgetPdfService.java`, `TechnicalMachiningResolver.java`, `TechnicalMachiningContext.java`.
+- **Severidade:** 🟡 Média / Funcional | **Sprint:** 05 | **Status:** ✅ Resolvido.
+- **Detecção / Correção:** Issue #348 / Branch `fix/348-inconsistencia-furacao-ficha-tecnica`.
+
+**Causa Raiz Técnica & Solução:**
+* **Causa Raiz:** O método `BudgetPdfService.gerarLinhasFuracao` continha strings hardcoded que assumiam invariavelmente 3 furos para dobradiças sem consultar o `TechnicalMachiningContext`. Além disso, o parser de furação no `TechnicalMachiningResolver` não tratava certas variações de chaves (`holesCount`, `divisionType`) que podiam ocorrer em orçamentos salvos.
+* **Solução:**
+   1. Adicionado suporte no `TechnicalMachiningResolver` para ler chaves flexíveis (`divisionType`, `drillingMode`, `holeCount`, `holesCount`, `quantity`, `count`, `holes`) e distâncias configuradas.
+   2. Implementados os métodos `isSwingDoor()` e `hasNbr10821Warning()` no `TechnicalMachiningContext` para identificar portas de giro com altura > 1800mm e furação < 3 dobradiças.
+   3. Atualizado o método `BudgetPdfService.criarCelulaDetalhamentoFuracao` para obter o `TechnicalMachiningContext` resolvido e passá-lo para `gerarLinhasFuracao`.
+   4. Método `gerarLinhasFuracao` atualizado para montar a descrição dinâmica baseada no número real de furos (`ctx.getPontoFuracaoList().size()`), adicionando a advertência da NBR 10821 em vermelho quando aplicável.
+   5. Atualizados testes unitários e de integração E2E com cobertura total (562 testes passando).
+   6. Gerada evidência visual em alta resolução em `docs/projeto-001/003-teste/sprint-05/evidencias/evidencia-fix-348-ficha-tecnica.png`.
+
+---
+
+### BUG-025
+#### [BUG] [US-11.2] Cota e Rótulo do Puxador Cortados na Margem Lateral do Esquema Técnico de Usinagem (Issue #345)
+
+**Descrição do Problema:**
+No esquema técnico de usinagem e corte da Ficha Técnica (renderizado na coluna de usinagem do PDF), o texto contendo a identificação e a cota do puxador (ex.: `Puxador (600mm)` ou `Puxador (250mm)`) ficava colado na margem direita ou ultrapassava os limites do canvas de 126 pt, ficando parcialmente coberto pela linha de contorno da tabela ou truncado.
+Em esquadrias onde o puxador se posiciona na borda lateral direita da folha, a soma das larguras de deslocamento projetava o texto para fora do limite da célula, gerando risco de leitura truncada pelo operador na serralheria.
+
+**Passos para Reproduzir:**
+1. Criar ou emitir um orçamento contendo esquadria com puxador lateral externo longo (ex.: `Puxador (600mm)` em janela ou porta com folha na lateral direita).
+2. Gerar a Ficha Técnica de Oficina (Via Técnica em PDF).
+3. Inspecionar o quadrante gráfico de usinagem e corte:
+   - Observar a legenda do puxador encostando ou ultrapassando a linha de contorno perimetral da célula da tabela.
+   - Parênteses final ou unidade `mm` cortados pelo traço da borda.
+
+**Comportamento Esperado:**
+- O texto do puxador e sua máscara opaca de fundo (*pill background*) devem respeitar contenção estrita (*clamping*) dentro dos limites úteis do canvas (`[1.5f, totalWidth - 1.5f]`).
+- Quando o texto for extenso, aplicar quebra inteligente no delimitador de cota `" ("` e redução proporcional de fonte (até mín. `4.8f`), garantindo margem de respiro de pelo menos 1.5 pt em relação à borda perimetral.
+
+**Contexto / Ambiente:**
+- **Módulo Afetado:** `BudgetPdfDrawingHelper.java`.
+- **Severidade:** 🟡 Média / UX | **Sprint:** 05 | **Status:** ✅ Resolvido.
+- **Detecção / Correção:** Issue #345 / Branch `fix/345-cota-rotulo-puxador-cortados`.
+
+**Causa Raiz Técnica & Solução:**
+* **Causa Raiz:** O método `desenharRotuloPuxadorComMascara` calculava `boxX` e `textX` apenas pelo offset de posição do puxador, sem receber a largura total do canvas (`totalWidth`) e sem aplicar regras de contenção de borda.
+* **Solução:**
+  1. Propagada a largura `totalWidth` para `desenharRotuloPuxadorComMascara`.
+  2. Implementado método `ajustarCoordenadasParaLimites(boxX, boxW, textX, totalWidth)` para aplicar clamping rígido contra margens mínimas e máximas.
+  3. Modularizada a renderização em `renderizarRotuloLinhaUnica` e `renderizarRotuloDuasLinhas` com auto-ajuste de tamanho de fonte para textos extensos.
+  4. Testes automatizados unitários e de integração adicionados e aprovados.
+  5. Evidência em alta resolução gerada em `docs/projeto-001/003-teste/sprint-05/evidencias/evidencia-fix-345-ficha-tecnica.png`.
+
+---
+
+### BUG-026: Termos em Inglês Exibidos no Detalhamento de Usinagem, Puxadores e Tipologias do PDF Técnico
+
+**Descrição do Problema:**  
+Tanto na Ficha Técnica de Oficina (US-11.2) quanto no PDF Comercial do orçamento, identificou-se que determinados valores brutos de enums e nomenclaturas em inglês (ex.: `TUBULAR`, `SHELL_LOCK`, `HANDLE`, `RIGHT`, `LEFT`, `BOTH`, `AWNING WINDOW`, `SLIDING DOOR`, `SWING DOOR`, `CUSTOM_DISTANCES`) eram exibidos sem tradução vernácula para o Português do Brasil (pt-BR).
+
+Isso gerava inconsistência de linguagem para o cliente final e dificultava a identificação imediata na bancada de corte e montagem da serralheria/vidraçaria.
+
+**Passos para Reproduzir:**
+1. Criar um orçamento contendo itens com tipologias variadas (ex.: `AWNING WINDOW`, `SLIDING DOOR`) ou configurações de puxador/furação com termos em inglês (`TUBULAR`, `SHELL_LOCK`, `HANDLE`, `RIGHT`, `BOTH`, `CUSTOM_DISTANCES`).
+2. Emitir o PDF Comercial do orçamento e a Ficha Técnica de Oficina.
+3. Observar na coluna de especificação técnica e na coluna de detalhamento de usinagem/puxador:
+   - Exibição de `Tipo: TUBULAR` em vez de `Tipo: Tubular`.
+   - Exibição de `Tipo: SHELL_LOCK` em vez de `Tipo: Fecho Concha`.
+   - Exibição de `Posição: RIGHT` em vez de `Posição: Direita`.
+   - Exibição de `Posição: BOTH` em vez de `Posição: Ambos os Lados`.
+   - Exibição de `TIPO: AWNING WINDOW` em vez de `TIPO: BASCULANTE`.
+
+**Comportamento Esperado:**
+- Todos os termos técnicos, tipos de puxador, posições, formatos, esquemas de furação e nomenclaturas de tipologias devem ser traduzidos e padronizados em Português do Brasil (pt-BR) de forma resiliente tanto no PDF Comercial quanto na Ficha Técnica.
+- Termos com espaços (ex.: `AWNING WINDOW`, `SLIDING DOOR`) devem ser normalizados para suas tipologias equivalentes (`BASCULANTE`, `CORRER`).
+
+**Contexto / Ambiente:**
+- **Módulo Afetado:** `BudgetPdfService.java`.
+- **Severidade:** 🟡 Média / I18n & UX | **Sprint:** 05 | **Status:** ✅ Resolvido.
+- **Detecção / Correção:** Issue #344 / Branch `fix/344-termos-ingles-detalhamento-pdf`.
+
+**Causa Raiz Técnica & Solução:**
+* **Causa Raiz:**
+  1. No PDF Comercial, `extrairDescricaoPuxador` retornava `raw` sem traduzir quando o valor não iniciava com `{` (ex.: `"TUBULAR"`), ou falhava no enum `HandleType.valueOf` para termos que não existiam no enum estrito.
+  2. Na Ficha Técnica, `formatarTipoTemplate` só aceitava underscores (`_`); entradas com espaço caíam no fallback e eram exibidas cruas com prefixo `TIPO: `.
+  3. Métodos auxiliares de usinagem (`traduzirPosicaoTexto`, `traduzirFormatoTexto`, `traduzirTipoPuxadorTexto`) não mapeavam variantes como `BOTH`, `TUBULAR`, `CUSTOM`, `HANDLE`.
+* **Solução:**
+  1. Centralizado o dicionário de tradução resiliente em `BudgetPdfService.java` cobrindo tipos de puxador (`Tubular`, `Fecho Concha`, `Alavanca`, `Puxador Convencional`, `Embutido`), posições (`Direita`, `Esquerda`, `Central`, `Ambos os Lados`, `Superior`, `Inferior`), formatos (`Tubular`, `Redondo`, `Quadrado`, `Retangular`, `Chato`) e furação (`Distâncias personalizadas conforme gabarito`).
+  2. Implementada normalização resiliente de tipologias com espaços (`AWNING WINDOW` -> `BASCULANTE`, `SLIDING DOOR` -> `CORRER`, `SWING DOOR` -> `GIRO`).
+  3. Adicionados testes automatizados unitários e integrados cobrindo todas as variantes e proibindo termos em inglês com asserções `doesNotContain`.
+  4. Gerada evidência visual em 300 DPI em `docs/projeto-001/003-teste/sprint-05/evidencias/evidencia-fix-344-ficha-tecnica.png`.
+
+---
+
+
+### BUG-027
+#### [BUG] Divergência de Cálculo de Mão de Obra (`laborCost`) entre Frontend e Backend com Múltiplas Quantidades (`quantity > 1`)
+
+**Descrição do Problema:**
+Existe uma divergência semântica crítica na fórmula de composição do valor de mão de obra (`laborCost`) e subtotal entre o Backend e o Frontend:
+- No backend (`BudgetPricingService.java`, linhas 50-58), a mão de obra é somada fixamente uma única vez por linha de item:
+  $$\text{itemSubtotal} = (\text{itemMaterialsSubtotal} \times \text{quantity}) + \text{itemLaborCost}$$
+- Na geração do PDF comercial (`BudgetPdfService.java`, linhas 511-525), a mão de obra total é acumulada somando apenas `item.getLaborCost()` direto, sem multiplicar pela quantidade.
+- No entanto, na tela de detalhes do frontend (`BudgetDetailPage.tsx`, linhas 89-91), o cálculo do resumo totaliza a mão de obra multiplicando pelo número de peças:
+  ```typescript
+  const totalLaborCost = (budget.items ?? []).reduce((sum, item) => {
+    return sum + ((item.laborCost ?? 0) * (item.quantity ?? 1));
+  }, 0);
+  ```
+Quando o usuário orça 2 ou mais unidades de uma esquadria com mão de obra atribuída (ex: 2 janelas com R$ 150,00 de mão de obra cada):
+1. O backend calcula o subtotal como $(\text{materiais} \times 2) + 150,00$.
+2. O PDF comercial lista R$ 150,00 de mão de obra.
+3. A página de detalhes no frontend projeta R$ 300,00 de mão de obra. Ao tentar abater isso para apresentar o valor líquido dos insumos, os valores de tela tornam-se inconsistentes com o PDF e o banco de dados.
+
+**Passos para Reproduzir:**
+1. Acessar `/orcamentos/novo` e adicionar 1 item com quantidade = `2`.
+2. Definir o custo de mão de obra do item como `R$ 150,00`.
+3. Salvar o orçamento e acessar a tela de detalhes (`/orcamentos/{id}`).
+4. Observar a mão de obra exibida no card financeiro do frontend versus o total discriminado no PDF comercial baixado.
+
+**Comportamento Esperado:**
+O modelo de domínio e cálculo deve ser unificado: ou a mão de obra é sempre unitária e multiplicada pela quantidade em todas as camadas ($\text{subtotal} = (\text{materiais} + \text{laborCost}) \times \text{quantity}$), ou é global por item e tratada de forma idêntica tanto no frontend quanto no backend e PDF.
+
+**Contexto / Ambiente:**
+- **Navegador / Sistema:** Spring Boot 3.4 / React 19 / Vite.
+- **Módulo Afetado:** Motor de Orçamentos e Precificação / PDF Comercial (`BudgetPricingService.java`, `BudgetPdfService.java`, `BudgetDetailPage.tsx`).
+- **Severidade:** 🔴 Alta (P2) | **Sprint:** 05 | **Status:** 🟡 Em Aberto.
+- **Detecção / Origem:** Issue #372 / Auditoria de Regra de Negócio da US-10 (#134).
+
+**Causa Raiz Técnica & Solução Recomendada:**
+* **Causa Raiz:** Ausência de alinhamento no contrato DTO e na regra matemática do `BudgetPricingService` em relação ao caráter unitário ou global de `laborCost` ao iterar itens com `quantity > 1`.
+* **Solução Recomendada:** 
+  1. No `BudgetPricingService.java`, alinhar a fórmula de precificação para `itemSubtotal = (itemMaterialsSubtotal.add(itemLaborCost)).multiply(BigDecimal.valueOf(itemQty))`.
+  2. No `BudgetPdfService.java`, acumular a mão de obra total ponderando pela quantidade: `totalMaoDeObra = totalMaoDeObra.add(item.getLaborCost().multiply(BigDecimal.valueOf(item.getQuantity())))`.
+  3. Manter a paridade exata com o redutor do `BudgetDetailPage.tsx`.
+
+---
+
+### BUG-028
+#### [BUG] Falha da Clipboard API em Ambientes HTTP e Ausência de Link Direto para WhatsApp (`api.whatsapp.com/send`)
+
+**Descrição do Problema:**
+O botão "Copiar para WhatsApp" em `BudgetDetailActions.tsx` invoca diretamente `navigator.clipboard.writeText(text)` sem verificar se o objeto `navigator.clipboard` está disponível no contexto de execução do navegador.
+Conforme especificação da W3C, a Clipboard API é uma *Secure Context feature*, estando disponível exclusivamente sob HTTPS ou `localhost`. Em vidraçarias e oficinas onde a aplicação web/PWA é acessada pelo IP da rede local (ex: `http://192.168.1.50:5173`), `navigator.clipboard` é `undefined`. Ao clicar no botão, ocorre a exceção `TypeError: Cannot read properties of undefined (reading 'writeText')` e a mensagem de erro padrão é disparada.
+Adicionalmente, a sub-tarefa **US-10.10** especifica expressamente a disponibilização de link direto para envio via WhatsApp (`https://api.whatsapp.com/send?text=...`), o qual não foi fornecido na interface (apenas o botão de cópia isolado foi implementado).
+
+**Passos para Reproduzir:**
+1. Acessar a aplicação através de um endereço de IP de rede local via HTTP (`http://<ip-servidor>:5173/orcamentos/<id>`) em um dispositivo móvel ou aba sem SSL.
+2. Clicar no botão "Copiar para WhatsApp".
+3. Observar o erro no console: `Uncaught (in promise) TypeError: Cannot read properties of undefined (reading 'writeText')` e o toast `'Erro ao gerar ou copiar o resumo para o WhatsApp.'`.
+4. Observar a inexistência de um botão ou link para abertura direta da conversa no aplicativo WhatsApp com o texto pré-carregado.
+
+**Comportamento Esperado:**
+1. A cópia para a área de transferência deve possuir mecanismo de contingência (*fallback*) baseado em elemento `<textarea>` temporário com `document.execCommand('copy')` caso `navigator.clipboard` não esteja disponível.
+2. Deve existir opção na interface para abertura direta do link `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}` (ou `https://wa.me/?text=...`), permitindo ao vendedor disparar a mensagem sem precisar alternar manualmente de app.
+
+**Contexto / Ambiente:**
+- **Navegador / Sistema:** Google Chrome / Firefox / Safari (Mobile PWA & HTTP).
+- **Módulo Afetado:** Frontend — Ações de Orçamento (`BudgetDetailActions.tsx`, `BudgetDetailPage.tsx`).
+- **Severidade:** 🟡 Média (P3) | **Sprint:** 05 | **Status:** 🟡 Em Aberto.
+- **Detecção / Origem:** Issue #373 / Auditoria US-10.10 (US-10 #134).
+
+**Causa Raiz Técnica & Solução Recomendada:**
+* **Causa Raiz:** Dependência irrestrita de API moderna restrita a contextos criptografados (HTTPS) e implementação parcial dos requisitos descritos na issue US-10.10.
+* **Solução Recomendada:**
+  1. Implementar função utilitária `copyToClipboard(text: string): Promise<boolean>` com fallback gracioso para `document.execCommand('copy')`.
+  2. Adicionar menu drop-down ou botão secundário "Abrir no WhatsApp" que codifica a mensagem com `encodeURIComponent(text)` e invoca `window.open('https://api.whatsapp.com/send?text=' + encoded, '_blank')`.
+
+---
+
+### BUG-029
+#### [BUG] Cálculo Incorreto de Dias de Validade no Rodapé do PDF com Sobrescrita Indevida para 15 Dias
+
+**Descrição do Problema:**
+Na emissão do PDF Comercial (`BudgetPdfService.java`, linhas 604-617), o texto de validade da proposta comercial tenta exibir o número de dias corridos até a expiração:
+```java
+if (budget.getValidUntil() != null) {
+    long diasValidade = 15;
+    if (budget.getCreatedAt() != null) {
+        diasValidade = Duration.between(budget.getCreatedAt(), budget.getValidUntil()).toDays();
+        if (diasValidade <= 0) {
+            diasValidade = 15;
+        }
+    }
+    document.add(new Paragraph("- Orçamento válido até " + formatarData(budget.getValidUntil())
+            + " (" + diasValidade + " dias a partir da emissão).", FONTE_PEQUENA));
+}
+```
+`Duration.between(...).toDays()` calcula intervalos inteiros de 24 horas. Se um orçamento for emitido com prazo curto (ex: 1 dia) ou criado às 16:00 com validade para o dia seguinte às 10:00 (intervalo de 18h), `toDays()` retorna `0`.
+A verificação `if (diasValidade <= 0)` trata esse valor como erro e sobrescreve a variável com o valor padrão `15`. O documento impresso apresenta uma contradição de termos comercialmente gravíssima:
+`- Orçamento válido até 30/09/2026 (15 dias a partir da emissão).` (quando a emissão foi no dia 29/09/2026).
+
+**Passos para Reproduzir:**
+1. Criar um orçamento informando validade para o dia seguinte (1 dia de validade).
+2. Emitir o PDF Comercial chamando `GET /api/v1/budgets/{id}/pdf/comercial`.
+3. Inspecionar o bloco "Informações Complementares" no final do documento.
+4. O texto exibe a data de amanhã com "(15 dias a partir da emissão)".
+
+**Comportamento Esperado:**
+O cálculo de dias corridos deve considerar a diferença entre as datas de calendário (`ChronoUnit.DAYS.between(createdAt.toLocalDate(), validUntil.toLocalDate())`), exibindo o número exato de dias (ex: "1 dia a partir da emissão").
+
+**Contexto / Ambiente:**
+- **Navegador / Sistema:** OpenPDF / Java 21 / Spring Boot 3.4.
+- **Módulo Afetado:** Backend — Serviço de PDF (`BudgetPdfService.java`).
+- **Severidade:** 🟡 Média (P3) | **Sprint:** 05 | **Status:** 🟡 Em Aberto.
+- **Detecção / Origem:** Issue #374 / Análise de Regras de Negócio e Testes de Validade (US-10 #134).
+
+**Causa Raiz Técnica & Solução Recomendada:**
+* **Causa Raiz:** Utilização de `Duration` (baseada em segundos/horas absolutas) em vez de `ChronoUnit.DAYS` ou `Period` sobre datas locais (`LocalDate`), associada a um fallback que força `15` para qualquer intervalo que resulte em 0 dias.
+* **Solução Recomendada:**
+  Substituir o cálculo por:
+  ```java
+  LocalDate dataCriacao = budget.getCreatedAt() != null ? budget.getCreatedAt().toLocalDate() : LocalDate.now();
+  LocalDate dataValidade = budget.getValidUntil().toLocalDate();
+  long diasValidade = java.time.temporal.ChronoUnit.DAYS.between(dataCriacao, dataValidade);
+  if (diasValidade < 0) diasValidade = 0;
+  ```
+
+---
+
+### BUG-030
+#### [BUG] Razão Social da Empresa Hardcodada no Resumo para WhatsApp Ignorando `CompanyProperties`
+
+**Descrição do Problema:**
+O serviço de geração do resumo comercial para WhatsApp (`BudgetPdfService.java`, linha 231) encerra a mensagem com uma assinatura fixa:
+```java
+sb.append("_Alumiportas - Vidraçaria e Esquadrias_");
+```
+A classe `BudgetPdfService` já recebe via injeção de dependência o bean `CompanyProperties companyProps`, o qual contém a razão social e o nome fantasia configurados dinamicamente no `application.yml` da instalação do AlumiGest.
+Ao hardcodar "Alumiportas", qualquer cliente corporativo ou vidraçaria parceira que personalize sua instância terá suas propostas de WhatsApp enviadas com a marca de terceiros.
+
+**Passos para Reproduzir:**
+1. Configurar no `application.yml` a propriedade `app.company.razao-social=Vidraçaria Modelo LTDA`.
+2. Gerar o resumo para WhatsApp via endpoint `GET /api/v1/budgets/{id}/resumo-whatsapp`.
+3. Inspecionar o rodapé do texto retornado.
+4. O rodapé termina com `_Alumiportas - Vidraçaria e Esquadrias_` em vez de `_Vidraçaria Modelo LTDA_`.
+
+**Comportamento Esperado:**
+O resumo para WhatsApp deve extrair o nome da empresa de `companyProps.getRazaoSocial()` (com fallback seguro apenas se a propriedade for nula ou vazia).
+
+**Contexto / Ambiente:**
+- **Navegador / Sistema:** Spring Boot 3.4 / UTF-8 Text.
+- **Módulo Afetado:** Backend — Resumo WhatsApp (`BudgetPdfService.java`).
+- **Severidade:** 🟢 Baixa (P4) | **Sprint:** 05 | **Status:** 🟡 Em Aberto.
+- **Detecção / Origem:** Issue #375 / Análise Estática de Código da US-10.3 / US-10.5 (#134).
+
+**Causa Raiz Técnica & Solução Recomendada:**
+* **Causa Raiz:** Uso de string literal estática em vez de referenciar o atributo `this.companyProps.getRazaoSocial()`.
+* **Solução Recomendada:**
+  Alterar a linha 231 para:
+  ```java
+  String nomeEmpresa = (companyProps.getRazaoSocial() != null && !companyProps.getRazaoSocial().isBlank())
+          ? companyProps.getRazaoSocial().trim()
+          : "AlumiGest";
+  sb.append("_").append(nomeEmpresa).append("_");
+  ```
+
+---
+
+### BUG-031
+#### [BUG] Resposta de Erro Empacotada como Blob sem Tratamento de Mensagem no Download de PDF Comercial
+
+**Descrição do Problema:**
+Ao solicitar o download do PDF comercial pelo frontend, a função `budgetsApi.downloadCommercialPdf` configura a chamada Axios com `responseType: 'blob'`:
+```typescript
+downloadCommercialPdf: async (id: string, code: string): Promise<void> => {
+  const response = await api.get<Blob>(`/api/orcamentos/${id}/pdf/comercial`, {
+    baseURL: '',
+    responseType: 'blob',
+  });
+  // ...
+}
+```
+Caso o servidor retorne um erro semântico de negócio, como status `422 Unprocessable Entity` ("Não é possível gerar o PDF de um orçamento cancelado") ou `404 Not Found`, a biblioteca Axios encapsula o JSON de erro do Spring Boot dentro de um objeto `Blob`.
+No manipulador de eventos da interface (`BudgetDetailActions.tsx`), o bloco de captura genérico apenas dispara:
+```typescript
+toast.error('Erro ao gerar o PDF Comercial.');
+```
+Isso oculta a causa real da falha (orçamento cancelado, problema de permissão ou inexistência de itens), impedindo o operador de tomar a ação corretiva correta.
+
+**Passos para Reproduzir:**
+1. Localizar um orçamento com status `CANCELLED`.
+2. Na página de detalhes do orçamento, acionar o botão "PDF Comercial".
+3. O backend rejeita a requisição com HTTP 422 e payload `{"status": 422, "message": "Não é possível gerar o PDF de um orçamento cancelado."}`.
+4. A tela exibe apenas o toast genérico "Erro ao gerar o PDF Comercial.", sem detalhar que orçamentos cancelados não podem ser emitidos.
+
+**Comportamento Esperado:**
+Ao interceptar erros em requisições de download com `responseType: 'blob'`, o cliente de API deve converter o Blob em texto (`await error.response.data.text()`), parsear o JSON de erro e exibir na notificação toast a mensagem exata retornada pela API.
+
+**Contexto / Ambiente:**
+- **Navegador / Sistema:** Axios 1.x / React 19 / Browser Blob API.
+- **Módulo Afetado:** Frontend — Serviço de Orçamentos e Feedback UI (`budgetsApi.ts`, `BudgetDetailActions.tsx`).
+- **Severidade:** 🟡 Média (P3) | **Sprint:** 05 | **Status:** 🟡 Em Aberto.
+- **Detecção / Origem:** Issue #376 / Auditoria de UX e Robustez de Tratamento de Erros da US-10.8 (#134).
+
+**Causa Raiz Técnica & Solução Recomendada:**
+* **Causa Raiz:** Ausência de conversor de erro para respostas do tipo binário no Axios e captura de erro sem extração de payload no componente React.
+* **Solução Recomendada:**
+  No `catch` da função ou em um interceptor:
+  ```typescript
+  if (error.response?.data instanceof Blob) {
+    const errorJson = JSON.parse(await error.response.data.text());
+    toast.error(errorJson.message || 'Erro ao gerar o PDF Comercial.');
+  }
+  ```
+
+---
+
+### BUG-032
+#### [BUG] Duplicação de Mão de Obra e Inconsistência nos Totais do Orçamento
+
+**Descrição do Problema:**
+O cálculo de precificação do orçamento embutia indevidamente o valor da mão de obra (`laborCost`) diretamente no `subtotal` individual de cada item (`BudgetItem`). Isso causava inconsistência visual na tela de detalhes (exibindo a esquadria com a mão de obra embutida e somando visualmente uma segunda vez na linha de Mão de Obra) e duplicação matemática na tela de edição do orçamento (ao recarregar o item e salvar, a mão de obra era reaplicada, inflando o total).
+
+**Passos para Reproduzir:**
+1. Criar um orçamento com 1 item (materiais de R$ 4.840,18), Mão de Obra de R$ 2.000,00 e Desconto de 11%.
+2. Acessar a tela de detalhes do orçamento: o item exibia R$ 6.840,18 e a linha de mão de obra exibia + R$ 2.000,00 (soma visual daria R$ 8.087,76 contra o total correto de R$ 6.087,76).
+3. Acessar a tela de edição e salvar sem alterar nada: o total final inflava para R$ 7.867,76 devido à duplicação da mão de obra.
+
+**Comportamento Esperado:**
+- `BudgetItem.subtotal` deve conter estritamente o valor dos materiais (insumos × quantidade de esquadrias).
+- `Budget.subtotal` consolida o Subtotal Bruto (materiais + mão de obra), sobre o qual o desconto comercial é aplicado.
+- No frontend, os cards de fechamento financeiro exibem discriminadamente "Esquadrias / Materiais", "Mão de Obra" e "Subtotal Bruto", garantindo que a soma visual bata exatamente com o total líquido.
+- Ao salvar na edição, os totais permanecem idênticos.
+
+**Contexto / Ambiente:**
+- **Módulo Afetado:** Backend (`BudgetPricingService.java`) e Frontend (`BudgetFinancialSummaryCard.tsx`, `BudgetDetailPage.tsx`, `calculations.ts`, `BudgetProposalItemCard.tsx`).
+- **Severidade:** 🔴 Alta (P2) | **Sprint:** 05 | **Status:** ✅ Resolvido.
+- **Detecção / Origem:** Issue #333 / Alinhamento de homologação da US-09.
+
+**Causa Raiz Técnica & Solução Adotada:**
+* **Causa Raiz:** Em `BudgetPricingService.java`, a instrução `itemSubtotal = itemSubtotal.add(itemLaborCost)` somava a mão de obra antes de chamar `item.setSubtotal(itemSubtotal)`. Além disso, componentes de UI no frontend não exibiam a linha isolada de insumos vs mão de obra.
+* **Solução Adotada:**
+  1. No backend (`BudgetPricingService.java`), removeu-se a soma de `itemLaborCost` do `item.setSubtotal(itemSubtotal)`, mantendo a mão de obra consolidada apenas em `budgetSubtotal = budgetSubtotal.add(itemSubtotal).add(itemLaborCost)`.
+  2. Ajustou-se `BudgetControllerIntegrationTest` e adicionou-se teste unitário com reprodução fiel do cenário da Issue #333 em `BudgetPricingServiceTest.java`.
+  3. No frontend, atualizou-se `calcItemSubtotal` em `calculations.ts` e alinhou-se `BudgetFinancialSummaryCard.tsx` com `BudgetFinancialSummary.tsx`, discriminando materiais, mão de obra e subtotal bruto.
+  4. Adicionou-se teste de regressão ponta a ponta no Vitest (`BudgetDetailPage.test.tsx`).
+
+---
+
+### BUG-033
+#### [BUG] Impossibilidade de Criar Esquadria sem Ferragem / Acessório no Construtor de Orçamentos
+
+**Descrição do Problema:**
+No Studio CAD / Construtor de Esquadrias (`WindowBuilderModal`), todas as seleções de insumos originadas de `categoryRequirements` dos produtos (incluindo `HARDWARE`) eram configuradas com `isOptional: false`. Isso impedia a remoção da ferragem (botão `X` de exclusão oculto) e bloqueava a navegação caso o usuário não selecionasse um material de ferragem. O orçamentista era obrigado a contornar o problema digitando quantidade 0 na ferragem para conseguir salvar a esquadria sem acessórios.
+
+**Passos para Reproduzir:**
+1. Acessar a tela de criar um novo orçamento ou edição de proposta.
+2. Clicar em "Adicionar Esquadria", selecionando um modelo de esquadria do catálogo (ex: Porta de Correr 2 Folhas).
+3. No Passo 2 (Composição de Insumos), tentar avançar ou criar a esquadria sem selecionar ou incluir ferragens/acessórios.
+4. Notar que o card de ferragem não exibia o botão `X` de remoção e a validação do wizard bloqueava o avanço.
+
+**Comportamento Esperado:**
+O usuário deve poder excluir a ferragem livremente pelo botão `X` no Passo 2. Ao remover a ferragem, o tipo de puxador no Passo 3 deve transitar automaticamente para "Sem Puxador" (`NONE`) e a esquadria deve poder ser concluída e salva sem nenhum insumo de ferragem, com valores de materiais e totais coerentes.
+
+**Contexto / Ambiente:**
+- **Navegador / Sistema:** Frontend SPA React / TypeScript / Vite / TailWindCSS.
+- **Módulo Afetado:** Construtor de Esquadrias (`Step2Materials.tsx`, `useMaterialSync.ts`, `useWindowBuilderState.ts`).
+- **Severidade:** 🟡 Média (P3) | **Sprint:** 05 | **Status:** ✅ Resolvido.
+- **Detecção / Origem:** Issue #335 / Branch `fix/335-esquadria-sem-ferragem`.
+
+**Causa Raiz Técnica & Solução:**
+* **Causa Raiz:** Flag `isOptional: false` atribuída indistintamente a todos os requisitos de insumo gerados por `useMaterialSync.ts` e `useWindowBuilderState.ts`, associada à regra no `Step2Materials.tsx` que só exibia o botão `X` se `sel.isOptional === true`.
+* **Solução:**
+  1. Habilitado o botão de remoção `X` para `HARDWARE` e `FILM` no `Step2Materials.tsx` (`sel.isOptional || categoryType === 'HARDWARE' || categoryType === 'FILM'`).
+  2. Definido `isOptional: true` por padrão para `HARDWARE` e `FILM` ao instanciar seleções de templates e fallbacks em `useMaterialSync.ts` e `useWindowBuilderState.ts`.
+  3. Atualizado `handleRemoveMaterial` no `useWindowBuilderState.ts` para transitar automaticamente o formato de puxador para `NONE` ("Sem Puxador") quando não houver ferragens remanescentes.
+  4. Atualizado `handleHandleTypeChange` para reativar e incluir automaticamente a ferragem na lista de insumos caso o usuário selecione um puxador que a exija no Passo 3.
+  5. Adicionados testes formais de QA no Frontend (`WindowBuilderModal.test.tsx`, `useWindowBuilderState.test.ts`) e Backend (`BudgetPricingServiceTest.java`).
+  6. Evidência visual da resolução capturada diretamente no sistema em execução real (`http://localhost:5173`) em alta definição em [`docs/projeto-001/003-teste/sprint-05/evidencias/evidencia-fix-335-esquadria-sem-ferragem.png`](sprint-05/evidencias/evidencia-fix-335-esquadria-sem-ferragem.png) e detalhada no [RRF-QA-08](sprint-05/RRF-QA-08-Resolucao_Bug_335_Esquadria_Sem_Ferragem.md).
+
+![Evidência Visual da Resolução do Bug #335 em Localhost](sprint-05/evidencias/evidencia-fix-335-esquadria-sem-ferragem.png)
+
+---
+
+### BUG-034
 #### [BUG] [US-13.2] Condição de Corrida Pode Gerar Códigos Duplicados em Conversões Simultâneas (Issue #408)
 
 **Descrição do Problema:**
@@ -724,7 +1129,7 @@ O gerador de código deve garantir exclusão mútua na geração de sequenciais,
 
 ---
 
-### BUG-025
+### BUG-035
 #### [BUG] [US-13.3/13.4/13.5] Interface Troca Código Oficial PED por OS e Quebra Busca pelo Identificador Exibido (Issue #411)
 
 **Descrição do Problema:**
@@ -756,7 +1161,7 @@ O identificador oficial de mercado deve ser unificado e nativo em todas as camad
 
 ---
 
-### BUG-026
+### BUG-036
 #### [BUG] [US-13.4] Paginação Exibe Apenas Páginas 1–5 e Perde a Janela da Página Atual (Issue #412)
 
 **Descrição do Problema:**
@@ -792,8 +1197,8 @@ A paginação deve implementar navegação com janela deslizante e reticências 
 
 ```mermaid
 pie title "Origem dos Defeitos Identificados"
-    "Frontend & UI/UX" : 10
-    "Backend & Regras de Negócio" : 8
+    "Frontend & UI/UX" : 13
+    "Backend & Regras de Negócio" : 15
     "Incompatibilidade de Contratos / Fullstack" : 7
     "Pipeline CI/CD & SonarQube" : 3
     "Infraestrutura & Docker" : 2
@@ -805,8 +1210,8 @@ pie title "Origem dos Defeitos Identificados"
 | Categoria | Ocorrências | Ação Preventiva Definitiva Adotada |
 |---|:---:|---|
 | **Incompatibilidade de Contratos (DTOs / Types)** | 7 | Adoção de contratos OpenAPI sincronizados e tipagens estritas no TypeScript. |
-| **Limitações de Ambiente (HTTP vs HTTPS / Docker)** | 3 | Uso de fallbacks nativos (`Math.random`) e parametrização com variáveis de ambiente `.env`. |
-| **Erros de Validação e Feedback ao Usuário** | 3 | Padronização dos formulários com **React Hook Form + Zod** em todos os modais. |
+| **Limitações de Ambiente (HTTP vs HTTPS / Docker)** | 4 | Uso de fallbacks nativos (`document.execCommand`, `Math.random`) e SSL obrigatório. |
+| **Erros de Validação e Feedback ao Usuário** | 4 | Padronização dos formulários com **React Hook Form + Zod** e deserialização de erros Blob. |
 | **Regressão por Refatoração** | 4 | Ampliação da suíte para **626 testes JUnit 5**, **658 testes Vitest** e **24 suítes Cypress E2E** no pipeline obrigatório. |
 | **Configuração de CI/CD e Build Tools** | 4 | Adição do Quality Gate no SonarQube bloqueando merges caso haja regressão ou falha de plugin. |
 | **Desvio de Git Flow / Merge Prematuro** | 1 | Configuração de Rulesets protegendo `main` e `develop` contra merges diretos sem aprovação de PR. |

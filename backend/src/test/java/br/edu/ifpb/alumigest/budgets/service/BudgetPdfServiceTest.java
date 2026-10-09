@@ -6,7 +6,9 @@ import br.edu.ifpb.alumigest.budgets.domain.BudgetItem;
 import br.edu.ifpb.alumigest.budgets.domain.BudgetItemOption;
 import br.edu.ifpb.alumigest.budgets.domain.BudgetStatus;
 import br.edu.ifpb.alumigest.budgets.domain.PaymentCondition;
+import br.edu.ifpb.alumigest.catalog.domain.Material;
 import br.edu.ifpb.alumigest.catalog.domain.MaterialCategoryType;
+import br.edu.ifpb.alumigest.catalog.repository.MaterialRepository;
 import br.edu.ifpb.alumigest.clients.domain.Client;
 import com.lowagie.text.pdf.PdfReader;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,17 +23,23 @@ import org.junit.jupiter.params.provider.ValueSource;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Suíte de testes unitários para {@link BudgetPdfService} [US-10.8] (#228).
@@ -265,18 +273,46 @@ class BudgetPdfServiceTest {
             }
         }
 
-        @Test
-        @DisplayName("Dado handleConfig 'NONE' ou 'none', não deve exibir tag de puxador")
-        void dadoHandleConfigNone_deveOcultarTagDePuxador() throws IOException {
+        @ParameterizedTest
+        @ValueSource(strings = {
+                "NONE",
+                "{}",
+                "{\"handleType\":\"NONE\"}",
+                "{\"type\":\"NONE\"}"
+        })
+        @DisplayName("Dado handleConfig sem puxador, deve informar ausência sem usar fallback")
+        void dadoHandleConfigSemPuxador_deveInformarAusencia(String handleConfig) throws IOException {
             Budget budget = criarBudgetPadrao(false);
-            budget.getItems().getFirst().setHandleConfig("NONE");
+            budget.getItems().getFirst().setHandleConfig(handleConfig);
 
-            byte[] pdfBytes = budgetPdfService.gerarPdfComercial(budget);
+            byte[] pdfBytes = budgetPdfService.gerarPdfTecnico(budget);
 
             assertThat(pdfBytes).isNotNull();
             try (PdfReader reader = new PdfReader(pdfBytes)) {
                 String conteudo = extrairStreamsDeTexto(reader);
-                assertThat(conteudo).doesNotContain("NONE");
+                assertThat(conteudo)
+                        .contains("Sem puxador previsto.")
+                        .doesNotContain("NONE")
+                        .doesNotContain("Formato: Padrão do modelo.")
+                        .doesNotContain("Posição: Lado de abertura.");
+            }
+        }
+
+        @Test
+        @DisplayName("Dado handleConfig vazio, deve informar ausência sem usar fallback")
+        void dadoHandleConfigVazio_deveInformarAusencia() throws IOException {
+            Budget budget = criarBudgetPadrao(false);
+            budget.getItems().getFirst().setHandleConfig(" ");
+
+            byte[] pdfBytes = budgetPdfService.gerarPdfTecnico(budget);
+
+            assertThat(pdfBytes).isNotNull();
+            try (PdfReader reader = new PdfReader(pdfBytes)) {
+                String conteudo = extrairStreamsDeTexto(reader);
+                assertThat(conteudo)
+                        .contains("Sem puxador previsto.")
+                        .doesNotContain("Formato: Padrão do modelo.")
+                        .doesNotContain("Posição: Lado de abertura.");
             }
         }
 
@@ -436,8 +472,8 @@ class BudgetPdfServiceTest {
         }
 
         @Test
-        @DisplayName("Limite de Validade: validUntil menor ou igual a createdAt (dias <= 0) deve aplicar fallback de 15 dias")
-        void dadoValidUntilMenorOuIgualACreatedAt_deveAplicarFallbackDe15Dias() throws IOException {
+        @DisplayName("Limite de Validade: validUntil anterior a createdAt deve exibir 0 dias, sem fallback artificial de 15 dias (BUG-025)")
+        void dadoValidUntilAnteriorACreatedAt_deveExibirZeroDiasSemFallback() throws IOException {
             Budget budget = criarBudgetPadrao(false);
             OffsetDateTime agora = OffsetDateTime.now();
             budget.setCreatedAt(agora);
@@ -448,7 +484,9 @@ class BudgetPdfServiceTest {
             assertThat(pdfBytes).isNotNull();
             try (PdfReader reader = new PdfReader(pdfBytes)) {
                 String conteudo = extrairStreamsDeTexto(reader);
-                assertThat(conteudo).contains("15 dias a partir da emissão");
+                assertThat(conteudo)
+                        .contains("(0 dias a partir da emissão)")
+                        .doesNotContain("15 dias a partir da emissão");
             }
         }
 
@@ -466,6 +504,131 @@ class BudgetPdfServiceTest {
             try (PdfReader reader = new PdfReader(pdfBytes)) {
                 String conteudo = extrairStreamsDeTexto(reader);
                 assertThat(conteudo).contains("30 dias a partir da emissão");
+            }
+        }
+    }
+
+    // =========================================================================
+    // 3.1 BUG-025 — DIAS DE VALIDADE POR DATAS DE CALENDÁRIO NO PDF COMERCIAL
+    // =========================================================================
+    @Nested
+    @DisplayName("3.1 BUG-025 - Dias de validade por datas de calendário no PDF Comercial")
+    class DiasValidadeBug025Test {
+
+        private static final ZoneOffset OFFSET_BRT = ZoneOffset.ofHours(-3);
+        private static final ZoneId ZONA_PADRAO = ZoneId.of("America/Sao_Paulo");
+
+        private OffsetDateTime dataHora(int ano, int mes, int dia, int hora, int minuto) {
+            return OffsetDateTime.of(ano, mes, dia, hora, minuto, 0, 0, OFFSET_BRT);
+        }
+
+        @ParameterizedTest(name = "[{index}] {0} -> {1} = {2} dia(s)")
+        @CsvSource({
+                // Cenário A (bug original): menos de 24h, mas no dia seguinte
+                "2026-09-29T16:00:00-03:00, 2026-09-30T10:00:00-03:00, 1",
+                "2026-09-29T08:00:00-03:00, 2026-09-30T08:01:00-03:00, 1",
+                "2026-09-29T23:59:00-03:00, 2026-09-30T00:01:00-03:00, 1",
+                // Cenário B: vários dias
+                "2026-09-29T00:00:00-03:00, 2026-10-04T00:00:00-03:00, 5",
+                "2026-09-29T18:00:00-03:00, 2026-10-04T09:00:00-03:00, 5",
+                // Cenário C: mesma data
+                "2026-09-29T08:00:00-03:00, 2026-09-29T23:00:00-03:00, 0",
+                "2026-09-29T00:00:00-03:00, 2026-09-29T00:00:00-03:00, 0",
+                // Cenário E: validade anterior à emissão é travada em 0
+                "2026-09-29T08:00:00-03:00, 2026-09-27T08:00:00-03:00, 0"
+        })
+        @DisplayName("Deve calcular a diferença em dias de calendário, ignorando horas")
+        void deveCalcularDiferencaEmDiasDeCalendario(OffsetDateTime createdAt, OffsetDateTime validUntil, long esperado) {
+            assertThat(BudgetPdfService.calcularDiasValidade(createdAt, validUntil)).isEqualTo(esperado);
+        }
+
+        @Test
+        @DisplayName("Cenário D: createdAt nulo deve usar a data atual (America/Sao_Paulo) sem lançar exceção")
+        void dadoCreatedAtNulo_deveUsarDataAtualSemExcecao() {
+            LocalDate hoje = LocalDate.now(ZONA_PADRAO);
+            OffsetDateTime validadeEmTresDias = hoje.plusDays(3).atTime(12, 0).atOffset(OFFSET_BRT);
+            OffsetDateTime validadeVencida = hoje.minusDays(3).atTime(12, 0).atOffset(OFFSET_BRT);
+
+            assertThat(BudgetPdfService.calcularDiasValidade(null, validadeEmTresDias)).isEqualTo(3);
+            assertThat(BudgetPdfService.calcularDiasValidade(null, validadeVencida)).isZero();
+        }
+
+        @ParameterizedTest(name = "{0} -> ''{1}''")
+        @CsvSource({
+                "0, 0 dias",
+                "1, 1 dia",
+                "2, 2 dias",
+                "15, 15 dias"
+        })
+        @DisplayName("Deve aplicar singular/plural corretamente na quantidade de dias")
+        void deveFormatarQuantidadeDiasComConcordancia(long dias, String esperado) {
+            assertThat(BudgetPdfService.formatarQuantidadeDias(dias)).isEqualTo(esperado);
+        }
+
+        @Test
+        @DisplayName("Cenário F: validade no dia seguinte (< 24h) deve imprimir '1 dia', nunca '1 dias' nem '15 dias'")
+        void dadoValidadeNoDiaSeguinte_deveImprimirUmDiaNoPdf() throws IOException {
+            Budget budget = criarBudgetPadrao(false);
+            budget.setCreatedAt(dataHora(2026, 9, 29, 16, 0));
+            budget.setValidUntil(dataHora(2026, 9, 30, 10, 0));
+
+            byte[] pdfBytes = budgetPdfService.gerarPdfComercial(budget);
+
+            try (PdfReader reader = new PdfReader(pdfBytes)) {
+                String conteudo = extrairStreamsDeTexto(reader);
+                assertThat(conteudo)
+                        .contains("Orçamento válido até 30/09/2026 (1 dia a partir da emissão).")
+                        .doesNotContain("1 dias a partir da emissão")
+                        .doesNotContain("15 dias a partir da emissão");
+            }
+        }
+
+        @Test
+        @DisplayName("Cenário C no PDF: validade na mesma data da emissão deve imprimir '0 dias'")
+        void dadoValidadeNaMesmaData_deveImprimirZeroDiasNoPdf() throws IOException {
+            Budget budget = criarBudgetPadrao(false);
+            budget.setCreatedAt(dataHora(2026, 9, 29, 8, 0));
+            budget.setValidUntil(dataHora(2026, 9, 29, 23, 0));
+
+            byte[] pdfBytes = budgetPdfService.gerarPdfComercial(budget);
+
+            try (PdfReader reader = new PdfReader(pdfBytes)) {
+                String conteudo = extrairStreamsDeTexto(reader);
+                assertThat(conteudo)
+                        .contains("Orçamento válido até 29/09/2026 (0 dias a partir da emissão).")
+                        .doesNotContain("15 dias a partir da emissão");
+            }
+        }
+
+        @Test
+        @DisplayName("Cenário B no PDF: validade de vários dias deve imprimir o plural")
+        void dadoValidadeDeVariosDias_deveImprimirPluralNoPdf() throws IOException {
+            Budget budget = criarBudgetPadrao(false);
+            budget.setCreatedAt(dataHora(2026, 9, 29, 9, 0));
+            budget.setValidUntil(dataHora(2026, 10, 4, 9, 0));
+
+            byte[] pdfBytes = budgetPdfService.gerarPdfComercial(budget);
+
+            try (PdfReader reader = new PdfReader(pdfBytes)) {
+                String conteudo = extrairStreamsDeTexto(reader);
+                assertThat(conteudo).contains("Orçamento válido até 04/10/2026 (5 dias a partir da emissão).");
+            }
+        }
+
+        @Test
+        @DisplayName("Cenário D no PDF: createdAt nulo deve gerar o PDF sem NullPointerException")
+        void dadoCreatedAtNulo_deveGerarPdfSemExcecao() throws IOException {
+            Budget budget = criarBudgetPadrao(false);
+            budget.setCreatedAt(null);
+            budget.setValidUntil(LocalDate.now(ZONA_PADRAO).plusDays(1).atTime(12, 0).atOffset(OFFSET_BRT));
+
+            byte[] pdfBytes = budgetPdfService.gerarPdfComercial(budget);
+
+            try (PdfReader reader = new PdfReader(pdfBytes)) {
+                String conteudo = extrairStreamsDeTexto(reader);
+                assertThat(conteudo)
+                        .contains("(1 dia a partir da emissão)")
+                        .doesNotContain("15 dias a partir da emissão");
             }
         }
     }
@@ -953,6 +1116,92 @@ class BudgetPdfServiceTest {
                         .contains("VOLUME DO PEDIDO");
             }
         }
+
+        @Test
+        @DisplayName("Deve traduzir termos em inglês de usinagem, puxadores e tipologias na Ficha Técnica e PDF Comercial [Issue #344]")
+        void deveTraduzirTermosInglesUsinagemPuxadoresETipologias() throws IOException {
+            Budget budget = criarBudgetPadrao(false);
+            List<BudgetItem> itens = new ArrayList<>();
+
+            BudgetItem item1 = new BudgetItem();
+            item1.setId(UUID.randomUUID());
+            item1.setProductName("Janela Maxim-ar");
+            item1.setTemplateType("AWNING WINDOW");
+            item1.setWidthMm(new BigDecimal("800"));
+            item1.setHeightMm(new BigDecimal("600"));
+            item1.setQuantity(1);
+            item1.setHandleConfig("{\"handleType\":\"TUBULAR\",\"format\":\"ROUND\",\"position\":\"RIGHT\"}");
+            item1.setDrillingConfig("{\"details\":\"CUSTOM_DISTANCES\",\"position\":\"BOTH\"}");
+            item1.setBudget(budget);
+            itens.add(item1);
+
+            BudgetItem item2 = new BudgetItem();
+            item2.setId(UUID.randomUUID());
+            item2.setProductName("Porta de Correr");
+            item2.setTemplateType("SLIDING DOOR");
+            item2.setWidthMm(new BigDecimal("1500"));
+            item2.setHeightMm(new BigDecimal("2100"));
+            item2.setQuantity(1);
+            item2.setHandleConfig("{\"type\":\"SHELL_LOCK\",\"format\":\"FLAT\",\"position\":\"BOTH_SIDES\"}");
+            item2.setBudget(budget);
+            itens.add(item2);
+
+            BudgetItem item3 = new BudgetItem();
+            item3.setId(UUID.randomUUID());
+            item3.setProductName("Porta Pivotante");
+            item3.setTemplateType("SWING DOOR");
+            item3.setWidthMm(new BigDecimal("900"));
+            item3.setHeightMm(new BigDecimal("2100"));
+            item3.setQuantity(1);
+            item3.setHandleConfig("{\"handle\":\"HANDLE\",\"shape\":\"RECTANGULAR\",\"pos\":\"CENTER\"}");
+            item3.setBudget(budget);
+            itens.add(item3);
+
+            budget.setItems(itens);
+
+            byte[] pdfTecnico = budgetPdfService.gerarPdfTecnico(budget);
+            try (PdfReader reader = new PdfReader(pdfTecnico)) {
+                String text = extrairStreamsDeTexto(reader);
+
+                assertThat(text)
+                        .contains("TIPO: BASCULANTE")
+                        .contains("TIPO: CORRER")
+                        .contains("TIPO: GIRO")
+                        .contains("Tipo: Tubular")
+                        .contains("Formato: Redondo")
+                        .contains("Posição: Direita")
+                        .contains("Distâncias personalizadas conforme")
+                        .contains("gabarito")
+                        .contains("Posição: Ambos os Lados")
+                        .contains("Tipo: Fecho Concha")
+                        .contains("Formato: Chato")
+                        .contains("Tipo: Puxador Convencional")
+                        .contains("Formato: Retangular")
+                        .contains("Posição: Central")
+                        .doesNotContain("TIPO: AWNING WINDOW")
+                        .doesNotContain("TIPO: SLIDING DOOR")
+                        .doesNotContain("TIPO: SWING DOOR")
+                        .doesNotContain("Tipo: TUBULAR")
+                        .doesNotContain("Tipo: SHELL_LOCK")
+                        .doesNotContain("Tipo: HANDLE")
+                        .doesNotContain("Formato: ROUND")
+                        .doesNotContain("Formato: FLAT")
+                        .doesNotContain("Posição: RIGHT")
+                        .doesNotContain("Posição: BOTH");
+            }
+
+            byte[] pdfComercial = budgetPdfService.gerarPdfComercial(budget);
+            try (PdfReader reader = new PdfReader(pdfComercial)) {
+                String text = extrairStreamsDeTexto(reader);
+
+                assertThat(text)
+                        .contains("Tubular")
+                        .contains("Fecho Concha")
+                        .contains("Puxador Convencional")
+                        .doesNotContain("TUBULAR")
+                        .doesNotContain("SHELL_LOCK");
+            }
+        }
     }
 
     // =========================================================================
@@ -1311,6 +1560,174 @@ class BudgetPdfServiceTest {
                         .contains("VOLUME DO PEDIDO")
                         .contains("9 PEÇAS"); // 2+3+4 = 9
             }
+        }
+
+        @Test
+        @DisplayName("US-11.2 / Issue #348: Deve renderizar 2 furos no texto e alerta NBR 10821 para porta de giro com holeCount: 2")
+        void deveRenderizarFichaTecnicaComConsistenciaDeFuracaoEAlertaNbr10821() throws IOException {
+            Budget budget = criarBudgetPadrao(true);
+            BudgetItem item = budget.getItems().get(0);
+            item.setTemplateType("SWING_DOOR_2F");
+            item.setHeightMm(new BigDecimal("2100"));
+            item.setWidthMm(new BigDecimal("1600"));
+            item.setDrillingConfig("{\"holeCount\": 2, \"divisionType\": \"EQUAL\"}");
+
+            byte[] pdfBytes = budgetPdfService.gerarPdfTecnico(budget);
+
+            try (PdfReader reader = new PdfReader(pdfBytes)) {
+                String texto = extrairStreamsDeTexto(reader);
+
+                assertThat(texto).contains("2 furos para dobradiças.");
+                assertThat(texto).doesNotContain("3 furos para dobradiças.");
+                assertThat(texto).contains("NBR 10821: Recomendado");
+                assertThat(texto).contains("dobradiças para altura > 1800mm");
+            }
+        }
+
+        @Test
+        @DisplayName("US-11.1 / Issue #383 (BUG-034): Deve emitir PDF técnico com fallback para 1 peça quando BudgetItem.quantity for nulo")
+        void deveEmitirPdfTecnicoComSucessoQuandoItemPossuirQuantityNulo() throws IOException {
+            Budget budget = criarBudgetPadrao(true);
+            budget.getItems().get(0).setQuantity(null);
+
+            byte[] pdfBytes = budgetPdfService.gerarPdfTecnico(budget);
+
+            assertThat(pdfBytes).isNotNull().isNotEmpty();
+            try (PdfReader reader = new PdfReader(pdfBytes)) {
+                String texto = extrairStreamsDeTexto(reader);
+                assertThat(texto).contains("VOLUME DO PEDIDO");
+                assertThat(texto).contains("1 PEÇA");
+                assertThat(texto).contains("Qtd: 1");
+            }
+        }
+
+        @Test
+        @DisplayName("US-11.1 / Issue #383 (BUG-034): Deve somar volume do pedido defensivamente quando houver mix de itens com e sem quantity")
+        void deveSomarTotalPecasComFallbackQuandoHouverMixDeItensComESemQuantity() throws IOException {
+            Budget budget = criarBudgetPadrao(true);
+            BudgetItem item1 = budget.getItems().get(0);
+            item1.setQuantity(2);
+
+            BudgetItem item2 = new BudgetItem();
+            item2.setId(UUID.randomUUID());
+            item2.setProductName("Janela Basculante");
+            item2.setWidthMm(new BigDecimal("600"));
+            item2.setHeightMm(new BigDecimal("600"));
+            item2.setQuantity(null); // NULO (fallback defensivo = 1)
+            item2.setSubtotal(new BigDecimal("300.00"));
+            item2.setBudget(budget);
+
+            BudgetItem item3 = new BudgetItem();
+            item3.setId(UUID.randomUUID());
+            item3.setProductName("Porta de Correr 2F");
+            item3.setWidthMm(new BigDecimal("1200"));
+            item3.setHeightMm(new BigDecimal("2100"));
+            item3.setQuantity(3);
+            item3.setSubtotal(new BigDecimal("900.00"));
+            item3.setBudget(budget);
+
+            budget.setItems(new ArrayList<>(List.of(item1, item2, item3)));
+
+            byte[] pdfBytes = budgetPdfService.gerarPdfTecnico(budget);
+
+            assertThat(pdfBytes).isNotNull().isNotEmpty();
+            try (PdfReader reader = new PdfReader(pdfBytes)) {
+                String texto = extrairStreamsDeTexto(reader);
+                assertThat(texto).contains("VOLUME DO PEDIDO");
+                // 2 + 1 (fallback) + 3 = 6 peças
+                assertThat(texto).contains("6 PEÇAS");
+            }
+        }
+    }
+
+    // =========================================================================
+    // PARIDADE DE MÃO DE OBRA: BudgetPricingService x BudgetPdfService (#372)
+    // =========================================================================
+
+    @Nested
+    @DisplayName("Paridade de Mão de Obra entre Precificação e PDF Comercial [Issue #372 / BUG-023]")
+    class ParidadeMaoDeObraPricingPdfTest {
+
+        @Test
+        @DisplayName("PDF comercial deve exibir a mesma mão de obra e o mesmo subtotal de produtos calculados pelo BudgetPricingService")
+        void deveExibirMaoDeObraESubtotalDeProdutosIdenticosAoCalculoDePrecificacao() throws IOException {
+            // Item A: 2 esquadrias × R$ 200 de materiais, MO da linha R$ 150
+            // Item B: 3 esquadrias × R$ 100 de materiais, MO da linha R$ 100
+            Material materialA = criarMaterial("200.00");
+            Material materialB = criarMaterial("100.00");
+
+            Budget budget = criarBudgetPadrao(false);
+            budget.setItems(new ArrayList<>());
+            budget.setDiscountPercent(BigDecimal.ZERO);
+            budget.addItem(criarItemPrecificavel("Janela de Correr 2 Folhas", materialA, 2, new BigDecimal("150.00")));
+            budget.addItem(criarItemPrecificavel("Porta de Giro 1 Folha", materialB, 3, new BigDecimal("100.00")));
+
+            MaterialRepository materialRepository = mock(MaterialRepository.class);
+            when(materialRepository.findById(materialA.getId())).thenReturn(Optional.of(materialA));
+            when(materialRepository.findById(materialB.getId())).thenReturn(Optional.of(materialB));
+
+            new BudgetPricingService(materialRepository).calculatePricing(budget);
+
+            BigDecimal somaSubtotaisItens = budget.getItems().stream()
+                    .map(BudgetItem::getSubtotal)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            BigDecimal maoDeObraPrecificacao = budget.getSubtotal().subtract(somaSubtotaisItens);
+
+            assertThat(somaSubtotaisItens).isEqualByComparingTo("700.00");
+            assertThat(maoDeObraPrecificacao)
+                    .as("A precificação deve consolidar 150 + 100 = 250 de mão de obra (sem multiplicar pela quantidade)")
+                    .isEqualByComparingTo("250.00");
+            assertThat(budget.getTotal()).isEqualByComparingTo("950.00");
+
+            byte[] pdfBytes = budgetPdfService.gerarPdfComercial(budget);
+
+            try (PdfReader reader = new PdfReader(pdfBytes)) {
+                String conteudo = extrairStreamsDeTexto(reader);
+
+                assertThat(conteudo)
+                        .contains("Subtotal de Produtos")
+                        .contains("Mão de Obra")
+                        .contains("TOTAL A PAGAR");
+
+                assertThat(conteudo)
+                        .as("Subtotal de Produtos no PDF deve ser igual à soma dos subtotais de itens da precificação (R$ 700,00)")
+                        .containsPattern("R\\$[\\s\\u00A0]700,00")
+                        .as("Mão de Obra no PDF deve ser igual à parcela de MO da precificação (R$ 250,00)")
+                        .containsPattern("R\\$[\\s\\u00A0]250,00")
+                        .as("Total a pagar no PDF deve ser igual ao total da precificação (R$ 950,00)")
+                        .containsPattern("R\\$[\\s\\u00A0]950,00");
+
+                assertThat(conteudo)
+                        .as("O PDF não pode multiplicar a MO pela quantidade (2×150 + 3×100 = R$ 600,00)")
+                        .doesNotContainPattern("R\\$[\\s\\u00A0]600,00")
+                        .as("O PDF não pode exibir subtotal de produtos derivado de MO multiplicada (950 − 600 = R$ 350,00)")
+                        .doesNotContainPattern("R\\$[\\s\\u00A0]350,00");
+            }
+        }
+
+        private Material criarMaterial(String salePrice) {
+            Material material = new Material();
+            material.setId(UUID.randomUUID());
+            material.setSalePrice(new BigDecimal(salePrice));
+            return material;
+        }
+
+        private BudgetItem criarItemPrecificavel(String nome, Material material, int quantity, BigDecimal laborCost) {
+            BudgetItem item = new BudgetItem();
+            item.setId(UUID.randomUUID());
+            item.setProductName(nome);
+            item.setWidthMm(new BigDecimal("1000"));
+            item.setHeightMm(new BigDecimal("1000"));
+            item.setQuantity(quantity);
+            item.setLaborCost(laborCost);
+
+            BudgetItemOption option = new BudgetItemOption();
+            option.setMaterial(material);
+            option.setCategoryType(MaterialCategoryType.PROFILE);
+            option.setMaterialName("Perfil Linha 25");
+            option.setQuantity(new BigDecimal("1.00"));
+            item.addOption(option);
+            return item;
         }
     }
 

@@ -2,6 +2,7 @@ import { formatBRL } from '../utils/calculations';
 import { PAYMENT_CONDITION_LABELS, type PaymentCondition } from '../types';
 
 interface BudgetFinancialSummaryCardProps {
+  readonly itemsSubtotal?: number;
   readonly subtotal: number;
   readonly totalLaborCost: number;
   readonly freightCost: number;
@@ -21,6 +22,7 @@ interface BudgetFinancialSummaryCardProps {
 }
 
 export function BudgetFinancialSummaryCard({
+  itemsSubtotal,
   subtotal,
   totalLaborCost,
   freightCost,
@@ -50,6 +52,8 @@ export function BudgetFinancialSummaryCard({
   // Evita duplicidade caso a API retorne a mesma string para ambos
   const showDistinctMethod = resolvedPaymentMethod && resolvedPaymentMethod !== resolvedPaymentCondition;
 
+  const resolvedItemsSubtotal = itemsSubtotal ?? (subtotal >= totalLaborCost ? subtotal - totalLaborCost : subtotal);
+
   return (
     <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-md shadow-xs flex flex-col gap-sm">
       <div className="flex items-center justify-between pb-xs border-b border-outline-variant">
@@ -63,10 +67,10 @@ export function BudgetFinancialSummaryCard({
       </div>
 
       <div className="flex flex-col gap-xs pt-xs">
-        {/* Valor Bruto */}
+        {/* Esquadrias / Materiais */}
         <div className="flex justify-between items-center text-xs py-1 border-b border-outline-variant/40 border-dashed">
-          <span className="text-on-surface-variant font-body">Valor Bruto dos Itens:</span>
-          <span className="font-data-mono text-on-surface font-semibold">{formatBRL(subtotal)}</span>
+          <span className="text-on-surface-variant font-body">Esquadrias / Materiais:</span>
+          <span className="font-data-mono text-on-surface font-semibold">{formatBRL(resolvedItemsSubtotal)}</span>
         </div>
 
         {/* Mão de Obra */}
@@ -76,6 +80,12 @@ export function BudgetFinancialSummaryCard({
             <span className="font-data-mono text-on-surface font-semibold">{`+ ${formatBRL(totalLaborCost)}`}</span>
           </div>
         )}
+
+        {/* Subtotal Bruto */}
+        <div className="flex justify-between items-center text-xs py-1 border-b border-outline-variant/40 border-dashed font-medium">
+          <span className="text-on-surface font-body font-medium">Subtotal Bruto:</span>
+          <span className="font-data-mono text-on-surface font-semibold">{formatBRL(subtotal)}</span>
+        </div>
 
         {/* Taxa de Frete */}
         {freightCost > 0 && (
