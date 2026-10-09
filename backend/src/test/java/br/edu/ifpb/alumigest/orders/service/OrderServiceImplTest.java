@@ -601,6 +601,37 @@ class OrderServiceImplTest {
     }
 
     @Test
+    @DisplayName("[US-15.2] Deve cancelar pedido e manter orçamento vinculado como APPROVED sem alteração automática")
+    void shouldCancelOrderAndKeepLinkedBudgetApproved() {
+        Order savedOrder = buildSavedOrder();
+        budget.setStatus(BudgetStatus.APPROVED);
+        OrderCancelRequest cancelRequest = new OrderCancelRequest("Cliente desistiu da obra.");
+
+        given(orderRepository.findByIdWithDetails(orderId)).willReturn(Optional.of(savedOrder));
+        given(orderRepository.save(any(Order.class))).willAnswer(inv -> inv.getArgument(0));
+
+        OrderResponse expectedResponse = new OrderResponse(
+                orderId, "OS-2026-0001", budgetId, null,
+                "Empresa XPTO Ltda", null, null,
+                OrderStatus.CANCELLED, "Cancelado",
+                ApprovalChannel.WHATSAPP, "WhatsApp",
+                LocalDate.now(ZoneOffset.UTC), request.dataPrevisaoEntrega(), null,
+                budget.getSubtotal(), budget.getDiscountValue(), BigDecimal.ZERO, BigDecimal.ZERO,
+                budget.getTotal(), null, null, null, "Cliente desistiu da obra.",
+                OffsetDateTime.now(ZoneOffset.UTC), OffsetDateTime.now(ZoneOffset.UTC), true,
+                Collections.emptyList()
+        );
+        given(orderMapper.toResponse(any(Order.class))).willReturn(expectedResponse);
+
+        OrderResponse result = orderService.cancelOrder(orderId, cancelRequest);
+
+        assertThat(result).isNotNull();
+        assertThat(result.status()).isEqualTo(OrderStatus.CANCELLED);
+        assertThat(budget.getStatus()).isEqualTo(BudgetStatus.APPROVED);
+        verify(budgetRepository, never()).save(any());
+    }
+
+    @Test
     @DisplayName("Deve lançar ResourceNotFoundException ao tentar cancelar pedido inexistente")
     void shouldThrowResourceNotFoundExceptionWhenOrderDoesNotExist() {
         UUID nonExistentId = UUID.randomUUID();

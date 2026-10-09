@@ -9,8 +9,12 @@ import br.edu.ifpb.alumigest.clients.repository.ClientRepository;
 import br.edu.ifpb.alumigest.common.dto.PageResponse;
 import br.edu.ifpb.alumigest.common.exception.BudgetImmutableException;
 import br.edu.ifpb.alumigest.common.exception.BusinessException;
+import br.edu.ifpb.alumigest.common.exception.ConflictException;
 import br.edu.ifpb.alumigest.common.exception.InvalidBudgetStatusTransitionException;
 import br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException;
+import br.edu.ifpb.alumigest.orders.domain.Order;
+import br.edu.ifpb.alumigest.orders.domain.OrderStatus;
+import br.edu.ifpb.alumigest.orders.repository.OrderRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -45,6 +49,9 @@ class BudgetServiceTest {
     @Mock
     private BudgetMapper budgetMapper;
 
+    @Mock
+    private OrderRepository orderRepository;
+
     private BudgetQuantityService budgetQuantityService;
 
     @Mock
@@ -76,6 +83,7 @@ class BudgetServiceTest {
                 budgetRepository,
                 clientRepository,
                 budgetMapper,
+                orderRepository,
                 budgetQuantityService,
                 budgetPricingService,
                 budgetCodeGenerator,
@@ -419,16 +427,139 @@ class BudgetServiceTest {
     }
 
     @Test
-    @DisplayName("Alteração de status: Transição inválida com StatusChangeRequest")
+    @DisplayName("Alteração de status: Transição inválida com StatusChangeRequest quando não há pedido")
     void updateStatus_ShouldThrowException_WhenTransitionIsInvalid() {
         budget.setStatus(BudgetStatus.APPROVED);
         UUID budgetId = budget.getId();
         when(budgetRepository.findById(budgetId)).thenReturn(Optional.of(budget));
+        when(orderRepository.findByOrcamentoId(budgetId)).thenReturn(Optional.empty());
         
         StatusChangeRequest request = new StatusChangeRequest(BudgetStatus.DRAFT);
         
         assertThatThrownBy(() -> budgetService.updateStatus(budgetId, request))
                 .isInstanceOf(InvalidBudgetStatusTransitionException.class);
+    }
+
+    @Test
+    @DisplayName("US-15.2: Deve permitir transição APPROVED para DRAFT quando pedido vinculado estiver cancelado")
+    void updateStatus_ShouldAllowApprovedToDraft_WhenLinkedOrderIsCancelled() {
+        budget.setStatus(BudgetStatus.APPROVED);
+        UUID budgetId = budget.getId();
+        when(budgetRepository.findById(budgetId)).thenReturn(Optional.of(budget));
+
+        Order order = Order.builder()
+                .codigo("OS-2026-0001")
+                .status(OrderStatus.CANCELLED)
+                .build();
+        when(orderRepository.findByOrcamentoId(budgetId)).thenReturn(Optional.of(order));
+
+        StatusChangeRequest request = new StatusChangeRequest(BudgetStatus.DRAFT);
+        budgetService.updateStatus(budgetId, request);
+
+        assertThat(budget.getStatus()).isEqualTo(BudgetStatus.DRAFT);
+        verify(budgetRepository).save(budget);
+    }
+
+    @Test
+    @DisplayName("US-15.2: Deve lançar ConflictException na transição APPROVED para DRAFT quando pedido vinculado não estiver cancelado")
+    void updateStatus_ShouldThrowConflictException_WhenLinkedOrderIsNotCancelled() {
+        budget.setStatus(BudgetStatus.APPROVED);
+        UUID budgetId = budget.getId();
+        when(budgetRepository.findById(budgetId)).thenReturn(Optional.of(budget));
+
+        Order order = Order.builder()
+                .codigo("OS-2026-0001")
+                .status(OrderStatus.WAITING_PRODUCTION)
+                .build();
+        when(orderRepository.findByOrcamentoId(budgetId)).thenReturn(Optional.of(order));
+
+        StatusChangeRequest request = new StatusChangeRequest(BudgetStatus.DRAFT);
+
+        assertThatThrownBy(() -> budgetService.updateStatus(budgetId, request))
+                .isInstanceOf(ConflictException.class)
+                .hasMessageContaining("OS-2026-0001")
+                .hasMessageContaining("não está cancelada");
+
+        verify(budgetRepository, never()).save(budget);
+    }
+
+    @Test
+    @DisplayName("US-15.2: reabrirOrcamento deve reabrir para DRAFT quando orçamento estiver APPROVED e pedido cancelado")
+    void reabrirOrcamento_ShouldReopenBudgetToDraft_WhenBudgetIsApprovedAndOrderIsCancelled() {
+        budget.setStatus(BudgetStatus.APPROVED);
+        UUID budgetId = budget.getId();
+        when(budgetRepository.findById(budgetId)).thenReturn(Optional.of(budget));
+
+        Order order = Order.builder()
+                .codigo("OS-2026-0001")
+                .status(OrderStatus.CANCELLED)
+                .build();
+        when(orderRepository.findByOrcamentoId(budgetId)).thenReturn(Optional.of(order));
+        when(budgetRepository.save(budget)).thenReturn(budget);
+
+        BudgetResponseDTO responseDTO = new BudgetResponseDTO(
+                budget.getId(), "ORC-2026-001", client.getId(), "João da Silva",
+                BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO,
+                PaymentCondition.A_VISTA_PIX, "À Vista (PIX / Dinheiro)", null,
+                BudgetStatus.DRAFT, "Rascunho", "Notes",
+                null, null, null, false, Collections.emptyList()
+        );
+        when(budgetMapper.toResponseDTO(budget)).thenReturn(responseDTO);
+
+        BudgetResponseDTO result = budgetService.reabrirOrcamento(budgetId);
+
+        assertThat(result).isNotNull();
+        assertThat(budget.getStatus()).isEqualTo(BudgetStatus.DRAFT);
+        verify(budgetRepository).save(budget);
+    }
+
+    @Test
+    @DisplayName("US-15.2: reabrirOrcamento deve lançar ConflictException quando pedido vinculado não estiver cancelado")
+    void reabrirOrcamento_ShouldThrowConflictException_WhenBudgetIsApprovedAndOrderIsNotCancelled() {
+        budget.setStatus(BudgetStatus.APPROVED);
+        UUID budgetId = budget.getId();
+        when(budgetRepository.findById(budgetId)).thenReturn(Optional.of(budget));
+
+        Order order = Order.builder()
+                .codigo("OS-2026-0001")
+                .status(OrderStatus.IN_PRODUCTION)
+                .build();
+        when(orderRepository.findByOrcamentoId(budgetId)).thenReturn(Optional.of(order));
+
+        assertThatThrownBy(() -> budgetService.reabrirOrcamento(budgetId))
+                .isInstanceOf(ConflictException.class)
+                .hasMessageContaining("OS-2026-0001")
+                .hasMessageContaining("não está cancelada");
+
+        verify(budgetRepository, never()).save(budget);
+    }
+
+    @Test
+    @DisplayName("US-15.2: reabrirOrcamento deve lançar BusinessException quando orçamento não estiver APPROVED")
+    void reabrirOrcamento_ShouldThrowBusinessException_WhenBudgetIsNotApproved() {
+        budget.setStatus(BudgetStatus.SENT);
+        UUID budgetId = budget.getId();
+        when(budgetRepository.findById(budgetId)).thenReturn(Optional.of(budget));
+
+        assertThatThrownBy(() -> budgetService.reabrirOrcamento(budgetId))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("Apenas orçamentos aprovados podem ser reabertos");
+
+        verify(budgetRepository, never()).save(budget);
+    }
+
+    @Test
+    @DisplayName("US-15.2: reabrirOrcamento deve lançar BusinessException quando orçamento estiver CANCELLED")
+    void reabrirOrcamento_ShouldThrowBusinessException_WhenBudgetIsCancelled() {
+        budget.setStatus(BudgetStatus.CANCELLED);
+        UUID budgetId = budget.getId();
+        when(budgetRepository.findById(budgetId)).thenReturn(Optional.of(budget));
+
+        assertThatThrownBy(() -> budgetService.reabrirOrcamento(budgetId))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("Apenas orçamentos aprovados podem ser reabertos");
+
+        verify(budgetRepository, never()).save(budget);
     }
 
     @Test

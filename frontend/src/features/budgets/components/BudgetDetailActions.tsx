@@ -3,11 +3,11 @@ import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '../../../components/ui/Button';
 import { budgetsApi } from '../services/budgetsApi';
-import { useUpdateBudgetStatus } from '../hooks/useBudgets';
+import { useUpdateBudgetStatus, useReopenBudget } from '../hooks/useBudgets';
 import type { CreateBudgetPayload, BudgetStatus, BudgetDetail } from '../types';
 import { WhatsAppSummaryModal } from './WhatsAppSummaryModal';
 import { shareCommercialPdfLink } from '../utils/whatsappHelper';
-import { useOrders } from '../../orders/hooks/useOrders';
+import type { Order } from '../../orders/types/order';
 import toast from 'react-hot-toast';
 
 interface BudgetDetailActionsProps {
@@ -21,6 +21,8 @@ interface BudgetDetailActionsProps {
   readonly onDownloadPdfTecnico?: () => void;
   readonly isDownloadingPdfTecnico?: boolean;
   readonly onApproveClick?: () => void;
+  readonly linkedOrder?: Order | { id: string; codigo?: string; status?: string } | null;
+  readonly isOrderCancelled?: boolean;
 }
 
 function getApprovalButtonTooltip(isApproved: boolean, isCancelledOrRejected: boolean, isExpired: boolean): string {
@@ -116,46 +118,13 @@ function WhatsAppDropdownMenu({
   );
 }
 
-export function BudgetDetailActions({
-  budgetId,
-  budgetCode,
-  customerPhone,
-  status,
-  budgetStatus,
-  isExpired = false,
-  onDeleteClick,
-  onDownloadPdfTecnico,
-  isDownloadingPdfTecnico,
-  onApproveClick,
-}: BudgetDetailActionsProps) {
-  const navigate = useNavigate();
-  const { mutate: updateStatus } = useUpdateBudgetStatus();
-
-  const currentStatus = (status ?? budgetStatus ?? 'DRAFT') as BudgetStatus;
-  const isApproved = currentStatus === 'APPROVED';
-  const isCancelledOrRejected = currentStatus === 'CANCELLED' || currentStatus === 'REJECTED';
-  const isApprovalDisabled = isApproved || isCancelledOrRejected || isExpired;
-
-  const { data: linkedOrders } = useOrders(
-    isApproved ? { search: budgetCode, size: 1 } : undefined
-  );
-  const linkedOrder = isApproved ? linkedOrders?.content?.[0] : undefined;
-  const approvalButtonTooltip = getApprovalButtonTooltip(isApproved, isCancelledOrRejected, isExpired);
-
-  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+function useWhatsAppMenu() {
   const [showWhatsAppMenu, setShowWhatsAppMenu] = useState(false);
-  const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
-  const [isDuplicating, setIsDuplicating] = useState(false);
-  const [localDownloadingPdfTecnico, setLocalDownloadingPdfTecnico] = useState(false);
-
-  const isDownloadingTecnico = isDownloadingPdfTecnico ?? localDownloadingPdfTecnico;
-
   const whatsAppMenuRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
 
-  // Calcula a posição exata do botão na tela ao abrir o menu do WhatsApp
-  const handleToggleWhatsAppMenu = () => {
+  const toggleWhatsAppMenu = () => {
     if (!showWhatsAppMenu && buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
       setMenuPosition({
@@ -166,15 +135,14 @@ export function BudgetDetailActions({
     setShowWhatsAppMenu((prev) => !prev);
   };
 
-  // Fecha o dropdown do WhatsApp ao clicar fora ou rolar a página
+  const closeWhatsAppMenu = () => setShowWhatsAppMenu(false);
+
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (
-        whatsAppMenuRef.current && 
-        !whatsAppMenuRef.current.contains(event.target as Node) &&
-        buttonRef.current &&
-        !buttonRef.current.contains(event.target as Node)
-      ) {
+      const target = event.target as Node;
+      const clickedMenu = whatsAppMenuRef.current?.contains(target);
+      const clickedButton = buttonRef.current?.contains(target);
+      if (!clickedMenu && !clickedButton) {
         setShowWhatsAppMenu(false);
       }
     }
@@ -186,6 +154,147 @@ export function BudgetDetailActions({
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [showWhatsAppMenu]);
+
+  return {
+    showWhatsAppMenu,
+    toggleWhatsAppMenu,
+    closeWhatsAppMenu,
+    whatsAppMenuRef,
+    buttonRef,
+    menuPosition,
+  };
+}
+
+interface BudgetApprovalOrOrderActionsProps {
+  readonly isApproved: boolean;
+  readonly linkedOrderId?: string;
+  readonly isOrderCancelled: boolean;
+  readonly budgetCode: string;
+  readonly budgetId: string;
+  readonly isApprovalDisabled: boolean;
+  readonly approvalButtonTooltip: string;
+  readonly onApproveClick?: () => void;
+  readonly onReopen: (id: string) => void;
+  readonly isReopening: boolean;
+}
+
+function BudgetApprovalOrOrderActions({
+  isApproved,
+  linkedOrderId,
+  isOrderCancelled,
+  budgetCode,
+  budgetId,
+  isApprovalDisabled,
+  approvalButtonTooltip,
+  onApproveClick,
+  onReopen,
+  isReopening,
+}: BudgetApprovalOrOrderActionsProps) {
+  const navigate = useNavigate();
+
+  if (isApproved) {
+    const handleNavigate = () => {
+      if (linkedOrderId) {
+        navigate(`/ordens-servico/${linkedOrderId}`);
+      } else {
+        navigate(`/ordens-servico?search=${encodeURIComponent(budgetCode)}`);
+      }
+    };
+
+    return (
+      <div className="flex items-center gap-xs shrink-0">
+        <Button
+          type="button"
+          variant="primary"
+          icon="assignment"
+          data-testid="btn-view-work-order"
+          onClick={handleNavigate}
+          className="text-xs py-1.5 px-3 whitespace-nowrap cursor-pointer shrink-0"
+          title="Ver Ordem de Serviço vinculada a este orçamento"
+        >
+          <span className="whitespace-nowrap">
+            {isOrderCancelled ? 'Ver O.S. (Cancelada)' : 'Ver Ordem de Serviço'}
+          </span>
+        </Button>
+
+        {isOrderCancelled && (
+          <Button
+            type="button"
+            variant="secondary"
+            icon="replay"
+            data-testid="btn-reopen-budget"
+            onClick={() => onReopen(budgetId)}
+            disabled={isReopening}
+            className="text-xs py-1.5 px-3 whitespace-nowrap cursor-pointer shrink-0 border-amber-500/40 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10"
+            title="Reabrir orçamento como rascunho para renegociação após cancelamento do pedido"
+          >
+            <span className="whitespace-nowrap">
+              {isReopening ? 'Reabrindo...' : 'Reabrir Orçamento'}
+            </span>
+          </Button>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <Button
+      type="button"
+      variant="success"
+      icon="check_circle"
+      data-testid="btn-approve-budget"
+      onClick={onApproveClick}
+      disabled={isApprovalDisabled || !onApproveClick}
+      className="text-xs py-1.5 px-3 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shrink-0"
+      title={approvalButtonTooltip}
+    >
+      <span className="whitespace-nowrap">Aprovar e Gerar O.S.</span>
+    </Button>
+  );
+}
+
+export function BudgetDetailActions({
+  budgetId,
+  budgetCode,
+  customerPhone,
+  status,
+  budgetStatus,
+  isExpired = false,
+  onDeleteClick,
+  onDownloadPdfTecnico,
+  isDownloadingPdfTecnico,
+  onApproveClick,
+  linkedOrder,
+  isOrderCancelled,
+}: BudgetDetailActionsProps) {
+  const navigate = useNavigate();
+  const { mutate: updateStatus } = useUpdateBudgetStatus();
+  const { mutate: reopenBudget, isPending: isReopening } = useReopenBudget();
+
+  const currentStatus = (status ?? budgetStatus ?? 'DRAFT') as BudgetStatus;
+  const isApproved = currentStatus === 'APPROVED';
+  const isCancelled = currentStatus === 'CANCELLED' || budgetStatus === 'CANCELLED';
+  const isCancelledOrRejected = isCancelled || currentStatus === 'REJECTED';
+  const isApprovalDisabled = isApproved || isCancelledOrRejected || isExpired;
+
+  const effectiveIsOrderCancelled = Boolean(isOrderCancelled ?? (linkedOrder?.status === 'CANCELLED'));
+  const approvalButtonTooltip = getApprovalButtonTooltip(isApproved, isCancelledOrRejected, isExpired);
+
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+  const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
+  const [isDuplicating, setIsDuplicating] = useState(false);
+  const [localDownloadingPdfTecnico, setLocalDownloadingPdfTecnico] = useState(false);
+
+  const {
+    showWhatsAppMenu,
+    toggleWhatsAppMenu,
+    closeWhatsAppMenu,
+    whatsAppMenuRef,
+    buttonRef,
+    menuPosition,
+  } = useWhatsAppMenu();
+
+  const isDownloadingTecnico = isDownloadingPdfTecnico ?? localDownloadingPdfTecnico;
 
   const handleDownloadPdfComercial = async () => {
     if (isDownloadingPdf) return;
@@ -202,7 +311,7 @@ export function BudgetDetailActions({
 
   const handleSendCommercialPdfViaWhatsApp = () => {
     try {
-      setShowWhatsAppMenu(false);
+      closeWhatsAppMenu();
 
       shareCommercialPdfLink({
         budgetId,
@@ -226,7 +335,7 @@ export function BudgetDetailActions({
       onDownloadPdfTecnico();
       return;
     }
-    if (isDownloadingTecnico || budgetStatus === 'CANCELLED') return;
+    if (isDownloadingTecnico || isCancelled) return;
     try {
       setLocalDownloadingPdfTecnico(true);
       await budgetsApi.downloadPdfTecnico(budgetId, budgetCode);
@@ -268,13 +377,13 @@ export function BudgetDetailActions({
         <button
           ref={buttonRef}
           type="button"
-          onClick={handleToggleWhatsAppMenu}
-          disabled={status === 'CANCELLED' || budgetStatus === 'CANCELLED'}
+          onClick={toggleWhatsAppMenu}
+          disabled={isCancelled}
           aria-haspopup="true"
           aria-expanded={showWhatsAppMenu}
           className="p-2 text-on-surface-variant hover:text-emerald-600 hover:bg-surface-container rounded-lg border border-outline-variant/60 transition-colors flex items-center gap-1.5 text-xs font-label font-medium disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed shrink-0"
           title={
-            status === 'CANCELLED' || budgetStatus === 'CANCELLED'
+            isCancelled
               ? 'Orçamento cancelado. Não é permitido compartilhar proposta cancelada.'
               : 'Opções de compartilhamento via WhatsApp'
           }
@@ -294,7 +403,7 @@ export function BudgetDetailActions({
             menuPosition={menuPosition}
             menuRef={whatsAppMenuRef}
             onOpenSummaryModal={() => {
-              setShowWhatsAppMenu(false);
+              closeWhatsAppMenu();
               setShowWhatsAppModal(true);
             }}
             onSendCommercialPdf={handleSendCommercialPdfViaWhatsApp}
@@ -323,10 +432,10 @@ export function BudgetDetailActions({
         type="button"
         data-testid="btn-download-pdf-tecnico"
         onClick={handleEmitirViaTecnica}
-        disabled={isDownloadingTecnico || budgetStatus === 'CANCELLED'}
+        disabled={isDownloadingTecnico || isCancelled}
         className="p-2 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-lg border border-outline-variant/60 transition-colors flex items-center gap-1.5 text-xs font-label font-medium disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shrink-0"
         title={
-          budgetStatus === 'CANCELLED'
+          isCancelled
             ? 'Não é possível emitir ficha técnica de orçamento cancelado'
             : 'Emitir Via Técnica (Oficina)'
         }
@@ -339,39 +448,19 @@ export function BudgetDetailActions({
         </span>
       </button>
 
-      {/* ── 4º Aprovar ou Ver Ordem de Serviço (US-13.3) ─────────────────── */}
-      {isApproved ? (
-        <Button
-          type="button"
-          variant="primary"
-          icon="assignment"
-          data-testid="btn-view-work-order"
-          onClick={() => {
-            if (linkedOrder?.id) {
-              navigate(`/ordens-servico/${linkedOrder.id}`);
-            } else {
-              navigate(`/ordens-servico?search=${encodeURIComponent(budgetCode)}`);
-            }
-          }}
-          className="text-xs py-1.5 px-3 whitespace-nowrap cursor-pointer shrink-0"
-          title="Ver Ordem de Serviço vinculada a este orçamento"
-        >
-          <span className="whitespace-nowrap">Ver Ordem de Serviço</span>
-        </Button>
-      ) : (
-        <Button
-          type="button"
-          variant="success"
-          icon="check_circle"
-          data-testid="btn-approve-budget"
-          onClick={onApproveClick}
-          disabled={isApprovalDisabled || !onApproveClick}
-          className="text-xs py-1.5 px-3 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shrink-0"
-          title={approvalButtonTooltip}
-        >
-          <span className="whitespace-nowrap">Aprovar e Gerar O.S.</span>
-        </Button>
-      )}
+      {/* ── 4º Aprovar ou Ver Ordem de Serviço (US-13.3 / US-15.2) ──────── */}
+      <BudgetApprovalOrOrderActions
+        isApproved={isApproved}
+        linkedOrderId={linkedOrder?.id}
+        isOrderCancelled={effectiveIsOrderCancelled}
+        budgetCode={budgetCode}
+        budgetId={budgetId}
+        isApprovalDisabled={isApprovalDisabled}
+        approvalButtonTooltip={approvalButtonTooltip}
+        onApproveClick={onApproveClick}
+        onReopen={reopenBudget}
+        isReopening={isReopening}
+      />
 
       {/* ── 5º Duplicar ─────────────────────────────────────────────────── */}
       <button

@@ -4,6 +4,15 @@ import { describe, it, expect, vi } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BudgetDetailPage } from '../../../pages/BudgetDetailPage';
 import * as budgetsHooks from '../../../features/budgets/hooks/useBudgets';
+import { useOrders } from '../../../features/orders/hooks/useOrders';
+
+// Mock dos hooks de ordens
+vi.mock('../../../features/orders/hooks/useOrders', () => ({
+  useOrders: vi.fn(() => ({
+    data: { content: [] },
+    isLoading: false,
+  })),
+}));
 
 // Mock dos hooks de orçamento
 vi.mock('../../../features/budgets/hooks/useBudgets', () => ({
@@ -11,6 +20,7 @@ vi.mock('../../../features/budgets/hooks/useBudgets', () => ({
   useDeleteBudget: () => ({ mutate: vi.fn(), isPending: false }),
   useUpdateBudgetStatus: () => ({ mutate: vi.fn(), isPending: false }),
   useDownloadPdfTecnico: () => ({ mutate: vi.fn(), isPending: false }),
+  useReopenBudget: () => ({ mutate: vi.fn(), isPending: false }),
   useWhatsAppSummary: () => ({
     data: 'Resumo oficial mock para WhatsApp',
     isLoading: false,
@@ -254,5 +264,62 @@ describe('BudgetDetailPage - Testes Unitários', () => {
 
     const btnViaTecnica = screen.getByTitle('Emitir Via Técnica (Oficina)');
     expect(btnViaTecnica).toBeInTheDocument();
+  });
+
+  it('[US-15.2] deve exibir banner de cancelamento e permitir reabertura quando orçamento for APPROVED e pedido cancelado', () => {
+    const mockReopen = vi.fn();
+    vi.spyOn(budgetsHooks, 'useBudget').mockReturnValue({
+      data: {
+        ...mockBudgetDetail,
+        status: 'APPROVED',
+      },
+      isLoading: false,
+      isError: false,
+    } as any);
+
+    vi.spyOn(budgetsHooks, 'useReopenBudget').mockReturnValue({
+      mutate: mockReopen,
+      isPending: false,
+    } as any);
+
+    vi.mocked(useOrders).mockReturnValue({
+      data: {
+        content: [
+          { id: 'order-1', codigo: 'OS-2026-0001', status: 'CANCELLED' } as any,
+        ],
+      },
+    } as any);
+
+    renderWithRouter();
+
+    const banner = screen.getByTestId('banner-order-cancelled');
+    expect(banner).toBeInTheDocument();
+    expect(banner).toHaveTextContent('Ordem de Serviço Cancelada (OS-2026-0001)');
+
+    const reopenBtn = screen.getByTestId('btn-reopen-budget-banner');
+    expect(reopenBtn).toBeInTheDocument();
+    fireEvent.click(reopenBtn);
+    expect(mockReopen).toHaveBeenCalledWith('b1');
+  });
+
+  it('[US-15.2] não deve exibir banner de cancelamento quando orçamento for APPROVED mas não houver pedido cancelado', () => {
+    vi.spyOn(budgetsHooks, 'useBudget').mockReturnValue({
+      data: {
+        ...mockBudgetDetail,
+        status: 'APPROVED',
+      },
+      isLoading: false,
+      isError: false,
+    } as any);
+
+    vi.mocked(useOrders).mockReturnValue({
+      data: {
+        content: [],
+      },
+    } as any);
+
+    renderWithRouter();
+
+    expect(screen.queryByTestId('banner-order-cancelled')).not.toBeInTheDocument();
   });
 });
