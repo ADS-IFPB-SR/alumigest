@@ -27,9 +27,8 @@ export const customerSchema = z.object({
     ),
 
   email: z
-    .string()
+    .email('E-mail inválido.')
     .trim()
-    .email({ message: 'E-mail inválido.' })
     .or(z.literal(''))
     .optional()
     .nullable(),
