@@ -9,7 +9,7 @@
 
 ---
 
-## 📦 US-13: Aprovar Orçamento e Converter em Pedido de Venda
+## 📦 US-13: Aprovar Orçamento e Converter em Ordem de Serviço (O.S.)
 **Issue GitHub**: [#137](https://github.com/ADS-IFPB-SR/alumigest/issues/137) | **Prioridade**: P1 (MVP)
 
 | ID | Issue | Tarefa | Duração | Pré-requisito / Bloqueado por | Status |
