@@ -601,16 +601,14 @@ class OrderServiceImplTest {
     }
 
     @Test
-    @DisplayName("[US-15.2] Deve cancelar pedido e alterar orçamento vinculado de APPROVED para CANCELLED")
-    void shouldCancelOrderAndSetLinkedBudgetToCancelledSuccessfully() {
+    @DisplayName("[US-15.2] Deve cancelar pedido e manter orçamento vinculado como APPROVED sem alteração automática")
+    void shouldCancelOrderAndKeepLinkedBudgetApproved() {
         Order savedOrder = buildSavedOrder();
         budget.setStatus(BudgetStatus.APPROVED);
         OrderCancelRequest cancelRequest = new OrderCancelRequest("Cliente desistiu da obra.");
 
         given(orderRepository.findByIdWithDetails(orderId)).willReturn(Optional.of(savedOrder));
         given(orderRepository.save(any(Order.class))).willAnswer(inv -> inv.getArgument(0));
-        given(budgetRepository.findById(budgetId)).willReturn(Optional.of(budget));
-        given(budgetRepository.save(any(Budget.class))).willAnswer(inv -> inv.getArgument(0));
 
         OrderResponse expectedResponse = new OrderResponse(
                 orderId, "OS-2026-0001", budgetId, null,
@@ -629,8 +627,8 @@ class OrderServiceImplTest {
 
         assertThat(result).isNotNull();
         assertThat(result.status()).isEqualTo(OrderStatus.CANCELLED);
-        assertThat(budget.getStatus()).isEqualTo(BudgetStatus.CANCELLED);
-        verify(budgetRepository).save(budget);
+        assertThat(budget.getStatus()).isEqualTo(BudgetStatus.APPROVED);
+        verify(budgetRepository, never()).save(any());
     }
 
     @Test

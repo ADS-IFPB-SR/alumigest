@@ -814,17 +814,17 @@ class BudgetControllerTest {
     }
 
     @Test
-    @DisplayName("[US-15.2] Deve retornar 422 quando orçamento não estiver cancelado")
+    @DisplayName("[US-15.2] Deve retornar 422 quando orçamento não estiver aprovado")
     void reabrirOrcamento_DeveRetornar422_QuandoOrcamentoNaoEstiverAprovado() throws Exception {
         UUID id = UUID.randomUUID();
 
         when(budgetService.reabrirOrcamento(id))
-                .thenThrow(new BusinessException("Apenas orçamentos cancelados podem ser reabertos."));
+                .thenThrow(new BusinessException("Apenas orçamentos aprovados podem ser reabertos."));
 
         mockMvc.perform(post("/api/budgets/{id}/reopen", id))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.status").value(422))
-                .andExpect(jsonPath("$.message").value("Apenas orçamentos cancelados podem ser reabertos."));
+                .andExpect(jsonPath("$.message").value("Apenas orçamentos aprovados podem ser reabertos."));
 
         verify(budgetService).reabrirOrcamento(id);
     }

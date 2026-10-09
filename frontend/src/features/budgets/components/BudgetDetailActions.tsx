@@ -167,7 +167,6 @@ function useWhatsAppMenu() {
 
 interface BudgetApprovalOrOrderActionsProps {
   readonly isApproved: boolean;
-  readonly isCancelled: boolean;
   readonly linkedOrderId?: string;
   readonly isOrderCancelled: boolean;
   readonly budgetCode: string;
@@ -181,7 +180,6 @@ interface BudgetApprovalOrOrderActionsProps {
 
 function BudgetApprovalOrOrderActions({
   isApproved,
-  isCancelled,
   linkedOrderId,
   isOrderCancelled,
   budgetCode,
@@ -194,7 +192,7 @@ function BudgetApprovalOrOrderActions({
 }: BudgetApprovalOrOrderActionsProps) {
   const navigate = useNavigate();
 
-  if ((isCancelled && isOrderCancelled) || isApproved) {
+  if (isApproved) {
     const handleNavigate = () => {
       if (linkedOrderId) {
         navigate(`/ordens-servico/${linkedOrderId}`);
@@ -453,7 +451,6 @@ export function BudgetDetailActions({
       {/* ── 4º Aprovar ou Ver Ordem de Serviço (US-13.3 / US-15.2) ──────── */}
       <BudgetApprovalOrOrderActions
         isApproved={isApproved}
-        isCancelled={isCancelled}
         linkedOrderId={linkedOrder?.id}
         isOrderCancelled={effectiveIsOrderCancelled}
         budgetCode={budgetCode}

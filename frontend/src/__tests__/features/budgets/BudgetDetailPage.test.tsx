@@ -266,12 +266,12 @@ describe('BudgetDetailPage - Testes Unitários', () => {
     expect(btnViaTecnica).toBeInTheDocument();
   });
 
-  it('[US-15.2] deve exibir banner de cancelamento e permitir reabertura quando orçamento for CANCELLED e pedido cancelado', () => {
+  it('[US-15.2] deve exibir banner de cancelamento e permitir reabertura quando orçamento for APPROVED e pedido cancelado', () => {
     const mockReopen = vi.fn();
     vi.spyOn(budgetsHooks, 'useBudget').mockReturnValue({
       data: {
         ...mockBudgetDetail,
-        status: 'CANCELLED',
+        status: 'APPROVED',
       },
       isLoading: false,
       isError: false,
@@ -302,11 +302,11 @@ describe('BudgetDetailPage - Testes Unitários', () => {
     expect(mockReopen).toHaveBeenCalledWith('b1');
   });
 
-  it('[US-15.2] não deve exibir banner de cancelamento quando orçamento for CANCELLED mas não houver pedido cancelado', () => {
+  it('[US-15.2] não deve exibir banner de cancelamento quando orçamento for APPROVED mas não houver pedido cancelado', () => {
     vi.spyOn(budgetsHooks, 'useBudget').mockReturnValue({
       data: {
         ...mockBudgetDetail,
-        status: 'CANCELLED',
+        status: 'APPROVED',
       },
       isLoading: false,
       isError: false,

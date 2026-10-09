@@ -339,14 +339,14 @@ describe('BudgetDetailActions Component [Joseph Nichollas]', () => {
   });
 
   describe('Reabertura de Orçamento após cancelamento de pedido [US-15.2]', () => {
-    it('deve exibir botão Reabrir Orçamento quando status for CANCELLED e pedido vinculado estiver CANCELLED', async () => {
+    it('deve exibir botão Reabrir Orçamento quando status for APPROVED e pedido vinculado estiver CANCELLED', async () => {
       vi.mocked(budgetsApi.reopenBudget).mockResolvedValueOnce({
         id: 'budget-123',
         status: 'DRAFT',
       } as any);
 
       renderComponent({
-        budgetStatus: 'CANCELLED',
+        budgetStatus: 'APPROVED',
         linkedOrder: { id: 'order-1', codigo: 'OS-2026-0001', status: 'CANCELLED' } as any,
         isOrderCancelled: true,
       });
@@ -386,7 +386,7 @@ describe('BudgetDetailActions Component [Joseph Nichollas]', () => {
       });
 
       expect(screen.queryByTestId('btn-reopen-budget')).not.toBeInTheDocument();
-      expect(screen.getByTestId('btn-approve-budget')).toBeDisabled();
+      expect(screen.getByTestId('btn-download-pdf-tecnico')).toBeDisabled();
     });
   });
 });

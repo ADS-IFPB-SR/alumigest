@@ -384,14 +384,14 @@ export function BudgetDetailPage() {
 
   const isCancelled = budget?.status === 'CANCELLED';
   const isApproved = budget?.status === 'APPROVED';
-  const orderSearchParams = (isApproved || isCancelled) && budget?.code ? { search: budget.code, size: 1 } : undefined;
+  const orderSearchParams = isApproved && budget?.code ? { search: budget.code, size: 1 } : undefined;
   const { data: linkedOrders } = useOrders(orderSearchParams);
-  const linkedOrder = (isApproved || isCancelled) ? linkedOrders?.content?.[0] : undefined;
+  const linkedOrder = isApproved ? linkedOrders?.content?.[0] : undefined;
   const isOrderCancelled = linkedOrder?.status === 'CANCELLED';
-  const canReopen = isCancelled && isOrderCancelled;
+  const canReopen = isApproved && isOrderCancelled;
 
   const downloadPdfTecnico = () => {
-    if (!budget || isDownloadingPdf || budget.status === 'CANCELLED') return;
+    if (!budget || isDownloadingPdf || isCancelled) return;
     downloadPdf({ id: budget.id, code: budget.code });
   };
 
