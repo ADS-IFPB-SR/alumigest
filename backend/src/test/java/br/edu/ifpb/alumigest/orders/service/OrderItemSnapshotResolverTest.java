@@ -218,4 +218,77 @@ class OrderItemSnapshotResolverTest {
 
         assertThat(ferragens).isNull();
     }
+
+    @Test
+    @DisplayName("[Tabela de Decisão] Deve priorizar templateConfig do item sobre o templateConfig do produto para cor do alumínio (#433)")
+    void shouldPrioritizeItemTemplateConfigOverProductTemplateConfigForAluminumColor() {
+        BudgetItem item = new BudgetItem();
+        item.setTemplateConfig("{\"aluminumColor\": \"Preto\"}");
+
+        Product product = new Product();
+        TemplateConfig productConfig = new TemplateConfig();
+        productConfig.setAluminumColor("Branco");
+        product.setTemplateConfig(productConfig);
+        item.setProduct(product);
+
+        String cor = OrderItemSnapshotResolver.extractAluminumColor(item);
+
+        assertThat(cor).isEqualTo("Preto");
+    }
+
+    @Test
+    @DisplayName("[Tabela de Decisão] Deve priorizar templateConfig do item sobre o templateConfig do produto para acabamento do vidro (#433)")
+    void shouldPrioritizeItemTemplateConfigOverProductTemplateConfigForGlassType() {
+        BudgetItem item = new BudgetItem();
+        item.setTemplateConfig("{\"glassFinish\": \"Reflecta Champanhe 6mm\"}");
+
+        Product product = new Product();
+        TemplateConfig productConfig = new TemplateConfig();
+        productConfig.setGlassColor("Incolor 4mm");
+        product.setTemplateConfig(productConfig);
+        item.setProduct(product);
+
+        String vidro = OrderItemSnapshotResolver.extractGlassType(item);
+
+        assertThat(vidro).isEqualTo("Reflecta Champanhe 6mm");
+    }
+
+    @Test
+    @DisplayName("[Partição de Equivalência] Deve extrair slidingMode do item templateConfig em formato canônico (#433)")
+    void shouldExtractSlidingModeFromItemTemplateConfig() {
+        BudgetItem item = new BudgetItem();
+        item.setTemplateConfig("{\"slidingMode\": \"BOTH_SLIDING\"}");
+
+        String abertura = OrderItemSnapshotResolver.extractOpeningDirection(item);
+
+        assertThat(abertura).isEqualTo("BOTH_SLIDING");
+    }
+
+    @Test
+    @DisplayName("[Partição de Equivalência] Deve extrair slidingMode do produto quando item não especificar abertura (#433)")
+    void shouldExtractSlidingModeFromProductTemplateConfigFallback() {
+        BudgetItem item = new BudgetItem();
+
+        Product product = new Product();
+        TemplateConfig productConfig = new TemplateConfig();
+        productConfig.setSlidingMode(br.edu.ifpb.alumigest.catalog.domain.SlidingMode.LEFT_FIXED_RIGHT_SLIDING);
+        product.setTemplateConfig(productConfig);
+        item.setProduct(product);
+
+        String abertura = OrderItemSnapshotResolver.extractOpeningDirection(item);
+
+        assertThat(abertura).isEqualTo("LEFT_FIXED_RIGHT_SLIDING");
+    }
+
+    @Test
+    @DisplayName("[Análise de Valor Limite] Deve truncar orientação de abertura que exceda 30 caracteres do banco (#433)")
+    void shouldTruncateOpeningDirectionIfExceeds30Chars() {
+        BudgetItem item = new BudgetItem();
+        item.setTemplateConfig("{\"openingDirection\": \"ABERTURA_EXTREMAMENTE_LONGA_SUPERIOR_A_30_CARACTERES\"}");
+
+        String abertura = OrderItemSnapshotResolver.extractOpeningDirection(item);
+
+        assertThat(abertura).hasSize(30)
+                .isEqualTo("ABERTURA_EXTREMAMENTE_LONGA_SU");
+    }
 }

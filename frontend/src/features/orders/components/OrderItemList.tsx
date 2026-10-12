@@ -2,6 +2,7 @@ import React from 'react';
 import { Package, Layers } from 'lucide-react';
 import type { OrderItem } from '../types';
 import { formatBRL } from '../../budgets/utils/calculations';
+import { SLIDING_MODE_LABELS, OPENING_DIRECTION_LABELS } from '../../catalog/types/templates';
 
 interface OrderItemListProps {
   items?: OrderItem[];
@@ -89,7 +90,11 @@ export const OrderItemList: React.FC<OrderItemListProps> = ({ items = [] }) => {
                     {item.orientacaoAbertura && (
                       <div className="flex items-baseline gap-1.5">
                         <span className="text-on-surface-variant font-medium shrink-0">Abertura:</span>
-                        <span className="font-semibold text-on-surface">{item.orientacaoAbertura}</span>
+                        <span className="font-semibold text-on-surface">
+                          {SLIDING_MODE_LABELS[item.orientacaoAbertura as keyof typeof SLIDING_MODE_LABELS] ||
+                            OPENING_DIRECTION_LABELS[item.orientacaoAbertura as keyof typeof OPENING_DIRECTION_LABELS] ||
+                            item.orientacaoAbertura}
+                        </span>
                       </div>
                     )}
                     {item.ferragens && (

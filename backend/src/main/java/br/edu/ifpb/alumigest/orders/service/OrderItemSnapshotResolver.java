@@ -4,6 +4,7 @@ import br.edu.ifpb.alumigest.budgets.domain.BudgetItem;
 import br.edu.ifpb.alumigest.budgets.domain.BudgetItemOption;
 import br.edu.ifpb.alumigest.catalog.domain.MaterialCategoryType;
 import br.edu.ifpb.alumigest.catalog.domain.Product;
+import br.edu.ifpb.alumigest.catalog.domain.TemplateConfig;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -43,12 +44,20 @@ public final class OrderItemSnapshotResolver {
             return colorFromOption;
         }
 
-        String colorFromProduct = extractAluminumColorFromProduct(item.getProduct());
-        if (colorFromProduct != null) {
-            return colorFromProduct;
+        String colorFromJson = extractAluminumColorFromJson(item.getTemplateConfig());
+        if (colorFromJson != null) {
+            return colorFromJson;
         }
 
-        return extractJsonValue(item.getTemplateConfig(), "aluminumColor");
+        return extractAluminumColorFromProduct(item.getProduct());
+    }
+
+    private static String extractAluminumColorFromJson(String jsonConfig) {
+        String color = extractJsonValue(jsonConfig, "aluminumColor");
+        if (color != null && !color.isBlank()) {
+            return color;
+        }
+        return extractJsonValue(jsonConfig, "profileColor");
     }
 
     private static String extractAluminumColorFromOptions(List<BudgetItemOption> options) {
@@ -89,12 +98,12 @@ public final class OrderItemSnapshotResolver {
             return glassFromOption;
         }
 
-        String glassFromProduct = extractGlassFromProduct(item.getProduct());
-        if (glassFromProduct != null) {
-            return glassFromProduct;
+        String glassFromJson = extractGlassFromJson(item.getTemplateConfig());
+        if (glassFromJson != null) {
+            return glassFromJson;
         }
 
-        return extractGlassFromJson(item.getTemplateConfig());
+        return extractGlassFromProduct(item.getProduct());
     }
 
     private static String extractGlassFromOptions(List<BudgetItemOption> options) {
@@ -145,6 +154,10 @@ public final class OrderItemSnapshotResolver {
         if (glassFinish != null && !glassFinish.isBlank()) {
             return glassFinish;
         }
+        String glassType = extractJsonValue(jsonConfig, "glassType");
+        if (glassType != null && !glassType.isBlank()) {
+            return glassType;
+        }
         return extractJsonValue(jsonConfig, "glassColor");
     }
 
@@ -159,10 +172,28 @@ public final class OrderItemSnapshotResolver {
             return null;
         }
 
-        String jsonConfig = item.getTemplateConfig();
+        String openingFromJson = extractOpeningFromJson(item.getTemplateConfig());
+        if (openingFromJson != null) {
+            return sanitizeOpeningDirection(openingFromJson);
+        }
+
+        String openingFromProduct = extractOpeningFromProduct(item.getProduct());
+        if (openingFromProduct != null) {
+            return sanitizeOpeningDirection(openingFromProduct);
+        }
+
+        return null;
+    }
+
+    private static String extractOpeningFromJson(String jsonConfig) {
         String opening = extractJsonValue(jsonConfig, "openingDirection");
         if (opening != null && !opening.isBlank()) {
             return opening;
+        }
+
+        String slidingMode = extractJsonValue(jsonConfig, "slidingMode");
+        if (slidingMode != null && !slidingMode.isBlank()) {
+            return slidingMode;
         }
 
         String openingType = extractJsonValue(jsonConfig, "openingType");
@@ -171,6 +202,28 @@ public final class OrderItemSnapshotResolver {
         }
 
         return extractJsonValue(jsonConfig, "direction");
+    }
+
+    private static String extractOpeningFromProduct(Product product) {
+        if (product == null || product.getTemplateConfig() == null) {
+            return null;
+        }
+        TemplateConfig config = product.getTemplateConfig();
+        if (config.getOpeningDirection() != null) {
+            return config.getOpeningDirection().name();
+        }
+        if (config.getSlidingMode() != null) {
+            return config.getSlidingMode().name();
+        }
+        return null;
+    }
+
+    private static String sanitizeOpeningDirection(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.length() > 30 ? trimmed.substring(0, 30) : trimmed;
     }
 
     /**
