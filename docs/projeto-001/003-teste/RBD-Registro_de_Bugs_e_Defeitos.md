@@ -4,10 +4,10 @@
 |---|---|
 | **Projeto** | AlumiGest — Sistema de Gestão para Vidraçaria e Esquadrias |
 | **Documento** | Registro Unificado de Bugs, Defeitos e Hotfixes (RBD) |
-| **Versão** | 2.2.0 (Atualizado com Catálogo do BUG-023 - Issue #349 e Padronização em mm da Ficha Técnica) |
-| **Data de Atualização** | 29/09/2026 |
+| **Versão** | 2.3.0 (Atualizado com Catálogo dos Bugs da Sprint 06 / US-14.1: BUG-024, BUG-025, BUG-026 e BUG-027) |
+| **Data de Atualização** | 11/10/2026 |
 | **Responsável QA** | Herbert Carvalho dos Santos / Equipe de Engenharia AlumiGest |
-| **Branch** | `fix/349-cotas-furacao-puxador-duplo` |
+| **Branch** | `feat/us-14.1-snapshot-imutavel-lock-precos-deep-copy-360` |
 | **Padrão de Template** | Baseado em [`.github/ISSUE_TEMPLATE/bug_report.md`](../../../.github/ISSUE_TEMPLATE/bug_report.md) |
 | **Auditoria Técnica** | Análise estática SonarQube, Pipeline CI/CD GitHub Actions e Histórico Git |
 
@@ -51,6 +51,10 @@ Seguindo a governança do **Plano de Gerência de Configuração (PGC)** e do **
 | **[BUG-021](#bug-021)** | Perda de Insumos da Ficha Técnica em Produtos Estáticos e Ocultação de Templates na Categoria Janela | Frontend / Catálogo & Orçamentos | 🔴 Alta | Sprint 03 | ✅ Resolvido | Issue #235 / Branch `fix/products-static-items-and-window-category` |
 | **[BUG-022](#bug-022)** | Itens do Orçamento Descartados na Criação via POST /api/budgets por Ausência de Campo no BudgetCreateRequest | Backend / Orçamentos | 🔴 Alta | Sprint 04 | ✅ Resolvido | Issue #300 / PR #293 |
 | **[BUG-023](#bug-023)** | Falta de Cotas Milimétricas Reais de Furação e Linha Divisória Cortando Texto do Puxador Duplo na Ficha Técnica | Backend / PDF | 🟡 Média | Sprint 05 | ✅ Resolvido | Issue #349 / Branch `fix/349-cotas-furacao-puxador-duplo` |
+| **[BUG-024](#bug-024)** | Classificação Indevida de Película (`FILM`) como Vidro no Snapshot (`tipoVidro`) | Backend / Orders | 🔴 Alta | Sprint 06 | ✅ Resolvido | Issue #424 / Commit `c871c5e` |
+| **[BUG-025](#bug-025)** | Extrator de Puxador Falha Silenciosamente por Divergência de Chaves (`model` vs `handleType`) | Backend / Orders | 🔴 Alta | Sprint 06 | ✅ Resolvido | Issue #422 / Commit `ccc44e5` |
+| **[BUG-026](#bug-026)** | Inversão de Precedência no Snapshot e Omissão de `slidingMode` em `orientacao_abertura` | Full-Stack / Orders | 🔴 Alta | Sprint 06 | ✅ Resolvido | Issue #433 / Commit `4e4788c` |
+| **[BUG-027](#bug-027)** | Duplicação do Índice Ordinal `# 1` para as Duas Primeiras Linhas na `OrderItemList` | Frontend / UI | 🟡 Média | Sprint 06 | ✅ Resolvido | Issue #421 / Commit `c3b47e0` |
 
 ---
 
@@ -688,6 +692,109 @@ Na emissão da Ficha Técnica de Usinagem e Corte (Ficha de Oficina - US-11.2), 
   3. Reposicionado o rótulo do puxador para `py1 - 7.0f` (abaixo do desenho do puxador) e adicionado `desenharRotuloPuxadorComMascara` com retângulo arredondado branco opaco (*pill background*).
   4. Padronizadas as dimensões em milímetros (`mm`) nas Especificações Técnicas (`formatarDimensaoMm`) e no rótulo do puxador.
   5. Evidência visual gerada com 4 itens demonstrativos em `docs/projeto-001/003-teste/sprint-05/evidencias/evidencia-fix-349-ficha-tecnica.png`.
+
+---
+
+### BUG-024
+#### [BUG] Classificação Indevida de Película (`FILM`) como Vidro no Snapshot (`tipoVidro`)
+
+**Descrição do Problema:**
+Durante a conversão do orçamento em pedido de venda (US-14.1), itens que possuíam insumos de película protetora/térmica (categoria `FILM`) tinham seu campo de snapshot `tipo_vidro` preenchido indevidamente com o nome da película (ex.: `"Película Fumê 5%"`), sobrescrevendo a especificação real do vidro da esquadria (ex.: `"Incolor 8mm Temperado"`).
+
+**Passos para Reproduzir:**
+1. Criar um orçamento com esquadria contendo vidro `"Incolor 8mm Temperado"` e película adicional `"Película Térmica Fumê 5% G5"`.
+2. Aprovar e converter o orçamento em pedido através do endpoint `/api/orders/convert/{budgetId}`.
+3. Consultar o pedido gerado via `GET /api/orders/{id}`.
+4. Observar que o campo `tipoVidro` do item exibia a película ao invés do acabamento do vidro.
+
+**Comportamento Esperado:**
+Insumos de categoria `FILM` não devem ser associados ao acabamento estrutural do vidro (`tipoVidro`), permanecendo isolados nas opções de insumos (`options`). A categoria `GLASS` deve ter prioridade máxima e insumos de película devem ser explicitamente descartados na extração de `tipoVidro`.
+
+**Contexto / Ambiente:**
+- **Módulo Afetado:** `backend/src/main/java/br/edu/ifpb/alumigest/orders/service/OrderItemSnapshotResolver.java`.
+- **Severidade:** 🔴 Alta / Regra de Negócio | **Sprint:** 06 | **Status:** ✅ Resolvido.
+- **Detecção / Correção:** Issue #424 / Commit `c871c5e`.
+
+**Causa Raiz Técnica & Solução:**
+* **Causa Raiz:** O método `isGlassOption` realizava correspondência textual fraca buscando a palavra `"vidro"` sem filtrar a categoria `FILM`, capturando opções cujo nome continha expressões como `"Película Fumê para Vidro"`.
+* **Solução:** Implementada extração em duas passagens em `OrderItemSnapshotResolver.extractGlassFromOptions`: primeira passada estrita por `MaterialCategoryType.GLASS`, e segunda passada com fallback textual onde `isGlassOption` descarta explicitamente opções com categoria `FILM` ou termos de película. Testado formalmente com Partição de Equivalência e Tabela de Decisão em `OrderItemSnapshotResolverTest`.
+
+---
+
+### BUG-025
+#### [BUG] Extrator de Puxador Falha Silenciosamente por Divergência de Chaves (`model` vs `handleType`)
+
+**Descrição do Problema:**
+O extrator de puxadores e ferragens (`extractHardware`) em `OrderItemSnapshotResolver` falhava silenciosamente e deixava o campo textual `ferragens` como nulo ou incompleto, mesmo quando o item de orçamento possuía configuração explícita de puxador no JSON `handle_config`.
+
+**Passos para Reproduzir:**
+1. Criar um item de orçamento com `handle_config = "{\"handleType\": \"BAR_TUBULAR\", \"handleLengthMm\": 600}"`.
+2. Converter o orçamento em pedido de venda.
+3. Verificar o campo `ferragens` do `OrderItem` persistido.
+4. Observar que o campo retornava `null` em vez de registrar `"Puxador Barra Tubular 600mm"`.
+
+**Comportamento Esperado:**
+O snapshot imutável deve extrair e consolidar o puxador especificado no JSONB `handle_config`, gerando rótulo amigável em português com dimensão física em milímetros (ex.: `"Puxador Barra Tubular 600mm"` ou `"Fecho Concha"`).
+
+**Contexto / Ambiente:**
+- **Módulo Afetado:** `backend/src/main/java/br/edu/ifpb/alumigest/orders/service/OrderItemSnapshotResolver.java`.
+- **Severidade:** 🔴 Alta / Snapshot Imutável | **Sprint:** 06 | **Status:** ✅ Resolvido.
+- **Detecção / Correção:** Issue #422 / Commit `ccc44e5`.
+
+**Causa Raiz Técnica & Solução:**
+* **Causa Raiz:** O extrator `appendHandleModel` buscava exclusivamente pela chave `"model"`, enquanto o catálogo paramétrico e os schemas do AlumiStudio persistiam a chave `"handleType"`.
+* **Solução:** Atualizado `appendHandleModel` para buscar `"handleType"` com fallback para `"model"`, extrair a dimensão de `"handleLengthMm"` (ou `"lengthMm"`), mapear rótulos em português (`resolveHandleLabel`) e ignorar explicitamente quando `handleType == NONE`. Coberto por testes de Partição de Equivalência e Análise de Valor Limite em `OrderItemSnapshotResolverTest`.
+
+---
+
+### BUG-026
+#### [BUG] Inversão de Precedência no Snapshot e Omissão de `slidingMode` em `orientacao_abertura`
+
+**Descrição do Problema:**
+Ao converter um orçamento customizado em pedido, o template padrão do produto no catálogo sobrepunha as cores e acabamentos customizados do item de orçamento caso o item não tivesse insumos explícitos de perfil/vidro. Adicionalmente, esquadrias de correr que utilizavam o modo `slidingMode` (ex.: `BOTH_SLIDING`) tinham o campo `orientacao_abertura` preenchido como nulo, e a tabela de itens exibia identificadores técnicos brutos.
+
+**Passos para Reproduzir:**
+1. Criar produto no catálogo com cor padrão `"Branco"`.
+2. No orçamento, customizar o item para cor de alumínio `"Preto"` via `templateConfig` sem alterar opções de perfil avulsas.
+3. Converter o orçamento em pedido de venda.
+4. Constatar que o snapshot gravava `"Branco"` (do catálogo) sobrepondo a escolha do cliente (`"Preto"`).
+
+**Comportamento Esperado:**
+A precedência deve priorizar: (1) opções avulsas selecionadas no orçamento, (2) configuração customizada do item no orçamento (`item.templateConfig`), e apenas como fallback (3) valores padrão do produto no catálogo (`product.templateConfig`). Esquadrias de correr devem extrair `slidingMode` canônico e a interface deve traduzir para rótulos legíveis em português.
+
+**Contexto / Ambiente:**
+- **Módulo Afetado:** `OrderItemSnapshotResolver.java`, `OrderItemSnapshotResolverTest.java`, `OrderItemList.tsx`, `OrderItemList.test.tsx`.
+- **Severidade:** 🔴 Alta / Integridade de Contrato | **Sprint:** 06 | **Status:** ✅ Resolvido.
+- **Detecção / Correção:** Issue #433 / Commit `4e4788c`.
+
+**Causa Raiz Técnica & Solução:**
+* **Causa Raiz:** Inversão na cadeia de chamadas: `extractAluminumColorFromProduct` e `extractGlassFromProduct` eram consultados antes de `item.getTemplateConfig()`. Além disso, `extractOpeningDirection` não contemplava a chave `"slidingMode"`.
+* **Solução:** Reordenada a precedência para `options` $\rightarrow$ `item.templateConfig` $\rightarrow$ `product.templateConfig`. Adicionada extração de `slidingMode` em maiúsculo com sanitização defensiva de 30 caracteres (`VARCHAR(30)`). No frontend, `OrderItemList.tsx` mapeia e exibe rótulos amigáveis via `SLIDING_MODE_LABELS` e `OPENING_DIRECTION_LABELS`.
+
+---
+
+### BUG-027
+#### [BUG] Duplicação do Índice Ordinal `# 1` para as Duas Primeiras Linhas na `OrderItemList`
+
+**Descrição do Problema:**
+Na tabela de itens contratados (`OrderItemList.tsx`), a primeira e a segunda linha da tabela exibiam o mesmo número ordinal (`# 1`), quebrando a sequência lógica de visualização dos itens de produção.
+
+**Passos para Reproduzir:**
+1. Acessar a página de detalhes de qualquer pedido com 2 ou mais itens (`/pedidos/{id}`).
+2. Observar a coluna `#` (ordinal) da tabela de itens.
+3. Constatar que a primeira linha exibia `1` e a segunda linha também exibia `1`.
+
+**Comportamento Esperado:**
+A numeração ordinal de itens deve ser estritamente sequencial e de base 1 (`# 1`, `# 2`, `# 3`...).
+
+**Contexto / Ambiente:**
+- **Módulo Afetado:** `frontend/src/features/orders/components/OrderItemList.tsx`, `frontend/src/__tests__/features/orders/OrderItemList.test.tsx`.
+- **Severidade:** 🟡 Média / UI | **Sprint:** 06 | **Status:** ✅ Resolvido.
+- **Detecção / Correção:** Issue #421 / Commit `c3b47e0`.
+
+**Causa Raiz Técnica & Solução:**
+* **Causa Raiz:** A expressão `{item.ordem || index + 1}` no JavaScript avaliava `0` (base 0 enviada pelo backend) como falsy, resultando em `index + 1 = 1` para a linha 0, e avaliava `1` como truthy para a linha 1, duplicando o número `1`.
+* **Solução:** Substituída a expressão por `{(typeof item.ordem === 'number' ? item.ordem : index) + 1}`, garantindo que tanto itens com índice zero-based quanto itens sem ordem explícita recebam numeração ordinal correta de base 1. Testado unitariamente no frontend com Vitest.
 
 ---
 
