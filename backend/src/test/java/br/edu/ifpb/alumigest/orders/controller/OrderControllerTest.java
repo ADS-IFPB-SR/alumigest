@@ -90,6 +90,19 @@ class OrderControllerTest {
     }
 
     @Test
+    @DisplayName("Deve aceitar requisições também através do alias canônico /api/v1/ordens-servico")
+    void shouldAcceptCanonicalPortugueseAlias() throws Exception {
+      PageResponse<OrderSummaryResponse> emptyResponse = PageResponse.of(new PageImpl<>(Collections.emptyList()));
+      when(orderService.findAll(any(), any(), any(), any())).thenReturn(emptyResponse);
+
+      mockMvc.perform(get("/api/v1/ordens-servico")
+              .param("page", "0")
+              .param("size", "10")
+              .contentType(MediaType.APPLICATION_JSON))
+          .andExpect(status().isOk());
+    }
+
+    @Test
     @DisplayName("Deve repassar filtros de status, canal e search para o service")
     void shouldPassFiltersToService() throws Exception {
       PageResponse<OrderSummaryResponse> emptyResponse = PageResponse.of(new PageImpl<>(Collections.emptyList()));

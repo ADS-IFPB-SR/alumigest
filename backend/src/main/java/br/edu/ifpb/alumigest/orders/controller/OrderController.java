@@ -38,7 +38,7 @@ import java.util.UUID;
  * Depende da abstração {@link OrderService}, nunca da implementação concreta (DIP).
  */
 @RestController
-@RequestMapping({"/api/v1/orders", "/api/orders", "/api/ordens-servico", "/api/pedidos"})
+@RequestMapping({"/api/v1/orders", "/api/v1/ordens-servico"})
 @Tag(name = "Ordens de Serviço", description = "Endpoints para consulta, criação, conversão e ciclo de vida de ordens de serviço (pedidos de venda)")
 public class OrderController {
 
