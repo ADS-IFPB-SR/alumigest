@@ -51,7 +51,7 @@ export const OrderItemList: React.FC<OrderItemListProps> = ({ items = [] }) => {
                 data-testid={`order-item-row-${item.id}`}
               >
                 <td className="py-3.5 px-2 text-center font-data-mono text-xs text-on-surface-variant">
-                  {item.ordem || index + 1}
+                  {(typeof item.ordem === 'number' ? item.ordem : index) + 1}
                 </td>
                 <td className="py-3.5 px-4">
                   <div className="font-semibold text-on-surface text-sm leading-snug">{item.descricao}</div>
