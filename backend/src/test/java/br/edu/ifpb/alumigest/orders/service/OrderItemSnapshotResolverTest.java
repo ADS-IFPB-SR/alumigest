@@ -185,4 +185,37 @@ class OrderItemSnapshotResolverTest {
         BudgetItem item = new BudgetItem();
         assertThat(OrderItemSnapshotResolver.extractHardware(item)).isNull();
     }
+
+    @Test
+    @DisplayName("[Partição de Equivalência] Deve extrair puxador via handleType com dimensão handleLengthMm (#422)")
+    void shouldExtractHardwareFromHandleTypeWithLength() {
+        BudgetItem item = new BudgetItem();
+        item.setHandleConfig("{\"handleType\": \"BAR_TUBULAR\", \"handleLengthMm\": 600}");
+
+        String ferragens = OrderItemSnapshotResolver.extractHardware(item);
+
+        assertThat(ferragens).isEqualTo("Puxador Barra Tubular 600mm");
+    }
+
+    @Test
+    @DisplayName("[Partição de Equivalência] Deve extrair fecho concha via handleType sem dimensão (#422)")
+    void shouldExtractHardwareFromShellLockWithoutLength() {
+        BudgetItem item = new BudgetItem();
+        item.setHandleConfig("{\"handleType\": \"SHELL_LOCK\"}");
+
+        String ferragens = OrderItemSnapshotResolver.extractHardware(item);
+
+        assertThat(ferragens).isEqualTo("Fecho Concha");
+    }
+
+    @Test
+    @DisplayName("[Análise de Valor Limite] Deve ignorar puxador quando handleType for NONE (#422)")
+    void shouldIgnoreHandleWhenTypeIsNone() {
+        BudgetItem item = new BudgetItem();
+        item.setHandleConfig("{\"handleType\": \"NONE\"}");
+
+        String ferragens = OrderItemSnapshotResolver.extractHardware(item);
+
+        assertThat(ferragens).isNull();
+    }
 }

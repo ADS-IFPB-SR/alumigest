@@ -192,10 +192,39 @@ public final class OrderItemSnapshotResolver {
     }
 
     private static void appendHandleModel(String handleConfig, Set<String> set) {
-        String handleModel = extractJsonValue(handleConfig, "model");
-        if (handleModel != null && !handleModel.isBlank()) {
-            set.add("Puxador " + handleModel);
+        if (handleConfig == null || handleConfig.isBlank()) {
+            return;
         }
+        String handleType = extractJsonValue(handleConfig, "handleType");
+        if (handleType == null || handleType.isBlank()) {
+            handleType = extractJsonValue(handleConfig, "model");
+        }
+        if (handleType == null || handleType.isBlank() || "NONE".equalsIgnoreCase(handleType.trim())) {
+            return;
+        }
+
+        String length = extractJsonValue(handleConfig, "handleLengthMm");
+        if (length == null || length.isBlank()) {
+            length = extractJsonValue(handleConfig, "lengthMm");
+        }
+
+        String label = resolveHandleLabel(handleType.trim());
+        if (length != null && !length.isBlank() && !"0".equals(length.trim())) {
+            label = label + " " + length.trim() + "mm";
+        }
+        set.add(label);
+    }
+
+    private static String resolveHandleLabel(String handleType) {
+        return switch (handleType.toUpperCase(Locale.ROOT)) {
+            case "BAR_TUBULAR" -> "Puxador Barra Tubular";
+            case "SHELL_LOCK" -> "Fecho Concha";
+            case "LEVER_HANDLE" -> "Puxador Alavanca / Maçaneta";
+            case "PROFILE_HANDLE" -> "Puxador Perfil Integrado";
+            default -> handleType.toLowerCase(Locale.ROOT).startsWith("puxador")
+                    ? handleType
+                    : "Puxador " + handleType;
+        };
     }
 
     private static void collectHardwareFromOptions(List<BudgetItemOption> options, Set<String> set) {
