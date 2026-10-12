@@ -101,6 +101,16 @@ public final class OrderItemSnapshotResolver {
         if (options == null) {
             return null;
         }
+        // 1ª passada: prioridade estrita para categoria GLASS
+        for (BudgetItemOption opt : options) {
+            if (opt != null && opt.getCategoryType() == MaterialCategoryType.GLASS) {
+                String desc = resolveGlassDescription(opt);
+                if (desc != null) {
+                    return desc;
+                }
+            }
+        }
+        // 2ª passada: fallback textual descartando explicitamente insumos de película
         for (BudgetItemOption opt : options) {
             if (isGlassOption(opt)) {
                 String desc = resolveGlassDescription(opt);
@@ -215,12 +225,15 @@ public final class OrderItemSnapshotResolver {
         if (opt.getCategoryType() == MaterialCategoryType.GLASS) {
             return true;
         }
+        if (opt.getCategoryType() == MaterialCategoryType.FILM) {
+            return false;
+        }
         String name = opt.getMaterialName();
         if (name == null) {
             return false;
         }
         String lower = name.toLowerCase(Locale.ROOT);
-        return lower.contains("vidro") || lower.contains("película") || lower.contains("pelicula");
+        return lower.contains("vidro") && !lower.contains("película") && !lower.contains("pelicula");
     }
 
     private static boolean isHardwareOrComponent(BudgetItemOption opt) {

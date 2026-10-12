@@ -94,6 +94,28 @@ class OrderItemSnapshotResolverTest {
     }
 
     @Test
+    @DisplayName("[Tabela de Decisão / Equivalência] Deve priorizar insumo GLASS sobre FILM e não classificar película como tipoVidro (#424)")
+    void shouldPrioritizeGlassOptionOverFilmAndNotClassifyFilmAsGlass() {
+        BudgetItem item = new BudgetItem();
+
+        BudgetItemOption filmOption = new BudgetItemOption();
+        filmOption.setCategoryType(MaterialCategoryType.FILM);
+        filmOption.setMaterialName("Película Térmica Fumê 5% G5");
+        filmOption.setSelectedType("Película Fumê 5%");
+        item.addOption(filmOption);
+
+        BudgetItemOption glassOption = new BudgetItemOption();
+        glassOption.setCategoryType(MaterialCategoryType.GLASS);
+        glassOption.setMaterialName("Vidro Temperado Incolor 8mm");
+        glassOption.setSelectedType("Temperado Incolor 8mm");
+        item.addOption(glassOption);
+
+        String vidro = OrderItemSnapshotResolver.extractGlassType(item);
+
+        assertThat(vidro).isEqualTo("Temperado Incolor 8mm");
+    }
+
+    @Test
     @DisplayName("[Partição de Equivalência] Deve extrair orientação de abertura do JSON templateConfig")
     void shouldExtractOpeningDirectionFromJsonConfig() {
         BudgetItem item = new BudgetItem();
