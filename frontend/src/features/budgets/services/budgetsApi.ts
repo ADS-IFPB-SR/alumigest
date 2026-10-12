@@ -89,6 +89,9 @@ function mapBackendToBudgetDetail(res: any): BudgetDetail {
     customer: {
       id: res.clientId,
       name: res.clientName,
+      phone: res.clientPhone,
+      email: res.clientEmail,
+      address: res.clientAddress,
     },
     status: res.status,
     createdAt: res.createdAt,

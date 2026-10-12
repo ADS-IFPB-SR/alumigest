@@ -2055,7 +2055,7 @@ class BudgetPdfServiceTest {
                     .contains("🏷️ Desconto (10%): -R$ 210,00")
                     .contains("📦 *TOTAL: R$ 1.890,00*")
                     .contains("💳 Pagamento: 50% Entrada + 50% na Entrega")
-                    .contains("_Alumiportas - Vidraçaria e Esquadrias_");
+                    .contains("_Alumiportas LTDA_");
         }
 
         @Test

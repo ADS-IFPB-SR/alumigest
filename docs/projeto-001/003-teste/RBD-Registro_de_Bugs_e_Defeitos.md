@@ -4,10 +4,10 @@
 |---|---|
 | **Projeto** | AlumiGest — Sistema de Gestão para Vidraçaria e Esquadrias |
 | **Documento** | Registro Unificado de Bugs, Defeitos e Hotfixes (RBD) |
-| **Versão** | 2.6.0 (Catálogo de Bugs BUG-027 a BUG-031 da US-10 e BUG-024 a BUG-026 da US-11.2 na Sprint 05) |
-| **Data de Atualização** | 29/09/2026 |
+| **Versão** | 2.7.0 (Catálogo de Bugs BUG-024 a BUG-033 da Sprint 05 e BUG-034 a BUG-036 da US-13 / Sprint 06) |
+| **Data de Atualização** | 09/10/2026 |
 | **Responsável QA / SM** | Herbert Carvalho dos Santos / Júlio Kennedy dos Santos Silva / Equipe de Engenharia AlumiGest |
-| **Branch** | `develop` |
+| **Branch** | `feat/us-13-aprovar-orcamento-converter-pedido-venda` |
 | **Padrão de Template** | Baseado em [`.github/ISSUE_TEMPLATE/bug_report.md`](../../../.github/ISSUE_TEMPLATE/bug_report.md) |
 | **Auditoria Técnica** | Análise estática SonarQube, Pipeline CI/CD GitHub Actions e Histórico Git |
 
@@ -20,7 +20,7 @@ Este documento consolida o **catálogo histórico e investigativo de todos os bu
 Seguindo a governança do **Plano de Gerência de Configuração (PGC)** e do **Plano Geral de Testes (PLT)**:
 1. Todos os relatos respeitam estritamente a estrutura formal do template [`.github/ISSUE_TEMPLATE/bug_report.md`](../../../.github/ISSUE_TEMPLATE/bug_report.md).
 2. Cada defeito é rastreado com sua severidade, passos de reprodução, comportamento esperado, ambiente afetado e **análise técnica de causa raiz e solução aplicada**.
-3. O monitoramento contínuo aplica a filosofia **Clean as You Code**, suportada pela suíte de **242 testes automatizados JUnit 5**, **24 suítes E2E Cypress**, **Oxlint** e **SonarQube Community Edition**.
+3. O monitoramento contínuo aplica a filosofia **Clean as You Code**, suportada pela suíte de **626 testes automatizados JUnit 5**, **658 testes Vitest**, **24 suítes E2E Cypress**, **Oxlint** e **SonarQube Community Edition**.
 
 ---
 
@@ -51,6 +51,11 @@ Seguindo a governança do **Plano de Gerência de Configuração (PGC)** e do **
 | **[BUG-021](#bug-021)** | Perda de Insumos da Ficha Técnica em Produtos Estáticos e Ocultação de Templates na Categoria Janela | Frontend / Catálogo & Orçamentos | 🔴 Alta | Sprint 03 | ✅ Resolvido | Issue #235 / Branch `fix/products-static-items-and-window-category` |
 | **[BUG-022](#bug-022)** | Itens do Orçamento Descartados na Criação via POST /api/budgets por Ausência de Campo no BudgetCreateRequest | Backend / Orçamentos | 🔴 Alta | Sprint 04 | ✅ Resolvido | Issue #300 / PR #293 |
 | **[BUG-023](#bug-023)** | Falta de Cotas Milimétricas Reais de Furação e Linha Divisória Cortando Texto do Puxador Duplo na Ficha Técnica | Backend / PDF | 🟡 Média | Sprint 05 | ✅ Resolvido | Issue #349 / Branch `fix/349-cotas-furacao-puxador-duplo` |
+<<<<<<< HEAD
+| **[BUG-024](#bug-024)** | Condição de Corrida Pode Gerar Códigos Duplicados em Conversões Simultâneas | Backend / Concorrência | 🔴 Alta | Sprint 06 | ✅ Resolvido | Issue #408 / PR #414 |
+| **[BUG-025](#bug-025)** | Interface Troca Código Oficial PED por OS e Quebra Busca pelo Identificador Exibido | Fullstack / Contratos | 🔴 Alta | Sprint 06 | ✅ Resolvido | Issue #411 / PR #414 |
+| **[BUG-026](#bug-026)** | Paginação Exibe Apenas Páginas 1–5 e Perde a Janela da Página Atual | Frontend / Paginação | 🟡 Média | Sprint 06 | ✅ Resolvido | Issue #412 / PR #414 |
+=======
 | **[BUG-024](#bug-024)** | Inconsistência entre Texto de Furação e Desenho Técnico na Ficha Técnica (3 furos no texto vs 2 furos no desenho) | Backend / PDF | 🟡 Média | Sprint 05 | ✅ Resolvido | Issue #348 / Branch `fix/348-inconsistencia-furacao-ficha-tecnica` |
 | **[BUG-025](#bug-025)** | Cota e Rótulo do Puxador Cortados na Margem Lateral do Esquema Técnico de Usinagem | Backend / PDF | 🟡 Média | Sprint 05 | ✅ Resolvido | Issue #345 / Branch `fix/345-cota-rotulo-puxador-cortados` |
 | **[BUG-026](#bug-026)** | Termos em Inglês Exibidos no Detalhamento de Usinagem, Puxadores e Tipologias do PDF Técnico | Backend / PDF | 🟡 Média | Sprint 05 | ✅ Resolvido | Issue #344 / Branch `fix/344-termos-ingles-detalhamento-pdf` |
@@ -61,6 +66,7 @@ Seguindo a governança do **Plano de Gerência de Configuração (PGC)** e do **
 | **[BUG-031](#bug-031)** | Resposta de Erro Empacotada como Blob sem Tratamento de Mensagem no Download de PDF Comercial | Frontend / API | 🟡 Média | Sprint 05 | 🟡 Em Aberto | Issue #376 / US-10 |
 | **[BUG-032](#bug-032)** | Duplicação de Mão de Obra e Inconsistência nos Totais do Orçamento | Backend & Frontend / Orçamentos | 🔴 Alta | Sprint 05 | ✅ Resolvido | Issue #333 / Branch `fix/333-duplicacao-mao-de-obra-totais-orcamento` |
 | **[BUG-033](#bug-033)** | Impossibilidade de Criar Esquadria sem Ferragem / Acessório no Construtor de Orçamentos | Frontend / Orçamentos | 🟡 Média | Sprint 05 | ✅ Resolvido | Issue #335 / Branch `fix/335-esquadria-sem-ferragem` |
+>>>>>>> origin/develop
 
 ---
 
@@ -730,12 +736,12 @@ Na emissão da Ficha Técnica de Oficina (Ficha de Usinagem e Corte - US-11.2), 
 **Causa Raiz Técnica & Solução:**
 * **Causa Raiz:** O método `BudgetPdfService.gerarLinhasFuracao` continha strings hardcoded que assumiam invariavelmente 3 furos para dobradiças sem consultar o `TechnicalMachiningContext`. Além disso, o parser de furação no `TechnicalMachiningResolver` não tratava certas variações de chaves (`holesCount`, `divisionType`) que podiam ocorrer em orçamentos salvos.
 * **Solução:**
-  1. Adicionado suporte no `TechnicalMachiningResolver` para ler chaves flexíveis (`divisionType`, `drillingMode`, `holeCount`, `holesCount`, `quantity`, `count`, `holes`) e distâncias configuradas.
-  2. Implementados os métodos `isSwingDoor()` e `hasNbr10821Warning()` no `TechnicalMachiningContext` para identificar portas de giro com altura > 1800mm e furação < 3 dobradiças.
-  3. Atualizado o método `BudgetPdfService.criarCelulaDetalhamentoFuracao` para obter o `TechnicalMachiningContext` resolvido e passá-lo para `gerarLinhasFuracao`.
-  4. Método `gerarLinhasFuracao` atualizado para montar a descrição dinâmica baseada no número real de furos (`ctx.getPontoFuracaoList().size()`), adicionando a advertência da NBR 10821 em vermelho quando aplicável.
-  5. Atualizados testes unitários e de integração E2E com cobertura total (562 testes passando).
-  6. Gerada evidência visual em alta resolução em `docs/projeto-001/003-teste/sprint-05/evidencias/evidencia-fix-348-ficha-tecnica.png`.
+   1. Adicionado suporte no `TechnicalMachiningResolver` para ler chaves flexíveis (`divisionType`, `drillingMode`, `holeCount`, `holesCount`, `quantity`, `count`, `holes`) e distâncias configuradas.
+   2. Implementados os métodos `isSwingDoor()` e `hasNbr10821Warning()` no `TechnicalMachiningContext` para identificar portas de giro com altura > 1800mm e furação < 3 dobradiças.
+   3. Atualizado o método `BudgetPdfService.criarCelulaDetalhamentoFuracao` para obter o `TechnicalMachiningContext` resolvido e passá-lo para `gerarLinhasFuracao`.
+   4. Método `gerarLinhasFuracao` atualizado para montar a descrição dinâmica baseada no número real de furos (`ctx.getPontoFuracaoList().size()`), adicionando a advertência da NBR 10821 em vermelho quando aplicável.
+   5. Atualizados testes unitários e de integração E2E com cobertura total (562 testes passando).
+   6. Gerada evidência visual em alta resolução em `docs/projeto-001/003-teste/sprint-05/evidencias/evidencia-fix-348-ficha-tecnica.png`.
 
 ---
 
@@ -1093,14 +1099,107 @@ O usuário deve poder excluir a ferragem livremente pelo botão `X` no Passo 2. 
 
 ---
 
+### BUG-034
+#### [BUG] [US-13.2] Condição de Corrida Pode Gerar Códigos Duplicados em Conversões Simultâneas (Issue #408)
+
+**Descrição do Problema:**
+Durante testes de concorrência ou conversões de múltiplos orçamentos no mesmo milissegundo, ocorria uma condição de corrida no gerador de código `OrderCodeGenerator`. Duas threads liam simultaneamente o mesmo código mais recente no banco de dados (ex: `OS-2026-0005`) antes de realizar o commit, tentando persistir ambas a ordem subsequente com o mesmo identificador (`OS-2026-0006`). Isso disparava `DataIntegrityViolationException` devido à restrição de unicidade `uk_orders_codigo` no PostgreSQL.
+
+**Passos para Reproduzir:**
+1. Disparar simultaneamente duas requisições `POST /api/v1/orders/from-budget/{budgetId}` para orçamentos distintos aprovados.
+2. Observar que ambas as transações leem o mesmo `max(codigo)`.
+3. Uma das transações comita com sucesso e a segunda é abortada com erro HTTP 500 / `DataIntegrityViolationException`.
+
+**Comportamento Esperado:**
+O gerador de código deve garantir exclusão mútua na geração de sequenciais, e o serviço transacional deve contar com política de retry automático e verificação defensiva contra colisões.
+
+**Contexto / Ambiente:**
+- **Módulo Afetado:** Backend / Módulo Orders (`OrderCodeGenerator.java`, `OrderServiceImpl.java`, `AlumiGestApplication.java`).
+- **Severidade:** 🔴 Alta | **Sprint:** 06 | **Status:** ✅ Resolvido.
+- **Detecção / Correção:** Issue #408 / PR #414.
+
+**Causa Raiz Técnica & Solução:**
+* **Causa Raiz:** O método `generateNextCode()` não possuía sincronização (`synchronized`) para exclusão mútua em nível de JVM e não checava se o código gerado já existia antes de devolvê-lo, somado à ausência de política de reprocessamento em caso de colisão de commit e risco de colisão entre threads que consultavam o banco antes da transação irmã comitar.
+* **Solução:**
+  1. Tornou-se o método `generateNextCode()` thread-safe (`public synchronized String generateNextCode()`), adicionando-se rastreamento sequencial em memória (`lastAllocatedNumber`) com atualização atômica e verificação defensiva em loop `while (orderRepository.existsByCodigo(candidateCode))` com limite de tentativas (`MAX_CANDIDATE_ATTEMPTS = 500`).
+  2. Adicionada a dependência `spring-retry` com `@EnableRetry(order = 0)` na aplicação, garantindo que o interceptor de retry envolva externamente o interceptor transacional (`@Transactional`).
+  3. O método transacional `convertBudgetToOrder` utiliza `orderRepository.saveAndFlush(order)` para materializar imediatamente a constraint UNIQUE no banco e foi anotado com `@Retryable(retryFor = {DataIntegrityViolationException.class, TransactionSystemException.class}, maxAttempts = 3, backoff = @Backoff(delay = 100, multiplier = 1.5))`.
+  4. Suíte de testes unitários `OrderCodeGeneratorTest.java` adicionada cobrindo geração inicial, incremento, fallback de formato e salto de códigos pré-existentes.
+  5. Teste de integração concorrente real com 10 threads simultâneas e barreira `CountDownLatch` implementado em `OrderCodeGeneratorConcurrencyIntegrationTest.java`, comprovando 100% de unicidade e ausência de colisões sob concorrência direta (CA-3).
+
+---
+
+### BUG-035
+#### [BUG] [US-13.3/13.4/13.5] Interface Troca Código Oficial PED por OS e Quebra Busca pelo Identificador Exibido (Issue #411)
+
+**Descrição do Problema:**
+O frontend exibia a identificação da ordem substituindo cosmetica e artificialmente o código retornado pela API via `.replace('PED-', 'OS-')`. No entanto, o banco de dados persistia nativamente o identificador com prefixo `PED-YYYY-NNNN`. Ao utilizar o campo de busca textual na listagem de ordens de serviço (`OrderListPage.tsx`) ou via API `GET /api/v1/orders?search=OS-2026-0001`, a consulta SQL `LOWER(o.codigo) LIKE %...%` não encontrava nenhuma linha, pois os códigos no banco começavam com `PED-`.
+
+**Passos para Reproduzir:**
+1. Converter um orçamento em ordem de serviço.
+2. Na listagem de ordens de serviço (`/ordens-servico`), visualizar o código exibido como `#OS-2026-0001`.
+3. Digitar `OS-2026-0001` no campo de pesquisa textual.
+4. Observar mensagem de "Nenhuma ordem de serviço encontrada", embora a ordem exista.
+
+**Comportamento Esperado:**
+O identificador oficial de mercado deve ser unificado e nativo em todas as camadas (Banco de Dados, Backend Core, APIs REST e Frontend), permitindo busca textual direta e consistente, com migração de dados legados e rotas padronizadas em `/ordens-servico`.
+
+**Contexto / Ambiente:**
+- **Módulo Afetado:** Fullstack / Módulo Orders (`OrderCodeGenerator.java`, `OrderListPage.tsx`, `OrderDetailHeader.tsx`, `OrderDetailPage.tsx`, `BudgetDetailPage.tsx`, `BudgetDetailActions.tsx`, `CancelOrderModal.tsx`, `useConvertBudget.ts`, `V20__migrate_order_codes_ped_to_os.sql`).
+- **Severidade:** 🔴 Alta | **Sprint:** 06 | **Status:** ✅ Resolvido.
+- **Detecção / Correção:** Issue #411 / PR #414.
+
+**Causa Raiz Técnica & Solução:**
+* **Causa Raiz:** Decisão de design na UI de renomear para "Ordem de Serviço" sem migrar o gerador do backend, o banco legado e as rotas internas, causando descompasso entre o dado persistido, a busca textual e a navegação.
+* **Solução:**
+  1. O prefixo no gerador `OrderCodeGenerator.java` foi unificado para `OS-%d-` nativo.
+  2. Criada a migração Flyway `V20__migrate_order_codes_ped_to_os.sql` atualizando dados legados (`UPDATE tb_orders SET codigo = REPLACE(codigo, 'PED-', 'OS-') WHERE codigo LIKE 'PED-%'`), blindando a continuidade do sequenciador e a integridade de dados.
+  3. Removidas todas as chamadas `.replace('PED-', 'OS-')` nos componentes `OrderListPage.tsx` e `OrderDetailHeader.tsx`, exibindo diretamente `#{order.codigo}`.
+  4. Padronizados todos os links internos e navegações programáticas de `/work-orders` para a rota canônica `/ordens-servico` em `OrderListPage.tsx`, `OrderDetailPage.tsx`, `OrderDetailHeader.tsx`, `BudgetDetailPage.tsx` e `BudgetDetailActions.tsx`.
+  5. Terminologia de mensagens toast e modais padronizada para "Ordem de Serviço" (`useConvertBudget.ts` e `CancelOrderModal.tsx`).
+  6. Suíte de testes do frontend e backend adaptada para validar `OS-2026-` e `/ordens-servico`.
+
+---
+
+### BUG-036
+#### [BUG] [US-13.4] Paginação Exibe Apenas Páginas 1–5 e Perde a Janela da Página Atual (Issue #412)
+
+**Descrição do Problema:**
+Na tela de listagem de ordens de serviço (`OrderListPage.tsx`), a barra de paginação utilizava `Array.from({ length: Math.min(totalPages, 5) })` para renderizar os botões de página. Quando o total de ordens gerava mais de 5 páginas (ex: 70 itens com tamanho 10 geram 7 páginas), as páginas 6 em diante nunca eram exibidas como botões, e ao navegar via botão "Próximo" para a página 6, a barra deixava de indicar qualquer botão ativo, perdendo o contexto de navegação.
+
+**Passos para Reproduzir:**
+1. Ter mais de 50 ordens de serviço cadastradas na base.
+2. Acessar `/ordens-servico` com tamanho de página 10 (gerando 6 ou mais páginas).
+3. Verificar que são renderizados apenas os botões de 1 a 5.
+4. Clicar no botão "Próximo" até a página 6 e observar que nenhum botão fica destacado.
+
+**Comportamento Esperado:**
+A paginação deve implementar navegação com janela deslizante e reticências (`…`) dinamicamente centralizadas na página atual, suportando qualquer quantidade de páginas no mesmo padrão de `BudgetsPagination.tsx`.
+
+**Contexto / Ambiente:**
+- **Módulo Afetado:** Frontend / Módulo Orders (`OrderListPage.tsx`, `OrderListPage.test.tsx`).
+- **Severidade:** 🟡 Média | **Sprint:** 06 | **Status:** ✅ Resolvido.
+- **Detecção / Correção:** Issue #412 / PR #414.
+
+**Causa Raiz Técnica & Solução:**
+* **Causa Raiz:** Lógica estática de renderização de botões limitada pelo hardcoding `Math.min(totalPages, 5)`.
+* **Solução:**
+  1. Extraída e exportada a função pura `getVisiblePages(page, totalPages)` com algoritmo de janela móvel e reticências (`ellipsis-start` e `ellipsis-end`) quando `totalPages > 7`.
+  2. Renderização de botões e spans de reticências acessíveis com marcação semântica (`aria-current="page"`).
+  3. Adicionados testes unitários isolados para `getVisiblePages` cobrindo início, meio (`page = 5, totalPages = 10`) e fim.
+  4. Adicionado teste de integração no componente `OrderListPage.test.tsx` cobrindo explicitamente `page > 4` (navegação até página 6 em 10 páginas) conforme o critério de aceite CA-4 da Issue #412.
+
+---
+
 ## 4. 📈 Análise Categórica e Lições Aprendidas de Qualidade
 
 ### 4.1 Distribuição dos Defeitos por Camada
 
 ```mermaid
 pie title "Origem dos Defeitos Identificados"
-    "Frontend & UI/UX" : 11
-    "Backend & Regras de Negócio" : 14
+    "Frontend & UI/UX" : 13
+    "Backend & Regras de Negócio" : 15
+    "Incompatibilidade de Contratos / Fullstack" : 7
     "Pipeline CI/CD & SonarQube" : 3
     "Infraestrutura & Docker" : 2
     "Governança & Git Flow" : 1
@@ -1113,11 +1212,12 @@ pie title "Origem dos Defeitos Identificados"
 | **Incompatibilidade de Contratos (DTOs / Types)** | 7 | Adoção de contratos OpenAPI sincronizados e tipagens estritas no TypeScript. |
 | **Limitações de Ambiente (HTTP vs HTTPS / Docker)** | 4 | Uso de fallbacks nativos (`document.execCommand`, `Math.random`) e SSL obrigatório. |
 | **Erros de Validação e Feedback ao Usuário** | 4 | Padronização dos formulários com **React Hook Form + Zod** e deserialização de erros Blob. |
-| **Regressão por Refatoração** | 4 | Ampliação da suíte para **242 testes JUnit 5** e **24 suítes Cypress E2E** no pipeline obrigatório. |
+| **Regressão por Refatoração** | 4 | Ampliação da suíte para **626 testes JUnit 5**, **658 testes Vitest** e **24 suítes Cypress E2E** no pipeline obrigatório. |
 | **Configuração de CI/CD e Build Tools** | 4 | Adição do Quality Gate no SonarQube bloqueando merges caso haja regressão ou falha de plugin. |
 | **Desvio de Git Flow / Merge Prematuro** | 1 | Configuração de Rulesets protegendo `main` e `develop` contra merges diretos sem aprovação de PR. |
+| **Concorrência e Condição de Corrida** | 1 | Sincronização explícita, verificação defensiva em loop e política de retry com Spring Retry. |
+| **Limitação de Paginação e Navegação** | 1 | Adoção de janela móvel deslizante com reticências para qualquer paginação com totalPages > 7. |
 
 ---
 
-*Documento mantido e auditado pelo Time de Engenharia e QA — AlumiGest — Setembro/2026*
-
+*Documento mantido e auditado pelo Time de Engenharia e QA — AlumiGest — Outubro/2026*
