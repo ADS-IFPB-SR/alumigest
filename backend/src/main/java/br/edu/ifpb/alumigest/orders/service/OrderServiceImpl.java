@@ -14,14 +14,19 @@ import br.edu.ifpb.alumigest.orders.domain.Order;
 import br.edu.ifpb.alumigest.orders.domain.OrderItem;
 import br.edu.ifpb.alumigest.orders.domain.OrderItemOption;
 import br.edu.ifpb.alumigest.orders.domain.OrderStatus;
+import br.edu.ifpb.alumigest.orders.dto.OrderCancelRequest;
 import br.edu.ifpb.alumigest.orders.dto.OrderConvertRequest;
 import br.edu.ifpb.alumigest.orders.dto.OrderResponse;
 import br.edu.ifpb.alumigest.orders.dto.OrderSummaryResponse;
 import br.edu.ifpb.alumigest.orders.mapper.OrderMapper;
 import br.edu.ifpb.alumigest.orders.repository.OrderRepository;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.TransactionSystemException;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -71,7 +76,25 @@ public class OrderServiceImpl implements OrderService {
         return PageResponse.of(dtoPage);
     }
 
+    /**
+     * Converte um orçamento aprovado em Pedido de Venda (Ordem de Serviço) oficial.
+     * 
+     * Resiliência a Concorrência (Issue #408):
+     * A anotação @Retryable intercepta violações de unicidade (DataIntegrityViolationException
+     * e TransactionSystemException). Como o @EnableRetry possui precedência (order = 0), o
+     * interceptor de retry atua externamente ao interceptor de transação (@Transactional),
+     * garantindo que cada tentativa de retry execute dentro de uma NOVA transação limpa.
+     * O uso de orderRepository.saveAndFlush força a sincronização imediata dos comandos SQL
+     * com o banco de dados antes da conclusão do método, materializando a constraint UNIQUE
+     * (uk_orders_codigo) e disparando o retry caso outra transação concorrente tenha obtido
+     * o mesmo código no milissegundo de commit.
+     */
     @Override
+    @Retryable(
+            retryFor = {DataIntegrityViolationException.class, TransactionSystemException.class},
+            maxAttempts = 3,
+            backoff = @Backoff(delay = 100, multiplier = 1.5)
+    )
     @Transactional
     public OrderResponse convertBudgetToOrder(UUID budgetId, OrderConvertRequest request) {
         Budget budget = budgetRepository.findByIdWithDetails(budgetId)
@@ -107,7 +130,7 @@ public class OrderServiceImpl implements OrderService {
 
         convertItems(budget, order);
 
-        order = orderRepository.save(order);
+        order = orderRepository.saveAndFlush(order);
         return orderMapper.toResponse(order);
     }
 
@@ -122,17 +145,31 @@ public class OrderServiceImpl implements OrderService {
         return orderMapper.toResponse(order);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @Transactional
+    public OrderResponse cancelOrder(UUID id, OrderCancelRequest request) {
+        Order order = orderRepository.findByIdWithDetails(id)
+                .orElseThrow(() -> new ResourceNotFoundException(RESOURCE_PEDIDO, id.toString()));
+
+        order.cancelar(request.justificativa());
+        order = orderRepository.save(order);
+
+        return orderMapper.toResponse(order);
+    }
+
     // =========================================================================
     // Métodos privados de suporte (SRP — separação de responsabilidades internas)
     // =========================================================================
-
     /**
      * Status elegíveis para conversão em pedido de venda.
      * DRAFT e SENT são promovidos para APPROVED atomicamente durante a conversão.
      * APPROVED é aceito para tolerar reprocessamento idempotente.
      */
     private static final Set<BudgetStatus> STATUS_ELEGIVEIS =
-            EnumSet.of(BudgetStatus.DRAFT, BudgetStatus.SENT, BudgetStatus.APPROVED);
+            EnumSet.of(BudgetStatus.DRAFT, BudgetStatus.SENT);
 
     /**
      * Valida que o orçamento está em um status elegível para conversão.
@@ -152,7 +189,7 @@ public class OrderServiceImpl implements OrderService {
                     : "Indefinido";
             throw new BusinessException(
                     "Orçamento com status '" + statusDesc + "' não pode ser convertido em pedido de venda."
-                            + " São aceitos: Rascunho, Enviado ou Aprovado.");
+                            + " São aceitos: Rascunho ou Enviado.");
         }
     }
 
@@ -305,53 +342,77 @@ public class OrderServiceImpl implements OrderService {
         return null;
     }
 
-    /**
-     * Compõe o endereço do cliente a partir dos campos individuais (street, number, city, state).
-     *
-     * @param budget orçamento de origem
-     * @return endereço formatado ou null
-     */
-    private String resolveCustomerAddress(Budget budget) {
-        if (budget.getClient() == null) {
-            return null;
+  /**
+   * Compõe o endereço do cliente a partir dos campos individuais (street, number, city, state).
+   *
+   * @param budget orçamento de origem
+   * @return endereço formatado ou null
+   */
+  private String resolveCustomerAddress(Budget budget) {
+    if (budget.getClient() == null) {
+      return null;
+    }
+    var c = budget.getClient();
+    var sb = new StringBuilder();
+    if (c.getStreet() != null) {
+      sb.append(c.getStreet());
+    }
+    if (c.getNumber() != null) {
+      sb.append(", ").append(c.getNumber());
+    }
+    if (c.getCity() != null) {
+      sb.append(" - ").append(c.getCity());
+    }
+    if (c.getState() != null) {
+      sb.append("/").append(c.getState());
+    }
+    return !sb.isEmpty() ? sb.toString() : null;
+  }
+
+  /**
+   * Retorna a condição de pagamento como String a partir do enum PaymentCondition do orçamento.
+   *
+   * @param budget orçamento de origem
+   * @return nome do enum ou null
+   */
+  private String resolvePaymentCondition(Budget budget) {
+    if (budget.getPaymentCondition() != null) {
+      return budget.getPaymentCondition().name();
+    }
+    return null;
+  }
+
+  /**
+   * Garante que um BigDecimal nunca seja null, retornando ZERO nesse caso.
+   *
+   * @param value valor potencialmente nulo
+   * @return valor original ou BigDecimal.ZERO
+   */
+  private BigDecimal orZero(BigDecimal value) {
+    return value != null ? value : BigDecimal.ZERO;
+  }
+    @Override
+    @Transactional
+    public OrderResponse updateStatus(UUID id, OrderStatus targetStatus) {
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException(RESOURCE_PEDIDO, id));
+
+        if (targetStatus == null) {
+            throw new IllegalArgumentException("O status de destino é obrigatório.");
         }
-        var c = budget.getClient();
-        var sb = new StringBuilder();
-        if (c.getStreet() != null) {
-            sb.append(c.getStreet());
+        try {
+            switch (targetStatus) {
+                case IN_PRODUCTION -> order.iniciarProducao();
+                case COMPLETED -> order.concluir(null);
+                default -> throw new ConflictException(
+                        "Não é permitida a transição para o status " + targetStatus + "."
+                );
+            }
+        } catch (BusinessException ex) {
+            throw new ConflictException(ex.getMessage());
         }
-        if (c.getNumber() != null) {
-            sb.append(", ").append(c.getNumber());
-        }
-        if (c.getCity() != null) {
-            sb.append(" - ").append(c.getCity());
-        }
-        if (c.getState() != null) {
-            sb.append("/").append(c.getState());
-        }
-        return !sb.isEmpty() ? sb.toString() : null;
+        Order savedOrder = orderRepository.save(order);
+        return orderMapper.toResponse(savedOrder);
     }
 
-    /**
-     * Retorna a condição de pagamento como String a partir do enum PaymentCondition do orçamento.
-     *
-     * @param budget orçamento de origem
-     * @return nome do enum ou null
-     */
-    private String resolvePaymentCondition(Budget budget) {
-        if (budget.getPaymentCondition() != null) {
-            return budget.getPaymentCondition().name();
-        }
-        return null;
-    }
-
-    /**
-     * Garante que um BigDecimal nunca seja null, retornando ZERO nesse caso.
-     *
-     * @param value valor potencialmente nulo
-     * @return valor original ou BigDecimal.ZERO
-     */
-    private BigDecimal orZero(BigDecimal value) {
-        return value != null ? value : BigDecimal.ZERO;
-    }
 }

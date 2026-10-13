@@ -33,9 +33,9 @@ export interface CustomerResponseDTO {
 
 export interface CreateCustomerRequest {
   nomeCompleto: string;
-  personType: PersonType;
-  documento?: string;
-  telefone?: string;
+  personType?: PersonType;
+  documento: string;
+  telefone: string;
   email?: string;
   cep?: string;
   logradouro?: string;

@@ -49,8 +49,8 @@ export const useConvertBudget = (defaultBudgetId?: string) => {
 
       toast.success(
         order?.codigo
-          ? `Orçamento aprovado e Pedido ${order.codigo} gerado com sucesso!`
-          : 'Orçamento aprovado e Pedido de Venda gerado com sucesso!'
+          ? `Orçamento aprovado e Ordem de Serviço ${order.codigo} gerada com sucesso!`
+          : 'Orçamento aprovado e Ordem de Serviço gerada com sucesso!'
       );
 
       if (budgetId) {
@@ -63,7 +63,7 @@ export const useConvertBudget = (defaultBudgetId?: string) => {
       const err = error as { response?: { data?: { message?: string } } };
       const message =
         err?.response?.data?.message ||
-        'Erro ao aprovar orçamento e gerar pedido. Tente novamente.';
+        'Erro ao aprovar orçamento e gerar ordem de serviço. Tente novamente.';
       toast.error(message);
     },
   });

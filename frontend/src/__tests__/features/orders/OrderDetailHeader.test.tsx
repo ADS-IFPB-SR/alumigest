@@ -6,7 +6,7 @@ import type { Order } from '../../../features/orders/types';
 
 const baseOrder: Order = {
   id: 'order-123',
-  codigo: 'PED-2026-0001',
+  codigo: 'OS-2026-0001',
   orcamentoId: 'orc-123',
   clienteNome: 'Construtora Silva',
   status: 'WAITING_PRODUCTION',

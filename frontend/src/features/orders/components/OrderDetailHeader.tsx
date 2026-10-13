@@ -7,6 +7,7 @@ import { OrderStatusBadge } from './OrderStatusBadge';
 interface OrderDetailHeaderProps {
   order: Order;
   isDownloadingPdf?: boolean;
+  isUpdatingStatus?: boolean;
   onAdvanceProduction?: () => void;
   onCompleteProduction?: () => void;
   onOpenCancelModal?: () => void;
@@ -16,6 +17,7 @@ interface OrderDetailHeaderProps {
 export const OrderDetailHeader: React.FC<OrderDetailHeaderProps> = ({
   order,
   isDownloadingPdf = false,
+  isUpdatingStatus = false,
   onAdvanceProduction,
   onCompleteProduction,
   onOpenCancelModal,
@@ -29,7 +31,7 @@ export const OrderDetailHeader: React.FC<OrderDetailHeaderProps> = ({
     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-outline-variant">
       <div className="flex items-center gap-4">
         <Link
-          to="/work-orders"
+          to="/ordens-servico"
           className="p-2 rounded-lg border border-outline-variant hover:bg-surface-container-high transition-colors text-on-surface-variant hover:text-on-surface"
           aria-label="Voltar para a lista de ordens de serviço"
         >
@@ -38,7 +40,7 @@ export const OrderDetailHeader: React.FC<OrderDetailHeaderProps> = ({
         <div>
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold tracking-tight text-on-surface font-headline">
-              #{order.codigo.replace('PED-', 'OS-')}
+              #{order.codigo}
             </h1>
             <OrderStatusBadge status={order.status} />
           </div>
@@ -96,10 +98,15 @@ export const OrderDetailHeader: React.FC<OrderDetailHeaderProps> = ({
           <button
             type="button"
             onClick={onAdvanceProduction}
+            disabled={isUpdatingStatus}
             className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-primary hover:bg-primary-dark rounded-lg shadow-sm transition-colors"
           >
-            <Play className="w-4 h-4" />
-            Avançar para Produção
+            {isUpdatingStatus ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Play className="w-4 h-4" />
+            )}
+            {isUpdatingStatus ? 'Avançando...' : 'Avançar para Produção'}
           </button>
         )}
 
@@ -108,10 +115,15 @@ export const OrderDetailHeader: React.FC<OrderDetailHeaderProps> = ({
           <button
             type="button"
             onClick={onCompleteProduction}
+            disabled={isUpdatingStatus}
             className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm transition-colors"
           >
-            <CheckCircle className="w-4 h-4" />
-            Concluir Produção
+            {isUpdatingStatus ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <CheckCircle className="w-4 h-4" />
+            )}
+            {isUpdatingStatus ? 'Concluindo...' : 'Concluir Produção'}
           </button>
         )}
       </div>

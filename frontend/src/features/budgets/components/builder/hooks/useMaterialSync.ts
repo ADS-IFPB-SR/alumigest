@@ -303,12 +303,15 @@ export function useMaterialSync({
         return targetTemplate.categoryRequirements.map((req, idx) => {
           const catType: CategoryType = typeof req === 'string' ? (req as CategoryType) : (req.categoryType as CategoryType);
           const { mat, qty } = resolveRequirementMaterial(catType, areaM2, glassColor, alumColor, catalog);
+          const isOptional = typeof req === 'object' && req.isOptional !== undefined
+            ? req.isOptional
+            : (catType === 'HARDWARE' || catType === 'FILM');
 
           return {
             requirementId: `req-${targetTemplate.id}-${catType}-${idx}`,
             categoryType: catType,
             label: CATEGORY_LABELS[catType] ?? catType,
-            isOptional: false,
+            isOptional,
             materialId: mat?.id ?? '',
             materialName: mat?.name ?? '',
             unitMeasure: mat?.unit ?? getDefaultUnitMeasure(catType),
@@ -357,7 +360,7 @@ export function useMaterialSync({
           requirementId: 'default-hardware-1',
           categoryType: 'HARDWARE',
           label: 'Puxador / Ferragem',
-          isOptional: false,
+          isOptional: true,
           materialId: hardwares[0].id,
           materialName: hardwares[0].name,
           unitMeasure: hardwares[0].unitMeasure ?? 'un',

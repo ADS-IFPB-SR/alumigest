@@ -7,6 +7,7 @@ import {
   useOrder,
   useCancelOrder,
   OrderDetailHeader,
+  useUpdateOrderStatus,
   OrderCancelledAlert,
   OrderOriginBudgetCard,
   OrderDeliveryTimelineCard,
@@ -20,19 +21,30 @@ export function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { data: order, isLoading, isError, refetch } = useOrder(id);
   const { mutate: cancelOrder, isPending: isCanceling } = useCancelOrder(id);
+  const { mutate: updateOrderStatus, isPending: isUpdatingStatus } = useUpdateOrderStatus(id);
   const { mutate: downloadPdfTecnico, isPending: isDownloadingPdf } = useDownloadPdfTecnico();
 
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
 
   const handleAdvanceProduction = () => {
-    toast('Fluxo de avanço fabril será consolidado com a US-14.', {
-      icon: '🏭',
+    updateOrderStatus('IN_PRODUCTION', {
+      onSuccess: () => {
+        toast.success('Ordem de serviço avançada para produção.');
+      },
+      onError: () => {
+        toast.error('Não foi possível avançar a ordem para produção.');
+      },
     });
   };
 
   const handleCompleteProduction = () => {
-    toast('Fluxo de conclusão fabril será consolidado com a US-18.', {
-      icon: '🏁',
+    updateOrderStatus('COMPLETED', {
+      onSuccess: () => {
+        toast.success('Ordem de serviço concluída com sucesso.');
+      },
+      onError: () => {
+        toast.error('Não foi possível concluir a ordem de serviço.');
+      },
     });
   };
 
@@ -51,6 +63,13 @@ export function OrderDetailPage() {
       {
         onSuccess: () => {
           setIsCancelModalOpen(false);
+          toast.success('Ordem de serviço cancelada com sucesso.');
+        },
+        onError: (err: any) => {
+          const message =
+            err?.response?.data?.message ||
+            'Não foi possível cancelar a ordem de serviço. Verifique as regras do status atual.';
+          toast.error(message);
         },
       }
     );
@@ -92,7 +111,7 @@ export function OrderDetailPage() {
             Tentar Novamente
           </button>
           <Link
-            to="/work-orders"
+            to="/ordens-servico"
             className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-primary hover:bg-primary-dark rounded-lg transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -109,6 +128,7 @@ export function OrderDetailPage() {
         {/* Cabeçalho de Ações e Status */}
         <OrderDetailHeader
           order={order}
+          isUpdatingStatus={isUpdatingStatus}
           isDownloadingPdf={isDownloadingPdf}
           onAdvanceProduction={handleAdvanceProduction}
           onCompleteProduction={handleCompleteProduction}

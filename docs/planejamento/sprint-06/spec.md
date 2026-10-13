@@ -23,41 +23,41 @@ O objetivo primordial desta sprint é garantir a formalização contratual da ve
 
 ## 2. 👥 Histórias de Usuário da Sprint 06
 
-### 📌 US-13: Aprovar Orçamento e Converter em Pedido de Venda (Priority: P1) 🎯 MVP
+### 📌 US-13: Aprovar Orçamento e Converter em Ordem de Serviço (O.S.) (Priority: P1) 🎯 MVP
 **Issue GitHub**: [#137](https://github.com/ADS-IFPB-SR/alumigest/issues/137)
 
 #### 🎯 Objetivo de Negócio
 > **Como** vendedor ou gerente comercial da Alumiportas,  
-> **Desejo** aprovar formalmente uma proposta orçamentária e convertê-la automaticamente em um Pedido de Venda oficial (`PED-YYYY-NNNN`), registrando o canal de aprovação (WhatsApp, Presencial, Telefone, E-mail), observações e a data de entrega acordada,  
-> **Para que** seja firmado o contrato de venda e liberado o pedido para o fluxo fabril com rastreabilidade completa.
+> **Desejo** aprovar formalmente uma proposta orçamentária e convertê-la automaticamente em uma Ordem de Serviço (O.S.) oficial (`OS-YYYY-NNNN`), registrando o canal de aprovação (WhatsApp, Presencial, Telefone, E-mail), observações e a data de entrega acordada,  
+> **Para que** seja firmado o contrato e liberada a ordem de serviço para o fluxo fabril com rastreabilidade completa.
 
 #### 🧪 Critérios de Aceitação (Dado que / Quando / Então)
 
-- [ ] **Cenário 1: Conversão Bem-Sucedida de Orçamento em Pedido de Venda**
+- [x] **Cenário 1: Conversão Bem-Sucedida de Orçamento em Ordem de Serviço (O.S.)**
   - **Dado que** o vendedor visualiza um orçamento com status `DRAFT` ou `SENT` na página `BudgetDetailPage`
-  - **Quando** clica no botão "Aprovar e Gerar Pedido", preenche o canal de aprovação (ex: `WHATSAPP`), confirma a data de previsão de entrega e submete o formulário
-  - **Então** o sistema cria um novo Pedido de Venda com código sequencial anual no padrão `PED-YYYY-NNNN`
-  - **E** o status do orçamento de origem é atualizado automaticamente para `APPROVED`, vinculando-se de forma unívoca ao pedido gerado
-  - **E** o usuário é redirecionado para a página de detalhes do novo pedido (`/pedidos/:id`) com notificação toast de sucesso.
+  - **Quando** clica no botão "Aprovar e Gerar O.S.", preenche o canal de aprovação (ex: `WHATSAPP`), confirma a data de previsão de entrega e submete o formulário
+  - **Então** o sistema cria uma nova Ordem de Serviço com código sequencial anual no padrão `OS-YYYY-NNNN`
+  - **E** o status do orçamento de origem é atualizado automaticamente para `APPROVED`, vinculando-se de forma unívoca à ordem de serviço gerada
+  - **E** o usuário é redirecionado para a página de detalhes da nova ordem de serviço (`/ordens-servico/:id`) com notificação toast de sucesso.
 
-- [ ] **Cenário 2: Sugestão Automática de Data de Entrega (+15 Dias Corridos)**
+- [x] **Cenário 2: Sugestão Automática de Data de Entrega (+15 Dias Corridos)**
   - **Dado que** o modal de aprovação de orçamento é aberto
   - **Quando** o formulário é inicializado
   - **Então** o campo `dataPrevisaoEntrega` é pré-preenchido automaticamente com a data atual $+15$ dias corridos
   - **E** o vendedor pode editar essa data manualmente antes da confirmação final caso acorde prazo diferenciado com o cliente.
 
-- [ ] **Cenário 3: Bloqueio de Conversão Duplicada (Invariante 1-para-1)**
-  - **Dado que** um orçamento já foi convertido previamente em um pedido ativo
+- [x] **Cenário 3: Bloqueio de Conversão Duplicada (Invariante 1-para-1)**
+  - **Dado que** um orçamento já foi convertido previamente em uma ordem de serviço ativa
   - **Quando** qualquer usuário tenta disparar uma nova conversão para o mesmo `orcamentoId`
   - **Então** o backend rejeita a solicitação retornando status HTTP `409 Conflict` (ou `422 Unprocessable Entity`)
-  - **E** a interface desabilita o botão de aprovação, indicando que o pedido já foi emitido com link direto para navegação.
+  - **E** a interface desabilita o botão de aprovação, indicando que a ordem de serviço já foi emitida com botão direto "Ver Ordem de Serviço".
 
-- [ ] **Cenário 4: Bloqueio de Conversão para Orçamentos em Status Inválido**
+- [x] **Cenário 4: Bloqueio de Conversão para Orçamentos em Status Inválido**
   - **Dado que** um orçamento possui status `CANCELLED`, `REJECTED` ou já está `APPROVED`
   - **Quando** o endpoint `POST /api/orders/from-budget/{budgetId}` for invocado
-  - **Então** o backend bloqueia a operação lançando `BusinessException` com mensagem em português ("Apenas orçamentos em rascunho ou enviados podem ser convertidos em pedido").
+  - **Então** o backend bloqueia a operação lançando `BusinessException` com mensagem em português ("Apenas orçamentos em rascunho ou enviados podem ser convertidos em ordem de serviço").
 
-- [ ] **Cenário 5: Validação de Dados Obrigatórios na Aprovação**
+- [x] **Cenário 5: Validação de Dados Obrigatórios na Aprovação**
   - **Dado que** o modal de aprovação está aberto
   - **Quando** o usuário tenta submeter o formulário sem selecionar o canal de aprovação ou informando data no passado
   - **Então** o schema Zod bloqueia a submissão e exibe mensagens de erro claras abaixo dos respectivos campos.

@@ -84,6 +84,19 @@ _${companyName}_`;
 }
 
 /**
+ * Gera a URL oficial de disparo direto para o WhatsApp (US-10.10).
+ * Utiliza o protocolo universal `https://api.whatsapp.com/send?text=...`.
+ */
+export function getWhatsAppDirectUrl(text: string, phone?: string | null): string {
+  const clean = cleanPhoneNumber(phone);
+  const hasPhone = clean.length >= 8;
+  const encodedText = encodeURIComponent(text);
+  return hasPhone
+    ? `https://api.whatsapp.com/send?phone=55${clean}&text=${encodedText}`
+    : `https://api.whatsapp.com/send?text=${encodedText}`;
+}
+
+/**
  * Abre a conversa no WhatsApp respeitando o ambiente do usuário:
  * - Mobile: dispara diretamente para api.whatsapp.com (abrindo o app WhatsApp no celular)
  * - Desktop: abre ou reutiliza a mesma aba do WhatsApp Web (web.whatsapp.com)
@@ -118,6 +131,7 @@ export function openWhatsAppChat({
     targetTab?.focus();
   }
 }
+
 
 export interface SharePdfOptions {
   budgetId: string;

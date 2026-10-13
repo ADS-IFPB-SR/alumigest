@@ -1,8 +1,10 @@
 package br.edu.ifpb.alumigest.orders.controller;
 
+import br.edu.ifpb.alumigest.common.dto.ErrorResponse;
 import br.edu.ifpb.alumigest.common.dto.PageResponse;
 import br.edu.ifpb.alumigest.orders.domain.ApprovalChannel;
 import br.edu.ifpb.alumigest.orders.domain.OrderStatus;
+import br.edu.ifpb.alumigest.orders.dto.OrderCancelRequest;
 import br.edu.ifpb.alumigest.orders.dto.OrderConvertRequest;
 import br.edu.ifpb.alumigest.orders.dto.OrderResponse;
 import br.edu.ifpb.alumigest.orders.dto.OrderSummaryResponse;
@@ -19,6 +21,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -31,12 +34,12 @@ import java.net.URI;
 import java.util.UUID;
 
 /**
- * Controller REST para consulta e ciclo de vida de Pedidos de Venda.
+ * Controller REST para consulta e ciclo de vida de Ordens de Serviço / Pedidos de Venda.
  * Depende da abstração {@link OrderService}, nunca da implementação concreta (DIP).
  */
 @RestController
-@RequestMapping("/api/v1/orders")
-@Tag(name = "Pedidos de Venda", description = "Endpoints para consulta e ciclo de vida de pedidos de venda")
+@RequestMapping({"/api/v1/orders", "/api/v1/ordens-servico"})
+@Tag(name = "Ordens de Serviço", description = "Endpoints para consulta, criação, conversão e ciclo de vida de ordens de serviço (pedidos de venda)")
 public class OrderController {
 
     private final OrderService orderService;
@@ -61,15 +64,28 @@ public class OrderController {
      * @return 200 OK com página de pedidos sumarizados
      */
     @GetMapping
-    @Operation(summary = "Listar pedidos de venda", description = "Lista pedidos de forma paginada com suporte a busca textual, status e canal de aprovação.")
-    @ApiResponse(responseCode = "200", description = "Lista paginada de pedidos recuperada com sucesso")
+    @Operation(
+            summary = "Listar pedidos de venda",
+            description = "Lista pedidos de venda de forma paginada com suporte a ordenação, busca textual (código do pedido, cliente ou código do orçamento) e filtros por status e canal de aprovação."
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Lista paginada de pedidos recuperada com sucesso",
+            content = @Content(schema = @Schema(implementation = PageResponse.class))
+    )
+    @ApiResponse(
+            responseCode = "400",
+            description = "Parâmetros de consulta ou ordenação inválidos",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+    )
     public ResponseEntity<PageResponse<OrderSummaryResponse>> findAll(
-            @Parameter(description = "Filtro por status do pedido")
+            @Parameter(description = "Filtro por status do pedido (CRIADO, AGUARDANDO_PRODUCAO, EM_PRODUCAO, CONCLUIDO, CANCELADO)")
             @RequestParam(required = false) OrderStatus status,
-            @Parameter(description = "Filtro por canal de aprovação")
+            @Parameter(description = "Filtro por canal de aprovação (WHATSAPP, PRESENCIAL, TELEFONE, EMAIL, OUTRO)")
             @RequestParam(required = false) ApprovalChannel channel,
-            @Parameter(description = "Termo para busca textual (código do pedido, cliente ou código do orçamento)")
+            @Parameter(description = "Termo para busca textual (código da ordem OS-YYYY-NNNN, cliente ou orçamento)", example = "OS-2026-0001")
             @RequestParam(name = "search", required = false) String search,
+            @Parameter(hidden = true)
             @RequestParam(name = "busca", required = false) String busca,
             @ParameterObject @PageableDefault(size = 10, sort = "createdAt") Pageable pageable) {
 
@@ -96,8 +112,8 @@ public class OrderController {
     @PostMapping({"/convert/{budgetId}", "/from-budget/{budgetId}"})
     @Operation(
             summary = "Converter orçamento em pedido de venda",
-            description = "Converte um orçamento (DRAFT, SENT ou APPROVED) em Pedido de Venda,"
-                    + " promovendo o status para APPROVED, gerando código sequencial PED-YYYY-NNNN"
+            description = "Converte um orçamento elegível (DRAFT ou SENT) em Pedido de Venda,"
+                    + " promovendo o status para APPROVED, gerando código sequencial OS-YYYY-NNNN"
                     + " e snapshot imutável dos itens (lock de preços)."
     )
     @ApiResponse(
@@ -105,10 +121,26 @@ public class OrderController {
             description = "Pedido de venda criado com sucesso",
             content = @Content(schema = @Schema(implementation = OrderResponse.class))
     )
-    @ApiResponse(responseCode = "400", description = "Dados de entrada inválidos")
-    @ApiResponse(responseCode = "404", description = "Orçamento não encontrado")
-    @ApiResponse(responseCode = "409", description = "Já existe pedido para este orçamento")
-    @ApiResponse(responseCode = "422", description = "Orçamento em status inválido (CANCELLED ou REJECTED) ou sem itens")
+    @ApiResponse(
+            responseCode = "400",
+            description = "Dados de entrada inválidos ou payload malformado",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+    )
+    @ApiResponse(
+            responseCode = "404",
+            description = "Orçamento de origem não encontrado",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+    )
+    @ApiResponse(
+            responseCode = "409",
+            description = "Conflito: já existe pedido de venda gerado para este orçamento",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+    )
+    @ApiResponse(
+            responseCode = "422",
+            description = "Regra de negócio violada: orçamento aprovado, cancelado, rejeitado, expirado ou sem itens cadastrados",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+    )
     public ResponseEntity<OrderResponse> convertBudgetToOrder(
             @Parameter(description = "Identificador único (UUID) do orçamento", required = true)
             @PathVariable UUID budgetId,
@@ -138,13 +170,71 @@ public class OrderController {
             description = "Pedido recuperado com sucesso",
             content = @Content(schema = @Schema(implementation = OrderResponse.class))
     )
-    @ApiResponse(responseCode = "400", description = "ID inválido")
-    @ApiResponse(responseCode = "404", description = "Pedido não encontrado")
+    @ApiResponse(
+            responseCode = "400",
+            description = "Identificador de pedido inválido (UUID malformado)",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+    )
+    @ApiResponse(
+            responseCode = "404",
+            description = "Pedido não encontrado",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+    )
     public ResponseEntity<OrderResponse> findById(
             @Parameter(description = "Identificador único (UUID) do pedido", required = true)
             @PathVariable UUID id) {
 
         OrderResponse response = orderService.findDetailedById(id);
+        return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<OrderResponse> updateStatus(
+            @PathVariable UUID id,
+            @RequestParam OrderStatus status
+    ) {
+        return ResponseEntity.ok(orderService.updateStatus(id, status));
+    }
+
+    /**
+     * Cancela formalmente um pedido de venda / ordem de serviço com justificativa obrigatória.
+     *
+     * @param id      identificador único do pedido
+     * @param request payload com justificativa válida (10 a 1000 caracteres)
+     * @return 200 OK com o pedido cancelado
+     */
+    @PatchMapping("/{id}/cancel")
+    @Operation(
+            summary = "Cancelar ordem de serviço / pedido de venda",
+            description = "Cancela o pedido de venda mediante justificativa formal obrigatória (mínimo 10 caracteres). "
+                    + "Permitido apenas quando o pedido estiver aguardando produção (CREATED ou WAITING_PRODUCTION)."
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Ordem de serviço cancelada com sucesso",
+            content = @Content(schema = @Schema(implementation = OrderResponse.class))
+    )
+    @ApiResponse(
+            responseCode = "400",
+            description = "Justificativa de cancelamento ausente ou inválida (menos de 10 caracteres)",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+    )
+    @ApiResponse(
+            responseCode = "404",
+            description = "Ordem de serviço não encontrada com o ID informado",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+    )
+    @ApiResponse(
+            responseCode = "422",
+            description = "Regra de negócio violada: pedido já está em produção ou concluído",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+    )
+    public ResponseEntity<OrderResponse> cancelOrder(
+            @Parameter(description = "Identificador único (UUID) do pedido", required = true)
+            @PathVariable UUID id,
+            @RequestBody @Valid OrderCancelRequest request) {
+
+        OrderResponse response = orderService.cancelOrder(id, request);
         return ResponseEntity.ok(response);
     }
 }

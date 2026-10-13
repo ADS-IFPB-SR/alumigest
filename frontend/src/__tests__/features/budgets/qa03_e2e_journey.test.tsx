@@ -37,10 +37,10 @@ const mockBudgetFluxoFeliz = {
   status: 'DRAFT',
   createdAt: '2026-09-25T10:00:00Z',
   validUntil: '2026-10-10',
-  subtotal: 1683.20,
+  subtotal: 1563.20,
   discountPercent: 5.0,
-  discountValue: 84.16,
-  total: 1599.04,
+  discountValue: 78.16,
+  total: 1485.04,
   notes: 'Entrega e montagem no endereço da obra em Sousa/PB',
   paymentCondition: 'A_VISTA_PIX',
   paymentConditionLabel: 'À Vista (PIX / Dinheiro)',
@@ -62,8 +62,8 @@ const mockBudgetFluxoFeliz = {
       width: 1400,
       height: 1900,
       quantity: 2,
-      laborCost: 120, // 2 x 120 = 240
-      subtotal: 1683.20,
+      laborCost: 120, // MO fixa da linha (não multiplica pela quantidade)
+      subtotal: 1443.20,
       templateConfig: {
         profileMm: 20,
         aluminumColor: 'Linha Box Branco',

@@ -47,6 +47,9 @@ class OrderRepositoryTest {
 
     @BeforeEach
     void setUp() {
+        orderRepository.deleteAll();
+        clientRepository.deleteAll();
+
         client = new Client();
         client.setFullName("Maria Oliveira");
         client.setPersonType(PersonType.FISICA);
@@ -80,7 +83,7 @@ class OrderRepositoryTest {
     @Test
     @DisplayName("[Partição de Equivalência] Deve persistir pedido com itens e recuperar por código e ID")
     void shouldPersistAndRetrieveOrderByCodeAndId() {
-        Order order = buildOrder("PED-2026-0001", UUID.randomUUID(), OrderStatus.WAITING_PRODUCTION);
+        Order order = buildOrder("OS-2026-0001", UUID.randomUUID(), OrderStatus.WAITING_PRODUCTION);
 
         OrderItem item = OrderItem.builder()
                 .descricao("Janela Correr 2F")
@@ -97,7 +100,7 @@ class OrderRepositoryTest {
         assertThat(saved.getId()).isNotNull();
         assertThat(saved.getItems()).hasSize(1);
 
-        Optional<Order> found = orderRepository.findByCodigo("PED-2026-0001");
+        Optional<Order> found = orderRepository.findByCodigo("OS-2026-0001");
         assertThat(found).isPresent();
         assertThat(found.get().getClienteNome()).isEqualTo("Maria Oliveira");
         assertThat(found.get().getItems().get(0).getDescricao()).isEqualTo("Janela Correr 2F");
@@ -108,10 +111,10 @@ class OrderRepositoryTest {
     void shouldEnforceUniqueBudgetConstraint() {
         UUID orcamentoId = UUID.randomUUID();
 
-        Order order1 = buildOrder("PED-2026-0001", orcamentoId, OrderStatus.WAITING_PRODUCTION);
+        Order order1 = buildOrder("OS-2026-0001", orcamentoId, OrderStatus.WAITING_PRODUCTION);
         orderRepository.saveAndFlush(order1);
 
-        Order order2 = buildOrder("PED-2026-0002", orcamentoId, OrderStatus.WAITING_PRODUCTION);
+        Order order2 = buildOrder("OS-2026-0002", orcamentoId, OrderStatus.WAITING_PRODUCTION);
 
         assertThatThrownBy(() -> orderRepository.saveAndFlush(order2))
                 .isInstanceOf(DataIntegrityViolationException.class);
@@ -120,10 +123,10 @@ class OrderRepositoryTest {
     @Test
     @DisplayName("[Restrição de Integridade] Deve lançar DataIntegrityViolationException ao duplicar codigo")
     void shouldEnforceUniqueCodigoConstraint() {
-        Order order1 = buildOrder("PED-2026-0001", UUID.randomUUID(), OrderStatus.WAITING_PRODUCTION);
+        Order order1 = buildOrder("OS-2026-0001", UUID.randomUUID(), OrderStatus.WAITING_PRODUCTION);
         orderRepository.saveAndFlush(order1);
 
-        Order order2 = buildOrder("PED-2026-0001", UUID.randomUUID(), OrderStatus.WAITING_PRODUCTION);
+        Order order2 = buildOrder("OS-2026-0001", UUID.randomUUID(), OrderStatus.WAITING_PRODUCTION);
 
         assertThatThrownBy(() -> orderRepository.saveAndFlush(order2))
                 .isInstanceOf(DataIntegrityViolationException.class);
@@ -132,13 +135,13 @@ class OrderRepositoryTest {
     @Test
     @DisplayName("[Partição de Equivalência] Deve filtrar pedidos ativos por status e busca textual")
     void shouldFilterActiveOrdersByStatusAndSearchTerm() {
-        Order order1 = buildOrder("PED-2026-0001", UUID.randomUUID(), OrderStatus.WAITING_PRODUCTION, "Carlos Eduardo");
+        Order order1 = buildOrder("OS-2026-0001", UUID.randomUUID(), OrderStatus.WAITING_PRODUCTION, "Carlos Eduardo");
         orderRepository.save(order1);
 
-        Order order2 = buildOrder("PED-2026-0002", UUID.randomUUID(), OrderStatus.IN_PRODUCTION, "Ana Paula");
+        Order order2 = buildOrder("OS-2026-0002", UUID.randomUUID(), OrderStatus.IN_PRODUCTION, "Ana Paula");
         orderRepository.save(order2);
 
-        Order order3 = buildOrder("PED-2026-0003", UUID.randomUUID(), OrderStatus.WAITING_PRODUCTION, "Bruna Costa");
+        Order order3 = buildOrder("OS-2026-0003", UUID.randomUUID(), OrderStatus.WAITING_PRODUCTION, "Bruna Costa");
         orderRepository.save(order3);
 
         entityManager.flush();
@@ -158,11 +161,11 @@ class OrderRepositoryTest {
         Page<Order> buscaNome = orderRepository.findAllWithFilters(
                 null, null, "Carlos", PageRequest.of(0, 10));
         assertThat(buscaNome.getContent()).hasSize(1);
-        assertThat(buscaNome.getContent().get(0).getCodigo()).isEqualTo("PED-2026-0001");
+        assertThat(buscaNome.getContent().get(0).getCodigo()).isEqualTo("OS-2026-0001");
 
         // Filtro por busca textual no código
         Page<Order> buscaCodigo = orderRepository.findAllWithFilters(
-                null, null, "PED-2026-0002", PageRequest.of(0, 10));
+                null, null, "OS-2026-0002", PageRequest.of(0, 10));
         assertThat(buscaCodigo.getContent()).hasSize(1);
         assertThat(buscaCodigo.getContent().get(0).getClienteNome()).isEqualTo("Ana Paula");
     }
@@ -170,16 +173,16 @@ class OrderRepositoryTest {
     @Test
     @DisplayName("[Partição de Equivalência] Deve encontrar o pedido com código mais recente para prefixo anual")
     void shouldFindTopOrderByCodePrefix() {
-        orderRepository.save(buildOrder("PED-2026-0001", UUID.randomUUID(), OrderStatus.WAITING_PRODUCTION));
-        orderRepository.save(buildOrder("PED-2026-0005", UUID.randomUUID(), OrderStatus.WAITING_PRODUCTION));
-        orderRepository.save(buildOrder("PED-2026-0002", UUID.randomUUID(), OrderStatus.WAITING_PRODUCTION));
+        orderRepository.save(buildOrder("OS-2026-0001", UUID.randomUUID(), OrderStatus.WAITING_PRODUCTION));
+        orderRepository.save(buildOrder("OS-2026-0005", UUID.randomUUID(), OrderStatus.WAITING_PRODUCTION));
+        orderRepository.save(buildOrder("OS-2026-0002", UUID.randomUUID(), OrderStatus.WAITING_PRODUCTION));
 
         entityManager.flush();
         entityManager.clear();
 
-        Optional<Order> topOrder = orderRepository.findTopByCodigoStartingWithOrderByCodigoDesc("PED-2026-");
+        Optional<Order> topOrder = orderRepository.findTopByCodigoStartingWithOrderByCodigoDesc("OS-2026-");
 
         assertThat(topOrder).isPresent();
-        assertThat(topOrder.get().getCodigo()).isEqualTo("PED-2026-0005");
+        assertThat(topOrder.get().getCodigo()).isEqualTo("OS-2026-0005");
     }
 }

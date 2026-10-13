@@ -247,6 +247,56 @@ class TechnicalMachiningResolverTest {
     }
 
     @Test
+    @DisplayName("US-11.2 / Issue #348: resolve furação com payload divisionType e holeCount")
+    void deveResolverFuracaoComDivisionTypeEHoleCount() {
+        BudgetItem item = new BudgetItem();
+        item.setTemplateType("SWING_DOOR_2F");
+        item.setHeightMm(new BigDecimal("2100"));
+        item.setDrillingConfig("{\"holeCount\": 2, \"divisionType\": \"EQUAL\"}");
+
+        TechnicalMachiningContext ctx = TechnicalMachiningResolver.resolve(item);
+
+        assertTrue(ctx.hasDrilling());
+        assertEquals(2, ctx.drillingHoles().size(), "Deve resolver exatamente 2 furos");
+        assertEquals("252 mm", ctx.drillingHoles().get(0).label());
+        assertEquals("1848 mm", ctx.drillingHoles().get(1).label());
+        assertTrue(ctx.hasNbr10821Warning(), "Porta de giro > 1800mm com 2 dobradiças deve alertar NBR 10821");
+    }
+
+    @Test
+    @DisplayName("US-11.2 / Issue #348: não deve alertar NBR 10821 quando porta de giro possui 3 dobradiças")
+    void naoDeveAlertarNbr10821ComTresDobradicas() {
+        BudgetItem item = new BudgetItem();
+        item.setTemplateType("SWING_DOOR_2F");
+        item.setHeightMm(new BigDecimal("2100"));
+        item.setDrillingConfig("{\"holeCount\": 3, \"divisionType\": \"EQUAL\"}");
+
+        TechnicalMachiningContext ctx = TechnicalMachiningResolver.resolve(item);
+
+        assertTrue(ctx.hasDrilling());
+        assertEquals(3, ctx.drillingHoles().size());
+        assertFalse(ctx.hasNbr10821Warning(), "3 dobradiças atende à recomendação da NBR 10821");
+    }
+
+    @Test
+    @DisplayName("US-11.2 / Issue #348: não deve alertar NBR 10821 para portas baixas (<=1800mm) ou outras tipologias")
+    void naoDeveAlertarNbr10821ParaPortasBaixasOuCorrer() {
+        BudgetItem portaBaixa = new BudgetItem();
+        portaBaixa.setTemplateType("SWING_DOOR_1F");
+        portaBaixa.setHeightMm(new BigDecimal("1800"));
+        portaBaixa.setDrillingConfig("{\"holeCount\": 2, \"divisionType\": \"EQUAL\"}");
+        TechnicalMachiningContext ctxBaixa = TechnicalMachiningResolver.resolve(portaBaixa);
+        assertFalse(ctxBaixa.hasNbr10821Warning());
+
+        BudgetItem janelaCorrer = new BudgetItem();
+        janelaCorrer.setTemplateType("SLIDING_DOOR_2F");
+        janelaCorrer.setHeightMm(new BigDecimal("2100"));
+        janelaCorrer.setDrillingConfig("{\"holeCount\": 2, \"divisionType\": \"EQUAL\"}");
+        TechnicalMachiningContext ctxCorrer = TechnicalMachiningResolver.resolve(janelaCorrer);
+        assertFalse(ctxCorrer.hasNbr10821Warning());
+    }
+
+    @Test
     @DisplayName("Construtor privado do TechnicalMachiningResolver deve lançar exceção")
     void deveLancarExcecaoAoInstanciarClasseUtilitaria() throws Exception {
         Constructor<TechnicalMachiningResolver> constructor =

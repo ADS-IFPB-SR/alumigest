@@ -20,7 +20,7 @@ class OrderTest {
     @DisplayName("[Partição de Equivalência] Deve instanciar e inicializar valores padrão e ciclo de vida via onCreate")
     void shouldInitializeWithDefaultValuesOnCreate() {
         Order order = Order.builder()
-                .codigo("PED-2026-0001")
+                .codigo("OS-2026-0001")
                 .orcamentoId(UUID.randomUUID())
                 .clienteNome("Cliente Teste")
                 .canalAprovacao(ApprovalChannel.WHATSAPP)
@@ -46,7 +46,7 @@ class OrderTest {
 
         Order order = Order.builder()
                 .id(orderId)
-                .codigo("PED-2026-0099")
+                .codigo("OS-2026-0099")
                 .orcamentoId(budgetId)
                 .clienteNome("Empresa XPTO")
                 .clienteTelefone("83988880000")
@@ -64,7 +64,7 @@ class OrderTest {
                 .build();
 
         assertThat(order.getId()).isEqualTo(orderId);
-        assertThat(order.getCodigo()).isEqualTo("PED-2026-0099");
+        assertThat(order.getCodigo()).isEqualTo("OS-2026-0099");
         assertThat(order.getOrcamentoId()).isEqualTo(budgetId);
         assertThat(order.getClienteNome()).isEqualTo("Empresa XPTO");
         assertThat(order.getCanalAprovacao()).isEqualTo(ApprovalChannel.EMAIL);

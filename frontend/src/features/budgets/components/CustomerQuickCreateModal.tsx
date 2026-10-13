@@ -72,9 +72,9 @@ export const CustomerQuickCreateModal: React.FC<CustomerQuickCreateModalProps> =
     });
   };
 
-  const validate = () => {
+  const handleSubmit = (e?: React.SyntheticEvent) => {
+    e?.preventDefault();
     const parsed = customerSchema.safeParse(form);
-    
     if (!parsed.success) {
       const errs: Record<string, string> = {};
       parsed.error.issues.forEach((err) => {
@@ -84,20 +84,10 @@ export const CustomerQuickCreateModal: React.FC<CustomerQuickCreateModalProps> =
         }
       });
       setErrors(errs);
-      return false;
+      return;
     }
-    
     setErrors({});
-    return true;
-  };
-
-  const handleSubmit = (e?: React.SyntheticEvent) => {
-    e?.preventDefault();
-    if (!validate()) return;
-    onSubmit({
-      ...form,
-      nomeCompleto: form.nomeCompleto.trim(),
-    });
+    onSubmit(parsed.data as CustomerRequest);
   };
 
   if (!isOpen) return null;
@@ -154,6 +144,7 @@ export const CustomerQuickCreateModal: React.FC<CustomerQuickCreateModalProps> =
               <Input
                 label="CPF / CNPJ"
                 id="cqc-doc"
+                required
                 value={form.cpfCnpj ?? ''}
                 onChange={(e) => set('cpfCnpj', e.target.value)}
                 error={errors.cpfCnpj}
@@ -162,6 +153,7 @@ export const CustomerQuickCreateModal: React.FC<CustomerQuickCreateModalProps> =
               <Input
                 label="Telefone"
                 id="cqc-tel"
+                required
                 value={form.telefone ?? ''}
                 onChange={(e) => set('telefone', e.target.value)}
                 error={errors.telefone}
@@ -193,6 +185,7 @@ export const CustomerQuickCreateModal: React.FC<CustomerQuickCreateModalProps> =
                   id="cqc-cep"
                   value={form.cep ?? ''}
                   onChange={(e) => set('cep', e.target.value)}
+                  error={errors.cep}
                   placeholder="58300-000"
                 />
               </div>
@@ -202,6 +195,7 @@ export const CustomerQuickCreateModal: React.FC<CustomerQuickCreateModalProps> =
                   id="cqc-logr"
                   value={form.logradouro ?? ''}
                   onChange={(e) => set('logradouro', e.target.value)}
+                  error={errors.logradouro}
                   placeholder="Rua das Flores"
                 />
               </div>
@@ -211,6 +205,7 @@ export const CustomerQuickCreateModal: React.FC<CustomerQuickCreateModalProps> =
                   id="cqc-num"
                   value={form.numero ?? ''}
                   onChange={(e) => set('numero', e.target.value)}
+                  error={errors.numero}
                   placeholder="123"
                 />
               </div>
@@ -220,6 +215,7 @@ export const CustomerQuickCreateModal: React.FC<CustomerQuickCreateModalProps> =
                   id="cqc-comp"
                   value={form.complemento ?? ''}
                   onChange={(e) => set('complemento', e.target.value)}
+                  error={errors.complemento}
                   placeholder="Casa / Ap 101"
                 />
               </div>
@@ -229,6 +225,7 @@ export const CustomerQuickCreateModal: React.FC<CustomerQuickCreateModalProps> =
                   id="cqc-bairro"
                   value={form.bairro ?? ''}
                   onChange={(e) => set('bairro', e.target.value)}
+                  error={errors.bairro}
                   placeholder="Centro"
                 />
               </div>
@@ -238,6 +235,7 @@ export const CustomerQuickCreateModal: React.FC<CustomerQuickCreateModalProps> =
                   id="cqc-cidade"
                   value={form.cidade ?? ''}
                   onChange={(e) => set('cidade', e.target.value)}
+                  error={errors.cidade}
                   placeholder="Santa Rita"
                 />
               </div>
@@ -249,13 +247,16 @@ export const CustomerQuickCreateModal: React.FC<CustomerQuickCreateModalProps> =
                   id="cqc-uf"
                   value={form.uf ?? ''}
                   onChange={(e) => set('uf', e.target.value)}
-                  className="w-full px-sm py-xs bg-surface-container-low border border-outline-variant rounded-sm font-body-sm text-body-sm text-on-surface focus:border-primary focus:outline-none transition-all"
+                  className={`w-full px-sm py-xs bg-surface-container-low border ${errors.uf ? 'border-error' : 'border-outline-variant'} rounded-sm font-body-sm text-body-sm text-on-surface focus:border-primary focus:outline-none transition-all`}
                 >
                   <option value="">UF</option>
                   {ESTADOS_BR.map((uf) => (
                     <option key={uf} value={uf}>{uf}</option>
                   ))}
                 </select>
+                {errors.uf && (
+                  <p className="text-[11px] text-error font-body-sm mt-0.5">{errors.uf}</p>
+                )}
               </div>
             </div>
           </section>

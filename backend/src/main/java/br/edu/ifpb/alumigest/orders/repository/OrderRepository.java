@@ -31,9 +31,9 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
   Page<Order> findAllByOrderByCreatedAtDesc(Pageable pageable);
 
   /**
-   * Busca o pedido com o código mais recente por prefixo anual (ex: "PED-2026-").
+   * Busca o pedido com o código mais recente por prefixo anual (ex: "OS-2026-").
    *
-   * @param prefix Prefixo anual do código (ex: "PED-2026-")
+   * @param prefix Prefixo anual do código (ex: "OS-2026-")
    * @return Pedido mais recente com o prefixo
    */
   Optional<Order> findTopByCodigoStartingWithOrderByCodigoDesc(String prefix);

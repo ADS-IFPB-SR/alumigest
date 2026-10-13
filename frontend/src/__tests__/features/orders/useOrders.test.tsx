@@ -35,7 +35,7 @@ describe('useOrders hooks', () => {
   it('useOrder deve carregar pedido por id com sucesso', async () => {
     const mockOrder: Partial<Order> = {
       id: 'order-1',
-      codigo: 'PED-2026-0001',
+      codigo: 'OS-2026-0001',
       status: 'WAITING_PRODUCTION',
     };
 
@@ -47,7 +47,7 @@ describe('useOrders hooks', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(result.current.data?.codigo).toBe('PED-2026-0001');
+    expect(result.current.data?.codigo).toBe('OS-2026-0001');
     expect(ordersApi.getOrderById).toHaveBeenCalledWith('order-1');
   });
 
@@ -96,7 +96,7 @@ describe('useOrders hooks', () => {
     it('deve converter orçamento em pedido com sucesso quando budgetId é informado no hook', async () => {
       const mockOrder: Partial<Order> = {
         id: 'order-10',
-        codigo: 'PED-2026-0010',
+        codigo: 'OS-2026-0010',
         orcamentoId: 'b-123',
         status: 'CREATED',
       };
@@ -120,14 +120,14 @@ describe('useOrders hooks', () => {
         observacoes: 'Urgente',
       });
       expect(toast.success).toHaveBeenCalledWith(
-        expect.stringContaining('PED-2026-0010')
+        expect.stringContaining('OS-2026-0010')
       );
     });
 
     it('deve permitir converter passando budgetId no payload da mutação', async () => {
       const mockOrder: Partial<Order> = {
         id: 'order-11',
-        codigo: 'PED-2026-0011',
+        codigo: 'OS-2026-0011',
         orcamentoId: 'b-456',
         status: 'CREATED',
       };
