@@ -4,7 +4,6 @@ import { MemoryRouter } from 'react-router-dom';
 import { BudgetDetailActions } from '../../../features/budgets/components/BudgetDetailActions';
 import { budgetsApi } from '../../../features/budgets/services/budgetsApi';
 import toast from 'react-hot-toast';
-
 vi.mock('../../../features/budgets/services/budgetsApi', () => ({
   budgetsApi: {
     downloadCommercialPdf: vi.fn(),
@@ -12,9 +11,9 @@ vi.mock('../../../features/budgets/services/budgetsApi', () => ({
     downloadPdfTecnico: vi.fn(),
     getBudget: vi.fn(),
     createBudget: vi.fn(),
+    reopenBudget: vi.fn(),
   },
 }));
-
 vi.mock('react-hot-toast', () => {
   const mockToast = vi.fn() as any;
   mockToast.success = vi.fn();
@@ -115,14 +114,48 @@ describe('BudgetDetailActions Component [Joseph Nichollas]', () => {
   });
 
   describe('WhatsApp Dropdown & Ações', () => {
-    it('deve abrir menu do WhatsApp e exibir opções de envio de texto e link do PDF', () => {
+    it('deve abrir menu do WhatsApp e exibir opções de envio direto, cópia, personalização e PDF', () => {
       renderComponent();
 
       const btn = screen.getByRole('button', { name: /WhatsApp/i });
       fireEvent.click(btn);
 
-      expect(screen.getByText('Enviar Resumo de Texto')).toBeInTheDocument();
+      expect(screen.getByText('Abrir no WhatsApp')).toBeInTheDocument();
+      expect(screen.getByText('Copiar Resumo')).toBeInTheDocument();
+      expect(screen.getByText('Personalizar Resumo')).toBeInTheDocument();
       expect(screen.getByText('Enviar PDF Comercial')).toBeInTheDocument();
+    });
+
+    it('deve abrir o WhatsApp diretamente ao clicar em "Abrir no WhatsApp"', async () => {
+      vi.mocked(budgetsApi.getWhatsAppSummary).mockResolvedValueOnce('Resumo de teste');
+      renderComponent({ customerPhone: '83988887766' });
+
+      const btnMenu = screen.getByRole('button', { name: /WhatsApp/i });
+      fireEvent.click(btnMenu);
+
+      const btnAbrir = screen.getByText('Abrir no WhatsApp');
+      fireEvent.click(btnAbrir);
+
+      await waitFor(() => {
+        expect(budgetsApi.getWhatsAppSummary).toHaveBeenCalledWith('budget-123');
+        expect(toast.success).toHaveBeenCalledWith('WhatsApp aberto pronto para envio do resumo!');
+      });
+    });
+
+    it('deve copiar o resumo diretamente ao clicar em "Copiar Resumo"', async () => {
+      vi.mocked(budgetsApi.getWhatsAppSummary).mockResolvedValueOnce('Resumo formatado para cópia');
+      renderComponent();
+
+      const btnMenu = screen.getByRole('button', { name: /WhatsApp/i });
+      fireEvent.click(btnMenu);
+
+      const btnCopiar = screen.getByText('Copiar Resumo');
+      fireEvent.click(btnCopiar);
+
+      await waitFor(() => {
+        expect(budgetsApi.getWhatsAppSummary).toHaveBeenCalledWith('budget-123');
+        expect(toast.success).toHaveBeenCalledWith('Resumo para WhatsApp copiado com sucesso!');
+      });
     });
 
     it('deve desabilitar o botão do WhatsApp quando o orçamento for CANCELLED', () => {
@@ -336,6 +369,58 @@ describe('BudgetDetailActions Component [Joseph Nichollas]', () => {
 
       const btn = screen.getByTestId('btn-approve-budget');
       expect(btn).toBeDisabled();
+    });
+  });
+
+  describe('Reabertura de Orçamento após cancelamento de pedido [US-15.2]', () => {
+    it('deve exibir botão Reabrir Orçamento quando status for APPROVED e pedido vinculado estiver CANCELLED', async () => {
+      vi.mocked(budgetsApi.reopenBudget).mockResolvedValueOnce({
+        id: 'budget-123',
+        status: 'DRAFT',
+      } as any);
+
+      renderComponent({
+        budgetStatus: 'APPROVED',
+        linkedOrder: { id: 'order-1', codigo: 'OS-2026-0001', status: 'CANCELLED' } as any,
+        isOrderCancelled: true,
+      });
+
+      const reopenBtn = screen.getByTestId('btn-reopen-budget');
+      expect(reopenBtn).toBeInTheDocument();
+      expect(reopenBtn).toHaveTextContent('Reabrir Orçamento');
+      expect(reopenBtn).not.toBeDisabled();
+
+      const viewOrderBtn = screen.getByTestId('btn-view-work-order');
+      expect(viewOrderBtn).toHaveTextContent('Ver O.S. (Cancelada)');
+
+      fireEvent.click(reopenBtn);
+
+      await waitFor(() => {
+        expect(budgetsApi.reopenBudget).toHaveBeenCalledWith('budget-123');
+        expect(toast.success).toHaveBeenCalledWith(
+          'Orçamento reaberto com sucesso como rascunho!'
+        );
+      });
+    });
+
+    it('não deve exibir botão Reabrir Orçamento quando pedido vinculado estiver ativo', () => {
+      renderComponent({
+        budgetStatus: 'APPROVED',
+        linkedOrder: { id: 'order-1', codigo: 'OS-2026-0001', status: 'WAITING_PRODUCTION' } as any,
+        isOrderCancelled: false,
+      });
+
+      expect(screen.queryByTestId('btn-reopen-budget')).not.toBeInTheDocument();
+      expect(screen.getByTestId('btn-view-work-order')).toHaveTextContent('Ver Ordem de Serviço');
+    });
+
+    it('não deve exibir botão Reabrir Orçamento quando orçamento estiver CANCELLED sem pedido cancelado', () => {
+      renderComponent({
+        budgetStatus: 'CANCELLED',
+      });
+
+      expect(screen.queryByTestId('btn-reopen-budget')).not.toBeInTheDocument();
+      expect(screen.getByTestId('btn-download-pdf-tecnico')).toBeDisabled();
     });
   });
 });

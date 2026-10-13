@@ -41,7 +41,7 @@ public class Order {
     @Column(nullable = false, unique = true, length = 20)
     private String codigo;
 
-    @Column(name = "orcamento_id", nullable = false, unique = true)
+    @Column(name = "orcamento_id", nullable = false)
     private UUID orcamentoId;
 
     @ManyToOne(fetch = FetchType.LAZY)

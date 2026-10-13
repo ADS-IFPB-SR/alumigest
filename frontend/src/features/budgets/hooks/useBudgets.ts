@@ -162,3 +162,20 @@ export const useWhatsAppSummary = (budgetId?: string, enabled = true) => {
     staleTime: 5 * 60_000,
   });
 };
+
+export const useReopenBudget = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => budgetsApi.reopenBudget(id),
+    onSuccess: (_, id) => {
+      toast.success('Orçamento reaberto com sucesso como rascunho!');
+      queryClient.invalidateQueries({ queryKey: ['budgets'] });
+      queryClient.invalidateQueries({ queryKey: ['budget', id] });
+    },
+    onError: (error: unknown) => {
+      const err = error as { response?: { data?: { message?: string } } };
+      const message = err?.response?.data?.message || 'Erro ao reabrir orçamento.';
+      toast.error(message);
+    },
+  });
+};

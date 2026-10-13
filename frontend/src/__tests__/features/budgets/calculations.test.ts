@@ -3,16 +3,16 @@ import { calcItemSubtotal, formatBRL } from '../../../features/budgets/utils/cal
 
 describe('calculations.ts', () => {
   describe('calcItemSubtotal', () => {
-    it('deve calcular o subtotal de materiais multiplicado pela quantidade e somado à mão de obra', () => {
+    it('deve calcular o subtotal de materiais multiplicado pela quantidade sem embutir mão de obra', () => {
       const options = [
         { quantity: 2, unitPrice: 50 }, // 100
         { quantity: 1.5, unitPrice: 100 }, // 150
       ];
       const laborCost = 80;
-      const quantity = 2; // (100 + 150) * 2 + 80 = 500 + 80 = 580
+      const quantity = 2; // (100 + 150) * 2 = 500 (mão de obra não é embutida no subtotal do item)
 
       const result = calcItemSubtotal(options, laborCost, quantity);
-      expect(result).toBe(580);
+      expect(result).toBe(500);
     });
 
     it('deve usar quantidade 1 como fallback se a quantidade de esquadrias for zero, negativa ou inválida', () => {
@@ -20,8 +20,8 @@ describe('calculations.ts', () => {
       const laborCost = 40;
 
       // @ts-expect-error testando fallback de quantidade 0
-      expect(calcItemSubtotal(options, laborCost, 0)).toBe(100);
-      expect(calcItemSubtotal(options, laborCost, -5)).toBe(100);
+      expect(calcItemSubtotal(options, laborCost, 0)).toBe(60);
+      expect(calcItemSubtotal(options, laborCost, -5)).toBe(60);
     });
 
     it('deve ignorar opções de insumo com quantidade negativa, zero ou indefinida', () => {
@@ -34,10 +34,10 @@ describe('calculations.ts', () => {
       const laborCost = 15;
       const quantity = 1;
 
-      expect(calcItemSubtotal(options, laborCost, quantity)).toBe(75);
+      expect(calcItemSubtotal(options, laborCost, quantity)).toBe(60);
     });
 
-    it('deve tratar mão de obra nula, negativa ou ausente como 0', () => {
+    it('deve tratar mão de obra nula, negativa ou ausente sem afetar o valor de materiais', () => {
       const options = [{ quantity: 1, unitPrice: 120 }];
       // @ts-expect-error testando fallback de laborCost nulo
       expect(calcItemSubtotal(options, null, 1)).toBe(120);
@@ -55,7 +55,18 @@ describe('calculations.ts', () => {
       const quantity = 3;
 
       const result = calcItemSubtotal(options, laborCost, quantity);
-      expect(result).toBe(32.53);
+      expect(result).toBe(20.2);
+    });
+
+    it('[Regressão Bug #333] deve calcular estritamente os insumos do item sem embutir R$ 2.000 de mão de obra', () => {
+      const options = [
+        { quantity: 1, unitPrice: 4840.18 },
+      ];
+      const laborCost = 2000;
+      const quantity = 1;
+
+      const result = calcItemSubtotal(options, laborCost, quantity);
+      expect(result).toBe(4840.18);
     });
   });
 

@@ -200,6 +200,21 @@ public class BudgetController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping({"/{id}/reopen", "/{id}/reabrir"})
+    @Operation(
+        summary = "Reabrir orçamento após cancelamento de pedido",
+        description = "Reabre um orçamento no status APPROVED de volta para DRAFT caso a ordem de serviço vinculada esteja cancelada (US-15.2)."
+    )
+    @ApiResponse(responseCode = "200", description = "Orçamento reaberto com sucesso como rascunho")
+    @ApiResponse(responseCode = "404", description = "Orçamento não encontrado")
+    @ApiResponse(responseCode = "409", description = "Ordem de serviço vinculada não está cancelada")
+    @ApiResponse(responseCode = "422", description = "Orçamento não elegível para reabertura (não está APPROVED)")
+    public ResponseEntity<BudgetResponseDTO> reabrirOrcamento(
+            @Parameter(description = "ID do orçamento") @PathVariable UUID id) {
+        BudgetResponseDTO response = budgetService.reabrirOrcamento(id);
+        return ResponseEntity.ok(response);
+    }
+
     @PostMapping("/items/preview-calculation")
     @Operation(summary = "Preview de cálculo de insumos", description = "Calcula sugestão de consumo de vidro/perfil e alerta de consistência física para itens de esquadria.")
     public ResponseEntity<BudgetItemCalculationResponseDTO> previewCalculation(

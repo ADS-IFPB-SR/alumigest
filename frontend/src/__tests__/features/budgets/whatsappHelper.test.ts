@@ -5,6 +5,7 @@ import {
   buildCommercialPdfMessage,
   shareCommercialPdfLink,
   isMobileDevice,
+  getWhatsAppDirectUrl,
 } from '../../../features/budgets/utils/whatsappHelper';
 
 describe('whatsappHelper - Suíte de Testes Formais (Mobile & Desktop)', () => {
@@ -187,6 +188,18 @@ describe('whatsappHelper - Suíte de Testes Formais (Mobile & Desktop)', () => {
         expect.stringContaining('https://web.whatsapp.com/send?text='),
         'whatsapp_web_window'
       );
+    });
+  });
+
+  describe('getWhatsAppDirectUrl (US-10.10)', () => {
+    it('deve gerar link com protocolo api.whatsapp.com/send e telefone normalizado com DDI 55', () => {
+      const url = getWhatsAppDirectUrl('Olá!', '(83) 98888-7766');
+      expect(url).toBe('https://api.whatsapp.com/send?phone=5583988887766&text=Ol%C3%A1!');
+    });
+
+    it('deve gerar link sem parâmetro phone quando o cliente não tiver telefone informado', () => {
+      const url = getWhatsAppDirectUrl('Mensagem livre', null);
+      expect(url).toBe('https://api.whatsapp.com/send?text=Mensagem%20livre');
     });
   });
 });

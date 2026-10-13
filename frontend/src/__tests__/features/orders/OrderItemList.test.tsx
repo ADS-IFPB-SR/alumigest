@@ -50,4 +50,67 @@ describe('OrderItemList', () => {
     expect(screen.getByText(/incolor 6mm/i)).toBeInTheDocument();
     expect(screen.getByText(/perfil linha suprema/i)).toBeInTheDocument();
   });
+
+  it('deve traduzir orientacaoAbertura canônica (BOTH_SLIDING) para rótulo amigável (#433)', () => {
+    const mockItems: OrderItem[] = [
+      {
+        id: 'item-sliding',
+        orderId: 'order-1',
+        descricao: 'Porta de Correr 2 Folhas',
+        larguraMm: 2000,
+        alturaMm: 2100,
+        quantidade: 1,
+        corAluminio: 'Branco',
+        tipoVidro: 'Incolor 8mm',
+        orientacaoAbertura: 'BOTH_SLIDING',
+        ferragens: 'Puxador Barra Tubular 400mm',
+        valorUnitario: 1200,
+        valorTotal: 1200,
+        ordem: 1,
+        options: [],
+      },
+    ];
+
+    render(<OrderItemList items={mockItems} />);
+
+    expect(screen.getByText('Ambas deslizam')).toBeInTheDocument();
+  });
+
+  it('deve numerar sequencialmente 1 e 2 sem duplicar # 1 quando itens possuírem ordem 0 e 1 (#421)', () => {
+    const mockItems: OrderItem[] = [
+      {
+        id: 'item-0',
+        orderId: 'order-1',
+        descricao: 'Janela 2F',
+        larguraMm: 1000,
+        alturaMm: 1000,
+        quantidade: 1,
+        valorUnitario: 300,
+        valorTotal: 300,
+        ordem: 0,
+      },
+      {
+        id: 'item-1',
+        orderId: 'order-1',
+        descricao: 'Porta 1F',
+        larguraMm: 800,
+        alturaMm: 2100,
+        quantidade: 1,
+        valorUnitario: 500,
+        valorTotal: 500,
+        ordem: 1,
+      },
+    ];
+
+    render(<OrderItemList items={mockItems} />);
+
+    const row0 = screen.getByTestId('order-item-row-item-0');
+    const row1 = screen.getByTestId('order-item-row-item-1');
+
+    const cell0 = row0.querySelector('td');
+    const cell1 = row1.querySelector('td');
+
+    expect(cell0).toHaveTextContent('1');
+    expect(cell1).toHaveTextContent('2');
+  });
 });

@@ -14,15 +14,20 @@ import br.edu.ifpb.alumigest.orders.domain.Order;
 import br.edu.ifpb.alumigest.orders.domain.OrderItem;
 import br.edu.ifpb.alumigest.orders.domain.OrderItemOption;
 import br.edu.ifpb.alumigest.orders.domain.OrderStatus;
+import br.edu.ifpb.alumigest.orders.dto.OrderCancelRequest;
 import br.edu.ifpb.alumigest.orders.dto.OrderConvertRequest;
 import br.edu.ifpb.alumigest.orders.dto.OrderPdfDTO;
 import br.edu.ifpb.alumigest.orders.dto.OrderResponse;
 import br.edu.ifpb.alumigest.orders.dto.OrderSummaryResponse;
 import br.edu.ifpb.alumigest.orders.mapper.OrderMapper;
 import br.edu.ifpb.alumigest.orders.repository.OrderRepository;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.TransactionSystemException;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -75,15 +80,33 @@ public class OrderServiceImpl implements OrderService {
         return PageResponse.of(dtoPage);
     }
 
+    /**
+     * Converte um orçamento aprovado em Pedido de Venda (Ordem de Serviço) oficial.
+     *
+     * Resiliência a Concorrência (Issue #408):
+     * A anotação @Retryable intercepta violações de unicidade (DataIntegrityViolationException
+     * e TransactionSystemException). Como o @EnableRetry possui precedência (order = 0), o
+     * interceptor de retry atua externamente ao interceptor de transação (@Transactional),
+     * garantindo que cada tentativa de retry execute dentro de uma NOVA transação limpa.
+     * O uso de orderRepository.saveAndFlush força a sincronização imediata dos comandos SQL
+     * com o banco de dados antes da conclusão do método, materializando a constraint UNIQUE
+     * (uk_orders_codigo) e disparando o retry caso outra transação concorrente tenha obtido
+     * o mesmo código no milissegundo de commit.
+     */
     @Override
+    @Retryable(
+            retryFor = {DataIntegrityViolationException.class, TransactionSystemException.class},
+            maxAttempts = 3,
+            backoff = @Backoff(delay = 100, multiplier = 1.5)
+    )
     @Transactional
     public OrderResponse convertBudgetToOrder(UUID budgetId, OrderConvertRequest request) {
         Budget budget = budgetRepository.findByIdWithDetails(budgetId)
                 .orElseThrow(() -> new ResourceNotFoundException(RESOURCE_ORCAMENTO, budgetId.toString()));
 
-        validarElegibilidadeOrcamento(budget);
-        validarOrcamentoComItens(budget);
-        validarIdempotencia(budgetId);
+        validateBudgetEligibility(budget);
+        validateBudgetHasItems(budget);
+        validateIdempotency(budgetId);
 
         if (budget.getStatus() != BudgetStatus.APPROVED) {
             budget.setStatus(BudgetStatus.APPROVED);
@@ -96,22 +119,22 @@ public class OrderServiceImpl implements OrderService {
                 .codigo(codigo)
                 .orcamentoId(budgetId)
                 .cliente(budget.getClient())
-                .clienteNome(resolverNomeCliente(budget))
-                .clienteTelefone(resolverTelefoneCliente(budget))
-                .clienteEndereco(resolverEnderecoCliente(budget))
+                .clienteNome(resolveCustomerName(budget))
+                .clienteTelefone(resolveCustomerPhone(budget))
+                .clienteEndereco(resolveCustomerAddress(budget))
                 .canalAprovacao(request.canalAprovacao())
                 .dataPrevisaoEntrega(request.dataPrevisaoEntrega())
-                .valorBruto(budget.getSubtotal())
-                .valorDesconto(orZero(budget.getDiscountValue()))
-                .valorLiquido(orZero(budget.getTotal()))
-                .condicaoPagamento(resolverCondicaoPagamento(budget))
+                .valorBruto(orZero(budget.getSubtotal()).setScale(2, RoundingMode.HALF_EVEN))
+                .valorDesconto(orZero(budget.getDiscountValue()).setScale(2, RoundingMode.HALF_EVEN))
+                .valorLiquido(orZero(budget.getTotal()).setScale(2, RoundingMode.HALF_EVEN))
+                .condicaoPagamento(resolvePaymentCondition(budget))
                 .observacoesPagamento(budget.getPaymentNotes())
                 .observacoes(request.observacoes())
                 .build();
 
-        converterItens(budget, order);
+        convertItems(budget, order);
 
-        order = orderRepository.save(order);
+        order = orderRepository.saveAndFlush(order);
         return orderMapper.toResponse(order);
     }
 
@@ -139,17 +162,28 @@ public class OrderServiceImpl implements OrderService {
         return new OrderPdfDTO(bytes, filename);
     }
 
+    @Override
+    @Transactional
+    public OrderResponse cancelOrder(UUID id, OrderCancelRequest request) {
+        Order order = orderRepository.findByIdWithDetails(id)
+                .orElseThrow(() -> new ResourceNotFoundException(RESOURCE_PEDIDO, id.toString()));
+
+        order.cancelar(request.justificativa());
+        order = orderRepository.save(order);
+
+        return orderMapper.toResponse(order);
+    }
+
     // =========================================================================
     // Métodos privados de suporte (SRP — separação de responsabilidades internas)
     // =========================================================================
-
     /**
      * Status elegíveis para conversão em pedido de venda.
      * DRAFT e SENT são promovidos para APPROVED atomicamente durante a conversão.
      * APPROVED é aceito para tolerar reprocessamento idempotente.
      */
     private static final Set<BudgetStatus> STATUS_ELEGIVEIS =
-            EnumSet.of(BudgetStatus.DRAFT, BudgetStatus.SENT, BudgetStatus.APPROVED);
+            EnumSet.of(BudgetStatus.DRAFT, BudgetStatus.SENT);
 
     /**
      * Valida que o orçamento está em um status elegível para conversão.
@@ -158,7 +192,7 @@ public class OrderServiceImpl implements OrderService {
      * @param budget orçamento a ser validado
      * @throws BusinessException se o status não for elegível para conversão
      */
-    private void validarElegibilidadeOrcamento(Budget budget) {
+    private void validateBudgetEligibility(Budget budget) {
         if (budget.isExpired()) {
             throw new BusinessException(
                     "Orçamento com validade expirada não pode ser convertido em pedido de venda.");
@@ -169,7 +203,7 @@ public class OrderServiceImpl implements OrderService {
                     : "Indefinido";
             throw new BusinessException(
                     "Orçamento com status '" + statusDesc + "' não pode ser convertido em pedido de venda."
-                            + " São aceitos: Rascunho, Enviado ou Aprovado.");
+                            + " São aceitos: Rascunho ou Enviado.");
         }
     }
 
@@ -179,7 +213,7 @@ public class OrderServiceImpl implements OrderService {
      * @param budget orçamento a ser validado
      * @throws BusinessException se o orçamento não possuir itens
      */
-    private void validarOrcamentoComItens(Budget budget) {
+    private void validateBudgetHasItems(Budget budget) {
         if (budget.getItems() == null || budget.getItems().isEmpty()) {
             throw new BusinessException(
                     "Não é possível converter um orçamento sem itens em pedido de venda.");
@@ -187,15 +221,16 @@ public class OrderServiceImpl implements OrderService {
     }
 
     /**
-     * Garante idempotência: um orçamento só pode gerar um único pedido de venda.
+     * Garante idempotência: um orçamento só pode possuir um pedido ativo.
+     * Pedidos cancelados permanecem no histórico e não bloqueiam uma nova conversão.
      *
      * @param budgetId ID do orçamento
-     * @throws ConflictException se já existir pedido para o orçamento informado
+     * @throws ConflictException se já existir pedido ativo para o orçamento informado
      */
-    private void validarIdempotencia(UUID budgetId) {
-        if (orderRepository.existsByOrcamentoId(budgetId)) {
+    private void validateIdempotency(UUID budgetId) {
+        if (orderRepository.existsByOrcamentoIdAndStatusNot(budgetId, OrderStatus.CANCELLED)) {
             throw new ConflictException(
-                    "Já existe um pedido de venda gerado para o orçamento com ID " + budgetId + ".");
+                    "Já existe um pedido de venda ativo para o orçamento com ID " + budgetId + ".");
         }
     }
 
@@ -205,7 +240,7 @@ public class OrderServiceImpl implements OrderService {
      * @param budget orçamento de origem
      * @param order  pedido destino
      */
-    private void converterItens(Budget budget, Order order) {
+    private void convertItems(Budget budget, Order order) {
         List<BudgetItem> budgetItems = budget.getItems();
         if (budgetItems == null || budgetItems.isEmpty()) {
             return;
@@ -213,8 +248,8 @@ public class OrderServiceImpl implements OrderService {
 
         for (int i = 0; i < budgetItems.size(); i++) {
             BudgetItem budgetItem = budgetItems.get(i);
-            OrderItem orderItem = construirOrderItem(budgetItem, i);
-            converterOpcoes(budgetItem, orderItem);
+            OrderItem orderItem = buildOrderItem(budgetItem, i);
+            convertOptions(budgetItem, orderItem);
             order.addItem(orderItem);
         }
     }
@@ -235,14 +270,15 @@ public class OrderServiceImpl implements OrderService {
      * @param ordem      posição sequencial do item no pedido
      * @return item do pedido com snapshot dos dados técnicos e financeiros
      */
-    private OrderItem construirOrderItem(BudgetItem budgetItem, int ordem) {
+    private OrderItem buildOrderItem(BudgetItem budgetItem, int ordem) {
         int largura = budgetItem.getWidthMm() != null ? budgetItem.getWidthMm().intValue() : 0;
         int altura = budgetItem.getHeightMm() != null ? budgetItem.getHeightMm().intValue() : 0;
         int qty = (budgetItem.getQuantity() != null && budgetItem.getQuantity() > 0)
                 ? budgetItem.getQuantity() : 1;
 
-        BigDecimal valorTotal = orZero(budgetItem.getSubtotal());
-        BigDecimal valorUnitario = valorTotal.divide(BigDecimal.valueOf(qty), 2, RoundingMode.HALF_UP);
+        BigDecimal valorTotal = orZero(budgetItem.getSubtotal()).setScale(2, RoundingMode.HALF_EVEN);
+        BigDecimal valorUnitario = valorTotal.divide(
+                BigDecimal.valueOf(qty), 2, RoundingMode.HALF_EVEN);
 
         return OrderItem.builder()
                 .product(budgetItem.getProduct())
@@ -250,6 +286,10 @@ public class OrderServiceImpl implements OrderService {
                 .larguraMm(largura)
                 .alturaMm(altura)
                 .quantidade(qty)
+                .corAluminio(OrderItemSnapshotResolver.extractAluminumColor(budgetItem))
+                .tipoVidro(OrderItemSnapshotResolver.extractGlassType(budgetItem))
+                .orientacaoAbertura(OrderItemSnapshotResolver.extractOpeningDirection(budgetItem))
+                .ferragens(OrderItemSnapshotResolver.extractHardware(budgetItem))
                 .valorUnitario(valorUnitario)
                 .valorTotal(valorTotal)
                 .templateConfig(budgetItem.getTemplateConfig())
@@ -265,12 +305,16 @@ public class OrderServiceImpl implements OrderService {
      * @param budgetItem item do orçamento de origem
      * @param orderItem  item do pedido destino
      */
-    private void converterOpcoes(BudgetItem budgetItem, OrderItem orderItem) {
+    private void convertOptions(BudgetItem budgetItem, OrderItem orderItem) {
         List<BudgetItemOption> opcoes = budgetItem.getOptions();
         if (opcoes == null || opcoes.isEmpty()) {
             return;
         }
         for (BudgetItemOption opcao : opcoes) {
+            BigDecimal qty = orZero(opcao.getQuantity()).setScale(2, RoundingMode.HALF_EVEN);
+            BigDecimal unitPrice = orZero(opcao.getUnitPrice()).setScale(2, RoundingMode.HALF_EVEN);
+            BigDecimal totalPrice = orZero(opcao.getTotalPrice()).setScale(2, RoundingMode.HALF_EVEN);
+
             OrderItemOption orderOption = OrderItemOption.builder()
                     .material(opcao.getMaterial())
                     .materialName(opcao.getMaterialName())
@@ -279,9 +323,9 @@ public class OrderServiceImpl implements OrderService {
                             ? opcao.getCategoryType().name() : null)
                     .selectedType(opcao.getSelectedType())
                     .selectedColor(opcao.getSelectedColor())
-                    .quantity(orZero(opcao.getQuantity()))
-                    .unitPrice(orZero(opcao.getUnitPrice()))
-                    .totalPrice(orZero(opcao.getTotalPrice()))
+                    .quantity(qty)
+                    .unitPrice(unitPrice)
+                    .totalPrice(totalPrice)
                     .build();
             orderItem.addOption(orderOption);
         }
@@ -293,7 +337,7 @@ public class OrderServiceImpl implements OrderService {
      * @param budget orçamento de origem
      * @return nome do cliente ou valor padrão se não disponível
      */
-    private String resolverNomeCliente(Budget budget) {
+    private String resolveCustomerName(Budget budget) {
         if (budget.getClient() != null && budget.getClient().getFullName() != null) {
             return budget.getClient().getFullName();
         }
@@ -306,60 +350,84 @@ public class OrderServiceImpl implements OrderService {
      * @param budget orçamento de origem
      * @return telefone do cliente ou null
      */
-    private String resolverTelefoneCliente(Budget budget) {
+    private String resolveCustomerPhone(Budget budget) {
         if (budget.getClient() != null) {
             return budget.getClient().getPhone();
         }
         return null;
     }
 
-    /**
-     * Compõe o endereço do cliente a partir dos campos individuais (street, number, city, state).
-     *
-     * @param budget orçamento de origem
-     * @return endereço formatado ou null
-     */
-    private String resolverEnderecoCliente(Budget budget) {
-        if (budget.getClient() == null) {
-            return null;
+  /**
+   * Compõe o endereço do cliente a partir dos campos individuais (street, number, city, state).
+   *
+   * @param budget orçamento de origem
+   * @return endereço formatado ou null
+   */
+  private String resolveCustomerAddress(Budget budget) {
+    if (budget.getClient() == null) {
+      return null;
+    }
+    var c = budget.getClient();
+    var sb = new StringBuilder();
+    if (c.getStreet() != null) {
+      sb.append(c.getStreet());
+    }
+    if (c.getNumber() != null) {
+      sb.append(", ").append(c.getNumber());
+    }
+    if (c.getCity() != null) {
+      sb.append(" - ").append(c.getCity());
+    }
+    if (c.getState() != null) {
+      sb.append("/").append(c.getState());
+    }
+    return !sb.isEmpty() ? sb.toString() : null;
+  }
+
+  /**
+   * Retorna a condição de pagamento como String a partir do enum PaymentCondition do orçamento.
+   *
+   * @param budget orçamento de origem
+   * @return nome do enum ou null
+   */
+  private String resolvePaymentCondition(Budget budget) {
+    if (budget.getPaymentCondition() != null) {
+      return budget.getPaymentCondition().name();
+    }
+    return null;
+  }
+
+  /**
+   * Garante que um BigDecimal nunca seja null, retornando ZERO nesse caso.
+   *
+   * @param value valor potencialmente nulo
+   * @return valor original ou BigDecimal.ZERO
+   */
+  private BigDecimal orZero(BigDecimal value) {
+    return value != null ? value : BigDecimal.ZERO;
+  }
+    @Override
+    @Transactional
+    public OrderResponse updateStatus(UUID id, OrderStatus targetStatus) {
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException(RESOURCE_PEDIDO, id));
+
+        if (targetStatus == null) {
+            throw new IllegalArgumentException("O status de destino é obrigatório.");
         }
-        var c = budget.getClient();
-        var sb = new StringBuilder();
-        if (c.getStreet() != null) {
-            sb.append(c.getStreet());
+        try {
+            switch (targetStatus) {
+                case IN_PRODUCTION -> order.iniciarProducao();
+                case COMPLETED -> order.concluir(null);
+                default -> throw new ConflictException(
+                        "Não é permitida a transição para o status " + targetStatus + "."
+                );
+            }
+        } catch (BusinessException ex) {
+            throw new ConflictException(ex.getMessage());
         }
-        if (c.getNumber() != null) {
-            sb.append(", ").append(c.getNumber());
-        }
-        if (c.getCity() != null) {
-            sb.append(" - ").append(c.getCity());
-        }
-        if (c.getState() != null) {
-            sb.append("/").append(c.getState());
-        }
-        return !sb.isEmpty() ? sb.toString() : null;
+        Order savedOrder = orderRepository.save(order);
+        return orderMapper.toResponse(savedOrder);
     }
 
-    /**
-     * Retorna a condição de pagamento como String a partir do enum PaymentCondition do orçamento.
-     *
-     * @param budget orçamento de origem
-     * @return nome do enum ou null
-     */
-    private String resolverCondicaoPagamento(Budget budget) {
-        if (budget.getPaymentCondition() != null) {
-            return budget.getPaymentCondition().name();
-        }
-        return null;
-    }
-
-    /**
-     * Garante que um BigDecimal nunca seja null, retornando ZERO nesse caso.
-     *
-     * @param value valor potencialmente nulo
-     * @return valor original ou BigDecimal.ZERO
-     */
-    private BigDecimal orZero(BigDecimal value) {
-        return value != null ? value : BigDecimal.ZERO;
-    }
 }

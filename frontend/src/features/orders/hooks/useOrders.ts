@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { ordersApi } from '../services/ordersApi';
 import toast from 'react-hot-toast';
-import type { OrderCancelRequest, OrderFilterParams } from '../types';
+import type { OrderCancelRequest, OrderFilterParams, OrderStatus } from '../types';
 
 export { useConvertBudget } from './useConvertBudget';
 
@@ -60,6 +60,23 @@ export const useDownloadComprovantePdf = () => {
       const err = error as { response?: { data?: { message?: string } } };
       const message = err?.response?.data?.message || 'Erro ao gerar o comprovante PDF.';
       toast.error(message);
+    },
+  });
+};
+
+export const useUpdateOrderStatus = (id?: string) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (status: OrderStatus) =>
+      ordersApi.updateStatus(id!, status),
+
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+
+      if (id) {
+        queryClient.invalidateQueries({ queryKey: ['order', id] });
+      }
     },
   });
 };

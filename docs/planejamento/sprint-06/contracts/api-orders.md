@@ -1,7 +1,7 @@
 # API Contract: Orders / Ordens de Serviço REST Endpoints
 
 **Base Path**: `/api/v1/orders` (Canônico / Padrão Frontend)  
-**Aliases Suportados**: `/api/orders`, `/api/ordens-servico`, `/api/pedidos`  
+**Aliases Suportados**: `/api/v1/ordens-servico` (Alias Canônico em Português)  
 **Content-Type**: `application/json`  
 **Sprint**: Sprint 06 (29/09/2026 a 12/10/2026)  
 
@@ -10,7 +10,7 @@
 ## Endpoints
 
 ### 1. POST /api/v1/orders/from-budget/{budgetId} — Converter Orçamento em Ordem de Serviço / Pedido
-*(Também acessível via `/api/orders/from-budget/{budgetId}`, `/api/ordens-servico/from-budget/{budgetId}` e `/api/pedidos/from-budget/{budgetId}`)*
+*(Também acessível via `/api/v1/ordens-servico/from-budget/{budgetId}` ou `/api/v1/orders/convert/{budgetId}`)*
 
 **Request Body** (`OrderConvertRequest`):
 ```json
@@ -31,22 +31,21 @@
 **Regras de Negócio**:
 - Orçamento deve estar em status válido (`DRAFT` ou `SENT`).
 - Atualiza o status do orçamento para `APPROVED`.
-- Gera código único anual `PED-YYYY-NNNN`.
+- Gera código único anual `OS-YYYY-NNNN`.
 - Realiza clonagem profunda (*deep copy*) dos itens do orçamento para `OrderItem` (lock de preços).
 - Se já existir pedido ativo para esse orçamento, retorna `409 Conflict` ou `422 Unprocessable Entity`.
 
 ---
 
 ### 2. GET /api/v1/orders — Listar Ordens de Serviço / Pedidos (Paginado)
-*(Também acessível via `/api/orders`, `/api/ordens-servico` e `/api/pedidos`)*
+*(Também acessível via `/api/v1/ordens-servico`)*
 
-**Query Parameters**:
 - `page` (int, default: 0): Número da página (0-indexed)
 - `size` (int, default: 20): Quantidade de registros por página
 - `sort` (string, optional): Campo e direção de ordenação (ex.: `createdAt,desc`)
 - `status` (string, optional): Filtro por status do pedido (`CRIADO`, `AGUARDANDO_PRODUCAO`, `EM_PRODUCAO`, `CONCLUIDO`, `CANCELADO`)
 - `canalAprovacao` (string, optional): Filtro por canal de aprovação (`WHATSAPP`, `PRESENCIAL`, `EMAIL`, `TELEFONE`, `OUTRO`)
-- `busca` (string, optional): Termo de busca textual por código do pedido (`PED-YYYY-NNNN`), código do orçamento ou nome do cliente
+- `busca` (string, optional): Termo de busca textual por código do pedido (`OS-YYYY-NNNN`), código do orçamento ou nome do cliente
 
 **Response** (200 OK): `PageResponse<OrderSummaryResponse>`  
 **Responses de Erro**:
@@ -55,7 +54,7 @@
 ---
 
 ### 3. GET /api/v1/orders/{id} — Detalhar Ordem de Serviço / Pedido
-*(Também acessível via `/api/orders/{id}`, `/api/ordens-servico/{id}` e `/api/pedidos/{id}`)*
+*(Também acessível via `/api/v1/ordens-servico/{id}`)*
 
 **Path Parameters**:
 - `id` (UUID, required): Identificador único do pedido
@@ -68,7 +67,7 @@
 ---
 
 ### 4. PATCH /api/v1/orders/{id}/cancel — Cancelar Ordem de Serviço / Pedido
-*(Também acessível via `/api/orders/{id}/cancel`, `/api/ordens-servico/{id}/cancel` e `/api/pedidos/{id}/cancel`)*
+*(Também acessível via `/api/v1/ordens-servico/{id}/cancel`)*
 
 **Path Parameters**:
 - `id` (UUID, required): Identificador único do pedido
@@ -93,14 +92,14 @@
 ---
 
 ### 5. GET /api/v1/orders/{id}/pdf/comprovante — Download do Comprovante da Ordem de Serviço
-*(Também acessível via `/api/orders/{id}/pdf/comprovante`, `/api/ordens-servico/{id}/pdf/comprovante` e `/api/pedidos/{id}/pdf/comprovante`)*
+*(Também acessível via `/api/v1/ordens-servico/{id}/pdf/comprovante`)*
 
 **Path Parameters**:
 - `id` (UUID, required): Identificador único do pedido
 
 **Response** (200 OK):
 - `Content-Type: application/pdf`
-- `Content-Disposition: attachment; filename="PED-2026-0001-comprovante.pdf"`  
+- `Content-Disposition: attachment; filename="OS-2026-0001-comprovante.pdf"`  
 **Responses de Erro**:
 - `404 Not Found`: `ErrorResponse` (Pedido não encontrado)
 - `422 Unprocessable Entity`: `ErrorResponse` (Pedido em status incompatível com emissão de comprovante)
@@ -113,7 +112,7 @@
 ```json
 {
   "id": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
-  "codigo": "PED-2026-0001",
+  "codigo": "OS-2026-0001",
   "orcamentoId": "f0e1d2c3-b4a5-6789-0123-456789abcdef",
   "orcamentoCodigo": "ORC-2026-0001",
   "clienteNome": "João Silva",
@@ -158,7 +157,7 @@
 ```json
 {
   "id": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
-  "codigo": "PED-2026-0001",
+  "codigo": "OS-2026-0001",
   "clienteNome": "João Silva",
   "dataAprovacao": "2026-09-29T10:00:00Z",
   "dataPrevisaoEntrega": "2026-10-14",

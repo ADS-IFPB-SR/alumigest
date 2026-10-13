@@ -1,0 +1,354 @@
+package br.edu.ifpb.alumigest.orders.service;
+
+import br.edu.ifpb.alumigest.budgets.domain.BudgetItem;
+import br.edu.ifpb.alumigest.budgets.domain.BudgetItemOption;
+import br.edu.ifpb.alumigest.catalog.domain.MaterialCategoryType;
+import br.edu.ifpb.alumigest.catalog.domain.Product;
+import br.edu.ifpb.alumigest.catalog.domain.TemplateConfig;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
+
+/**
+ * Resolvedor de extração resiliente de especificações físicas e técnicas para itens
+ * de pedidos de venda (Snapshot Técnico e Lock de Preços).
+ *
+ * <p>Responsável por consolidar cor do alumínio, acabamento de vidro, sentido de abertura
+ * e ferragens a partir das opções do orçamento e configurações paramétricas JSONB.</p>
+ */
+public final class OrderItemSnapshotResolver {
+
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
+    private OrderItemSnapshotResolver() {
+        // Construtor privado para classe utilitária
+    }
+
+    /**
+     * Extrai a cor do perfil de alumínio a partir das opções de insumos ou da configuração JSONB.
+     *
+     * @param item item do orçamento de origem
+     * @return cor do alumínio identificada ou null se não encontrada
+     */
+    public static String extractAluminumColor(BudgetItem item) {
+        if (item == null) {
+            return null;
+        }
+
+        String colorFromOption = extractAluminumColorFromOptions(item.getOptions());
+        if (colorFromOption != null) {
+            return colorFromOption;
+        }
+
+        String colorFromJson = extractAluminumColorFromJson(item.getTemplateConfig());
+        if (colorFromJson != null) {
+            return colorFromJson;
+        }
+
+        return extractAluminumColorFromProduct(item.getProduct());
+    }
+
+    private static String extractAluminumColorFromJson(String jsonConfig) {
+        String color = extractJsonValue(jsonConfig, "aluminumColor");
+        if (color != null && !color.isBlank()) {
+            return color;
+        }
+        return extractJsonValue(jsonConfig, "profileColor");
+    }
+
+    private static String extractAluminumColorFromOptions(List<BudgetItemOption> options) {
+        if (options == null) {
+            return null;
+        }
+        for (BudgetItemOption opt : options) {
+            if (opt.getCategoryType() == MaterialCategoryType.PROFILE
+                    && opt.getSelectedColor() != null
+                    && !opt.getSelectedColor().isBlank()) {
+                return opt.getSelectedColor();
+            }
+        }
+        return null;
+    }
+
+    private static String extractAluminumColorFromProduct(Product product) {
+        if (product == null || product.getTemplateConfig() == null) {
+            return null;
+        }
+        String color = product.getTemplateConfig().getAluminumColor();
+        return (color != null && !color.isBlank()) ? color : null;
+    }
+
+    /**
+     * Extrai a especificação e acabamento do vidro a partir das opções ou da configuração JSONB.
+     *
+     * @param item item do orçamento de origem
+     * @return tipo ou acabamento do vidro identificado ou null se não encontrado
+     */
+    public static String extractGlassType(BudgetItem item) {
+        if (item == null) {
+            return null;
+        }
+
+        String glassFromOption = extractGlassFromOptions(item.getOptions());
+        if (glassFromOption != null) {
+            return glassFromOption;
+        }
+
+        String glassFromJson = extractGlassFromJson(item.getTemplateConfig());
+        if (glassFromJson != null) {
+            return glassFromJson;
+        }
+
+        return extractGlassFromProduct(item.getProduct());
+    }
+
+    private static String extractGlassFromOptions(List<BudgetItemOption> options) {
+        if (options == null) {
+            return null;
+        }
+        // 1ª passada: prioridade estrita para categoria GLASS
+        for (BudgetItemOption opt : options) {
+            if (opt != null && opt.getCategoryType() == MaterialCategoryType.GLASS) {
+                String desc = resolveGlassDescription(opt);
+                if (desc != null) {
+                    return desc;
+                }
+            }
+        }
+        // 2ª passada: fallback textual descartando explicitamente insumos de película
+        for (BudgetItemOption opt : options) {
+            if (isGlassOption(opt)) {
+                String desc = resolveGlassDescription(opt);
+                if (desc != null) {
+                    return desc;
+                }
+            }
+        }
+        return null;
+    }
+
+    private static String resolveGlassDescription(BudgetItemOption opt) {
+        if (opt.getSelectedType() != null && !opt.getSelectedType().isBlank()) {
+            return opt.getSelectedType();
+        }
+        if (opt.getMaterialName() != null && !opt.getMaterialName().isBlank()) {
+            return opt.getMaterialName();
+        }
+        return null;
+    }
+
+    private static String extractGlassFromProduct(Product product) {
+        if (product == null || product.getTemplateConfig() == null) {
+            return null;
+        }
+        String glassColor = product.getTemplateConfig().getGlassColor();
+        return (glassColor != null && !glassColor.isBlank()) ? glassColor : null;
+    }
+
+    private static String extractGlassFromJson(String jsonConfig) {
+        String glassFinish = extractJsonValue(jsonConfig, "glassFinish");
+        if (glassFinish != null && !glassFinish.isBlank()) {
+            return glassFinish;
+        }
+        String glassType = extractJsonValue(jsonConfig, "glassType");
+        if (glassType != null && !glassType.isBlank()) {
+            return glassType;
+        }
+        return extractJsonValue(jsonConfig, "glassColor");
+    }
+
+    /**
+     * Extrai a orientação ou sentido de abertura da esquadria.
+     *
+     * @param item item do orçamento de origem
+     * @return sentido de abertura identificado ou null
+     */
+    public static String extractOpeningDirection(BudgetItem item) {
+        if (item == null) {
+            return null;
+        }
+
+        String openingFromJson = extractOpeningFromJson(item.getTemplateConfig());
+        if (openingFromJson != null) {
+            return sanitizeOpeningDirection(openingFromJson);
+        }
+
+        String openingFromProduct = extractOpeningFromProduct(item.getProduct());
+        if (openingFromProduct != null) {
+            return sanitizeOpeningDirection(openingFromProduct);
+        }
+
+        return null;
+    }
+
+    private static String extractOpeningFromJson(String jsonConfig) {
+        String opening = extractJsonValue(jsonConfig, "openingDirection");
+        if (opening != null && !opening.isBlank()) {
+            return opening;
+        }
+
+        String slidingMode = extractJsonValue(jsonConfig, "slidingMode");
+        if (slidingMode != null && !slidingMode.isBlank()) {
+            return slidingMode;
+        }
+
+        String openingType = extractJsonValue(jsonConfig, "openingType");
+        if (openingType != null && !openingType.isBlank()) {
+            return openingType;
+        }
+
+        return extractJsonValue(jsonConfig, "direction");
+    }
+
+    private static String extractOpeningFromProduct(Product product) {
+        if (product == null || product.getTemplateConfig() == null) {
+            return null;
+        }
+        TemplateConfig config = product.getTemplateConfig();
+        if (config.getOpeningDirection() != null) {
+            return config.getOpeningDirection().name();
+        }
+        if (config.getSlidingMode() != null) {
+            return config.getSlidingMode().name();
+        }
+        return null;
+    }
+
+    private static String sanitizeOpeningDirection(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.length() > 30 ? trimmed.substring(0, 30) : trimmed;
+    }
+
+    /**
+     * Extrai e consolida as ferragens e componentes acessórios associados à esquadria.
+     *
+     * @param item item do orçamento de origem
+     * @return ferragens consolidadas em texto ou null
+     */
+    public static String extractHardware(BudgetItem item) {
+        if (item == null) {
+            return null;
+        }
+
+        Set<String> ferragensSet = new LinkedHashSet<>();
+        appendHandleModel(item.getHandleConfig(), ferragensSet);
+        collectHardwareFromOptions(item.getOptions(), ferragensSet);
+
+        return ferragensSet.isEmpty() ? null : String.join(", ", ferragensSet);
+    }
+
+    private static void appendHandleModel(String handleConfig, Set<String> set) {
+        if (handleConfig == null || handleConfig.isBlank()) {
+            return;
+        }
+        String handleType = extractJsonValue(handleConfig, "handleType");
+        if (handleType == null || handleType.isBlank()) {
+            handleType = extractJsonValue(handleConfig, "model");
+        }
+        if (handleType == null || handleType.isBlank() || "NONE".equalsIgnoreCase(handleType.trim())) {
+            return;
+        }
+
+        String length = extractJsonValue(handleConfig, "handleLengthMm");
+        if (length == null || length.isBlank()) {
+            length = extractJsonValue(handleConfig, "lengthMm");
+        }
+
+        String label = resolveHandleLabel(handleType.trim());
+        if (length != null && !length.isBlank() && !"0".equals(length.trim())) {
+            label = label + " " + length.trim() + "mm";
+        }
+        set.add(label);
+    }
+
+    private static String resolveHandleLabel(String handleType) {
+        return switch (handleType.toUpperCase(Locale.ROOT)) {
+            case "BAR_TUBULAR" -> "Puxador Barra Tubular";
+            case "SHELL_LOCK" -> "Fecho Concha";
+            case "LEVER_HANDLE" -> "Puxador Alavanca / Maçaneta";
+            case "PROFILE_HANDLE" -> "Puxador Perfil Integrado";
+            default -> handleType.toLowerCase(Locale.ROOT).startsWith("puxador")
+                    ? handleType
+                    : "Puxador " + handleType;
+        };
+    }
+
+    private static void collectHardwareFromOptions(List<BudgetItemOption> options, Set<String> set) {
+        if (options == null) {
+            return;
+        }
+        for (BudgetItemOption opt : options) {
+            if (isHardwareOrComponent(opt)) {
+                set.add(formatHardwareDescription(opt));
+            }
+        }
+    }
+
+    private static String formatHardwareDescription(BudgetItemOption opt) {
+        String desc = opt.getMaterialName();
+        if (opt.getQuantity() != null && opt.getUnitMeasure() != null) {
+            return desc + " (" + opt.getQuantity().stripTrailingZeros().toPlainString()
+                    + " " + opt.getUnitMeasure() + ")";
+        }
+        return desc;
+    }
+
+    private static boolean isGlassOption(BudgetItemOption opt) {
+        if (opt == null) {
+            return false;
+        }
+        if (opt.getCategoryType() == MaterialCategoryType.GLASS) {
+            return true;
+        }
+        if (opt.getCategoryType() == MaterialCategoryType.FILM) {
+            return false;
+        }
+        String name = opt.getMaterialName();
+        if (name == null) {
+            return false;
+        }
+        String lower = name.toLowerCase(Locale.ROOT);
+        return lower.contains("vidro") && !lower.contains("película") && !lower.contains("pelicula");
+    }
+
+    private static boolean isHardwareOrComponent(BudgetItemOption opt) {
+        if (opt == null) {
+            return false;
+        }
+        MaterialCategoryType cat = opt.getCategoryType();
+        if (cat == MaterialCategoryType.HARDWARE || cat == MaterialCategoryType.ROLLERS) {
+            return true;
+        }
+        String name = opt.getMaterialName();
+        if (name == null) {
+            return false;
+        }
+        String lower = name.toLowerCase(Locale.ROOT);
+        return lower.contains("roldana") || lower.contains("fecho")
+                || lower.contains("puxador") || lower.contains("fechadura")
+                || lower.contains("guarnição") || lower.contains("guarnicao");
+    }
+
+    private static String extractJsonValue(String json, String key) {
+        if (json == null || json.isBlank()) {
+            return null;
+        }
+        try {
+            JsonNode root = OBJECT_MAPPER.readTree(json);
+            if (root == null) {
+                return null;
+            }
+            JsonNode node = root.get(key);
+            return (node != null && !node.isNull()) ? node.asText() : null;
+        } catch (JsonProcessingException e) {
+            return null;
+        }
+    }
+}
