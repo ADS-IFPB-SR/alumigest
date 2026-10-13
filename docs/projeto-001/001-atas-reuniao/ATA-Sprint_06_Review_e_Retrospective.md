@@ -5,14 +5,14 @@
 **Período avaliado:** 29 de setembro a 12 de outubro de 2026  
 **Data de consolidação:** 13 de outubro de 2026  
 **Horário e local:** Não informados no material de origem  
-**Registro:** Compilação da Sprint Review e de seis contribuições individuais da retrospectiva  
+**Registro:** Compilação da Sprint Review e de sete contribuições individuais da retrospectiva<br>
 **Branch de documentação:** `planejamento`
 
 ---
 
 ## 1. 👥 Participação e fonte dos registros
 
-Foram recebidas **seis contribuições individuais** para a retrospectiva. Como os relatos não vieram acompanhados dos nomes dos participantes, esta ata os identifica como **Relato 1** a **Relato 6**, preservando o conteúdo e evitando atribuições incorretas.
+Foram recebidas **sete contribuições individuais** para a retrospectiva. Como os relatos não vieram acompanhados dos nomes dos participantes, esta ata os identifica como **Relato 1** a **Relato 7**, preservando o conteúdo e evitando atribuições incorretas.
 
 A apuração da Sprint Review considerou também:
 
@@ -160,6 +160,17 @@ Apesar desses avanços, também foi registrado que algumas tarefas e revisões f
 - Algumas tarefas e revisões foram concluídas sem executar a aplicação para validar a implementação.
 - Houve confusão no fluxo das PRs.
 - No final da sprint, faltou mobilização conjunta da equipe para concluir a entrega.
+
+### 5.7 Relato 7
+
+**O que funcionou bem**
+
+- Houve melhoria na comunicação da equipe, permitindo acompanhar com clareza o andamento de cada tarefa.
+
+**O que pode ser melhorado**
+
+- Nenhum ponto negativo adicional foi identificado.
+- A equipe deve buscar uma forma de reduzir a quantidade de tarefas que bloqueiam outras tarefas.
 
 ---
 
