@@ -1,102 +1,112 @@
-# Quickstart Validation Guide: Sprint 6 — Pedidos de Venda, Lock de Preços e Comprovante Oficial
+# Quickstart de homologação — Sprint 6
 
-**Feature**: `002-pedidos-lock-precos`  
-**Período da Sprint 06**: 29/09/2026 a 12/10/2026  
-**Status**: APPROVED  
+Este guia valida o fluxo completo de Pedidos de Venda: criar um orçamento, aprovar e converter, emitir o comprovante PDF, cancelar o pedido e reabrir o orçamento para renegociação.
 
 ## Pré-requisitos
 
-- PostgreSQL rodando com migrations até V19 aplicadas (`V19__create_orders_schema.sql`)
-- Backend compilando sem erros (`mvn clean compile`)
-- Frontend executando sem erros de tipagem (`npm run build`)
-- Existência de pelo menos 1 orçamento criado em status `DRAFT` ou `SENT` (ex: ID 1)
+- Docker Desktop com Docker Compose, ou Java 21 + Maven, Node.js 22+ e PostgreSQL 16;
+- portas `3000`, `5173`, `8080` e `5432` livres, conforme a forma de execução;
+- migrations executadas até a versão mais recente disponível em `backend/src/main/resources/db/migration`;
+- um orçamento válido usa UUIDs reais retornados pela API. Não substitua identificadores por números sequenciais.
 
----
+## 1. Subir a aplicação
 
-## Cenários de Validação
-
-### Cenário 1: Converter Orçamento em Pedido de Venda com Sugestão de Prazo
+Na raiz do repositório:
 
 ```bash
-# Converter orçamento ID 1 em pedido de venda
-curl -s -X POST http://localhost:8080/api/orders/from-budget/1 \
+docker compose up -d --build postgres backend frontend
+docker compose ps
+```
+
+Acesse o frontend em `http://localhost:3000`. Para desenvolvimento local, execute o backend e o frontend separadamente:
+
+```bash
+cd backend
+mvn spring-boot:run
+
+cd ../frontend
+npm ci
+npm run dev
+```
+
+Nesse modo, o Vite responde em `http://localhost:5173` e encaminha as chamadas de API para o backend.
+
+## 2. Executar os quality gates
+
+```bash
+cd backend
+mvn clean verify
+
+cd ../frontend
+npm ci
+npm run build
+npm run test
+npm run test:e2e:us16
+```
+
+A suíte `test:e2e:us16` cobre, em formato BDD, aprovação/conversão, download do comprovante e cancelamento com reabertura. A criação real pela interface é coberta por `cypress/e2e/orders/us13_conversao_ordem_servico_real.cy.ts` quando a stack completa está disponível.
+
+## 3. Homologar pela interface
+
+1. Abra **Orçamentos > Novo Orçamento**.
+2. Selecione ou cadastre um cliente, adicione ao menos uma esquadria e salve.
+3. Na página do orçamento, clique em **Aprovar e Gerar O.S.**, informe canal e previsão de entrega e confirme.
+4. Confirme o redirecionamento para a Ordem de Serviço e o congelamento dos itens e valores.
+5. Clique em **Baixar Comprovante PDF**.
+6. Confirme que o arquivo tem extensão `.pdf`, abre sem erro e contém código do pedido, cliente, itens e total contratado.
+7. Clique em **Cancelar Ordem de Serviço**.
+8. Verifique que uma justificativa com menos de 10 caracteres é recusada; informe uma justificativa válida e confirme.
+9. Abra o orçamento de origem, confirme o aviso de pedido cancelado e clique em **Reabrir Orçamento**.
+10. Confirme que o orçamento voltou para **Rascunho**, está editável e pode ser aprovado novamente depois da renegociação.
+
+## 4. Homologar os endpoints
+
+Defina `BUDGET_ID` e `ORDER_ID` com os UUIDs obtidos nas respostas da criação e conversão.
+
+```bash
+# Converter orçamento em pedido
+curl -i -X POST "http://localhost:8080/api/v1/orders/convert/$BUDGET_ID" \
   -H "Content-Type: application/json" \
-  -d '{
-    "canalAprovacao": "WHATSAPP",
-    "dataPrevisaoEntrega": "2026-10-14",
-    "observacoes": "Aprovado via WhatsApp após confirmação das medidas"
-  }'
+  -d '{"canalAprovacao":"WHATSAPP","dataPrevisaoEntrega":"2026-10-28","observacoes":"Homologação da US-16.4"}'
 
-# Resultado esperado:
-# - HTTP 201 Created
-# - Código do pedido gerado (ex: PED-2026-0001)
-# - Status inicial: AGUARDANDO_PRODUCAO
-# - Orçamento ID 1 com status atualizado para APPROVED
-```
+# Emitir comprovante
+curl -i -o comprovante-pedido.pdf \
+  "http://localhost:8080/api/v1/orders/$ORDER_ID/pdf/comprovante"
 
-### Cenário 2: Validação do Snapshot Imutável (Lock de Preços)
-
-```bash
-# 1. Consultar pedido gerado
-curl -s http://localhost:8080/api/orders/1
-
-# 2. Simular reajuste no catálogo: alterar o preço do material ou tipologia no banco
-# 3. Consultar novamente o pedido gerado
-curl -s http://localhost:8080/api/orders/1
-
-# Resultado esperado: 
-# - Todos os itens do pedido e valores totais permanecem 100% idênticos
-# - Blindagem contra reajuste comprovada pelo snapshot deep copy
-```
-
-### Cenário 3: Bloqueio de Conversão Duplicada (Invariante 1-para-1)
-
-```bash
-# Tentar converter novamente o mesmo orçamento ID 1
-curl -s -X POST http://localhost:8080/api/orders/from-budget/1 \
+# Cancelar pedido
+curl -i -X PATCH "http://localhost:8080/api/v1/orders/$ORDER_ID/cancel" \
   -H "Content-Type: application/json" \
-  -d '{"canalAprovacao": "PRESENCIAL", "dataPrevisaoEntrega": "2026-10-14"}'
+  -d '{"justificativa":"Cliente solicitou renegociação antes do início da produção."}'
 
-# Resultado esperado: 
-# - HTTP 409 Conflict ou HTTP 422 Unprocessable Entity
-# - Mensagem: "Orçamento já convertido em pedido de venda"
+# Reabrir orçamento cancelado
+curl -i -X POST "http://localhost:8080/api/budgets/$BUDGET_ID/reopen" \
+  -H "Content-Type: application/json" \
+  -d '{}'
 ```
 
-### Cenário 4: Cancelamento de Pedido com Justificativa Obrigatória
+Resultados esperados:
+
+- conversão retorna `200` ou `201`, com código `OS-AAAA-NNNN` e pedido aguardando produção;
+- comprovante retorna `200`, `Content-Type: application/pdf` e `Content-Disposition: attachment`;
+- cancelamento sem justificativa válida retorna `400`; com justificativa válida retorna `200` e status `CANCELLED`;
+- reabertura retorna `200` e orçamento em `DRAFT`;
+- após a reabertura, uma nova conversão é permitida porque o pedido anterior está cancelado.
+
+## 5. Encerrar o ambiente
 
 ```bash
-# 1. Tentativa inválida sem justificativa (deve falhar por Bean Validation)
-curl -s -X PATCH http://localhost:8080/api/orders/1/cancel \
-  -H "Content-Type: application/json" \
-  -d '{"justificativa": "Curta"}' # Menos de 10 caracteres
-
-# Resultado esperado: HTTP 400 Bad Request
-
-# 2. Cancelamento com justificativa válida
-curl -s -X PATCH http://localhost:8080/api/orders/1/cancel \
-  -H "Content-Type: application/json" \
-  -d '{"justificativa": "Cliente solicitou cancelamento por adiamento da reforma residencial"}'
-
-# Resultado esperado: HTTP 200 OK com status CANCELADO e justificativa gravada
+docker compose down
 ```
 
-### Cenário 5: Emissão e Download do Comprovante do Pedido em PDF
+Use `docker compose down -v` somente quando houver intenção explícita de apagar os dados locais do PostgreSQL.
 
-```bash
-curl -s -o comprovante-pedido.pdf http://localhost:8080/api/orders/1/pdf/comprovante
+## Checklist de aceite
 
-# Resultado esperado: 
-# - Arquivo application/pdf válido
-# - Contém código PED-2026-0001, dados do cliente, itens congelados e total contratado
-```
-
----
-
-## Checklist do Quality Gate da Sprint 06
-
-- [ ] `mvn clean verify` executado sem falhas no backend
-- [ ] `npm run build` executado sem erros de TypeScript no frontend
-- [ ] Testes unitários do `OrderService` cobrindo conversão, deep copy e cancelamento
-- [ ] Testes de integração do `OrderController` com base H2
-- [ ] Teste automatizado do `OrderPdfService`
-- [ ] SonarQube Quality Gate verde (New Code Coverage $\ge 80\%$, zero bugs e vulnerabilidades)
+- [x] backend compilado e testes aprovados com `mvn clean verify`;
+- [x] frontend compilado sem erro com `npm run build`;
+- [x] testes unitários aprovados com `npm run test`;
+- [x] suíte BDD da US-16.4 aprovada com `npm run test:e2e:us16`;
+- [x] comprovante PDF baixado e conteúdo conferido por testes automatizados;
+- [x] cancelamento exige justificativa válida;
+- [x] orçamento vinculado reabre como rascunho;
+- [x] resultado registrado no relatório de homologação da US-16.4.

@@ -61,9 +61,15 @@
 
       describe('OrderDetailPage — [US-13.5] Visualização Detalhada do Pedido de Venda', () => {
         const mockDownloadPdf = vi.fn();
+        const mockDownloadComprovante = vi.fn();
 
         beforeEach(() => {
           vi.clearAllMocks();
+
+          vi.spyOn(useOrdersModule, 'useDownloadComprovantePdf').mockReturnValue({
+            mutate: mockDownloadComprovante,
+            isPending: false,
+          } as any);
 
           vi.spyOn(useOrdersModule, 'useCancelOrder').mockReturnValue({
             mutate: vi.fn(),
@@ -311,6 +317,29 @@
           await waitFor(() => {
             expect(mockMutate).toHaveBeenCalled();
             expect(toast.error).toHaveBeenCalledWith('Não é possível cancelar um pedido em produção.');
+          });
+        });
+
+        it('deve baixar o comprovante PDF oficial do pedido (US-16.1)', () => {
+          vi.spyOn(useOrdersModule, 'useOrder').mockReturnValue({
+            data: mockOrder,
+            isLoading: false,
+            isError: false,
+          } as any);
+
+          render(
+            <MemoryRouter initialEntries={['/ordens-servico/order-uuid-1']}>
+              <Routes>
+                <Route path="/ordens-servico/:id" element={<OrderDetailPage />} />
+              </Routes>
+            </MemoryRouter>
+          );
+
+          fireEvent.click(screen.getByRole('button', { name: /baixar comprovante pdf/i }));
+
+          expect(mockDownloadComprovante).toHaveBeenCalledWith({
+            id: 'order-uuid-1',
+            codigo: 'OS-2026-0001',
           });
         });
       });

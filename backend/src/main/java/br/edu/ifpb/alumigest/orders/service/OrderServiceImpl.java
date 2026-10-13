@@ -16,6 +16,7 @@ import br.edu.ifpb.alumigest.orders.domain.OrderItemOption;
 import br.edu.ifpb.alumigest.orders.domain.OrderStatus;
 import br.edu.ifpb.alumigest.orders.dto.OrderCancelRequest;
 import br.edu.ifpb.alumigest.orders.dto.OrderConvertRequest;
+import br.edu.ifpb.alumigest.orders.dto.OrderPdfDTO;
 import br.edu.ifpb.alumigest.orders.dto.OrderResponse;
 import br.edu.ifpb.alumigest.orders.dto.OrderSummaryResponse;
 import br.edu.ifpb.alumigest.orders.mapper.OrderMapper;
@@ -51,16 +52,19 @@ public class OrderServiceImpl implements OrderService {
     private final BudgetRepository budgetRepository;
     private final OrderCodeGenerator orderCodeGenerator;
     private final OrderMapper orderMapper;
+    private final OrderPdfService orderPdfService;
 
     public OrderServiceImpl(
             OrderRepository orderRepository,
             BudgetRepository budgetRepository,
             OrderCodeGenerator orderCodeGenerator,
-            OrderMapper orderMapper) {
+            OrderMapper orderMapper,
+            OrderPdfService orderPdfService) {
         this.orderRepository = orderRepository;
         this.budgetRepository = budgetRepository;
         this.orderCodeGenerator = orderCodeGenerator;
         this.orderMapper = orderMapper;
+        this.orderPdfService = orderPdfService;
     }
 
     @Override
@@ -78,7 +82,7 @@ public class OrderServiceImpl implements OrderService {
 
     /**
      * Converte um orçamento aprovado em Pedido de Venda (Ordem de Serviço) oficial.
-     * 
+     *
      * Resiliência a Concorrência (Issue #408):
      * A anotação @Retryable intercepta violações de unicidade (DataIntegrityViolationException
      * e TransactionSystemException). Como o @EnableRetry possui precedência (order = 0), o
@@ -148,6 +152,16 @@ public class OrderServiceImpl implements OrderService {
     /**
      * {@inheritDoc}
      */
+    @Override
+    @Transactional(readOnly = true)
+    public OrderPdfDTO gerarComprovanteById(UUID id) {
+        Order order = orderRepository.findByIdWithDetails(id)
+                .orElseThrow(() -> new ResourceNotFoundException(RESOURCE_PEDIDO, id.toString()));
+        byte[] bytes = orderPdfService.gerarComprovante(order);
+        String filename = "comprovante-" + order.getCodigo().toLowerCase().replace("/", "-") + ".pdf";
+        return new OrderPdfDTO(bytes, filename);
+    }
+
     @Override
     @Transactional
     public OrderResponse cancelOrder(UUID id, OrderCancelRequest request) {
