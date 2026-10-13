@@ -4,10 +4,10 @@
 |---|---|
 | **Projeto** | AlumiGest — Sistema de Gestão para Vidraçaria e Esquadrias |
 | **Documento** | Registro Unificado de Bugs, Defeitos e Hotfixes (RBD) |
-| **Versão** | 2.7.0 (Catálogo de Bugs BUG-024 a BUG-033 da Sprint 05 e BUG-034 a BUG-036 da US-13 / Sprint 06) |
-| **Data de Atualização** | 09/10/2026 |
+| **Versão** | 2.8.0 (Catálogo consolidado até BUG-040, incluindo as correções da US-14.1 / Sprint 06) |
+| **Data de Atualização** | 13/10/2026 |
 | **Responsável QA / SM** | Herbert Carvalho dos Santos / Júlio Kennedy dos Santos Silva / Equipe de Engenharia AlumiGest |
-| **Branch** | `feat/us-13-aprovar-orcamento-converter-pedido-venda` |
+| **Branch** | `feat/us-14.1-snapshot-imutavel-lock-precos-deep-copy-360` |
 | **Padrão de Template** | Baseado em [`.github/ISSUE_TEMPLATE/bug_report.md`](../../../.github/ISSUE_TEMPLATE/bug_report.md) |
 | **Auditoria Técnica** | Análise estática SonarQube, Pipeline CI/CD GitHub Actions e Histórico Git |
 
@@ -51,11 +51,6 @@ Seguindo a governança do **Plano de Gerência de Configuração (PGC)** e do **
 | **[BUG-021](#bug-021)** | Perda de Insumos da Ficha Técnica em Produtos Estáticos e Ocultação de Templates na Categoria Janela | Frontend / Catálogo & Orçamentos | 🔴 Alta | Sprint 03 | ✅ Resolvido | Issue #235 / Branch `fix/products-static-items-and-window-category` |
 | **[BUG-022](#bug-022)** | Itens do Orçamento Descartados na Criação via POST /api/budgets por Ausência de Campo no BudgetCreateRequest | Backend / Orçamentos | 🔴 Alta | Sprint 04 | ✅ Resolvido | Issue #300 / PR #293 |
 | **[BUG-023](#bug-023)** | Falta de Cotas Milimétricas Reais de Furação e Linha Divisória Cortando Texto do Puxador Duplo na Ficha Técnica | Backend / PDF | 🟡 Média | Sprint 05 | ✅ Resolvido | Issue #349 / Branch `fix/349-cotas-furacao-puxador-duplo` |
-<<<<<<< HEAD
-| **[BUG-024](#bug-024)** | Condição de Corrida Pode Gerar Códigos Duplicados em Conversões Simultâneas | Backend / Concorrência | 🔴 Alta | Sprint 06 | ✅ Resolvido | Issue #408 / PR #414 |
-| **[BUG-025](#bug-025)** | Interface Troca Código Oficial PED por OS e Quebra Busca pelo Identificador Exibido | Fullstack / Contratos | 🔴 Alta | Sprint 06 | ✅ Resolvido | Issue #411 / PR #414 |
-| **[BUG-026](#bug-026)** | Paginação Exibe Apenas Páginas 1–5 e Perde a Janela da Página Atual | Frontend / Paginação | 🟡 Média | Sprint 06 | ✅ Resolvido | Issue #412 / PR #414 |
-=======
 | **[BUG-024](#bug-024)** | Inconsistência entre Texto de Furação e Desenho Técnico na Ficha Técnica (3 furos no texto vs 2 furos no desenho) | Backend / PDF | 🟡 Média | Sprint 05 | ✅ Resolvido | Issue #348 / Branch `fix/348-inconsistencia-furacao-ficha-tecnica` |
 | **[BUG-025](#bug-025)** | Cota e Rótulo do Puxador Cortados na Margem Lateral do Esquema Técnico de Usinagem | Backend / PDF | 🟡 Média | Sprint 05 | ✅ Resolvido | Issue #345 / Branch `fix/345-cota-rotulo-puxador-cortados` |
 | **[BUG-026](#bug-026)** | Termos em Inglês Exibidos no Detalhamento de Usinagem, Puxadores e Tipologias do PDF Técnico | Backend / PDF | 🟡 Média | Sprint 05 | ✅ Resolvido | Issue #344 / Branch `fix/344-termos-ingles-detalhamento-pdf` |
@@ -66,7 +61,13 @@ Seguindo a governança do **Plano de Gerência de Configuração (PGC)** e do **
 | **[BUG-031](#bug-031)** | Resposta de Erro Empacotada como Blob sem Tratamento de Mensagem no Download de PDF Comercial | Frontend / API | 🟡 Média | Sprint 05 | 🟡 Em Aberto | Issue #376 / US-10 |
 | **[BUG-032](#bug-032)** | Duplicação de Mão de Obra e Inconsistência nos Totais do Orçamento | Backend & Frontend / Orçamentos | 🔴 Alta | Sprint 05 | ✅ Resolvido | Issue #333 / Branch `fix/333-duplicacao-mao-de-obra-totais-orcamento` |
 | **[BUG-033](#bug-033)** | Impossibilidade de Criar Esquadria sem Ferragem / Acessório no Construtor de Orçamentos | Frontend / Orçamentos | 🟡 Média | Sprint 05 | ✅ Resolvido | Issue #335 / Branch `fix/335-esquadria-sem-ferragem` |
->>>>>>> origin/develop
+| **[BUG-034](#bug-034)** | Condição de Corrida Pode Gerar Códigos Duplicados em Conversões Simultâneas | Backend / Concorrência | 🔴 Alta | Sprint 06 | ✅ Resolvido | Issue #408 / PR #414 |
+| **[BUG-035](#bug-035)** | Interface Troca Código Oficial PED por OS e Quebra Busca pelo Identificador Exibido | Fullstack / Contratos | 🔴 Alta | Sprint 06 | ✅ Resolvido | Issue #411 / PR #414 |
+| **[BUG-036](#bug-036)** | Paginação Exibe Apenas Páginas 1–5 e Perde a Janela da Página Atual | Frontend / Paginação | 🟡 Média | Sprint 06 | ✅ Resolvido | Issue #412 / PR #414 |
+| **[BUG-037](#bug-037)** | Classificação Indevida de Película (`FILM`) como Vidro no Snapshot (`tipoVidro`) | Backend / Orders | 🔴 Alta | Sprint 06 | ✅ Resolvido | Issue #424 / Commit `c871c5e` |
+| **[BUG-038](#bug-038)** | Extrator de Puxador Falha por Divergência de Chaves (`model` vs `handleType`) | Backend / Orders | 🔴 Alta | Sprint 06 | ✅ Resolvido | Issue #422 / Commit `ccc44e5` |
+| **[BUG-039](#bug-039)** | Inversão de Precedência no Snapshot e Omissão de `slidingMode` | Full-Stack / Orders | 🔴 Alta | Sprint 06 | ✅ Resolvido | Issue #433 / Commit `4e4788c` |
+| **[BUG-040](#bug-040)** | Duplicação do Índice Ordinal na `OrderItemList` | Frontend / UI | 🟡 Média | Sprint 06 | ✅ Resolvido | Issue #421 / Commit `c3b47e0` |
 
 ---
 
@@ -781,7 +782,7 @@ Em esquadrias onde o puxador se posiciona na borda lateral direita da folha, a s
 
 ### BUG-026: Termos em Inglês Exibidos no Detalhamento de Usinagem, Puxadores e Tipologias do PDF Técnico
 
-**Descrição do Problema:**  
+**Descrição do Problema:**
 Tanto na Ficha Técnica de Oficina (US-11.2) quanto no PDF Comercial do orçamento, identificou-se que determinados valores brutos de enums e nomenclaturas em inglês (ex.: `TUBULAR`, `SHELL_LOCK`, `HANDLE`, `RIGHT`, `LEFT`, `BOTH`, `AWNING WINDOW`, `SLIDING DOOR`, `SWING DOOR`, `CUSTOM_DISTANCES`) eram exibidos sem tradução vernácula para o Português do Brasil (pt-BR).
 
 Isso gerava inconsistência de linguagem para o cliente final e dificultava a identificação imediata na bancada de corte e montagem da serralheria/vidraçaria.
@@ -855,7 +856,7 @@ O modelo de domínio e cálculo deve ser unificado: ou a mão de obra é sempre 
 
 **Causa Raiz Técnica & Solução Recomendada:**
 * **Causa Raiz:** Ausência de alinhamento no contrato DTO e na regra matemática do `BudgetPricingService` em relação ao caráter unitário ou global de `laborCost` ao iterar itens com `quantity > 1`.
-* **Solução Recomendada:** 
+* **Solução Recomendada:**
   1. No `BudgetPricingService.java`, alinhar a fórmula de precificação para `itemSubtotal = (itemMaterialsSubtotal.add(itemLaborCost)).multiply(BigDecimal.valueOf(itemQty))`.
   2. No `BudgetPdfService.java`, acumular a mão de obra total ponderando pela quantidade: `totalMaoDeObra = totalMaoDeObra.add(item.getLaborCost().multiply(BigDecimal.valueOf(item.getQuantity())))`.
   3. Manter a paridade exata com o redutor do `BudgetDetailPage.tsx`.
@@ -1188,6 +1189,105 @@ A paginação deve implementar navegação com janela deslizante e reticências 
   2. Renderização de botões e spans de reticências acessíveis com marcação semântica (`aria-current="page"`).
   3. Adicionados testes unitários isolados para `getVisiblePages` cobrindo início, meio (`page = 5, totalPages = 10`) e fim.
   4. Adicionado teste de integração no componente `OrderListPage.test.tsx` cobrindo explicitamente `page > 4` (navegação até página 6 em 10 páginas) conforme o critério de aceite CA-4 da Issue #412.
+
+---
+
+### BUG-037
+#### [BUG] Classificação Indevida de Película (`FILM`) como Vidro no Snapshot (`tipoVidro`)
+
+**Descrição do Problema:**
+Durante a conversão do orçamento em pedido de venda (US-14.1), itens com película protetora ou térmica podiam ter `tipoVidro` preenchido com o nome da película, sobrescrevendo a especificação real do vidro.
+
+**Passos para Reproduzir:**
+1. Criar um orçamento com vidro e película adicional.
+2. Aprovar e converter o orçamento em pedido.
+3. Consultar o pedido gerado e verificar o campo `tipoVidro`.
+
+**Comportamento Esperado:**
+Insumos da categoria `FILM` devem permanecer nas opções do item e nunca substituir o acabamento estrutural do vidro.
+
+**Contexto / Ambiente:**
+- **Módulo Afetado:** `OrderItemSnapshotResolver.java`.
+- **Severidade:** 🔴 Alta | **Sprint:** 06 | **Status:** ✅ Resolvido.
+- **Detecção / Correção:** Issue #424 / Commit `c871c5e`.
+
+**Causa Raiz Técnica & Solução:**
+* **Causa Raiz:** A correspondência textual de vidro não excluía opções da categoria `FILM`.
+* **Solução:** A extração passou a priorizar `MaterialCategoryType.GLASS` e a descartar explicitamente películas no fallback textual, com testes de regressão.
+
+---
+
+### BUG-038
+#### [BUG] Extrator de Puxador Falha por Divergência de Chaves (`model` vs `handleType`)
+
+**Descrição do Problema:**
+O snapshot deixava o campo `ferragens` nulo ou incompleto quando a configuração do puxador usava a chave `handleType`.
+
+**Passos para Reproduzir:**
+1. Criar um item com `handle_config` contendo `handleType` e `handleLengthMm`.
+2. Converter o orçamento em pedido.
+3. Verificar o campo `ferragens` persistido.
+
+**Comportamento Esperado:**
+O snapshot deve registrar o puxador com rótulo amigável e dimensão em milímetros.
+
+**Contexto / Ambiente:**
+- **Módulo Afetado:** `OrderItemSnapshotResolver.java`.
+- **Severidade:** 🔴 Alta | **Sprint:** 06 | **Status:** ✅ Resolvido.
+- **Detecção / Correção:** Issue #422 / Commit `ccc44e5`.
+
+**Causa Raiz Técnica & Solução:**
+* **Causa Raiz:** O extrator buscava somente a chave `model`.
+* **Solução:** Adicionado suporte a `handleType`, com fallback para `model`, leitura do comprimento, tradução dos rótulos e testes automatizados.
+
+---
+
+### BUG-039
+#### [BUG] Inversão de Precedência no Snapshot e Omissão de `slidingMode`
+
+**Descrição do Problema:**
+O template padrão do produto podia sobrescrever cores e acabamentos customizados do orçamento. Além disso, esquadrias de correr com `slidingMode` tinham a orientação de abertura omitida.
+
+**Passos para Reproduzir:**
+1. Criar um orçamento com configuração customizada e modo de correr.
+2. Converter o orçamento em pedido.
+3. Comparar o snapshot com a configuração do item original.
+
+**Comportamento Esperado:**
+As configurações específicas do item devem prevalecer sobre o template do produto, e `slidingMode` deve ser registrado e exibido com rótulo amigável.
+
+**Contexto / Ambiente:**
+- **Módulos Afetados:** `OrderItemSnapshotResolver.java` e `OrderItemList.tsx`.
+- **Severidade:** 🔴 Alta | **Sprint:** 06 | **Status:** ✅ Resolvido.
+- **Detecção / Correção:** Issue #433 / Commit `4e4788c`.
+
+**Causa Raiz Técnica & Solução:**
+* **Causa Raiz:** A cadeia de precedência consultava o produto antes da configuração do item e não reconhecia `slidingMode`.
+* **Solução:** Reordenada a precedência para opções, configuração do item e configuração do produto; adicionada extração e tradução de `slidingMode`.
+
+---
+
+### BUG-040
+#### [BUG] Duplicação do Índice Ordinal na `OrderItemList`
+
+**Descrição do Problema:**
+A primeira e a segunda linha da tabela de itens podiam exibir o mesmo ordinal `# 1`.
+
+**Passos para Reproduzir:**
+1. Acessar um pedido com dois ou mais itens.
+2. Observar a coluna ordinal da tabela.
+
+**Comportamento Esperado:**
+A numeração deve ser sequencial e iniciar em 1.
+
+**Contexto / Ambiente:**
+- **Módulos Afetados:** `OrderItemList.tsx` e `OrderItemList.test.tsx`.
+- **Severidade:** 🟡 Média | **Sprint:** 06 | **Status:** ✅ Resolvido.
+- **Detecção / Correção:** Issue #421 / Commit `c3b47e0`.
+
+**Causa Raiz Técnica & Solução:**
+* **Causa Raiz:** A expressão baseada em `||` tratava o índice zero como valor falso.
+* **Solução:** A numeração passou a testar explicitamente o tipo do campo `ordem` antes de somar 1, com cobertura de regressão no frontend.
 
 ---
 
