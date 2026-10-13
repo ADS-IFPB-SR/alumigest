@@ -27,13 +27,13 @@ O **AlumiGest** é uma solução de software integrada desenvolvida para moderni
 | Integrante | Papel Principal |
 | :--- | :--- |
 | **José Guilherme** | Product Owner (PO - Papel Fixo) |
-| **Italo Santos** | Equipe Técnica / Gerente de Projeto (S01) |
-| **Nichollas** | Equipe Técnica / Arquitetura & DEV |
-| **Hebert** | Equipe Técnica / DEV & Backend |
+| **Italo Santos** | Equipe Técnica / Gerente de Projeto (S01) /  DEV |
+| **Nichollas** | Equipe Técnica /  DEV |
+| **Hebert** | Equipe Técnica / DEV |
 | **Gabriel** | Equipe Técnica / DEV |
 | **Guilherme Kauã** | Equipe Técnica / DEV |
-| **Júlio Kennedy** | Equipe Técnica / DEV & QA |
-| **Maylson** | Equipe Técnica / DEV & QA |
+| **Júlio Kennedy** | Equipe Técnica / DEV  |
+| **Maylson** | Equipe Técnica / DEV  |
 
 *Metodologia de trabalho: **IMPROS (Scrum Adaptado) com Sprints quinzenais de 15 dias e rotação dos papéis de Gerente de Projeto (Scrum Master), Testador (QA) e Desenvolvedor (DEV)**.*
 
