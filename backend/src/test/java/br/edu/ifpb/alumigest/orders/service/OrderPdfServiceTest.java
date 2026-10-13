@@ -1,6 +1,7 @@
 package br.edu.ifpb.alumigest.orders.service;
 
 import br.edu.ifpb.alumigest.budgets.config.CompanyProperties;
+import br.edu.ifpb.alumigest.common.exception.BusinessException;
 import br.edu.ifpb.alumigest.orders.domain.ApprovalChannel;
 import br.edu.ifpb.alumigest.orders.domain.Order;
 import br.edu.ifpb.alumigest.orders.domain.OrderItem;
@@ -154,6 +155,83 @@ class OrderPdfServiceTest {
             // O conteúdo deve incluir valores financeiros (presentes nos streams do PDF)
             assertThat(pdfConteudo).isNotBlank();
         }
+
+        @Test
+        @DisplayName("Cenário 2 da US-16: Deve incluir bloco de assinaturas formal com 2 colunas")
+        void deveIncluirBlocoDeAssinaturasFormal() throws IOException {
+            Order order = criarPedidoPadrao();
+
+            byte[] pdfBytes = orderPdfService.gerarComprovante(order);
+
+            try (PdfReader reader = new PdfReader(pdfBytes)) {
+                String streamsConteudo = extrairStreamsDeTexto(reader);
+
+                assertThat(streamsConteudo)
+                        .as("Deve conter a linha de assinatura do cliente")
+                        .contains("Assinatura do Cliente");
+                assertThat(streamsConteudo)
+                        .as("Deve conter a declaração de confirmação das medidas")
+                        .contains("Confirmo as medidas e especificações acima");
+                assertThat(streamsConteudo)
+                        .as("Deve conter a identificação da empresa para assinatura")
+                        .contains(companyProps.getRazaoSocial());
+                assertThat(streamsConteudo)
+                        .as("Deve conter o cargo do responsável pela empresa")
+                        .contains("Vendedor / Responsável Técnico");
+            }
+        }
+
+        @Test
+        @DisplayName("Cenário 3 da US-16: Deve suportar documento multi-página com paginação dinâmica e cabeçalho repetido")
+        void deveSuportarDocumentoMultiPaginaComPaginacaoECabecalhoRepetido() throws IOException {
+            Order order = criarPedidoPadrao();
+
+            // Adiciona múltiplos itens para forçar quebra de página A4 fluida
+            for (int i = 2; i <= 15; i++) {
+                order.addItem(OrderItem.builder()
+                        .id(UUID.randomUUID())
+                        .descricao("Janela de Correr 4 Folhas Especial com Vidro Temperado 8mm - Linha Suprema #" + i)
+                        .larguraMm(1800)
+                        .alturaMm(1400)
+                        .quantidade(1)
+                        .valorUnitario(new BigDecimal("1200.00"))
+                        .valorTotal(new BigDecimal("1200.00"))
+                        .ordem(i)
+                        .build());
+            }
+
+            byte[] pdfBytes = orderPdfService.gerarComprovante(order);
+
+            try (PdfReader reader = new PdfReader(pdfBytes)) {
+                int totalPaginas = reader.getNumberOfPages();
+                assertThat(totalPaginas)
+                        .as("O documento com 15 itens deve ultrapassar 1 página A4")
+                        .isGreaterThan(1);
+
+                String streamsConteudo = extrairStreamsDeTexto(reader);
+
+                // Valida paginação dinâmica em todas as páginas
+                assertThat(streamsConteudo)
+                        .as("Deve conter identificação da Página 1")
+                        .contains("1 de");
+                assertThat(streamsConteudo)
+                        .as("Deve conter identificação da Página 2")
+                        .contains("2 de");
+
+                // Valida código do pedido no rodapé em todas as páginas
+                assertThat(streamsConteudo)
+                        .as("Deve conter o código do pedido em todas as páginas via OrderPdfPageEvent")
+                        .contains("Pedido " + order.getCodigo());
+
+                // Valida cabeçalho repetido em páginas subsequentes (página 2+)
+                assertThat(streamsConteudo)
+                        .as("Deve conter cabeçalho repetido na página 2+")
+                        .contains("Pedido de Venda #" + order.getCodigo());
+                assertThat(streamsConteudo)
+                        .as("Deve conter o nome do cliente no cabeçalho repetido")
+                        .contains("Cliente: " + order.getClienteNome());
+            }
+        }
     }
 
     // =========================================================================
@@ -301,7 +379,12 @@ class OrderPdfServiceTest {
             if (pageBytes != null) {
                 String raw = new String(pageBytes, StandardCharsets.ISO_8859_1);
                 // Normaliza escapes de PDF literals para possibilitar asserts naturais
-                String normalizado = raw.replace("\\(", "(").replace("\\)", ")");
+                String normalizado = raw.replace("\\(", "(").replace("\\)", "")
+                        .replace("\\341", "á").replace("\\351", "é").replace("\\355", "í")
+                        .replace("\\363", "ó").replace("\\372", "ú").replace("\\343", "ã")
+                        .replace("\\365", "õ").replace("\\347", "ç").replace("\\301", "Á")
+                        .replace("\\311", "É").replace("\\323", "Ó").replace("\\303", "Ã")
+                        .replace("\\325", "Õ").replace("\\307", "Ç");
                 sb.append(normalizado).append("\n");
             }
         }

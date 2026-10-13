@@ -1,8 +1,10 @@
 package br.edu.ifpb.alumigest.orders.service;
 
 import br.edu.ifpb.alumigest.budgets.config.CompanyProperties;
+import br.edu.ifpb.alumigest.common.exception.BusinessException;
 import br.edu.ifpb.alumigest.orders.domain.Order;
 import br.edu.ifpb.alumigest.orders.domain.OrderItem;
+import br.edu.ifpb.alumigest.orders.service.pdf.OrderPdfPageEvent;
 import com.lowagie.text.Chunk;
 import com.lowagie.text.Document;
 import com.lowagie.text.DocumentException;
@@ -57,7 +59,6 @@ public class OrderPdfService {
     private static final Font FONTE_CABECALHO_TABELA = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 9, Color.WHITE);
     private static final Font FONTE_TOTAL_LABEL = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 11, Color.WHITE);
     private static final Font FONTE_TOTAL_VALOR = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 13, Color.WHITE);
-    private static final Font FONTE_RODAPE = FontFactory.getFont(FontFactory.HELVETICA, 8, new Color(130, 135, 145));
 
     private static final Color COR_CABECALHO_TABELA = new Color(20, 30, 50);
     private static final Color COR_FUNDO_CLARO = new Color(247, 249, 252);
@@ -84,7 +85,11 @@ public class OrderPdfService {
 
         try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
             try (Document document = new Document(PageSize.A4, 36, 36, 54, 54)) {
-                PdfWriter.getInstance(document, outputStream);
+                PdfWriter writer = PdfWriter.getInstance(document, outputStream);
+                String nomeCliente = order.getClienteNome() != null ? order.getClienteNome() : "";
+                OrderPdfPageEvent pageEvent = new OrderPdfPageEvent(
+                        order.getCodigo(), nomeCliente, companyProps.getRazaoSocial());
+                writer.setPageEvent(pageEvent);
                 document.open();
 
                 adicionarCabecalho(document, order);
@@ -106,14 +111,13 @@ public class OrderPdfService {
                     adicionarCondicoesComerciais(document, order);
                 }
 
-                document.add(espacamento(20f));
-                adicionarRodape(document, order);
+                adicionarBlocoAssinaturas(document);
             }
             return outputStream.toByteArray();
 
         } catch (DocumentException | IOException e) {
             log.error("Erro ao gerar comprovante PDF para o pedido {}: {}", order.getCodigo(), e.getMessage(), e);
-            throw new RuntimeException("Erro ao gerar comprovante PDF do pedido: " + e.getMessage(), e);
+            throw new BusinessException("Erro ao gerar comprovante PDF do pedido: " + e.getMessage(), e);
         }
     }
 
@@ -510,22 +514,58 @@ public class OrderPdfService {
     }
 
     // =========================================================================
-    // Seção: Rodapé
+    // Seção: Assinaturas Formais (Cenário 2 da US-16)
     // =========================================================================
 
-    private void adicionarRodape(Document document, Order order) throws DocumentException {
-        Paragraph divisoria = new Paragraph();
-        divisoria.setSpacingAfter(10f);
-        divisoria.add(new Chunk(new LineSeparator(0.5f, 100f, COR_BORDA_CLARA, Element.ALIGN_CENTER, 0f)));
-        document.add(divisoria);
+    private void adicionarBlocoAssinaturas(Document document) throws DocumentException {
+        document.add(espacamento(25f));
 
-        Paragraph rodape = new Paragraph(
-                companyProps.getRazaoSocial() + " — " + companyProps.getCidadeUf()
-                        + " — " + companyProps.getTelefone()
-                        + "\nDocumento gerado eletronicamente. Pedido " + obterDadoSeguro(order.getCodigo()),
-                FONTE_RODAPE);
-        rodape.setAlignment(Element.ALIGN_CENTER);
-        document.add(rodape);
+        PdfPTable table = new PdfPTable(3);
+        table.setWidthPercentage(90);
+        table.setWidths(new float[]{45f, 10f, 45f});
+        table.setHorizontalAlignment(Element.ALIGN_CENTER);
+        table.setKeepTogether(true);
+
+        // Assinatura do Cliente
+        PdfPCell cellCliente = new PdfPCell();
+        cellCliente.setBorder(Rectangle.TOP);
+        cellCliente.setBorderColor(COR_CABECALHO_TABELA);
+        cellCliente.setBorderWidthTop(1f);
+        cellCliente.setPaddingTop(6f);
+        cellCliente.setHorizontalAlignment(Element.ALIGN_CENTER);
+
+        Paragraph pNomeCliente = new Paragraph("Assinatura do Cliente", FONTE_NEGRITO);
+        pNomeCliente.setAlignment(Element.ALIGN_CENTER);
+        cellCliente.addElement(pNomeCliente);
+
+        Paragraph pDescCliente = new Paragraph("Confirmo as medidas e especificações acima", FONTE_PEQUENA);
+        pDescCliente.setAlignment(Element.ALIGN_CENTER);
+        cellCliente.addElement(pDescCliente);
+        table.addCell(cellCliente);
+
+        // Espaço intermediário
+        PdfPCell cellEspaco = new PdfPCell();
+        cellEspaco.setBorder(Rectangle.NO_BORDER);
+        table.addCell(cellEspaco);
+
+        // Assinatura da Empresa
+        PdfPCell cellEmpresa = new PdfPCell();
+        cellEmpresa.setBorder(Rectangle.TOP);
+        cellEmpresa.setBorderColor(COR_CABECALHO_TABELA);
+        cellEmpresa.setBorderWidthTop(1f);
+        cellEmpresa.setPaddingTop(6f);
+        cellEmpresa.setHorizontalAlignment(Element.ALIGN_CENTER);
+
+        Paragraph pNomeEmpresa = new Paragraph(companyProps.getRazaoSocial(), FONTE_NEGRITO);
+        pNomeEmpresa.setAlignment(Element.ALIGN_CENTER);
+        cellEmpresa.addElement(pNomeEmpresa);
+
+        Paragraph pDescEmpresa = new Paragraph("Vendedor / Responsável Técnico", FONTE_PEQUENA);
+        pDescEmpresa.setAlignment(Element.ALIGN_CENTER);
+        cellEmpresa.addElement(pDescEmpresa);
+        table.addCell(cellEmpresa);
+
+        document.add(table);
     }
 
     // =========================================================================
