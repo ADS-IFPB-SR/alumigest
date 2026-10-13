@@ -51,9 +51,6 @@ public class BudgetController {
     @ApiResponse(responseCode = "400", description = "Dados inválidos")
     @ApiResponse(responseCode = "404", description = "Cliente não encontrado")
     public ResponseEntity<BudgetResponseDTO> create(@RequestBody @Valid BudgetCreateRequest request) {
-        // Caso o seu BudgetService espere o BudgetRequestDTO legado, 
-        // você pode mapear o BudgetCreateRequest para o BudgetRequestDTO ou ajustar o service.
-        // Assumindo que o service receba o novo DTO ou que seja adaptado:
         BudgetResponseDTO response = budgetService.create(request);
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}")
@@ -126,6 +123,7 @@ public class BudgetController {
         BudgetResponseDTO response = budgetService.aplicarDesconto(id, request);
         return ResponseEntity.ok(response);
     }
+    
     @PostMapping({"/{id}/items", "/{id}/itens"})
     @Operation(summary = "Adicionar item ao orçamento",
                description = "Adiciona incrementalmente um item avulso ao orçamento DRAFT e recalcula valores.")
@@ -168,7 +166,8 @@ public class BudgetController {
                 .body(pdfDto.bytes());
     }
 
-    @GetMapping("/{id}/pdf/tecnico")
+
+    @GetMapping({"/{id}/pdf/tecnico", "/{id}/technical-pdf"})
     @Operation(
             summary = "Exportar PDF técnico (Ficha de Oficina) do orçamento",
             description = "Gera e exporta a ficha de corte e usinagem da oficina em formato PDF A4 para download."
@@ -191,7 +190,6 @@ public class BudgetController {
                 .body(pdfDto.bytes());
     }
 
-
     @PostMapping("/{id}/recalcular")
     @Operation(summary = "Forçar recálculo", description = "Força o recálculo de quantidades e preços de um orçamento DRAFT.")
     @ApiResponse(responseCode = "200", description = "Orçamento recalculado")
@@ -199,6 +197,21 @@ public class BudgetController {
     @ApiResponse(responseCode = "422", description = "Orçamento imutável")
     public ResponseEntity<BudgetResponseDTO> recalculate(@PathVariable UUID id) {
         BudgetResponseDTO response = budgetService.recalculate(id);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping({"/{id}/reopen", "/{id}/reabrir"})
+    @Operation(
+        summary = "Reabrir orçamento após cancelamento de pedido",
+        description = "Reabre um orçamento no status APPROVED de volta para DRAFT caso a ordem de serviço vinculada esteja cancelada (US-15.2)."
+    )
+    @ApiResponse(responseCode = "200", description = "Orçamento reaberto com sucesso como rascunho")
+    @ApiResponse(responseCode = "404", description = "Orçamento não encontrado")
+    @ApiResponse(responseCode = "409", description = "Ordem de serviço vinculada não está cancelada")
+    @ApiResponse(responseCode = "422", description = "Orçamento não elegível para reabertura (não está APPROVED)")
+    public ResponseEntity<BudgetResponseDTO> reabrirOrcamento(
+            @Parameter(description = "ID do orçamento") @PathVariable UUID id) {
+        BudgetResponseDTO response = budgetService.reabrirOrcamento(id);
         return ResponseEntity.ok(response);
     }
 
@@ -218,7 +231,6 @@ public class BudgetController {
         budgetService.delete(id);
         return ResponseEntity.noContent().build();
     }
-
 
     @GetMapping(value = "/{id}/resumo-whatsapp", produces = MediaType.TEXT_PLAIN_VALUE + ";charset=UTF-8")
     @Operation( summary = "Obter resumo do orçamento para WhatsApp", description = "Gera e retorna o texto formatado com os dados do orçamento para envio via WhatsApp.")

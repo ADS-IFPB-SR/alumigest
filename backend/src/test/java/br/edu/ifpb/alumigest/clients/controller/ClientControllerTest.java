@@ -118,7 +118,73 @@ class ClientControllerTest {
                 "",
                 PersonType.FISICA,
                 "123.456.789-00",
-                null, null, null, null, null, null, null, null, null, null
+                "(83) 99999-0000", null, null, null, null, null, null, null, null, null
+        );
+
+        // Act & Assert
+        mockMvc.perform(post("/api/clientes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(invalidRequest)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400));
+    }
+
+    @Test
+    @DisplayName("Deve retornar 400 BAD REQUEST ao tentar cadastrar cliente com documento em branco")
+    void create_ShouldReturn400_WhenDocumentIsBlank() throws Exception {
+        // Arrange
+        ClientRequestDTO invalidRequest = new ClientRequestDTO(
+                "João da Silva",
+                PersonType.FISICA,
+                "",
+                "(83) 99999-0000", null, null, null, null, null, null, null, null, null
+        );
+
+        // Act & Assert
+        mockMvc.perform(post("/api/clientes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(invalidRequest)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400));
+    }
+
+    @Test
+    @DisplayName("Deve retornar 400 BAD REQUEST ao tentar cadastrar cliente com telefone em branco")
+    void create_ShouldReturn400_WhenPhoneIsBlank() throws Exception {
+        // Arrange
+        ClientRequestDTO invalidRequest = new ClientRequestDTO(
+                "João da Silva",
+                PersonType.FISICA,
+                "123.456.789-00",
+                "", null, null, null, null, null, null, null, null, null
+        );
+
+        // Act & Assert
+        mockMvc.perform(post("/api/clientes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(invalidRequest)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400));
+    }
+
+    @Test
+    @DisplayName("Deve retornar 400 BAD REQUEST quando município contiver caracteres especiais ou números")
+    void create_ShouldReturn400_WhenCityContainsSpecialCharacters() throws Exception {
+        // Arrange
+        ClientRequestDTO invalidRequest = new ClientRequestDTO(
+                "João da Silva",
+                PersonType.FISICA,
+                "123.456.789-00",
+                "(83) 99999-0000",
+                "joao@email.com",
+                "58300-000",
+                "Rua das Flores",
+                "123",
+                "Casa",
+                "Centro",
+                "Santa Rita @#$% 123",
+                "PB",
+                "Sem observações"
         );
 
         // Act & Assert
@@ -137,7 +203,7 @@ class ClientControllerTest {
                 "João da Silva",
                 PersonType.FISICA,
                 "123.456.789-00",
-                null, null, null, null, null, null, null, null, null, null
+                "(83) 99999-0000", null, null, null, null, null, null, null, null, null
         );
 
         when(clientService.create(any(ClientRequestDTO.class)))
@@ -223,7 +289,7 @@ class ClientControllerTest {
                 "Nome Atualizado",
                 PersonType.FISICA,
                 "123.456.789-00",
-                null, null, null, null, null, null, null, null, null, null
+                "(83) 99999-0000", null, null, null, null, null, null, null, null, null
         );
 
         ClientResponseDTO response = new ClientResponseDTO(
@@ -256,5 +322,58 @@ class ClientControllerTest {
         mockMvc.perform(patch("/api/clientes/{id}/status", id))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.ativo").value(false));
+    }
+
+    @Test
+    @DisplayName("Deve retornar 201 CREATED ao cadastrar Razão Social contendo números e símbolos comerciais")
+    void create_ShouldReturn201_WhenCompanyNameContainsNumbersAndCommercialSymbols() throws Exception {
+        // Arrange
+        UUID id = UUID.randomUUID();
+        ClientRequestDTO request = new ClientRequestDTO(
+                "3M do Brasil, Sousa & Filhos S/A",
+                PersonType.JURIDICA,
+                "12.345.678/0001-90",
+                "(83) 3218-0000",
+                "contato@3m.com.br",
+                "58000-000",
+                "Av Principal",
+                "100",
+                null,
+                "Centro",
+                "João Pessoa",
+                "PB",
+                null
+        );
+
+        ClientResponseDTO response = new ClientResponseDTO(
+                id,
+                "3M do Brasil, Sousa & Filhos S/A",
+                PersonType.JURIDICA,
+                "12345678000190",
+                "(83) 3218-0000",
+                "contato@3m.com.br",
+                "58000-000",
+                "Av Principal",
+                "100",
+                null,
+                "Centro",
+                "João Pessoa",
+                "PB",
+                null,
+                true,
+                OffsetDateTime.now(ZoneOffset.UTC),
+                OffsetDateTime.now(ZoneOffset.UTC)
+        );
+
+        when(clientService.create(any(ClientRequestDTO.class))).thenReturn(response);
+
+        // Act & Assert
+        mockMvc.perform(post("/api/clientes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(id.toString()))
+                .andExpect(jsonPath("$.nomeCompleto").value("3M do Brasil, Sousa & Filhos S/A"))
+                .andExpect(jsonPath("$.personType").value("JURIDICA"));
     }
 }

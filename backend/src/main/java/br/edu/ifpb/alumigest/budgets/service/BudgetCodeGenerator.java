@@ -15,16 +15,28 @@ public class BudgetCodeGenerator {
         this.budgetRepository = budgetRepository;
     }
 
-    public String generateNextCode() {
+    public synchronized String generateNextCode() {
         int currentYear = Year.now(ZoneOffset.UTC).getValue();
         String prefix = String.format("ORC-%d-", currentYear);
 
-        return budgetRepository.findTopByCodeStartingWithOrderByCodeDesc(prefix)
+        int nextNumber = budgetRepository.findTopByCodeStartingWithOrderByCodeDesc(prefix)
                 .map(lastBudget -> {
                     String lastCode = lastBudget.getCode();
-                    int lastNumber = Integer.parseInt(lastCode.substring(prefix.length()));
-                    return String.format("%s%04d", prefix, lastNumber + 1);
+                    try {
+                        int lastNumber = Integer.parseInt(lastCode.substring(prefix.length()));
+                        return lastNumber + 1;
+                    } catch (NumberFormatException e) {
+                        return 1;
+                    }
                 })
-                .orElse(prefix + "0001");
+                .orElse(1);
+
+        String candidateCode = String.format("%s%04d", prefix, nextNumber);
+        while (budgetRepository.existsByCode(candidateCode)) {
+            nextNumber++;
+            candidateCode = String.format("%s%04d", prefix, nextNumber);
+        }
+
+        return candidateCode;
     }
 }

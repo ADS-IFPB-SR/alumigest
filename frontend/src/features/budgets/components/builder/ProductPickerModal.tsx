@@ -54,7 +54,9 @@ export const ProductPickerModal: React.FC<ProductPickerModalProps> = ({
 
   const configuredProducts = useMemo<Product[]>(() => {
     if (!productsData?.content) return [];
-    return productsData.content.filter((p: Product) => p.isActive && Boolean(p.templateConfig));
+    return productsData.content.filter(
+      (p: Product) => p.isActive && (Boolean(p.templateConfig) || Boolean(p.templateType))
+    );
   }, [productsData]);
 
   const filteredProducts = useMemo<ProductWithTemplate[]>(() => {

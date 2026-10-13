@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BudgetDetailPage } from '../../pages/BudgetDetailPage';
 import * as useBudgetsModule from '../../features/budgets/hooks/useBudgets';
 import type { BudgetDetail } from '../../features/budgets/types';
@@ -74,6 +75,11 @@ describe('BudgetDetailPage — [US-11.5] Botão Emitir Via Técnica (Oficina)', 
       isPending: false,
     } as any);
 
+    vi.spyOn(useBudgetsModule, 'useReopenBudget').mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+    } as any);
+
     vi.spyOn(useBudgetsModule, 'useWhatsAppSummary').mockReturnValue({
       data: 'Resumo mock para WhatsApp',
       isLoading: false,
@@ -83,12 +89,21 @@ describe('BudgetDetailPage — [US-11.5] Botão Emitir Via Técnica (Oficina)', 
   });
 
   function renderComponent() {
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
+
     return render(
-      <MemoryRouter initialEntries={['/orcamentos/budget-123']}>
-        <Routes>
-          <Route path="/orcamentos/:id" element={<BudgetDetailPage />} />
-        </Routes>
-      </MemoryRouter>
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={['/orcamentos/budget-123']}>
+          <Routes>
+            <Route path="/orcamentos/:id" element={<BudgetDetailPage />} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>
     );
   }
 
@@ -143,4 +158,18 @@ describe('BudgetDetailPage — [US-11.5] Botão Emitir Via Técnica (Oficina)', 
       'Não é possível emitir ficha técnica de orçamento cancelado'
     );
   });
+
+  it('deve abrir o modal de aprovação ao clicar no botão "Aprovar e Gerar Pedido"', () => {
+    renderComponent();
+
+    const approveBtn = screen.getByTestId('btn-approve-budget');
+    expect(approveBtn).toBeInTheDocument();
+    expect(approveBtn).not.toBeDisabled();
+
+    fireEvent.click(approveBtn);
+
+    expect(screen.getByTestId('order-approval-modal')).toBeInTheDocument();
+    expect(screen.getByText(/Aprovar Orçamento e Gerar (Pedido|Ordem de Serviço)/i)).toBeInTheDocument();
+  });
 });
+

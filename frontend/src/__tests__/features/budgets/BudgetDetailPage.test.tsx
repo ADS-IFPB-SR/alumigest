@@ -4,6 +4,14 @@ import { describe, it, expect, vi } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BudgetDetailPage } from '../../../pages/BudgetDetailPage';
 import * as budgetsHooks from '../../../features/budgets/hooks/useBudgets';
+import { useOrders } from '../../../features/orders/hooks/useOrders';
+
+vi.mock('../../../features/orders/hooks/useOrders', () => ({
+  useOrders: vi.fn(() => ({
+    data: { content: [] },
+    isLoading: false,
+  })),
+}));
 
 // Mock dos hooks de orçamento
 vi.mock('../../../features/budgets/hooks/useBudgets', () => ({
@@ -11,6 +19,7 @@ vi.mock('../../../features/budgets/hooks/useBudgets', () => ({
   useDeleteBudget: () => ({ mutate: vi.fn(), isPending: false }),
   useUpdateBudgetStatus: () => ({ mutate: vi.fn(), isPending: false }),
   useDownloadPdfTecnico: () => ({ mutate: vi.fn(), isPending: false }),
+  useReopenBudget: () => ({ mutate: vi.fn(), isPending: false }),
   useWhatsAppSummary: () => ({
     data: 'Resumo oficial mock para WhatsApp',
     isLoading: false,
@@ -49,8 +58,8 @@ const mockBudgetDetail = {
       width: 2000,
       height: 2100,
       quantity: 2,
-      laborCost: 150, // 150 * 2 = 300 de MO agregada
-      subtotal: 1500,
+      laborCost: 150, // MO fixa da linha (não multiplica pela quantidade)
+      subtotal: 1350, // materiais (1350) + MO (150) = subtotal bruto (1500)
       options: [],
     },
   ],
@@ -171,11 +180,11 @@ describe('BudgetDetailPage - Testes Unitários', () => {
     // Abre o dropdown
     fireEvent.click(whatsAppButton);
 
-    const sendTextOption = screen.getByRole('button', { name: /enviar resumo de texto/i });
+    const sendTextOption = screen.getByRole('button', { name: /personalizar resumo/i });
     expect(sendTextOption).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /enviar pdf comercial/i })).toBeInTheDocument();
 
-    // Clica em "Enviar Resumo de Texto"
+    // Clica em "Personalizar Resumo"
     fireEvent.click(sendTextOption);
 
     // Modal deve estar aberto com o título característico
@@ -254,5 +263,178 @@ describe('BudgetDetailPage - Testes Unitários', () => {
 
     const btnViaTecnica = screen.getByTitle('Emitir Via Técnica (Oficina)');
     expect(btnViaTecnica).toBeInTheDocument();
+  });
+
+  it('[Regressão Bug #333] deve exibir os totais financeiros e subtotal de itens de forma consistente sem duplicar mão de obra', () => {
+    // Cenário fiel da Issue #333:
+    // Item: R$ 4.840,18 em materiais
+    // Mão de Obra: R$ 2.000,00
+    // Subtotal Bruto: R$ 6.840,18
+    // Desconto 11%: R$ 752,42
+    // Total Líquido a Pagar: R$ 6.087,76
+    const issue333Budget = {
+      id: 'b-333',
+      code: 'ORC-2026-333',
+      status: 'PENDING',
+      createdAt: '2026-09-26T10:00:00Z',
+      validUntil: '2026-10-26',
+      subtotal: 6840.18,
+      discountPercent: 11,
+      discountValue: 752.42,
+      freightCost: 0,
+      installationCost: 0,
+      total: 6087.76,
+      customer: {
+        id: 'c1',
+        name: 'Cliente Bug 333',
+      },
+      items: [
+        {
+          id: 'i-333',
+          productId: 'p-333',
+          productName: 'Janela 4 Folhas Suprema',
+          templateType: 'SLIDING_DOOR_2F',
+          width: 2000,
+          height: 1200,
+          quantity: 1,
+          laborCost: 2000,
+          subtotal: 4840.18,
+          options: [],
+        },
+      ],
+    };
+
+    vi.spyOn(budgetsHooks, 'useBudget').mockReturnValue({
+      data: issue333Budget,
+      isLoading: false,
+      isError: false,
+    } as any);
+
+    renderWithRouter('b-333');
+
+    // 1. O item individual na lista deve exibir seu subtotal estrito de materiais
+    expect(screen.getAllByText(/Janela 4 Folhas Suprema/i).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText(/4\.840,18/).length).toBeGreaterThanOrEqual(1);
+
+    // 2. A tag de mão de obra do item deve exibir R$ 2.000,00
+    expect(screen.getByText(/MO:\s*R\$\s*2\.000,00/i)).toBeInTheDocument();
+
+    // 3. O fechamento financeiro deve exibir separadamente Materiais, Mão de Obra e Subtotal Bruto
+    expect(screen.getByText(/Esquadrias \/ Materiais:/i)).toBeInTheDocument();
+    expect(screen.getByText(/Mão de Obra:/i)).toBeInTheDocument();
+    expect(screen.getByText(/Subtotal Bruto:/i)).toBeInTheDocument();
+
+    // 4. O total líquido final exibido deve ser exatamente R$ 6.087,76
+    expect(screen.getByText(/6\.087,76/)).toBeInTheDocument();
+  });
+
+  it('[Regressão #372] deve somar a mão de obra das linhas sem multiplicar pela quantidade (paridade com BudgetPricingService e PDF)', () => {
+    // Item A: 2 esquadrias, MO da linha R$ 150 | Item B: 3 esquadrias, MO da linha R$ 100
+    // MO esperada = 150 + 100 = 250 (e não 2×150 + 3×100 = 600)
+    const multiItemBudget = {
+      ...mockBudgetDetail,
+      subtotal: 950,
+      discountPercent: 0,
+      discountValue: 0,
+      freightCost: 0,
+      installationCost: 0,
+      total: 950,
+      items: [
+        { ...mockBudgetDetail.items[0], id: 'i-a', quantity: 2, laborCost: 150, subtotal: 400 },
+        { ...mockBudgetDetail.items[0], id: 'i-b', productName: 'Janela Maxim-Ar', quantity: 3, laborCost: 100, subtotal: 300 },
+      ],
+    };
+
+    vi.spyOn(budgetsHooks, 'useBudget').mockReturnValue({
+      data: multiItemBudget,
+      isLoading: false,
+      isError: false,
+    } as any);
+
+    renderWithRouter();
+
+    const maoDeObraValor = screen.getByText('Mão de Obra:').nextElementSibling;
+    expect(maoDeObraValor?.textContent).toMatch(/250,00/);
+    expect(maoDeObraValor?.textContent).not.toMatch(/600,00/);
+
+    const materiaisValor = screen.getByText('Esquadrias / Materiais:').nextElementSibling;
+    expect(materiaisValor?.textContent).toMatch(/700,00/);
+
+    const subtotalBrutoValor = screen.getByText('Subtotal Bruto:').nextElementSibling;
+    expect(subtotalBrutoValor?.textContent).toMatch(/950,00/);
+  });
+
+  it('[Regressão #372] deve exibir no card do item a MO fixa da linha, sem multiplicar pela quantidade', () => {
+    // mockBudgetDetail: 1 item com quantity = 2 e laborCost = 150 (MO fixa da linha).
+    // O card (BudgetProposalItemCard) deve mostrar R$ 150,00, em paridade com a
+    // precificação, o PDF e o resumo financeiro (e não 2 × 150 = R$ 300,00).
+    vi.spyOn(budgetsHooks, 'useBudget').mockReturnValue({
+      data: mockBudgetDetail,
+      isLoading: false,
+      isError: false,
+    } as any);
+
+    renderWithRouter();
+
+    expect(screen.getByText('2 unidades')).toBeInTheDocument();
+    expect(screen.getByText(/MO:\s*R\$\s*150,00/)).toBeInTheDocument();
+    expect(screen.queryByText(/MO:\s*R\$\s*300,00/)).not.toBeInTheDocument();
+  });
+
+  it('[US-15.2] deve exibir banner de cancelamento e permitir reabertura quando orçamento for APPROVED e pedido cancelado', () => {
+    const mockReopen = vi.fn();
+    vi.spyOn(budgetsHooks, 'useBudget').mockReturnValue({
+      data: {
+        ...mockBudgetDetail,
+        status: 'APPROVED',
+      },
+      isLoading: false,
+      isError: false,
+    } as any);
+
+    vi.spyOn(budgetsHooks, 'useReopenBudget').mockReturnValue({
+      mutate: mockReopen,
+      isPending: false,
+    } as any);
+
+    vi.mocked(useOrders).mockReturnValue({
+      data: {
+        content: [
+          { id: 'order-1', codigo: 'OS-2026-0001', status: 'CANCELLED' } as any,
+        ],
+      },
+    } as any);
+
+    renderWithRouter();
+
+    const banner = screen.getByTestId('banner-order-cancelled');
+    expect(banner).toBeInTheDocument();
+    expect(banner).toHaveTextContent('Ordem de Serviço Cancelada (OS-2026-0001)');
+
+    const reopenBtn = screen.getByTestId('btn-reopen-budget-banner');
+    expect(reopenBtn).toBeInTheDocument();
+    fireEvent.click(reopenBtn);
+    expect(mockReopen).toHaveBeenCalledWith('b1');
+  });
+
+  it('[US-15.2] não deve exibir banner de cancelamento quando orçamento for APPROVED mas não houver pedido cancelado', () => {
+    vi.spyOn(budgetsHooks, 'useBudget').mockReturnValue({
+      data: {
+        ...mockBudgetDetail,
+        status: 'APPROVED',
+      },
+      isLoading: false,
+      isError: false,
+    } as any);
+
+    vi.mocked(useOrders).mockReturnValue({
+      data: {
+        content: [],
+      },
+    } as any);
+
+    renderWithRouter();
+
+    expect(screen.queryByTestId('banner-order-cancelled')).not.toBeInTheDocument();
   });
 });

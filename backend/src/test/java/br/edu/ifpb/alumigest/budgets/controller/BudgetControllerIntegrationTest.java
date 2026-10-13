@@ -404,7 +404,8 @@ class BudgetControllerIntegrationTest {
                     .andExpect(header().exists("Location"))
                     .andExpect(jsonPath("$.productId").value(savedProduct.getId().toString()))
                     .andExpect(jsonPath("$.quantity").value(2))
-                    .andExpect(jsonPath("$.subtotal").value(80.00))
+                    .andExpect(jsonPath("$.laborCost").value(80.00))
+                    .andExpect(jsonPath("$.subtotal").value(0.00))
                     .andExpect(jsonPath("$.notes").value("Porta adicional de teste"));
 
             // Confirma que o item foi inserido no orçamento e valores financeiros recalculados

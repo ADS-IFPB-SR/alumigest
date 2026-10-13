@@ -3,6 +3,7 @@ import { Modal } from '../../../components/ui/Modal';
 import { Button } from '../../../components/ui/Button';
 import { useWhatsAppSummary, useUpdateBudgetStatus } from '../hooks/useBudgets';
 import { openWhatsAppChat, sanitizeWhatsAppText } from '../utils/whatsappHelper';
+import { copyToClipboard } from '../utils/clipboardHelper';
 import type { BudgetStatus } from '../types';
 import toast from 'react-hot-toast';
 
@@ -65,18 +66,18 @@ export function WhatsAppSummaryModal({
 
   const handleCopy = async () => {
     try {
-      if (navigator?.clipboard?.writeText) {
-        await navigator.clipboard.writeText(text);
+      const success = await copyToClipboard(text);
+      if (success) {
         setIsCopied(true);
         setFallbackNotice(false);
         toast.success('Resumo para WhatsApp copiado com sucesso!');
         checkAndTransitionStatus();
         setTimeout(() => setIsCopied(false), 2000);
       } else {
-        throw new Error('Clipboard API indisponível');
+        throw new Error('Falha na cópia automática para o clipboard');
       }
     } catch {
-      // Fallback para seleção forçada caso o navegador bloqueie
+      // Fallback para seleção forçada caso o navegador bloqueie tanto a API quanto execCommand
       textareaRef.current?.focus();
       textareaRef.current?.select();
       setFallbackNotice(true);

@@ -89,6 +89,9 @@ function mapBackendToBudgetDetail(res: any): BudgetDetail {
     customer: {
       id: res.clientId,
       name: res.clientName,
+      phone: res.clientPhone,
+      email: res.clientEmail,
+      address: res.clientAddress,
     },
     status: res.status,
     createdAt: res.createdAt,
@@ -476,5 +479,12 @@ export const budgetsApi = {
       responseType: 'text',
     });
     return response.data;
+  },
+
+  reopenBudget: async (id: string): Promise<BudgetDetail> => {
+    const response = await api.post<unknown>(`/api/budgets/${id}/reopen`, {}, {
+      baseURL: '',
+    });
+    return mapBackendToBudgetDetail(response.data);
   },
 };
