@@ -88,7 +88,7 @@ export function BudgetProposalItemCard({
             )}
             {item.laborCost > 0 && (
               <span className="bg-surface-container px-2 py-0.5 rounded border border-outline-variant">
-                MO: {formatBRL(item.laborCost * item.quantity)}
+                MO: {formatBRL(item.laborCost)}
               </span>
             )}
             {item.handleConfig?.handleType && item.handleConfig.handleType !== 'NONE' && (

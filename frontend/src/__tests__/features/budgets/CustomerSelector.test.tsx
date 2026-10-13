@@ -222,6 +222,12 @@ describe('CustomerSelector Component [Joseph Nichollas]', () => {
     const nomeInput = screen.getByPlaceholderText('João da Silva');
     fireEvent.change(nomeInput, { target: { value: 'Novo Cliente Teste' } });
 
+    const docInput = screen.getByPlaceholderText('000.000.000-00');
+    fireEvent.change(docInput, { target: { value: '123.456.789-00' } });
+
+    const telInput = screen.getByPlaceholderText('(83) 99999-0000');
+    fireEvent.change(telInput, { target: { value: '(83) 99999-0000' } });
+
     const salvarBtn = screen.getByRole('button', { name: /Cadastrar Cliente/i });
     fireEvent.click(salvarBtn);
 

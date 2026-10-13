@@ -1,7 +1,7 @@
 # API Contract: Orders / Ordens de Serviço REST Endpoints
 
 **Base Path**: `/api/v1/orders` (Canônico / Padrão Frontend)  
-**Aliases Suportados**: `/api/orders`, `/api/ordens-servico`, `/api/pedidos`  
+**Aliases Suportados**: `/api/v1/ordens-servico` (Alias Canônico em Português)  
 **Content-Type**: `application/json`  
 **Sprint**: Sprint 06 (29/09/2026 a 12/10/2026)  
 
@@ -10,7 +10,7 @@
 ## Endpoints
 
 ### 1. POST /api/v1/orders/from-budget/{budgetId} — Converter Orçamento em Ordem de Serviço / Pedido
-*(Também acessível via `/api/orders/from-budget/{budgetId}`, `/api/ordens-servico/from-budget/{budgetId}` e `/api/pedidos/from-budget/{budgetId}`)*
+*(Também acessível via `/api/v1/ordens-servico/from-budget/{budgetId}` ou `/api/v1/orders/convert/{budgetId}`)*
 
 **Request Body** (`OrderConvertRequest`):
 ```json
@@ -38,7 +38,7 @@
 ---
 
 ### 2. GET /api/v1/orders — Listar Ordens de Serviço / Pedidos (Paginado)
-*(Também acessível via `/api/orders`, `/api/ordens-servico` e `/api/pedidos`)*
+*(Também acessível via `/api/v1/ordens-servico`)*
 
 - `page` (int, default: 0): Número da página (0-indexed)
 - `size` (int, default: 20): Quantidade de registros por página
@@ -54,7 +54,7 @@
 ---
 
 ### 3. GET /api/v1/orders/{id} — Detalhar Ordem de Serviço / Pedido
-*(Também acessível via `/api/orders/{id}`, `/api/ordens-servico/{id}` e `/api/pedidos/{id}`)*
+*(Também acessível via `/api/v1/ordens-servico/{id}`)*
 
 **Path Parameters**:
 - `id` (UUID, required): Identificador único do pedido
@@ -67,7 +67,7 @@
 ---
 
 ### 4. PATCH /api/v1/orders/{id}/cancel — Cancelar Ordem de Serviço / Pedido
-*(Também acessível via `/api/orders/{id}/cancel`, `/api/ordens-servico/{id}/cancel` e `/api/pedidos/{id}/cancel`)*
+*(Também acessível via `/api/v1/ordens-servico/{id}/cancel`)*
 
 **Path Parameters**:
 - `id` (UUID, required): Identificador único do pedido
@@ -92,7 +92,7 @@
 ---
 
 ### 5. GET /api/v1/orders/{id}/pdf/comprovante — Download do Comprovante da Ordem de Serviço
-*(Também acessível via `/api/orders/{id}/pdf/comprovante`, `/api/ordens-servico/{id}/pdf/comprovante` e `/api/pedidos/{id}/pdf/comprovante`)*
+*(Também acessível via `/api/v1/ordens-servico/{id}/pdf/comprovante`)*
 
 **Path Parameters**:
 - `id` (UUID, required): Identificador único do pedido

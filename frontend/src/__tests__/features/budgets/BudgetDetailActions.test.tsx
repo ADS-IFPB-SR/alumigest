@@ -114,14 +114,48 @@ describe('BudgetDetailActions Component [Joseph Nichollas]', () => {
   });
 
   describe('WhatsApp Dropdown & Ações', () => {
-    it('deve abrir menu do WhatsApp e exibir opções de envio de texto e link do PDF', () => {
+    it('deve abrir menu do WhatsApp e exibir opções de envio direto, cópia, personalização e PDF', () => {
       renderComponent();
 
       const btn = screen.getByRole('button', { name: /WhatsApp/i });
       fireEvent.click(btn);
 
-      expect(screen.getByText('Enviar Resumo de Texto')).toBeInTheDocument();
+      expect(screen.getByText('Abrir no WhatsApp')).toBeInTheDocument();
+      expect(screen.getByText('Copiar Resumo')).toBeInTheDocument();
+      expect(screen.getByText('Personalizar Resumo')).toBeInTheDocument();
       expect(screen.getByText('Enviar PDF Comercial')).toBeInTheDocument();
+    });
+
+    it('deve abrir o WhatsApp diretamente ao clicar em "Abrir no WhatsApp"', async () => {
+      vi.mocked(budgetsApi.getWhatsAppSummary).mockResolvedValueOnce('Resumo de teste');
+      renderComponent({ customerPhone: '83988887766' });
+
+      const btnMenu = screen.getByRole('button', { name: /WhatsApp/i });
+      fireEvent.click(btnMenu);
+
+      const btnAbrir = screen.getByText('Abrir no WhatsApp');
+      fireEvent.click(btnAbrir);
+
+      await waitFor(() => {
+        expect(budgetsApi.getWhatsAppSummary).toHaveBeenCalledWith('budget-123');
+        expect(toast.success).toHaveBeenCalledWith('WhatsApp aberto pronto para envio do resumo!');
+      });
+    });
+
+    it('deve copiar o resumo diretamente ao clicar em "Copiar Resumo"', async () => {
+      vi.mocked(budgetsApi.getWhatsAppSummary).mockResolvedValueOnce('Resumo formatado para cópia');
+      renderComponent();
+
+      const btnMenu = screen.getByRole('button', { name: /WhatsApp/i });
+      fireEvent.click(btnMenu);
+
+      const btnCopiar = screen.getByText('Copiar Resumo');
+      fireEvent.click(btnCopiar);
+
+      await waitFor(() => {
+        expect(budgetsApi.getWhatsAppSummary).toHaveBeenCalledWith('budget-123');
+        expect(toast.success).toHaveBeenCalledWith('Resumo para WhatsApp copiado com sucesso!');
+      });
     });
 
     it('deve desabilitar o botão do WhatsApp quando o orçamento for CANCELLED', () => {

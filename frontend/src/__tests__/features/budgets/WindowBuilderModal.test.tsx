@@ -35,6 +35,20 @@ const { mockCatalogResults, mockToast } = vi.hoisted(() => {
         openingDirection: 'OUTSIDE',
       },
     },
+    {
+      id: 'prod-3',
+      name: 'Porta de Correr com Ferragem',
+      templateType: 'SLIDING_DOOR_2F' as DoorTemplateType,
+      isActive: true,
+      laborCost: 150,
+      categoryRequirements: ['GLASS', 'PROFILE', 'HARDWARE'],
+      templateConfig: {
+        profileMm: 20,
+        aluminumColor: 'Branco Brilhante',
+        glassColor: 'Incolor',
+        openingDirection: 'LEFT_TO_RIGHT',
+      },
+    },
   ];
 
   const glasses = [
@@ -342,6 +356,62 @@ describe('WindowBuilderModal — [US-09.34] Alinhamento e Adição de Esquadrias
     // Preserva o mesmo tempId
     expect(updatedItem.tempId).toBe('item-edit-777');
     expect(updatedItem.widthMm).toBe(1650);
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('[Partição de Equivalência & Transição de Estados] deve permitir remover ferragens com botão X e salvar esquadria sem ferragem (#335)', async () => {
+    const user = userEvent.setup();
+
+    renderWithProviders(
+      <WindowBuilderModal
+        isOpen={true}
+        selectedProductId="prod-3"
+        onClose={onClose}
+        onAddItem={onAddItem}
+      />,
+    );
+
+    // Step 1 -> Step 2
+    await user.click(screen.getByRole('button', { name: /Próximo/i }));
+    expect(screen.getByText(/Composição de Insumos/i)).toBeInTheDocument();
+
+    // No Step 2, a ferragem deve estar presente com o botão de remoção
+    const removeHardwareBtn = screen.getByRole('button', { name: /Remover Ferragens \/ Componentes/i });
+    expect(removeHardwareBtn).toBeInTheDocument();
+
+    // Clica no botão 'X' para excluir a ferragem
+    await user.click(removeHardwareBtn);
+
+    // A ferragem não deve mais estar na tela
+    expect(screen.queryByRole('button', { name: /Remover Ferragens \/ Componentes/i })).not.toBeInTheDocument();
+
+    // Seleciona vidro e perfil
+    const glassSelect = screen.getByLabelText(/Selecionar material para Vidros/i);
+    await user.selectOptions(glassSelect, 'glass-1');
+
+    const profileSelect = screen.getByLabelText(/Selecionar material para Perfis de Alumínio/i);
+    await user.selectOptions(profileSelect, 'prof-1');
+
+    // Avança para Step 3 (Mecânica) - não deve dar erro de validação
+    await user.click(screen.getByRole('button', { name: /Próximo/i }));
+    expect(screen.getByText(/Sentido de Abertura/i)).toBeInTheDocument();
+
+    // Avança para Step 4 (Resumo)
+    await user.click(screen.getByRole('button', { name: /Próximo/i }));
+    expect(screen.getByText(/Ficha Técnica & Resumo/i)).toBeInTheDocument();
+
+    // Clica em "Adicionar"
+    await user.click(screen.getByRole('button', { name: /Adicionar/i }));
+
+    await waitFor(() => {
+      expect(onAddItem).toHaveBeenCalledTimes(1);
+    });
+
+    const item: BudgetItem = onAddItem.mock.calls[0][0];
+    // Garante que o puxador foi salvo como NONE e nenhuma opção é HARDWARE
+    expect(item.handleConfig?.handleType).toBe('NONE');
+    const hardwareOptions = (item.options ?? []).filter((opt) => opt.categoryType === 'HARDWARE');
+    expect(hardwareOptions).toHaveLength(0);
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 });

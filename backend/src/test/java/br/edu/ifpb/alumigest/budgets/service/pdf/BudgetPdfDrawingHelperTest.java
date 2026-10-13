@@ -796,4 +796,51 @@ class BudgetPdfDrawingHelperTest {
         }
         assertTrue(demoOutput.size() > 0, "O PDF de demonstração não deve estar vazio");
     }
+
+    @Test
+    @DisplayName("Issue #345: desenharEsquemaUsinagem com puxador extenso (600mm e 1000mm) não estoura limites")
+    void deveDesenharPuxadorExtensoSemEstouroCanvas() {
+        BudgetItem item600 = new BudgetItem();
+        item600.setTemplateType("SWING_DOOR_1F");
+        item600.setTemplateConfig("{\"width\": 900, \"height\": 2100, \"openingDirection\": \"RIGHT\"}");
+        item600.setDrillingConfig("{\"mode\": \"EQUIDISTANT\", \"quantity\": 3}");
+        item600.setHandleConfig("{\"type\": \"BAR_TUBULAR\", \"lengthMm\": 600.0, \"distanceFromFloorMm\": 1050.0}");
+
+        Image img600 = BudgetPdfDrawingHelper.desenharEsquemaUsinagem(writer, item600, 126f, 96f);
+        assertNotNull(img600);
+        assertEquals(126f, img600.getWidth(), 0.01f);
+        assertEquals(96f, img600.getHeight(), 0.01f);
+
+        BudgetItem item1000 = new BudgetItem();
+        item1000.setTemplateType("SWING_DOOR_1F");
+        item1000.setTemplateConfig("{\"width\": 900, \"height\": 2100, \"openingDirection\": \"RIGHT\"}");
+        item1000.setDrillingConfig("{\"mode\": \"EQUIDISTANT\", \"quantity\": 3}");
+        item1000.setHandleConfig("{\"type\": \"BAR_TUBULAR\", \"lengthMm\": 1000.0, \"distanceFromFloorMm\": 1050.0}");
+
+        Image img1000 = BudgetPdfDrawingHelper.desenharEsquemaUsinagem(writer, item1000, 105f, 105f);
+        assertNotNull(img1000);
+        assertEquals(105f, img1000.getWidth(), 0.01f);
+    }
+
+    @Test
+    @DisplayName("Issue #345: desenharEsquemaUsinagem com puxador lateral esquerdo e direito")
+    void deveDesenharPuxadorEsquerdaEDireitaComClamping() {
+        BudgetItem itemEsq = new BudgetItem();
+        itemEsq.setTemplateType("SWING_DOOR_1F");
+        itemEsq.setTemplateConfig("{\"width\": 800, \"height\": 2100, \"openingDirection\": \"RIGHT_TO_LEFT\"}");
+        itemEsq.setDrillingConfig("{\"mode\": \"EQUIDISTANT\", \"quantity\": 3}");
+        itemEsq.setHandleConfig("{\"position\": \"LEFT\", \"type\": \"TUBULAR\", \"lengthMm\": 400.0}");
+
+        Image imgEsq = BudgetPdfDrawingHelper.desenharEsquemaUsinagem(writer, itemEsq, 126f, 96f);
+        assertNotNull(imgEsq);
+
+        BudgetItem itemDir = new BudgetItem();
+        itemDir.setTemplateType("SWING_DOOR_1F");
+        itemDir.setTemplateConfig("{\"width\": 800, \"height\": 2100, \"openingDirection\": \"LEFT_TO_RIGHT\"}");
+        itemDir.setDrillingConfig("{\"mode\": \"EQUIDISTANT\", \"quantity\": 3}");
+        itemDir.setHandleConfig("{\"position\": \"RIGHT\", \"type\": \"TUBULAR\", \"lengthMm\": 400.0}");
+
+        Image imgDir = BudgetPdfDrawingHelper.desenharEsquemaUsinagem(writer, itemDir, 126f, 96f);
+        assertNotNull(imgDir);
+    }
 }

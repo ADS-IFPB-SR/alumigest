@@ -3,6 +3,8 @@ package br.edu.ifpb.alumigest.orders.service;
 import br.edu.ifpb.alumigest.orders.repository.OrderRepository;
 import java.time.Year;
 import java.time.ZoneOffset;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 /**
@@ -11,6 +13,8 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class OrderCodeGenerator {
+
+    private static final Logger log = LoggerFactory.getLogger(OrderCodeGenerator.class);
 
     private final OrderRepository orderRepository;
 
@@ -34,6 +38,11 @@ public class OrderCodeGenerator {
      * em memória garantindo que threads concorrentes dentro da mesma JVM não gerem o mesmo
      * identificador enquanto transações irmãs ainda não concluíram o commit físico.
      *
+     * <p>Nota de escalabilidade: A sincronização via {@code synchronized} garante unicidade intra-JVM.
+     * Colisões eventuais entre réplicas concorrentes em cluster são tratadas pelo {@code @Retryable}
+     * com backoff exponencial no serviço de criação; migração nativa para SEQUENCE do PostgreSQL
+     * mapeada para sprints futuras.
+     *
      * @return próximo código único da ordem de serviço
      */
     public synchronized String generateNextCode() {
@@ -47,6 +56,8 @@ public class OrderCodeGenerator {
                         int lastNumber = Integer.parseInt(lastCode.substring(prefix.length()));
                         return lastNumber + 1;
                     } catch (NumberFormatException e) {
+                        log.warn("Falha ao extrair sufixo numérico do código '{}' com prefixo '{}': {}. Reiniciando sequência para 1.",
+                                lastCode, prefix, e.getMessage());
                         return 1;
                     }
                 })

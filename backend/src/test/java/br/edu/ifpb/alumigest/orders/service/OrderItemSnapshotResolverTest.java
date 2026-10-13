@@ -94,6 +94,28 @@ class OrderItemSnapshotResolverTest {
     }
 
     @Test
+    @DisplayName("[Tabela de Decisão / Equivalência] Deve priorizar insumo GLASS sobre FILM e não classificar película como tipoVidro (#424)")
+    void shouldPrioritizeGlassOptionOverFilmAndNotClassifyFilmAsGlass() {
+        BudgetItem item = new BudgetItem();
+
+        BudgetItemOption filmOption = new BudgetItemOption();
+        filmOption.setCategoryType(MaterialCategoryType.FILM);
+        filmOption.setMaterialName("Película Térmica Fumê 5% G5");
+        filmOption.setSelectedType("Película Fumê 5%");
+        item.addOption(filmOption);
+
+        BudgetItemOption glassOption = new BudgetItemOption();
+        glassOption.setCategoryType(MaterialCategoryType.GLASS);
+        glassOption.setMaterialName("Vidro Temperado Incolor 8mm");
+        glassOption.setSelectedType("Temperado Incolor 8mm");
+        item.addOption(glassOption);
+
+        String vidro = OrderItemSnapshotResolver.extractGlassType(item);
+
+        assertThat(vidro).isEqualTo("Temperado Incolor 8mm");
+    }
+
+    @Test
     @DisplayName("[Partição de Equivalência] Deve extrair orientação de abertura do JSON templateConfig")
     void shouldExtractOpeningDirectionFromJsonConfig() {
         BudgetItem item = new BudgetItem();
@@ -162,5 +184,111 @@ class OrderItemSnapshotResolverTest {
     void shouldReturnNullForHardwareWhenEmpty() {
         BudgetItem item = new BudgetItem();
         assertThat(OrderItemSnapshotResolver.extractHardware(item)).isNull();
+    }
+
+    @Test
+    @DisplayName("[Partição de Equivalência] Deve extrair puxador via handleType com dimensão handleLengthMm (#422)")
+    void shouldExtractHardwareFromHandleTypeWithLength() {
+        BudgetItem item = new BudgetItem();
+        item.setHandleConfig("{\"handleType\": \"BAR_TUBULAR\", \"handleLengthMm\": 600}");
+
+        String ferragens = OrderItemSnapshotResolver.extractHardware(item);
+
+        assertThat(ferragens).isEqualTo("Puxador Barra Tubular 600mm");
+    }
+
+    @Test
+    @DisplayName("[Partição de Equivalência] Deve extrair fecho concha via handleType sem dimensão (#422)")
+    void shouldExtractHardwareFromShellLockWithoutLength() {
+        BudgetItem item = new BudgetItem();
+        item.setHandleConfig("{\"handleType\": \"SHELL_LOCK\"}");
+
+        String ferragens = OrderItemSnapshotResolver.extractHardware(item);
+
+        assertThat(ferragens).isEqualTo("Fecho Concha");
+    }
+
+    @Test
+    @DisplayName("[Análise de Valor Limite] Deve ignorar puxador quando handleType for NONE (#422)")
+    void shouldIgnoreHandleWhenTypeIsNone() {
+        BudgetItem item = new BudgetItem();
+        item.setHandleConfig("{\"handleType\": \"NONE\"}");
+
+        String ferragens = OrderItemSnapshotResolver.extractHardware(item);
+
+        assertThat(ferragens).isNull();
+    }
+
+    @Test
+    @DisplayName("[Tabela de Decisão] Deve priorizar templateConfig do item sobre o templateConfig do produto para cor do alumínio (#433)")
+    void shouldPrioritizeItemTemplateConfigOverProductTemplateConfigForAluminumColor() {
+        BudgetItem item = new BudgetItem();
+        item.setTemplateConfig("{\"aluminumColor\": \"Preto\"}");
+
+        Product product = new Product();
+        TemplateConfig productConfig = new TemplateConfig();
+        productConfig.setAluminumColor("Branco");
+        product.setTemplateConfig(productConfig);
+        item.setProduct(product);
+
+        String cor = OrderItemSnapshotResolver.extractAluminumColor(item);
+
+        assertThat(cor).isEqualTo("Preto");
+    }
+
+    @Test
+    @DisplayName("[Tabela de Decisão] Deve priorizar templateConfig do item sobre o templateConfig do produto para acabamento do vidro (#433)")
+    void shouldPrioritizeItemTemplateConfigOverProductTemplateConfigForGlassType() {
+        BudgetItem item = new BudgetItem();
+        item.setTemplateConfig("{\"glassFinish\": \"Reflecta Champanhe 6mm\"}");
+
+        Product product = new Product();
+        TemplateConfig productConfig = new TemplateConfig();
+        productConfig.setGlassColor("Incolor 4mm");
+        product.setTemplateConfig(productConfig);
+        item.setProduct(product);
+
+        String vidro = OrderItemSnapshotResolver.extractGlassType(item);
+
+        assertThat(vidro).isEqualTo("Reflecta Champanhe 6mm");
+    }
+
+    @Test
+    @DisplayName("[Partição de Equivalência] Deve extrair slidingMode do item templateConfig em formato canônico (#433)")
+    void shouldExtractSlidingModeFromItemTemplateConfig() {
+        BudgetItem item = new BudgetItem();
+        item.setTemplateConfig("{\"slidingMode\": \"BOTH_SLIDING\"}");
+
+        String abertura = OrderItemSnapshotResolver.extractOpeningDirection(item);
+
+        assertThat(abertura).isEqualTo("BOTH_SLIDING");
+    }
+
+    @Test
+    @DisplayName("[Partição de Equivalência] Deve extrair slidingMode do produto quando item não especificar abertura (#433)")
+    void shouldExtractSlidingModeFromProductTemplateConfigFallback() {
+        BudgetItem item = new BudgetItem();
+
+        Product product = new Product();
+        TemplateConfig productConfig = new TemplateConfig();
+        productConfig.setSlidingMode(br.edu.ifpb.alumigest.catalog.domain.SlidingMode.LEFT_FIXED_RIGHT_SLIDING);
+        product.setTemplateConfig(productConfig);
+        item.setProduct(product);
+
+        String abertura = OrderItemSnapshotResolver.extractOpeningDirection(item);
+
+        assertThat(abertura).isEqualTo("LEFT_FIXED_RIGHT_SLIDING");
+    }
+
+    @Test
+    @DisplayName("[Análise de Valor Limite] Deve truncar orientação de abertura que exceda 30 caracteres do banco (#433)")
+    void shouldTruncateOpeningDirectionIfExceeds30Chars() {
+        BudgetItem item = new BudgetItem();
+        item.setTemplateConfig("{\"openingDirection\": \"ABERTURA_EXTREMAMENTE_LONGA_SUPERIOR_A_30_CARACTERES\"}");
+
+        String abertura = OrderItemSnapshotResolver.extractOpeningDirection(item);
+
+        assertThat(abertura).hasSize(30)
+                .isEqualTo("ABERTURA_EXTREMAMENTE_LONGA_SU");
     }
 }

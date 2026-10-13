@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import type { Customer } from '../types';
+import type { Customer, CustomerRequest } from '../types';
 import { CustomerQuickCreateModal } from './CustomerQuickCreateModal';
 import { useCustomers, useCreateCustomer } from '../../customers/hooks/useCustomers';
 import type { CustomerSummaryDTO } from '../../customers/services/customersApi';
@@ -206,26 +206,12 @@ export const CustomerSelector: React.FC<CustomerSelectorProps> = ({
     inputRef.current?.focus();
   };
 
-  const handleQuickCreate = (formData: {
-    nomeCompleto: string;
-    cpfCnpj?: string;
-    telefone?: string;
-    email?: string;
-    cep?: string;
-    logradouro?: string;
-    numero?: string;
-    complemento?: string;
-    bairro?: string;
-    cidade?: string;
-    uf?: string;
-    observacoes?: string;
-  }) => {
+  const handleQuickCreate = (formData: CustomerRequest) => {
     createCustomer(
       {
         nomeCompleto: formData.nomeCompleto.trim(),
-        personType: 'FISICA',
-        documento: formData.cpfCnpj?.trim() || undefined,
-        telefone: formData.telefone?.trim() || undefined,
+        documento: formData.cpfCnpj.trim(),
+        telefone: formData.telefone.trim(),
         email: formData.email?.trim() || undefined,
         cep: formData.cep?.trim() || undefined,
         logradouro: formData.logradouro?.trim() || undefined,
