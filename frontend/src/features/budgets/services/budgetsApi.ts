@@ -482,7 +482,7 @@ export const budgetsApi = {
   },
 
   reopenBudget: async (id: string): Promise<BudgetDetail> => {
-    const response = await api.post<any>(`/api/budgets/${id}/reopen`, {}, {
+    const response = await api.post<unknown>(`/api/budgets/${id}/reopen`, {}, {
       baseURL: '',
     });
     return mapBackendToBudgetDetail(response.data);

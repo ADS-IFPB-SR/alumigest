@@ -798,6 +798,28 @@ class BudgetControllerTest {
     }
 
     @Test
+    @DisplayName("[US-15.2] Deve aceitar o alias em português /reabrir")
+    void reabrirOrcamento_DeveRetornar200_UsandoAliasEmPortugues() throws Exception {
+        UUID id = UUID.randomUUID();
+        BudgetResponseDTO responseDTO = new BudgetResponseDTO(
+                id, "ORC-2026-001", UUID.randomUUID(), "Cliente Teste",
+                BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO,
+                PaymentCondition.A_VISTA_PIX, "À Vista", null,
+                BudgetStatus.DRAFT, "Rascunho", null,
+                null, null, null, false, Collections.emptyList()
+        );
+
+        when(budgetService.reabrirOrcamento(id)).thenReturn(responseDTO);
+
+        mockMvc.perform(post("/api/budgets/{id}/reabrir", id))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(id.toString()))
+                .andExpect(jsonPath("$.status").value("DRAFT"));
+
+        verify(budgetService).reabrirOrcamento(id);
+    }
+
+    @Test
     @DisplayName("[US-15.2] Deve retornar 409 quando pedido de venda vinculado não estiver cancelado")
     void reabrirOrcamento_DeveRetornar409_QuandoPedidoNaoEstiverCancelado() throws Exception {
         UUID id = UUID.randomUUID();

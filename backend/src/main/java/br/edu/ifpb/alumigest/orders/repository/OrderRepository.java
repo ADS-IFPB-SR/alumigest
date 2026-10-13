@@ -20,9 +20,9 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
 
   Optional<Order> findByCodigo(String codigo);
 
-  Optional<Order> findByOrcamentoId(UUID orcamentoId);
+  Optional<Order> findTopByOrcamentoIdOrderByCreatedAtDesc(UUID orcamentoId);
 
-  boolean existsByOrcamentoId(UUID orcamentoId);
+  boolean existsByOrcamentoIdAndStatusNot(UUID orcamentoId, OrderStatus status);
 
   boolean existsByCodigo(String codigo);
 

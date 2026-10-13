@@ -13,6 +13,7 @@ import br.edu.ifpb.alumigest.orders.domain.ApprovalChannel;
 import br.edu.ifpb.alumigest.orders.domain.Order;
 import br.edu.ifpb.alumigest.orders.domain.OrderItem;
 import br.edu.ifpb.alumigest.orders.domain.OrderItemOption;
+import br.edu.ifpb.alumigest.orders.domain.OrderStatus;
 import br.edu.ifpb.alumigest.orders.dto.OrderConvertRequest;
 import br.edu.ifpb.alumigest.orders.mapper.OrderMapper;
 import br.edu.ifpb.alumigest.orders.repository.OrderRepository;
@@ -146,7 +147,7 @@ class OrderSnapshotLockTest {
     void shouldShieldOrderValuesFromFutureCatalogPriceIncreases() {
         // Arrange
         given(budgetRepository.findByIdWithDetails(budgetId)).willReturn(Optional.of(budget));
-        given(orderRepository.existsByOrcamentoId(budgetId)).willReturn(false);
+        given(orderRepository.existsByOrcamentoIdAndStatusNot(budgetId, OrderStatus.CANCELLED)).willReturn(false);
         given(orderCodeGenerator.generateNextCode()).willReturn("OS-2026-0001");
         given(orderRepository.saveAndFlush(any(Order.class))).willAnswer(inv -> inv.getArgument(0));
 
@@ -204,7 +205,7 @@ class OrderSnapshotLockTest {
     void shouldPerformDeepCopyAcrossThreeLevels() {
         // Arrange
         given(budgetRepository.findByIdWithDetails(budgetId)).willReturn(Optional.of(budget));
-        given(orderRepository.existsByOrcamentoId(budgetId)).willReturn(false);
+        given(orderRepository.existsByOrcamentoIdAndStatusNot(budgetId, OrderStatus.CANCELLED)).willReturn(false);
         given(orderCodeGenerator.generateNextCode()).willReturn("OS-2026-0002");
         given(orderRepository.saveAndFlush(any(Order.class))).willAnswer(inv -> inv.getArgument(0));
 
@@ -247,7 +248,7 @@ class OrderSnapshotLockTest {
         budget.getItems().get(0).setSubtotal(new BigDecimal("100.00"));
 
         given(budgetRepository.findByIdWithDetails(budgetId)).willReturn(Optional.of(budget));
-        given(orderRepository.existsByOrcamentoId(budgetId)).willReturn(false);
+        given(orderRepository.existsByOrcamentoIdAndStatusNot(budgetId, OrderStatus.CANCELLED)).willReturn(false);
         given(orderCodeGenerator.generateNextCode()).willReturn("OS-2026-0003");
         given(orderRepository.saveAndFlush(any(Order.class))).willAnswer(inv -> inv.getArgument(0));
 

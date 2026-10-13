@@ -12,9 +12,7 @@ import br.edu.ifpb.alumigest.common.exception.BusinessException;
 import br.edu.ifpb.alumigest.common.exception.ConflictException;
 import br.edu.ifpb.alumigest.common.exception.InvalidBudgetStatusTransitionException;
 import br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException;
-import br.edu.ifpb.alumigest.orders.domain.Order;
-import br.edu.ifpb.alumigest.orders.domain.OrderStatus;
-import br.edu.ifpb.alumigest.orders.repository.OrderRepository;
+import br.edu.ifpb.alumigest.common.port.OrderQueryPort;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -50,7 +48,7 @@ class BudgetServiceTest {
     private BudgetMapper budgetMapper;
 
     @Mock
-    private OrderRepository orderRepository;
+    private OrderQueryPort orderQueryPort;
 
     private BudgetQuantityService budgetQuantityService;
 
@@ -83,7 +81,7 @@ class BudgetServiceTest {
                 budgetRepository,
                 clientRepository,
                 budgetMapper,
-                orderRepository,
+                orderQueryPort,
                 budgetQuantityService,
                 budgetPricingService,
                 budgetCodeGenerator,
@@ -432,7 +430,7 @@ class BudgetServiceTest {
         budget.setStatus(BudgetStatus.APPROVED);
         UUID budgetId = budget.getId();
         when(budgetRepository.findById(budgetId)).thenReturn(Optional.of(budget));
-        when(orderRepository.findByOrcamentoId(budgetId)).thenReturn(Optional.empty());
+        when(orderQueryPort.findLatestByBudgetId(budgetId)).thenReturn(Optional.empty());
         
         StatusChangeRequest request = new StatusChangeRequest(BudgetStatus.DRAFT);
         
@@ -447,11 +445,8 @@ class BudgetServiceTest {
         UUID budgetId = budget.getId();
         when(budgetRepository.findById(budgetId)).thenReturn(Optional.of(budget));
 
-        Order order = Order.builder()
-                .codigo("OS-2026-0001")
-                .status(OrderStatus.CANCELLED)
-                .build();
-        when(orderRepository.findByOrcamentoId(budgetId)).thenReturn(Optional.of(order));
+        OrderQueryPort.LinkedOrder order = new OrderQueryPort.LinkedOrder("OS-2026-0001", true);
+        when(orderQueryPort.findLatestByBudgetId(budgetId)).thenReturn(Optional.of(order));
 
         StatusChangeRequest request = new StatusChangeRequest(BudgetStatus.DRAFT);
         budgetService.updateStatus(budgetId, request);
@@ -467,11 +462,8 @@ class BudgetServiceTest {
         UUID budgetId = budget.getId();
         when(budgetRepository.findById(budgetId)).thenReturn(Optional.of(budget));
 
-        Order order = Order.builder()
-                .codigo("OS-2026-0001")
-                .status(OrderStatus.WAITING_PRODUCTION)
-                .build();
-        when(orderRepository.findByOrcamentoId(budgetId)).thenReturn(Optional.of(order));
+        OrderQueryPort.LinkedOrder order = new OrderQueryPort.LinkedOrder("OS-2026-0001", false);
+        when(orderQueryPort.findLatestByBudgetId(budgetId)).thenReturn(Optional.of(order));
 
         StatusChangeRequest request = new StatusChangeRequest(BudgetStatus.DRAFT);
 
@@ -490,11 +482,8 @@ class BudgetServiceTest {
         UUID budgetId = budget.getId();
         when(budgetRepository.findById(budgetId)).thenReturn(Optional.of(budget));
 
-        Order order = Order.builder()
-                .codigo("OS-2026-0001")
-                .status(OrderStatus.CANCELLED)
-                .build();
-        when(orderRepository.findByOrcamentoId(budgetId)).thenReturn(Optional.of(order));
+        OrderQueryPort.LinkedOrder order = new OrderQueryPort.LinkedOrder("OS-2026-0001", true);
+        when(orderQueryPort.findLatestByBudgetId(budgetId)).thenReturn(Optional.of(order));
         when(budgetRepository.save(budget)).thenReturn(budget);
 
         BudgetResponseDTO responseDTO = new BudgetResponseDTO(
@@ -520,11 +509,8 @@ class BudgetServiceTest {
         UUID budgetId = budget.getId();
         when(budgetRepository.findById(budgetId)).thenReturn(Optional.of(budget));
 
-        Order order = Order.builder()
-                .codigo("OS-2026-0001")
-                .status(OrderStatus.IN_PRODUCTION)
-                .build();
-        when(orderRepository.findByOrcamentoId(budgetId)).thenReturn(Optional.of(order));
+        OrderQueryPort.LinkedOrder order = new OrderQueryPort.LinkedOrder("OS-2026-0001", false);
+        when(orderQueryPort.findLatestByBudgetId(budgetId)).thenReturn(Optional.of(order));
 
         assertThatThrownBy(() -> budgetService.reabrirOrcamento(budgetId))
                 .isInstanceOf(ConflictException.class)

@@ -207,15 +207,16 @@ public class OrderServiceImpl implements OrderService {
     }
 
     /**
-     * Garante idempotência: um orçamento só pode gerar um único pedido de venda.
+     * Garante idempotência: um orçamento só pode possuir um pedido ativo.
+     * Pedidos cancelados permanecem no histórico e não bloqueiam uma nova conversão.
      *
      * @param budgetId ID do orçamento
-     * @throws ConflictException se já existir pedido para o orçamento informado
+     * @throws ConflictException se já existir pedido ativo para o orçamento informado
      */
     private void validateIdempotency(UUID budgetId) {
-        if (orderRepository.existsByOrcamentoId(budgetId)) {
+        if (orderRepository.existsByOrcamentoIdAndStatusNot(budgetId, OrderStatus.CANCELLED)) {
             throw new ConflictException(
-                    "Já existe um pedido de venda gerado para o orçamento com ID " + budgetId + ".");
+                    "Já existe um pedido de venda ativo para o orçamento com ID " + budgetId + ".");
         }
     }
 

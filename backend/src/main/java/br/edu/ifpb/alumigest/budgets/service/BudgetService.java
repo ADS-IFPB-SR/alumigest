@@ -16,9 +16,7 @@ import br.edu.ifpb.alumigest.common.exception.BusinessException;
 import br.edu.ifpb.alumigest.common.exception.ConflictException;
 import br.edu.ifpb.alumigest.common.exception.InvalidBudgetStatusTransitionException;
 import br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException;
-import br.edu.ifpb.alumigest.orders.domain.Order;
-import br.edu.ifpb.alumigest.orders.domain.OrderStatus;
-import br.edu.ifpb.alumigest.orders.repository.OrderRepository;
+import br.edu.ifpb.alumigest.common.port.OrderQueryPort;
 import org.hibernate.Hibernate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -44,19 +42,19 @@ public class BudgetService {
     private final BudgetRepository budgetRepository;
     private final ClientRepository clientRepository;
     private final BudgetMapper budgetMapper;
-    private final OrderRepository orderRepository;
+    private final OrderQueryPort orderQueryPort;
 
     private final BudgetQuantityService budgetQuantityService;
     private final BudgetPricingService budgetPricingService;
     private final BudgetCodeGenerator budgetCodeGenerator;
     private final BudgetPdfService budgetPdfService;
 
-    public BudgetService(BudgetRepository budgetRepository, ClientRepository clientRepository, BudgetMapper budgetMapper, OrderRepository orderRepository, BudgetQuantityService budgetQuantityService, BudgetPricingService budgetPricingService, BudgetCodeGenerator budgetCodeGenerator, BudgetPdfService budgetPdfService)
+    public BudgetService(BudgetRepository budgetRepository, ClientRepository clientRepository, BudgetMapper budgetMapper, OrderQueryPort orderQueryPort, BudgetQuantityService budgetQuantityService, BudgetPricingService budgetPricingService, BudgetCodeGenerator budgetCodeGenerator, BudgetPdfService budgetPdfService)
     {
         this.budgetRepository = budgetRepository;
         this.clientRepository = clientRepository;
         this.budgetMapper = budgetMapper;
-        this.orderRepository = orderRepository;
+        this.orderQueryPort = orderQueryPort;
         this.budgetQuantityService = budgetQuantityService;
         this.budgetPricingService = budgetPricingService;
         this.budgetCodeGenerator = budgetCodeGenerator;
@@ -405,13 +403,13 @@ public BudgetResponseDTO create(BudgetCreateRequest requestDTO) {
 
         // US-15.2: Transição condicional de APPROVED para DRAFT
         if (current == BudgetStatus.APPROVED && target == BudgetStatus.DRAFT) {
-            Optional<Order> orderOpt = orderRepository.findByOrcamentoId(budget.getId());
+            Optional<OrderQueryPort.LinkedOrder> orderOpt = orderQueryPort.findLatestByBudgetId(budget.getId());
             if (orderOpt.isPresent()) {
-                Order order = orderOpt.get();
-                if (order.getStatus() == OrderStatus.CANCELLED) {
+                OrderQueryPort.LinkedOrder order = orderOpt.get();
+                if (order.cancelled()) {
                     return; // Transição autorizada!
                 }
-                throw new ConflictException("Não é possível reabrir o orçamento: a ordem de serviço vinculada (" + order.getCodigo() + ") não está cancelada.");
+                throw new ConflictException("Não é possível reabrir o orçamento: a ordem de serviço vinculada (" + order.code() + ") não está cancelada.");
             }
             throw new InvalidBudgetStatusTransitionException(current, target);
         }
