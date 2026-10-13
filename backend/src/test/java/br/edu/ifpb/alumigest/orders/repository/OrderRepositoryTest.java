@@ -107,17 +107,19 @@ class OrderRepositoryTest {
     }
 
     @Test
-    @DisplayName("[Restrição de Integridade / Invariante 1:1] Deve lançar DataIntegrityViolationException ao duplicar orcamentoId")
-    void shouldEnforceUniqueBudgetConstraint() {
+    @DisplayName("[US-15.2] Deve permitir novo pedido quando o anterior estiver cancelado")
+    void shouldAllowNewOrderAfterCancelledOrder() {
         UUID orcamentoId = UUID.randomUUID();
 
-        Order order1 = buildOrder("OS-2026-0001", orcamentoId, OrderStatus.WAITING_PRODUCTION);
+        Order order1 = buildOrder("OS-2026-0001", orcamentoId, OrderStatus.CANCELLED);
         orderRepository.saveAndFlush(order1);
 
         Order order2 = buildOrder("OS-2026-0002", orcamentoId, OrderStatus.WAITING_PRODUCTION);
+        Order saved = orderRepository.saveAndFlush(order2);
 
-        assertThatThrownBy(() -> orderRepository.saveAndFlush(order2))
-                .isInstanceOf(DataIntegrityViolationException.class);
+        assertThat(saved.getId()).isNotNull();
+        assertThat(orderRepository.existsByOrcamentoIdAndStatusNot(orcamentoId, OrderStatus.CANCELLED))
+                .isTrue();
     }
 
     @Test

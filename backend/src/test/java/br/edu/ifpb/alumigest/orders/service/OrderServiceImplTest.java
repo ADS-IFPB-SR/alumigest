@@ -124,7 +124,7 @@ class OrderServiceImplTest {
         OrderResponse expectedResponse = buildOrderResponse();
 
         given(budgetRepository.findByIdWithDetails(budgetId)).willReturn(Optional.of(budget));
-        given(orderRepository.existsByOrcamentoId(budgetId)).willReturn(false);
+        given(orderRepository.existsByOrcamentoIdAndStatusNot(budgetId, OrderStatus.CANCELLED)).willReturn(false);
         given(orderCodeGenerator.generateNextCode()).willReturn("OS-2026-0001");
         given(orderRepository.saveAndFlush(any(Order.class))).willReturn(savedOrder);
         given(orderMapper.toResponse(savedOrder)).willReturn(expectedResponse);
@@ -155,7 +155,7 @@ class OrderServiceImplTest {
         OrderResponse expectedResponse = buildOrderResponse();
 
         given(budgetRepository.findByIdWithDetails(budgetId)).willReturn(Optional.of(budget));
-        given(orderRepository.existsByOrcamentoId(budgetId)).willReturn(false);
+        given(orderRepository.existsByOrcamentoIdAndStatusNot(budgetId, OrderStatus.CANCELLED)).willReturn(false);
         given(orderCodeGenerator.generateNextCode()).willReturn("OS-2026-0001");
         given(orderRepository.saveAndFlush(any(Order.class))).willReturn(savedOrder);
         given(orderMapper.toResponse(savedOrder)).willReturn(expectedResponse);
@@ -187,7 +187,7 @@ class OrderServiceImplTest {
         OrderResponse expectedResponse = buildOrderResponse();
 
         given(budgetRepository.findByIdWithDetails(budgetId)).willReturn(Optional.of(budget));
-        given(orderRepository.existsByOrcamentoId(budgetId)).willReturn(false);
+        given(orderRepository.existsByOrcamentoIdAndStatusNot(budgetId, OrderStatus.CANCELLED)).willReturn(false);
         given(orderCodeGenerator.generateNextCode()).willReturn("OS-2026-0001");
         given(orderRepository.saveAndFlush(any(Order.class))).willReturn(savedOrder);
         given(orderMapper.toResponse(savedOrder)).willReturn(expectedResponse);
@@ -289,7 +289,7 @@ class OrderServiceImplTest {
     @DisplayName("[Análise de Valor Limite] Deve lançar ConflictException quando pedido já existe para o orçamento (idempotência)")
     void shouldThrowConflictExceptionWhenOrderAlreadyExistsForBudget() {
         given(budgetRepository.findByIdWithDetails(budgetId)).willReturn(Optional.of(budget));
-        given(orderRepository.existsByOrcamentoId(budgetId)).willReturn(true);
+        given(orderRepository.existsByOrcamentoIdAndStatusNot(budgetId, OrderStatus.CANCELLED)).willReturn(true);
 
         assertThatThrownBy(() -> orderService.convertBudgetToOrder(budgetId, request))
                 .isInstanceOf(ConflictException.class)
@@ -297,6 +297,26 @@ class OrderServiceImplTest {
 
         verify(orderRepository, never()).saveAndFlush(any());
         verify(orderCodeGenerator, never()).generateNextCode();
+    }
+
+    @Test
+    @DisplayName("[US-15.2] Deve permitir nova conversão quando o pedido anterior estiver cancelado")
+    void shouldAllowReconversionWhenPreviousOrderIsCancelled() {
+        Order savedOrder = buildSavedOrder();
+        OrderResponse expectedResponse = buildOrderResponse();
+
+        given(budgetRepository.findByIdWithDetails(budgetId)).willReturn(Optional.of(budget));
+        given(orderRepository.existsByOrcamentoIdAndStatusNot(budgetId, OrderStatus.CANCELLED))
+                .willReturn(false);
+        given(orderCodeGenerator.generateNextCode()).willReturn("OS-2026-0002");
+        given(orderRepository.saveAndFlush(any(Order.class))).willReturn(savedOrder);
+        given(orderMapper.toResponse(savedOrder)).willReturn(expectedResponse);
+
+        OrderResponse result = orderService.convertBudgetToOrder(budgetId, request);
+
+        assertThat(result).isNotNull();
+        verify(orderRepository).existsByOrcamentoIdAndStatusNot(budgetId, OrderStatus.CANCELLED);
+        verify(orderRepository).saveAndFlush(any(Order.class));
     }
 
     // =========================================================================
@@ -598,6 +618,37 @@ class OrderServiceImplTest {
         verify(orderRepository).save(captor.capture());
         assertThat(captor.getValue().getStatus()).isEqualTo(OrderStatus.CANCELLED);
         assertThat(captor.getValue().getJustificativaCancelamento()).isEqualTo("Cliente desistiu por motivo de mudança de obra.");
+    }
+
+    @Test
+    @DisplayName("[US-15.2] Deve cancelar pedido e manter orçamento vinculado como APPROVED sem alteração automática")
+    void shouldCancelOrderAndKeepLinkedBudgetApproved() {
+        Order savedOrder = buildSavedOrder();
+        budget.setStatus(BudgetStatus.APPROVED);
+        OrderCancelRequest cancelRequest = new OrderCancelRequest("Cliente desistiu da obra.");
+
+        given(orderRepository.findByIdWithDetails(orderId)).willReturn(Optional.of(savedOrder));
+        given(orderRepository.save(any(Order.class))).willAnswer(inv -> inv.getArgument(0));
+
+        OrderResponse expectedResponse = new OrderResponse(
+                orderId, "OS-2026-0001", budgetId, null,
+                "Empresa XPTO Ltda", null, null,
+                OrderStatus.CANCELLED, "Cancelado",
+                ApprovalChannel.WHATSAPP, "WhatsApp",
+                LocalDate.now(ZoneOffset.UTC), request.dataPrevisaoEntrega(), null,
+                budget.getSubtotal(), budget.getDiscountValue(), BigDecimal.ZERO, BigDecimal.ZERO,
+                budget.getTotal(), null, null, null, "Cliente desistiu da obra.",
+                OffsetDateTime.now(ZoneOffset.UTC), OffsetDateTime.now(ZoneOffset.UTC), true,
+                Collections.emptyList()
+        );
+        given(orderMapper.toResponse(any(Order.class))).willReturn(expectedResponse);
+
+        OrderResponse result = orderService.cancelOrder(orderId, cancelRequest);
+
+        assertThat(result).isNotNull();
+        assertThat(result.status()).isEqualTo(OrderStatus.CANCELLED);
+        assertThat(budget.getStatus()).isEqualTo(BudgetStatus.APPROVED);
+        verify(budgetRepository, never()).save(any());
     }
 
     @Test
