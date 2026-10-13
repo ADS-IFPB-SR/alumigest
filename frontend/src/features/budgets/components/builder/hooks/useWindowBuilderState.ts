@@ -110,6 +110,13 @@ function computeRequirementMeasure(catType: CategoryType, areaM2: number, profil
   return { qty: 1, unit: 'un' };
 }
 
+function generateRequirementId(prefix: string): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return `${prefix}-${crypto.randomUUID()}`;
+  }
+  return `${prefix}-${Date.now()}`;
+}
+
 function buildDefaultSelectionsForTemplate(
   targetTemplate: WindowTemplate,
   w: number,
@@ -123,12 +130,15 @@ function buildDefaultSelectionsForTemplate(
     return targetTemplate.categoryRequirements.map((req, idx) => {
       const catType: CategoryType = typeof req === 'string' ? (req as CategoryType) : (req.categoryType as CategoryType);
       const { qty, unit } = computeRequirementMeasure(catType, areaM2, profileM);
+      const isOptional = typeof req === 'object' && req.isOptional !== undefined
+        ? req.isOptional
+        : (catType === 'HARDWARE' || catType === 'FILM');
 
       return {
         requirementId: `req-${targetTemplate.id}-${catType}-${idx}`,
         categoryType: catType,
         label: CATEGORY_LABELS[catType] ?? catType,
-        isOptional: false,
+        isOptional,
         materialId: '',
         materialName: '',
         unitMeasure: unit,
@@ -174,7 +184,7 @@ function buildDefaultSelectionsForTemplate(
       requirementId: 'fallback-hardware',
       categoryType: 'HARDWARE',
       label: CATEGORY_LABELS.HARDWARE,
-      isOptional: false,
+      isOptional: true,
       materialId: '',
       materialName: '',
       unitMeasure: 'un',
@@ -825,7 +835,7 @@ export function useWindowBuilderState({
     };
 
     const newSel: MaterialSelection = {
-      requirementId: `custom-mat-${Date.now()}`,
+      requirementId: generateRequirementId('custom-mat'),
       categoryType: catType,
       label: `${CATEGORY_LABELS[catType]} (Adicional)`,
       isOptional: true,
@@ -844,10 +854,26 @@ export function useWindowBuilderState({
   };
 
   const handleRemoveMaterial = (requirementId: string) => {
-    setState((prev) => ({
-      ...prev,
-      materialSelections: prev.materialSelections.filter((s) => s.requirementId !== requirementId),
-    }));
+    setState((prev) => {
+      const remaining = prev.materialSelections.filter((s) => s.requirementId !== requirementId);
+      const hasHardwareOrHandle = remaining.some(
+        (s) => s.categoryType === 'HARDWARE' || isHandleOrLockMaterial(s)
+      );
+
+      let nextHandleConfig = prev.handleConfig;
+      if (!hasHardwareOrHandle && prev.handleConfig.handleType !== 'PROFILE_HANDLE') {
+        nextHandleConfig = {
+          ...prev.handleConfig,
+          handleType: 'NONE',
+        };
+      }
+
+      return {
+        ...prev,
+        materialSelections: remaining,
+        handleConfig: nextHandleConfig,
+      };
+    });
   };
 
   const handleHandleTypeChange = (type: HandleType) => {
@@ -863,8 +889,31 @@ export function useWindowBuilderState({
         orientation: prev.handleConfig.orientation ?? (isProfileOrBar ? 'VERTICAL' : undefined),
       };
 
-      const nextSelections = syncHandleMaterialSelections(
-        prev.materialSelections,
+      let nextSelections = prev.materialSelections;
+      const requiresHardware = type === 'BAR_TUBULAR' || type === 'SHELL_LOCK' || type === 'LEVER_HANDLE';
+      const hasHardwareOrHandle = prev.materialSelections.some(
+        (s) => s.categoryType === 'HARDWARE' || isHandleOrLockMaterial(s)
+      );
+
+      if (requiresHardware && !hasHardwareOrHandle && hardwares.length > 0) {
+        const defaultHw = hardwares[0];
+        const newHwSelection: MaterialSelection = {
+          requirementId: generateRequirementId('handle-mat'),
+          categoryType: 'HARDWARE',
+          label: 'Puxador / Ferragem',
+          isOptional: true,
+          materialId: defaultHw.id,
+          materialName: defaultHw.name,
+          unitMeasure: defaultHw.unitMeasure ?? 'un',
+          unitPrice: defaultHw.salePrice ?? 0,
+          quantity: 1,
+          totalPrice: defaultHw.salePrice ?? 0,
+        };
+        nextSelections = [...prev.materialSelections, newHwSelection];
+      }
+
+      const syncedSelections = syncHandleMaterialSelections(
+        nextSelections,
         nextHandleConfig,
         prev.heightMm,
         undefined,
@@ -874,7 +923,7 @@ export function useWindowBuilderState({
       return {
         ...prev,
         handleConfig: nextHandleConfig,
-        materialSelections: nextSelections,
+        materialSelections: syncedSelections,
       };
     });
   };

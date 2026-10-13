@@ -2,6 +2,7 @@ import React from 'react';
 import { Package, Layers } from 'lucide-react';
 import type { OrderItem } from '../types';
 import { formatBRL } from '../../budgets/utils/calculations';
+import { SLIDING_MODE_LABELS, OPENING_DIRECTION_LABELS } from '../../catalog/types/templates';
 
 interface OrderItemListProps {
   items?: OrderItem[];
@@ -27,9 +28,6 @@ export const OrderItemList: React.FC<OrderItemListProps> = ({ items = [] }) => {
           <Layers className="w-5 h-5 text-primary" />
           Itens de Produção ({items.length})
         </h3>
-        <span className="text-xs text-on-surface-variant bg-surface-container-high px-2 py-1 rounded-md font-medium">
-          Lock de Preços & Especificações
-        </span>
       </div>
 
       <div className="overflow-x-auto border border-outline-variant rounded-xl bg-surface-container-lowest shadow-xs">
@@ -53,7 +51,7 @@ export const OrderItemList: React.FC<OrderItemListProps> = ({ items = [] }) => {
                 data-testid={`order-item-row-${item.id}`}
               >
                 <td className="py-3.5 px-2 text-center font-data-mono text-xs text-on-surface-variant">
-                  {item.ordem || index + 1}
+                  {(typeof item.ordem === 'number' ? item.ordem : index) + 1}
                 </td>
                 <td className="py-3.5 px-4">
                   <div className="font-semibold text-on-surface text-sm leading-snug">{item.descricao}</div>
@@ -92,7 +90,11 @@ export const OrderItemList: React.FC<OrderItemListProps> = ({ items = [] }) => {
                     {item.orientacaoAbertura && (
                       <div className="flex items-baseline gap-1.5">
                         <span className="text-on-surface-variant font-medium shrink-0">Abertura:</span>
-                        <span className="font-semibold text-on-surface">{item.orientacaoAbertura}</span>
+                        <span className="font-semibold text-on-surface">
+                          {SLIDING_MODE_LABELS[item.orientacaoAbertura as keyof typeof SLIDING_MODE_LABELS] ||
+                            OPENING_DIRECTION_LABELS[item.orientacaoAbertura as keyof typeof OPENING_DIRECTION_LABELS] ||
+                            item.orientacaoAbertura}
+                        </span>
                       </div>
                     )}
                     {item.ferragens && (

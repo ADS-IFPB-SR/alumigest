@@ -165,8 +165,8 @@ export interface Customer {
 
 export interface CustomerRequest {
   nomeCompleto: string;
-  cpfCnpj?: string;
-  telefone?: string;
+  cpfCnpj: string;
+  telefone: string;
   email?: string;
   cep?: string;
   logradouro?: string;

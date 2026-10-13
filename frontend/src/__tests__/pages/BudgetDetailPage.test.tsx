@@ -75,6 +75,11 @@ describe('BudgetDetailPage — [US-11.5] Botão Emitir Via Técnica (Oficina)', 
       isPending: false,
     } as any);
 
+    vi.spyOn(useBudgetsModule, 'useReopenBudget').mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+    } as any);
+
     vi.spyOn(useBudgetsModule, 'useWhatsAppSummary').mockReturnValue({
       data: 'Resumo mock para WhatsApp',
       isLoading: false,
