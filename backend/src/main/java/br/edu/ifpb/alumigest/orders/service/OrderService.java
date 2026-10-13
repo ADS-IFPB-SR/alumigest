@@ -80,4 +80,12 @@ public interface OrderService {
 
     OrderResponse updateStatus(UUID id, OrderStatus status);
 
+    /**
+     * Recupera a ordem de serviço mais recente gerada a partir do orçamento informado.
+     *
+     * @param budgetId identificador único do orçamento
+     * @return Optional contendo a ordem de serviço mais recente ou vazio
+     */
+    java.util.Optional<OrderSummaryResponse> findLatestByBudgetId(UUID budgetId);
+
 }

@@ -34,6 +34,8 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -115,6 +117,8 @@ public class OrderServiceImpl implements OrderService {
 
         String codigo = orderCodeGenerator.generateNextCode();
 
+        BigDecimal valorMaoDeObra = resolveLaborCost(budget);
+
         Order order = Order.builder()
                 .codigo(codigo)
                 .orcamentoId(budgetId)
@@ -125,6 +129,7 @@ public class OrderServiceImpl implements OrderService {
                 .canalAprovacao(request.canalAprovacao())
                 .dataPrevisaoEntrega(request.dataPrevisaoEntrega())
                 .valorBruto(orZero(budget.getSubtotal()).setScale(2, RoundingMode.HALF_EVEN))
+                .valorMaoDeObra(valorMaoDeObra.setScale(2, RoundingMode.HALF_EVEN))
                 .valorDesconto(orZero(budget.getDiscountValue()).setScale(2, RoundingMode.HALF_EVEN))
                 .valorLiquido(orZero(budget.getTotal()).setScale(2, RoundingMode.HALF_EVEN))
                 .condicaoPagamento(resolvePaymentCondition(budget))
@@ -428,6 +433,23 @@ public class OrderServiceImpl implements OrderService {
         }
         Order savedOrder = orderRepository.save(order);
         return orderMapper.toResponse(savedOrder);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<OrderSummaryResponse> findLatestByBudgetId(UUID budgetId) {
+        return orderRepository.findTopByOrcamentoIdOrderByCreatedAtDesc(budgetId)
+                .map(orderMapper::toSummaryResponse);
+    }
+
+    private BigDecimal resolveLaborCost(Budget budget) {
+        if (budget.getItems() == null || budget.getItems().isEmpty()) {
+            return BigDecimal.ZERO;
+        }
+        return budget.getItems().stream()
+                .map(BudgetItem::getLaborCost)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
 }

@@ -24,6 +24,13 @@ export const OrderFinancialSummaryCard: React.FC<OrderFinancialSummaryCardProps>
           <span className="font-data-mono font-medium">{formatBRL(order.valorBruto)}</span>
         </div>
 
+        {Boolean(order.valorMaoDeObra && order.valorMaoDeObra > 0) && (
+          <div className="flex justify-between text-on-surface-variant">
+            <span>Mão de Obra:</span>
+            <span className="font-data-mono font-medium">{formatBRL(order.valorMaoDeObra!)}</span>
+          </div>
+        )}
+
         {order.valorDesconto > 0 && (
           <div className="flex justify-between text-rose-600">
             <span>Desconto Comercial:</span>

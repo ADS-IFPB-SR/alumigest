@@ -102,6 +102,10 @@ export const ordersApi = {
       queryParams.status = params.status;
     }
 
+    if (params?.sort) {
+      queryParams.sort = params.sort;
+    }
+
     const response = await api.get<any>('/orders', {
       params: queryParams,
     });
@@ -125,6 +129,18 @@ export const ordersApi = {
       size: Number(pageSize),
       number: Number(pageNumber),
     };
+  },
+
+  /**
+   * Busca a ordem de serviço mais recente vinculada a um orçamento.
+   */
+  async getLatestOrderByBudgetId(budgetId: string): Promise<OrderSummary | null> {
+    try {
+      const response = await api.get<OrderSummary>(`/orders/by-budget/${budgetId}`);
+      return response.data;
+    } catch {
+      return null;
+    }
   },
 };
 

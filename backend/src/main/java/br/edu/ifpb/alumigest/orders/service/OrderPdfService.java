@@ -415,7 +415,18 @@ public class OrderPdfService {
         PdfPTable totaisTable = new PdfPTable(2);
         totaisTable.setWidthPercentage(100);
 
-        adicionarLinhaTotais(totaisTable, "Subtotal", formatarMoeda(orZero(order.getValorBruto())), false);
+        BigDecimal valorBruto = orZero(order.getValorBruto());
+        BigDecimal valorMaoDeObra = orZero(order.getValorMaoDeObra());
+        BigDecimal subtotalItens = valorBruto.subtract(valorMaoDeObra);
+        if (subtotalItens.compareTo(BigDecimal.ZERO) < 0) {
+            subtotalItens = BigDecimal.ZERO;
+        }
+
+        if (valorMaoDeObra.compareTo(BigDecimal.ZERO) > 0) {
+            adicionarLinhaTotais(totaisTable, "Subtotal dos Itens", formatarMoeda(subtotalItens), false);
+            adicionarLinhaTotais(totaisTable, "Mão de Obra", formatarMoeda(valorMaoDeObra), false);
+        }
+        adicionarLinhaTotais(totaisTable, "Subtotal", formatarMoeda(valorBruto), false);
 
         if (order.getValorDesconto() != null && order.getValorDesconto().compareTo(BigDecimal.ZERO) > 0) {
             adicionarLinhaTotais(totaisTable, "Desconto", "- " + formatarMoeda(order.getValorDesconto()), false);

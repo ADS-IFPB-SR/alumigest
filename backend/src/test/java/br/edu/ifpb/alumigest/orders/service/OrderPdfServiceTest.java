@@ -144,6 +144,56 @@ class OrderPdfServiceTest {
         }
 
         @Test
+        @DisplayName("Deve gerar comprovante com detalhamento de mão de obra quando valorMaoDeObra for maior que zero")
+        void deveGerarComprovanteComMaoDeObraMaiorQueZero() throws IOException {
+            Order order = Order.builder()
+                    .codigo("OS-2026-0002")
+                    .orcamentoId(UUID.randomUUID())
+                    .clienteNome("Cliente Com Mão de Obra")
+                    .clienteTelefone("(83) 98888-0002")
+                    .clienteEndereco("Rua das Esquadrias, 10 - Sousa/PB")
+                    .status(OrderStatus.WAITING_PRODUCTION)
+                    .canalAprovacao(ApprovalChannel.PRESENCIAL)
+                    .dataAprovacao(LocalDate.of(2026, 10, 10))
+                    .dataPrevisaoEntrega(LocalDate.of(2026, 10, 25))
+                    .valorBruto(new BigDecimal("1500.00"))
+                    .valorMaoDeObra(new BigDecimal("300.00"))
+                    .valorDesconto(BigDecimal.ZERO)
+                    .taxaInstalacao(BigDecimal.ZERO)
+                    .taxaFrete(BigDecimal.ZERO)
+                    .valorLiquido(new BigDecimal("1500.00"))
+                    .build();
+
+            OrderItem item = OrderItem.builder()
+                    .id(UUID.randomUUID())
+                    .descricao("Janela Maxim-ar")
+                    .larguraMm(1000)
+                    .alturaMm(1200)
+                    .quantidade(1)
+                    .valorUnitario(new BigDecimal("1200.00"))
+                    .valorTotal(new BigDecimal("1200.00"))
+                    .ordem(0)
+                    .build();
+
+            order.addItem(item);
+
+            byte[] pdfBytes = orderPdfService.gerarComprovante(order);
+
+            assertThat(pdfBytes)
+                    .as("PDF gerado com mão de obra não deve ser nulo")
+                    .isNotNull()
+                    .isNotEmpty();
+
+            try (PdfReader reader = new PdfReader(pdfBytes)) {
+                String streamsConteudo = extrairStreamsDeTexto(reader);
+                assertThat(streamsConteudo)
+                        .as("O PDF deve conter a discriminação da Mão de Obra e Subtotal dos Itens")
+                        .contains("Mão de Obra")
+                        .contains("Subtotal dos Itens");
+            }
+        }
+
+        @Test
         @DisplayName("AC-05: Deve incluir o resumo financeiro com os valores do pedido")
         void deveIncluirResumoFinanceiro() {
             Order order = criarPedidoPadrao();
