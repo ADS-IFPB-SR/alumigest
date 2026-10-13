@@ -5,14 +5,14 @@
 **Período avaliado:** 29 de setembro a 12 de outubro de 2026  
 **Data de consolidação:** 13 de outubro de 2026  
 **Horário e local:** Não informados no material de origem  
-**Registro:** Compilação da Sprint Review e de sete contribuições individuais da retrospectiva<br>
+**Registro:** Compilação da Sprint Review e de oito contribuições individuais da retrospectiva<br>
 **Branch de documentação:** `planejamento`
 
 ---
 
 ## 1. 👥 Participação e fonte dos registros
 
-Foram recebidas **sete contribuições individuais** para a retrospectiva. Como os relatos não vieram acompanhados dos nomes dos participantes, esta ata os identifica como **Relato 1** a **Relato 7**, preservando o conteúdo e evitando atribuições incorretas.
+Foram recebidas **oito contribuições individuais** para a retrospectiva. Como os relatos não vieram acompanhados dos nomes dos participantes, esta ata os identifica como **Relato 1** a **Relato 8**, preservando o conteúdo e evitando atribuições incorretas.
 
 A apuração da Sprint Review considerou também:
 
@@ -171,6 +171,20 @@ Apesar desses avanços, também foi registrado que algumas tarefas e revisões f
 
 - Nenhum ponto negativo adicional foi identificado.
 - A equipe deve buscar uma forma de reduzir a quantidade de tarefas que bloqueiam outras tarefas.
+
+### 5.8 Relato 8
+
+**O que funcionou bem**
+
+- Percebi uma evolução na organização e na comunicação da equipe durante a sprint.
+- A participação nos code reviews aumentou e ajudou a melhorar a qualidade das entregas.
+- Mesmo com os impedimentos, o time conseguiu manter um bom ritmo de desenvolvimento.
+
+**O que pode ser melhorado**
+
+- As dependências entre as tarefas precisam ser planejadas melhor para evitar bloqueios e períodos de ociosidade.
+- As regras de negócio devem ser detalhadas e alinhadas antes do desenvolvimento, reduzindo interpretações diferentes e retrabalho.
+- O fluxo de branches e PRs pode ser organizado com mais antecedência, incluindo validação funcional da aplicação antes dos merges.
 
 ---
 
