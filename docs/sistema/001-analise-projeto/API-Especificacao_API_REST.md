@@ -4,8 +4,8 @@
 |---|---|
 | **Projeto** | AlumiGest — Sistema de Gestão para Vidraçaria e Esquadrias |
 | **Sigla** | ALG |
-| **Versão** | 2.1 (Atualizado para Sprint 4) |
-| **Data** | 23/09/2026 |
+| **Versão** | 3.0 (Atualizado para Sprint 6 — Ordens de Serviço / Pedidos) |
+| **Data** | 12/10/2026 |
 | **Base URL** | `http://localhost:8080/api` |
 
 ---
@@ -17,6 +17,7 @@
 | 05/08/2026 | 1.0 | Versão inicial — Endpoints da Release 1 (Materiais) | Ítalo Jefferson / Equipe AlumiGest |
 | 21/08/2026 | 2.0 | Atualização Sprint 3 — Módulo de Produtos com Templates Paramétricos SVG, Requisitos de Categorias e Orçamentos com Romaneio | Equipe de Engenharia AlumiGest |
 | 23/09/2026 | 2.1 | Atualização Sprint 4 — Módulo de Orçamentos com Descontos Comerciais (US-09), Emissão de PDF Comercial e WhatsApp (US-10) e Emissão de PDF Técnico de Oficina (US-11) | Equipe de Engenharia AlumiGest |
+| 12/10/2026 | 3.0 | Atualização Sprint 6 — Módulo de Ordens de Serviço (O.S. / Pedidos): Conversão de Orçamento (US-13), Snapshot Imutável e Lock de Preços (US-14), Gestão de Status e Cancelamento (US-15) e Comprovante em PDF (US-16) | Equipe de Engenharia AlumiGest |
 
 ---
 
@@ -493,7 +494,93 @@ Gera e exporta a ficha de corte e usinagem da oficina (Romaneio Técnico de Fabr
 
 ---
 
-## 7. Resumo Geral de Rotas da API
+---
+
+## 7. Módulo de Ordens de Serviço / Pedidos (`/api/orders`) *(Release 2 / Sprint 06)*
+
+Centraliza a formalização da proposta comercial aprovada em **Ordem de Serviço (O.S.)** vinculante para o chão de fábrica, garantindo imutabilidade cadastral (*deep copy* e lock de preços), gestão do ciclo de vida e emissão de comprovante em PDF.
+
+### POST `/api/orders/from-budget/{budgetId}` *(US-13)*
+Converte um orçamento aprovado (`DRAFT` ou `SENT`) em uma nova Ordem de Serviço com geração de código anual sequencial `PED-YYYY-NNNN` e bloqueio de conversão duplicada.
+
+> **Perfis:** ADMINISTRADOR, VENDEDOR  
+> **Headers:** `Content-Type: application/json`
+
+**Request Body (`OrderConvertRequest`):**
+```json
+{
+  "canalAprovacao": "WHATSAPP",
+  "dataPrevisaoEntrega": "2026-10-25",
+  "observacoes": "Aprovado via WhatsApp após confirmação das medidas"
+}
+```
+
+**Response Body (`201 Created` — `OrderResponse`):**
+```json
+{
+  "id": "c1f7a0b5-7c91-4d3e-9081-3e4b7b209a81",
+  "codigo": "PED-2026-0001",
+  "orcamentoId": "d8e3b2a1-5f4c-4e2b-9871-2a3b4c5d6e7f",
+  "clienteId": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
+  "clienteNome": "João da Silva",
+  "status": "AGUARDANDO_PRODUCAO",
+  "canalAprovacao": "WHATSAPP",
+  "dataAprovacao": "2026-10-12",
+  "dataPrevisaoEntrega": "2026-10-25",
+  "dataConclusao": null,
+  "valorLiquido": 4500.00,
+  "createdAt": "2026-10-12T10:00:00"
+}
+```
+
+---
+
+### GET `/api/orders` *(US-13.4)*
+Lista as Ordens de Serviço paginadas com busca textual (código ou cliente) e filtros por status fabril.
+
+> **Parâmetros de Consulta:**
+> - `page` (int, default: 0)
+> - `size` (int, default: 20)
+> - `status` (string, opcional): `CRIADO`, `AGUARDANDO_PRODUCAO`, `EM_PRODUCAO`, `CONCLUIDO`, `CANCELADO`
+> - `busca` (string, opcional): Código do pedido ou nome do cliente
+
+**Response (`200 OK` — `PageResponse<OrderSummaryResponse>`)**
+
+---
+
+### GET `/api/orders/{id}` *(US-13.5 & US-14)*
+Retorna o detalhamento completo da Ordem de Serviço com todos os itens congelados (*snapshot* imutável de medidas nominais L x A mm, valores unitários, acabamento de perfis, vidros e configurações técnicas).
+
+> **Response:** `200 OK` (`OrderResponse` com lista de `OrderItemResponse`)
+
+---
+
+### PATCH `/api/orders/{id}/cancel` *(US-15)*
+Cancela formalmente a Ordem de Serviço mediante registro de justificativa obrigatória ($\ge 10$ caracteres).
+
+> **Request Body (`OrderCancelRequest`):**
+```json
+{
+  "justificativa": "Cliente cancelou a obra temporariamente por motivos de força maior"
+}
+```
+
+> **Validações:**
+> - Bloqueia cancelamento de ordens já em `EM_PRODUCAO` ou `CONCLUIDO` (HTTP 422).
+> - Permite a reabertura condicional do orçamento de origem para novas negociações (`US-15.2`).
+
+---
+
+### GET `/api/orders/{id}/pdf/comprovante` *(US-16)*
+Emite e exporta o Comprovante Oficial da Ordem de Serviço timbrado em formato PDF A4 institucional via OpenPDF.
+
+> **Headers de Resposta:**  
+> - `Content-Type: application/pdf`  
+> - `Content-Disposition: inline; filename="comprovante-pedido-PED-YYYY-NNNN.pdf"`
+
+---
+
+## 8. Resumo Geral de Rotas da API
 
 | Método | Rota | Descrição | Módulo | Release / US |
 |---|---|---|---|:---:|
@@ -524,4 +611,11 @@ Gera e exporta a ficha de corte e usinagem da oficina (Romaneio Técnico de Fabr
 | `GET` | `/api/budgets/{id}/pdf/comercial` | Emitir Proposta Comercial em PDF A4 | `budgets` | R1 / US-10 |
 | `GET` | `/api/budgets/{id}/resumo-whatsapp` | Obter texto formatado para envio no WhatsApp | `budgets` | R1 / US-10 |
 | `GET` | `/api/budgets/{id}/pdf/tecnico` | Emitir Via Técnica de Oficina em PDF (Sem Preços) | `budgets` | R1 / US-11 |
+| **Ordens de Serviço / Pedidos** | | | | |
+| `POST` | `/api/orders/from-budget/{budgetId}` | Converter orçamento em Ordem de Serviço vinculante | `orders` | R2 / US-13 |
+| `GET` | `/api/orders` | Listar Ordens de Serviço paginadas com filtros | `orders` | R2 / US-13 |
+| `GET` | `/api/orders/{id}` | Detalhar Ordem de Serviço com snapshot de itens | `orders` | R2 / US-14 |
+| `PATCH` | `/api/orders/{id}/cancel` | Cancelar Ordem de Serviço com justificativa formal | `orders` | R2 / US-15 |
+| `GET` | `/api/orders/{id}/pdf/comprovante` | Emitir Comprovante Oficial da Ordem de Serviço em PDF | `orders` | R2 / US-16 |
+
 

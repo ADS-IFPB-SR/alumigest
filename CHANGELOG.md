@@ -6,7 +6,41 @@ O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.
 
 ---
 
-## [Unreleased] — Sprint 05 (Em Homologação / Conclusão de Orçamentos e PDFs)
+## [Unreleased] — Sprint 07 (Gestão Fabril: Etiquetas de Identificação & Painel Kanban de Produção)
+
+### 📋 Em Planejamento / Execução
+- **Etiquetas de Identificação de Peças por Item (US-17 / Issue #142):** Geração de PDFs térmicos de 100x50mm via OpenPDF por unidade física de peça com medidas, acabamento e vidro.
+- **Painel Kanban de Produção (US-18 / Issue #143):** Gestão visual do fluxo nas colunas `AGUARDANDO_PRODUCAO`, `EM_PRODUCAO` e `CONCLUIDO` com cálculo de SLA de entrega e rota `/producao`.
+
+---
+
+## [0.6.0] - 2026-10-12 — Release 2: Ordens de Serviço (O.S.), Lock de Preços e Comprovante Oficial (Sprint 06)
+
+### ✨ Adicionado (Added)
+- **Aprovação de Orçamento e Conversão em Ordem de Serviço (US-13 / Issue #137 / PR #423):**
+  - Criação do schema relacional do módulo de pedidos via migration Flyway `V19__create_orders_schema.sql` (tabelas `tb_orders`, `tb_order_items`, `tb_order_item_options`, constraint de unicidade 1-para-1 em `orcamento_id`).
+  - Geração de código sequencial anual `PED-YYYY-NNNN` via `OrderCodeGenerator`.
+  - Endpoint `POST /api/orders/from-budget/{budgetId}` com transação atômica `@Transactional` convertendo orçamento em Ordem de Serviço e atualizando status do orçamento para `APPROVED`.
+  - Modal de aprovação no frontend (`OrderApprovalModal.tsx`) com seleção de canal (WhatsApp, Presencial, Telefone, E-mail) e sugestão automática de data de entrega (+15 dias corridos).
+  - Listagem paginada (`OrderListPage.tsx`) com filtros por status e busca por código/cliente e tela de detalhamento completo (`OrderDetailPage.tsx`).
+- **Snapshot Imutável e Lock de Preços da Ordem de Serviço (US-14 / Issue #138 / PR #445):**
+  - Clonagem profunda (*deep copy*) em 3 níveis congelando itens, opções, ferragens e configurações de templates (`template_config`, `handle_config`, `drilling_config`), blindando o contrato contra reajustes futuros do catálogo de materiais.
+  - Componente de exibição de itens congelados `OrderItemsTable.tsx`.
+- **Gestão de Status, Prazos e Cancelamento com Justificativa (US-15 / Issue #139 / PR #446):**
+  - Ciclo de vida estrito da O.S.: `CRIADO` ➔ `AGUARDANDO_PRODUCAO` ➔ `EM_PRODUCAO` ➔ `CONCLUIDO` / `CANCELADO`.
+  - Endpoint `PATCH /api/orders/{id}/cancel` exigindo justificativa obrigatória ($\ge 10$ caracteres) e modal de cancelamento `OrderCancelModal.tsx`.
+  - Reabertura de orçamento após cancelamento da O.S. (`US-15.2`), permitindo renegociação comercial e reconversão controlada.
+- **Emissão do Comprovante da Ordem de Serviço em PDF e Testes E2E (US-16 / Issue #140 / PRs #420, #447, #459):**
+  - Serviço `OrderPdfService` gerando comprovante formal institucional A4 via OpenPDF com especificações técnicas e condições de pagamento.
+  - Endpoint `GET /api/orders/{id}/pdf/comprovante` e botão de download na `OrderDetailPage.tsx`.
+  - Bateria de testes de integração com `MockMvc` + H2 (`OrderControllerIntegrationTest`) cobrindo todos os endpoints REST, conflito 409 e downloads.
+  - Suite E2E Cypress homologando o fluxo ponta a ponta e validação integral do `quickstart.md`.
+- **Correções de Regressão e Qualidade (Catálogo RBD):**
+  - Correção de duplicação ordinal em `OrderItemList` (#421), suporte a `slidingMode` em templates (#433), extração de puxador via `handleType` (#422) e isolamento de película na descrição do vidro (#424).
+
+---
+
+## [0.5.0] - 2026-09-28 — Baseline Sprint 05 (B-ALG-v0.5.0-S05-01)
 
 ### ✨ Entregas Concluídas na Sprint 05
 - **Emissão de Orçamento em PDF — Via Técnica de Oficina (US-11 / Issue #135 / PR #322):**

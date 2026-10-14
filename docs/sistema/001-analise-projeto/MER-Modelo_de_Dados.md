@@ -1,7 +1,7 @@
 # 📊 MER — Modelo de Dados Oficial (AlumiGest)
 **Projeto:** AlumiGest — Sistema de Gestão para Vidraçaria e Esquadrias  
-**Versão:** 4.0 (Consolidado com Templates Paramétricos, Option Schema, Remoção de Categorias Legadas e Migrações Flyway V1-V15)  
-**Data:** 10 de Setembro de 2026  
+**Versão:** 5.0 (Consolidado com Ordens de Serviço / Pedidos, Snapshot Imutável, Lock de Preços e Migrações Flyway V1-V19)  
+**Data:** 12 de Outubro de 2026  
 **SGBD:** PostgreSQL 16 com extensão `uuid-ossp`  
 **Autor:** Equipe de Engenharia AlumiGest (Scrum Master: Italo Santos)  
 
@@ -25,6 +25,10 @@ erDiagram
     tb_products ||--o{ tb_budget_items : "instanciado em (1:N)"
     tb_budget_items ||--o{ tb_budget_item_options : "customizado por (1:N)"
     tb_materials ||--o{ tb_budget_item_options : "fornece insumo para (1:N)"
+    
+    tb_budgets ||--o| tb_orders : "converte em (1:1)"
+    tb_customers ||--o{ tb_orders : "titular de (1:N)"
+    tb_orders ||--o{ tb_order_items : "contém itens congelados (1:N)"
 
     tb_material_groups {
         uuid id PK
@@ -109,6 +113,53 @@ erDiagram
         decimal unit_price
         decimal total_price
     }
+
+    tb_orders {
+        uuid id PK
+        string codigo UK "PED-YYYY-NNNN"
+        uuid orcamento_id UK_FK "Invariante 1:1"
+        uuid cliente_id FK
+        string cliente_nome "Snapshot do cliente"
+        string cliente_telefone
+        string cliente_endereco
+        string status "CRIADO, AGUARDANDO_PRODUCAO, EM_PRODUCAO, CONCLUIDO, CANCELADO"
+        string canal_aprovacao "WHATSAPP, PRESENCIAL, TELEFONE, EMAIL"
+        date data_aprovacao
+        date data_previsao_entrega
+        date data_conclusao
+        decimal valor_bruto
+        decimal valor_desconto
+        decimal taxa_instalacao
+        decimal taxa_frete
+        decimal valor_liquido "Total formalizado"
+        string condicao_pagamento
+        string observacoes_pagamento
+        string observacoes
+        string justificativa_cancelamento
+        boolean ativo
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    tb_order_items {
+        uuid id PK
+        uuid order_id FK
+        uuid product_id FK
+        string descricao "Descrição congelada"
+        integer largura_mm "Medida nominal"
+        integer altura_mm "Medida nominal"
+        integer quantidade
+        string cor_aluminio
+        string tipo_vidro
+        string orientacao_abertura
+        string ferragens
+        decimal valor_unitario "Preço congelado"
+        decimal valor_total "Subtotal congelado"
+        jsonb template_config "Snapshot imutável"
+        jsonb handle_config "Snapshot puxador"
+        jsonb drilling_config "Snapshot furação"
+        integer ordem
+    }
 ```
 
 ---
@@ -141,6 +192,15 @@ erDiagram
 * **Campos `tb_budget_items`:** `id` (UUID PK), `budget_id` (UUID FK), `product_id` (UUID FK), `width` (INTEGER), `height` (INTEGER), `quantity` (INTEGER), `labor_cost` (DECIMAL), `subtotal` (DECIMAL), `notes` (TEXT).
 * **Campos `tb_budget_item_options`:** `id` (UUID PK), `budget_item_id` (UUID FK), `material_id` (UUID FK), `category_type` (VARCHAR), `unit_measure` (VARCHAR), `quantity` (DECIMAL), `unit_price` (DECIMAL), `total_price` (DECIMAL).
 
+### 2.7 `tb_orders` (Ordens de Serviço / Pedidos de Venda — Migration V19)
+* **Finalidade:** Formalização contratual de venda e ordem executiva de produção fabril. Gerado a partir de um orçamento aprovado (invariante 1-para-1), garantindo lock de preços e controle de prazos de entrega.
+* **Campos:** `id` (UUID PK), `codigo` (VARCHAR UK), `orcamento_id` (UUID UK FK), `cliente_id` (UUID FK), `cliente_nome` (VARCHAR), `cliente_telefone` (VARCHAR), `cliente_endereco` (TEXT), `status` (VARCHAR: `CRIADO`, `AGUARDANDO_PRODUCAO`, `EM_PRODUCAO`, `CONCLUIDO`, `CANCELADO`), `canal_aprovacao` (VARCHAR: `WHATSAPP`, `PRESENCIAL`, `TELEFONE`, `EMAIL`), `data_aprovacao` (DATE), `data_previsao_entrega` (DATE), `data_conclusao` (DATE), `valor_bruto` (DECIMAL), `valor_desconto` (DECIMAL), `taxa_instalacao` (DECIMAL), `taxa_frete` (DECIMAL), `valor_liquido` (DECIMAL), `condicao_pagamento` (VARCHAR), `observacoes_pagamento` (TEXT), `observacoes` (TEXT), `justificativa_cancelamento` (TEXT), `ativo` (BOOLEAN), `created_at` (TIMESTAMP), `updated_at` (TIMESTAMP).
+
+### 2.8 `tb_order_items` (Itens da Ordem de Serviço — Snapshot Imutável — Migration V19)
+* **Finalidade:** Registra cada exemplar físico de esquadria contratada com dimensões nominais, especificações de perfil, vidro e valores unitários congelados via clonagem profunda (*deep copy*), blindados contra reajustes posteriores de catálogo.
+* **Campos:** `id` (UUID PK), `order_id` (UUID FK), `product_id` (UUID FK), `descricao` (VARCHAR), `largura_mm` (INTEGER), `altura_mm` (INTEGER), `quantidade` (INTEGER), `cor_aluminio` (VARCHAR), `tipo_vidro` (VARCHAR), `orientacao_abertura` (VARCHAR), `ferragens` (TEXT), `valor_unitario` (DECIMAL), `valor_total` (DECIMAL), `template_config` (JSONB), `handle_config` (JSONB), `drilling_config` (JSONB), `ordem` (INTEGER).
+
 ---
 
-*Modelo de Dados homologado com a base PostgreSQL 16 — Versão 4.0 — 10/09/2026*
+*Modelo de Dados homologado com a base PostgreSQL 16 — Versão 5.0 — 12/10/2026*
+

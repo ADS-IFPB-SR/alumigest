@@ -4,10 +4,10 @@
 |---|---|
 | **Projeto** | AlumiGest — Sistema de Gestão para Vidraçaria e Esquadrias |
 | **Documento** | Registro Unificado de Bugs, Defeitos e Hotfixes (RBD) |
-| **Versão** | 2.6.2 (Atualização com Resolução dos BUG-029 e BUG-035 / Issues #374 e #384 via PRs #399 e #407) |
-| **Data de Atualização** | 07/10/2026 |
+| **Versão** | 2.8.0 (Catálogo consolidado até BUG-040, incluindo as correções da US-14.1 / Sprint 06) |
+| **Data de Atualização** | 13/10/2026 |
 | **Responsável QA / SM** | Herbert Carvalho dos Santos / Júlio Kennedy dos Santos Silva / Equipe de Engenharia AlumiGest |
-| **Branch** | `planejamento` |
+| **Branch** | `feat/us-14.1-snapshot-imutavel-lock-precos-deep-copy-360` |
 | **Padrão de Template** | Baseado em [`.github/ISSUE_TEMPLATE/bug_report.md`](../../../.github/ISSUE_TEMPLATE/bug_report.md) |
 | **Auditoria Técnica** | Análise estática SonarQube, Pipeline CI/CD GitHub Actions e Histórico Git |
 
@@ -20,7 +20,7 @@ Este documento consolida o **catálogo histórico e investigativo de todos os bu
 Seguindo a governança do **Plano de Gerência de Configuração (PGC)** e do **Plano Geral de Testes (PLT)**:
 1. Todos os relatos respeitam estritamente a estrutura formal do template [`.github/ISSUE_TEMPLATE/bug_report.md`](../../../.github/ISSUE_TEMPLATE/bug_report.md).
 2. Cada defeito é rastreado com sua severidade, passos de reprodução, comportamento esperado, ambiente afetado e **análise técnica de causa raiz e solução aplicada**.
-3. O monitoramento contínuo aplica a filosofia **Clean as You Code**, suportada pela suíte de **242 testes automatizados JUnit 5**, **24 suítes E2E Cypress**, **Oxlint** e **SonarQube Community Edition**.
+3. O monitoramento contínuo aplica a filosofia **Clean as You Code**, suportada pela suíte de **626 testes automatizados JUnit 5**, **658 testes Vitest**, **24 suítes E2E Cypress**, **Oxlint** e **SonarQube Community Edition**.
 
 ---
 
@@ -56,12 +56,18 @@ Seguindo a governança do **Plano de Gerência de Configuração (PGC)** e do **
 | **[BUG-026](#bug-026)** | Termos em Inglês Exibidos no Detalhamento de Usinagem, Puxadores e Tipologias do PDF Técnico | Backend / PDF | 🟡 Média | Sprint 05 | ✅ Resolvido | Issue #344 / Branch `fix/344-termos-ingles-detalhamento-pdf` |
 | **[BUG-027](#bug-027)** | Divergência de Cálculo de Mão de Obra (`laborCost`) entre Frontend e Backend com Múltiplas Quantidades (`quantity > 1`) | Motor de Orçamentos / Backend & UI | 🔴 Alta | Sprint 05 | 🟡 Em Aberto | Issue #372 / US-10 |
 | **[BUG-028](#bug-028)** | Falha da Clipboard API em Ambientes HTTP e Ausência de Link Direto para WhatsApp (`api.whatsapp.com/send`) | Frontend / Ações | 🟡 Média | Sprint 05 | 🟡 Em Aberto | Issue #373 / US-10 |
-| **[BUG-029](#bug-029)** | Cálculo Incorreto de Dias de Validade no Rodapé do PDF com Sobrescrita Indevida para 15 Dias | Backend / PDF | 🟡 Média | Sprint 05 | ✅ Resolvido | Issue #374 / PR #399 (Commit `37feaac`) |
+| **[BUG-029](#bug-029)** | Cálculo Incorreto de Dias de Validade no Rodapé do PDF com Sobrescrita Indevida para 15 Dias | Backend / PDF | 🟡 Média | Sprint 05 | 🟡 Em Aberto | Issue #374 / US-10 |
 | **[BUG-030](#bug-030)** | Razão Social da Empresa Hardcodada no Resumo para WhatsApp Ignorando `CompanyProperties` | Backend / WhatsApp | 🟢 Baixa | Sprint 05 | 🟡 Em Aberto | Issue #375 / US-10 |
 | **[BUG-031](#bug-031)** | Resposta de Erro Empacotada como Blob sem Tratamento de Mensagem no Download de PDF Comercial | Frontend / API | 🟡 Média | Sprint 05 | 🟡 Em Aberto | Issue #376 / US-10 |
 | **[BUG-032](#bug-032)** | Duplicação de Mão de Obra e Inconsistência nos Totais do Orçamento | Backend & Frontend / Orçamentos | 🔴 Alta | Sprint 05 | ✅ Resolvido | Issue #333 / Branch `fix/333-duplicacao-mao-de-obra-totais-orcamento` |
 | **[BUG-033](#bug-033)** | Impossibilidade de Criar Esquadria sem Ferragem / Acessório no Construtor de Orçamentos | Frontend / Orçamentos | 🟡 Média | Sprint 05 | ✅ Resolvido | Issue #335 / Branch `fix/335-esquadria-sem-ferragem` |
-| **[BUG-035](#bug-035)** | Impressão de '• Tipo: NONE' e Contradição Visual de Puxador quando Esquadria Não Possui Puxador | Backend / PDF | 🟡 Média | Sprint 05 | ✅ Resolvido | Issue #384 / PR #407 (Commit `4ee0519`) |
+| **[BUG-034](#bug-034)** | Condição de Corrida Pode Gerar Códigos Duplicados em Conversões Simultâneas | Backend / Concorrência | 🔴 Alta | Sprint 06 | ✅ Resolvido | Issue #408 / PR #414 |
+| **[BUG-035](#bug-035)** | Interface Troca Código Oficial PED por OS e Quebra Busca pelo Identificador Exibido | Fullstack / Contratos | 🔴 Alta | Sprint 06 | ✅ Resolvido | Issue #411 / PR #414 |
+| **[BUG-036](#bug-036)** | Paginação Exibe Apenas Páginas 1–5 e Perde a Janela da Página Atual | Frontend / Paginação | 🟡 Média | Sprint 06 | ✅ Resolvido | Issue #412 / PR #414 |
+| **[BUG-037](#bug-037)** | Classificação Indevida de Película (`FILM`) como Vidro no Snapshot (`tipoVidro`) | Backend / Orders | 🔴 Alta | Sprint 06 | ✅ Resolvido | Issue #424 / Commit `c871c5e` |
+| **[BUG-038](#bug-038)** | Extrator de Puxador Falha por Divergência de Chaves (`model` vs `handleType`) | Backend / Orders | 🔴 Alta | Sprint 06 | ✅ Resolvido | Issue #422 / Commit `ccc44e5` |
+| **[BUG-039](#bug-039)** | Inversão de Precedência no Snapshot e Omissão de `slidingMode` | Full-Stack / Orders | 🔴 Alta | Sprint 06 | ✅ Resolvido | Issue #433 / Commit `4e4788c` |
+| **[BUG-040](#bug-040)** | Duplicação do Índice Ordinal na `OrderItemList` | Frontend / UI | 🟡 Média | Sprint 06 | ✅ Resolvido | Issue #421 / Commit `c3b47e0` |
 
 ---
 
@@ -731,12 +737,12 @@ Na emissão da Ficha Técnica de Oficina (Ficha de Usinagem e Corte - US-11.2), 
 **Causa Raiz Técnica & Solução:**
 * **Causa Raiz:** O método `BudgetPdfService.gerarLinhasFuracao` continha strings hardcoded que assumiam invariavelmente 3 furos para dobradiças sem consultar o `TechnicalMachiningContext`. Além disso, o parser de furação no `TechnicalMachiningResolver` não tratava certas variações de chaves (`holesCount`, `divisionType`) que podiam ocorrer em orçamentos salvos.
 * **Solução:**
-  1. Adicionado suporte no `TechnicalMachiningResolver` para ler chaves flexíveis (`divisionType`, `drillingMode`, `holeCount`, `holesCount`, `quantity`, `count`, `holes`) e distâncias configuradas.
-  2. Implementados os métodos `isSwingDoor()` e `hasNbr10821Warning()` no `TechnicalMachiningContext` para identificar portas de giro com altura > 1800mm e furação < 3 dobradiças.
-  3. Atualizado o método `BudgetPdfService.criarCelulaDetalhamentoFuracao` para obter o `TechnicalMachiningContext` resolvido e passá-lo para `gerarLinhasFuracao`.
-  4. Método `gerarLinhasFuracao` atualizado para montar a descrição dinâmica baseada no número real de furos (`ctx.getPontoFuracaoList().size()`), adicionando a advertência da NBR 10821 em vermelho quando aplicável.
-  5. Atualizados testes unitários e de integração E2E com cobertura total (562 testes passando).
-  6. Gerada evidência visual em alta resolução em `docs/projeto-001/003-teste/sprint-05/evidencias/evidencia-fix-348-ficha-tecnica.png`.
+   1. Adicionado suporte no `TechnicalMachiningResolver` para ler chaves flexíveis (`divisionType`, `drillingMode`, `holeCount`, `holesCount`, `quantity`, `count`, `holes`) e distâncias configuradas.
+   2. Implementados os métodos `isSwingDoor()` e `hasNbr10821Warning()` no `TechnicalMachiningContext` para identificar portas de giro com altura > 1800mm e furação < 3 dobradiças.
+   3. Atualizado o método `BudgetPdfService.criarCelulaDetalhamentoFuracao` para obter o `TechnicalMachiningContext` resolvido e passá-lo para `gerarLinhasFuracao`.
+   4. Método `gerarLinhasFuracao` atualizado para montar a descrição dinâmica baseada no número real de furos (`ctx.getPontoFuracaoList().size()`), adicionando a advertência da NBR 10821 em vermelho quando aplicável.
+   5. Atualizados testes unitários e de integração E2E com cobertura total (562 testes passando).
+   6. Gerada evidência visual em alta resolução em `docs/projeto-001/003-teste/sprint-05/evidencias/evidencia-fix-348-ficha-tecnica.png`.
 
 ---
 
@@ -776,7 +782,7 @@ Em esquadrias onde o puxador se posiciona na borda lateral direita da folha, a s
 
 ### BUG-026: Termos em Inglês Exibidos no Detalhamento de Usinagem, Puxadores e Tipologias do PDF Técnico
 
-**Descrição do Problema:**  
+**Descrição do Problema:**
 Tanto na Ficha Técnica de Oficina (US-11.2) quanto no PDF Comercial do orçamento, identificou-se que determinados valores brutos de enums e nomenclaturas em inglês (ex.: `TUBULAR`, `SHELL_LOCK`, `HANDLE`, `RIGHT`, `LEFT`, `BOTH`, `AWNING WINDOW`, `SLIDING DOOR`, `SWING DOOR`, `CUSTOM_DISTANCES`) eram exibidos sem tradução vernácula para o Português do Brasil (pt-BR).
 
 Isso gerava inconsistência de linguagem para o cliente final e dificultava a identificação imediata na bancada de corte e montagem da serralheria/vidraçaria.
@@ -850,7 +856,7 @@ O modelo de domínio e cálculo deve ser unificado: ou a mão de obra é sempre 
 
 **Causa Raiz Técnica & Solução Recomendada:**
 * **Causa Raiz:** Ausência de alinhamento no contrato DTO e na regra matemática do `BudgetPricingService` em relação ao caráter unitário ou global de `laborCost` ao iterar itens com `quantity > 1`.
-* **Solução Recomendada:** 
+* **Solução Recomendada:**
   1. No `BudgetPricingService.java`, alinhar a fórmula de precificação para `itemSubtotal = (itemMaterialsSubtotal.add(itemLaborCost)).multiply(BigDecimal.valueOf(itemQty))`.
   2. No `BudgetPdfService.java`, acumular a mão de obra total ponderando pela quantidade: `totalMaoDeObra = totalMaoDeObra.add(item.getLaborCost().multiply(BigDecimal.valueOf(item.getQuantity())))`.
   3. Manter a paridade exata com o redutor do `BudgetDetailPage.tsx`.
@@ -923,16 +929,19 @@ O cálculo de dias corridos deve considerar a diferença entre as datas de calen
 **Contexto / Ambiente:**
 - **Navegador / Sistema:** OpenPDF / Java 21 / Spring Boot 3.4.
 - **Módulo Afetado:** Backend — Serviço de PDF (`BudgetPdfService.java`).
-- **Severidade:** 🟡 Média (P3) | **Sprint:** 05 | **Status:** ✅ Resolvido.
-- **Detecção / Correção:** Issue #374 / PR #399 (Commit `37feaac`, Merge `52bada1`).
+- **Severidade:** 🟡 Média (P3) | **Sprint:** 05 | **Status:** 🟡 Em Aberto.
+- **Detecção / Origem:** Issue #374 / Análise de Regras de Negócio e Testes de Validade (US-10 #134).
 
-**Causa Raiz Técnica & Solução Aplicada:**
-* **Causa Raiz:** Utilização de `Duration` (baseada em segundos/horas absolutas) em vez de `ChronoUnit.DAYS` sobre datas locais (`LocalDate`), associada a um fallback artificial que forçava `15` dias para qualquer intervalo que resultasse em 0 dias.
-* **Solução Aplicada:**
-  1. No `BudgetPdfService.java`, implementado o método estático `calcularDiasValidade(OffsetDateTime createdAt, OffsetDateTime validUntil)`, calculando a diferença por datas de calendário com `ChronoUnit.DAYS.between(dataEmissao, dataValidade)` e travando valores negativos em `0` (`Math.max(0, ...)`).
-  2. Implementado `formatarQuantidadeDias(long dias)` para tratar concordância gramatical (`1 dia` vs `0 dias` / `N dias`).
-  3. Removido o fallback forçado de 15 dias quando `validUntil != null`, preservando a regra padrão de 15 dias exclusivamente para orçamentos sem data de validade estipulada (`validUntil == null`).
-  4. Adicionados 17 casos de testes automatizados na suíte `BudgetPdfServiceTest$DiasValidadeBug025Test` cobrindo cenários com menos de 24h, datas no passado, fuso horário `America/Sao_Paulo` e verificação nos streams do documento OpenPDF.
+**Causa Raiz Técnica & Solução Recomendada:**
+* **Causa Raiz:** Utilização de `Duration` (baseada em segundos/horas absolutas) em vez de `ChronoUnit.DAYS` ou `Period` sobre datas locais (`LocalDate`), associada a um fallback que força `15` para qualquer intervalo que resulte em 0 dias.
+* **Solução Recomendada:**
+  Substituir o cálculo por:
+  ```java
+  LocalDate dataCriacao = budget.getCreatedAt() != null ? budget.getCreatedAt().toLocalDate() : LocalDate.now();
+  LocalDate dataValidade = budget.getValidUntil().toLocalDate();
+  long diasValidade = java.time.temporal.ChronoUnit.DAYS.between(dataCriacao, dataValidade);
+  if (diasValidade < 0) diasValidade = 0;
+  ```
 
 ---
 
@@ -1091,37 +1100,194 @@ O usuário deve poder excluir a ferragem livremente pelo botão `X` no Passo 2. 
 
 ---
 
-### BUG-035
-#### [BUG] Impressão de '• Tipo: NONE' e Contradição Visual de Puxador quando Esquadria Não Possui Puxador
+### BUG-034
+#### [BUG] [US-13.2] Condição de Corrida Pode Gerar Códigos Duplicados em Conversões Simultâneas (Issue #408)
 
 **Descrição do Problema:**
-Ao gerar a Ficha Técnica de Oficina (`BudgetPdfService.java`) para esquadrias que não possuem puxador externo (ex: esquadria sem ferragem configurada na Issue #335):
-1. Se `handleConfig` contivesse `{"handleType":"NONE"}`, o método `adicionarTipoPuxador` imprimia literalmente o termo em inglês `• Tipo: NONE`.
-2. Se `handleConfig` fosse `"NONE"`, `{}` ou vazio, `extrairLinhasPuxadorJson` retornava lista vazia e acionava o fallback padrão `obterLinhasPuxadorFallback`, gerando o texto:
-   - `• Formato: Padrão do modelo.`
-   - `• Posição: Lado de abertura.`
-O desenho CAD técnico exibia a folha limpa sem puxador, gerando contradição direta entre o desenho esquemático e a descrição textual na ordem de corte/usinagem.
+Durante testes de concorrência ou conversões de múltiplos orçamentos no mesmo milissegundo, ocorria uma condição de corrida no gerador de código `OrderCodeGenerator`. Duas threads liam simultaneamente o mesmo código mais recente no banco de dados (ex: `OS-2026-0005`) antes de realizar o commit, tentando persistir ambas a ordem subsequente com o mesmo identificador (`OS-2026-0006`). Isso disparava `DataIntegrityViolationException` devido à restrição de unicidade `uk_orders_codigo` no PostgreSQL.
 
 **Passos para Reproduzir:**
-1. Criar esquadria sem ferragem/puxador (`handleType = NONE`).
-2. Emitir o PDF técnico da oficina (`/api/v1/budgets/{id}/pdf/tecnico`).
-3. Analisar a coluna "Detalhamento Furação / Puxador": observava-se o texto "• Tipo: NONE" ou texto indicando formato padrão do modelo.
+1. Disparar simultaneamente duas requisições `POST /api/v1/orders/from-budget/{budgetId}` para orçamentos distintos aprovados.
+2. Observar que ambas as transações leem o mesmo `max(codigo)`.
+3. Uma das transações comita com sucesso e a segunda é abortada com erro HTTP 500 / `DataIntegrityViolationException`.
 
 **Comportamento Esperado:**
-Para esquadrias sem puxador, o PDF técnico deve omitir termos em inglês e indicar de forma limpa e inequívoca: `"• Sem puxador previsto."`.
+O gerador de código deve garantir exclusão mútua na geração de sequenciais, e o serviço transacional deve contar com política de retry automático e verificação defensiva contra colisões.
 
 **Contexto / Ambiente:**
-- **Navegador / Sistema:** OpenPDF / Java 21 / Spring Boot 3.4.
-- **Módulo Afetado:** Backend — Serviço de PDF (`BudgetPdfService.java`).
-- **Severidade:** 🟡 Média (P3) | **Sprint:** 05 | **Status:** ✅ Resolvido.
-- **Detecção / Correção:** Issue #384 / PR #407 (Commit `4ee0519` / Merge `e83094a`).
+- **Módulo Afetado:** Backend / Módulo Orders (`OrderCodeGenerator.java`, `OrderServiceImpl.java`, `AlumiGestApplication.java`).
+- **Severidade:** 🔴 Alta | **Sprint:** 06 | **Status:** ✅ Resolvido.
+- **Detecção / Correção:** Issue #408 / PR #414.
 
-**Causa Raiz Técnica & Solução Aplicada:**
-* **Causa Raiz:** Em `adicionarTipoPuxador`, `traduzirTipoPuxadorTexto("NONE")` retornava `null`, caindo no fallback que imprimia a chave bruta `NONE`. Em `gerarLinhasPuxador`, listas vazias invocavam `obterLinhasPuxadorFallback` em vez de sinalizar a ausência intencional de puxador.
-* **Solução Aplicada:**
-  1. Implementado o helper `isSemPuxador(String raw)` no `BudgetPdfService.java`, cobrindo valores vazios, `{}`, `NONE` e JSON com chave `handleType` ou `type` igual a `NONE`.
-  2. Ajustado `gerarLinhasPuxador` para retornar `List.of("Sem puxador previsto.")` imediatamente quando `isSemPuxador` for verdadeiro, desarmando o fallback de puxador padrão.
-  3. Adicionados testes parametrizados em `BudgetPdfServiceTest` cobrindo todos os formatos suportados de ausência de puxador.
+**Causa Raiz Técnica & Solução:**
+* **Causa Raiz:** O método `generateNextCode()` não possuía sincronização (`synchronized`) para exclusão mútua em nível de JVM e não checava se o código gerado já existia antes de devolvê-lo, somado à ausência de política de reprocessamento em caso de colisão de commit e risco de colisão entre threads que consultavam o banco antes da transação irmã comitar.
+* **Solução:**
+  1. Tornou-se o método `generateNextCode()` thread-safe (`public synchronized String generateNextCode()`), adicionando-se rastreamento sequencial em memória (`lastAllocatedNumber`) com atualização atômica e verificação defensiva em loop `while (orderRepository.existsByCodigo(candidateCode))` com limite de tentativas (`MAX_CANDIDATE_ATTEMPTS = 500`).
+  2. Adicionada a dependência `spring-retry` com `@EnableRetry(order = 0)` na aplicação, garantindo que o interceptor de retry envolva externamente o interceptor transacional (`@Transactional`).
+  3. O método transacional `convertBudgetToOrder` utiliza `orderRepository.saveAndFlush(order)` para materializar imediatamente a constraint UNIQUE no banco e foi anotado com `@Retryable(retryFor = {DataIntegrityViolationException.class, TransactionSystemException.class}, maxAttempts = 3, backoff = @Backoff(delay = 100, multiplier = 1.5))`.
+  4. Suíte de testes unitários `OrderCodeGeneratorTest.java` adicionada cobrindo geração inicial, incremento, fallback de formato e salto de códigos pré-existentes.
+  5. Teste de integração concorrente real com 10 threads simultâneas e barreira `CountDownLatch` implementado em `OrderCodeGeneratorConcurrencyIntegrationTest.java`, comprovando 100% de unicidade e ausência de colisões sob concorrência direta (CA-3).
+
+---
+
+### BUG-035
+#### [BUG] [US-13.3/13.4/13.5] Interface Troca Código Oficial PED por OS e Quebra Busca pelo Identificador Exibido (Issue #411)
+
+**Descrição do Problema:**
+O frontend exibia a identificação da ordem substituindo cosmetica e artificialmente o código retornado pela API via `.replace('PED-', 'OS-')`. No entanto, o banco de dados persistia nativamente o identificador com prefixo `PED-YYYY-NNNN`. Ao utilizar o campo de busca textual na listagem de ordens de serviço (`OrderListPage.tsx`) ou via API `GET /api/v1/orders?search=OS-2026-0001`, a consulta SQL `LOWER(o.codigo) LIKE %...%` não encontrava nenhuma linha, pois os códigos no banco começavam com `PED-`.
+
+**Passos para Reproduzir:**
+1. Converter um orçamento em ordem de serviço.
+2. Na listagem de ordens de serviço (`/ordens-servico`), visualizar o código exibido como `#OS-2026-0001`.
+3. Digitar `OS-2026-0001` no campo de pesquisa textual.
+4. Observar mensagem de "Nenhuma ordem de serviço encontrada", embora a ordem exista.
+
+**Comportamento Esperado:**
+O identificador oficial de mercado deve ser unificado e nativo em todas as camadas (Banco de Dados, Backend Core, APIs REST e Frontend), permitindo busca textual direta e consistente, com migração de dados legados e rotas padronizadas em `/ordens-servico`.
+
+**Contexto / Ambiente:**
+- **Módulo Afetado:** Fullstack / Módulo Orders (`OrderCodeGenerator.java`, `OrderListPage.tsx`, `OrderDetailHeader.tsx`, `OrderDetailPage.tsx`, `BudgetDetailPage.tsx`, `BudgetDetailActions.tsx`, `CancelOrderModal.tsx`, `useConvertBudget.ts`, `V20__migrate_order_codes_ped_to_os.sql`).
+- **Severidade:** 🔴 Alta | **Sprint:** 06 | **Status:** ✅ Resolvido.
+- **Detecção / Correção:** Issue #411 / PR #414.
+
+**Causa Raiz Técnica & Solução:**
+* **Causa Raiz:** Decisão de design na UI de renomear para "Ordem de Serviço" sem migrar o gerador do backend, o banco legado e as rotas internas, causando descompasso entre o dado persistido, a busca textual e a navegação.
+* **Solução:**
+  1. O prefixo no gerador `OrderCodeGenerator.java` foi unificado para `OS-%d-` nativo.
+  2. Criada a migração Flyway `V20__migrate_order_codes_ped_to_os.sql` atualizando dados legados (`UPDATE tb_orders SET codigo = REPLACE(codigo, 'PED-', 'OS-') WHERE codigo LIKE 'PED-%'`), blindando a continuidade do sequenciador e a integridade de dados.
+  3. Removidas todas as chamadas `.replace('PED-', 'OS-')` nos componentes `OrderListPage.tsx` e `OrderDetailHeader.tsx`, exibindo diretamente `#{order.codigo}`.
+  4. Padronizados todos os links internos e navegações programáticas de `/work-orders` para a rota canônica `/ordens-servico` em `OrderListPage.tsx`, `OrderDetailPage.tsx`, `OrderDetailHeader.tsx`, `BudgetDetailPage.tsx` e `BudgetDetailActions.tsx`.
+  5. Terminologia de mensagens toast e modais padronizada para "Ordem de Serviço" (`useConvertBudget.ts` e `CancelOrderModal.tsx`).
+  6. Suíte de testes do frontend e backend adaptada para validar `OS-2026-` e `/ordens-servico`.
+
+---
+
+### BUG-036
+#### [BUG] [US-13.4] Paginação Exibe Apenas Páginas 1–5 e Perde a Janela da Página Atual (Issue #412)
+
+**Descrição do Problema:**
+Na tela de listagem de ordens de serviço (`OrderListPage.tsx`), a barra de paginação utilizava `Array.from({ length: Math.min(totalPages, 5) })` para renderizar os botões de página. Quando o total de ordens gerava mais de 5 páginas (ex: 70 itens com tamanho 10 geram 7 páginas), as páginas 6 em diante nunca eram exibidas como botões, e ao navegar via botão "Próximo" para a página 6, a barra deixava de indicar qualquer botão ativo, perdendo o contexto de navegação.
+
+**Passos para Reproduzir:**
+1. Ter mais de 50 ordens de serviço cadastradas na base.
+2. Acessar `/ordens-servico` com tamanho de página 10 (gerando 6 ou mais páginas).
+3. Verificar que são renderizados apenas os botões de 1 a 5.
+4. Clicar no botão "Próximo" até a página 6 e observar que nenhum botão fica destacado.
+
+**Comportamento Esperado:**
+A paginação deve implementar navegação com janela deslizante e reticências (`…`) dinamicamente centralizadas na página atual, suportando qualquer quantidade de páginas no mesmo padrão de `BudgetsPagination.tsx`.
+
+**Contexto / Ambiente:**
+- **Módulo Afetado:** Frontend / Módulo Orders (`OrderListPage.tsx`, `OrderListPage.test.tsx`).
+- **Severidade:** 🟡 Média | **Sprint:** 06 | **Status:** ✅ Resolvido.
+- **Detecção / Correção:** Issue #412 / PR #414.
+
+**Causa Raiz Técnica & Solução:**
+* **Causa Raiz:** Lógica estática de renderização de botões limitada pelo hardcoding `Math.min(totalPages, 5)`.
+* **Solução:**
+  1. Extraída e exportada a função pura `getVisiblePages(page, totalPages)` com algoritmo de janela móvel e reticências (`ellipsis-start` e `ellipsis-end`) quando `totalPages > 7`.
+  2. Renderização de botões e spans de reticências acessíveis com marcação semântica (`aria-current="page"`).
+  3. Adicionados testes unitários isolados para `getVisiblePages` cobrindo início, meio (`page = 5, totalPages = 10`) e fim.
+  4. Adicionado teste de integração no componente `OrderListPage.test.tsx` cobrindo explicitamente `page > 4` (navegação até página 6 em 10 páginas) conforme o critério de aceite CA-4 da Issue #412.
+
+---
+
+### BUG-037
+#### [BUG] Classificação Indevida de Película (`FILM`) como Vidro no Snapshot (`tipoVidro`)
+
+**Descrição do Problema:**
+Durante a conversão do orçamento em pedido de venda (US-14.1), itens com película protetora ou térmica podiam ter `tipoVidro` preenchido com o nome da película, sobrescrevendo a especificação real do vidro.
+
+**Passos para Reproduzir:**
+1. Criar um orçamento com vidro e película adicional.
+2. Aprovar e converter o orçamento em pedido.
+3. Consultar o pedido gerado e verificar o campo `tipoVidro`.
+
+**Comportamento Esperado:**
+Insumos da categoria `FILM` devem permanecer nas opções do item e nunca substituir o acabamento estrutural do vidro.
+
+**Contexto / Ambiente:**
+- **Módulo Afetado:** `OrderItemSnapshotResolver.java`.
+- **Severidade:** 🔴 Alta | **Sprint:** 06 | **Status:** ✅ Resolvido.
+- **Detecção / Correção:** Issue #424 / Commit `c871c5e`.
+
+**Causa Raiz Técnica & Solução:**
+* **Causa Raiz:** A correspondência textual de vidro não excluía opções da categoria `FILM`.
+* **Solução:** A extração passou a priorizar `MaterialCategoryType.GLASS` e a descartar explicitamente películas no fallback textual, com testes de regressão.
+
+---
+
+### BUG-038
+#### [BUG] Extrator de Puxador Falha por Divergência de Chaves (`model` vs `handleType`)
+
+**Descrição do Problema:**
+O snapshot deixava o campo `ferragens` nulo ou incompleto quando a configuração do puxador usava a chave `handleType`.
+
+**Passos para Reproduzir:**
+1. Criar um item com `handle_config` contendo `handleType` e `handleLengthMm`.
+2. Converter o orçamento em pedido.
+3. Verificar o campo `ferragens` persistido.
+
+**Comportamento Esperado:**
+O snapshot deve registrar o puxador com rótulo amigável e dimensão em milímetros.
+
+**Contexto / Ambiente:**
+- **Módulo Afetado:** `OrderItemSnapshotResolver.java`.
+- **Severidade:** 🔴 Alta | **Sprint:** 06 | **Status:** ✅ Resolvido.
+- **Detecção / Correção:** Issue #422 / Commit `ccc44e5`.
+
+**Causa Raiz Técnica & Solução:**
+* **Causa Raiz:** O extrator buscava somente a chave `model`.
+* **Solução:** Adicionado suporte a `handleType`, com fallback para `model`, leitura do comprimento, tradução dos rótulos e testes automatizados.
+
+---
+
+### BUG-039
+#### [BUG] Inversão de Precedência no Snapshot e Omissão de `slidingMode`
+
+**Descrição do Problema:**
+O template padrão do produto podia sobrescrever cores e acabamentos customizados do orçamento. Além disso, esquadrias de correr com `slidingMode` tinham a orientação de abertura omitida.
+
+**Passos para Reproduzir:**
+1. Criar um orçamento com configuração customizada e modo de correr.
+2. Converter o orçamento em pedido.
+3. Comparar o snapshot com a configuração do item original.
+
+**Comportamento Esperado:**
+As configurações específicas do item devem prevalecer sobre o template do produto, e `slidingMode` deve ser registrado e exibido com rótulo amigável.
+
+**Contexto / Ambiente:**
+- **Módulos Afetados:** `OrderItemSnapshotResolver.java` e `OrderItemList.tsx`.
+- **Severidade:** 🔴 Alta | **Sprint:** 06 | **Status:** ✅ Resolvido.
+- **Detecção / Correção:** Issue #433 / Commit `4e4788c`.
+
+**Causa Raiz Técnica & Solução:**
+* **Causa Raiz:** A cadeia de precedência consultava o produto antes da configuração do item e não reconhecia `slidingMode`.
+* **Solução:** Reordenada a precedência para opções, configuração do item e configuração do produto; adicionada extração e tradução de `slidingMode`.
+
+---
+
+### BUG-040
+#### [BUG] Duplicação do Índice Ordinal na `OrderItemList`
+
+**Descrição do Problema:**
+A primeira e a segunda linha da tabela de itens podiam exibir o mesmo ordinal `# 1`.
+
+**Passos para Reproduzir:**
+1. Acessar um pedido com dois ou mais itens.
+2. Observar a coluna ordinal da tabela.
+
+**Comportamento Esperado:**
+A numeração deve ser sequencial e iniciar em 1.
+
+**Contexto / Ambiente:**
+- **Módulos Afetados:** `OrderItemList.tsx` e `OrderItemList.test.tsx`.
+- **Severidade:** 🟡 Média | **Sprint:** 06 | **Status:** ✅ Resolvido.
+- **Detecção / Correção:** Issue #421 / Commit `c3b47e0`.
+
+**Causa Raiz Técnica & Solução:**
+* **Causa Raiz:** A expressão baseada em `||` tratava o índice zero como valor falso.
+* **Solução:** A numeração passou a testar explicitamente o tipo do campo `ordem` antes de somar 1, com cobertura de regressão no frontend.
 
 ---
 
@@ -1131,8 +1297,9 @@ Para esquadrias sem puxador, o PDF técnico deve omitir termos em inglês e indi
 
 ```mermaid
 pie title "Origem dos Defeitos Identificados"
-    "Frontend & UI/UX" : 11
-    "Backend & Regras de Negócio" : 14
+    "Frontend & UI/UX" : 13
+    "Backend & Regras de Negócio" : 15
+    "Incompatibilidade de Contratos / Fullstack" : 7
     "Pipeline CI/CD & SonarQube" : 3
     "Infraestrutura & Docker" : 2
     "Governança & Git Flow" : 1
@@ -1145,11 +1312,12 @@ pie title "Origem dos Defeitos Identificados"
 | **Incompatibilidade de Contratos (DTOs / Types)** | 7 | Adoção de contratos OpenAPI sincronizados e tipagens estritas no TypeScript. |
 | **Limitações de Ambiente (HTTP vs HTTPS / Docker)** | 4 | Uso de fallbacks nativos (`document.execCommand`, `Math.random`) e SSL obrigatório. |
 | **Erros de Validação e Feedback ao Usuário** | 4 | Padronização dos formulários com **React Hook Form + Zod** e deserialização de erros Blob. |
-| **Regressão por Refatoração** | 4 | Ampliação da suíte para **242 testes JUnit 5** e **24 suítes Cypress E2E** no pipeline obrigatório. |
+| **Regressão por Refatoração** | 4 | Ampliação da suíte para **626 testes JUnit 5**, **658 testes Vitest** e **24 suítes Cypress E2E** no pipeline obrigatório. |
 | **Configuração de CI/CD e Build Tools** | 4 | Adição do Quality Gate no SonarQube bloqueando merges caso haja regressão ou falha de plugin. |
 | **Desvio de Git Flow / Merge Prematuro** | 1 | Configuração de Rulesets protegendo `main` e `develop` contra merges diretos sem aprovação de PR. |
+| **Concorrência e Condição de Corrida** | 1 | Sincronização explícita, verificação defensiva em loop e política de retry com Spring Retry. |
+| **Limitação de Paginação e Navegação** | 1 | Adoção de janela móvel deslizante com reticências para qualquer paginação com totalPages > 7. |
 
 ---
 
-*Documento mantido e auditado pelo Time de Engenharia e QA — AlumiGest — Setembro/2026*
-
+*Documento mantido e auditado pelo Time de Engenharia e QA — AlumiGest — Outubro/2026*

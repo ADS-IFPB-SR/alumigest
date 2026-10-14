@@ -57,7 +57,8 @@ O escopo foi composto por **12 fatias verticais**, estimadas em aproximadamente 
 | **US-15** | As subtarefas #361 e #362 foram encerradas, cobrindo máquina de estados, cancelamento e reabertura manual do orçamento. | A US-15.1 foi reapresentada em uma branch limpa pela PR **#418**. A US-15.2 foi integrada à branch agregadora pela PR **#419**, mas ainda havia commits pendentes de integração final com `develop`. |
 | **US-16** | As subtarefas #363, #364 e #365 foram encerradas, contemplando comprovante PDF, navegação/OpenAPI e testes MockMvc/H2. | A subtarefa **#366 (US-16.4)** permaneceu aberta. A branch agregadora da US-16 ainda possuía commits pendentes de integração final com `develop`. |
 
-**Resumo quantitativo:** 11 das 12 subtarefas planejadas foram encerradas. A Sprint 06 terminou com a US-16.4 aberta e com integrações finais ainda pendentes.
+**Resumo quantitativo inicial (13/10):** 11 das 12 subtarefas planejadas haviam sido encerradas na data da reunião.  
+**Resumo quantitativo definitivo (14/10):** **12 das 12 subtarefas (100%)** foram concluídas e mescladas em `develop` e `main` (Release v0.6.0). Ver Aditivo na [Seção 10](#10--aditivo-de-fechamento-definitivo-da-sprint-06-14102026).
 
 ### 4.2 Incrementos entregues
 
@@ -243,12 +244,24 @@ Apesar desses avanços, também foi registrado que algumas tarefas e revisões f
 
 ---
 
-## 9. 🏁 Encerramento
+---
 
-A Sprint 06 apresentou evolução perceptível na organização, comunicação, participação e qualidade das revisões. O principal incremento de negócio — a transformação do orçamento em Ordem de Serviço com dados congelados e fluxo operacional — avançou de forma significativa.
+## 10. 🏆 Aditivo de Fechamento Definitivo da Sprint 06 (14/10/2026)
 
-O encerramento, porém, ocorreu com uma tarefa de homologação aberta e integrações pendentes. A equipe definiu como prioridade melhorar o refinamento das regras de negócio, controlar dependências e bloqueios, organizar o Gitflow e reservar capacidade explícita para integração e validação ao final das próximas sprints.
+Em 14 de outubro de 2026, a equipe de engenharia concluiu a resolução integral de todas as pendências de integração listadas na Seção 8, atingindo **100% das 12 fatias verticais concluídas, testadas e integradas**:
+
+1. **US-14 Integrada (PR #445):** Correções de snapshot imutável, duplicação ordinal (#421) e atributos de templates (#422, #424, #433) mescladas em `develop`.
+2. **US-15 Integrada (PR #446):** Máquina de estados fabris, cancelamento com justificativa e reabertura de orçamentos mescladas em `develop`.
+3. **US-16.4 Homologada (PR #447):** Testes de sistema E2E (Cypress), validação BDD e homologação integral do roteiro `quickstart.md` mesclados com sucesso em `develop`.
+4. **Agregadora US-16 Mesclada (PR #459):** Emissão de comprovante PDF, navegação e testes de integração REST unificados em `develop`.
+5. **Release v0.6.0 Promovida para Main (PR #460):** Versão oficial de produção da Release 2 (Ordens de Serviço) homologada e mesclada na branch `main`.
+
+### Resultado Final Consolidado:
+- **Total de Fatias Verticais Entregues:** **12 de 12 (100% de conclusão)**.
+- **Story Points Realizados:** **31 SP**.
+- **Horas de Engenharia:** **~38.0h**.
+- **Status da Sprint 06:** 🟢 **Concluída com Sucesso & Homologada em Produção**.
 
 ---
 
-*Documento mantido pelo Time de Engenharia do AlumiGest — Outubro/2026.*
+*Documento mantido pelo Time de Engenharia do AlumiGest — Atualizado em 14/10/2026.*

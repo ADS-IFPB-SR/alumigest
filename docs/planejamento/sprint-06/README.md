@@ -1,7 +1,7 @@
 # 📌 Sprint 06 — Pedidos de Venda, Lock de Preços e Comprovante Oficial
 
 **Período Oficial da Sprint 06**: 29/09/2026 a 12/10/2026  
-**Status**: 🔵 Planejada / Pronta para Execução  
+**Status**: 🟢 Concluída  
 **Total de Tarefas**: 12 Fatias Verticais (*Thin Vertical Slices* ≤ 4h cada)  
 **Esforço Total Estimado**: ~38 horas (31 Story Points)
 
