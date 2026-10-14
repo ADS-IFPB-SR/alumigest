@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="h-full bg-slate-100">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AlumiGest ERP - Kanban de Produção</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#f0f4f8',
+              100: '#d9e2ec',
+              800: '#1e293b',
+              900: '#0f172a', // Navy da sidebar ativa
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom Scrollbar for Kanban columns */
+    .kanban-scroll::-webkit-scrollbar {
+      width: 6px;
+    }
+    .kanban-scroll::-webkit-scrollbar-track {
+      background: #f1f5f9;
+      border-radius: 8px;
+    }
+    .kanban-scroll::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 8px;
+    }
+    .kanban-scroll::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    /* Drag and Drop visual indicator */
+    .drag-over {
+      background-color: #f0fdf4 !important;
+      border: 2px dashed #22c55e !important;
+    }
+    .dragging {
+      opacity: 0.5;
+      transform: scale(0.98);
+    }
+  </style>
+</head>
+
+<body class="h-full text-slate-800 font-sans antialiased flex flex-col md:flex-row min-h-screen">
+
+  <!-- SIDEBAR (Alinhada perfeitamente com o Design System da imagem) -->
+  <aside class="w-full md:w-64 bg-white border-r border-slate-200 flex-shrink-0 flex flex-col justify-between z-20">
+    <div>
+      <!-- Branding / Logo Header -->
+      <div class="p-5 border-b border-slate-100 flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-slate-900 text-white flex items-center justify-center font-bold text-lg shadow">
+          A
+        </div>
+        <div>
+          <h1 class="font-bold text-slate-900 text-base leading-tight">Gestão de Esquadrias</h1>
+          <p class="text-xs text-slate-500 font-medium">Gestão de Vidros e Alumínio</p>
+        </div>
+      </div>
+
+      <!-- Navigation Menu -->
+      <nav class="p-3 space-y-1">
+        <a href="#" class="flex items-center gap-3 px-3.5 py-2.5 text-sm font-medium text-slate-600 rounded-lg hover:bg-slate-100 hover:text-slate-900 transition">
+          <i class="fa-solid fa-table-cells-large w-5 text-center"></i> Dashboard
+        </a>
+
+        <!-- ITEM ATIVO (KANBAN) - Estilo fiel ao Orçamentos selecionado na screenshot -->
+        <a href="#" class="flex items-center gap-3 px-3.5 py-2.5 text-sm font-semibold text-white bg-slate-900 rounded-lg shadow-sm transition">
+          <i class="fa-solid fa-square-poll-vertical w-5 text-center text-blue-400"></i> Kanban
+        </a>
+
+        <a href="#" class="flex items-center gap-3 px-3.5 py-2.5 text-sm font-medium text-slate-600 rounded-lg hover:bg-slate-100 hover:text-slate-900 transition">
+          <i class="fa-solid fa-file-invoice w-5 text-center"></i> Orçamentos
+        </a>
+
+        <a href="#" class="flex items-center gap-3 px-3.5 py-2.5 text-sm font-medium text-slate-600 rounded-lg hover:bg-slate-100 hover:text-slate-900 transition">
+          <i class="fa-solid fa-book-open w-5 text-center"></i> Catálogo de Materiais
+        </a>
+
+        <a href="#" class="flex items-center gap-3 px-3.5 py-2.5 text-sm font-medium text-slate-600 rounded-lg hover:bg-slate-100 hover:text-slate-900 transition">
+          <i class="fa-solid fa-boxes-stacked w-5 text-center"></i> Estoque
+        </a>
+
+        <a href="#" class="flex items-center gap-3 px-3.5 py-2.5 text-sm font-medium text-slate-600 rounded-lg hover:bg-slate-100 hover:text-slate-900 transition">
+          <i class="fa-solid fa-cubes w-5 text-center"></i> Produtos
+        </a>
+
+        <a href="#" class="flex items-center gap-3 px-3.5 py-2.5 text-sm font-medium text-slate-600 rounded-lg hover:bg-slate-100 hover:text-slate-900 transition">
+          <i class="fa-solid fa-users w-5 text-center"></i> Clientes
+        </a>
+
+        <a href="#" class="flex items-center gap-3 px-3.5 py-2.5 text-sm font-medium text-slate-600 rounded-lg hover:bg-slate-100 hover:text-slate-900 transition">
+          <i class="fa-solid fa-wallet w-5 text-center"></i> Financeiro
+        </a>
+
+        <a href="#" class="flex items-center gap-3 px-3.5 py-2.5 text-sm font-medium text-slate-600 rounded-lg hover:bg-slate-100 hover:text-slate-900 transition">
+          <i class="fa-solid fa-gear w-5 text-center"></i> Configurações
+        </a>
+      </nav>
+    </div>
+
+    <!-- Sidebar Bottom Footer -->
+    <div class="p-3 border-t border-slate-100 space-y-1">
+      <a href="#" class="flex items-center gap-3 px-3.5 py-2 text-sm font-medium text-slate-600 rounded-lg hover:bg-slate-100 transition">
+        <i class="fa-solid fa-circle-question w-5 text-center"></i> Suporte
+      </a>
+      <a href="#" class="flex items-center gap-3 px-3.5 py-2 text-sm font-medium text-slate-600 rounded-lg hover:bg-slate-100 hover:text-rose-600 transition">
+        <i class="fa-solid fa-arrow-right-from-bracket w-5 text-center"></i> Sair
+      </a>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT CONTAINER -->
+  <div class="flex-1 flex flex-col min-w-0 overflow-hidden bg-slate-50">
+
+    <!-- Topbar ERP Banner -->
+    <header class="bg-white border-b border-slate-200 h-14 px-6 flex items-center justify-between flex-shrink-0">
+      <div class="flex items-center gap-2">
+        <span class="font-bold text-slate-900 tracking-tight text-base">AlumiGest</span>
+        <span class="text-xs px-2 py-0.5 rounded font-semibold bg-slate-100 text-slate-600 uppercase border border-slate-200">ERP</span>
+      </div>
+
+      <!-- Right controls (Theme, Notifications, Admin Profile) -->
+      <div class="flex items-center gap-4">
+        <button class="text-slate-500 hover:text-slate-700 p-1.5 rounded-full hover:bg-slate-100 transition" title="Alternar Tema">
+          <i class="fa-regular fa-moon"></i>
+        </button>
+        <button class="relative text-slate-500 hover:text-slate-700 p-1.5 rounded-full hover:bg-slate-100 transition" title="Notificações">
+          <i class="fa-regular fa-bell"></i>
+          <span class="absolute top-1 right-1 w-2 h-2 bg-rose-500 rounded-full"></span>
+        </button>
+
+        <div class="h-6 w-px bg-slate-200"></div>
+
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center font-semibold border border-slate-300">
+            <i class="fa-regular fa-user"></i>
+          </div>
+          <div class="hidden sm:block text-left">
+            <p class="text-sm font-semibold text-slate-800 leading-none">Admin</p>
+            <p class="text-xs text-slate-500 leading-none mt-1">Gerente de Produção</p>
+          </div>
+          <i class="fa-solid fa-chevron-down text-xs text-slate-400"></i>
+        </div>
+      </div>
+    </header>
+
+    <!-- MAIN BOARD AREA -->
+    <main class="flex-1 overflow-y-auto p-4 sm:p-6">
+      <!-- Container principal idêntico ao estilo visual do ERP AlumiGest -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm max-w-7xl mx-auto space-y-6">
+
+        <!-- Breadcrumbs & Header Title Row -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <!-- Breadcrumb -->
+            <nav class="flex items-center gap-2 text-xs text-slate-500 mb-1">
+              <span>Início</span>
+              <i class="fa-solid fa-chevron-right text-[10px] text-slate-400"></i>
+              <span>Orçamentos</span>
+              <i class="fa-solid fa-chevron-right text-[10px] text-slate-400"></i>
+              <span class="font-medium text-slate-800">Kanban de Produção</span>
+            </nav>
+            <h2 class="text-2xl font-bold text-slate-900 tracking-tight">Ordens de Serviço (Kanban)</h2>
+            <p class="text-sm text-slate-500">Gerencie e acompanhe a fabricação das ordens de serviço geradas a partir de orçamentos aprovados.</p>
+          </div>
+
+          <!-- Top Actions -->
+          <div class="flex items-center gap-2">
+            <button onclick="window.print()" class="px-3.5 py-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-semibold rounded-lg shadow-sm transition flex items-center gap-2">
+              <i class="fa-solid fa-print text-slate-500"></i> Imprimir Fichas PCP
+            </button>
+            <button onclick="abrirModalNovaOS()" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold rounded-lg shadow-sm transition flex items-center gap-2">
+              <i class="fa-solid fa-plus text-xs"></i> Nova Ordem de Serviço
+            </button>
+          </div>
+        </div>
+
+        <!-- KPI METRICS BAR (Indicadores Importantes de Produção) -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 pt-2">
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center font-bold">
+              <i class="fa-solid fa-industry"></i>
+            </div>
+            <div>
+              <p class="text-xs text-slate-500 font-medium">OSs em Produção</p>
+              <p class="text-lg font-bold text-slate-900" id="kpiEmProducao">4</p>
+            </div>
+          </div>
+
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold">
+              <i class="fa-solid fa-vector-square"></i>
+            </div>
+            <div>
+              <p class="text-xs text-slate-500 font-medium">Área Total (m²)</p>
+              <p class="text-lg font-bold text-slate-900">148.5 m²</p>
+            </div>
+          </div>
+
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-lg bg-rose-100 text-rose-700 flex items-center justify-center font-bold">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <div>
+              <p class="text-xs text-slate-500 font-medium">OSs Urgentes</p>
+              <p class="text-lg font-bold text-rose-700">2</p>
+            </div>
+          </div>
+
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
+              <i class="fa-solid fa-circle-check"></i>
+            </div>
+            <div>
+              <p class="text-xs text-slate-500 font-medium">Entrega no Prazo</p>
+              <p class="text-lg font-bold text-emerald-700">96.2%</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- FILTER BAR & SEARCH -->
+        <div class="flex flex-col lg:flex-row gap-3 pt-2">
+          <!-- Search input -->
+          <div class="relative flex-1">
+            <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+            <input type="text" id="inputBusca" onkeyup="filtrarCards()" placeholder="Buscar por código de OS, cliente ou esquadria..." 
+              class="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:bg-white transition">
+          </div>
+
+          <!-- Select Filters -->
+          <div class="flex flex-wrap items-center gap-2">
+            <select id="filtroLinha" onchange="filtrarCards()" class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-900">
+              <option value="">Todas as Linhas</option>
+              <option value="Gold">Linha Gold</option>
+              <option value="Suprema">Linha Suprema</option>
+              <option value="Linha 25">Linha 25</option>
+            </select>
+
+            <select id="filtroEstoque" onchange="filtrarCards()" class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-900">
+              <option value="">Status de Estoque</option>
+              <option value="DISPONIVEL">🟢 Insumos Disponíveis</option>
+              <option value="PENDENTE">🔴 Falta Perfil / Vidro</option>
+            </select>
+
+            <select id="filtroPrioridade" onchange="filtrarCards()" class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-900">
+              <option value="">Prioridade</option>
+              <option value="URGENTE">🔴 Urgente</option>
+              <option value="NORMAL">🟡 Normal</option>
+              <option value="BAIXA">🔵 Baixa</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- KANBAN BOARD COLUMNS (3 STATUSES) -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5 items-start pt-2">
+
+          <!-- COLUNA 1: AGUARDANDO PRODUÇÃO -->
+          <div class="bg-slate-50 rounded-2xl border border-slate-200 p-4 flex flex-col max-h-[780px]">
+            <!-- Column Header -->
+            <div class="flex items-center justify-between pb-3 border-b border-slate-200 mb-3">
+              <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-amber-500"></span>
+                <h3 class="font-bold text-slate-800 text-sm tracking-wide uppercase">Aguardando Produção</h3>
+              </div>
+              <span id="badgeCountAguardando" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                0
+              </span>
+            </div>
+
+            <!-- Drag Column Dropzone -->
+            <div id="colAguardando" data-status="AGUARDANDO_PRODUCAO" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)" class="kanban-scroll space-y-3 overflow-y-auto pr-1 min-h-[250px]">
+              <!-- Cards rendered dynamically -->
+            </div>
+          </div>
+
+          <!-- COLUNA 2: EM PRODUÇÃO -->
+          <div class="bg-slate-50 rounded-2xl border border-slate-200 p-4 flex flex-col max-h-[780px]">
+            <!-- Column Header -->
+            <div class="flex items-center justify-between pb-3 border-b border-slate-200 mb-3">
+              <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-blue-600"></span>
+                <h3 class="font-bold text-slate-800 text-sm tracking-wide uppercase">Em Produção</h3>
+              </div>
+              <span id="badgeCountEmProducao" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800 border border-blue-200">
+                0
+              </span>
+            </div>
+
+            <!-- Drag Column Dropzone -->
+            <div id="colEmProducao" data-status="EM_PRODUCAO" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)" class="kanban-scroll space-y-3 overflow-y-auto pr-1 min-h-[250px]">
+              <!-- Cards rendered dynamically -->
+            </div>
+          </div>
+
+          <!-- COLUNA 3: CONCLUÍDO -->
+          <div class="bg-slate-50 rounded-2xl border border-slate-200 p-4 flex flex-col max-h-[780px]">
+            <!-- Column Header -->
+            <div class="flex items-center justify-between pb-3 border-b border-slate-200 mb-3">
+              <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
+                <h3 class="font-bold text-slate-800 text-sm tracking-wide uppercase">Concluído</h3>
+              </div>
+              <span id="badgeCountConcluido" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                0
+              </span>
+            </div>
+
+            <!-- Drag Column Dropzone -->
+            <div id="colConcluido" data-status="CONCLUIDO" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)" class="kanban-scroll space-y-3 overflow-y-auto pr-1 min-h-[250px]">
+              <!-- Cards rendered dynamically -->
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- MODAL: NOVA ORDEM DE SERVIÇO -->
+  <div id="modalNovaOS" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+    <div class="bg-white rounded-2xl border border-slate-200 w-full max-w-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-150">
+      <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+        <h3 class="font-bold text-slate-900 text-lg">Criar Ordem de Serviço (PCP)</h3>
+        <button onclick="fecharModalNovaOS()" class="text-slate-400 hover:text-slate-600 p-1">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <form id="formNovaOS" onsubmit="salvarNovaOS(event)" class="p-6 space-y-4">
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Código do Orçamento Origem</label>
+            <input type="text" id="novoOrcamento" required placeholder="Ex: ORC-2026-0003" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-800 focus:ring-2 focus:ring-slate-900 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Cliente</label>
+            <input type="text" id="novoCliente" required placeholder="Nome do Cliente" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-800 focus:ring-2 focus:ring-slate-900 focus:outline-none">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Descrição do Item / Esquadria</label>
+          <input type="text" id="novoItem" required placeholder="Ex: 2x Porta de Correr 3 Folhas - Linha Gold Preto" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-800 focus:ring-2 focus:ring-slate-900 focus:outline-none">
+        </div>
+
+        <div class="grid grid-cols-3 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Linha Alumínio</label>
+            <select id="novaLinha" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-800 focus:ring-2 focus:ring-slate-900 focus:outline-none">
+              <option value="Gold">Gold</option>
+              <option value="Suprema">Suprema</option>
+              <option value="Linha 25">Linha 25</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Prioridade</label>
+            <select id="novaPrioridade" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-800 focus:ring-2 focus:ring-slate-900 focus:outline-none">
+              <option value="NORMAL">NORMAL</option>
+              <option value="URGENTE">URGENTE</option>
+              <option value="BAIXA">BAIXA</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Estoque Inicial</label>
+            <select id="novoEstoque" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-800 focus:ring-2 focus:ring-slate-900 focus:outline-none">
+              <option value="DISPONIVEL">🟢 Insumos OK</option>
+              <option value="PENDENTE">🔴 Falta Insumo</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Data Limite de Entrega</label>
+            <input type="date" id="novaData" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-800 focus:ring-2 focus:ring-slate-900 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Operador / Bancada</label>
+            <input type="text" id="novoOperador" placeholder="Ex: Lucas M." class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-800 focus:ring-2 focus:ring-slate-900 focus:outline-none">
+          </div>
+        </div>
+
+        <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
+          <button type="button" onclick="fecharModalNovaOS()" class="px-4 py-2 border border-slate-300 rounded-lg text-slate-700 text-sm font-semibold hover:bg-slate-50">Cancelar</button>
+          <button type="submit" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-sm font-semibold shadow">Gerar Ordem de Serviço</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: FICHA DETALHADA DA OS / CORTES -->
+  <div id="modalDetalhesOS" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+    <div class="bg-white rounded-2xl border border-slate-200 w-full max-w-2xl shadow-2xl overflow-hidden">
+      <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+        <div>
+          <span id="detalheBadgeOrcamento" class="text-xs px-2 py-0.5 rounded font-bold bg-blue-100 text-blue-800"></span>
+          <h3 id="detalheTituloOS" class="font-bold text-slate-900 text-xl mt-1"></h3>
+        </div>
+        <button onclick="fecharModalDetalhes()" class="text-slate-400 hover:text-slate-600 p-1">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="p-6 space-y-5">
+        <!-- Detalhes do Cliente e Produto -->
+        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 grid grid-cols-2 gap-4">
+          <div>
+            <p class="text-xs font-bold text-slate-400 uppercase">Cliente</p>
+            <p id="detalheCliente" class="font-semibold text-slate-800 text-base"></p>
+          </div>
+          <div>
+            <p class="text-xs font-bold text-slate-400 uppercase">Linha & Acabamento</p>
+            <p id="detalheLinha" class="font-semibold text-slate-800 text-base"></p>
+          </div>
+          <div class="col-span-2">
+            <p class="text-xs font-bold text-slate-400 uppercase">Esquadria / Descrição</p>
+            <p id="detalheItem" class="font-semibold text-slate-900 text-base"></p>
+          </div>
+        </div>
+
+        <!-- Ficha de Corte / Lista de Perfis (PCP Simulado) -->
+        <div>
+          <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 flex items-center gap-2">
+            <i class="fa-solid fa-scissors text-slate-500"></i> Plano de Corte de Perfis (Alumínio)
+          </h4>
+          <div class="border border-slate-200 rounded-xl overflow-hidden">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-100 text-slate-600 uppercase font-bold border-b border-slate-200">
+                <tr>
+                  <th class="p-2.5">Código Perfil</th>
+                  <th class="p-2.5">Descrição</th>
+                  <th class="p-2.5">Medida (mm)</th>
+                  <th class="p-2.5">Qtd</th>
+                  <th class="p-2.5">Corte</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 text-slate-700">
+                <tr>
+                  <td class="p-2.5 font-mono font-bold">LG-001</td>
+                  <td class="p-2.5">Marco Superior/Inferior</td>
+                  <td class="p-2.5">2.400 mm</td>
+                  <td class="p-2.5">2</td>
+                  <td class="p-2.5">45° / 45°</td>
+                </tr>
+                <tr>
+                  <td class="p-2.5 font-mono font-bold">LG-008</td>
+                  <td class="p-2.5">Montante Lateral de Folha</td>
+                  <td class="p-2.5">1.850 mm</td>
+                  <td class="p-2.5">4</td>
+                  <td class="p-2.5">90° / 90°</td>
+                </tr>
+                <tr>
+                  <td class="p-2.5 font-mono font-bold">VD-TEMPL</td>
+                  <td class="p-2.5">Vidro Temperado Incolor 8mm</td>
+                  <td class="p-2.5">1.180 x 820 mm</td>
+                  <td class="p-2.5">2</td>
+                  <td class="p-2.5">Lapidado</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Observações de Fábrica -->
+        <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-900 flex gap-2">
+          <i class="fa-solid fa-circle-info text-amber-600 mt-0.5"></i>
+          <div>
+            <span class="font-bold">Atenção na Montagem:</span> Utilizar roldana dupla blindada de alta carga. Usinar folha direita para fechadura bico de papagaio.
+          </div>
+        </div>
+      </div>
+
+      <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end">
+        <button onclick="fecharModalDetalhes()" class="px-4 py-2 bg-slate-900 text-white rounded-lg text-sm font-semibold hover:bg-slate-800">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION -->
+  <div id="toastNotification" class="fixed bottom-5 right-5 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 translate-y-20 opacity-0 transition-all duration-300 z-50">
+    <i class="fa-solid fa-circle-check text-emerald-400 text-lg"></i>
+    <span id="toastMessage" class="text-sm font-medium">Ação realizada com sucesso!</span>
+  </div>
+
+  <!-- JAVASCRIPT APP LOGIC -->
+  <script>
+    // ESTADO DA APLICAÇÃO (Dados Iniciais de Ordens de Serviço de Esquadrias)
+    let ordensServico = [
+      {
+        id: 'OS-2026-0002',
+        orcamento: 'ORC-2026-0002',
+        cliente: 'João Silva',
+        item: '2x Janela de Correr 4 Folhas (2.00m x 1.20m)',
+        linha: 'Gold',
+        cor: 'Preto Anodizado',
+        estoqueStatus: 'DISPONIVEL', // DISPONIVEL ou PENDENTE
+        status: 'AGUARDANDO_PRODUCAO', // AGUARDANDO_PRODUCAO, EM_PRODUCAO, CONCLUIDO
+        prioridade: 'URGENTE',
+        dataEntrega: '28/10/2026',
+        operador: 'Carlos M.',
+        etapas: [
+          { nome: 'Corte de Alumínio', ok: true },
+          { nome: 'Usinagem / Estamparia', ok: false },
+          { nome: 'Montagem & Acessórios', ok: false },
+          { nome: 'Colocação de Vidro', ok: false },
+          { nome: 'Embalagem & Expedição', ok: false }
+        ]
+      },
+      {
+        id: 'OS-2026-0003',
+        orcamento: 'ORC-2026-0005',
+        cliente: 'Construtora Miramar',
+        item: '1x Porta Pivotante 1.20x2.40m c/ Puxador 1m',
+        linha: 'Gold',
+        cor: 'Amadeirado Anodizado',
+        estoqueStatus: 'PENDENTE',
+        status: 'AGUARDANDO_PRODUCAO',
+        prioridade: 'NORMAL',
+        dataEntrega: '05/11/2026',
+        operador: 'Marcos P.',
+        etapas: [
+          { nome: 'Corte de Alumínio', ok: false },
+          { nome: 'Usinagem / Estamparia', ok: false },
+          { nome: 'Montagem & Acessórios', ok: false },
+          { nome: 'Colocação de Vidro', ok: false },
+          { nome: 'Embalagem & Expedição', ok: false }
+        ]
+      },
+      {
+        id: 'OS-2026-0001',
+        orcamento: 'ORC-2026-0001',
+        cliente: 'Roberto Andrade',
+        item: '4x Maxim-ar 0.60x0.60m c/ Vidro Miniboreal',
+        linha: 'Suprema',
+        cor: 'Branco Anodizado',
+        estoqueStatus: 'DISPONIVEL',
+        status: 'EM_PRODUCAO',
+        prioridade: 'NORMAL',
+        dataEntrega: '25/10/2026',
+        operador: 'Lucas M.',
+        etapas: [
+          { nome: 'Corte de Alumínio', ok: true },
+          { nome: 'Usinagem / Estamparia', ok: true },
+          { nome: 'Montagem & Acessórios', ok: true },
+          { nome: 'Colocação de Vidro', ok: false },
+          { nome: 'Embalagem & Expedição', ok: false }
+        ]
+      },
+      {
+        id: 'OS-2026-0004',
+        orcamento: 'ORC-2026-0008',
+        cliente: 'Fernanda Lima',
+        item: '1x Box de Canto Temperado Incolor 8mm',
+        linha: 'Linha 25',
+        cor: 'Preto Anodizado',
+        estoqueStatus: 'DISPONIVEL',
+        status: 'EM_PRODUCAO',
+        prioridade: 'URGENTE',
+        dataEntrega: '24/10/2026',
+        operador: 'Lucas M.',
+        etapas: [
+          { nome: 'Corte de Alumínio', ok: true },
+          { nome: 'Usinagem / Estamparia', ok: true },
+          { nome: 'Montagem & Acessórios', ok: true },
+          { nome: 'Colocação de Vidro', ok: true },
+          { nome: 'Embalagem & Expedição', ok: false }
+        ]
+      },
+      {
+        id: 'OS-2026-0000',
+        orcamento: 'ORC-2025-099',
+        cliente: 'Edifício Horizon',
+        item: '12x Janela 2 Folhas Suprema 1.20x1.00m',
+        linha: 'Suprema',
+        cor: 'Branco Anodizado',
+        estoqueStatus: 'DISPONIVEL',
+        status: 'CONCLUIDO',
+        prioridade: 'BAIXA',
+        dataEntrega: '18/10/2026',
+        operador: 'Equipe A',
+        etapas: [
+          { nome: 'Corte de Alumínio', ok: true },
+          { nome: 'Usinagem / Estamparia', ok: true },
+          { nome: 'Montagem & Acessórios', ok: true },
+          { nome: 'Colocação de Vidro', ok: true },
+          { nome: 'Embalagem & Expedição', ok: true }
+        ]
+      }
+    ];
+
+    // RENDEREIZAR O KANBAN COMPLETO
+    function renderizarKanban() {
+      const colAguardando = document.getElementById('colAguardando');
+      const colEmProducao = document.getElementById('colEmProducao');
+      const colConcluido = document.getElementById('colConcluido');
+
+      colAguardando.innerHTML = '';
+      colEmProducao.innerHTML = '';
+      colConcluido.innerHTML = '';
+
+      let countAguardando = 0;
+      let countEmProducao = 0;
+      let countConcluido = 0;
+
+      // Filtros
+      const busca = document.getElementById('inputBusca').value.toLowerCase();
+      const filtroLinha = document.getElementById('filtroLinha').value;
+      const filtroEstoque = document.getElementById('filtroEstoque').value;
+      const filtroPrioridade = document.getElementById('filtroPrioridade').value;
+
+      ordensServico.forEach(os => {
+        // Aplicação de filtros
+        const atendeBusca = os.id.toLowerCase().includes(busca) || 
+                            os.cliente.toLowerCase().includes(busca) || 
+                            os.item.toLowerCase().includes(busca);
+        const atendeLinha = !filtroLinha || os.linha === filtroLinha;
+        const atendeEstoque = !filtroEstoque || os.estoqueStatus === filtroEstoque;
+        const atendePrioridade = !filtroPrioridade || os.prioridade === filtroPrioridade;
+
+        if (!atendeBusca || !atendeLinha || !atendeEstoque || !atendePrioridade) return;
+
+        // Gerar Card HTML
+        const cardHTML = criarCardHTML(os);
+
+        if (os.status === 'AGUARDANDO_PRODUCAO') {
+          colAguardando.appendChild(cardHTML);
+          countAguardando++;
+        } else if (os.status === 'EM_PRODUCAO') {
+          colEmProducao.appendChild(cardHTML);
+          countEmProducao++;
+        } else if (os.status === 'CONCLUIDO') {
+          colConcluido.appendChild(cardHTML);
+          countConcluido++;
+        }
+      });
+
+      // Atualizar Badges de Contagem
+      document.getElementById('badgeCountAguardando').textContent = countAguardando;
+      document.getElementById('badgeCountEmProducao').textContent = countEmProducao;
+      document.getElementById('badgeCountConcluido').textContent = countConcluido;
+
+      // Atualizar KPI do topo
+      document.getElementById('kpiEmProducao').textContent = countEmProducao;
+    }
+
+    // CRIAR ELEMENTO HTML DO CARD
+    function criarCardHTML(os) {
+      const card = document.createElement('div');
+      card.className = 'bg-white rounded-xl border border-slate-200 p-4 shadow-sm hover:shadow-md transition cursor-grab active:cursor-grabbing relative group';
+      card.draggable = true;
+      card.setAttribute('data-id', os.id);
+
+      // Eventos de Drag & Drop
+      card.addEventListener('dragstart', handleDragStart);
+      card.addEventListener('dragend', handleDragEnd);
+
+      // Cálculo do progresso das etapas
+      const totalEtapas = os.etapas.length;
+      const concluidas = os.etapas.filter(e => e.ok).length;
+      const pctProgresso = Math.round((concluidas / totalEtapas) * 100);
+
+      // Badge de Prioridade
+      let badgePrioridadeHTML = '';
+      if (os.prioridade === 'URGENTE') {
+        badgePrioridadeHTML = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-700 border border-rose-200"><i class="fa-solid fa-bolt mr-1"></i>URGENTE</span>`;
+      } else if (os.prioridade === 'NORMAL') {
+        badgePrioridadeHTML = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">NORMAL</span>`;
+      } else {
+        badgePrioridadeHTML = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200">BAIXA</span>`;
+      }
+
+      // Badge de Estoque
+      let badgeEstoqueHTML = os.estoqueStatus === 'DISPONIVEL' 
+        ? `<span class="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Insumos OK</span>`
+        : `<span class="inline-flex items-center gap-1 text-[11px] font-medium text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200"><span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Falta Insumo</span>`;
+
+      // Checkboxes de Etapas de Produção
+      let checklistHTML = os.etapas.map((etapa, idx) => `
+        <label class="flex items-center justify-between text-xs text-slate-600 hover:text-slate-900 cursor-pointer py-0.5">
+          <span class="flex items-center gap-2">
+            <input type="checkbox" ${etapa.ok ? 'checked' : ''} onchange="toggleEtapa('${os.id}', ${idx})" class="rounded text-slate-900 focus:ring-slate-900 h-3.5 w-3.5 accent-slate-900">
+            <span class="${etapa.ok ? 'line-through text-slate-400' : ''}">${etapa.nome}</span>
+          </span>
+        </label>
+      `).join('');
+
+      card.innerHTML = `
+        <!-- Card Top Bar -->
+        <div class="flex items-center justify-between gap-2 mb-2">
+          <div class="flex items-center gap-2">
+            <span class="font-bold text-slate-900 text-sm">${os.id}</span>
+            <span class="text-[10px] font-medium text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">${os.orcamento}</span>
+          </div>
+          ${badgePrioridadeHTML}
+        </div>
+
+        <!-- Cliente e Esquadria -->
+        <div class="mb-3">
+          <p class="text-xs font-bold text-slate-800 leading-snug">${os.cliente}</p>
+          <p class="text-xs text-slate-500 line-clamp-2 mt-0.5">${os.item}</p>
+        </div>
+
+        <!-- Tag de Estoque e Linha -->
+        <div class="flex items-center justify-between gap-2 mb-3">
+          ${badgeEstoqueHTML}
+          <span class="text-[11px] font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded">
+            Linha ${os.linha}
+          </span>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="space-y-1 mb-3 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+          <div class="flex justify-between items-center text-[11px]">
+            <span class="font-medium text-slate-600">Progresso da Fábrica</span>
+            <span class="font-bold text-slate-800">${pctProgresso}%</span>
+          </div>
+          <div class="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
+            <div class="h-full ${pctProgresso === 100 ? 'bg-emerald-500' : 'bg-slate-900'} transition-all duration-300" style="width: ${pctProgresso}%"></div>
+          </div>
+
+          <!-- Micro Checklist de Etapas -->
+          <div class="pt-2 border-t border-slate-200 space-y-1">
+            ${checklistHTML}
+          </div>
+        </div>
+
+        <!-- Footer do Card -->
+        <div class="flex items-center justify-between pt-2 border-t border-slate-100 text-xs text-slate-500">
+          <span class="flex items-center gap-1.5" title="Data Prevista de Entrega">
+            <i class="fa-regular fa-calendar text-slate-400"></i> ${os.dataEntrega}
+          </span>
+          <div class="flex items-center gap-2">
+            <button onclick="abrirModalDetalhes('${os.id}')" class="p-1 hover:text-slate-900 text-slate-400" title="Ver Ficha Técnica / Cortes">
+              <i class="fa-solid fa-eye"></i>
+            </button>
+            <span class="w-6 h-6 rounded-full bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-[10px]" title="Operador: ${os.operador}">
+              ${os.operador ? os.operador.substring(0,2).toUpperCase() : 'OP'}
+            </span>
+          </div>
+        </div>
+      `;
+
+      return card;
+    }
+
+    // DRAG AND DROP HANDLERS
+    let cardSendoArrastado = null;
+
+    function handleDragStart(e) {
+      cardSendoArrastado = this;
+      this.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', this.getAttribute('data-id'));
+    }
+
+    function handleDragEnd(e) {
+      this.classList.remove('dragging');
+      cardSendoArrastado = null;
+      document.querySelectorAll('[data-status]').forEach(col => col.classList.remove('drag-over'));
+    }
+
+    function handleDragOver(e) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      e.currentTarget.classList.add('drag-over');
+    }
+
+    function handleDragLeave(e) {
+      e.currentTarget.classList.remove('drag-over');
+    }
+
+    function handleDrop(e) {
+      e.preventDefault();
+      const dropzone = e.currentTarget;
+      dropzone.classList.remove('drag-over');
+
+      const osId = e.dataTransfer.getData('text/plain');
+      const novoStatus = dropzone.getAttribute('data-status');
+
+      const os = ordensServico.find(o => o.id === osId);
+      if (os && os.status !== novoStatus) {
+        os.status = novoStatus;
+        
+        // Se for movido para concluído, marcar todas etapas como ok
+        if (novoStatus === 'CONCLUIDO') {
+          os.etapas.forEach(et => et.ok = true);
+        }
+
+        renderizarKanban();
+        exibirToast(`OS ${osId} movida para ${formatarStatus(novoStatus)}!`);
+      }
+    }
+
+    // ATUALIZAR CHECKBOX DE ETAPA
+    function toggleEtapa(osId, etapaIndex) {
+      const os = ordensServico.find(o => o.id === osId);
+      if (os) {
+        os.etapas[etapaIndex].ok = !os.etapas[etapaIndex].ok;
+
+        // Se todas as etapas forem marcadas, sugere mover para concluído
+        const todasOk = os.etapas.every(e => e.ok);
+        if (todasOk && os.status !== 'CONCLUIDO') {
+          os.status = 'CONCLUIDO';
+          exhibirToast(`Todas as etapas concluídas! OS ${osId} finalizada.`);
+        }
+
+        renderizarKanban();
+      }
+    }
+
+    // FILTRO DINÂMICO
+    function filtrarCards() {
+      renderizarKanban();
+    }
+
+    // MODAL DETALHES (PCP)
+    function abrirModalDetalhes(osId) {
+      const os = ordensServico.find(o => o.id === osId);
+      if (!os) return;
+
+      document.getElementById('detalheTituloOS').textContent = `${os.id} - ${os.cliente}`;
+      document.getElementById('detalheBadgeOrcamento').textContent = os.orcamento;
+      document.getElementById('detalheCliente').textContent = os.cliente;
+      document.getElementById('detalheLinha').textContent = `Linha ${os.linha} (${os.cor})`;
+      document.getElementById('detalheItem').textContent = os.item;
+
+      document.getElementById('modalDetalhesOS').classList.remove('hidden');
+    }
+
+    function fecharModalDetalhes() {
+      document.getElementById('modalDetalhesOS').classList.add('hidden');
+    }
+
+    // MODAL NOVA OS
+    function abrirModalNovaOS() {
+      document.getElementById('modalNovaOS').classList.remove('hidden');
+    }
+
+    function fecharModalNovaOS() {
+      document.getElementById('modalNovaOS').classList.add('hidden');
+      document.getElementById('formNovaOS').reset();
+    }
+
+    function salvarNovaOS(e) {
+      e.preventDefault();
+
+      const proxIdNum = ordensServico.length + 1;
+      const novoId = `OS-2026-000${proxIdNum}`;
+
+      const novaOS = {
+        id: novoId,
+        orcamento: document.getElementById('novoOrcamento').value,
+        cliente: document.getElementById('novoCliente').value,
+        item: document.getElementById('novoItem').value,
+        linha: document.getElementById('novaLinha').value,
+        cor: 'Preto Anodizado',
+        estoqueStatus: document.getElementById('novoEstoque').value,
+        status: 'AGUARDANDO_PRODUCAO',
+        prioridade: document.getElementById('novaPrioridade').value,
+        dataEntrega: document.getElementById('novaData').value || '30/10/2026',
+        operador: document.getElementById('novoOperador').value || 'Carlos M.',
+        etapas: [
+          { nome: 'Corte de Alumínio', ok: false },
+          { nome: 'Usinagem / Estamparia', ok: false },
+          { nome: 'Montagem & Acessórios', ok: false },
+          { nome: 'Colocação de Vidro', ok: false },
+          { nome: 'Embalagem & Expedição', ok: false }
+        ]
+      };
+
+      ordensServico.unshift(novaOS);
+      fecharModalNovaOS();
+      renderizarKanban();
+      exibirToast(`Nova ${novoId} criada com sucesso!`);
+    }
+
+    // FORMATAR TEXTO DE STATUS
+    function formatarStatus(status) {
+      switch (status) {
+        case 'AGUARDANDO_PRODUCAO': return 'Aguardando Produção';
+        case 'EM_PRODUCAO': return 'Em Produção';
+        case 'CONCLUIDO': return 'Concluído';
+        default: return status;
+      }
+    }
+
+    // TOAST NOTIFICATION
+    function exibirToast(mensagem) {
+      const toast = document.getElementById('toastNotification');
+      const msgElem = document.getElementById('toastMessage');
+      msgElem.textContent = mensagem;
+
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      toast.classList.add('translate-y-0', 'opacity-100');
+
+      setTimeout(() => {
+        toast.classList.remove('translate-y-0', 'opacity-100');
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 3500);
+    }
+
+    // INICIALIZAÇÃO
+    window.onload = function() {
+      renderizarKanban();
+    };
+  </script>
+</body>
+</html>

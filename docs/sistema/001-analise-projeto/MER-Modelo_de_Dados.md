@@ -116,27 +116,27 @@ erDiagram
 
     tb_orders {
         uuid id PK
-        string codigo UK "PED-YYYY-NNNN"
-        uuid orcamento_id UK_FK "Invariante 1:1"
-        uuid cliente_id FK
-        string cliente_nome "Snapshot do cliente"
-        string cliente_telefone
-        string cliente_endereco
-        string status "CRIADO, AGUARDANDO_PRODUCAO, EM_PRODUCAO, CONCLUIDO, CANCELADO"
-        string canal_aprovacao "WHATSAPP, PRESENCIAL, TELEFONE, EMAIL"
-        date data_aprovacao
-        date data_previsao_entrega
-        date data_conclusao
-        decimal valor_bruto
-        decimal valor_desconto
-        decimal taxa_instalacao
-        decimal taxa_frete
-        decimal valor_liquido "Total formalizado"
-        string condicao_pagamento
-        string observacoes_pagamento
-        string observacoes
-        string justificativa_cancelamento
-        boolean ativo
+        string code UK "OS-YYYY-NNNN"
+        uuid budget_id UK_FK "Invariante 1:1"
+        uuid customer_id FK
+        string customer_name "Snapshot do cliente"
+        string customer_phone
+        string delivery_address
+        string status "CREATED, WAITING_PRODUCTION, IN_PRODUCTION, COMPLETED, CANCELLED"
+        string approval_channel "WHATSAPP, PRESENCIAL, TELEFONE, EMAIL"
+        date approval_date
+        date expected_delivery_date
+        date completion_date
+        decimal gross_total
+        decimal discount_total
+        decimal installation_fee
+        decimal freight_fee
+        decimal net_total "Total formalizado"
+        string payment_condition
+        string payment_notes
+        string notes
+        string cancellation_reason
+        boolean is_active
         timestamp created_at
         timestamp updated_at
     }
@@ -145,20 +145,20 @@ erDiagram
         uuid id PK
         uuid order_id FK
         uuid product_id FK
-        string descricao "Descrição congelada"
-        integer largura_mm "Medida nominal"
-        integer altura_mm "Medida nominal"
-        integer quantidade
-        string cor_aluminio
-        string tipo_vidro
-        string orientacao_abertura
-        string ferragens
-        decimal valor_unitario "Preço congelado"
-        decimal valor_total "Subtotal congelado"
+        string description "Descrição congelada"
+        integer width_mm "Medida nominal"
+        integer height_mm "Medida nominal"
+        integer quantity
+        string aluminum_color
+        string glass_type
+        string opening_direction
+        string hardware
+        decimal unit_price "Preço congelado"
+        decimal total_price "Subtotal congelado"
         jsonb template_config "Snapshot imutável"
         jsonb handle_config "Snapshot puxador"
         jsonb drilling_config "Snapshot furação"
-        integer ordem
+        integer display_order
     }
 ```
 
@@ -194,11 +194,11 @@ erDiagram
 
 ### 2.7 `tb_orders` (Ordens de Serviço / Pedidos de Venda — Migration V19)
 * **Finalidade:** Formalização contratual de venda e ordem executiva de produção fabril. Gerado a partir de um orçamento aprovado (invariante 1-para-1), garantindo lock de preços e controle de prazos de entrega.
-* **Campos:** `id` (UUID PK), `codigo` (VARCHAR UK), `orcamento_id` (UUID UK FK), `cliente_id` (UUID FK), `cliente_nome` (VARCHAR), `cliente_telefone` (VARCHAR), `cliente_endereco` (TEXT), `status` (VARCHAR: `CRIADO`, `AGUARDANDO_PRODUCAO`, `EM_PRODUCAO`, `CONCLUIDO`, `CANCELADO`), `canal_aprovacao` (VARCHAR: `WHATSAPP`, `PRESENCIAL`, `TELEFONE`, `EMAIL`), `data_aprovacao` (DATE), `data_previsao_entrega` (DATE), `data_conclusao` (DATE), `valor_bruto` (DECIMAL), `valor_desconto` (DECIMAL), `taxa_instalacao` (DECIMAL), `taxa_frete` (DECIMAL), `valor_liquido` (DECIMAL), `condicao_pagamento` (VARCHAR), `observacoes_pagamento` (TEXT), `observacoes` (TEXT), `justificativa_cancelamento` (TEXT), `ativo` (BOOLEAN), `created_at` (TIMESTAMP), `updated_at` (TIMESTAMP).
+* **Campos:** `id` (UUID PK), `code` (VARCHAR UK), `budget_id` (UUID UK FK), `customer_id` (UUID FK), `customer_name` (VARCHAR), `customer_phone` (VARCHAR), `delivery_address` (TEXT), `status` (VARCHAR: `CREATED`, `WAITING_PRODUCTION`, `IN_PRODUCTION`, `COMPLETED`, `CANCELLED`), `approval_channel` (VARCHAR: `WHATSAPP`, `PRESENCIAL`, `TELEFONE`, `EMAIL`), `approval_date` (DATE), `expected_delivery_date` (DATE), `completion_date` (DATE), `gross_total` (DECIMAL), `discount_total` (DECIMAL), `installation_fee` (DECIMAL), `freight_fee` (DECIMAL), `net_total` (DECIMAL), `payment_condition` (VARCHAR), `payment_notes` (TEXT), `notes` (TEXT), `cancellation_reason` (TEXT), `is_active` (BOOLEAN), `created_at` (TIMESTAMP), `updated_at` (TIMESTAMP).
 
 ### 2.8 `tb_order_items` (Itens da Ordem de Serviço — Snapshot Imutável — Migration V19)
 * **Finalidade:** Registra cada exemplar físico de esquadria contratada com dimensões nominais, especificações de perfil, vidro e valores unitários congelados via clonagem profunda (*deep copy*), blindados contra reajustes posteriores de catálogo.
-* **Campos:** `id` (UUID PK), `order_id` (UUID FK), `product_id` (UUID FK), `descricao` (VARCHAR), `largura_mm` (INTEGER), `altura_mm` (INTEGER), `quantidade` (INTEGER), `cor_aluminio` (VARCHAR), `tipo_vidro` (VARCHAR), `orientacao_abertura` (VARCHAR), `ferragens` (TEXT), `valor_unitario` (DECIMAL), `valor_total` (DECIMAL), `template_config` (JSONB), `handle_config` (JSONB), `drilling_config` (JSONB), `ordem` (INTEGER).
+* **Campos:** `id` (UUID PK), `order_id` (UUID FK), `product_id` (UUID FK), `description` (VARCHAR), `width_mm` (INTEGER), `height_mm` (INTEGER), `quantity` (INTEGER), `aluminum_color` (VARCHAR), `glass_type` (VARCHAR), `opening_direction` (VARCHAR), `hardware` (TEXT), `unit_price` (DECIMAL), `total_price` (DECIMAL), `template_config` (JSONB), `handle_config` (JSONB), `drilling_config` (JSONB), `display_order` (INTEGER).
 
 ---
 

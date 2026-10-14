@@ -28,7 +28,7 @@ Esta pasta contém o pacote completo de engenharia da **Sprint 07** do projeto *
 
 | Sub-Task | Tarefa | Duração | Tipo | Status |
 |---|---|:---:|---|:---:|
-| [US-18.1](issues/US-18.1-implementar-endpoint-patch-api-orders-id-production-status/issue.md) | Implementar endpoint `PATCH /api/orders/{id}/production-status` no backend com validação de transição fabril e preenchimento automático de `data_conclusao` | ~3h | Backend Core / Regras | 🔲 Aberta |
+| [US-18.1](issues/US-18.1-implementar-endpoint-patch-api-orders-id-production-status/issue.md) | Implementar endpoint `PATCH /api/v1/orders/{id}/production-status` no backend com validação de transição fabril e preenchimento automático de `completion_date` | ~3h | Backend Core / Regras | 🔲 Aberta |
 | [US-18.2](issues/US-18.2-criar-hook-react-query-useproductionkanban/issue.md) | Criar hook React Query `useProductionKanban` e serviços Axios de produção (`productionApi.ts`) no frontend | ~2h | Frontend State / API | 🔲 Aberta |
 | [US-18.3](issues/US-18.3-criar-componente-orderproductioncard-no-frontend/issue.md) | Criar componente `OrderProductionCard` no frontend exibindo dados do pedido, cliente, indicador de prazo (urgência/SLA), contagem de peças e botões de avanço | ~3h | Frontend UI / Cards | 🔲 Aberta |
 | [US-18.4](issues/US-18.4-criar-componente-productionkanbanboard-com-colunas-de-status/issue.md) | Criar componente `ProductionKanbanBoard` com colunas de status fabril (`AGUARDANDO_PRODUCAO`, `EM_PRODUCAO`, `CONCLUIDO`) e ações contextuais | ~3h | Frontend UI / Kanban | 🔲 Aberta |

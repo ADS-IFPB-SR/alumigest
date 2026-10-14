@@ -35,7 +35,7 @@ Implementar a identificação física de esquadrias e o controle visual da estei
 | II. Test-First & Quality Gates | ✅ PASS | Testes unitários para `LabelPdfService` e testes de transição de status no controller/service |
 | III. Validação Dupla | ✅ PASS | Validação de enum e integridade no Backend + Zod/TypeScript no Frontend |
 | III. @Transactional explícito | ✅ PASS | Método de alteração de status com `@Transactional` atômico |
-| III. Soft Delete & Auditoria | ✅ PASS | Respeita flag `ativo` e atualiza `data_conclusao` e `updated_at` |
+| III. Soft Delete & Auditoria | ✅ PASS | Respeita flag `is_active` e atualiza `completion_date` e `updated_at` |
 | IV. Commits em PT-BR | ✅ PASS | Conventional Commits em português do Brasil |
 | V. Git Flow & PR obrigatório | ✅ PASS | Branches específicas por sub-tarefa integradas via Pull Request |
 

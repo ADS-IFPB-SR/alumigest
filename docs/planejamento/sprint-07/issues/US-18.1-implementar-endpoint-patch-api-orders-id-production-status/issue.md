@@ -1,9 +1,9 @@
-# [US-18.1] Implementar endpoint `PATCH /api/orders/{id}/production-status` no backend com validação de transição fabril e preenchimento automático de `data_conclusao`
+# [US-18.1] Implementar endpoint `PATCH /api/v1/orders/{id}/production-status` no backend com validação de transição fabril e preenchimento automático de `completion_date`
 
 ## 📌 Metadados da Issue
 
 - **ID da Tarefa**: `US-18.1`
-- **US Pai**: `US-18: Acompanhar Produção via Painel Kanban de Pedidos de Venda`
+- **US Pai**: `US-18: Acompanhar Produção via Painel Kanban de Ordens de Serviço (O.S.)`
 - **Release**: Release 2 (v2.0.0) — Gestão de Produção & Fábrica
 - **Sub-área**: `Backend Core / Regras de Negócio`
 - **Arquivo / Alvo Principal**: `backend/src/main/java/br/edu/ifpb/alumigest/orders/service/OrderService.java` e `OrderController.java`
@@ -13,23 +13,23 @@
 
 ## 🎯 Objetivo & Descrição
 
-Implementar a máquina de estados para avanço da fabricação dos pedidos no chão de fábrica através do endpoint `PATCH /api/orders/{id}/production-status`.
+Implementar a máquina de estados para avanço da fabricação das ordens de serviço no chão de fábrica através do endpoint `PATCH /api/v1/orders/{id}/production-status`.
 
 As transições válidas permitidas são:
-1. `AGUARDANDO_PRODUCAO` ➔ `EM_PRODUCAO`
-2. `EM_PRODUCAO` ➔ `CONCLUIDO` (preenchendo automaticamente `data_conclusao = LocalDate.now()`)
+1. `WAITING_PRODUCTION` ➔ `IN_PRODUCTION`
+2. `IN_PRODUCTION` ➔ `COMPLETED` (preenchendo automaticamente `completion_date = LocalDate.now()`)
 
-Qualquer outra tentativa de movimentação (como saltar de `AGUARDANDO_PRODUCAO` para `CONCLUIDO`, regredir de status, ou alterar pedidos `CANCELADO`) deve ser bloqueada com status HTTP `422 Unprocessable Entity` ou `BusinessException`.
+Qualquer outra tentativa de movimentação (como saltar de `WAITING_PRODUCTION` para `COMPLETED`, regredir de status, ou alterar ordens `CANCELLED`) deve ser bloqueada com status HTTP `422 Unprocessable Entity` ou `BusinessException`.
 
 ---
 
 ## 🛠️ Checklist de Implementação
 
-- [ ] Criar DTO Record `ProductionStatusUpdateRequest.java` com validação `@NotNull`
-- [ ] No `OrderService.java`, criar método `@Transactional public OrderResponse updateProductionStatus(UUID orderId, OrderStatus newStatus)`
+- [ ] Criar DTO Record `OrderProductionStatusRequestDTO.java` com validação `@NotNull`
+- [ ] No `OrderService.java`, criar método `@Transactional public OrderResponseDTO updateProductionStatus(UUID orderId, OrderStatus newStatus)`
 - [ ] Validar a integridade da transição de acordo com as regras de negócio
-- [ ] Se o novo status for `CONCLUIDO`, setar `order.setDataConclusao(LocalDate.now())`
-- [ ] Salvar o pedido atualizado no `OrderRepository` e mapear para `OrderResponse`
+- [ ] Se o novo status for `COMPLETED`, setar `order.setCompletionDate(LocalDate.now())`
+- [ ] Salvar o pedido atualizado no `OrderRepository` e mapear para `OrderResponseDTO`
 - [ ] No `OrderController.java`, mapear `@PatchMapping("/{id}/production-status")`
 - [ ] Documentar o endpoint com anotações `@Operation` e `@ApiResponse`
 
@@ -40,7 +40,7 @@ Qualquer outra tentativa de movimentação (como saltar de `AGUARDANDO_PRODUCAO`
 1. [ ] **Compilação**: Backend compila sem erros (`mvn clean compile`).
 2. [ ] **Testes Unitários**: Testes unitários do método de transição passam com sucesso (`mvn test`).
 3. [ ] **Qualidade de Código**: Zero warnings bloqueantes e conformidade com Checkstyle.
-4. [ ] **Valor Funcional**: Transição de status altera o banco e atualiza `data_conclusao` apenas ao atingir `CONCLUIDO`.
+4. [ ] **Valor Funcional**: Transição de status altera o banco e atualiza `completion_date` apenas ao atingir `COMPLETED`.
 5. [ ] **Documentação Inline**: Javadoc nas classes e métodos novos.
 6. [ ] **Checklist Concluído**: Todos os itens do checklist da issue devidamente atendidos.
 7. [ ] **Commits Padronizados**: Commits seguindo o padrão Conventional Commits em pt-BR.
