@@ -11,8 +11,8 @@ Este diretório centraliza todas as User Stories futuras do projeto (**`US-17` a
 
 | US | Título / Escopo Funcional | Issue GitHub | Issues Vinculadas | Status |
 | :---: | :--- | :---: | :---: | :---: |
-| [`US-17`](US-17-etiquetas-identificacao/spec.md) | Emitir Etiquetas de Identificação de Peças por Item do Pedido | [#142](https://github.com/ADS-IFPB-SR/alumigest/issues/142) | **4** | 🔵 No Backlog |
-| [`US-18`](US-18-painel-kanban-producao/spec.md) | Acompanhar Produção via Painel Kanban de Pedidos de Venda | [#143](https://github.com/ADS-IFPB-SR/alumigest/issues/143) | **7** | 🔵 No Backlog |
+| [`US-17`](../sprint-07/spec.md) | Emitir Etiquetas de Identificação de Peças por Item do Pedido | [#142](https://github.com/ADS-IFPB-SR/alumigest/issues/142) | **4** | 🔵 Sprint 07 Ativa |
+| [`US-18`](../sprint-07/spec.md) | Acompanhar Produção via Painel Kanban de Pedidos de Venda | [#143](https://github.com/ADS-IFPB-SR/alumigest/issues/143) | **7** | 🔵 Sprint 07 Ativa |
 | [`US-19`](US-19-lista-corte-pedido/spec.md) | Consolidar Lista Linear e Plana de Corte do Pedido | [#144](https://github.com/ADS-IFPB-SR/alumigest/issues/144) | **8** | 🔵 No Backlog |
 | [`US-20`](US-20-ficha-tecnica-montagem/spec.md) | Gerar Ficha Técnica de Montagem por Item do Pedido | [#145](https://github.com/ADS-IFPB-SR/alumigest/issues/145) | **4** | 🔵 No Backlog |
 | [`US-21`](US-21-reserva-baixa-estoque/spec.md) | Reservar e Baixar Matéria-Prima no Estoque Automaticamente | [#146](https://github.com/ADS-IFPB-SR/alumigest/issues/146) | **15** | 🔵 No Backlog |

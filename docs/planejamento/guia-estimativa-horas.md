@@ -222,4 +222,29 @@ Antes de aprovar a pontuação no Planning, o Scrum Master e a equipe devem chec
 
 ---
 
+## 📊 9. Dimensionamento Oficial de Tarefas — Sprint 07
+
+> **Sprint 07**: Gestão Fabril: Etiquetas de Identificação de Peças & Painel Kanban de Produção  
+> **Período**: 13/10/2026 a 27/10/2026  
+> **Capacidade Planejada**: ~27.0 horas de desenvolvimento (11 Fatias Verticais)  
+> **Teto Máximo por Tarefa**: ≤ 4.0 horas (em conformidade com o limite de sub-tarefas da equipe)
+
+| ID | US Pai | Tarefa / Escopo | Tipo de Atividade (Matriz) | Estimativa (Horas) | Story Points |
+|---|---|---|---|:---:|:---:|
+| **US-17.1** | US-17 | Serviço `LabelPdfService` usando OpenPDF (100x50mm) | 4.4 Serviço OpenPDF térmico + layout de peça | **3.0h** | 3 SP |
+| **US-17.2** | US-17 | Endpoint `GET /api/orders/{orderId}/labels-pdf` | 4.5 Controller REST + stream binário | **2.0h** | 2 SP |
+| **US-17.3** | US-17 | Testes Unitários do `LabelPdfService` (JUnit 5 + OpenPDF) | 4.9 Testes de Paginação e Geração de Bytes | **2.0h** | 2 SP |
+| **US-17.4** | US-17 | Botão "Imprimir Etiquetas" na tela de detalhes do pedido | 4.7 Ação na OrderDetailPage + download blob | **2.0h** | 2 SP |
+| **US-18.1** | US-18 | Endpoint `PATCH /api/orders/{id}/production-status` | 4.4 Máquina de Estados + 4.5 PATCH Controller | **3.0h** | 3 SP |
+| **US-18.2** | US-18 | Hook React Query `useProductionKanban` e serviços Axios | 4.6 API Client + React Query cache | **2.0h** | 2 SP |
+| **US-18.3** | US-18 | Componente `OrderProductionCard` com SLA de prazo | 4.7 Componente Card + cálculo de dias/atraso | **3.0h** | 3 SP |
+| **US-18.4** | US-18 | Componente `ProductionKanbanBoard` (3 colunas fabris) | 4.7 Quadro Kanban + colunas e contadores | **3.0h** | 3 SP |
+| **US-18.5** | US-18 | Página `ProductionKanbanPage` com filtros e métricas | 4.7 Página completa + filtros de busca com debounce | **3.0h** | 3 SP |
+| **US-18.6** | US-18 | Rota `/producao` e atalho no Sidebar | 4.1 Menu Sidebar + rotas React Router | **1.0h** | 1 SP |
+| **US-18.7** | US-18 | Testes de Integração e Documentação OpenAPI/Swagger | 4.5 OpenAPI Docs + 4.9 MockMvc Integration Tests | **3.0h** | 3 SP |
+| **TOTAL** | — | **11 Fatias Verticais** | — | **~27.0h** | **27 SP (10 SP Fibonacci US)** |
+
+---
+
 *Documento homologado pela Equipe AlumiGest — Diretriz Oficial de Engenharia e Planejamento.*
+

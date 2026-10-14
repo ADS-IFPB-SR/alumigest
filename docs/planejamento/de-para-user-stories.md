@@ -22,14 +22,14 @@ Este documento é a **referência oficial de sincronização** entre a numeraç�
 | **US-09** | **US-09 (P2)** | Sprint 05 | Aplicar Descontos Comerciais (Parte 2: Validade & Integração) | [#133](https://github.com/ADS-IFPB-SR/alumigest/issues/133) | 🟢 Concluída |
 | **US-10** | **US-10** | Sprint 05 | Emitir e Exportar Orçamento em PDF - Via Comercial e WhatsApp | [#134](https://github.com/ADS-IFPB-SR/alumigest/issues/134) | 🟢 Concluída |
 | **US-12** | ❌ **DESCONTINUADA COMO US** | Sprint 04 / 05 | Homologação Integrada da Release 1 (v1.0.0) | [#136](https://github.com/ADS-IFPB-SR/alumigest/issues/136) | 🛡️ **Incorporada no DoD de US-10 e US-11** (Homologação não é feature) |
-| **US-13** | **US-13** | Sprint 06 | Aprovar Orçamento e Converter em Pedido de Venda | [#137](https://github.com/ADS-IFPB-SR/alumigest/issues/137) | 🔵 Planejada |
-| **US-14** | **US-14** | Sprint 06 | Snapshot Imutável e Lock de Preços do Pedido | [#138](https://github.com/ADS-IFPB-SR/alumigest/issues/138) | 🔵 Planejada |
-| **US-15** | **US-15** | Sprint 06 | Gestão de Status, Prazos e Cancelamento de Pedidos | [#139](https://github.com/ADS-IFPB-SR/alumigest/issues/139) | 🔵 Planejada |
-| **US-16** | **US-16** | Sprint 06 | Emissão do Comprovante do Pedido de Venda em PDF | [#140](https://github.com/ADS-IFPB-SR/alumigest/issues/140) | 🔵 Planejada |
+| **US-13** | **US-13** | Sprint 06 | Aprovar Orçamento e Converter em Pedido de Venda | [#137](https://github.com/ADS-IFPB-SR/alumigest/issues/137) | 🟢 Concluída |
+| **US-14** | **US-14** | Sprint 06 | Snapshot Imutável e Lock de Preços do Pedido | [#138](https://github.com/ADS-IFPB-SR/alumigest/issues/138) | 🟢 Concluída |
+| **US-15** | **US-15** | Sprint 06 | Gestão de Status, Prazos e Cancelamento de Pedidos | [#139](https://github.com/ADS-IFPB-SR/alumigest/issues/139) | 🟢 Concluída |
+| **US-16** | **US-16** | Sprint 06 | Emissão do Comprovante do Pedido de Venda em PDF | [#140](https://github.com/ADS-IFPB-SR/alumigest/issues/140) | 🟢 Concluída |
 | **US-17** | ❌ **DESCARTADA** | Sprint 06 | Gerar Ordens de Produção (OP) Individuais por Peça | — | 🚫 Removida do Escopo |
-| **US-18** | **US-17** | Sprint 06 | Emitir Etiquetas de Identificação de Peças por Item do Pedido | [#142](https://github.com/ADS-IFPB-SR/alumigest/issues/142) | 🔄 Adaptada (Sem QR Code) |
+| **US-18** | **US-17** | Sprint 07 | Emitir Etiquetas de Identificação de Peças por Item do Pedido | [#142](https://github.com/ADS-IFPB-SR/alumigest/issues/142) | 🔵 Ativa (13/10 a 27/10) |
 | **US-19** | ❌ **DESCARTADA** | Sprint 06 | Atualizar Status de Produção via Scanner de QR Code | — | 🚫 Removida do Escopo |
-| **US-20** | **US-18** | Sprint 06 | Acompanhar Produção via Painel Kanban de Pedidos de Venda | [#143](https://github.com/ADS-IFPB-SR/alumigest/issues/143) | 🔄 Adaptada (Foco em Orders) |
+| **US-20** | **US-18** | Sprint 07 | Acompanhar Produção via Painel Kanban de Pedidos de Venda | [#143](https://github.com/ADS-IFPB-SR/alumigest/issues/143) | 🔵 Ativa (13/10 a 27/10) |
 | **US-21** | **US-19** | Sprint 07 | Consolidar Lista Linear e Plana de Corte do Pedido | [#144](https://github.com/ADS-IFPB-SR/alumigest/issues/144) | 🔄 Renumerada (-2) |
 | **US-22** | **US-20** | Sprint 07 | Gerar Ficha Técnica de Montagem por Item do Pedido | [#145](https://github.com/ADS-IFPB-SR/alumigest/issues/145) | 🔄 Renumerada (-2) |
 | **US-23** | ❌ **DESCARTADA** | Sprint 07 | Emitir Romaneio de Oficina em PDF com Checklist de Conferência | — | 🚫 Removida do Escopo |
