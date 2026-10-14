@@ -3,35 +3,72 @@
 **Identificador**: `US-24`  
 **Issue GitHub**: [#149](https://github.com/ADS-IFPB-SR/alumigest/issues/149)  
 **Status**: 🔵 No Backlog (Aguardando Sprint Planning)  
+**Diretriz de Idioma**: Conforme `PAD-Padroes_de_Codigo.md`, variáveis, atributos Java, colunas SQL, DTOs e enums são em **inglês técnico** (`camelCase`/`snake_case`), e a tradução para `pt-BR` ocorre na camada de UI do Frontend.
 
 ---
 
 ## 🎯 Objetivo de Negócio
-Gerar cobrança PIX integrada com provedor bancário (PSP) com QR Code dinâmico, código copia-e-cola e controle de expiração.
+
+Como vendedor ou gestor financeiro da Alumiportas, desejo gerar uma cobrança PIX dinâmica integrada para uma Ordem de Serviço (`OS-YYYY-NNNN`) com geração de QR Code em imagem (Base64), código "Copia e Cola" (BR Code padrão Bacen) e controle de expiração, para agilizar o recebimento de entradas e pagamentos à vista com conciliação automática.
 
 ---
 
-## 📋 Sub-Tarefas / Issues Vinculadas (14 issues)
+## 🧪 Critérios de Aceitação (Dado que / Quando / Então)
 
-| Sub-Task | Tarefa / Descrição | Status |
-|---|---|:---:|
-| [US](issues/US-24.1-criar-package-br-edu-ifpb-alumigest-finance-e/issue.md) | Criar package `br.edu.ifpb.alumigest.finance` e diretório `frontend/src/features/finance` | 🔲 No Backlog |
-| [US](issues/US-24.10-criar-record-pixchargeresponse-txid-valor-pay/issue.md) | Criar record `PixChargeResponse` (txid, valor, payloadCopiaECola, qrCodeBase64, dataExpiracao) em `backend/src/main/java/br/edu/ifpb/alumigest/finance/dto/PixChargeResponse.java` | 🔲 No Backlog |
-| [US](issues/US-24.11-criar-interface-pixgatewayservice-e-implement/issue.md) | Criar interface `PixGatewayService` e implementação `MockPixGatewayServiceImpl` em `backend/src/main/java/br/edu/ifpb/alumigest/finance/service/impl/MockPixGatewayServiceImpl.java` | 🔲 No Backlog |
-| [US](issues/US-24.12-implementar-servico-pixservice-gerarcobrancap/issue.md) | Implementar serviço `PixService.gerarCobrancaPix(Long orderId, PixGenerateRequest request)` com validade de 24h em `backend/src/main/java/br/edu/ifpb/alumigest/finance/service/PixService.java` | 🔲 No Backlog |
-| [US](issues/US-24.13-criar-endpoint-post-api-payments-pix-generate/issue.md) | Criar endpoint POST /api/payments/pix/generate-for-order/{orderId} no `PixPaymentController` em `backend/src/main/java/br/edu/ifpb/alumigest/finance/controller/PixPaymentController.java` | 🔲 No Backlog |
-| [US](issues/US-24.14-criar-testes-unitarios-do-pixpayloadgenerator/issue.md) | Criar testes unitários do `PixPayloadGeneratorTest` e `PixServiceTest` | 🔲 No Backlog |
-| [US](issues/US-24.2-criar-migration-flyway-backend-src-main-resou/issue.md) | Criar migration Flyway `backend/src/main/resources/db/migration/V12__create_payments_and_pix_schema.sql` com tabelas `payments` e `pix_transactions` | 🔲 No Backlog |
-| [US](issues/US-24.3-criar-enums-paymenttype-paymentmethod-payment/issue.md) | Criar enums `PaymentType`PaymentMethod`PaymentStatus` e `PixStatus` em `backend/src/main/java/br/edu/ifpb/alumigest/finance/domain/` | 🔲 No Backlog |
-| [US](issues/US-24.4-criar-entidade-jpa-payment-em-backend-src-mai/issue.md) | Criar entidade JPA `Payment` em `backend/src/main/java/br/edu/ifpb/alumigest/finance/domain/Payment.java` | 🔲 No Backlog |
-| [US](issues/US-24.5-criar-entidade-jpa-pixtransaction-em-backend-/issue.md) | Criar entidade JPA `PixTransaction` em `backend/src/main/java/br/edu/ifpb/alumigest/finance/domain/PixTransaction.java` | 🔲 No Backlog |
-| [US](issues/US-24.6-criar-repositorio-paymentrepository-em-backen/issue.md) | Criar repositório `PaymentRepository` em `backend/src/main/java/br/edu/ifpb/alumigest/finance/repository/PaymentRepository.java` | 🔲 No Backlog |
-| [US](issues/US-24.7-criar-repositorio-pixtransactionrepository-em/issue.md) | Criar repositório `PixTransactionRepository` em `backend/src/main/java/br/edu/ifpb/alumigest/finance/repository/PixTransactionRepository.java` | 🔲 No Backlog |
-| [US](issues/US-24.8-criar-gerador-de-payload-emv-br-code-pixpaylo/issue.md) | Criar gerador de payload EMV / BR Code `PixPayloadGenerator` com CRC16 CCITT em `backend/src/main/java/br/edu/ifpb/alumigest/finance/service/PixPayloadGenerator.java` | 🔲 No Backlog |
-| [US](issues/US-24.9-criar-record-pixgeneraterequest-tipopagamento/issue.md) | Criar record `PixGenerateRequest` (tipoPagamento, valor, observacoes) com Bean Validation em `backend/src/main/java/br/edu/ifpb/alumigest/finance/dto/PixGenerateRequest.java` | 🔲 No Backlog |
+- [ ] **Cenário 1: Geração Bem-Sucedida de Cobrança PIX com QR Code e Copia e Cola**
+  - **Dado que** o vendedor visualiza uma Ordem de Serviço na página `OrderDetailPage` com valor pendente de pagamento,
+  - **Quando** aciona a ação "Gerar Cobrança PIX", informa o valor (`amount`) e confirma o modal,
+  - **Então** o sistema gera um identificador de transação único (`txid` alfanumérico),
+  - **E** compila a string padrão EMV BR Code com checksum CRC16 válido,
+  - **E** renderiza no frontend o QR Code visual e disponibiliza botão com clique único para "Copiar Código PIX",
+  - **E** exibe o cronômetro regressivo com prazo de expiração configurado para 24 horas (`expiresAt`).
+
+- [ ] **Cenário 2: Validação de Valor Mínimo e Teto da O.S.**
+  - **Dado que** o usuário tenta gerar uma cobrança PIX,
+  - **Quando** informa um valor menor ou igual a zero ou superior ao saldo em aberto da O.S.,
+  - **Então** a validação do schema Zod e do backend bloqueia a operação com HTTP `422 Unprocessable Entity` ("O valor da cobrança PIX deve ser maior que zero e não pode exceder o saldo pendente da ordem").
+
+- [ ] **Cenário 3: Reutilização de Cobrança PIX Pendente Válida**
+  - **Dado que** já existe uma cobrança PIX com status `PENDING` e dentro do prazo de validade para aquele mesmo valor/etapa da O.S.,
+  - **Quando** o vendedor solicita a geração de PIX,
+  - **Então** o sistema recupera a transação existente em vez de duplicar cobranças no provedor, retornando o mesmo QR Code e `txid`.
+
+- [ ] **Cenário 4: Expiração Automática de Cobrança Vencida**
+  - **Dado que** uma cobrança PIX atingiu a data/hora limite (`expiresAt`) sem confirmação de pagamento,
+  - **Quando** o backend executa a rotina de verificação ou o status é consultado,
+  - **Então** a transação passa atomicamente para `EXPIRED`, desabilitando o QR Code na interface e permitindo a emissão de nova cobrança.
 
 ---
 
-## 🔗 Referências & Governança
-- 🏛️ **Constituição do Projeto**: [../../constitution.md](../../constitution.md)
-- 🗺️ **Tabela De-Para Oficial**: [../../de-para-user-stories.md](../../de-para-user-stories.md)
+## 📋 Regras de Negócio e Restrições
+
+- **RN-01 (Conformidade com o Arranjo PIX Bacen):** O payload copia-e-cola deve seguir a especificação EMV QRCPS (Merchant-Presented Mode) com chave PIX, nome do recebedor ("Alumiportas"), cidade ("Santa Rita") e CRC16 CCITT.
+- **RN-02 (Precisão Financeira Estrita):** O valor da transação deve ser persistido como `NUMERIC(12,2)` com `RoundingMode.HALF_EVEN`.
+- **RN-03 (Diretriz de Idioma em Variáveis):** Entidades e DTOs em inglês técnico: `txid`, `amount`, `copyAndPastePayload`, `qrCodeBase64`, `expiresAt`, `pixStatus` (`PENDING`, `PAID`, `EXPIRED`, `CANCELLED`).
+
+---
+
+## 🔌 Especificação Técnica
+
+### Backend (Spring Boot 3 / JPA / PostgreSQL)
+- **Tabelas:** `tb_payments` e `tb_pix_transactions` (`V22__create_payments_and_pix_schema.sql`)
+- **Endpoint:** `POST /api/v1/payments/pix/orders/{orderId}`
+- **DTOs:** `PixChargeRequestDTO` (`amount`, `paymentType`), `PixChargeResponseDTO` (`txid`, `amount`, `qrCodeBase64`, `copyAndPastePayload`, `expiresAt`, `status`)
+- **Service:** `PixService.java` e `PixPayloadGenerator.java`
+
+### Frontend (React 19 / Vite / TanStack Query / Tailwind)
+- **Modal:** `PixPaymentModal.tsx` com visualização de QR Code, botão "Copiar Código" com feedback e temporizador
+- **Hook:** `useGeneratePixCharge(orderId)`
+
+---
+
+## 🛡️ Definition of Done (DoD)
+
+- [ ] Teste unitário de `PixPayloadGeneratorTest` validando a estrutura TLV (Tag-Length-Value) e integridade do cálculo CRC16.
+- [ ] Teste de integração REST validando `POST /api/v1/payments/pix/orders/{orderId}` e retorno HTTP 201/422.
+- [ ] Componente visual `PixPaymentModal.tsx` testado com cópia para área de transferência e feedback visual Toast.
+- [ ] Cobertura de testes $\ge 80\%$ e SonarQube Quality Gate verde.
+
+---
+
+**Branch:** `feat/us-24-cobranca-pix-dinamico`
