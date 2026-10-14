@@ -28,6 +28,17 @@ export function OrderDetailPage() {
 
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
 
+  const handleAdvanceToWaitingProduction = () => {
+    updateOrderStatus('WAITING_PRODUCTION', {
+      onSuccess: () => {
+        toast.success('Ordem de serviço avançada para aguardando produção.');
+      },
+      onError: () => {
+        toast.error('Não foi possível avançar a ordem para aguardando produção.');
+      },
+    });
+  };
+
   const handleAdvanceProduction = () => {
     updateOrderStatus('IN_PRODUCTION', {
       onSuccess: () => {
@@ -142,6 +153,7 @@ export function OrderDetailPage() {
           isUpdatingStatus={isUpdatingStatus}
           isDownloadingPdf={isDownloadingPdf}
           isDownloadingComprovante={isDownloadingComprovante}
+          onAdvanceWaitingProduction={handleAdvanceToWaitingProduction}
           onAdvanceProduction={handleAdvanceProduction}
           onCompleteProduction={handleCompleteProduction}
           onOpenCancelModal={() => setIsCancelModalOpen(true)}

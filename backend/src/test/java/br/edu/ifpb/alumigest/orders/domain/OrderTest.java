@@ -29,7 +29,7 @@ class OrderTest {
         order.onCreate();
 
         assertThat(order.getAtivo()).isTrue();
-        assertThat(order.getStatus()).isEqualTo(OrderStatus.WAITING_PRODUCTION);
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.CREATED);
         assertThat(order.getDataAprovacao()).isEqualTo(LocalDate.now(ZoneOffset.UTC));
         assertThat(order.getDataPrevisaoEntrega())
                 .isEqualTo(LocalDate.now(ZoneOffset.UTC).plusDays(15));
@@ -149,6 +149,73 @@ class OrderTest {
         assertThatThrownBy(() -> order.cancelar("Tentativa de cancelamento de pedido já entregue"))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("Não é possível cancelar um pedido no status COMPLETED");
+    }
+
+    @Test
+    @DisplayName("[Transição de Estados] Deve transitar para WAITING_PRODUCTION com sucesso quando status atual for CREATED")
+    void shouldTransitionToWaitingProductionFromCreated() {
+        Order order = Order.builder()
+                .status(OrderStatus.CREATED)
+                .build();
+
+        order.aguardarProducao();
+
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.WAITING_PRODUCTION);
+    }
+
+    @Test
+    @DisplayName("[Transição de Estados] Deve rejeitar transição para WAITING_PRODUCTION quando status atual não for CREATED")
+    void shouldRejectTransitionToWaitingProductionWhenNotCreated() {
+        Order order = Order.builder()
+                .status(OrderStatus.WAITING_PRODUCTION)
+                .build();
+
+        assertThatThrownBy(order::aguardarProducao)
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("Apenas pedidos recém-criados podem avançar para aguardando produção.");
+    }
+
+    @Test
+    @DisplayName("[Transição de Estados] Deve rejeitar transição direta de CREATED para IN_PRODUCTION")
+    void shouldRejectDirectJumpFromCreatedToInProduction() {
+        Order order = Order.builder()
+                .status(OrderStatus.CREATED)
+                .build();
+
+        assertThatThrownBy(order::iniciarProducao)
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("Apenas pedidos aguardando produção podem entrar em produção.");
+    }
+
+    @Test
+    @DisplayName("[Transição de Estados] Deve rejeitar conclusão direta de pedido no estado CREATED")
+    void shouldRejectDirectJumpFromCreatedToCompleted() {
+        Order order = Order.builder()
+                .status(OrderStatus.CREATED)
+                .build();
+
+        assertThatThrownBy(() -> order.concluir(LocalDate.now(ZoneOffset.UTC)))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("Apenas pedidos em produção podem ser concluídos.");
+    }
+
+    @Test
+    @DisplayName("[Transição de Estados] Deve executar com sucesso a sequência completa CREATED -> WAITING_PRODUCTION -> IN_PRODUCTION -> COMPLETED")
+    void shouldExecuteCompleteStateSequenceSuccessfully() {
+        Order order = Order.builder()
+                .status(OrderStatus.CREATED)
+                .build();
+
+        order.aguardarProducao();
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.WAITING_PRODUCTION);
+
+        order.iniciarProducao();
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.IN_PRODUCTION);
+
+        LocalDate dataEntrega = LocalDate.of(2026, 10, 20);
+        order.concluir(dataEntrega);
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.COMPLETED);
+        assertThat(order.getDataConclusao()).isEqualTo(dataEntrega);
     }
 
     @Test
