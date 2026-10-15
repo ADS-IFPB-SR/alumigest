@@ -21,11 +21,11 @@ Esta issue faz parte da entrega da **Release 2** do AlumiGest. Deve seguir rigor
 
 ## 🛠️ Checklist de Implementação
 
-- [ ] Analisar os requisitos específicos no arquivo de especificação (`docs/planejamento/sprint-06/spec.md`)
-- [ ] Verificar os modelos e tipos no modelo de dados (`docs/planejamento/sprint-06/data-model.md`)
-- [ ] Implementar a alteração necessária em `backend/src/main/java/br/edu/ifpb/alumigest/production/service/LabelPdfService.java`
-- [ ] Garantir que o código compila e segue as diretrizes do Checkstyle/Oxlint
-- [ ] Executar validação local conforme o cenário relevante do `quickstart.md`
+- [x] Analisar os requisitos específicos no arquivo de especificação (`docs/planejamento/sprint-06/spec.md`)
+- [x] Verificar os modelos e tipos no modelo de dados (`docs/planejamento/sprint-06/data-model.md`)
+- [x] Implementar a alteração necessária em `backend/src/main/java/br/edu/ifpb/alumigest/orders/service/LabelPdfService.java`
+- [x] Garantir que o código compila e segue as diretrizes do Checkstyle/Oxlint
+- [x] Executar validação local conforme o cenário relevante do `quickstart.md`
 
 ---
 
