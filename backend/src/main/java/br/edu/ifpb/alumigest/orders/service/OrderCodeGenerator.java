@@ -63,17 +63,16 @@ public class OrderCodeGenerator {
 
         int dbNextNumber = 1;
         for (String code : recentCodes) {
-            if (code == null || !code.startsWith(prefix)) {
-                continue;
-            }
-            String suffix = code.substring(prefix.length());
-            try {
-                int lastNumber = Integer.parseInt(suffix);
-                dbNextNumber = lastNumber + 1;
-                break;
-            } catch (NumberFormatException e) {
-                log.warn("Código malformado com sufixo não numérico ignorado no sequenciador: '{}' com prefixo '{}'.",
-                        code, prefix);
+            if (code != null && code.startsWith(prefix)) {
+                String suffix = code.substring(prefix.length());
+                try {
+                    int lastNumber = Integer.parseInt(suffix);
+                    dbNextNumber = lastNumber + 1;
+                    break;
+                } catch (NumberFormatException e) {
+                    log.warn("Código malformado com sufixo não numérico ignorado no sequenciador: '{}' com prefixo '{}'.",
+                            code, prefix);
+                }
             }
         }
 
