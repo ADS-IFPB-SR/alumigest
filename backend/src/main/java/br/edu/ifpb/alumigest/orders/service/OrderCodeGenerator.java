@@ -3,8 +3,11 @@ package br.edu.ifpb.alumigest.orders.service;
 import br.edu.ifpb.alumigest.orders.repository.OrderRepository;
 import java.time.Year;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 
 /**
@@ -49,19 +52,30 @@ public class OrderCodeGenerator {
         int currentYear = Year.now(ZoneOffset.UTC).getValue();
         String prefix = String.format("OS-%d-", currentYear);
 
-        int dbNextNumber = orderRepository.findTopByCodigoStartingWithOrderByCodigoDesc(prefix)
-                .map(lastOrder -> {
-                    String lastCode = lastOrder.getCodigo();
-                    try {
-                        int lastNumber = Integer.parseInt(lastCode.substring(prefix.length()));
-                        return lastNumber + 1;
-                    } catch (NumberFormatException e) {
-                        log.warn("Falha ao extrair sufixo numérico do código '{}' com prefixo '{}': {}. Reiniciando sequência para 1.",
-                                lastCode, prefix, e.getMessage());
-                        return 1;
-                    }
-                })
-                .orElse(1);
+        List<String> rawCodes = orderRepository.findRecentCodigosByPrefix(prefix, PageRequest.of(0, 50));
+        List<String> recentCodes = rawCodes != null ? new ArrayList<>(rawCodes) : new ArrayList<>();
+
+        // Fallback para testes legados que configuraram apenas findTopByCodigoStartingWithOrderByCodigoDesc
+        if (recentCodes.isEmpty()) {
+            orderRepository.findTopByCodigoStartingWithOrderByCodigoDesc(prefix)
+                    .ifPresent(o -> recentCodes.add(o.getCodigo()));
+        }
+
+        int dbNextNumber = 1;
+        for (String code : recentCodes) {
+            if (code == null || !code.startsWith(prefix)) {
+                continue;
+            }
+            String suffix = code.substring(prefix.length());
+            try {
+                int lastNumber = Integer.parseInt(suffix);
+                dbNextNumber = lastNumber + 1;
+                break;
+            } catch (NumberFormatException e) {
+                log.warn("Código malformado com sufixo não numérico ignorado no sequenciador: '{}' com prefixo '{}'.",
+                        code, prefix);
+            }
+        }
 
         if (currentYear != cachedYear) {
             cachedYear = currentYear;

@@ -187,4 +187,36 @@ class OrderRepositoryTest {
         assertThat(topOrder).isPresent();
         assertThat(topOrder.get().getCodigo()).isEqualTo("OS-2026-0005");
     }
+
+    @Test
+    @DisplayName("[BUG-041 / #438] Deve ordenar numericamente quando código atinge 10.000")
+    void deveOrdenarNumericamenteApos9999Registros() {
+        orderRepository.save(buildOrder("OS-2026-9999", UUID.randomUUID(), OrderStatus.WAITING_PRODUCTION));
+        orderRepository.save(buildOrder("OS-2026-10000", UUID.randomUUID(), OrderStatus.WAITING_PRODUCTION));
+
+        entityManager.flush();
+        entityManager.clear();
+
+        Optional<Order> topOrder = orderRepository.findTopByCodigoStartingWithOrderByCodigoDesc("OS-2026-");
+
+        assertThat(topOrder).isPresent();
+        assertThat(topOrder.get().getCodigo()).isEqualTo("OS-2026-10000");
+    }
+
+    @Test
+    @DisplayName("[BUG-041 / #438] Deve retornar lista de códigos recentes ordenados por comprimento e valor")
+    void deveBuscarCodigosRecentesOrdenadosNumericamente() {
+        orderRepository.save(buildOrder("OS-2026-0001", UUID.randomUUID(), OrderStatus.WAITING_PRODUCTION));
+        orderRepository.save(buildOrder("OS-2026-9999", UUID.randomUUID(), OrderStatus.WAITING_PRODUCTION));
+        orderRepository.save(buildOrder("OS-2026-10000", UUID.randomUUID(), OrderStatus.WAITING_PRODUCTION));
+
+        entityManager.flush();
+        entityManager.clear();
+
+        var codigos = orderRepository.findRecentCodigosByPrefix("OS-2026-", PageRequest.of(0, 10));
+
+        assertThat(codigos)
+                .isNotEmpty()
+                .startsWith("OS-2026-10000", "OS-2026-9999", "OS-2026-0001");
+    }
 }
