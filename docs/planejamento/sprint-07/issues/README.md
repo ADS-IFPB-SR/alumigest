@@ -6,7 +6,7 @@
 
 | Sub-Task | Tarefa | Alvo / Módulo | Status |
 |---|---|---|:---:|
-| [US-17.1](US-17.1-criar-servico-labelpdfservice-usando-openpdf/issue.md) | Criar serviço `LabelPdfService` usando OpenPDF com layout térmico (100x50mm) contendo dados do pedido, cliente, medidas nominais, cor, vidro e numeração da peça | `backlog` | 🔲 Aberta |
+| [US-17.1](US-17.1-criar-servico-labelpdfservice-usando-openpdf/issue.md) | Criar serviço `LabelPdfService` usando OpenPDF com layout térmico (100x60mm) contendo dados do pedido, cliente, medidas nominais, cor, vidro e numeração da peça | `backlog` | 🔲 Aberta |
 | [US-17.2](US-17.2-adicionar-endpoint-get-api-orders-orderid-labels-pdf/issue.md) | Adicionar endpoint `GET /api/orders/{orderId}/labels-pdf` no backend retornando documento `application/pdf` | `backlog` | 🔲 Aberta |
 | [US-17.3](US-17.3-criar-teste-unitario-do-labelpdfservice/issue.md) | Criar teste unitário do `LabelPdfService` validando geração de bytes e paginação exata por quantidade de peças | `backlog` | 🔲 Aberta |
 | [US-17.4](US-17.4-adicionar-botao-imprimir-etiquetas-no-frontend/issue.md) | Adicionar botão "Imprimir Etiquetas" na tela de detalhes do pedido no frontend (`OrderDetailPage.tsx`) | `backlog` | 🔲 Aberta |

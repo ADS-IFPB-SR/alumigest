@@ -1,4 +1,4 @@
-# [US-17.1] Criar serviço `LabelPdfService` usando OpenPDF com layout térmico (100x50mm) contendo dados do pedido, cliente, medidas nominais, cor, vidro e numeração da peça
+# [US-17.1] Criar serviço `LabelPdfService` usando OpenPDF com layout térmico (100x60mm) contendo dados do pedido, cliente, medidas nominais, cor, vidro e numeração da peça
 
 ## 📌 Metadados da Issue
 
@@ -13,7 +13,7 @@
 
 ## 🎯 Objetivo & Descrição
 
-Criar serviço LabelPdfService usando OpenPDF gerando páginas de 100x50mm para identificação física de cada esquadria a partir dos itens do pedido (OrderItem).
+Criar serviço LabelPdfService usando OpenPDF gerando páginas de 100x60mm para identificação física de cada esquadria a partir dos itens do pedido (OrderItem).
 
 Esta issue faz parte da entrega da **Release 2** do AlumiGest. Deve seguir rigorosamente as diretrizes arquiteturais da Constituição do Projeto (Clean Architecture, Records Java, Bean Validation e commits em PT-BR).
 
@@ -21,11 +21,11 @@ Esta issue faz parte da entrega da **Release 2** do AlumiGest. Deve seguir rigor
 
 ## 🛠️ Checklist de Implementação
 
-- [ ] Analisar os requisitos específicos no arquivo de especificação (`docs/planejamento/sprint-06/spec.md`)
-- [ ] Verificar os modelos e tipos no modelo de dados (`docs/planejamento/sprint-06/data-model.md`)
-- [ ] Implementar a alteração necessária em `backend/src/main/java/br/edu/ifpb/alumigest/production/service/LabelPdfService.java`
-- [ ] Garantir que o código compila e segue as diretrizes do Checkstyle/Oxlint
-- [ ] Executar validação local conforme o cenário relevante do `quickstart.md`
+- [x] Analisar os requisitos específicos no arquivo de especificação (`docs/planejamento/sprint-06/spec.md`)
+- [x] Verificar os modelos e tipos no modelo de dados (`docs/planejamento/sprint-06/data-model.md`)
+- [x] Implementar a alteração necessária em `backend/src/main/java/br/edu/ifpb/alumigest/orders/service/LabelPdfService.java`
+- [x] Garantir que o código compila e segue as diretrizes do Checkstyle/Oxlint
+- [x] Executar validação local conforme o cenário relevante do `quickstart.md`
 
 ---
 
