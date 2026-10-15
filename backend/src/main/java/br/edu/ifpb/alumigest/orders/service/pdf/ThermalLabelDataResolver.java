@@ -81,41 +81,50 @@ public class ThermalLabelDataResolver {
                 log.debug("Ignorando item ID {} sem quantidade positiva para emissão de etiquetas.", item.getId());
                 continue;
             }
-            int qtdItem = item.getQuantidade();
 
-            String descricao = resolverDescricao(item);
-            String linha = extrairLinhaOuGrupo(item);
-            int largura = item.getLarguraMm() != null ? item.getLarguraMm() : 0;
-            int altura = item.getAlturaMm() != null ? item.getAlturaMm() : 0;
-            String cor = resolverCor(item);
-            String vidro = resolverVidro(item);
-            String localAmbiente = extrairAmbienteOuLocal(item, order);
-            String codItem = extrairCodigoItem(item, itemIndex);
-
-            for (int p = 1; p <= qtdItem; p++) {
-                listaEtiquetas.add(new ThermalLabelData(
-                        nomeEmpresa,
-                        nomeCliente,
-                        codigoOS,
-                        itemIndex,
-                        contadorGlobal,
-                        totalPecasOS,
-                        descricao,
-                        linha,
-                        largura,
-                        altura,
-                        cor,
-                        vidro,
-                        localAmbiente,
-                        codItem,
-                        dataEmissao
-                ));
-                contadorGlobal++;
-            }
+            contadorGlobal = adicionarEtiquetasDoItem(listaEtiquetas, item, order,
+                    nomeEmpresa, nomeCliente, codigoOS, dataEmissao, totalPecasOS, itemIndex, contadorGlobal);
             itemIndex++;
         }
 
         return listaEtiquetas;
+    }
+
+    private int adicionarEtiquetasDoItem(List<ThermalLabelData> listaEtiquetas, OrderItem item, Order order,
+                                         String nomeEmpresa, String nomeCliente, String codigoOS,
+                                         LocalDate dataEmissao, int totalPecasOS, int itemIndex, int contadorGlobal) {
+        String descricao = resolverDescricao(item);
+        String linha = extrairLinhaOuGrupo(item);
+        int largura = item.getLarguraMm() != null ? item.getLarguraMm() : 0;
+        int altura = item.getAlturaMm() != null ? item.getAlturaMm() : 0;
+        String cor = resolverCor(item);
+        String vidro = resolverVidro(item);
+        String localAmbiente = extrairAmbienteOuLocal(item, order);
+        String codItem = extrairCodigoItem(item, itemIndex);
+        int qtdItem = item.getQuantidade();
+
+        int contador = contadorGlobal;
+        for (int p = 1; p <= qtdItem; p++) {
+            listaEtiquetas.add(new ThermalLabelData(
+                    nomeEmpresa,
+                    nomeCliente,
+                    codigoOS,
+                    itemIndex,
+                    contador,
+                    totalPecasOS,
+                    descricao,
+                    linha,
+                    largura,
+                    altura,
+                    cor,
+                    vidro,
+                    localAmbiente,
+                    codItem,
+                    dataEmissao
+            ));
+            contador++;
+        }
+        return contador;
     }
 
     private int calcularTotalPecas(List<OrderItem> items) {
@@ -187,21 +196,9 @@ public class ThermalLabelDataResolver {
     }
 
     public String extrairAmbienteOuLocal(OrderItem item, Order order) {
-        if (item.getTemplateConfig() != null && !item.getTemplateConfig().isBlank()) {
-            try {
-                JsonNode root = OBJECT_MAPPER.readTree(item.getTemplateConfig());
-                if (root != null) {
-                    for (String key : List.of("ambiente", "room", "local",
-                            "environment", "location", "notes")) {
-                        JsonNode node = root.get(key);
-                        if (node != null && !node.isNull() && !node.asText().isBlank()) {
-                            return truncarTexto(node.asText().trim(), 38);
-                        }
-                    }
-                }
-            } catch (Exception e) {
-                log.debug("Falha ao extrair ambiente do templateConfig: {}", e.getMessage());
-            }
+        String valorJson = extrairAmbienteDoTemplateConfig(item.getTemplateConfig());
+        if (valorJson != null) {
+            return truncarTexto(valorJson, 38);
         }
         if (order.getClienteEndereco() != null && !order.getClienteEndereco().isBlank()) {
             return truncarTexto(order.getClienteEndereco().trim(), 38);
@@ -210,6 +207,28 @@ public class ThermalLabelDataResolver {
             return truncarTexto(order.getObservacoes().trim(), 38);
         }
         return NAO_INFORMADO;
+    }
+
+    private String extrairAmbienteDoTemplateConfig(String templateConfig) {
+        if (templateConfig == null || templateConfig.isBlank()) {
+            return null;
+        }
+        try {
+            JsonNode root = OBJECT_MAPPER.readTree(templateConfig);
+            if (root == null) {
+                return null;
+            }
+            for (String key : List.of("ambiente", "room", "local",
+                    "environment", "location", "notes")) {
+                JsonNode node = root.get(key);
+                if (node != null && !node.isNull() && !node.asText().isBlank()) {
+                    return node.asText().trim();
+                }
+            }
+        } catch (Exception e) {
+            log.debug("Falha ao extrair ambiente do templateConfig: {}", e.getMessage());
+        }
+        return null;
     }
 
     public String extrairCodigoItem(OrderItem item, int itemIndex) {

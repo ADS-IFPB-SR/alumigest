@@ -10,11 +10,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -162,26 +162,21 @@ class ThermalLabelDataResolverTest {
             assertThat(linha).isEqualTo(DoorTemplateType.SLIDING_WINDOW_2F.getGroupName());
         }
 
-        @Test
-        @DisplayName("Deve detectar 'Linha Gold' no texto da descrição se produto não tiver templateType")
-        void deveDetectarLinhaGoldNaDescricao() {
+        @ParameterizedTest(name = "Para descrição \"{0}\" deve extrair \"{1}\"")
+        @CsvSource({
+                "'Porta 4 folhas Linha GOLD brilhante', 'Linha Gold'",
+                "'Janela 2 folhas Linha Suprema', 'Linha Suprema'",
+                "'Porta Giro Linha Inova', 'Linha Inova'",
+                "'Painel Fixo de Vidro', 'Esquadria'"
+        })
+        @DisplayName("Deve extrair linha a partir da descrição ou retornar fallback 'Esquadria'")
+        void deveExtrairLinhaComBaseNaDescricao(String descricao, String resultadoEsperado) {
             OrderItem item = OrderItem.builder()
-                    .descricao("Porta 4 folhas Linha GOLD brilhante")
+                    .descricao(descricao)
                     .build();
 
             String linha = resolver.extrairLinhaOuGrupo(item);
-            assertThat(linha).isEqualTo("Linha Gold");
-        }
-
-        @Test
-        @DisplayName("Deve retornar fallback 'Esquadria' quando nenhuma linha for detectada")
-        void deveRetornarFallbackEsquadria() {
-            OrderItem item = OrderItem.builder()
-                    .descricao("Painel Fixo de Vidro")
-                    .build();
-
-            String linha = resolver.extrairLinhaOuGrupo(item);
-            assertThat(linha).isEqualTo("Esquadria");
+            assertThat(linha).isEqualTo(resultadoEsperado);
         }
     }
 
@@ -189,28 +184,21 @@ class ThermalLabelDataResolverTest {
     @DisplayName("3. Extração e Fallbacks de Ambiente / Local")
     class ExtracaoAmbienteTestes {
 
-        @Test
-        @DisplayName("Deve extrair do JSON templateConfig quando chave 'ambiente' estiver presente")
-        void deveExtrairAmbienteDoJson() {
+        @ParameterizedTest(name = "JSON \"{0}\" deve extrair ambiente \"{1}\"")
+        @CsvSource({
+                "'{\"ambiente\": \"Varanda Gourmet\"}', 'Varanda Gourmet'",
+                "'{\"room\": \"Cozinha Integrada\"}', 'Cozinha Integrada'",
+                "'{\"local\": \"Área de Serviço\"}', 'Área de Serviço'"
+        })
+        @DisplayName("Deve extrair ambiente de diferentes chaves válidas no JSON templateConfig")
+        void deveExtrairAmbienteDeDiferentesChavesJson(String json, String valorEsperado) {
             OrderItem item = OrderItem.builder()
-                    .templateConfig("{\"ambiente\": \"Varanda Gourmet\"}")
+                    .templateConfig(json)
                     .build();
             Order order = Order.builder().clienteEndereco("Rua Ignorada, 10").build();
 
             String local = resolver.extrairAmbienteOuLocal(item, order);
-            assertThat(local).isEqualTo("Varanda Gourmet");
-        }
-
-        @Test
-        @DisplayName("Deve extrair do JSON templateConfig com chaves alternativas como 'room' ou 'local'")
-        void deveExtrairChavesAlternativasDoJson() {
-            OrderItem item = OrderItem.builder()
-                    .templateConfig("{\"room\": \"Cozinha Integrada\"}")
-                    .build();
-            Order order = Order.builder().build();
-
-            String local = resolver.extrairAmbienteOuLocal(item, order);
-            assertThat(local).isEqualTo("Cozinha Integrada");
+            assertThat(local).isEqualTo(valorEsperado);
         }
 
         @Test
