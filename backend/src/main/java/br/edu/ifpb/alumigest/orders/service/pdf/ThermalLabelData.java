@@ -4,7 +4,7 @@ import java.time.LocalDate;
 
 /**
  * Snapshot imutável contendo os dados técnicos e comerciais consolidados para
- * a impressão de uma etiqueta adesiva térmica individual (100mm x 50mm).
+ * a impressão de uma etiqueta adesiva térmica individual (100mm x 60mm).
  * US-17.1 — Modelagem orientada a domínio e separação de dados da renderização (#448).
  *
  * @param companyName           Razão social da empresa emissora

@@ -65,12 +65,14 @@ public class ThermalLabelDataResolver {
                     "A ordem de serviço não possui itens com quantidade válida para emissão de etiquetas.");
         }
 
-        String nomeEmpresa = resolverNomeEmpresa();
-        String nomeCliente = resolverNomeCliente(order);
-        String codigoOS = order.getCodigo() != null ? order.getCodigo() : "OS-S/COD";
-        LocalDate dataEmissao = order.getDataAprovacao() != null
-                ? order.getDataAprovacao()
-                : LocalDate.now(ZoneOffset.UTC);
+        OrderLabelContext context = new OrderLabelContext(
+                order,
+                resolverNomeEmpresa(),
+                resolverNomeCliente(order),
+                order.getCodigo() != null ? order.getCodigo() : "OS-S/COD",
+                order.getDataAprovacao() != null ? order.getDataAprovacao() : LocalDate.now(ZoneOffset.UTC),
+                totalPecasOS
+        );
 
         List<ThermalLabelData> listaEtiquetas = new ArrayList<>(totalPecasOS);
         int contadorGlobal = 1;
@@ -82,36 +84,37 @@ public class ThermalLabelDataResolver {
                 continue;
             }
 
-            contadorGlobal = adicionarEtiquetasDoItem(listaEtiquetas, item, order,
-                    nomeEmpresa, nomeCliente, codigoOS, dataEmissao, totalPecasOS, itemIndex, contadorGlobal);
+            contadorGlobal = adicionarEtiquetasDoItem(listaEtiquetas, item, context, itemIndex, contadorGlobal);
             itemIndex++;
         }
 
         return listaEtiquetas;
     }
 
-    private int adicionarEtiquetasDoItem(List<ThermalLabelData> listaEtiquetas, OrderItem item, Order order,
-                                         String nomeEmpresa, String nomeCliente, String codigoOS,
-                                         LocalDate dataEmissao, int totalPecasOS, int itemIndex, int contadorGlobal) {
+    private int adicionarEtiquetasDoItem(List<ThermalLabelData> listaEtiquetas,
+                                         OrderItem item,
+                                         OrderLabelContext ctx,
+                                         int itemIndex,
+                                         int contadorGlobal) {
         String descricao = resolverDescricao(item);
         String linha = extrairLinhaOuGrupo(item);
         int largura = item.getLarguraMm() != null ? item.getLarguraMm() : 0;
         int altura = item.getAlturaMm() != null ? item.getAlturaMm() : 0;
         String cor = resolverCor(item);
         String vidro = resolverVidro(item);
-        String localAmbiente = extrairAmbienteOuLocal(item, order);
+        String localAmbiente = extrairAmbienteOuLocal(item, ctx.order());
         String codItem = extrairCodigoItem(item, itemIndex);
         int qtdItem = item.getQuantidade();
 
         int contador = contadorGlobal;
         for (int p = 1; p <= qtdItem; p++) {
             listaEtiquetas.add(new ThermalLabelData(
-                    nomeEmpresa,
-                    nomeCliente,
-                    codigoOS,
+                    ctx.companyName(),
+                    ctx.customerName(),
+                    ctx.orderCode(),
                     itemIndex,
                     contador,
-                    totalPecasOS,
+                    ctx.totalPieces(),
                     descricao,
                     linha,
                     largura,
@@ -120,11 +123,21 @@ public class ThermalLabelDataResolver {
                     vidro,
                     localAmbiente,
                     codItem,
-                    dataEmissao
+                    ctx.issueDate()
             ));
             contador++;
         }
         return contador;
+    }
+
+    private record OrderLabelContext(
+            Order order,
+            String companyName,
+            String customerName,
+            String orderCode,
+            LocalDate issueDate,
+            int totalPieces
+    ) {
     }
 
     private int calcularTotalPecas(List<OrderItem> items) {

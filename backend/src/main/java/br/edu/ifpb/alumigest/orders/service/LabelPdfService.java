@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.util.List;
 
 /**
- * Serviço orquestrador responsável pela geração de etiquetas adesivas térmicas em PDF (100mm x 50mm).
+ * Serviço orquestrador responsável pela geração de etiquetas adesivas térmicas em PDF (100mm x 60mm).
  * Coordena a resolução de dados da O.S. e a renderização do layout térmico OpenPDF.
  * Gera uma página dedicada para cada exemplar físico de esquadria de uma Ordem de Serviço.
  * US-17.1 — Serviço LabelPdfService com layout térmico industrial (#448).
@@ -33,8 +33,8 @@ public class LabelPdfService {
 
     /** Largura da etiqueta térmica em pontos (100 mm = 283.46 pt). */
     public static final float LARGURA_ETIQUETA_PT = 283.46f;
-    /** Altura da etiqueta térmica em pontos (50 mm = 141.73 pt). */
-    public static final float ALTURA_ETIQUETA_PT = 141.73f;
+    /** Altura da etiqueta térmica em pontos (60 mm = 170.08 pt). */
+    public static final float ALTURA_ETIQUETA_PT = 170.08f;
 
     private static final float MARGEM_HORIZONTAL = 8.0f;
     private static final float MARGEM_VERTICAL = 4.0f;
@@ -53,7 +53,7 @@ public class LabelPdfService {
     }
 
     /**
-     * Gera o documento PDF com etiquetas adesivas térmicas (100mm x 50mm) para todos os
+     * Gera o documento PDF com etiquetas adesivas térmicas (100mm x 60mm) para todos os
      * exemplares físicos dos itens de uma ordem de serviço.
      *
      * @param order ordem de serviço de origem

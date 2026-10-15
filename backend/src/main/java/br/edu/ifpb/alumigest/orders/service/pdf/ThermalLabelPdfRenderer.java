@@ -19,7 +19,7 @@ import java.util.Locale;
 
 /**
  * Renderizador de apresentação responsável por transformar um snapshot {@link ThermalLabelData}
- * em componentes visuais de tabela OpenPDF formatados para impressão térmica (100mm x 50mm).
+ * em componentes visuais de tabela OpenPDF formatados para impressão térmica (100mm x 60mm).
  * US-17.1 — Camada de apresentação especializada em layout térmico industrial (#448).
  */
 @Component

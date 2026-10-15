@@ -43,7 +43,7 @@ Este diretório centraliza a documentação de planejamento, especificações fu
 Todas as histórias subsequentes da **Release 2**, **Release 3** e **Sustentação** estão organizadas no [Backlog Centralizado](backlog/README.md). Conforme a equipe realizar cada Sprint Planning, novas pastas de sprint serão criadas selecionando histórias deste backlog:
 
 - **Fábrica & Chão de Fábrica (Release 2)**:
-  - [`US-17`](backlog/US-17-etiquetas-identificacao/spec.md) — Etiquetas de Identificação de Peças (100x50mm)
+  - [`US-17`](backlog/US-17-etiquetas-identificacao/spec.md) — Etiquetas de Identificação de Peças (100x60mm)
   - [`US-18`](backlog/US-18-painel-kanban-producao/spec.md) — Painel Kanban de Produção
   - [`US-19`](backlog/US-19-lista-corte-pedido/spec.md) — Lista Consolidada de Corte (Romaneio)
   - [`US-20`](backlog/US-20-ficha-tecnica-montagem/spec.md) — Ficha Técnica de Montagem de Esquadrias

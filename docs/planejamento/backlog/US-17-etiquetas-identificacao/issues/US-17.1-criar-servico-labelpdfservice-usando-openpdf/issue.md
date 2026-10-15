@@ -1,4 +1,4 @@
-# [US-17.1] Criar serviço `LabelPdfService` usando OpenPDF com layout térmico (100x50mm) contendo dados do pedido, cliente, medidas nominais, cor, vidro e numeração da peça
+# [US-17.1] Criar serviço `LabelPdfService` usando OpenPDF com layout térmico (100x60mm) contendo dados do pedido, cliente, medidas nominais, cor, vidro e numeração da peça
 
 ## 📌 Metadados da Issue
 
@@ -13,7 +13,7 @@
 
 ## 🎯 Objetivo & Descrição
 
-Criar serviço LabelPdfService usando OpenPDF gerando páginas de 100x50mm para identificação física de cada esquadria a partir dos itens do pedido (OrderItem).
+Criar serviço LabelPdfService usando OpenPDF gerando páginas de 100x60mm para identificação física de cada esquadria a partir dos itens do pedido (OrderItem).
 
 Esta issue faz parte da entrega da **Release 2** do AlumiGest. Deve seguir rigorosamente as diretrizes arquiteturais da Constituição do Projeto (Clean Architecture, Records Java, Bean Validation e commits em PT-BR).
 

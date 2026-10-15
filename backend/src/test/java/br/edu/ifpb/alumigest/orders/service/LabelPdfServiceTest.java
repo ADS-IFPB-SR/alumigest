@@ -27,7 +27,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Bateria de testes unitários com técnicas formais de QA para {@link LabelPdfService}.
- * US-17.1 — Serviço LabelPdfService com layout térmico (100x50mm) (#448).
+ * US-17.1 — Serviço LabelPdfService com layout térmico (100x60mm) (#448).
  */
 @DisplayName("LabelPdfService - Testes de Geração de Etiquetas Térmicas [US-17.1]")
 class LabelPdfServiceTest {
@@ -132,15 +132,15 @@ class LabelPdfServiceTest {
                         .as("O documento deve ter exatamente 3 páginas físicas")
                         .isEqualTo(3);
 
-                // Validação das dimensões térmicas 100mm x 50mm (283.46 pt x 141.73 pt)
+                // Validação das dimensões térmicas 100mm x 60mm (283.46 pt x 170.08 pt)
                 for (int i = 1; i <= 3; i++) {
                     Rectangle pageSize = reader.getPageSize(i);
                     assertThat(pageSize.getWidth())
                             .as("Largura da página %d deve ser 100mm (283.46 pt)", i)
                             .isEqualTo(283.46f);
                     assertThat(pageSize.getHeight())
-                            .as("Altura da página %d deve ser 50mm (141.73 pt)", i)
-                            .isEqualTo(141.73f);
+                            .as("Altura da página %d deve ser 60mm (170.08 pt)", i)
+                            .isEqualTo(170.08f);
                 }
             }
         }
