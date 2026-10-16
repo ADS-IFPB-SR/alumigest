@@ -67,23 +67,7 @@ public class ThermalLabelDataResolver {
         Objects.requireNonNull(order,
                 "A ordem de serviço não pode ser nula para resolução de etiquetas térmicas.");
 
-        List<OrderItem> items = order.getItems();
-        if (items == null || items.isEmpty()) {
-            throw new BusinessException(
-                    "A ordem de serviço não possui itens para emissão de etiquetas.");
-        }
-
-        List<OrderItem> itensOrdenados = new ArrayList<>(items);
-        itensOrdenados.sort(Comparator.comparingInt(i -> i.getOrdem() != null ? i.getOrdem() : 0));
-
-        if (itemId != null) {
-            itensOrdenados = itensOrdenados.stream()
-                    .filter(i -> Objects.equals(i.getId(), itemId))
-                    .toList();
-            if (itensOrdenados.isEmpty()) {
-                throw new ResourceNotFoundException("Item do Pedido", itemId.toString());
-            }
-        }
+        List<OrderItem> itensOrdenados = filtrarEOrdenarItens(order.getItems(), itemId);
 
         int totalPecasOS = calcularTotalPecas(itensOrdenados);
         if (totalPecasOS == 0) {
@@ -116,6 +100,37 @@ public class ThermalLabelDataResolver {
         }
 
         return listaEtiquetas;
+    }
+
+    /**
+     * Filtra e ordena os itens da ordem pelo campo {@code ordem}, aplicando opcionalmente
+     * um filtro por {@code itemId}. Centraliza a validação de nulidade e existência do item.
+     *
+     * @param items  lista bruta de itens da ordem
+     * @param itemId identificador opcional para filtrar um item específico
+     * @return lista ordenada (e possivelmente filtrada) de itens
+     * @throws BusinessException         se a lista for nula ou vazia
+     * @throws ResourceNotFoundException se {@code itemId} for informado mas não encontrado
+     */
+    private List<OrderItem> filtrarEOrdenarItens(List<OrderItem> items, UUID itemId) {
+        if (items == null || items.isEmpty()) {
+            throw new BusinessException(
+                    "A ordem de serviço não possui itens para emissão de etiquetas.");
+        }
+
+        List<OrderItem> ordenados = new ArrayList<>(items);
+        ordenados.sort(Comparator.comparingInt(i -> i.getOrdem() != null ? i.getOrdem() : 0));
+
+        if (itemId != null) {
+            ordenados = ordenados.stream()
+                    .filter(i -> Objects.equals(i.getId(), itemId))
+                    .toList();
+            if (ordenados.isEmpty()) {
+                throw new ResourceNotFoundException("Item do Pedido", itemId.toString());
+            }
+        }
+
+        return ordenados;
     }
 
     private int adicionarEtiquetasDoItem(List<ThermalLabelData> listaEtiquetas,
