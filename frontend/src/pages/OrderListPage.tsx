@@ -320,6 +320,7 @@ export function OrderListPage() {
                 return (
                   <span
                     key={pageItem}
+                    data-testid={`pagination-${pageItem}`}
                     className="w-7 h-7 flex items-center justify-center text-xs text-on-surface-variant select-none"
                     aria-hidden="true"
                   >
