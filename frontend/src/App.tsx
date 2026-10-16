@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
 import { DashboardLayout } from './components/layout/DashboardLayout';
@@ -22,6 +22,15 @@ const queryClient = new QueryClient({
   },
 });
 
+/**
+ * Redireciona rotas alias de detalhe preservando o parâmetro :id.
+ * Ex.: /pedidos/abc-123 → /ordens-servico/abc-123
+ */
+function OrderDetailRedirect() {
+  const { id } = useParams<{ id: string }>();
+  return <Navigate to={`/ordens-servico/${id}`} replace />;
+}
+
 export function AppRoutes() {
   return (
     <Routes>
@@ -35,10 +44,11 @@ export function AppRoutes() {
         <Route path="orcamentos/:id/editar" element={<BudgetEditor />} />
         <Route path="ordens-servico" element={<OrderListPage />} />
         <Route path="ordens-servico/:id" element={<OrderDetailPage />} />
-        <Route path="pedidos" element={<OrderListPage />} />
-        <Route path="pedidos/:id" element={<OrderDetailPage />} />
-        <Route path="work-orders" element={<OrderListPage />} />
-        <Route path="work-orders/:id" element={<OrderDetailPage />} />
+        {/* Aliases legados → redirecionam para a URL canônica /ordens-servico */}
+        <Route path="pedidos" element={<Navigate to="/ordens-servico" replace />} />
+        <Route path="pedidos/:id" element={<OrderDetailRedirect />} />
+        <Route path="work-orders" element={<Navigate to="/ordens-servico" replace />} />
+        <Route path="work-orders/:id" element={<OrderDetailRedirect />} />
 
         <Route
           path="dashboard"
