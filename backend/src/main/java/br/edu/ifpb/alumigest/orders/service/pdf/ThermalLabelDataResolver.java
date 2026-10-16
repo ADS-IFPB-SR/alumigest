@@ -2,6 +2,7 @@ package br.edu.ifpb.alumigest.orders.service.pdf;
 
 import br.edu.ifpb.alumigest.budgets.config.CompanyProperties;
 import br.edu.ifpb.alumigest.common.exception.BusinessException;
+import br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException;
 import br.edu.ifpb.alumigest.orders.domain.Order;
 import br.edu.ifpb.alumigest.orders.domain.OrderItem;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -17,6 +18,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * Resolvedor responsável por extrair, normalizar e compilar os dados da Ordem de Serviço
@@ -47,6 +49,21 @@ public class ThermalLabelDataResolver {
      * @throws BusinessException se a ordem não contiver itens
      */
     public List<ThermalLabelData> resolveLabels(Order order) {
+        return resolveLabels(order, null);
+    }
+
+    /**
+     * Resolve todos os dados necessários para impressão das etiquetas térmicas da ordem,
+     * com suporte a filtro opcional por item específico.
+     * Gera uma entrada individual em {@link ThermalLabelData} para cada peça física.
+     *
+     * @param order  ordem de serviço de origem
+     * @param itemId identificador opcional de um item específico para filtragem
+     * @return lista de dados de etiquetas em sequência física
+     * @throws BusinessException         se a ordem não contiver itens ou peças válidas
+     * @throws ResourceNotFoundException se o itemId for informado mas não pertencer à ordem
+     */
+    public List<ThermalLabelData> resolveLabels(Order order, UUID itemId) {
         Objects.requireNonNull(order,
                 "A ordem de serviço não pode ser nula para resolução de etiquetas térmicas.");
 
@@ -58,6 +75,15 @@ public class ThermalLabelDataResolver {
 
         List<OrderItem> itensOrdenados = new ArrayList<>(items);
         itensOrdenados.sort(Comparator.comparingInt(i -> i.getOrdem() != null ? i.getOrdem() : 0));
+
+        if (itemId != null) {
+            itensOrdenados = itensOrdenados.stream()
+                    .filter(i -> Objects.equals(i.getId(), itemId))
+                    .toList();
+            if (itensOrdenados.isEmpty()) {
+                throw new ResourceNotFoundException("Item do Pedido", itemId.toString());
+            }
+        }
 
         int totalPecasOS = calcularTotalPecas(itensOrdenados);
         if (totalPecasOS == 0) {
@@ -84,7 +110,8 @@ public class ThermalLabelDataResolver {
                 continue;
             }
 
-            contadorGlobal = adicionarEtiquetasDoItem(listaEtiquetas, item, context, itemIndex, contadorGlobal);
+            int indexUtilizado = (item.getOrdem() != null && item.getOrdem() > 0) ? item.getOrdem() : itemIndex;
+            contadorGlobal = adicionarEtiquetasDoItem(listaEtiquetas, item, context, indexUtilizado, contadorGlobal);
             itemIndex++;
         }
 

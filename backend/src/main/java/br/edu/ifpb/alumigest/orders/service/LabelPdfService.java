@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Serviço orquestrador responsável pela geração de etiquetas adesivas térmicas em PDF (100mm x 60mm).
@@ -62,7 +63,21 @@ public class LabelPdfService {
      * @throws BusinessException se order não tiver itens ou ocorrer erro de geração
      */
     public byte[] gerarEtiquetas(Order order) {
-        List<ThermalLabelData> etiquetas = dataResolver.resolveLabels(order);
+        return gerarEtiquetas(order, null);
+    }
+
+    /**
+     * Gera o documento PDF com etiquetas adesivas térmicas (100mm x 60mm) para os
+     * exemplares físicos de uma ordem de serviço, com suporte a filtro opcional por item.
+     *
+     * @param order  ordem de serviço de origem
+     * @param itemId identificador opcional de um item específico para filtragem
+     * @return array de bytes contendo o PDF gerado
+     * @throws NullPointerException se order for nulo
+     * @throws BusinessException se order não tiver itens ou ocorrer erro de geração
+     */
+    public byte[] gerarEtiquetas(Order order, UUID itemId) {
+        List<ThermalLabelData> etiquetas = dataResolver.resolveLabels(order, itemId);
 
         Rectangle pageSize = new Rectangle(LARGURA_ETIQUETA_PT, ALTURA_ETIQUETA_PT);
         Document document = new Document(pageSize, MARGEM_HORIZONTAL, MARGEM_HORIZONTAL,

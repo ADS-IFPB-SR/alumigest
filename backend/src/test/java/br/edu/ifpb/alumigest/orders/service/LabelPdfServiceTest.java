@@ -4,6 +4,7 @@ import br.edu.ifpb.alumigest.budgets.config.CompanyProperties;
 import br.edu.ifpb.alumigest.catalog.domain.DoorTemplateType;
 import br.edu.ifpb.alumigest.catalog.domain.Product;
 import br.edu.ifpb.alumigest.common.exception.BusinessException;
+import br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException;
 import br.edu.ifpb.alumigest.orders.domain.ApprovalChannel;
 import br.edu.ifpb.alumigest.orders.domain.Order;
 import br.edu.ifpb.alumigest.orders.domain.OrderItem;
@@ -207,6 +208,22 @@ class LabelPdfServiceTest {
                 assertThat(conteudo).contains("Suíte Master - Bloco A");
             }
         }
+
+        @Test
+        @DisplayName("Deve gerar etiquetas apenas para o item especificado quando itemId for informado")
+        void deveGerarEtiquetasParaItemEspecificoQuandoItemIdInformado() throws IOException {
+            Order order = criarOrdemPadraoComDoisItens();
+            UUID itemId = order.getItems().get(1).getId();
+
+            byte[] pdfBytes = labelPdfService.gerarEtiquetas(order, itemId);
+
+            assertThat(pdfBytes).isNotNull().isNotEmpty();
+            try (PdfReader reader = new PdfReader(pdfBytes)) {
+                assertThat(reader.getNumberOfPages())
+                        .as("Item 2 possui quantidade 1, logo deve gerar exatamente 1 página")
+                        .isEqualTo(1);
+            }
+        }
     }
 
     // =========================================================================
@@ -310,6 +327,17 @@ class LabelPdfServiceTest {
             assertThatThrownBy(() -> labelPdfService.gerarEtiquetas(order))
                     .isInstanceOf(BusinessException.class)
                     .hasMessageContaining("não possui itens");
+        }
+
+        @Test
+        @DisplayName("Deve lançar ResourceNotFoundException quando o itemId informado não existir na ordem")
+        void deveLancarResourceNotFoundExceptionQuandoItemIdNaoExistir() {
+            Order order = criarOrdemPadraoComDoisItens();
+            UUID itemIdInexistente = UUID.randomUUID();
+
+            assertThatThrownBy(() -> labelPdfService.gerarEtiquetas(order, itemIdInexistente))
+                    .isInstanceOf(ResourceNotFoundException.class)
+                    .hasMessageContaining("Item do Pedido");
         }
 
         @Test
