@@ -1,7 +1,7 @@
 import React from 'react';
 import { Calendar, Eye, AlertCircle, Clock, Package } from 'lucide-react';
 import type { Order, OrderSummary } from '../../orders/types';
-import { formatDate } from '../../orders/utils/formatDate'; // Ajuste o caminho exato do seu util de datas
+import { formatDate } from '../../orders/utils/formatDate';
 import { getDeadlineStatus } from '../utils/deadlineUtils';
 
 interface OrderProductionCardProps {
@@ -39,11 +39,15 @@ export const OrderProductionCard: React.FC<OrderProductionCardProps> = ({
 
   return (
     <div
+      data-testid="order-production-card"
+      aria-label={`Ordem de serviço ${order.codigo}`}
       className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm hover:shadow-md transition cursor-grab active:cursor-grabbing relative group flex flex-col gap-3"
       draggable
       onDragStart={(e) => {
-        e.dataTransfer.setData('text/plain', order.id);
-        e.dataTransfer.effectAllowed = 'move';
+        if (e.dataTransfer) {
+          e.dataTransfer.setData('text/plain', order.id);
+          e.dataTransfer.effectAllowed = 'move';
+        }
         e.currentTarget.classList.add('opacity-50', 'scale-[0.98]');
       }}
       onDragEnd={(e) => {
@@ -110,6 +114,7 @@ export const OrderProductionCard: React.FC<OrderProductionCardProps> = ({
           <button
             type="button"
             onClick={() => onClickDetails(order.id)}
+            aria-label={`Visualizar detalhes da ordem de serviço ${order.codigo}`}
             className="p-1.5 hover:text-blue-600 hover:bg-blue-50 rounded-lg text-slate-400 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
             title="Abrir Detalhes da O.S."
           >
