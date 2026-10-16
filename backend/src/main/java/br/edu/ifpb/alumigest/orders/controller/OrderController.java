@@ -10,6 +10,7 @@ import br.edu.ifpb.alumigest.orders.dto.OrderPdfDTO;
 import br.edu.ifpb.alumigest.orders.dto.OrderResponse;
 import br.edu.ifpb.alumigest.orders.dto.OrderSummaryResponse;
 import br.edu.ifpb.alumigest.orders.service.OrderService;
+import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -38,10 +39,11 @@ import java.util.UUID;
 
 /**
  * Controller REST para consulta e ciclo de vida de Ordens de Serviço / Pedidos de Venda.
+ * Define o contrato canônico oficial {@code /api/v1/orders} documentado via OpenAPI (BUG-040).
  * Depende da abstração {@link OrderService}, nunca da implementação concreta (DIP).
  */
 @RestController
-@RequestMapping({"/api/v1/orders", "/api/v1/ordens-servico"})
+@RequestMapping("/api/v1/orders")
 @Tag(name = "Ordens de Serviço", description = "Endpoints para consulta, criação, conversão e ciclo de vida de ordens de serviço (pedidos de venda)")
 public class OrderController {
 
@@ -112,7 +114,7 @@ public class OrderController {
      * @param request  dados da aprovação (canal, previsão de entrega, observações)
      * @return 201 Created com o pedido gerado no corpo
      */
-    @PostMapping({"/convert/{budgetId}", "/from-budget/{budgetId}"})
+    @PostMapping("/convert/{budgetId}")
     @Operation(
             summary = "Converter orçamento em pedido de venda",
             description = "Converte um orçamento elegível (DRAFT ou SENT) em Pedido de Venda,"
@@ -155,6 +157,22 @@ public class OrderController {
                 .buildAndExpand(response.id())
                 .toUri();
         return ResponseEntity.created(location).body(response);
+    }
+
+    /**
+     * Alias retrocompatível para conversão de orçamento via {@code /from-budget/{budgetId}}.
+     * Oculto da OpenAPI ({@link Hidden}) para garantir rota única canônica na documentação (BUG-040).
+     *
+     * @param budgetId ID do orçamento a ser convertido
+     * @param request  dados da aprovação (canal, previsão de entrega, observações)
+     * @return 201 Created com o pedido gerado no corpo
+     */
+    @Hidden
+    @PostMapping("/from-budget/{budgetId}")
+    public ResponseEntity<OrderResponse> convertBudgetFromBudgetAlias(
+            @PathVariable UUID budgetId,
+            @RequestBody @Valid OrderConvertRequest request) {
+        return convertBudgetToOrder(budgetId, request);
     }
 
     /**

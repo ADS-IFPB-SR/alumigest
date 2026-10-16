@@ -1,7 +1,7 @@
 # API Contract: Orders / Ordens de Serviço REST Endpoints
 
 **Base Path**: `/api/v1/orders` (Canônico / Padrão Frontend)  
-**Aliases Suportados**: `/api/v1/ordens-servico` (Alias Canônico em Português)  
+**Aliases de Compatibilidade**: `/api/v1/ordens-servico`, `/api/orders`, `/api/ordens-servico`, `/api/pedidos` (Ocultos da OpenAPI/Swagger — BUG-040)  
 **Content-Type**: `application/json`  
 **Sprint**: Sprint 06 (29/09/2026 a 12/10/2026)  
 

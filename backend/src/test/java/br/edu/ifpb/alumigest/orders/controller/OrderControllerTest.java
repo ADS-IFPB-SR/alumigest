@@ -6,9 +6,10 @@ import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -17,8 +18,9 @@ import br.edu.ifpb.alumigest.common.exception.BusinessException;
 import br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException;
 import br.edu.ifpb.alumigest.orders.domain.ApprovalChannel;
 import br.edu.ifpb.alumigest.orders.domain.OrderStatus;
-import br.edu.ifpb.alumigest.orders.dto.OrderPdfDTO;
 import br.edu.ifpb.alumigest.orders.dto.OrderCancelRequest;
+import br.edu.ifpb.alumigest.orders.dto.OrderConvertRequest;
+import br.edu.ifpb.alumigest.orders.dto.OrderPdfDTO;
 import br.edu.ifpb.alumigest.orders.dto.OrderResponse;
 import br.edu.ifpb.alumigest.orders.dto.OrderSummaryResponse;
 import br.edu.ifpb.alumigest.orders.service.OrderService;
@@ -39,7 +41,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-@WebMvcTest(OrderController.class)
+@WebMvcTest({OrderController.class, OrderLegacyController.class})
 @AutoConfigureMockMvc(addFilters = false)
 @DisplayName("OrderController - Testes de Integração WebMvc")
 class OrderControllerTest {
@@ -55,7 +57,7 @@ class OrderControllerTest {
   class FindAllEndpointTests {
 
     @Test
-    @DisplayName("Deve retornar status 200 OK e lista paginada de pedidos sumarizados")
+    @DisplayName("Deve retornar status 200 OK e lista paginada de pedidos sumarizados na rota canônica /api/v1/orders")
     void shouldReturn200AndPageOfSummarizedOrders() throws Exception {
       UUID orderId = UUID.randomUUID();
       UUID budgetId = UUID.randomUUID();
@@ -93,12 +95,51 @@ class OrderControllerTest {
     }
 
     @Test
-    @DisplayName("Deve aceitar requisições também através do alias canônico /api/v1/ordens-servico")
+    @DisplayName("Deve aceitar requisições através do alias legado /api/v1/ordens-servico")
     void shouldAcceptCanonicalPortugueseAlias() throws Exception {
       PageResponse<OrderSummaryResponse> emptyResponse = PageResponse.of(new PageImpl<>(Collections.emptyList()));
       when(orderService.findAll(any(), any(), any(), any())).thenReturn(emptyResponse);
 
       mockMvc.perform(get("/api/v1/ordens-servico")
+              .param("page", "0")
+              .param("size", "10")
+              .contentType(MediaType.APPLICATION_JSON))
+          .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("Deve aceitar requisições através do alias legado /api/orders")
+    void shouldAcceptLegacyApiOrdersAlias() throws Exception {
+      PageResponse<OrderSummaryResponse> emptyResponse = PageResponse.of(new PageImpl<>(Collections.emptyList()));
+      when(orderService.findAll(any(), any(), any(), any())).thenReturn(emptyResponse);
+
+      mockMvc.perform(get("/api/orders")
+              .param("page", "0")
+              .param("size", "10")
+              .contentType(MediaType.APPLICATION_JSON))
+          .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("Deve aceitar requisições através do alias legado /api/ordens-servico")
+    void shouldAcceptLegacyApiOrdensServicoAlias() throws Exception {
+      PageResponse<OrderSummaryResponse> emptyResponse = PageResponse.of(new PageImpl<>(Collections.emptyList()));
+      when(orderService.findAll(any(), any(), any(), any())).thenReturn(emptyResponse);
+
+      mockMvc.perform(get("/api/ordens-servico")
+              .param("page", "0")
+              .param("size", "10")
+              .contentType(MediaType.APPLICATION_JSON))
+          .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("Deve aceitar requisições através do alias legado /api/pedidos")
+    void shouldAcceptLegacyApiPedidosAlias() throws Exception {
+      PageResponse<OrderSummaryResponse> emptyResponse = PageResponse.of(new PageImpl<>(Collections.emptyList()));
+      when(orderService.findAll(any(), any(), any(), any())).thenReturn(emptyResponse);
+
+      mockMvc.perform(get("/api/pedidos")
               .param("page", "0")
               .param("size", "10")
               .contentType(MediaType.APPLICATION_JSON))
@@ -148,8 +189,146 @@ class OrderControllerTest {
     }
   }
 
-    @Nested
-    @DisplayName("GET /api/v1/orders/{id} - Detalhe do Pedido")
+  @Nested
+  @DisplayName("POST /api/v1/orders/convert/{budgetId} - Converter Orçamento em Pedido (US-13.2)")
+  class ConvertBudgetEndpointTests {
+
+    @Test
+    @DisplayName("Deve converter orçamento na rota canônica /api/v1/orders/convert/{budgetId}")
+    void shouldConvertOnCanonicalRoute() throws Exception {
+      UUID budgetId = UUID.randomUUID();
+      UUID orderId = UUID.randomUUID();
+      OrderResponse response = new OrderResponse(
+          orderId,
+          "OS-2026-0001",
+          budgetId,
+          null,
+          "Cliente Teste",
+          "(83) 98888-7777",
+          "Av. Central, 500",
+          OrderStatus.WAITING_PRODUCTION,
+          "Aguardando Produção",
+          ApprovalChannel.PRESENCIAL,
+          "Presencial",
+          LocalDate.now(),
+          LocalDate.now().plusDays(10),
+          null,
+          new BigDecimal("1500.00"),
+          BigDecimal.ZERO,
+          BigDecimal.ZERO,
+          BigDecimal.ZERO,
+          new BigDecimal("1500.00"),
+          "A vista",
+          null,
+          "Obs",
+          null,
+          OffsetDateTime.now(),
+          OffsetDateTime.now(),
+          true,
+          Collections.emptyList()
+      );
+
+      when(orderService.convertBudgetToOrder(eq(budgetId), any(OrderConvertRequest.class))).thenReturn(response);
+
+      mockMvc.perform(post("/api/v1/orders/convert/{budgetId}", budgetId)
+              .contentType(MediaType.APPLICATION_JSON)
+              .content("{\"canalAprovacao\":\"PRESENCIAL\",\"dataPrevisaoEntrega\":\"2026-10-30\",\"observacoes\":\"Obs\"}"))
+          .andExpect(status().isCreated())
+          .andExpect(header().string("Location", org.hamcrest.Matchers.containsString("/api/v1/orders/" + orderId)))
+          .andExpect(jsonPath("$.id").value(orderId.toString()))
+          .andExpect(jsonPath("$.codigo").value("OS-2026-0001"));
+    }
+
+    @Test
+    @DisplayName("Deve aceitar conversão no alias retrocompatível /api/v1/orders/from-budget/{budgetId}")
+    void shouldConvertOnFromBudgetAlias() throws Exception {
+      UUID budgetId = UUID.randomUUID();
+      UUID orderId = UUID.randomUUID();
+      OrderResponse response = new OrderResponse(
+          orderId,
+          "OS-2026-0001",
+          budgetId,
+          null,
+          "Cliente Teste",
+          "(83) 98888-7777",
+          "Av. Central, 500",
+          OrderStatus.WAITING_PRODUCTION,
+          "Aguardando Produção",
+          ApprovalChannel.PRESENCIAL,
+          "Presencial",
+          LocalDate.now(),
+          LocalDate.now().plusDays(10),
+          null,
+          new BigDecimal("1500.00"),
+          BigDecimal.ZERO,
+          BigDecimal.ZERO,
+          BigDecimal.ZERO,
+          new BigDecimal("1500.00"),
+          "A vista",
+          null,
+          "Obs",
+          null,
+          OffsetDateTime.now(),
+          OffsetDateTime.now(),
+          true,
+          Collections.emptyList()
+      );
+
+      when(orderService.convertBudgetToOrder(eq(budgetId), any(OrderConvertRequest.class))).thenReturn(response);
+
+      mockMvc.perform(post("/api/v1/orders/from-budget/{budgetId}", budgetId)
+              .contentType(MediaType.APPLICATION_JSON)
+              .content("{\"canalAprovacao\":\"PRESENCIAL\",\"dataPrevisaoEntrega\":\"2026-10-30\",\"observacoes\":\"Obs\"}"))
+          .andExpect(status().isCreated())
+          .andExpect(header().string("Location", org.hamcrest.Matchers.containsString("/api/v1/orders/" + orderId)));
+    }
+
+    @Test
+    @DisplayName("Deve aceitar conversão no alias legado /api/orders/from-budget/{budgetId}")
+    void shouldConvertOnLegacyApiOrdersAlias() throws Exception {
+      UUID budgetId = UUID.randomUUID();
+      UUID orderId = UUID.randomUUID();
+      OrderResponse response = new OrderResponse(
+          orderId,
+          "OS-2026-0001",
+          budgetId,
+          null,
+          "Cliente Teste",
+          "(83) 98888-7777",
+          "Av. Central, 500",
+          OrderStatus.WAITING_PRODUCTION,
+          "Aguardando Produção",
+          ApprovalChannel.PRESENCIAL,
+          "Presencial",
+          LocalDate.now(),
+          LocalDate.now().plusDays(10),
+          null,
+          new BigDecimal("1500.00"),
+          BigDecimal.ZERO,
+          BigDecimal.ZERO,
+          BigDecimal.ZERO,
+          new BigDecimal("1500.00"),
+          "A vista",
+          null,
+          "Obs",
+          null,
+          OffsetDateTime.now(),
+          OffsetDateTime.now(),
+          true,
+          Collections.emptyList()
+      );
+
+      when(orderService.convertBudgetToOrder(eq(budgetId), any(OrderConvertRequest.class))).thenReturn(response);
+
+      mockMvc.perform(post("/api/orders/from-budget/{budgetId}", budgetId)
+              .contentType(MediaType.APPLICATION_JSON)
+              .content("{\"canalAprovacao\":\"PRESENCIAL\",\"dataPrevisaoEntrega\":\"2026-10-30\",\"observacoes\":\"Obs\"}"))
+          .andExpect(status().isCreated());
+    }
+  }
+
+  @Nested
+  @DisplayName("GET /api/v1/orders/{id} - Detalhe do Pedido")
     class FindByIdEndpointTests {
 
     @Test
