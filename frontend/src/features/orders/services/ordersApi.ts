@@ -80,6 +80,34 @@ export const ordersApi = {
   },
 
   /**
+   * Baixa as etiquetas térmicas adesivas (100x60mm) da Ordem de Serviço em PDF (US-17.2 / US-17.4 / #451).
+   * Chama GET /api/v1/orders/{id}/labels-pdf com suporte a filtro opcional por item e inicia o download via Blob.
+   */
+  async downloadLabelsPdf(id: string, codigo?: string, itemId?: string): Promise<void> {
+    const response = await api.get(`/orders/${id}/labels-pdf`, {
+      params: itemId ? { itemId } : undefined,
+      responseType: 'blob',
+    });
+
+    const fallbackFilename = `etiquetas-${codigo ?? id}.pdf`;
+    const disposition = (
+      response.headers?.['content-disposition'] ||
+      response.headers?.['Content-Disposition']
+    ) as string | undefined;
+    const filename = extractFilenameFromContentDisposition(disposition, fallbackFilename);
+
+    const blob = new Blob([response.data], { type: 'application/pdf' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  },
+
+  /**
    * Lista pedidos de venda com paginação e filtros dinâmicos (US-13.4).
    */
   async getOrders(params?: OrderFilterParams): Promise<PageResponse<OrderSummary>> {

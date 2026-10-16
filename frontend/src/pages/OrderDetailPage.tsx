@@ -7,6 +7,7 @@ import {
   useOrder,
   useCancelOrder,
   useDownloadComprovantePdf,
+  useDownloadLabelsPdf,
   OrderDetailHeader,
   useUpdateOrderStatus,
   OrderCancelledAlert,
@@ -25,6 +26,7 @@ export function OrderDetailPage() {
   const { mutate: updateOrderStatus, isPending: isUpdatingStatus } = useUpdateOrderStatus(id);
   const { mutate: downloadPdfTecnico, isPending: isDownloadingPdf } = useDownloadPdfTecnico();
   const { mutate: downloadComprovante, isPending: isDownloadingComprovante } = useDownloadComprovantePdf();
+  const { mutate: downloadLabels, isPending: isDownloadingLabels } = useDownloadLabelsPdf();
 
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
 
@@ -66,6 +68,15 @@ export function OrderDetailPage() {
   const handleDownloadComprovante = () => {
     if (!order) return;
     downloadComprovante({ id: order.id, codigo: order.codigo });
+  };
+
+  /**
+   * Inicia o download das Etiquetas Térmicas de Identificação de Peças em PDF (US-17.4 / #451).
+   * Delega ao hook useDownloadLabelsPdf que cuida do Blob, filename e toast.
+   */
+  const handlePrintLabels = () => {
+    if (!order) return;
+    downloadLabels({ id: order.id, codigo: order.codigo });
   };
 
   const handleConfirmCancel = (data: CancelOrderFormData) => {
@@ -142,11 +153,13 @@ export function OrderDetailPage() {
           isUpdatingStatus={isUpdatingStatus}
           isDownloadingPdf={isDownloadingPdf}
           isDownloadingComprovante={isDownloadingComprovante}
+          isDownloadingLabels={isDownloadingLabels}
           onAdvanceProduction={handleAdvanceProduction}
           onCompleteProduction={handleCompleteProduction}
           onOpenCancelModal={() => setIsCancelModalOpen(true)}
           onPrintTechnicalPdf={handlePrintTechnicalPdf}
           onDownloadComprovante={handleDownloadComprovante}
+          onPrintLabels={handlePrintLabels}
         />
 
         {/* Alerta de Cancelamento com Justificativa */}

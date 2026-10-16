@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, Play, CheckCircle, Ban, FileText, Download, Loader2 } from 'lucide-react';
+import { ArrowLeft, Play, CheckCircle, Ban, FileText, Download, Loader2, Tag } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { Order } from '../types';
 import { OrderStatusBadge } from './OrderStatusBadge';
@@ -8,24 +8,28 @@ interface OrderDetailHeaderProps {
   order: Order;
   isDownloadingPdf?: boolean;
   isDownloadingComprovante?: boolean;
+  isDownloadingLabels?: boolean;
   isUpdatingStatus?: boolean;
   onAdvanceProduction?: () => void;
   onCompleteProduction?: () => void;
   onOpenCancelModal?: () => void;
   onPrintTechnicalPdf?: () => void;
   onDownloadComprovante?: () => void;
+  onPrintLabels?: () => void;
 }
 
 export const OrderDetailHeader: React.FC<OrderDetailHeaderProps> = ({
   order,
   isDownloadingPdf = false,
   isDownloadingComprovante = false,
+  isDownloadingLabels = false,
   isUpdatingStatus = false,
   onAdvanceProduction,
   onCompleteProduction,
   onOpenCancelModal,
   onPrintTechnicalPdf,
   onDownloadComprovante,
+  onPrintLabels,
 }) => {
   const isAwaitingProduction = order.status === 'CREATED' || order.status === 'WAITING_PRODUCTION';
   const isInProduction = order.status === 'IN_PRODUCTION';
@@ -112,6 +116,25 @@ export const OrderDetailHeader: React.FC<OrderDetailHeaderProps> = ({
               <Download className="w-4 h-4" />
             )}
             <span>{isDownloadingComprovante ? 'Gerando PDF...' : 'Baixar Comprovante PDF'}</span>
+          </button>
+        )}
+
+        {/* Etiquetas Térmicas de Identificação de Peças em PDF (100x60mm) — US-17.4 (#451) */}
+        {order.status !== 'CANCELLED' && (
+          <button
+            type="button"
+            id="btn-download-labels-pdf"
+            data-testid="btn-download-labels-pdf"
+            onClick={onPrintLabels}
+            disabled={isDownloadingLabels}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium text-amber-800 bg-amber-50 hover:bg-amber-100 disabled:opacity-50 rounded-lg border border-amber-200 transition-colors cursor-pointer disabled:cursor-not-allowed"
+          >
+            {isDownloadingLabels ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Tag className="w-4 h-4" />
+            )}
+            <span>{isDownloadingLabels ? 'Gerando Etiquetas...' : 'Imprimir Etiquetas'}</span>
           </button>
         )}
 
