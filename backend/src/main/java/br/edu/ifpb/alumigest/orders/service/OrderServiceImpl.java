@@ -53,18 +53,21 @@ public class OrderServiceImpl implements OrderService {
     private final OrderCodeGenerator orderCodeGenerator;
     private final OrderMapper orderMapper;
     private final OrderPdfService orderPdfService;
+    private final LabelPdfService labelPdfService;
 
     public OrderServiceImpl(
             OrderRepository orderRepository,
             BudgetRepository budgetRepository,
             OrderCodeGenerator orderCodeGenerator,
             OrderMapper orderMapper,
-            OrderPdfService orderPdfService) {
+            OrderPdfService orderPdfService,
+            LabelPdfService labelPdfService) {
         this.orderRepository = orderRepository;
         this.budgetRepository = budgetRepository;
         this.orderCodeGenerator = orderCodeGenerator;
         this.orderMapper = orderMapper;
         this.orderPdfService = orderPdfService;
+        this.labelPdfService = labelPdfService;
     }
 
     @Override
@@ -159,6 +162,20 @@ public class OrderServiceImpl implements OrderService {
                 .orElseThrow(() -> new ResourceNotFoundException(RESOURCE_PEDIDO, id.toString()));
         byte[] bytes = orderPdfService.gerarComprovante(order);
         String filename = "comprovante-" + order.getCodigo().toLowerCase().replace("/", "-") + ".pdf";
+        return new OrderPdfDTO(bytes, filename);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public OrderPdfDTO gerarEtiquetasById(UUID id, UUID itemId) {
+        Order order = orderRepository.findByIdWithDetails(id)
+                .orElseThrow(() -> new ResourceNotFoundException(RESOURCE_PEDIDO, id.toString()));
+        byte[] bytes = labelPdfService.gerarEtiquetas(order, itemId);
+        String codigo = order.getCodigo() != null ? order.getCodigo().replace("/", "-") : id.toString();
+        String filename = "etiquetas-" + codigo + ".pdf";
         return new OrderPdfDTO(bytes, filename);
     }
 
