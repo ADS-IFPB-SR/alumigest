@@ -68,12 +68,12 @@ export const OrderItemList: React.FC<OrderItemListProps> = ({ items = [] }) => {
                     </div>
                   )}
                 </td>
-                <td className="py-3.5 px-3 text-center whitespace-nowrap">
+                <td className="py-3.5 px-3 text-center whitespace-nowrap" data-testid="order-item-dimensions">
                   <span className="inline-block px-2.5 py-1 rounded bg-surface-container-high/60 font-data-mono text-xs text-on-surface font-medium">
                     {item.larguraMm} × {item.alturaMm} mm
                   </span>
                 </td>
-                <td className="py-3.5 px-4">
+                <td className="py-3.5 px-4" data-testid="order-item-specs">
                   <div className="flex flex-col gap-1 text-xs">
                     {item.corAluminio && (
                       <div className="flex items-baseline gap-1.5">
@@ -105,13 +105,13 @@ export const OrderItemList: React.FC<OrderItemListProps> = ({ items = [] }) => {
                     )}
                   </div>
                 </td>
-                <td className="py-3.5 px-2 text-center font-data-mono font-bold text-on-surface text-sm">
+                <td className="py-3.5 px-2 text-center font-data-mono font-bold text-on-surface text-sm" data-testid="order-item-quantity">
                   {item.quantidade}
                 </td>
-                <td className="py-3.5 px-3 text-right font-data-mono text-xs text-on-surface-variant whitespace-nowrap">
+                <td className="py-3.5 px-3 text-right font-data-mono text-xs text-on-surface-variant whitespace-nowrap" data-testid="order-item-unit-price">
                   {formatBRL(item.valorUnitario)}
                 </td>
-                <td className="py-3.5 px-4 text-right font-data-mono font-bold text-sm text-on-surface whitespace-nowrap">
+                <td className="py-3.5 px-4 text-right font-data-mono font-bold text-sm text-on-surface whitespace-nowrap" data-testid="order-item-total-price">
                   {formatBRL(item.valorTotal)}
                 </td>
               </tr>
