@@ -63,6 +63,31 @@ public interface OrderService {
     OrderPdfDTO gerarComprovanteById(UUID id);
 
     /**
+     * Gera o documento PDF contendo etiquetas térmicas (100x60mm) para identificação
+     * das peças da Ordem de Serviço / Pedido de Venda, com suporte a filtro opcional por item.
+     *
+     * @param id     Identificador único (UUID) do pedido
+     * @param itemId Identificador opcional (UUID) de um item específico para filtragem de etiquetas
+     * @return DTO contendo os bytes do PDF e o nome do arquivo para download
+     * @throws br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException se o pedido ou item não for encontrado
+     * @throws br.edu.ifpb.alumigest.common.exception.BusinessException         se a ordem não contiver itens válidos
+     */
+    OrderPdfDTO gerarEtiquetasById(UUID id, UUID itemId);
+
+    /**
+     * Gera o documento PDF contendo etiquetas térmicas (100x60mm) para todas as
+     * peças da Ordem de Serviço / Pedido de Venda.
+     *
+     * @param id Identificador único (UUID) do pedido
+     * @return DTO contendo os bytes do PDF e o nome do arquivo para download
+     * @throws br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException se o pedido não for encontrado
+     * @throws br.edu.ifpb.alumigest.common.exception.BusinessException         se a ordem não contiver itens válidos
+     */
+    default OrderPdfDTO gerarEtiquetasById(UUID id) {
+        return gerarEtiquetasById(id, null);
+    }
+
+    /**
      * Lista pedidos de venda de forma paginada com suporte a filtros dinâmicos.
      *
      * @param status   filtro opcional por status do pedido

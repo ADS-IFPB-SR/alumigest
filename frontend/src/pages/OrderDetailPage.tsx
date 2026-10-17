@@ -7,6 +7,7 @@ import {
   useOrder,
   useCancelOrder,
   useDownloadComprovantePdf,
+  useDownloadLabelsPdf,
   OrderDetailHeader,
   useUpdateOrderStatus,
   OrderCancelledAlert,
@@ -15,6 +16,7 @@ import {
   OrderFinancialSummaryCard,
   OrderItemList,
   CancelOrderModal,
+  ThermalLabelModal,
   type CancelOrderFormData,
 } from '../features/orders';
 
@@ -25,8 +27,10 @@ export function OrderDetailPage() {
   const { mutate: updateOrderStatus, isPending: isUpdatingStatus } = useUpdateOrderStatus(id);
   const { mutate: downloadPdfTecnico, isPending: isDownloadingPdf } = useDownloadPdfTecnico();
   const { mutate: downloadComprovante, isPending: isDownloadingComprovante } = useDownloadComprovantePdf();
+  const { mutate: downloadLabels, isPending: isDownloadingLabels } = useDownloadLabelsPdf();
 
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [isThermalModalOpen, setIsThermalModalOpen] = useState(false);
 
   const handleAdvanceProduction = () => {
     updateOrderStatus('IN_PRODUCTION', {
@@ -66,6 +70,15 @@ export function OrderDetailPage() {
   const handleDownloadComprovante = () => {
     if (!order) return;
     downloadComprovante({ id: order.id, codigo: order.codigo });
+  };
+
+  /**
+   * Inicia o download das Etiquetas Térmicas de Identificação de Peças em PDF (US-17.4 / #451).
+   * Delega ao hook useDownloadLabelsPdf que cuida do Blob, filename e toast.
+   */
+  const handlePrintLabels = () => {
+    if (!order) return;
+    downloadLabels({ id: order.id, codigo: order.codigo });
   };
 
   const handleConfirmCancel = (data: CancelOrderFormData) => {
@@ -142,11 +155,14 @@ export function OrderDetailPage() {
           isUpdatingStatus={isUpdatingStatus}
           isDownloadingPdf={isDownloadingPdf}
           isDownloadingComprovante={isDownloadingComprovante}
+          isDownloadingLabels={isDownloadingLabels}
           onAdvanceProduction={handleAdvanceProduction}
           onCompleteProduction={handleCompleteProduction}
           onOpenCancelModal={() => setIsCancelModalOpen(true)}
           onPrintTechnicalPdf={handlePrintTechnicalPdf}
           onDownloadComprovante={handleDownloadComprovante}
+          onPrintLabels={handlePrintLabels}
+          onOpenThermalModal={() => setIsThermalModalOpen(true)}
         />
 
         {/* Alerta de Cancelamento com Justificativa */}
@@ -177,6 +193,15 @@ export function OrderDetailPage() {
         isSubmitting={isCanceling}
         onClose={() => setIsCancelModalOpen(false)}
         onConfirm={handleConfirmCancel}
+      />
+
+      {/* Modal de Visualização Prévia Contínua de Etiquetas Térmicas (US-17.5) */}
+      <ThermalLabelModal
+        isOpen={isThermalModalOpen}
+        onClose={() => setIsThermalModalOpen(false)}
+        order={order}
+        onDownloadPdf={handlePrintLabels}
+        isDownloadingPdf={isDownloadingLabels}
       />
     </div>
   );
