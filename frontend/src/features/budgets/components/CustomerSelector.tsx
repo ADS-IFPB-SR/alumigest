@@ -17,7 +17,7 @@ interface SelectedCustomerCardProps {
 
 const SelectedCustomerCard: React.FC<SelectedCustomerCardProps> = ({ customer, onClear }) => {
   return (
-    <div className="flex items-start justify-between gap-sm bg-surface-container-low p-sm rounded-md border border-primary/30 shadow-xs">
+    <div className="flex items-start justify-between gap-sm bg-surface-container-low p-sm rounded-md border border-primary/30 shadow-xs" data-cy="card-cliente-selecionado">
       <div className="flex items-start gap-sm min-w-0">
         <span className="material-symbols-outlined text-primary text-[26px] mt-[2px] shrink-0">
           account_circle
@@ -49,6 +49,7 @@ const SelectedCustomerCard: React.FC<SelectedCustomerCardProps> = ({ customer, o
         className="shrink-0 p-xs text-on-surface-variant hover:text-error hover:bg-error/10 rounded-md transition-colors"
         title="Trocar ou remover cliente"
         aria-label="Trocar cliente"
+        data-cy="btn-limpar-cliente"
       >
         <span className="material-symbols-outlined text-[18px]">close</span>
       </button>
@@ -94,11 +95,12 @@ const CustomerSearchResultsDropdown: React.FC<CustomerDropdownProps> = ({
 
     return (
       <div className="p-md text-center text-sm text-on-surface-variant font-body">
-        <p className="text-xs">{emptyMessage}</p>
+        <p className="text-xs" data-cy="msg-nenhum-cliente">{emptyMessage}</p>
         <button
           type="button"
           onClick={onOpenCreateModal}
           className="mt-sm text-primary text-xs hover:underline font-label font-semibold flex items-center gap-xs mx-auto"
+          data-cy="btn-cadastrar-novo-cliente-empty"
         >
           <span className="material-symbols-outlined text-[16px]">add_circle</span>
           Cadastrar {buttonText} agora
@@ -108,7 +110,7 @@ const CustomerSearchResultsDropdown: React.FC<CustomerDropdownProps> = ({
   }
 
   return (
-    <div>
+    <div data-cy="dropdown-lista-clientes">
       <div className="px-sm py-xs bg-surface-container-low border-b border-outline-variant/60 text-[11px] font-label text-on-surface-variant uppercase tracking-wider">
         Clientes Cadastrados ({customers.length})
       </div>
@@ -118,6 +120,7 @@ const CustomerSearchResultsDropdown: React.FC<CustomerDropdownProps> = ({
           type="button"
           onClick={() => onSelect(customer)}
           className="w-full flex items-start gap-sm px-md py-sm hover:bg-primary/5 hover:text-primary transition-colors border-b border-outline-variant/40 last:border-0 text-left group"
+          data-cy="dropdown-opcao-cliente"
         >
           <span className="material-symbols-outlined text-secondary group-hover:text-primary text-[20px] mt-[2px] shrink-0">
             person
@@ -282,12 +285,14 @@ export const CustomerSelector: React.FC<CustomerSelectorProps> = ({
                   className={`w-full pl-xl pr-sm py-sm bg-surface-container-lowest border rounded-sm font-body-sm text-body-sm text-on-surface focus:border-primary focus:outline-none transition-all ${
                     error ? 'border-error' : 'border-outline-variant'
                   }`}
+                  data-cy="input-busca-cliente"
                 />
               </div>
               <button
                 type="button"
                 onClick={() => setIsCreateModalOpen(true)}
                 className="shrink-0 flex items-center gap-xs px-md py-sm bg-primary text-on-primary rounded-sm text-xs font-label font-semibold hover:opacity-90 transition-opacity whitespace-nowrap shadow-xs"
+                data-cy="btn-novo-cliente"
               >
                 <span className="material-symbols-outlined text-[16px]">person_add</span>
                 <span>Novo Cliente</span>

@@ -422,6 +422,7 @@ export const BudgetEditor: React.FC = () => {
                   onClick={handleOpenBuilder}
                   disabled={!form.customerId}
                   id="btn-add-window"
+                  data-cy="btn-adicionar-esquadria"
                   title={
                     !form.customerId
                       ? 'Selecione um cliente para adicionar esquadrias'
