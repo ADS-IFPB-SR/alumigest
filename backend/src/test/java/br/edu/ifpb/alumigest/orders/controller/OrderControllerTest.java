@@ -385,7 +385,7 @@ class OrderControllerTest {
       UUID orderId = UUID.randomUUID();
       OrderResponse response = buildResponse(orderId, OrderStatus.IN_PRODUCTION, null);
 
-      when(orderService.updateStatus(eq(orderId), eq(OrderStatus.IN_PRODUCTION)))
+      when(orderService.updateStatus(orderId, OrderStatus.IN_PRODUCTION))
           .thenReturn(response);
 
       mockMvc.perform(patch("/api/orders/{id}/production-status", orderId)
@@ -403,7 +403,7 @@ class OrderControllerTest {
       LocalDate hoje = LocalDate.now();
       OrderResponse response = buildResponse(orderId, OrderStatus.COMPLETED, hoje);
 
-      when(orderService.updateStatus(eq(orderId), eq(OrderStatus.COMPLETED)))
+      when(orderService.updateStatus(orderId, OrderStatus.COMPLETED))
           .thenReturn(response);
 
       mockMvc.perform(patch("/api/v1/orders/{id}/production-status", orderId)
@@ -420,7 +420,7 @@ class OrderControllerTest {
       UUID orderId = UUID.randomUUID();
       OrderResponse response = buildResponse(orderId, OrderStatus.IN_PRODUCTION, null);
 
-      when(orderService.updateStatus(eq(orderId), eq(OrderStatus.IN_PRODUCTION)))
+      when(orderService.updateStatus(orderId, OrderStatus.IN_PRODUCTION))
           .thenReturn(response);
 
       mockMvc.perform(patch("/api/v1/orders/{id}/production-status", orderId)
@@ -433,7 +433,7 @@ class OrderControllerTest {
     @DisplayName("Deve retornar 422 UNPROCESSABLE ENTITY quando transição for inválida")
     void shouldReturn422WhenTransitionIsInvalid() throws Exception {
       UUID orderId = UUID.randomUUID();
-      when(orderService.updateStatus(eq(orderId), eq(OrderStatus.COMPLETED)))
+      when(orderService.updateStatus(orderId, OrderStatus.COMPLETED))
           .thenThrow(new BusinessException("Apenas pedidos em produção podem ser concluídos."));
 
       mockMvc.perform(patch("/api/orders/{id}/production-status", orderId)
