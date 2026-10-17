@@ -128,9 +128,6 @@ describe('US-14.2 / #431: Testes E2E — Imutabilidade Cadastral e Estrutural da
 
     // Garante ausência de botões genéricos de ação dentro do contêiner da listagem de itens
     cy.get('[data-testid="order-items-container"]').find('button').should('not.exist');
-
-    // Captura evidência visual
-    cy.screenshot('cenario-1-ausencia-acoes-mutaveis');
   });
 
   it('Cenário 2: Validar que todos os campos de medidas, materiais e preços estão em modo somente leitura', () => {
@@ -204,9 +201,6 @@ describe('US-14.2 / #431: Testes E2E — Imutabilidade Cadastral e Estrutural da
         .should('be.visible')
         .and('contain.text', '2.400,00');
     });
-
-    // Captura evidência visual
-    cy.screenshot('cenario-2-modo-somente-leitura');
   });
 
   it('Cenário 3: Validar que a única ação de alteração contratual disponível é o Cancelamento', () => {
@@ -246,9 +240,6 @@ describe('US-14.2 / #431: Testes E2E — Imutabilidade Cadastral e Estrutural da
     cy.get('[data-testid="cancel-order-modal"]').find('button[type="submit"]').click();
     cy.contains(/mínimo 10 caracteres/i).should('be.visible');
 
-    // Captura evidência visual do modal com validação de erro
-    cy.screenshot('cenario-3-modal-cancelamento-validacao');
-
     // 3.2 Fluxo positivo: preencher justificativa formal e confirmar cancelamento para renegociação
     const justificativaValida =
       'Cliente solicitou alteração no modelo da esquadria e nova negociação comercial.';
@@ -274,9 +265,6 @@ describe('US-14.2 / #431: Testes E2E — Imutabilidade Cadastral e Estrutural da
     // Mesmo com o cancelamento efetivado, as esquadrias contratadas mantêm total integridade documental
     cy.get('[data-testid="order-items-container"]').should('be.visible');
     cy.get('[data-testid="order-item-dimensions"]').first().should('contain.text', '1500 × 1200 mm');
-
-    // Captura evidência visual do cancelamento formal concluído
-    cy.screenshot('cenario-3-fluxo-completo-cancelamento-renegociacao');
   });
 
   it('Cenário 4: Validar blindagem progressiva e bloqueio de cancelamento em status IN_PRODUCTION', () => {
@@ -305,9 +293,6 @@ describe('US-14.2 / #431: Testes E2E — Imutabilidade Cadastral e Estrutural da
     cy.get('[data-testid="order-items-container"]')
       .find('input, select, textarea, button')
       .should('not.exist');
-
-    // Captura evidência visual
-    cy.screenshot('cenario-4-bloqueio-cancelamento-producao');
   });
 
   it('Cenário 5: Validar preservação da imutabilidade nos status terminais COMPLETED e CANCELLED', () => {
@@ -361,8 +346,5 @@ describe('US-14.2 / #431: Testes E2E — Imutabilidade Cadastral e Estrutural da
       cy.get('[data-testid="order-item-dimensions"]').should('contain.text', '1500 × 1200 mm');
       cy.get('[data-testid="order-item-total-price"]').should('contain.text', '4.400,00');
     });
-
-    // Captura evidência visual
-    cy.screenshot('cenario-5-status-terminais-imutabilidade');
   });
 });
