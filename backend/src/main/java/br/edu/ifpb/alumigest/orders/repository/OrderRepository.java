@@ -3,9 +3,11 @@ package br.edu.ifpb.alumigest.orders.repository;
 import br.edu.ifpb.alumigest.orders.domain.ApprovalChannel;
 import br.edu.ifpb.alumigest.orders.domain.Order;
 import br.edu.ifpb.alumigest.orders.domain.OrderStatus;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -31,12 +33,45 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
   Page<Order> findAllByOrderByCreatedAtDesc(Pageable pageable);
 
   /**
-   * Busca o pedido com o código mais recente por prefixo anual (ex: "OS-2026-").
+   * Busca os códigos recentes por prefixo anual ordenados numericamente
+   * (maior comprimento de string primeiro, seguido de maior valor lexicográfico).
+   * Garante que "OS-2026-10000" preceda "OS-2026-9999".
    *
    * @param prefix Prefixo anual do código (ex: "OS-2026-")
-   * @return Pedido mais recente com o prefixo
+   * @param pageable Limite e paginação da busca
+   * @return Lista de códigos encontrados
    */
-  Optional<Order> findTopByCodigoStartingWithOrderByCodigoDesc(String prefix);
+  @Query("""
+        SELECT o.codigo FROM Order o
+        WHERE o.codigo LIKE CONCAT(:prefix, '%')
+        ORDER BY LENGTH(o.codigo) DESC, o.codigo DESC
+      """)
+  List<String> findRecentCodigosByPrefix(@Param("prefix") String prefix, Pageable pageable);
+
+  /**
+   * Busca pedidos recentes por prefixo anual com ordenação numérica.
+   *
+   * @param prefix Prefixo anual do código (ex: "OS-2026-")
+   * @param pageable Limite e paginação da busca
+   * @return Lista de pedidos ordenados
+   */
+  @Query("""
+        SELECT o FROM Order o
+        WHERE o.codigo LIKE CONCAT(:prefix, '%')
+        ORDER BY LENGTH(o.codigo) DESC, o.codigo DESC
+      """)
+  List<Order> findTopOrdersByPrefix(@Param("prefix") String prefix, Pageable pageable);
+
+  /**
+   * Busca o pedido com o código mais recente por prefixo anual,
+   * delegando para consulta ordenada por comprimento numérico.
+   *
+   * @param prefix Prefixo anual do código (ex: "OS-2026-")
+   * @return Pedido mais recente
+   */
+  default Optional<Order> findTopByCodigoStartingWithOrderByCodigoDesc(String prefix) {
+    return findTopOrdersByPrefix(prefix, PageRequest.of(0, 1)).stream().findFirst();
+  }
 
   @Query("""
         SELECT o FROM Order o
