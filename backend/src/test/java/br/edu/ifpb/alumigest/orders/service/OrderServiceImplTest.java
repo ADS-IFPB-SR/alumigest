@@ -514,8 +514,8 @@ class OrderServiceImplTest {
     }
 
     @Test
-    @DisplayName("[US-15.1] Deve rejeitar destino de status não permitido")
-    void shouldThrowConflictExceptionWhenTargetStatusIsNotAllowed() {
+    @DisplayName("[US-18.1] Deve rejeitar destino de status não permitido com BusinessException")
+    void shouldThrowBusinessExceptionWhenTargetStatusIsNotAllowed() {
         // Arrange
         Order order = buildSavedOrder();
 
@@ -525,13 +525,13 @@ class OrderServiceImplTest {
         assertThatThrownBy(() ->
                 orderService.updateStatus(orderId, OrderStatus.WAITING_PRODUCTION)
         )
-                .isInstanceOf(ConflictException.class);
+                .isInstanceOf(BusinessException.class);
 
         verify(orderRepository, never()).save(any());
     }
 
     @Test
-    @DisplayName("[US-15.1] Deve rejeitar conclusão quando pedido ainda não está em produção")
+    @DisplayName("[US-18.1] Deve rejeitar conclusão quando pedido ainda não está em produção")
     void shouldRejectCompletionWhenOrderIsNotInProduction() {
         // Arrange
         Order order = buildSavedOrder();
@@ -542,18 +542,19 @@ class OrderServiceImplTest {
         assertThatThrownBy(() ->
                 orderService.updateStatus(orderId, OrderStatus.COMPLETED)
         )
-                .isInstanceOf(ConflictException.class);
+                .isInstanceOf(BusinessException.class);
 
         verify(orderRepository, never()).save(any());
     }
 
     @Test
-    @DisplayName("[US-15.1] Deve rejeitar início de produção quando pedido já está concluído")
+    @DisplayName("[US-18.1] Deve rejeitar início de produção quando pedido já está concluído")
     void shouldRejectStartingProductionWhenOrderIsAlreadyCompleted() {
         // Arrange
         Order order = buildSavedOrder();
         order.iniciarProducao();
-        order.concluir(LocalDate.now(ZoneOffset.UTC));
+        LocalDate dataConclusao = LocalDate.now(ZoneOffset.UTC);
+        order.concluir(dataConclusao);
 
         given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
 
@@ -561,7 +562,7 @@ class OrderServiceImplTest {
         assertThatThrownBy(() ->
                 orderService.updateStatus(orderId, OrderStatus.IN_PRODUCTION)
         )
-                .isInstanceOf(ConflictException.class);
+                .isInstanceOf(BusinessException.class);
 
         verify(orderRepository, never()).save(any());
     }

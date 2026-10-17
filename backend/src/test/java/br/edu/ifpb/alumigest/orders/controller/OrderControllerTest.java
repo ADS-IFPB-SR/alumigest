@@ -342,4 +342,154 @@ class OrderControllerTest {
           .andExpect(jsonPath("$.message").value("Não é possível cancelar um pedido no status Em Produção"));
     }
   }
+
+  @Nested
+  @DisplayName("PATCH /api/orders/{id}/production-status - Atualização de Status Kanban (US-18.1)")
+  class UpdateProductionStatusEndpointTests {
+
+    private OrderResponse buildResponse(UUID id, OrderStatus status, LocalDate dataConclusao) {
+      return new OrderResponse(
+          id,
+          "OS-2026-0001",
+          UUID.randomUUID(),
+          null,
+          "Cliente Teste",
+          "(83) 98888-7777",
+          "Av. Central, 500",
+          status,
+          status.getDescricao(),
+          ApprovalChannel.WHATSAPP,
+          "WhatsApp",
+          LocalDate.now(),
+          LocalDate.now().plusDays(15),
+          dataConclusao,
+          new BigDecimal("2500.00"),
+          BigDecimal.ZERO,
+          BigDecimal.ZERO,
+          BigDecimal.ZERO,
+          new BigDecimal("2500.00"),
+          "A vista",
+          null,
+          "Sem observacoes",
+          null,
+          OffsetDateTime.now(),
+          OffsetDateTime.now(),
+          true,
+          Collections.emptyList()
+      );
+    }
+
+    @Test
+    @DisplayName("Deve retornar 200 OK ao atualizar status para IN_PRODUCTION via JSON body")
+    void shouldReturn200WhenUpdatingToInProductionViaBody() throws Exception {
+      UUID orderId = UUID.randomUUID();
+      OrderResponse response = buildResponse(orderId, OrderStatus.IN_PRODUCTION, null);
+
+      when(orderService.updateStatus(orderId, OrderStatus.IN_PRODUCTION))
+          .thenReturn(response);
+
+      mockMvc.perform(patch("/api/orders/{id}/production-status", orderId)
+              .contentType(MediaType.APPLICATION_JSON)
+              .content("{\"status\":\"IN_PRODUCTION\"}"))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.id").value(orderId.toString()))
+          .andExpect(jsonPath("$.status").value("IN_PRODUCTION"));
+    }
+
+    @Test
+    @DisplayName("Deve retornar 200 OK ao atualizar para COMPLETED preenchendo dataConclusao")
+    void shouldReturn200WhenUpdatingToCompletedWithDataConclusao() throws Exception {
+      UUID orderId = UUID.randomUUID();
+      LocalDate hoje = LocalDate.now();
+      OrderResponse response = buildResponse(orderId, OrderStatus.COMPLETED, hoje);
+
+      when(orderService.updateStatus(orderId, OrderStatus.COMPLETED))
+          .thenReturn(response);
+
+      mockMvc.perform(patch("/api/v1/orders/{id}/production-status", orderId)
+              .contentType(MediaType.APPLICATION_JSON)
+              .content("{\"status\":\"COMPLETED\"}"))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.status").value("COMPLETED"))
+          .andExpect(jsonPath("$.dataConclusao").value(hoje.toString()));
+    }
+
+    @Test
+    @DisplayName("Deve retornar 200 OK ao atualizar status via query param status")
+    void shouldReturn200WhenUpdatingViaQueryParam() throws Exception {
+      UUID orderId = UUID.randomUUID();
+      OrderResponse response = buildResponse(orderId, OrderStatus.IN_PRODUCTION, null);
+
+      when(orderService.updateStatus(orderId, OrderStatus.IN_PRODUCTION))
+          .thenReturn(response);
+
+      mockMvc.perform(patch("/api/v1/orders/{id}/production-status", orderId)
+              .param("status", "IN_PRODUCTION"))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.status").value("IN_PRODUCTION"));
+    }
+
+    @Test
+    @DisplayName("Deve retornar 422 UNPROCESSABLE ENTITY quando transição for inválida")
+    void shouldReturn422WhenTransitionIsInvalid() throws Exception {
+      UUID orderId = UUID.randomUUID();
+      when(orderService.updateStatus(orderId, OrderStatus.COMPLETED))
+          .thenThrow(new BusinessException("Apenas pedidos em produção podem ser concluídos."));
+
+      mockMvc.perform(patch("/api/orders/{id}/production-status", orderId)
+              .contentType(MediaType.APPLICATION_JSON)
+              .content("{\"status\":\"COMPLETED\"}"))
+          .andExpect(status().isUnprocessableEntity())
+          .andExpect(jsonPath("$.status").value(422))
+          .andExpect(jsonPath("$.message")
+              .value("Apenas pedidos em produção podem ser concluídos."));
+    }
+
+    @Test
+    @DisplayName("Deve retornar 404 NOT FOUND quando pedido não for encontrado")
+    void shouldReturn404WhenOrderNotFound() throws Exception {
+      UUID orderId = UUID.randomUUID();
+      when(orderService.updateStatus(eq(orderId), any(OrderStatus.class)))
+          .thenThrow(new ResourceNotFoundException("Pedido", orderId));
+
+      mockMvc.perform(patch("/api/orders/{id}/production-status", orderId)
+              .contentType(MediaType.APPLICATION_JSON)
+              .content("{\"status\":\"IN_PRODUCTION\"}"))
+          .andExpect(status().isNotFound())
+          .andExpect(jsonPath("$.status").value(404));
+    }
+
+    @Test
+    @DisplayName("Deve retornar 400 BAD REQUEST quando status não for informado")
+    void shouldReturn400WhenStatusIsMissing() throws Exception {
+      UUID orderId = UUID.randomUUID();
+
+      mockMvc.perform(patch("/api/orders/{id}/production-status", orderId))
+          .andExpect(status().isBadRequest())
+          .andExpect(jsonPath("$.status").value(400));
+    }
+
+    @Test
+    @DisplayName("Deve retornar 400 BAD REQUEST quando status for inválido no JSON body")
+    void shouldReturn400WhenStatusIsInvalidInJsonBody() throws Exception {
+      UUID orderId = UUID.randomUUID();
+
+      mockMvc.perform(patch("/api/orders/{id}/production-status", orderId)
+              .contentType(MediaType.APPLICATION_JSON)
+              .content("{\"status\":\"STATUS_INEXISTENTE\"}"))
+          .andExpect(status().isBadRequest())
+          .andExpect(jsonPath("$.status").value(400));
+    }
+
+    @Test
+    @DisplayName("Deve retornar 400 BAD REQUEST quando status for inválido via query param")
+    void shouldReturn400WhenStatusIsInvalidInQueryParam() throws Exception {
+      UUID orderId = UUID.randomUUID();
+
+      mockMvc.perform(patch("/api/orders/{id}/production-status", orderId)
+              .param("status", "STATUS_INEXISTENTE"))
+          .andExpect(status().isBadRequest())
+          .andExpect(jsonPath("$.status").value(400));
+    }
+  }
 }
