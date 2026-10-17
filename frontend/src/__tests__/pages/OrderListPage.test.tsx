@@ -349,6 +349,51 @@ describe('OrderListPage — [US-13.4] Listagem Paginada de Pedidos de Venda', ()
     expect(screen.queryByRole('button', { name: 'Ir para página 8' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Ir para página 9' })).not.toBeInTheDocument();
   });
+
+  it('deve renderizar reticências com chaves distintas sem aviso de chave duplicada no console (#443 / BUG-046)', () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error');
+
+    vi.spyOn(useOrdersModule, 'useOrders').mockReturnValue({
+      data: {
+        content: mockSummaries,
+        totalElements: 150,
+        totalPages: 15,
+        page: {
+          totalElements: 150,
+          totalPages: 15,
+          size: 10,
+          number: 6,
+        },
+      },
+      isLoading: false,
+      isError: false,
+    } as any);
+
+    render(
+      <MemoryRouter>
+        <OrderListPage />
+      </MemoryRouter>
+    );
+
+    const nextBtn = screen.getByRole('button', { name: /Próxima página/i });
+    // Navega 5 vezes para atingir página 6 (page = 5), onde ambas as reticências são renderizadas
+    for (let i = 0; i < 5; i++) {
+      fireEvent.click(nextBtn);
+    }
+
+    // Deve conter ambas as reticências distintas no DOM
+    const startEllipsis = screen.getByTestId('pagination-ellipsis-start');
+    const endEllipsis = screen.getByTestId('pagination-ellipsis-end');
+
+    expect(startEllipsis).toBeInTheDocument();
+    expect(endEllipsis).toBeInTheDocument();
+
+    // Valida que o React não emitiu aviso de chave duplicada
+    const duplicateKeyWarnings = consoleErrorSpy.mock.calls.filter(call =>
+      call.some(arg => typeof arg === 'string' && arg.includes('Encountered two children with the same key'))
+    );
+    expect(duplicateKeyWarnings).toHaveLength(0);
+  });
 });
 
 describe('getVisiblePages (função pura de paginação)', () => {
@@ -373,5 +418,14 @@ describe('getVisiblePages (função pura de paginação)', () => {
     expect(getVisiblePages(8, 10)).toEqual([0, 'ellipsis-start', 7, 8, 9]);
     expect(getVisiblePages(9, 10)).toEqual([0, 'ellipsis-start', 8, 9]);
   });
+
+  it('deve retornar chaves distintas ellipsis-start e ellipsis-end para reticências nos dois lados (#443)', () => {
+    const pages = getVisiblePages(5, 12);
+    expect(pages).toContain('ellipsis-start');
+    expect(pages).toContain('ellipsis-end');
+    expect(pages.filter(p => p === 'ellipsis-start')).toHaveLength(1);
+    expect(pages.filter(p => p === 'ellipsis-end')).toHaveLength(1);
+  });
 });
+
 

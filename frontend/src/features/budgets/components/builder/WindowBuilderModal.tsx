@@ -271,7 +271,7 @@ export const WindowBuilderModal: React.FC<WindowBuilderModalProps> = ({
                 Próximo
               </Button>
             ) : (
-              <Button variant="primary" icon="check" onClick={handleSubmit} className="px-3 sm:px-4 py-1.5 text-xs sm:text-sm">
+              <Button id="btn-adicionar" variant="primary" icon="check" onClick={handleSubmit} className="px-3 sm:px-4 py-1.5 text-xs sm:text-sm">
                 {editingItem ? 'Salvar' : 'Adicionar'}
               </Button>
             )}
