@@ -8,6 +8,7 @@ import br.edu.ifpb.alumigest.orders.dto.OrderCancelRequest;
 import br.edu.ifpb.alumigest.orders.dto.OrderConvertRequest;
 import br.edu.ifpb.alumigest.orders.dto.OrderPdfDTO;
 import br.edu.ifpb.alumigest.orders.dto.OrderResponse;
+import br.edu.ifpb.alumigest.orders.dto.OrderStatusUpdateRequest;
 import br.edu.ifpb.alumigest.orders.dto.OrderSummaryResponse;
 import br.edu.ifpb.alumigest.orders.service.OrderService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -41,7 +42,7 @@ import java.util.UUID;
  * Depende da abstração {@link OrderService}, nunca da implementação concreta (DIP).
  */
 @RestController
-@RequestMapping({"/api/v1/orders", "/api/v1/ordens-servico"})
+@RequestMapping({"/api/v1/orders", "/api/v1/ordens-servico", "/api/orders"})
 @Tag(name = "Ordens de Serviço", description = "Endpoints para consulta, criação, conversão e ciclo de vida de ordens de serviço (pedidos de venda)")
 public class OrderController {
 
@@ -230,12 +231,65 @@ public class OrderController {
                 .body(pdfDto.bytes());
     }
 
-    @PatchMapping("/{id}/status")
+    /**
+     * Atualiza o status de produção do pedido (máquina de estados do Kanban).
+     * Suporta a transição: WAITING_PRODUCTION -> IN_PRODUCTION -> COMPLETED.
+     * Ao transicionar para CONCLUIDO, preenche automaticamente a data de conclusão.
+     * Rejeita transições inválidas com HTTP 422 Unprocessable Entity. US-18.1 (#143).
+     *
+     * @param id          identificador único do pedido
+     * @param request     payload com novo status (opcional se fornecido via query param)
+     * @param statusParam parâmetro de query com novo status (opcional se no body)
+     * @return 200 OK com o pedido atualizado
+     */
+    @PatchMapping({"/{id}/production-status", "/{id}/status"})
+    @Operation(
+            summary = "Atualizar status de produção do pedido (Kanban)",
+            description = "Atualiza o status de produção do pedido seguindo o fluxo: "
+                    + "WAITING_PRODUCTION -> IN_PRODUCTION -> COMPLETED. "
+                    + "Rejeita transições inválidas com HTTP 422 Unprocessable Entity. "
+                    + "Ao avançar para COMPLETED, preenche automaticamente a data_conclusao."
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Status de produção atualizado com sucesso",
+            content = @Content(schema = @Schema(implementation = OrderResponse.class))
+    )
+    @ApiResponse(
+            responseCode = "400",
+            description = "Status de destino ausente ou inválido",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+    )
+    @ApiResponse(
+            responseCode = "404",
+            description = "Pedido não encontrado",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+    )
+    @ApiResponse(
+            responseCode = "422",
+            description = "Transição de status inválida ou violação de regra de negócio fabril",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+    )
     public ResponseEntity<OrderResponse> updateStatus(
+            @Parameter(description = "Identificador único (UUID) do pedido", required = true)
             @PathVariable UUID id,
-            @RequestParam OrderStatus status
-    ) {
-        return ResponseEntity.ok(orderService.updateStatus(id, status));
+            @RequestBody(required = false) @Valid OrderStatusUpdateRequest request,
+            @Parameter(description = "Novo status de produção via query param",
+                    example = "IN_PRODUCTION")
+            @RequestParam(name = "status", required = false) String statusParam) {
+
+        OrderStatus targetStatus = null;
+        if (request != null && request.status() != null) {
+            targetStatus = request.status();
+        } else if (statusParam != null && !statusParam.isBlank()) {
+            targetStatus = OrderStatus.fromString(statusParam);
+        }
+
+        if (targetStatus == null) {
+            throw new IllegalArgumentException("O status de destino é obrigatório.");
+        }
+
+        return ResponseEntity.ok(orderService.updateStatus(id, targetStatus));
     }
 
     /**
