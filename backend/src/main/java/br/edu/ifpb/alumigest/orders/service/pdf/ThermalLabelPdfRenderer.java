@@ -7,8 +7,11 @@ import com.lowagie.text.FontFactory;
 import com.lowagie.text.Paragraph;
 import com.lowagie.text.Phrase;
 import com.lowagie.text.Rectangle;
+import com.lowagie.text.pdf.PdfContentByte;
 import com.lowagie.text.pdf.PdfPCell;
+import com.lowagie.text.pdf.PdfPCellEvent;
 import com.lowagie.text.pdf.PdfPTable;
+import com.lowagie.text.pdf.PdfPTableEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -41,8 +44,6 @@ public class ThermalLabelPdfRenderer {
 
     private static final Font FONTE_DESCRICAO =
             FontFactory.getFont(FontFactory.HELVETICA_BOLD, 7.5f, new Color(15, 23, 42));
-    private static final Font FONTE_GRUPO_LINHA =
-            FontFactory.getFont(FontFactory.HELVETICA_BOLD, 6.0f, new Color(30, 41, 59));
 
     private static final Font FONTE_MEDIDAS_TITULO =
             FontFactory.getFont(FontFactory.HELVETICA_BOLD, 5.0f, new Color(71, 85, 105));
@@ -60,10 +61,8 @@ public class ThermalLabelPdfRenderer {
             FontFactory.getFont(FontFactory.HELVETICA_BOLD, 6.0f, new Color(15, 23, 42));
 
     private static final Color COR_BORDA_CARD = new Color(15, 23, 42);
-    private static final Color COR_DIVISORIA = new Color(226, 232, 240);
     private static final Color COR_FUNDO_MEDIDAS = new Color(241, 245, 249);
     private static final Color COR_FUNDO_BADGE = new Color(15, 23, 42);
-    private static final Color COR_FUNDO_PILL = new Color(241, 245, 249);
 
     /**
      * Renderiza o card completo da etiqueta térmica a partir do snapshot de dados.
@@ -77,59 +76,60 @@ public class ThermalLabelPdfRenderer {
         card.setTotalWidth(larguraUtilPt);
         card.setLockedWidth(true);
         card.setKeepTogether(true);
+        card.setTableEvent(new BordaArredondadaCardEvent(6.0f, COR_BORDA_CARD, 1.0f));
 
-        // 1. Linha do Cabeçalho
-        PdfPCell c1 = criarLinhaCard(Rectangle.TOP | Rectangle.LEFT | Rectangle.RIGHT);
-        c1.setPaddingTop(2.0f);
-        c1.setPaddingBottom(1.0f);
+        // 1. Linha do Cabeçalho com borda inferior
+        PdfPCell c1 = criarLinhaCard(Rectangle.BOTTOM, 1.5f);
+        c1.setPaddingTop(2.5f);
+        c1.setPaddingBottom(1.5f);
         c1.addElement(construirCabecalho(data));
         card.addCell(c1);
 
-        // 2. Linha de Descrição e Linha
-        PdfPCell c2 = criarLinhaCard(Rectangle.LEFT | Rectangle.RIGHT);
-        c2.setPaddingTop(0.5f);
+        // 2. Linha de Descrição
+        PdfPCell c2 = criarLinhaCard(Rectangle.NO_BORDER, 0f);
+        c2.setPaddingTop(1.0f);
         c2.setPaddingBottom(1.0f);
         c2.addElement(construirLinhaDescricao(data));
         card.addCell(c2);
 
         // 3. Linha das Medidas Nominais
-        PdfPCell c3 = criarLinhaCard(Rectangle.LEFT | Rectangle.RIGHT);
-        c3.setPaddingTop(0.5f);
+        PdfPCell c3 = criarLinhaCard(Rectangle.NO_BORDER, 0f);
+        c3.setPaddingTop(1.0f);
         c3.setPaddingBottom(1.0f);
         c3.addElement(construirBlocoMedidas(data));
         card.addCell(c3);
 
         // 4. Linha de Especificações Técnicas (Cor e Vidro)
-        PdfPCell c4 = criarLinhaCard(Rectangle.LEFT | Rectangle.RIGHT);
+        PdfPCell c4 = criarLinhaCard(Rectangle.NO_BORDER, 0f);
         c4.setPaddingTop(0.5f);
         c4.setPaddingBottom(0.5f);
         c4.addElement(construirBlocoEspecificacoes(data));
         card.addCell(c4);
 
         // 5. Linha de Localização / Ambiente
-        PdfPCell c5 = criarLinhaCard(Rectangle.LEFT | Rectangle.RIGHT);
+        PdfPCell c5 = criarLinhaCard(Rectangle.NO_BORDER, 0f);
         c5.setPaddingTop(0.5f);
         c5.setPaddingBottom(1.0f);
         c5.addElement(construirBlocoLocalAmbiente(data));
         card.addCell(c5);
 
-        // 6. Linha do Rodapé Limpo
-        PdfPCell c6 = criarLinhaCard(Rectangle.BOTTOM | Rectangle.LEFT | Rectangle.RIGHT);
-        c6.setPaddingTop(0.5f);
-        c6.setPaddingBottom(2.0f);
+        // 6. Linha do Rodapé Limpo com borda superior
+        PdfPCell c6 = criarLinhaCard(Rectangle.TOP, 1.2f);
+        c6.setPaddingTop(1.0f);
+        c6.setPaddingBottom(2.5f);
         c6.addElement(construirRodape(data));
         card.addCell(c6);
 
         return card;
     }
 
-    private PdfPCell criarLinhaCard(int bordas) {
+    private PdfPCell criarLinhaCard(int bordas, float borderWidth) {
         PdfPCell cell = new PdfPCell();
         cell.setBorder(bordas);
-        cell.setBorderWidth(1.0f);
+        cell.setBorderWidth(borderWidth);
         cell.setBorderColor(COR_BORDA_CARD);
-        cell.setPaddingLeft(4.5f);
-        cell.setPaddingRight(4.5f);
+        cell.setPaddingLeft(5.0f);
+        cell.setPaddingRight(5.0f);
         return cell;
     }
 
@@ -169,12 +169,12 @@ public class ThermalLabelPdfRenderer {
         badgeTable.setWidthPercentage(95);
 
         PdfPCell badgeCell = new PdfPCell(new Phrase(badgeTexto, FONTE_BADGE));
-        badgeCell.setBackgroundColor(COR_FUNDO_BADGE);
+        badgeCell.setBorder(Rectangle.NO_BORDER);
+        badgeCell.setCellEvent(new BordaArredondadaBoxEvent(3.0f, null, 0f, COR_FUNDO_BADGE));
         badgeCell.setHorizontalAlignment(Element.ALIGN_CENTER);
         badgeCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
         badgeCell.setPaddingTop(1.0f);
         badgeCell.setPaddingBottom(1.5f);
-        badgeCell.setBorder(Rectangle.NO_BORDER);
         badgeTable.addCell(badgeCell);
 
         cellDir.addElement(badgeTable);
@@ -184,42 +184,14 @@ public class ThermalLabelPdfRenderer {
     }
 
     private PdfPTable construirLinhaDescricao(ThermalLabelData data) {
-        PdfPTable table = new PdfPTable(2);
+        PdfPTable table = new PdfPTable(1);
         table.setWidthPercentage(100);
-
-        try {
-            table.setWidths(new float[]{76f, 24f});
-        } catch (DocumentException e) {
-            log.warn("Erro ao definir larguras da descrição da esquadria", e);
-        }
 
         PdfPCell cellDesc = new PdfPCell();
         cellDesc.setBorder(Rectangle.NO_BORDER);
         cellDesc.setPadding(0);
         cellDesc.addElement(new Phrase(data.description(), FONTE_DESCRICAO));
         table.addCell(cellDesc);
-
-        PdfPCell cellLinha = new PdfPCell();
-        cellLinha.setBorder(Rectangle.NO_BORDER);
-        cellLinha.setPadding(0);
-        cellLinha.setHorizontalAlignment(Element.ALIGN_RIGHT);
-
-        PdfPTable pillTable = new PdfPTable(1);
-        pillTable.setHorizontalAlignment(Element.ALIGN_RIGHT);
-        pillTable.setWidthPercentage(100);
-
-        PdfPCell pillCell = new PdfPCell(new Phrase(data.lineOrGroup(), FONTE_GRUPO_LINHA));
-        pillCell.setBackgroundColor(COR_FUNDO_PILL);
-        pillCell.setHorizontalAlignment(Element.ALIGN_CENTER);
-        pillCell.setPaddingTop(1.0f);
-        pillCell.setPaddingBottom(1.0f);
-        pillCell.setBorder(Rectangle.BOX);
-        pillCell.setBorderWidth(0.5f);
-        pillCell.setBorderColor(COR_DIVISORIA);
-        pillTable.addCell(pillCell);
-
-        cellLinha.addElement(pillTable);
-        table.addCell(cellLinha);
 
         return table;
     }
@@ -229,10 +201,8 @@ public class ThermalLabelPdfRenderer {
         table.setWidthPercentage(100);
 
         PdfPCell cell = new PdfPCell();
-        cell.setBackgroundColor(COR_FUNDO_MEDIDAS);
-        cell.setBorder(Rectangle.BOX);
-        cell.setBorderWidth(0.7f);
-        cell.setBorderColor(COR_BORDA_CARD);
+        cell.setBorder(Rectangle.NO_BORDER);
+        cell.setCellEvent(new BordaArredondadaBoxEvent(3.5f, COR_BORDA_CARD, 0.7f, COR_FUNDO_MEDIDAS));
         cell.setPaddingTop(1.0f);
         cell.setPaddingBottom(1.5f);
         cell.setHorizontalAlignment(Element.ALIGN_CENTER);
@@ -267,7 +237,7 @@ public class ThermalLabelPdfRenderer {
         cellCor.setBorder(Rectangle.NO_BORDER);
         cellCor.setPadding(0);
         Phrase phraseCor = new Phrase();
-        phraseCor.add(new Phrase("COR: ", FONTE_SPEC_ROTULO));
+        phraseCor.add(new Phrase("COR / ACABAMENTO: ", FONTE_SPEC_ROTULO));
         phraseCor.add(new Phrase(data.aluminumColor(), FONTE_SPEC_VALOR));
         cellCor.addElement(phraseCor);
         table.addCell(cellCor);
@@ -276,7 +246,7 @@ public class ThermalLabelPdfRenderer {
         cellVidro.setBorder(Rectangle.NO_BORDER);
         cellVidro.setPadding(0);
         Phrase phraseVidro = new Phrase();
-        phraseVidro.add(new Phrase("VIDRO: ", FONTE_SPEC_ROTULO));
+        phraseVidro.add(new Phrase("VIDRO ESPECIFICADO: ", FONTE_SPEC_ROTULO));
         phraseVidro.add(new Phrase(data.glassType(), FONTE_SPEC_VALOR));
         cellVidro.addElement(phraseVidro);
         table.addCell(cellVidro);
@@ -302,35 +272,12 @@ public class ThermalLabelPdfRenderer {
     }
 
     private PdfPTable construirRodape(ThermalLabelData data) {
-        PdfPTable table = new PdfPTable(3);
+        PdfPTable table = new PdfPTable(1);
         table.setWidthPercentage(100);
 
-        try {
-            table.setWidths(new float[]{36f, 34f, 30f});
-        } catch (DocumentException e) {
-            log.warn("Erro ao definir larguras do rodapé da etiqueta", e);
-        }
-
-        // Coluna 1: Código do Item
-        PdfPCell cellItem = new PdfPCell();
-        cellItem.setBorder(Rectangle.TOP);
-        cellItem.setBorderWidth(0.8f);
-        cellItem.setBorderColor(COR_BORDA_CARD);
-        cellItem.setPaddingTop(1.5f);
-        cellItem.setPaddingBottom(0);
-
-        Phrase phraseItem = new Phrase();
-        phraseItem.add(new Phrase("CÓD: ", FONTE_RODAPE_ROTULO));
-        phraseItem.add(new Phrase(data.itemCode(), FONTE_RODAPE_VALOR));
-        cellItem.addElement(phraseItem);
-        table.addCell(cellItem);
-
-        // Coluna 2: Data de Emissão
         PdfPCell cellData = new PdfPCell();
-        cellData.setBorder(Rectangle.TOP);
-        cellData.setBorderWidth(0.8f);
-        cellData.setBorderColor(COR_BORDA_CARD);
-        cellData.setPaddingTop(1.5f);
+        cellData.setBorder(Rectangle.NO_BORDER);
+        cellData.setPaddingTop(0.5f);
         cellData.setPaddingBottom(0);
 
         Phrase phraseData = new Phrase();
@@ -339,21 +286,77 @@ public class ThermalLabelPdfRenderer {
         cellData.addElement(phraseData);
         table.addCell(cellData);
 
-        // Coluna 3: Carimbo do Sistema
-        PdfPCell cellMarca = new PdfPCell();
-        cellMarca.setBorder(Rectangle.TOP);
-        cellMarca.setBorderWidth(0.8f);
-        cellMarca.setBorderColor(COR_BORDA_CARD);
-        cellMarca.setPaddingTop(1.5f);
-        cellMarca.setPaddingBottom(0);
-        cellMarca.setHorizontalAlignment(Element.ALIGN_RIGHT);
-
-        Paragraph paragrafoMarca = new Paragraph("ALUMIGEST ERP", FONTE_RODAPE_ROTULO);
-        paragrafoMarca.setLeading(6.5f);
-        paragrafoMarca.setAlignment(Element.ALIGN_RIGHT);
-        cellMarca.addElement(paragrafoMarca);
-        table.addCell(cellMarca);
-
         return table;
+    }
+
+    /**
+     * Evento de renderização de borda externa arredondada para o card completo da etiqueta térmica.
+     */
+    private static class BordaArredondadaCardEvent implements PdfPTableEvent {
+        private final float radius;
+        private final Color borderColor;
+        private final float borderWidth;
+
+        BordaArredondadaCardEvent(float radius, Color borderColor, float borderWidth) {
+            this.radius = radius;
+            this.borderColor = borderColor;
+            this.borderWidth = borderWidth;
+        }
+
+        @Override
+        public void tableLayout(PdfPTable table, float[][] widths, float[] heights,
+                                int headerRows, int rowStart, PdfContentByte[] canvases) {
+            float[] width = widths[0];
+            float x = width[0];
+            float w = width[width.length - 1] - x;
+            float y = heights[heights.length - 1];
+            float h = heights[0] - y;
+
+            PdfContentByte cb = canvases[PdfPTable.LINECANVAS];
+            cb.saveState();
+            cb.setColorStroke(borderColor);
+            cb.setLineWidth(borderWidth);
+            cb.roundRectangle(x, y, w, h, radius);
+            cb.stroke();
+            cb.restoreState();
+        }
+    }
+
+    /**
+     * Evento de renderização de box interno com cantos arredondados (ex: Medidas e Badges).
+     */
+    private static class BordaArredondadaBoxEvent implements PdfPCellEvent {
+        private final float radius;
+        private final Color borderColor;
+        private final float borderWidth;
+        private final Color backgroundColor;
+
+        BordaArredondadaBoxEvent(float radius, Color borderColor,
+                                 float borderWidth, Color backgroundColor) {
+            this.radius = radius;
+            this.borderColor = borderColor;
+            this.borderWidth = borderWidth;
+            this.backgroundColor = backgroundColor;
+        }
+
+        @Override
+        public void cellLayout(PdfPCell cell, Rectangle position, PdfContentByte[] canvases) {
+            PdfContentByte cb = canvases[PdfPTable.BACKGROUNDCANVAS];
+            cb.saveState();
+            if (backgroundColor != null) {
+                cb.setColorFill(backgroundColor);
+                cb.roundRectangle(position.getLeft(), position.getBottom(),
+                        position.getWidth(), position.getHeight(), radius);
+                cb.fill();
+            }
+            if (borderColor != null && borderWidth > 0) {
+                cb.setColorStroke(borderColor);
+                cb.setLineWidth(borderWidth);
+                cb.roundRectangle(position.getLeft(), position.getBottom(),
+                        position.getWidth(), position.getHeight(), radius);
+                cb.stroke();
+            }
+            cb.restoreState();
+        }
     }
 }

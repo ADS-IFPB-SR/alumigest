@@ -164,7 +164,8 @@ class LabelPdfServiceTest {
                 assertThat(pagina1).contains("Item 01 | Peça 01/03");
                 assertThat(pagina1).contains("1200 x 1500 mm");
                 assertThat(pagina1).contains("Preto Anodizado");
-                assertThat(pagina1).contains("Incolor 6mm Temperado");
+                assertThat(pagina1).contains("Incolor 6mm");
+                assertThat(pagina1).contains("Temperado");
 
                 // Página 2: Item 1, Peça 2 de 3
                 assertThat(pagina2).contains("OS-2026-0002");
@@ -176,7 +177,8 @@ class LabelPdfServiceTest {
                 assertThat(pagina3).contains("Item 02 | Peça 03/03");
                 assertThat(pagina3).contains("2000 x 2100 mm");
                 assertThat(pagina3).contains("Branco Anodizado");
-                assertThat(pagina3).contains("Incolor 8mm Temperado");
+                assertThat(pagina3).contains("Incolor 8mm");
+                assertThat(pagina3).contains("Temperado");
             }
         }
 

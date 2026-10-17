@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, Play, CheckCircle, Ban, FileText, Download, Loader2, Tag } from 'lucide-react';
+import { ArrowLeft, Play, CheckCircle, Ban, FileText, Download, Loader2, Tag, Eye } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { Order } from '../types';
 import { OrderStatusBadge } from './OrderStatusBadge';
@@ -16,6 +16,7 @@ interface OrderDetailHeaderProps {
   onPrintTechnicalPdf?: () => void;
   onDownloadComprovante?: () => void;
   onPrintLabels?: () => void;
+  onOpenThermalModal?: () => void;
 }
 
 export const OrderDetailHeader: React.FC<OrderDetailHeaderProps> = ({
@@ -30,6 +31,7 @@ export const OrderDetailHeader: React.FC<OrderDetailHeaderProps> = ({
   onPrintTechnicalPdf,
   onDownloadComprovante,
   onPrintLabels,
+  onOpenThermalModal,
 }) => {
   const isAwaitingProduction = order.status === 'CREATED' || order.status === 'WAITING_PRODUCTION';
   const isInProduction = order.status === 'IN_PRODUCTION';
@@ -135,6 +137,20 @@ export const OrderDetailHeader: React.FC<OrderDetailHeaderProps> = ({
               <Tag className="w-4 h-4" />
             )}
             <span>{isDownloadingLabels ? 'Gerando Etiquetas...' : 'Imprimir Etiquetas'}</span>
+          </button>
+        )}
+
+        {/* Visualização Prévia Contínua no Modal Frontend com Filtro por Item — US-17.5 (#474) */}
+        {order.status !== 'CANCELLED' && onOpenThermalModal && (
+          <button
+            type="button"
+            id="btn-open-thermal-modal"
+            data-testid="btn-open-thermal-modal"
+            onClick={onOpenThermalModal}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg border border-slate-300 transition-colors cursor-pointer"
+          >
+            <Eye className="w-4 h-4" />
+            <span>Visualizar Etiquetas</span>
           </button>
         )}
 
