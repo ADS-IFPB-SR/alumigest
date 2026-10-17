@@ -194,7 +194,8 @@ class OrderTest {
                 .status(OrderStatus.CREATED)
                 .build();
 
-        assertThatThrownBy(() -> order.concluir(LocalDate.now(ZoneOffset.UTC)))
+        LocalDate dataConclusao = LocalDate.now(ZoneOffset.UTC);
+        assertThatThrownBy(() -> order.concluir(dataConclusao))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("Apenas pedidos em produção podem ser concluídos.");
     }
