@@ -2,7 +2,7 @@
 
 **Identificador**: `US-17`  
 **Issue GitHub**: [#142](https://github.com/ADS-IFPB-SR/alumigest/issues/142)  
-**Status**: 🔵 No Backlog (Aguardando Sprint Planning)  
+**Status**: 🟢 Concluída (100% das sub-issues e testes aprovados)  
 
 ---
 
