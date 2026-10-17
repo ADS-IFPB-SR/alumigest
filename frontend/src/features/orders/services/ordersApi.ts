@@ -1,5 +1,10 @@
 import { api } from '../../../lib/api';
 import { extractFilenameFromContentDisposition } from '../../budgets/services/budgetsApi';
+import {
+  demoOrder,
+  demoOrderSummaries,
+  generateDemoThermalLabelsPdf,
+} from '../mocks/demoOrdersData';
 import type {
   Order,
   OrderCancelRequest,
@@ -25,10 +30,25 @@ export interface PageResponse<T> {
 
 export type OrderPageResponse = PageResponse<OrderSummary>;
 
+function isDevBackendOffline(error: any): boolean {
+  if (!import.meta.env.DEV) return false;
+  if (!error?.response) return true;
+  const status = error.response?.status;
+  return typeof status === 'number' && status >= 500;
+}
+
 export const ordersApi = {
   async getOrderById(id: string): Promise<Order> {
-    const response = await api.get<Order>(`/orders/${id}`);
-    return response.data;
+    try {
+      const response = await api.get<Order>(`/orders/${id}`);
+      return response.data;
+    } catch (error: any) {
+      if (isDevBackendOffline(error)) {
+        console.info('[AlumiGest Dev Demo] Backend offline. Fornecendo dados de demonstração da O.S.');
+        return { ...demoOrder, id };
+      }
+      throw error;
+    }
   },
 
   /**
@@ -84,19 +104,31 @@ export const ordersApi = {
    * Chama GET /api/v1/orders/{id}/labels-pdf com suporte a filtro opcional por item e inicia o download via Blob.
    */
   async downloadLabelsPdf(id: string, codigo?: string, itemId?: string): Promise<void> {
-    const response = await api.get(`/orders/${id}/labels-pdf`, {
-      params: itemId ? { itemId } : undefined,
-      responseType: 'blob',
-    });
-
+    let blob: Blob;
     const fallbackFilename = `etiquetas-${codigo ?? id}.pdf`;
-    const disposition = (
-      response.headers?.['content-disposition'] ||
-      response.headers?.['Content-Disposition']
-    ) as string | undefined;
-    const filename = extractFilenameFromContentDisposition(disposition, fallbackFilename);
+    let filename = fallbackFilename;
 
-    const blob = new Blob([response.data], { type: 'application/pdf' });
+    try {
+      const response = await api.get(`/orders/${id}/labels-pdf`, {
+        params: itemId ? { itemId } : undefined,
+        responseType: 'blob',
+      });
+
+      const disposition = (
+        response.headers?.['content-disposition'] ||
+        response.headers?.['Content-Disposition']
+      ) as string | undefined;
+      filename = extractFilenameFromContentDisposition(disposition, fallbackFilename);
+      blob = new Blob([response.data], { type: 'application/pdf' });
+    } catch (error: any) {
+      if (isDevBackendOffline(error)) {
+        console.info('[AlumiGest Dev Demo] Backend offline. Gerando PDF térmico de demonstração.');
+        blob = generateDemoThermalLabelsPdf();
+      } else {
+        throw error;
+      }
+    }
+
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
@@ -130,29 +162,64 @@ export const ordersApi = {
       queryParams.status = params.status;
     }
 
-    const response = await api.get<any>('/orders', {
-      params: queryParams,
-    });
+    try {
+      const response = await api.get<any>('/orders', {
+        params: queryParams,
+      });
 
-    const data = response.data || {};
-    const pageNumber = data.page?.number ?? data.number ?? (typeof data.page === 'number' ? data.page : queryParams.page);
-    const pageSize = data.page?.size ?? data.size ?? queryParams.size;
-    const totalElements = data.page?.totalElements ?? data.totalElements ?? 0;
-    const totalPages = data.page?.totalPages ?? data.totalPages ?? 1;
+      const data = response.data || {};
+      const pageNumber = data.page?.number ?? data.number ?? (typeof data.page === 'number' ? data.page : queryParams.page);
+      const pageSize = data.page?.size ?? data.size ?? queryParams.size;
+      const totalElements = data.page?.totalElements ?? data.totalElements ?? 0;
+      const totalPages = data.page?.totalPages ?? data.totalPages ?? 1;
 
-    return {
-      content: data.content || [],
-      page: {
-        size: Number(pageSize),
-        number: Number(pageNumber),
+      return {
+        content: data.content || [],
+        page: {
+          size: Number(pageSize),
+          number: Number(pageNumber),
+          totalElements: Number(totalElements),
+          totalPages: Number(totalPages),
+        },
         totalElements: Number(totalElements),
         totalPages: Number(totalPages),
-      },
-      totalElements: Number(totalElements),
-      totalPages: Number(totalPages),
-      size: Number(pageSize),
-      number: Number(pageNumber),
-    };
+        size: Number(pageSize),
+        number: Number(pageNumber),
+      };
+    } catch (error: any) {
+      if (isDevBackendOffline(error)) {
+        console.info('[AlumiGest Dev Demo] Backend offline. Exibindo lista de demonstração de O.S.');
+        let filtered = [...demoOrderSummaries];
+        if (params?.status) {
+          filtered = filtered.filter((o) => o.status === params.status);
+        }
+        if (params?.channel) {
+          filtered = filtered.filter((o) => o.canalAprovacao === params.channel);
+        }
+        if (params?.search) {
+          const s = params.search.toLowerCase();
+          filtered = filtered.filter(
+            (o) =>
+              o.codigo.toLowerCase().includes(s) ||
+              o.clienteNome.toLowerCase().includes(s)
+          );
+        }
+        return {
+          content: filtered,
+          page: {
+            size: Number(params?.size ?? 10),
+            number: Number(params?.page ?? 0),
+            totalElements: filtered.length,
+            totalPages: 1,
+          },
+          totalElements: filtered.length,
+          totalPages: 1,
+          size: Number(params?.size ?? 10),
+          number: Number(params?.page ?? 0),
+        };
+      }
+      throw error;
+    }
   },
 };
 

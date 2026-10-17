@@ -32,7 +32,7 @@ public class ThermalLabelDataResolver {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private static final String NAO_INFORMADO = "Não informado";
-    private static final String FALLBACK_EMPRESA = "AlumiGest ERP";
+    private static final String FALLBACK_EMPRESA = "Alumiportas";
 
     private final CompanyProperties companyProps;
 
@@ -202,14 +202,14 @@ public class ThermalLabelDataResolver {
 
     private String resolverNomeCliente(Order order) {
         if (order.getClienteNome() != null && !order.getClienteNome().isBlank()) {
-            return truncarTexto(order.getClienteNome().toUpperCase(Locale.ROOT), 24);
+            return truncarTexto(order.getClienteNome().trim().toUpperCase(Locale.ROOT), 48);
         }
         return NAO_INFORMADO;
     }
 
     private String resolverDescricao(OrderItem item) {
         if (item.getDescricao() != null && !item.getDescricao().isBlank()) {
-            return truncarTexto(item.getDescricao(), 32);
+            return truncarTexto(item.getDescricao().trim(), 48);
         }
         return "Esquadria Padrão";
     }
@@ -252,14 +252,14 @@ public class ThermalLabelDataResolver {
 
     public String extrairAmbienteOuLocal(OrderItem item, Order order) {
         String valorJson = extrairAmbienteDoTemplateConfig(item.getTemplateConfig());
-        if (valorJson != null) {
-            return truncarTexto(valorJson, 38);
-        }
-        if (order.getClienteEndereco() != null && !order.getClienteEndereco().isBlank()) {
-            return truncarTexto(order.getClienteEndereco().trim(), 38);
+        if (valorJson != null && !valorJson.isBlank()) {
+            return truncarTexto(valorJson.trim(), 52);
         }
         if (order.getObservacoes() != null && !order.getObservacoes().isBlank()) {
-            return truncarTexto(order.getObservacoes().trim(), 38);
+            return truncarTexto(order.getObservacoes().trim(), 52);
+        }
+        if (order.getClienteEndereco() != null && !order.getClienteEndereco().isBlank()) {
+            return truncarTexto(order.getClienteEndereco().trim(), 52);
         }
         return NAO_INFORMADO;
     }

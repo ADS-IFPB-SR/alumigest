@@ -181,6 +181,7 @@ describe('OrderDetailHeader', () => {
           <OrderDetailHeader
             order={cancelledOrder}
             onPrintLabels={vi.fn()}
+            onOpenThermalModal={vi.fn()}
           />
         </MemoryRouter>
       );
@@ -188,6 +189,28 @@ describe('OrderDetailHeader', () => {
       expect(
         screen.queryByRole('button', { name: /imprimir etiquetas/i })
       ).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', { name: /visualizar etiquetas/i })
+      ).not.toBeInTheDocument();
+    });
+
+    it('deve exibir o botão "Visualizar Etiquetas" e acionar onOpenThermalModal (US-17.5)', () => {
+      const handleOpenModal = vi.fn();
+
+      render(
+        <MemoryRouter>
+          <OrderDetailHeader
+            order={baseOrder}
+            onOpenThermalModal={handleOpenModal}
+          />
+        </MemoryRouter>
+      );
+
+      const previewBtn = screen.getByRole('button', { name: /visualizar etiquetas/i });
+      expect(previewBtn).toBeInTheDocument();
+
+      fireEvent.click(previewBtn);
+      expect(handleOpenModal).toHaveBeenCalledTimes(1);
     });
   });
 });

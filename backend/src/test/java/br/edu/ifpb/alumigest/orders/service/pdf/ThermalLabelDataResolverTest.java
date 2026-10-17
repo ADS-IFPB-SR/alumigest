@@ -276,7 +276,7 @@ class ThermalLabelDataResolverTest {
             order.addItem(OrderItem.builder().quantidade(1).build());
 
             List<ThermalLabelData> labels = resolverSemProps.resolveLabels(order);
-            assertThat(labels.get(0).companyName()).isEqualTo("AlumiGest ERP");
+            assertThat(labels.get(0).companyName()).isEqualTo("Alumiportas");
         }
 
         @Test
