@@ -468,5 +468,28 @@ class OrderControllerTest {
           .andExpect(status().isBadRequest())
           .andExpect(jsonPath("$.status").value(400));
     }
+
+    @Test
+    @DisplayName("Deve retornar 400 BAD REQUEST quando status for inválido no JSON body")
+    void shouldReturn400WhenStatusIsInvalidInJsonBody() throws Exception {
+      UUID orderId = UUID.randomUUID();
+
+      mockMvc.perform(patch("/api/orders/{id}/production-status", orderId)
+              .contentType(MediaType.APPLICATION_JSON)
+              .content("{\"status\":\"STATUS_INEXISTENTE\"}"))
+          .andExpect(status().isBadRequest())
+          .andExpect(jsonPath("$.status").value(400));
+    }
+
+    @Test
+    @DisplayName("Deve retornar 400 BAD REQUEST quando status for inválido via query param")
+    void shouldReturn400WhenStatusIsInvalidInQueryParam() throws Exception {
+      UUID orderId = UUID.randomUUID();
+
+      mockMvc.perform(patch("/api/orders/{id}/production-status", orderId)
+              .param("status", "STATUS_INEXISTENTE"))
+          .andExpect(status().isBadRequest())
+          .andExpect(jsonPath("$.status").value(400));
+    }
   }
 }

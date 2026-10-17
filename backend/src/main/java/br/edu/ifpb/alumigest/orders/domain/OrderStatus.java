@@ -1,6 +1,7 @@
 package br.edu.ifpb.alumigest.orders.domain;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import java.text.Normalizer;
 
 /**
  * Estados do ciclo de vida de um Pedido de Venda.
@@ -41,11 +42,9 @@ public enum OrderStatus {
     if (value == null || value.isBlank()) {
       return null;
     }
-    String normalized = value.trim().toUpperCase()
-            .replace(" ", "_")
-            .replace("Ç", "C")
-            .replace("Ã", "A")
-            .replace("Í", "I");
+    String normalized = Normalizer.normalize(value.trim().toUpperCase(), Normalizer.Form.NFD)
+            .replaceAll("\\p{M}", "")
+            .replace(" ", "_");
 
     return switch (normalized) {
       case "WAITING_PRODUCTION", "AGUARDANDO_PRODUCAO" -> WAITING_PRODUCTION;

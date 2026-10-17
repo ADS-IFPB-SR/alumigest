@@ -393,5 +393,30 @@ class OrderControllerIntegrationTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.status").value("IN_PRODUCTION"));
         }
+
+        @Test
+        @DisplayName("Deve rejeitar transição redundante quando pedido já está em produção com 422 Unprocessable Entity")
+        void shouldRejectRedundantTransitionWhenAlreadyInProduction() throws Exception {
+            existingOrder.iniciarProducao();
+            orderRepository.saveAndFlush(existingOrder);
+
+            mockMvc.perform(patch("/api/orders/{id}/production-status", existingOrder.getId())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"status\":\"IN_PRODUCTION\"}"))
+                    .andExpect(status().isUnprocessableEntity())
+                    .andExpect(jsonPath("$.status").value(422))
+                    .andExpect(jsonPath("$.message")
+                            .value(containsString("Apenas pedidos aguardando produção podem entrar em produção.")));
+        }
+
+        @Test
+        @DisplayName("Deve retornar 400 Bad Request quando formato textual do status for desconhecido no JSON")
+        void shouldReturn400WhenStatusIsMalformedInJson() throws Exception {
+            mockMvc.perform(patch("/api/orders/{id}/production-status", existingOrder.getId())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"status\":\"STATUS_TOTALMENTE_INVALIDO\"}"))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.status").value(400));
+        }
     }
 }
