@@ -100,7 +100,7 @@ describe('US-14.2 / #431: Testes E2E — Imutabilidade Cadastral e Estrutural da
   });
 
   afterEach(() => {
-    expect(consoleErrors, 'Nenhum erro silencioso ou visível no console deve ser emitido').to.be.empty;
+    expect(consoleErrors, 'Nenhum erro silencioso ou visível no console deve ser emitido').to.deep.equal([]);
   });
 
   it('Cenário 1: Navegar para a tela de detalhes de pedido aprovado e validar ausência de ações mutáveis', () => {
