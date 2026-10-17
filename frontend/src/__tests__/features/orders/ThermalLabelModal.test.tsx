@@ -104,7 +104,7 @@ describe('ThermalLabelModal — [US-17.5] Visualização Prévia Contínua e Fil
     // Marca da empresa
     expect(screen.getAllByText('Alumiportas').length).toBeGreaterThan(0);
     // Código da O.S.
-    expect(screen.getAllByText('#OS-2026-0017').length).toBe(3);
+    expect(screen.getAllByText('#OS-2026-0017')).toHaveLength(3);
     // Cliente
     expect(screen.getAllByText('Construtora Alvorada Ltda').length).toBeGreaterThan(0);
 
@@ -117,11 +117,11 @@ describe('ThermalLabelModal — [US-17.5] Visualização Prévia Contínua e Fil
     // Especificações técnicas com testids dedicados
     expect(screen.getAllByTestId('label-color')).toHaveLength(3);
     expect(screen.getAllByTestId('label-glass')).toHaveLength(3);
-    expect(screen.getAllByText(/Preto Anodizado/).length).toBe(2);
-    expect(screen.getAllByText(/Incolor 6mm Temperado/).length).toBe(2);
-    expect(screen.getAllByText(/Branco Pintura Eletrostática/).length).toBe(1);
-    expect(screen.getAllByText(/Fumê 8mm Temperado/).length).toBe(1);
-    expect(screen.getAllByText(/Entregar na portaria da obra/).length).toBe(3);
+    expect(screen.getAllByText(/Preto Anodizado/)).toHaveLength(2);
+    expect(screen.getAllByText(/Incolor 6mm Temperado/)).toHaveLength(2);
+    expect(screen.getAllByText(/Branco Pintura Eletrostática/)).toHaveLength(1);
+    expect(screen.getAllByText(/Fumê 8mm Temperado/)).toHaveLength(1);
+    expect(screen.getAllByText(/Entregar na portaria da obra/)).toHaveLength(3);
 
     // Rodapé limpo com data, sem código de barras, sem código de item e sem badge GOLD
     expect(screen.getAllByTestId('label-date')).toHaveLength(3);

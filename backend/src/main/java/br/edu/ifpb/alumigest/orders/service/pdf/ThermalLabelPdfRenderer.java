@@ -44,8 +44,6 @@ public class ThermalLabelPdfRenderer {
 
     private static final Font FONTE_DESCRICAO =
             FontFactory.getFont(FontFactory.HELVETICA_BOLD, 7.5f, new Color(15, 23, 42));
-    private static final Font FONTE_GRUPO_LINHA =
-            FontFactory.getFont(FontFactory.HELVETICA_BOLD, 6.0f, new Color(30, 41, 59));
 
     private static final Font FONTE_MEDIDAS_TITULO =
             FontFactory.getFont(FontFactory.HELVETICA_BOLD, 5.0f, new Color(71, 85, 105));
@@ -63,10 +61,8 @@ public class ThermalLabelPdfRenderer {
             FontFactory.getFont(FontFactory.HELVETICA_BOLD, 6.0f, new Color(15, 23, 42));
 
     private static final Color COR_BORDA_CARD = new Color(15, 23, 42);
-    private static final Color COR_DIVISORIA = new Color(226, 232, 240);
     private static final Color COR_FUNDO_MEDIDAS = new Color(241, 245, 249);
     private static final Color COR_FUNDO_BADGE = new Color(15, 23, 42);
-    private static final Color COR_FUNDO_PILL = new Color(241, 245, 249);
 
     /**
      * Renderiza o card completo da etiqueta térmica a partir do snapshot de dados.

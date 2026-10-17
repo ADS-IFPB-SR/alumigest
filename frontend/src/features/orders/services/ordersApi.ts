@@ -37,6 +37,82 @@ function isDevBackendOffline(error: any): boolean {
   return typeof status === 'number' && status >= 500;
 }
 
+function buildOrderQueryParams(params?: OrderFilterParams): Record<string, string | number> {
+  const queryParams: Record<string, string | number> = {
+    page: params?.page ?? 0,
+    size: params?.size ?? 10,
+  };
+
+  const search = params?.search?.trim();
+  if (search && search.length >= 2) {
+    queryParams.search = search;
+  }
+
+  if (params?.channel) {
+    queryParams.channel = params.channel;
+  }
+
+  if (params?.status) {
+    queryParams.status = params.status;
+  }
+
+  return queryParams;
+}
+
+function parsePageResponse(data: any, queryParams: Record<string, string | number>): PageResponse<OrderSummary> {
+  const pageNumber = data.page?.number ?? data.number ?? (typeof data.page === 'number' ? data.page : queryParams.page);
+  const pageSize = data.page?.size ?? data.size ?? queryParams.size;
+  const totalElements = data.page?.totalElements ?? data.totalElements ?? 0;
+  const totalPages = data.page?.totalPages ?? data.totalPages ?? 1;
+
+  return {
+    content: data.content || [],
+    page: {
+      size: Number(pageSize),
+      number: Number(pageNumber),
+      totalElements: Number(totalElements),
+      totalPages: Number(totalPages),
+    },
+    totalElements: Number(totalElements),
+    totalPages: Number(totalPages),
+    size: Number(pageSize),
+    number: Number(pageNumber),
+  };
+}
+
+function getDemoOrdersPage(params?: OrderFilterParams): PageResponse<OrderSummary> {
+  let filtered = [...demoOrderSummaries];
+  if (params?.status) {
+    filtered = filtered.filter((o) => o.status === params.status);
+  }
+  if (params?.channel) {
+    filtered = filtered.filter((o) => o.canalAprovacao === params.channel);
+  }
+  if (params?.search) {
+    const s = params.search.toLowerCase();
+    filtered = filtered.filter(
+      (o) =>
+        o.codigo.toLowerCase().includes(s) ||
+        o.clienteNome.toLowerCase().includes(s)
+    );
+  }
+  const size = Number(params?.size ?? 10);
+  const number = Number(params?.page ?? 0);
+  return {
+    content: filtered,
+    page: {
+      size,
+      number,
+      totalElements: filtered.length,
+      totalPages: 1,
+    },
+    totalElements: filtered.length,
+    totalPages: 1,
+    size,
+    number,
+  };
+}
+
 export const ordersApi = {
   async getOrderById(id: string): Promise<Order> {
     try {
@@ -143,80 +219,17 @@ export const ordersApi = {
    * Lista pedidos de venda com paginação e filtros dinâmicos (US-13.4).
    */
   async getOrders(params?: OrderFilterParams): Promise<PageResponse<OrderSummary>> {
-    const queryParams: Record<string, string | number> = {
-      page: params?.page ?? 0,
-      size: params?.size ?? 10,
-    };
-
-    const search = params?.search;
-    if (search && search.trim().length >= 2) {
-      queryParams.search = search.trim();
-    }
-
-    const channel = params?.channel;
-    if (channel) {
-      queryParams.channel = channel;
-    }
-
-    if (params?.status) {
-      queryParams.status = params.status;
-    }
+    const queryParams = buildOrderQueryParams(params);
 
     try {
       const response = await api.get<any>('/orders', {
         params: queryParams,
       });
-
-      const data = response.data || {};
-      const pageNumber = data.page?.number ?? data.number ?? (typeof data.page === 'number' ? data.page : queryParams.page);
-      const pageSize = data.page?.size ?? data.size ?? queryParams.size;
-      const totalElements = data.page?.totalElements ?? data.totalElements ?? 0;
-      const totalPages = data.page?.totalPages ?? data.totalPages ?? 1;
-
-      return {
-        content: data.content || [],
-        page: {
-          size: Number(pageSize),
-          number: Number(pageNumber),
-          totalElements: Number(totalElements),
-          totalPages: Number(totalPages),
-        },
-        totalElements: Number(totalElements),
-        totalPages: Number(totalPages),
-        size: Number(pageSize),
-        number: Number(pageNumber),
-      };
+      return parsePageResponse(response.data || {}, queryParams);
     } catch (error: any) {
       if (isDevBackendOffline(error)) {
         console.info('[AlumiGest Dev Demo] Backend offline. Exibindo lista de demonstração de O.S.');
-        let filtered = [...demoOrderSummaries];
-        if (params?.status) {
-          filtered = filtered.filter((o) => o.status === params.status);
-        }
-        if (params?.channel) {
-          filtered = filtered.filter((o) => o.canalAprovacao === params.channel);
-        }
-        if (params?.search) {
-          const s = params.search.toLowerCase();
-          filtered = filtered.filter(
-            (o) =>
-              o.codigo.toLowerCase().includes(s) ||
-              o.clienteNome.toLowerCase().includes(s)
-          );
-        }
-        return {
-          content: filtered,
-          page: {
-            size: Number(params?.size ?? 10),
-            number: Number(params?.page ?? 0),
-            totalElements: filtered.length,
-            totalPages: 1,
-          },
-          totalElements: filtered.length,
-          totalPages: 1,
-          size: Number(params?.size ?? 10),
-          number: Number(params?.page ?? 0),
-        };
+        return getDemoOrdersPage(params);
       }
       throw error;
     }

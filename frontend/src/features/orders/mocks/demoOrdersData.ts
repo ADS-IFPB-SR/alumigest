@@ -124,7 +124,7 @@ function escapePdf(text: string): string {
     if (char === '\\' || char === '(' || char === ')') {
       return '\\' + char;
     }
-    const code = char.charCodeAt(0);
+    const code = char.codePointAt(0) ?? 0;
     return code <= 255 ? `\\${code.toString(8).padStart(3, '0')}` : '';
   });
 }
