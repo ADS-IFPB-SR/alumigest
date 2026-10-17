@@ -64,6 +64,25 @@ export const useDownloadComprovantePdf = () => {
   });
 };
 
+/**
+ * Hook de mutação para baixar as etiquetas térmicas adesivas (100x60mm) do Pedido de Venda em PDF.
+ * US-17.4 (#451) — utiliza o mesmo padrão de download Blob do useDownloadComprovantePdf.
+ */
+export const useDownloadLabelsPdf = () => {
+  return useMutation({
+    mutationFn: ({ id, codigo, itemId }: { id: string; codigo?: string; itemId?: string }) =>
+      ordersApi.downloadLabelsPdf(id, codigo, itemId),
+    onSuccess: () => {
+      toast.success('Etiquetas térmicas baixadas com sucesso!');
+    },
+    onError: (error: unknown) => {
+      const err = error as { response?: { data?: { message?: string } } };
+      const message = err?.response?.data?.message || 'Erro ao gerar as etiquetas térmicas.';
+      toast.error(message);
+    },
+  });
+};
+
 export const useUpdateOrderStatus = (id?: string) => {
   const queryClient = useQueryClient();
 
