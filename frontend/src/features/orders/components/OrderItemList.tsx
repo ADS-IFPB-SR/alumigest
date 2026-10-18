@@ -69,11 +69,14 @@ export const OrderItemList: React.FC<OrderItemListProps> = ({ items = [] }) => {
                   )}
                 </td>
                 <td className="py-3.5 px-3 text-center whitespace-nowrap">
-                  <span className="inline-block px-2.5 py-1 rounded bg-surface-container-high/60 font-data-mono text-xs text-on-surface font-medium">
+                  <span
+                    data-testid={`item-dimensions-${item.id}`}
+                    className="inline-block px-2.5 py-1 rounded bg-surface-container-high/60 font-data-mono text-xs text-on-surface font-medium"
+                  >
                     {item.larguraMm} × {item.alturaMm} mm
                   </span>
                 </td>
-                <td className="py-3.5 px-4">
+                <td className="py-3.5 px-4" data-testid={`item-specs-${item.id}`}>
                   <div className="flex flex-col gap-1 text-xs">
                     {item.corAluminio && (
                       <div className="flex items-baseline gap-1.5">
@@ -105,14 +108,17 @@ export const OrderItemList: React.FC<OrderItemListProps> = ({ items = [] }) => {
                     )}
                   </div>
                 </td>
-                <td className="py-3.5 px-2 text-center font-data-mono font-bold text-on-surface text-sm">
+                <td
+                  className="py-3.5 px-2 text-center font-data-mono font-bold text-on-surface text-sm"
+                  data-testid={`item-quantity-${item.id}`}
+                >
                   {item.quantidade}
                 </td>
                 <td className="py-3.5 px-3 text-right font-data-mono text-xs text-on-surface-variant whitespace-nowrap">
-                  {formatBRL(item.valorUnitario)}
+                  <span data-testid={`item-unit-price-${item.id}`}>{formatBRL(item.valorUnitario)}</span>
                 </td>
                 <td className="py-3.5 px-4 text-right font-data-mono font-bold text-sm text-on-surface whitespace-nowrap">
-                  {formatBRL(item.valorTotal)}
+                  <span data-testid={`item-total-price-${item.id}`}>{formatBRL(item.valorTotal)}</span>
                 </td>
               </tr>
             ))}
