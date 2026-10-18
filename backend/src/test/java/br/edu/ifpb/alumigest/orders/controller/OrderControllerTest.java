@@ -43,6 +43,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+@SuppressWarnings({"java:S5738", "deprecation"})
 @WebMvcTest({OrderController.class, OrderLegacyController.class})
 @AutoConfigureMockMvc(addFilters = false)
 @DisplayName("OrderController - Testes de Integração WebMvc")

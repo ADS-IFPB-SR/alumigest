@@ -38,7 +38,8 @@ import java.util.UUID;
  *
  * @deprecated Este controller será removido em versões futuras. Utilize {@link OrderController} em {@code /api/v1/orders}.
  */
-@Deprecated(since = "1.0", forRemoval = true)
+@SuppressWarnings("java:S1133")
+@Deprecated(since = "1.0")
 @Hidden
 @RestController
 @RequestMapping({"/api/v1/ordens-servico", "/api/orders", "/api/ordens-servico", "/api/pedidos"})
