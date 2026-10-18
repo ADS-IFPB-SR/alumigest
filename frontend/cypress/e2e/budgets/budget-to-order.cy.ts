@@ -427,6 +427,8 @@ describe('Testes E2E - Ciclo de Orçamentos e Conversão para Pedido (Deep Copy)
 
     cy.get('[data-testid="order-approval-modal"]').should('not.exist');
     
+    // Ciclo de status US-15.1: CREATED -> WAITING_PRODUCTION -> IN_PRODUCTION -> COMPLETED
+    cy.get('[data-testid="btn-advance-waiting-production"]').should('be.visible').click();
     cy.get('[data-testid="btn-advance-production"]').should('be.visible').click();
     cy.get('[data-testid="btn-complete-production"]').should('be.visible').click();
 
