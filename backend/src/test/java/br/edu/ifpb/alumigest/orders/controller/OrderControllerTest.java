@@ -33,6 +33,8 @@ import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -94,52 +96,18 @@ class OrderControllerTest {
           .andExpect(jsonPath("$.content[0].valorLiquido").value(1500.00));
     }
 
-    @Test
-    @DisplayName("Deve aceitar requisições através do alias legado /api/v1/ordens-servico")
-    void shouldAcceptCanonicalPortugueseAlias() throws Exception {
+    @ParameterizedTest(name = "Deve aceitar requisições através do alias legado {0}")
+    @ValueSource(strings = {
+        "/api/v1/ordens-servico",
+        "/api/orders",
+        "/api/ordens-servico",
+        "/api/pedidos"
+    })
+    void shouldAcceptLegacyAliases(String endpoint) throws Exception {
       PageResponse<OrderSummaryResponse> emptyResponse = PageResponse.of(new PageImpl<>(Collections.emptyList()));
       when(orderService.findAll(any(), any(), any(), any())).thenReturn(emptyResponse);
 
-      mockMvc.perform(get("/api/v1/ordens-servico")
-              .param("page", "0")
-              .param("size", "10")
-              .contentType(MediaType.APPLICATION_JSON))
-          .andExpect(status().isOk());
-    }
-
-    @Test
-    @DisplayName("Deve aceitar requisições através do alias legado /api/orders")
-    void shouldAcceptLegacyApiOrdersAlias() throws Exception {
-      PageResponse<OrderSummaryResponse> emptyResponse = PageResponse.of(new PageImpl<>(Collections.emptyList()));
-      when(orderService.findAll(any(), any(), any(), any())).thenReturn(emptyResponse);
-
-      mockMvc.perform(get("/api/orders")
-              .param("page", "0")
-              .param("size", "10")
-              .contentType(MediaType.APPLICATION_JSON))
-          .andExpect(status().isOk());
-    }
-
-    @Test
-    @DisplayName("Deve aceitar requisições através do alias legado /api/ordens-servico")
-    void shouldAcceptLegacyApiOrdensServicoAlias() throws Exception {
-      PageResponse<OrderSummaryResponse> emptyResponse = PageResponse.of(new PageImpl<>(Collections.emptyList()));
-      when(orderService.findAll(any(), any(), any(), any())).thenReturn(emptyResponse);
-
-      mockMvc.perform(get("/api/ordens-servico")
-              .param("page", "0")
-              .param("size", "10")
-              .contentType(MediaType.APPLICATION_JSON))
-          .andExpect(status().isOk());
-    }
-
-    @Test
-    @DisplayName("Deve aceitar requisições através do alias legado /api/pedidos")
-    void shouldAcceptLegacyApiPedidosAlias() throws Exception {
-      PageResponse<OrderSummaryResponse> emptyResponse = PageResponse.of(new PageImpl<>(Collections.emptyList()));
-      when(orderService.findAll(any(), any(), any(), any())).thenReturn(emptyResponse);
-
-      mockMvc.perform(get("/api/pedidos")
+      mockMvc.perform(get(endpoint)
               .param("page", "0")
               .param("size", "10")
               .contentType(MediaType.APPLICATION_JSON))

@@ -35,8 +35,10 @@ import java.util.UUID;
  * Oculto da documentação OpenAPI/Swagger ({@link Hidden}) e marcado como depreciado ({@link Deprecated})
  * para evitar poluição e ambiguidade no contrato principal da API (BUG-040).
  * O contrato canônico oficial da API é exposto exclusivamente via {@link OrderController} em {@code /api/v1/orders}.
+ *
+ * @deprecated Este controller será removido em versões futuras. Utilize {@link OrderController} em {@code /api/v1/orders}.
  */
-@Deprecated
+@Deprecated(since = "1.0", forRemoval = true)
 @Hidden
 @RestController
 @RequestMapping({"/api/v1/ordens-servico", "/api/orders", "/api/ordens-servico", "/api/pedidos"})
