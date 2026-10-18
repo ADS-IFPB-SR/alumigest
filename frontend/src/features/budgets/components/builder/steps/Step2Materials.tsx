@@ -190,6 +190,7 @@ export const Step2Materials: React.FC<Step2MaterialsProps> = ({
                   <div className="flex items-center gap-xs mt-xs">
                     <select
                       value={sel.materialId ?? ''}
+                      data-testid={`select-material-${categoryType.toLowerCase()}`}
                       onChange={(e) => onMaterialChange(reqId, e.target.value)}
                       aria-label={`Selecionar material para ${sel.label}`}
                       className="flex-1 text-sm py-2 px-2.5 bg-surface border border-outline-variant rounded font-body text-on-surface focus:border-primary focus:outline-none min-w-0 transition-colors"

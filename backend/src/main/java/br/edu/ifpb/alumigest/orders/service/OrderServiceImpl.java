@@ -81,17 +81,8 @@ public class OrderServiceImpl implements OrderService {
     }
 
     /**
-     * Converte um orçamento aprovado em Pedido de Venda (Ordem de Serviço) oficial.
-     *
-     * Resiliência a Concorrência (Issue #408):
-     * A anotação @Retryable intercepta violações de unicidade (DataIntegrityViolationException
-     * e TransactionSystemException). Como o @EnableRetry possui precedência (order = 0), o
-     * interceptor de retry atua externamente ao interceptor de transação (@Transactional),
-     * garantindo que cada tentativa de retry execute dentro de uma NOVA transação limpa.
-     * O uso de orderRepository.saveAndFlush força a sincronização imediata dos comandos SQL
-     * com o banco de dados antes da conclusão do método, materializando a constraint UNIQUE
-     * (uk_orders_codigo) e disparando o retry caso outra transação concorrente tenha obtido
-     * o mesmo código no milissegundo de commit.
+     * Converte um orçamento aprovado em Pedido de Venda oficial.
+     * Possui retry para garantir unicidade de código sob concorrência.
      */
     @Override
     @Retryable(
@@ -175,263 +166,217 @@ public class OrderServiceImpl implements OrderService {
         return orderMapper.toResponse(order);
     }
 
-  // =========================================================================
-  // Métodos privados de suporte (SRP — separação de responsabilidades internas)
-  // =========================================================================
-  /**
-   * Status elegíveis para conversão em pedido de venda.
-   * DRAFT e SENT são promovidos para APPROVED atomicamente durante a conversão.
-   * APPROVED é aceito para tolerar reprocessamento idempotente.
-   */
-  private static final Set<BudgetStatus> STATUS_ELEGIVEIS =
-      EnumSet.of(BudgetStatus.DRAFT, BudgetStatus.SENT);
+    // =========================================================================
+    // Métodos privados de suporte (SRP — separação de responsabilidades internas)
+    // =========================================================================
+    /**
+     * Status elegíveis para conversão em pedido de venda.
+     * DRAFT e SENT são promovidos para APPROVED atomicamente durante a conversão.
+     * APPROVED é aceito para tolerar reprocessamento idempotente.
+     */
+    private static final Set<BudgetStatus> STATUS_ELEGIVEIS =
+            EnumSet.of(BudgetStatus.DRAFT, BudgetStatus.SENT);
 
-  /**
-   * Valida que o orçamento está em um status elegível para conversão.
-   * Aceita DRAFT, SENT e APPROVED. Rejeita CANCELLED, REJECTED e EXPIRED.
-   *
-   * @param budget orçamento a ser validado
-   * @throws BusinessException se o status não for elegível para conversão
-   */
-  private void validateBudgetEligibility(Budget budget) {
-    if (budget.isExpired()) {
-      throw new BusinessException(
-          "Orçamento com validade expirada não pode ser convertido em pedido de venda.");
-    }
-    if (!STATUS_ELEGIVEIS.contains(budget.getStatus())) {
-      String statusDesc = budget.getStatus() != null
-          ? budget.getStatus().getDescricao()
-          : "Indefinido";
-      throw new BusinessException(
-          "Orçamento com status '" + statusDesc + "' não pode ser convertido em pedido de venda."
-              + " São aceitos: Rascunho ou Enviado.");
-    }
-  }
-
-  /**
-   * Valida que o orçamento possui ao menos um item antes de gerar o pedido.
-   *
-   * @param budget orçamento a ser validado
-   * @throws BusinessException se o orçamento não possuir itens
-   */
-  private void validateBudgetHasItems(Budget budget) {
-    if (budget.getItems() == null || budget.getItems().isEmpty()) {
-      throw new BusinessException(
-          "Não é possível converter um orçamento sem itens em pedido de venda.");
-    }
-  }
-
-  /**
-   * Garante idempotência: um orçamento só pode possuir um pedido ativo.
-   * Pedidos cancelados permanecem no histórico e não bloqueiam uma nova conversão.
-   *
-   * @param budgetId ID do orçamento
-   * @throws ConflictException se já existir pedido ativo para o orçamento informado
-   */
-  private void validateIdempotency(UUID budgetId) {
-    if (orderRepository.existsByOrcamentoIdAndStatusNot(budgetId, OrderStatus.CANCELLED)) {
-      throw new ConflictException(
-          "Já existe um pedido de venda ativo para o orçamento com ID " + budgetId + ".");
-    }
-  }
-
-  /**
-   * Converte todos os itens do orçamento em itens do pedido (snapshot / lock de preços).
-   *
-   * @param budget orçamento de origem
-   * @param order  pedido destino
-   */
-  private void convertItems(Budget budget, Order order) {
-    List<BudgetItem> budgetItems = budget.getItems();
-    if (budgetItems == null || budgetItems.isEmpty()) {
-      return;
+    /**
+     * Valida se o status e a validade do orçamento permitem conversão.
+     */
+    private void validateBudgetEligibility(Budget budget) {
+        if (budget.isExpired()) {
+            throw new BusinessException(
+                    "Orçamento com validade expirada não pode ser convertido em pedido de venda.");
+        }
+        if (!STATUS_ELEGIVEIS.contains(budget.getStatus())) {
+            String statusDesc = budget.getStatus() != null
+                    ? budget.getStatus().getDescricao()
+                    : "Indefinido";
+            throw new BusinessException(
+                    "Orçamento com status '" + statusDesc + "' não pode ser convertido em pedido de venda."
+                            + " São aceitos: Rascunho ou Enviado.");
+        }
     }
 
-    for (int i = 0; i < budgetItems.size(); i++) {
-      BudgetItem budgetItem = budgetItems.get(i);
-      OrderItem orderItem = buildOrderItem(budgetItem, i);
-      convertOptions(budgetItem, orderItem);
-      order.addItem(orderItem);
+    /**
+     * Valida se o orçamento possui itens antes da conversão.
+     */
+    private void validateBudgetHasItems(Budget budget) {
+        if (budget.getItems() == null || budget.getItems().isEmpty()) {
+            throw new BusinessException(
+                    "Não é possível converter um orçamento sem itens em pedido de venda.");
+        }
     }
-  }
 
-  /**
-   * Constrói um {@link OrderItem} a partir de um {@link BudgetItem} via Builder Pattern.
-   *
-   * <p><strong>Regra financeira:</strong> {@code budgetItem.getSubtotal()} já representa o
-   * total do item (preço unitário × quantidade), conforme calculado pelo
-   * {@code BudgetPricingService}. Portanto:
-   * <ul>
-   *   <li>{@code valorTotal} = subtotal do item (congelado do orçamento)</li>
-   *   <li>{@code valorUnitario} = valorTotal / quantidade (derivado por divisão)</li>
-   * </ul>
-   * Isso evita a multiplicação dupla da quantidade (qty²).
-   *
-   * @param budgetItem item do orçamento original
-   * @param ordem      posição sequencial do item no pedido
-   * @return item do pedido com snapshot dos dados técnicos e financeiros
-   */
-  private OrderItem buildOrderItem(BudgetItem budgetItem, int ordem) {
-    int largura = budgetItem.getWidthMm() != null ? budgetItem.getWidthMm().intValue() : 0;
-    int altura = budgetItem.getHeightMm() != null ? budgetItem.getHeightMm().intValue() : 0;
-    int qty = (budgetItem.getQuantity() != null && budgetItem.getQuantity() > 0)
-        ? budgetItem.getQuantity() : 1;
+    /**
+     * Garante idempotência: valida se já existe um pedido ativo para o orçamento.
+     */
+    private void validateIdempotency(UUID budgetId) {
+        if (orderRepository.existsByOrcamentoIdAndStatusNot(budgetId, OrderStatus.CANCELLED)) {
+            throw new ConflictException(
+                    "Já existe um pedido de venda ativo para o orçamento com ID " + budgetId + ".");
+        }
+    }
 
-    BigDecimal valorTotal = orZero(budgetItem.getSubtotal())
-        .setScale(2, RoundingMode.HALF_EVEN);
-    BigDecimal valorUnitario = valorTotal.divide(
-        BigDecimal.valueOf(qty), 2, RoundingMode.HALF_EVEN);
+    /**
+     * Converte os itens e opções do orçamento em itens do pedido.
+     */
+    private void convertItems(Budget budget, Order order) {
+        List<BudgetItem> budgetItems = budget.getItems();
+        if (budgetItems == null || budgetItems.isEmpty()) {
+            return;
+        }
 
-    return OrderItem.builder()
-        .product(budgetItem.getProduct())
-        .descricao(budgetItem.getProductName())
-        .larguraMm(largura)
-        .alturaMm(altura)
-        .quantidade(qty)
-        .corAluminio(OrderItemSnapshotResolver.extractAluminumColor(budgetItem))
-        .tipoVidro(OrderItemSnapshotResolver.extractGlassType(budgetItem))
-        .orientacaoAbertura(OrderItemSnapshotResolver.extractOpeningDirection(budgetItem))
-        .ferragens(OrderItemSnapshotResolver.extractHardware(budgetItem))
-        .valorUnitario(valorUnitario)
-        .valorTotal(valorTotal)
-        .templateConfig(budgetItem.getTemplateConfig())
-        .handleConfig(budgetItem.getHandleConfig())
-        .drillingConfig(budgetItem.getDrillingConfig())
-        .ordem(ordem)
-        .build();
-  }
+        for (int i = 0; i < budgetItems.size(); i++) {
+            BudgetItem budgetItem = budgetItems.get(i);
+            OrderItem orderItem = buildOrderItem(budgetItem, i);
+            convertOptions(budgetItem, orderItem);
+            order.addItem(orderItem);
+        }
+    }
 
-  /**
-   * Converte as opções de insumo de um item do orçamento em opções do item do pedido.
-   *
-   * @param budgetItem item do orçamento de origem
-   * @param orderItem  item do pedido destino
-   */
-  private void convertOptions(BudgetItem budgetItem, OrderItem orderItem) {
-    List<BudgetItemOption> opcoes = budgetItem.getOptions();
-    if (opcoes == null || opcoes.isEmpty()) {
-      return;
-    }
-    for (BudgetItemOption opcao : opcoes) {
-      BigDecimal qty = orZero(opcao.getQuantity()).setScale(2, RoundingMode.HALF_EVEN);
-      BigDecimal unitPrice = orZero(opcao.getUnitPrice()).setScale(2, RoundingMode.HALF_EVEN);
-      BigDecimal totalPrice = orZero(opcao.getTotalPrice())
-          .setScale(2, RoundingMode.HALF_EVEN);
+    /**
+     * Constrói o {@link OrderItem} a partir do {@link BudgetItem}, calculando o valor unitário
+     * derivado do subtotal congelado para evitar multiplicação dupla de quantidade.
+     */
+    private OrderItem buildOrderItem(BudgetItem budgetItem, int ordem) {
+        int largura = budgetItem.getWidthMm() != null ? budgetItem.getWidthMm().intValue() : 0;
+        int altura = budgetItem.getHeightMm() != null ? budgetItem.getHeightMm().intValue() : 0;
+        int qty = (budgetItem.getQuantity() != null && budgetItem.getQuantity() > 0)
+                ? budgetItem.getQuantity() : 1;
 
-      OrderItemOption orderOption = OrderItemOption.builder()
-          .material(opcao.getMaterial())
-          .materialName(opcao.getMaterialName())
-          .unitMeasure(opcao.getUnitMeasure())
-          .categoryType(opcao.getCategoryType() != null
-              ? opcao.getCategoryType().name() : null)
-          .selectedType(opcao.getSelectedType())
-          .selectedColor(opcao.getSelectedColor())
-          .quantity(qty)
-          .unitPrice(unitPrice)
-          .totalPrice(totalPrice)
-          .build();
-      orderItem.addOption(orderOption);
-    }
-  }
+        BigDecimal valorTotal = orZero(budgetItem.getSubtotal()).setScale(2, RoundingMode.HALF_EVEN);
+        BigDecimal valorUnitario = valorTotal.divide(
+                BigDecimal.valueOf(qty), 2, RoundingMode.HALF_EVEN);
 
-  /**
-   * Retorna o nome do cliente a partir do orçamento.
-   *
-   * @param budget orçamento de origem
-   * @return nome do cliente ou valor padrão se não disponível
-   */
-  private String resolveCustomerName(Budget budget) {
-    if (budget.getClient() != null && budget.getClient().getFullName() != null) {
-      return budget.getClient().getFullName();
+        return OrderItem.builder()
+                .product(budgetItem.getProduct())
+                .descricao(budgetItem.getProductName())
+                .larguraMm(largura)
+                .alturaMm(altura)
+                .quantidade(qty)
+                .corAluminio(OrderItemSnapshotResolver.extractAluminumColor(budgetItem))
+                .tipoVidro(OrderItemSnapshotResolver.extractGlassType(budgetItem))
+                .orientacaoAbertura(OrderItemSnapshotResolver.extractOpeningDirection(budgetItem))
+                .ferragens(OrderItemSnapshotResolver.extractHardware(budgetItem))
+                .valorUnitario(valorUnitario)
+                .valorTotal(valorTotal)
+                .templateConfig(budgetItem.getTemplateConfig())
+                .handleConfig(budgetItem.getHandleConfig())
+                .drillingConfig(budgetItem.getDrillingConfig())
+                .ordem(ordem)
+                .build();
     }
-    return "Cliente não informado";
-  }
 
-  /**
-   * Retorna o telefone do cliente a partir do objeto de domínio Client.
-   *
-   * @param budget orçamento de origem
-   * @return telefone do cliente ou null
-   */
-  private String resolveCustomerPhone(Budget budget) {
-    if (budget.getClient() != null) {
-      return budget.getClient().getPhone();
-    }
-    return null;
-  }
+    /**
+     * Converte as opções de insumo do item de orçamento em opções do item do pedido.
+     */
+    private void convertOptions(BudgetItem budgetItem, OrderItem orderItem) {
+        List<BudgetItemOption> opcoes = budgetItem.getOptions();
+        if (opcoes == null || opcoes.isEmpty()) {
+            return;
+        }
+        for (BudgetItemOption opcao : opcoes) {
+            BigDecimal qty = orZero(opcao.getQuantity()).setScale(2, RoundingMode.HALF_EVEN);
+            BigDecimal unitPrice = orZero(opcao.getUnitPrice()).setScale(2, RoundingMode.HALF_EVEN);
+            BigDecimal totalPrice = orZero(opcao.getTotalPrice()).setScale(2, RoundingMode.HALF_EVEN);
 
-  /**
-   * Compõe o endereço do cliente a partir dos campos individuais (street, number, city, state).
-   *
-   * @param budget orçamento de origem
-   * @return endereço formatado ou null
-   */
-  private String resolveCustomerAddress(Budget budget) {
-    if (budget.getClient() == null) {
-      return null;
+            OrderItemOption orderOption = OrderItemOption.builder()
+                    .material(opcao.getMaterial())
+                    .materialName(opcao.getMaterialName())
+                    .unitMeasure(opcao.getUnitMeasure())
+                    .categoryType(opcao.getCategoryType() != null
+                            ? opcao.getCategoryType().name() : null)
+                    .selectedType(opcao.getSelectedType())
+                    .selectedColor(opcao.getSelectedColor())
+                    .quantity(qty)
+                    .unitPrice(unitPrice)
+                    .totalPrice(totalPrice)
+                    .build();
+            orderItem.addOption(orderOption);
+        }
     }
-    var c = budget.getClient();
-    var sb = new StringBuilder();
-    if (c.getStreet() != null) {
-      sb.append(c.getStreet());
-    }
-    if (c.getNumber() != null) {
-      sb.append(", ").append(c.getNumber());
-    }
-    if (c.getCity() != null) {
-      sb.append(" - ").append(c.getCity());
-    }
-    if (c.getState() != null) {
-      sb.append("/").append(c.getState());
-    }
-    return !sb.isEmpty() ? sb.toString() : null;
-  }
 
-  /**
-   * Retorna a condição de pagamento como String a partir do enum PaymentCondition do orçamento.
-   *
-   * @param budget orçamento de origem
-   * @return nome do enum ou null
-   */
-  private String resolvePaymentCondition(Budget budget) {
-    if (budget.getPaymentCondition() != null) {
-      return budget.getPaymentCondition().name();
+    /**
+     * Retorna o nome do cliente a partir do orçamento ou valor padrão.
+     */
+    private String resolveCustomerName(Budget budget) {
+        if (budget.getClient() != null && budget.getClient().getFullName() != null) {
+            return budget.getClient().getFullName();
+        }
+        return "Cliente não informado";
     }
-    return null;
-  }
 
-  /**
-   * Garante que um BigDecimal nunca seja null, retornando ZERO nesse caso.
-   *
-   * @param value valor potencialmente nulo
-   * @return valor original ou BigDecimal.ZERO
-   */
-  private BigDecimal orZero(BigDecimal value) {
-    return value != null ? value : BigDecimal.ZERO;
-  }
-
-  @Override
-  @Transactional
-  public OrderResponse updateStatus(UUID id, OrderStatus targetStatus) {
-    Order order = orderRepository.findById(id)
-        .orElseThrow(() -> new ResourceNotFoundException(RESOURCE_PEDIDO, id));
-
-    if (targetStatus == null) {
-      throw new IllegalArgumentException("O status de destino é obrigatório.");
+    /**
+     * Retorna o telefone do cliente a partir do objeto de domínio Client.
+     */
+    private String resolveCustomerPhone(Budget budget) {
+        if (budget.getClient() != null) {
+            return budget.getClient().getPhone();
+        }
+        return null;
     }
-    try {
-      switch (targetStatus) {
-        case WAITING_PRODUCTION -> order.aguardarProducao();
-        case IN_PRODUCTION -> order.iniciarProducao();
-        case COMPLETED -> order.concluir(null);
-        default -> throw new ConflictException(
-            "Não é permitida a transição para o status " + targetStatus + "."
-        );
-      }
-    } catch (BusinessException ex) {
-      throw new ConflictException(ex.getMessage());
+
+    /**
+     * Compõe o endereço do cliente a partir dos campos individuais.
+     */
+    private String resolveCustomerAddress(Budget budget) {
+        if (budget.getClient() == null) {
+            return null;
+        }
+        var c = budget.getClient();
+        var sb = new StringBuilder();
+        if (c.getStreet() != null) {
+            sb.append(c.getStreet());
+        }
+        if (c.getNumber() != null) {
+            sb.append(", ").append(c.getNumber());
+        }
+        if (c.getCity() != null) {
+            sb.append(" - ").append(c.getCity());
+        }
+        if (c.getState() != null) {
+            sb.append("/").append(c.getState());
+        }
+        return !sb.isEmpty() ? sb.toString() : null;
     }
-    Order savedOrder = orderRepository.save(order);
-    return orderMapper.toResponse(savedOrder);
-  }
+
+    /**
+     * Retorna o identificador da condição de pagamento do orçamento.
+     */
+    private String resolvePaymentCondition(Budget budget) {
+        if (budget.getPaymentCondition() != null) {
+            return budget.getPaymentCondition().name();
+        }
+        return null;
+    }
+
+    /**
+     * Garante que um BigDecimal nunca seja null, retornando ZERO nesse caso.
+     */
+    private BigDecimal orZero(BigDecimal value) {
+        return value != null ? value : BigDecimal.ZERO;
+    }
+    @Override
+    @Transactional
+    public OrderResponse updateStatus(UUID id, OrderStatus targetStatus) {
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException(RESOURCE_PEDIDO, id));
+
+        if (targetStatus == null) {
+            throw new IllegalArgumentException("O status de destino é obrigatório.");
+        }
+        try {
+            switch (targetStatus) {
+                case WAITING_PRODUCTION -> order.aguardarProducao();
+                case IN_PRODUCTION -> order.iniciarProducao();
+                case COMPLETED -> order.concluir(null);
+                default -> throw new ConflictException(
+                        "Não é permitida a transição para o status " + targetStatus + "."
+                );
+            }
+        } catch (BusinessException ex) {
+            throw new ConflictException(ex.getMessage());
+        }
+        Order savedOrder = orderRepository.save(order);
+        return orderMapper.toResponse(savedOrder);
+    }
+
 }
