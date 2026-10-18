@@ -119,6 +119,7 @@ export const OrderDetailHeader: React.FC<OrderDetailHeaderProps> = ({
         {isAwaitingProduction && (
           <button
             type="button"
+            data-testid="btn-advance-production"
             onClick={onAdvanceProduction}
             disabled={isUpdatingStatus}
             className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-primary hover:bg-primary-dark rounded-lg shadow-sm transition-colors"
@@ -136,6 +137,7 @@ export const OrderDetailHeader: React.FC<OrderDetailHeaderProps> = ({
         {isInProduction && (
           <button
             type="button"
+            data-testid="btn-complete-production"
             onClick={onCompleteProduction}
             disabled={isUpdatingStatus}
             className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm transition-colors"
