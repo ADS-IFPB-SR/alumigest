@@ -318,25 +318,39 @@ public class OrderServiceImpl implements OrderService {
      * Compõe o endereço do cliente a partir dos campos individuais.
      */
     private String resolveCustomerAddress(Budget budget) {
-        if (budget.getClient() == null) {
-            return null;
-        }
-        var c = budget.getClient();
-        var sb = new StringBuilder();
-        if (c.getStreet() != null) {
-            sb.append(c.getStreet());
-        }
-        if (c.getNumber() != null) {
-            sb.append(", ").append(c.getNumber());
-        }
-        if (c.getCity() != null) {
-            sb.append(" - ").append(c.getCity());
-        }
-        if (c.getState() != null) {
-            sb.append("/").append(c.getState());
-        }
-        return !sb.isEmpty() ? sb.toString() : null;
+    if (budget == null || budget.getClient() == null) {
+        return null;
     }
+    
+    var c = budget.getClient();
+    var sb = new StringBuilder();
+
+    String street = c.getStreet();
+    if (street != null && !street.isBlank()) {
+        sb.append(street.trim());
+    }
+
+    String number = c.getNumber();
+    if (number != null && !number.isBlank()) {
+        if (!sb.isEmpty()) sb.append(", ");
+        sb.append(number.trim());
+    }
+
+    String city = c.getCity();
+    if (city != null && !city.isBlank()) {
+        if (!sb.isEmpty()) sb.append(" - ");
+        sb.append(city.trim());
+    }
+
+    String state = c.getState();
+    if (state != null && !state.isBlank()) {
+        // Usa a barra "/" se já houver conteúdo
+        if (!sb.isEmpty()) sb.append("/");
+        sb.append(state.trim());
+    }
+
+    return !sb.isEmpty() ? sb.toString() : null;
+}
 
     /**
      * Retorna o identificador da condição de pagamento do orçamento.
