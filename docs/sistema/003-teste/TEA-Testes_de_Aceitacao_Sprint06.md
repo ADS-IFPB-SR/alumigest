@@ -35,7 +35,8 @@ Validar os critérios de aceitação e a conformidade técnica das entregas do m
 | 2 | Modo somente leitura para dimensões e especificações | Pedido aprovado contendo esquadrias cadastradas | Inspecionada a tabela de itens de produção | Dimensões (L × A mm), acabamentos (alumínio, vidro, ferragens, abertura) e valores monetários são estáticos; zero elementos `<input>`, `<select>`, `<textarea>` | Cypress E2E ✅ Aprovado |
 | 3 | Exclusividade de alteração contratual via Cancelamento (Fluxo Completo) | Pedido ativo aguardando fabricação física | Usuário clica em "Cancelar Ordem de Serviço" | Modal exige justificativa $\ge 10$ caracteres (validação Zod); ao submeter motivo válido, efetiva `PATCH /orders/{id}/cancel` e reflete status `CANCELLED` mantendo itens intactos | Cypress E2E ✅ Aprovado |
 | 4 | Blindagem progressiva em Chão de Fábrica | Pedido em corte/usinagem com status `IN_PRODUCTION` | Operador visualiza os detalhes | O botão de cancelamento torna-se restrito e desabilitado com tooltip informativo; itens continuam estritamente protegidos | Cypress E2E ✅ Aprovado |
-| 5 | Preservação da imutabilidade nos status terminais | Pedido com status `COMPLETED` ou `CANCELLED` | Consulta ao documento formalizado | Itens preservam medidas e valores originais do contrato para fins fiscais e de auditoria; ações de edição/cancelamento inexistentes | Cypress E2E ✅ Aprovado |
+| 5.1 | Preservação da imutabilidade no status terminal COMPLETED | Pedido finalizado com status `COMPLETED` | Consulta ao documento formalizado | Itens preservam medidas e valores originais do contrato para fins fiscais e de auditoria; ações de edição/cancelamento inexistentes | Cypress E2E ✅ Aprovado |
+| 5.2 | Preservação da imutabilidade no status terminal CANCELLED | Pedido cancelado com status `CANCELLED` | Consulta ao documento cancelado | Banner auditável exibe justificativa formal; tabela de esquadrias preservada intacta; zero ações mutáveis | Cypress E2E ✅ Aprovado |
 | 6 | Resiliência e escalabilidade com dataset dinâmico via Factory | Pedido gerado dinamicamente via Factory Pattern com itens heterogêneos (com e sem sub-opções) | Renderização do contêiner de itens | A tabela processa e valida todos os itens gerados dinamicamente sob demanda, assegurando modo somente leitura e zero acoplamento a fixtures estáticas | Cypress E2E ✅ Aprovado |
 
 ---
@@ -44,7 +45,7 @@ Validar os critérios de aceitação e a conformidade técnica das entregas do m
 
 | Métrica de Qualidade | Meta | Resultado Obtido | Status |
 |---|:---:|:---:|:---:|
-| **Suíte Cypress US-14.2** | 100% de sucesso (6/6 cenários) | 6 aprovados (0 falhas) em 15s | ✅ Aprovado |
+| **Suíte Cypress US-14.2** | 100% de sucesso (7/7 cenários) | 7 aprovados (0 falhas) em 16s | ✅ Aprovado |
 | **Console DevTools (Erros invisíveis)** | 0 erros de runtime / console | 0 erros, 0 exceções não tratadas | ✅ Aprovado |
 | **Regressão de Testes Unitários Vitest** | 100% aprovados | 88 arquivos / 723 testes aprovados | ✅ Aprovado |
 | **Linter Oxlint** | 0 erros bloqueantes | 0 erros | ✅ Aprovado |

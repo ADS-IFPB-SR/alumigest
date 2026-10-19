@@ -223,8 +223,7 @@ describe('US-14.2 / #431: Testes E2E — Imutabilidade Cadastral e Estrutural da
       .should('not.exist');
   });
 
-  it('Cenário 5: Validar preservação da imutabilidade nos status terminais COMPLETED e CANCELLED', () => {
-    // 5.1 Status COMPLETED
+  it('Cenário 5.1: Validar preservação da imutabilidade no status terminal COMPLETED', () => {
     const completedOrder = buildOrder({ status: 'COMPLETED' });
 
     cy.intercept('GET', `**/orders/${completedOrder.id}`, {
@@ -239,8 +238,9 @@ describe('US-14.2 / #431: Testes E2E — Imutabilidade Cadastral e Estrutural da
     cy.get('[data-testid="btn-cancel-order-restricted"]').should('not.exist');
     cy.get('[data-testid="order-items-container"]').should('be.visible');
     cy.contains(formatOrderItemDimensions(completedOrder.items[0])).should('be.visible');
+  });
 
-    // 5.2 Status CANCELLED
+  it('Cenário 5.2: Validar preservação da imutabilidade no status terminal CANCELLED com justificativa auditável', () => {
     const cancelledOrder = buildOrder({
       status: 'CANCELLED',
       justificativaCancelamento:

@@ -100,6 +100,24 @@ export function generateUUID(): string {
   });
 }
 
+/**
+ * Retorna uma data no formato YYYY-MM-DD relativa à data de execução atual.
+ */
+export function getRelativeDateISO(offsetDays = 0): string {
+  const date = new Date();
+  date.setDate(date.getDate() + offsetDays);
+  return date.toISOString().split('T')[0];
+}
+
+/**
+ * Retorna uma data/hora no formato ISO 8601 relativa à data de execução atual.
+ */
+export function getRelativeDateTimeISO(offsetDays = 0): string {
+  const date = new Date();
+  date.setDate(date.getDate() + offsetDays);
+  return date.toISOString();
+}
+
 // ==========================================
 // 3. FACTORY BUILDERS
 // ==========================================
@@ -129,18 +147,17 @@ export function buildOrderItemOption(overrides: Partial<OrderItemOption> = {}): 
   const totalPrice = overrides.totalPrice ?? Number((quantity * unitPrice).toFixed(2));
 
   return {
-    id: generateUUID(),
-    orderItemId: generateUUID(),
-    materialId: generateUUID(),
-    materialName,
-    unitMeasure,
-    categoryType,
-    selectedType: null,
-    selectedColor: null,
+    id: overrides.id ?? generateUUID(),
+    orderItemId: overrides.orderItemId ?? generateUUID(),
+    materialId: overrides.materialId ?? generateUUID(),
+    materialName: overrides.materialName ?? materialName,
+    unitMeasure: overrides.unitMeasure ?? unitMeasure,
+    categoryType: overrides.categoryType ?? categoryType,
+    selectedType: overrides.selectedType ?? null,
+    selectedColor: overrides.selectedColor ?? null,
     quantity,
     unitPrice,
     totalPrice,
-    ...overrides,
   };
 }
 
@@ -176,12 +193,11 @@ export function buildOrderItem(overrides: Partial<OrderItem> = {}): OrderItem {
     ferragens: overrides.ferragens ?? randomChoice(FERRAGENS),
     valorUnitario,
     valorTotal,
-    templateConfig: null,
-    handleConfig: null,
-    drillingConfig: null,
+    templateConfig: overrides.templateConfig ?? null,
+    handleConfig: overrides.handleConfig ?? null,
+    drillingConfig: overrides.drillingConfig ?? null,
     ordem: overrides.ordem ?? 1,
     options: overrides.options !== undefined ? overrides.options : defaultOptions,
-    ...overrides,
   };
 }
 
@@ -237,6 +253,10 @@ export function buildOrder(options: BuildOrderOptions = {}): Order {
 
   const status: OrderStatus = orderOverrides.status ?? 'WAITING_PRODUCTION';
   const canalAprovacao: ApprovalChannel = orderOverrides.canalAprovacao ?? 'WHATSAPP';
+  const dataAprovacao = orderOverrides.dataAprovacao ?? getRelativeDateISO(-5);
+  const dataPrevisaoEntrega = orderOverrides.dataPrevisaoEntrega ?? getRelativeDateISO(15);
+  const createdAt = orderOverrides.createdAt ?? getRelativeDateTimeISO(-5);
+  const updatedAt = orderOverrides.updatedAt ?? createdAt;
 
   return {
     id,
@@ -249,8 +269,8 @@ export function buildOrder(options: BuildOrderOptions = {}): Order {
     clienteEndereco,
     status,
     canalAprovacao,
-    dataAprovacao: orderOverrides.dataAprovacao ?? '2026-10-15',
-    dataPrevisaoEntrega: orderOverrides.dataPrevisaoEntrega ?? '2026-10-30',
+    dataAprovacao,
+    dataPrevisaoEntrega,
     dataConclusao: orderOverrides.dataConclusao ?? null,
     valorBruto,
     valorDesconto,
@@ -263,11 +283,10 @@ export function buildOrder(options: BuildOrderOptions = {}): Order {
       orderOverrides.observacoes ??
       'Pedido formalizado com snapshot integral de esquadrias gerado por Factory.',
     justificativaCancelamento: orderOverrides.justificativaCancelamento ?? null,
-    createdAt: orderOverrides.createdAt ?? '2026-10-15T08:30:00-03:00',
-    updatedAt: orderOverrides.updatedAt ?? '2026-10-15T08:30:00-03:00',
+    createdAt,
+    updatedAt,
     ativo: orderOverrides.ativo ?? true,
     items,
-    ...orderOverrides,
   };
 }
 
