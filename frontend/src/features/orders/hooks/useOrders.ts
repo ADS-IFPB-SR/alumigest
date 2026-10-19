@@ -26,7 +26,9 @@ export const useOrder = (id?: string) => {
     queryFn: () => ordersApi.getOrderById(id!),
     enabled: Boolean(id),
     retry: (failureCount, error: any) => {
+      if (!error) return false;
       if (error?.response?.status === 404) return false;
+      if (error?.message && /not found|não encontrad/i.test(error.message)) return false;
       return failureCount < 2;
     },
   });
