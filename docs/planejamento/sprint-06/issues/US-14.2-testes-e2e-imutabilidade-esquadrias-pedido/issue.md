@@ -18,13 +18,14 @@ O valor de negócio está em garantir a conformidade, a segurança e a integrida
 
 ## 📝 Escopo Técnico
 
-* **Suíte E2E Cypress**: Implementação do arquivo `frontend/cypress/e2e/orders/us14_2_imutabilidade_esquadrias_pedido.cy.ts`.
+* **Suíte E2E Cypress**: Implementação do arquivo `frontend/cypress/e2e/orders/us14_2_imutabilidade_esquadrias_pedido.cy.ts` integrado ao padrão **Factory Pattern** (`frontend/cypress/support/factories/orderFactory.ts`) para geração de dados e esquadrias dinâmicas sob demanda.
 * **Cenários BDD**:
   1. **Navegação & Ausência de Componentes de Edição**: Verificação de que os botões de ação ("Adicionar Item", "Excluir Item", "Editar Item") não existem na interface.
-  2. **Modo Somente Leitura**: Validação de que dimensões (`larguraMm × alturaMm`), especificações (vidros, perfis, aberturas, ferragens) e valores financeiros não possuem campos editáveis (`input`, `select`, `textarea`, `contenteditable`).
+  2. **Modo Somente Leitura Dinâmico (Factory)**: Validação dinâmica de que dimensões (`larguraMm × alturaMm`), especificações (vidros, perfis, aberturas, ferragens, opções) e valores financeiros gerados sob demanda não possuem campos editáveis (`input`, `select`, `textarea`, `contenteditable`) e preservam fidelidade total.
   3. **Ação Exclusiva de Renegociação (Fluxo Completo)**: Validação de que a única ação de modificação contratual disponível é o botão de cancelamento (`btn-cancel-order`), acionando o `CancelOrderModal`, testando validação de fronteira (<10 caracteres) e executando o cancelamento formal bem-sucedido via `PATCH /orders/{id}/cancel` com transição imediata para `CANCELLED` e persistência documental das esquadrias.
   4. **Blindagem Progressiva em Produção (`IN_PRODUCTION`)**: Validação de que em produção o cancelamento é bloqueado (`btn-cancel-order-restricted` desabilitado com tooltip).
   5. **Integridade em Status Terminais (`COMPLETED` e `CANCELLED`)**: Validação de que os itens preservam a fidelidade documental sem possibilidade de mutação.
+  6. **Resiliência e Escalabilidade Multidataset**: Validação da tabela reagindo dinamicamente a pedidos com múltiplos itens simultâneos, cobrindo cenários com e sem sub-opções de materiais (options).
 * **Contrato de Testabilidade**:
   - `data-testid="btn-cancel-order"` e `data-testid="btn-cancel-order-restricted"` em `OrderDetailHeader.tsx`.
   - `data-testid="order-item-dimensions"`, `order-item-specs"`, `order-item-quantity"`, `order-item-unit-price"` e `order-item-total-price"` em `OrderItemList.tsx`.
@@ -42,6 +43,7 @@ O valor de negócio está em garantir a conformidade, a segurança e a integrida
 - [x] Cenário Adicional: Validar blindagem progressiva no status `IN_PRODUCTION` e persistência documental em `COMPLETED` e `CANCELLED`.
 - [x] Adicionar `data-testid`s semânticos nos componentes `OrderDetailHeader.tsx` e `OrderItemList.tsx`.
 - [x] Configurar script `"test:e2e:us14"` no `frontend/package.json`.
+- [x] Implementar módulo de geração dinâmica `OrderFactory` (`frontend/cypress/support/factories/orderFactory.ts`) no padrão Factory Pattern.
 - [x] Documentar resultados dos testes de aceitação com as evidências do Cypress.
 - [x] Verificar a execução e estabilidade (flakiness) via `npm run test:e2e:us14`.
 
@@ -49,7 +51,7 @@ O valor de negócio está em garantir a conformidade, a segurança e a integrida
 
 ## ✅ Definition of Done (DoD)
 
-1. [x] **Suíte E2E Cypress**: 5 cenários BDD implementados e aprovados com 100% de sucesso.
+1. [x] **Suíte E2E Cypress**: 6 cenários BDD implementados e aprovados com 100% de sucesso (usando `OrderFactory`).
 2. [x] **Zero Regressão**: Testes unitários do frontend (`npm test`) continuam passando sem falhas.
 3. [x] **Qualidade Estática**: 0 erros no linter (`npm run lint`).
 4. [x] **Compilação**: Build do frontend (`npm run build`) executado com sucesso.
