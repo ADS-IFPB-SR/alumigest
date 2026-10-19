@@ -49,6 +49,7 @@ vi.mock('../../features/orders/services/ordersApi', () => ({
     cancelOrder: vi.fn(),
     convertBudget: vi.fn(),
     downloadComprovantePdf: vi.fn(),
+    downloadLabelsPdf: vi.fn(),
     updateStatus: vi.fn(),
   },
   orderApi: {

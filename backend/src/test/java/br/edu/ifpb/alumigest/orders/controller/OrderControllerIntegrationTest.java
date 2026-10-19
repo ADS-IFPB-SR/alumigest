@@ -318,6 +318,48 @@ class OrderControllerIntegrationTest {
     }
 
     @Nested
+    @DisplayName("GET /api/v1/orders/{id}/labels-pdf — Download Etiquetas Térmicas PDF [US-17.2]")
+    class DownloadLabelsPdfTests {
+
+        @Test
+        @DisplayName("Sucesso (200): Deve retornar binário do PDF de etiquetas e headers corretos via /api/v1/orders/{id}/labels-pdf")
+        void downloadLabelsPdfSuccessViaV1Path() throws Exception {
+            MvcResult result = mockMvc.perform(get("/api/v1/orders/{id}/labels-pdf", existingOrder.getId()))
+                    .andExpect(status().isOk())
+                    .andExpect(header().string("Content-Type", "application/pdf"))
+                    .andExpect(header().string("Content-Disposition", containsString("attachment")))
+                    .andExpect(header().string("Content-Disposition", containsString("etiquetas-PED-INTEGRACAO-01.pdf")))
+                    .andReturn();
+
+            byte[] pdfContent = result.getResponse().getContentAsByteArray();
+            assertThat(pdfContent).isNotEmpty();
+        }
+
+        @Test
+        @DisplayName("Sucesso (200): Deve retornar binário do PDF de etiquetas via alias /api/orders/{id}/labels-pdf")
+        void downloadLabelsPdfSuccessViaOrdersPath() throws Exception {
+            MvcResult result = mockMvc.perform(get("/api/orders/{id}/labels-pdf", existingOrder.getId()))
+                    .andExpect(status().isOk())
+                    .andExpect(header().string("Content-Type", "application/pdf"))
+                    .andExpect(header().string("Content-Disposition", containsString("attachment")))
+                    .andExpect(header().string("Content-Disposition", containsString("etiquetas-PED-INTEGRACAO-01.pdf")))
+                    .andReturn();
+
+            byte[] pdfContent = result.getResponse().getContentAsByteArray();
+            assertThat(pdfContent).isNotEmpty();
+        }
+
+        @Test
+        @DisplayName("Erro (404): Pedido inexistente para emissão de etiquetas térmicas PDF")
+        void downloadLabelsPdfNotFound() throws Exception {
+            mockMvc.perform(get("/api/v1/orders/{id}/labels-pdf", UUID.randomUUID()))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.status").value(404))
+                    .andExpect(jsonPath("$.message").exists());
+        }
+    }
+
+    @Nested
     @DisplayName("PATCH /api/v1/orders/{id}/status — Máquina de Estados US-15.1")
     class UpdateStatusTests {
 
