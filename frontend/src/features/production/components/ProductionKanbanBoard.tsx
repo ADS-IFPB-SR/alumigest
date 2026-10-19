@@ -93,6 +93,58 @@ export const ProductionKanbanBoard: React.FC<ProductionKanbanBoardProps> = ({
     }
   };
 
+  // Renderizador do corpo da coluna para evitar operadores ternários aninhados (S3358)
+  const renderColumnContent = (column: (typeof columnsData)[number]) => {
+    if (isLoading) {
+      return (
+        <div data-testid="kanban-skeleton" className="space-y-3">
+          {[1, 2, 3].map((skeletonId) => (
+            <div
+              key={skeletonId}
+              className="animate-pulse bg-white rounded-xl border border-slate-200 p-4 space-y-3 shadow-xs"
+            >
+              <div className="flex justify-between items-center">
+                <div className="h-4 bg-slate-200 rounded-md w-24"></div>
+                <div className="h-4 bg-slate-100 rounded-md w-16"></div>
+              </div>
+              <div className="h-4 bg-slate-200 rounded-md w-3/4"></div>
+              <div className="h-3 bg-slate-100 rounded-md w-1/2"></div>
+              <div className="pt-2 border-t border-slate-100 flex justify-between items-center">
+                <div className="h-3 bg-slate-100 rounded-md w-20"></div>
+                <div className="h-4 bg-slate-100 rounded-md w-12"></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    if (column.orders.length > 0) {
+      return column.orders.map((order) => (
+        <OrderProductionCard
+          key={order.id}
+          order={order}
+          onClickDetails={onClickDetails}
+        />
+      ));
+    }
+
+    return (
+      <div
+        data-testid={`column-empty-${column.id.toLowerCase()}`}
+        className="flex flex-col items-center justify-center h-52 text-center p-6 border-2 border-dashed border-slate-200/90 rounded-xl text-slate-400 bg-white/40"
+      >
+        <Inbox className="w-8 h-8 mb-2 text-slate-300 stroke-[1.5]" />
+        <p className="text-xs font-semibold text-slate-600 leading-snug">
+          {column.emptyMessage}
+        </p>
+        <p className="text-[11px] text-slate-400 mt-1">
+          Arraste uma O.S. para esta coluna para avançar a etapa
+        </p>
+      </div>
+    );
+  };
+
   return (
     <section
       data-testid="production-kanban-board"
@@ -152,51 +204,7 @@ export const ProductionKanbanBoard: React.FC<ProductionKanbanBoardProps> = ({
 
             {/* Lista Rolável de Cartões da Coluna */}
             <div className="flex-1 p-3 space-y-3 overflow-y-auto max-h-[calc(100vh-270px)] min-h-[380px]">
-              {isLoading ? (
-                // Skeletons de Carregamento
-                <div data-testid="kanban-skeleton" className="space-y-3">
-                  {[1, 2, 3].map((skeletonId) => (
-                    <div
-                      key={skeletonId}
-                      className="animate-pulse bg-white rounded-xl border border-slate-200 p-4 space-y-3 shadow-xs"
-                    >
-                      <div className="flex justify-between items-center">
-                        <div className="h-4 bg-slate-200 rounded-md w-24"></div>
-                        <div className="h-4 bg-slate-100 rounded-md w-16"></div>
-                      </div>
-                      <div className="h-4 bg-slate-200 rounded-md w-3/4"></div>
-                      <div className="h-3 bg-slate-100 rounded-md w-1/2"></div>
-                      <div className="pt-2 border-t border-slate-100 flex justify-between items-center">
-                        <div className="h-3 bg-slate-100 rounded-md w-20"></div>
-                        <div className="h-4 bg-slate-100 rounded-md w-12"></div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : column.orders.length > 0 ? (
-                // Lista de Cartões de Produção
-                column.orders.map((order) => (
-                  <OrderProductionCard
-                    key={order.id}
-                    order={order}
-                    onClickDetails={onClickDetails}
-                  />
-                ))
-              ) : (
-                // Estado Vazio da Coluna
-                <div
-                  data-testid={`column-empty-${column.id.toLowerCase()}`}
-                  className="flex flex-col items-center justify-center h-52 text-center p-6 border-2 border-dashed border-slate-200/90 rounded-xl text-slate-400 bg-white/40"
-                >
-                  <Inbox className="w-8 h-8 mb-2 text-slate-300 stroke-[1.5]" />
-                  <p className="text-xs font-semibold text-slate-600 leading-snug">
-                    {column.emptyMessage}
-                  </p>
-                  <p className="text-[11px] text-slate-400 mt-1">
-                    Arraste uma O.S. para esta coluna para avançar a etapa
-                  </p>
-                </div>
-              )}
+              {renderColumnContent(column)}
             </div>
           </section>
         );

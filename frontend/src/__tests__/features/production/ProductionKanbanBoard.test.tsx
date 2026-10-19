@@ -225,7 +225,7 @@ describe('ProductionKanbanBoard Component (US-18.4)', () => {
       );
 
       const skeletons = screen.getAllByTestId('kanban-skeleton');
-      expect(skeletons.length).toBe(3); // 1 para cada coluna
+      expect(skeletons).toHaveLength(3); // 1 para cada coluna
       // Não deve exibir cartões nem estado vazio durante o carregamento
       expect(screen.queryByText('OS-2026-0001')).not.toBeInTheDocument();
       expect(screen.queryByTestId('column-empty-waiting_production')).not.toBeInTheDocument();
