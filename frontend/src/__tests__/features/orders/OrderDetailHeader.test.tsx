@@ -25,6 +25,36 @@ const baseOrder: Order = {
 };
 
 describe('OrderDetailHeader', () => {
+  it('deve exibir botões "Avançar para Aguardando Produção" e "Cancelar Ordem de Serviço" quando status for CREATED', () => {
+    const createdOrder: Order = { ...baseOrder, status: 'CREATED' };
+    const handleAdvanceWaiting = vi.fn();
+    const handleCancel = vi.fn();
+
+    render(
+      <MemoryRouter>
+        <OrderDetailHeader
+          order={createdOrder}
+          onAdvanceWaitingProduction={handleAdvanceWaiting}
+          onOpenCancelModal={handleCancel}
+        />
+      </MemoryRouter>
+    );
+
+    const advanceWaitingBtn = screen.getByRole('button', { name: /avançar para aguardando produção/i });
+    const cancelBtn = screen.getByRole('button', { name: /cancelar (pedido|ordem de serviço)/i });
+
+    expect(advanceWaitingBtn).toBeInTheDocument();
+    expect(cancelBtn).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^avançar para produção$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /concluir produção/i })).not.toBeInTheDocument();
+
+    fireEvent.click(advanceWaitingBtn);
+    expect(handleAdvanceWaiting).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(cancelBtn);
+    expect(handleCancel).toHaveBeenCalledTimes(1);
+  });
+
   it('deve exibir botões "Avançar para Produção" e "Cancelar Pedido" quando status for WAITING_PRODUCTION', () => {
     const handleAdvance = vi.fn();
     const handleCancel = vi.fn();
@@ -134,5 +164,83 @@ describe('OrderDetailHeader', () => {
     expect(
       screen.queryByRole('button', { name: /baixar comprovante pdf/i })
     ).not.toBeInTheDocument();
+  });
+
+  describe('Botão Imprimir Etiquetas (US-17.4)', () => {
+    it('deve exibir o botão "Imprimir Etiquetas" para pedidos não cancelados', () => {
+      const handlePrintLabels = vi.fn();
+
+      render(
+        <MemoryRouter>
+          <OrderDetailHeader
+            order={baseOrder}
+            onPrintLabels={handlePrintLabels}
+          />
+        </MemoryRouter>
+      );
+
+      const labelsBtn = screen.getByRole('button', { name: /imprimir etiquetas/i });
+      expect(labelsBtn).toBeInTheDocument();
+      expect(labelsBtn).not.toBeDisabled();
+
+      fireEvent.click(labelsBtn);
+      expect(handlePrintLabels).toHaveBeenCalledTimes(1);
+    });
+
+    it('deve exibir "Gerando Etiquetas..." e desabilitar o botão enquanto o download está em andamento', () => {
+      render(
+        <MemoryRouter>
+          <OrderDetailHeader
+            order={baseOrder}
+            isDownloadingLabels={true}
+            onPrintLabels={vi.fn()}
+          />
+        </MemoryRouter>
+      );
+
+      const labelsBtn = screen.getByRole('button', { name: /gerando etiquetas/i });
+      expect(labelsBtn).toBeInTheDocument();
+      expect(labelsBtn).toBeDisabled();
+    });
+
+    it('deve ocultar o botão de etiquetas quando o pedido estiver CANCELLED', () => {
+      const cancelledOrder: Order = { ...baseOrder, status: 'CANCELLED' };
+
+      render(
+        <MemoryRouter>
+          <OrderDetailHeader
+            order={cancelledOrder}
+            onPrintLabels={vi.fn()}
+            onOpenThermalModal={vi.fn()}
+          />
+        </MemoryRouter>
+      );
+
+      expect(
+        screen.queryByRole('button', { name: /imprimir etiquetas/i })
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', { name: /visualizar etiquetas/i })
+      ).not.toBeInTheDocument();
+    });
+
+    it('deve exibir o botão "Visualizar Etiquetas" e acionar onOpenThermalModal (US-17.5)', () => {
+      const handleOpenModal = vi.fn();
+
+      render(
+        <MemoryRouter>
+          <OrderDetailHeader
+            order={baseOrder}
+            onOpenThermalModal={handleOpenModal}
+          />
+        </MemoryRouter>
+      );
+
+      const previewBtn = screen.getByRole('button', { name: /visualizar etiquetas/i });
+      expect(previewBtn).toBeInTheDocument();
+
+      fireEvent.click(previewBtn);
+      expect(handleOpenModal).toHaveBeenCalledTimes(1);
+    });
   });
 });

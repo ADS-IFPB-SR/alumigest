@@ -10,6 +10,7 @@ import br.edu.ifpb.alumigest.orders.dto.OrderPdfDTO;
 import br.edu.ifpb.alumigest.orders.dto.OrderResponse;
 import br.edu.ifpb.alumigest.orders.dto.OrderSummaryResponse;
 import br.edu.ifpb.alumigest.orders.service.OrderService;
+import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -38,10 +39,11 @@ import java.util.UUID;
 
 /**
  * Controller REST para consulta e ciclo de vida de Ordens de Serviço / Pedidos de Venda.
+ * Define o contrato canônico oficial {@code /api/v1/orders} documentado via OpenAPI (BUG-040).
  * Depende da abstração {@link OrderService}, nunca da implementação concreta (DIP).
  */
 @RestController
-@RequestMapping({"/api/v1/orders", "/api/v1/ordens-servico"})
+@RequestMapping("/api/v1/orders")
 @Tag(name = "Ordens de Serviço", description = "Endpoints para consulta, criação, conversão e ciclo de vida de ordens de serviço (pedidos de venda)")
 public class OrderController {
 
@@ -112,7 +114,7 @@ public class OrderController {
      * @param request  dados da aprovação (canal, previsão de entrega, observações)
      * @return 201 Created com o pedido gerado no corpo
      */
-    @PostMapping({"/convert/{budgetId}", "/from-budget/{budgetId}"})
+    @PostMapping("/convert/{budgetId}")
     @Operation(
             summary = "Converter orçamento em pedido de venda",
             description = "Converte um orçamento elegível (DRAFT ou SENT) em Pedido de Venda,"
@@ -155,6 +157,22 @@ public class OrderController {
                 .buildAndExpand(response.id())
                 .toUri();
         return ResponseEntity.created(location).body(response);
+    }
+
+    /**
+     * Alias retrocompatível para conversão de orçamento via {@code /from-budget/{budgetId}}.
+     * Oculto da OpenAPI ({@link Hidden}) para garantir rota única canônica na documentação (BUG-040).
+     *
+     * @param budgetId ID do orçamento a ser convertido
+     * @param request  dados da aprovação (canal, previsão de entrega, observações)
+     * @return 201 Created com o pedido gerado no corpo
+     */
+    @Hidden
+    @PostMapping("/from-budget/{budgetId}")
+    public ResponseEntity<OrderResponse> convertBudgetFromBudgetAlias(
+            @PathVariable UUID budgetId,
+            @RequestBody @Valid OrderConvertRequest request) {
+        return convertBudgetToOrder(budgetId, request);
     }
 
     /**
@@ -218,6 +236,59 @@ public class OrderController {
             @PathVariable UUID id) {
 
         OrderPdfDTO pdfDto = orderService.gerarComprovanteById(id);
+
+        ContentDisposition contentDisposition = ContentDisposition.attachment()
+                .filename(pdfDto.filename())
+                .build();
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .headers(headers -> headers.setContentDisposition(contentDisposition))
+                .contentLength(pdfDto.bytes().length)
+                .body(pdfDto.bytes());
+    }
+
+    /**
+     * Gera e exporta as etiquetas térmicas adesivas (100x60mm) para identificação física
+     * das peças da Ordem de Serviço em formato PDF para download.
+     * Suporta filtro opcional por item (?itemId={uuid}). US-17.2 (#449).
+     *
+     * @param id     Identificador único (UUID) do pedido
+     * @param itemId Identificador opcional (UUID) de um item específico para filtragem
+     * @return PDF térmico 100x60mm com Content-Disposition attachment
+     */
+    @GetMapping({"/{id}/labels-pdf", "/{id}/etiquetas-pdf"})
+    @Operation(
+            summary = "Baixar etiquetas térmicas da ordem de serviço em PDF (100x60mm)",
+            description = "Gera e exporta as etiquetas térmicas adesivas de identificação física das peças da Ordem de Serviço em formato PDF térmico (100x60mm) para download."
+                    + " Cada peça física gera exatamente uma etiqueta individual — US-17.2."
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Documento PDF de etiquetas térmicas gerado com sucesso (binário)"
+    )
+    @ApiResponse(
+            responseCode = "400",
+            description = "Identificador de pedido inválido (UUID malformado)",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+    )
+    @ApiResponse(
+            responseCode = "404",
+            description = "Ordem de serviço ou item não encontrado",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+    )
+    @ApiResponse(
+            responseCode = "422",
+            description = "Regra de negócio violada: ordem de serviço não possui itens válidos para emissão de etiquetas",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+    )
+    public ResponseEntity<byte[]> gerarPdfEtiquetas(
+            @Parameter(description = "Identificador único (UUID) do pedido", required = true)
+            @PathVariable UUID id,
+            @Parameter(description = "Identificador opcional (UUID) de um item específico para emissão de etiquetas")
+            @RequestParam(required = false) UUID itemId) {
+
+        OrderPdfDTO pdfDto = orderService.gerarEtiquetasById(id, itemId);
 
         ContentDisposition contentDisposition = ContentDisposition.attachment()
                 .filename(pdfDto.filename())

@@ -13,6 +13,7 @@
     "test:e2e": "cypress run",
     "test:e2e:us14": "cypress run --spec cypress/e2e/orders/us14_2_imutabilidade_esquadrias_pedido.cy.ts",
     "test:e2e:us16": "cypress run --spec cypress/e2e/orders/us16_4_homologacao_quickstart.cy.ts",
+    "test:e2e:us17": "cypress run --spec cypress/e2e/orders/us17_5_etiquetas_identificacao_termica.cy.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"

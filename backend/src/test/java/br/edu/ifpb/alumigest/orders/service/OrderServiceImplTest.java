@@ -17,12 +17,14 @@ import br.edu.ifpb.alumigest.orders.domain.OrderItem;
 import br.edu.ifpb.alumigest.orders.domain.OrderStatus;
 import br.edu.ifpb.alumigest.orders.dto.OrderCancelRequest;
 import br.edu.ifpb.alumigest.orders.dto.OrderConvertRequest;
+import br.edu.ifpb.alumigest.orders.dto.OrderPdfDTO;
 import br.edu.ifpb.alumigest.orders.dto.OrderResponse;
 import br.edu.ifpb.alumigest.orders.dto.OrderSummaryResponse;
 import br.edu.ifpb.alumigest.orders.mapper.OrderMapper;
 import br.edu.ifpb.alumigest.orders.repository.OrderRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -71,6 +73,12 @@ class OrderServiceImplTest {
 
     @Mock
     private OrderMapper orderMapper;
+
+    @Mock
+    private OrderPdfService orderPdfService;
+
+    @Mock
+    private LabelPdfService labelPdfService;
 
     @InjectMocks
     private OrderServiceImpl orderService;
@@ -167,6 +175,7 @@ class OrderServiceImplTest {
         verify(orderRepository).saveAndFlush(orderCaptor.capture());
         Order orderSalvo = orderCaptor.getValue();
 
+        assertThat(orderSalvo.getStatus()).isEqualTo(OrderStatus.CREATED);
         assertThat(orderSalvo.getItems()).hasSize(1);
         OrderItem itemGerado = orderSalvo.getItems().getFirst();
 
@@ -514,6 +523,60 @@ class OrderServiceImplTest {
     }
 
     @Test
+    @DisplayName("[US-15.1] Deve avançar para aguardando produção quando pedido está no status CREATED")
+    void shouldAdvanceToWaitingProductionWhenOrderIsCreated() {
+        // Arrange
+        Order order = Order.builder()
+                .id(orderId)
+                .codigo("OS-2026-0001")
+                .orcamentoId(budgetId)
+                .clienteNome("Empresa XPTO Ltda")
+                .canalAprovacao(ApprovalChannel.WHATSAPP)
+                .status(OrderStatus.CREATED)
+                .dataPrevisaoEntrega(request.dataPrevisaoEntrega())
+                .valorBruto(budget.getSubtotal())
+                .valorDesconto(budget.getDiscountValue())
+                .valorLiquido(budget.getTotal())
+                .build();
+        OrderResponse expectedResponse = buildOrderResponse();
+
+        given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+        given(orderRepository.save(order)).willReturn(order);
+        given(orderMapper.toResponse(order)).willReturn(expectedResponse);
+
+        // Act
+        OrderResponse result = orderService.updateStatus(orderId, OrderStatus.WAITING_PRODUCTION);
+
+        // Assert
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.WAITING_PRODUCTION);
+        assertThat(result).isEqualTo(expectedResponse);
+
+        verify(orderRepository).save(order);
+        verify(orderMapper).toResponse(order);
+    }
+
+    @Test
+    @DisplayName("[US-15.1] Deve rejeitar início de produção quando pedido está em CREATED (sem passar por WAITING_PRODUCTION)")
+    void shouldRejectStartingProductionWhenOrderIsCreated() {
+        // Arrange
+        Order order = Order.builder()
+                .id(orderId)
+                .status(OrderStatus.CREATED)
+                .build();
+
+        given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+
+        // Act & Assert
+        assertThatThrownBy(() ->
+                orderService.updateStatus(orderId, OrderStatus.IN_PRODUCTION)
+        )
+                .isInstanceOf(ConflictException.class)
+                .hasMessageContaining("Apenas pedidos aguardando produção podem entrar em produção.");
+
+        verify(orderRepository, never()).save(any());
+    }
+
+    @Test
     @DisplayName("[US-15.1] Deve rejeitar destino de status não permitido")
     void shouldThrowConflictExceptionWhenTargetStatusIsNotAllowed() {
         // Arrange
@@ -523,9 +586,10 @@ class OrderServiceImplTest {
 
         // Act & Assert
         assertThatThrownBy(() ->
-                orderService.updateStatus(orderId, OrderStatus.WAITING_PRODUCTION)
+                orderService.updateStatus(orderId, OrderStatus.CANCELLED)
         )
-                .isInstanceOf(ConflictException.class);
+                .isInstanceOf(ConflictException.class)
+                .hasMessageContaining("Não é permitida a transição para o status CANCELLED");
 
         verify(orderRepository, never()).save(any());
     }
@@ -701,5 +765,54 @@ class OrderServiceImplTest {
                 .hasMessageContaining("pelo menos 10 caracteres");
 
         verify(orderRepository, never()).save(any());
+    }
+
+    @Nested
+    @DisplayName("Cenários de Geração de Etiquetas Térmicas (gerarEtiquetasById) [US-17.2]")
+    class GerarEtiquetasByIdTests {
+
+        @Test
+        @DisplayName("Deve gerar etiquetas térmicas com sucesso para pedido existente")
+        void shouldGenerateLabelsSuccessfullyForExistingOrder() {
+            Order savedOrder = buildSavedOrder();
+            byte[] fakeBytes = "%PDF-1.4 labels".getBytes();
+            given(orderRepository.findByIdWithDetails(orderId)).willReturn(Optional.of(savedOrder));
+            given(labelPdfService.gerarEtiquetas(savedOrder, null)).willReturn(fakeBytes);
+
+            OrderPdfDTO result = orderService.gerarEtiquetasById(orderId);
+
+            assertThat(result).isNotNull();
+            assertThat(result.bytes()).isEqualTo(fakeBytes);
+            assertThat(result.filename()).isEqualTo("etiquetas-" + savedOrder.getCodigo().replace("/", "-") + ".pdf");
+            verify(labelPdfService).gerarEtiquetas(savedOrder, null);
+        }
+
+        @Test
+        @DisplayName("Deve repassar itemId ao LabelPdfService quando informado")
+        void shouldPassItemIdToLabelPdfServiceWhenProvided() {
+            Order savedOrder = buildSavedOrder();
+            UUID itemId = UUID.randomUUID();
+            byte[] fakeBytes = "%PDF-1.4 labels single".getBytes();
+            given(orderRepository.findByIdWithDetails(orderId)).willReturn(Optional.of(savedOrder));
+            given(labelPdfService.gerarEtiquetas(savedOrder, itemId)).willReturn(fakeBytes);
+
+            OrderPdfDTO result = orderService.gerarEtiquetasById(orderId, itemId);
+
+            assertThat(result).isNotNull();
+            assertThat(result.bytes()).isEqualTo(fakeBytes);
+            verify(labelPdfService).gerarEtiquetas(savedOrder, itemId);
+        }
+
+        @Test
+        @DisplayName("Deve lançar ResourceNotFoundException quando pedido não existir")
+        void shouldThrowResourceNotFoundExceptionWhenOrderDoesNotExist() {
+            given(orderRepository.findByIdWithDetails(orderId)).willReturn(Optional.empty());
+
+            assertThatThrownBy(() -> orderService.gerarEtiquetasById(orderId))
+                    .isInstanceOf(ResourceNotFoundException.class)
+                    .hasMessageContaining("Pedido");
+
+            verify(labelPdfService, never()).gerarEtiquetas(any(), any());
+        }
     }
 }

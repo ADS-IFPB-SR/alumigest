@@ -62,12 +62,18 @@
       describe('OrderDetailPage — [US-13.5] Visualização Detalhada do Pedido de Venda', () => {
         const mockDownloadPdf = vi.fn();
         const mockDownloadComprovante = vi.fn();
+        const mockDownloadLabels = vi.fn();
 
         beforeEach(() => {
           vi.clearAllMocks();
 
           vi.spyOn(useOrdersModule, 'useDownloadComprovantePdf').mockReturnValue({
             mutate: mockDownloadComprovante,
+            isPending: false,
+          } as any);
+
+          vi.spyOn(useOrdersModule, 'useDownloadLabelsPdf').mockReturnValue({
+            mutate: mockDownloadLabels,
             isPending: false,
           } as any);
 
@@ -341,5 +347,129 @@
             id: 'order-uuid-1',
             codigo: 'OS-2026-0001',
           });
+        });
+
+        it('deve disparar o download das etiquetas térmicas PDF do pedido (US-17.4)', () => {
+          vi.spyOn(useOrdersModule, 'useOrder').mockReturnValue({
+            data: mockOrder,
+            isLoading: false,
+            isError: false,
+          } as any);
+
+          render(
+            <MemoryRouter initialEntries={['/ordens-servico/order-uuid-1']}>
+              <Routes>
+                <Route path="/ordens-servico/:id" element={<OrderDetailPage />} />
+              </Routes>
+            </MemoryRouter>
+          );
+
+          fireEvent.click(screen.getByRole('button', { name: /imprimir etiquetas/i }));
+
+          expect(mockDownloadLabels).toHaveBeenCalledWith({
+            id: 'order-uuid-1',
+            codigo: 'OS-2026-0001',
+          });
+        });
+
+        it('deve avançar para WAITING_PRODUCTION ao clicar no CTA quando a ordem estiver em CREATED', () => {
+          const createdOrder: Order = { ...mockOrder, status: 'CREATED' };
+          const mockUpdateStatus = vi.fn((_status, options) => {
+            options?.onSuccess?.();
+          });
+
+          vi.spyOn(useOrdersModule, 'useOrder').mockReturnValue({
+            data: createdOrder,
+            isLoading: false,
+            isError: false,
+          } as any);
+
+          vi.spyOn(useOrdersModule, 'useUpdateOrderStatus').mockReturnValue({
+            mutate: mockUpdateStatus,
+            isPending: false,
+          } as any);
+
+          render(
+            <MemoryRouter initialEntries={['/ordens-servico/order-uuid-1']}>
+              <Routes>
+                <Route path="/ordens-servico/:id" element={<OrderDetailPage />} />
+              </Routes>
+            </MemoryRouter>
+          );
+
+          const advanceWaitingBtn = screen.getByRole('button', { name: /avançar para aguardando produção/i });
+          expect(advanceWaitingBtn).toBeInTheDocument();
+
+          fireEvent.click(advanceWaitingBtn);
+
+          expect(mockUpdateStatus).toHaveBeenCalledWith('WAITING_PRODUCTION', expect.any(Object));
+          expect(toast.success).toHaveBeenCalledWith('Ordem de serviço avançada para aguardando produção.');
+        });
+
+        it('deve avançar para IN_PRODUCTION ao clicar no CTA quando a ordem estiver em WAITING_PRODUCTION', () => {
+          const mockUpdateStatus = vi.fn((status, options) => {
+            options?.onSuccess?.();
+          });
+
+          vi.spyOn(useOrdersModule, 'useOrder').mockReturnValue({
+            data: mockOrder, // status: 'WAITING_PRODUCTION'
+            isLoading: false,
+            isError: false,
+          } as any);
+
+          vi.spyOn(useOrdersModule, 'useUpdateOrderStatus').mockReturnValue({
+            mutate: mockUpdateStatus,
+            isPending: false,
+          } as any);
+
+          render(
+            <MemoryRouter initialEntries={['/ordens-servico/order-uuid-1']}>
+              <Routes>
+                <Route path="/ordens-servico/:id" element={<OrderDetailPage />} />
+              </Routes>
+            </MemoryRouter>
+          );
+
+          const advanceProductionBtn = screen.getByRole('button', { name: /avançar para produção/i });
+          expect(advanceProductionBtn).toBeInTheDocument();
+
+          fireEvent.click(advanceProductionBtn);
+
+          expect(mockUpdateStatus).toHaveBeenCalledWith('IN_PRODUCTION', expect.any(Object));
+          expect(toast.success).toHaveBeenCalledWith('Ordem de serviço avançada para produção.');
+        });
+
+        it('deve avançar para COMPLETED ao clicar no CTA quando a ordem estiver em IN_PRODUCTION', () => {
+          const inProductionOrder: Order = { ...mockOrder, status: 'IN_PRODUCTION' };
+          const mockUpdateStatus = vi.fn((status, options) => {
+            options?.onSuccess?.();
+          });
+
+          vi.spyOn(useOrdersModule, 'useOrder').mockReturnValue({
+            data: inProductionOrder,
+            isLoading: false,
+            isError: false,
+          } as any);
+
+          vi.spyOn(useOrdersModule, 'useUpdateOrderStatus').mockReturnValue({
+            mutate: mockUpdateStatus,
+            isPending: false,
+          } as any);
+
+          render(
+            <MemoryRouter initialEntries={['/ordens-servico/order-uuid-1']}>
+              <Routes>
+                <Route path="/ordens-servico/:id" element={<OrderDetailPage />} />
+              </Routes>
+            </MemoryRouter>
+          );
+
+          const completeBtn = screen.getByRole('button', { name: /concluir produção/i });
+          expect(completeBtn).toBeInTheDocument();
+
+          fireEvent.click(completeBtn);
+
+          expect(mockUpdateStatus).toHaveBeenCalledWith('COMPLETED', expect.any(Object));
+          expect(toast.success).toHaveBeenCalledWith('Ordem de serviço concluída com sucesso.');
         });
       });
