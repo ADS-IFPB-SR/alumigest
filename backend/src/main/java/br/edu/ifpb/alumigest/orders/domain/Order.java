@@ -59,7 +59,7 @@ public class Order {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 25)
-    private OrderStatus status = OrderStatus.WAITING_PRODUCTION;
+    private OrderStatus status = OrderStatus.CREATED;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "canal_aprovacao", nullable = false, length = 20)
@@ -124,7 +124,7 @@ public class Order {
         this.clienteNome = builder.clienteNome;
         this.clienteTelefone = builder.clienteTelefone;
         this.clienteEndereco = builder.clienteEndereco;
-        this.status = builder.status != null ? builder.status : OrderStatus.WAITING_PRODUCTION;
+        this.status = builder.status != null ? builder.status : OrderStatus.CREATED;
         this.canalAprovacao = builder.canalAprovacao;
         this.dataAprovacao = builder.dataAprovacao != null
                 ? builder.dataAprovacao : LocalDate.now(ZoneOffset.UTC);
@@ -157,7 +157,7 @@ public class Order {
             this.dataPrevisaoEntrega = this.dataAprovacao.plusDays(15);
         }
         if (this.status == null) {
-            this.status = OrderStatus.WAITING_PRODUCTION;
+            this.status = OrderStatus.CREATED;
         }
         if (this.ativo == null) {
             this.ativo = true;
@@ -191,7 +191,19 @@ public class Order {
     }
 
     /**
+     * Transita o pedido para o status de aguardando produção (WAITING_PRODUCTION).
+     * Somente permitido para pedidos no status CREATED.
+     */
+    public void aguardarProducao() {
+        if (this.status != OrderStatus.CREATED) {
+            throw new BusinessException("Apenas pedidos recém-criados podem avançar para aguardando produção.");
+        }
+        this.status = OrderStatus.WAITING_PRODUCTION;
+    }
+
+    /**
      * Transita o pedido para o status de fabricação (IN_PRODUCTION).
+     * Somente permitido para pedidos no status WAITING_PRODUCTION.
      */
     public void iniciarProducao() {
         if (this.status != OrderStatus.WAITING_PRODUCTION) {
@@ -405,7 +417,7 @@ public class Order {
         private String clienteNome;
         private String clienteTelefone;
         private String clienteEndereco;
-        private OrderStatus status = OrderStatus.WAITING_PRODUCTION;
+        private OrderStatus status = OrderStatus.CREATED;
         private ApprovalChannel canalAprovacao;
         private LocalDate dataAprovacao = LocalDate.now(ZoneOffset.UTC);
         private LocalDate dataPrevisaoEntrega;

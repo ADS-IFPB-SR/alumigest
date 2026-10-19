@@ -1,7 +1,8 @@
-﻿# API Contract: Orders REST Endpoints
+# API Contract: Orders REST Endpoints
 
-**Base Path**: `/api/orders`
-**Content-Type**: `application/json`
+**Base Path Canônico**: `/api/v1/orders`  
+**Base Path Legado**: `/api/orders` (Mantido exclusivamente para compatibilidade retroativa; ver [Sprint 06 api-orders.md](../../sprint-06/contracts/api-orders.md))  
+**Content-Type**: `application/json`  
 
 ---
 

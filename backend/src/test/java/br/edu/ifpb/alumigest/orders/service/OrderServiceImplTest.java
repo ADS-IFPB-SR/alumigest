@@ -175,6 +175,7 @@ class OrderServiceImplTest {
         verify(orderRepository).saveAndFlush(orderCaptor.capture());
         Order orderSalvo = orderCaptor.getValue();
 
+        assertThat(orderSalvo.getStatus()).isEqualTo(OrderStatus.CREATED);
         assertThat(orderSalvo.getItems()).hasSize(1);
         OrderItem itemGerado = orderSalvo.getItems().getFirst();
 
@@ -522,6 +523,60 @@ class OrderServiceImplTest {
     }
 
     @Test
+    @DisplayName("[US-15.1] Deve avançar para aguardando produção quando pedido está no status CREATED")
+    void shouldAdvanceToWaitingProductionWhenOrderIsCreated() {
+        // Arrange
+        Order order = Order.builder()
+                .id(orderId)
+                .codigo("OS-2026-0001")
+                .orcamentoId(budgetId)
+                .clienteNome("Empresa XPTO Ltda")
+                .canalAprovacao(ApprovalChannel.WHATSAPP)
+                .status(OrderStatus.CREATED)
+                .dataPrevisaoEntrega(request.dataPrevisaoEntrega())
+                .valorBruto(budget.getSubtotal())
+                .valorDesconto(budget.getDiscountValue())
+                .valorLiquido(budget.getTotal())
+                .build();
+        OrderResponse expectedResponse = buildOrderResponse();
+
+        given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+        given(orderRepository.save(order)).willReturn(order);
+        given(orderMapper.toResponse(order)).willReturn(expectedResponse);
+
+        // Act
+        OrderResponse result = orderService.updateStatus(orderId, OrderStatus.WAITING_PRODUCTION);
+
+        // Assert
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.WAITING_PRODUCTION);
+        assertThat(result).isEqualTo(expectedResponse);
+
+        verify(orderRepository).save(order);
+        verify(orderMapper).toResponse(order);
+    }
+
+    @Test
+    @DisplayName("[US-15.1] Deve rejeitar início de produção quando pedido está em CREATED (sem passar por WAITING_PRODUCTION)")
+    void shouldRejectStartingProductionWhenOrderIsCreated() {
+        // Arrange
+        Order order = Order.builder()
+                .id(orderId)
+                .status(OrderStatus.CREATED)
+                .build();
+
+        given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+
+        // Act & Assert
+        assertThatThrownBy(() ->
+                orderService.updateStatus(orderId, OrderStatus.IN_PRODUCTION)
+        )
+                .isInstanceOf(ConflictException.class)
+                .hasMessageContaining("Apenas pedidos aguardando produção podem entrar em produção.");
+
+        verify(orderRepository, never()).save(any());
+    }
+
+    @Test
     @DisplayName("[US-15.1] Deve rejeitar destino de status não permitido")
     void shouldThrowConflictExceptionWhenTargetStatusIsNotAllowed() {
         // Arrange
@@ -531,9 +586,10 @@ class OrderServiceImplTest {
 
         // Act & Assert
         assertThatThrownBy(() ->
-                orderService.updateStatus(orderId, OrderStatus.WAITING_PRODUCTION)
+                orderService.updateStatus(orderId, OrderStatus.CANCELLED)
         )
-                .isInstanceOf(ConflictException.class);
+                .isInstanceOf(ConflictException.class)
+                .hasMessageContaining("Não é permitida a transição para o status CANCELLED");
 
         verify(orderRepository, never()).save(any());
     }

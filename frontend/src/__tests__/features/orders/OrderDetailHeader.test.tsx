@@ -25,6 +25,36 @@ const baseOrder: Order = {
 };
 
 describe('OrderDetailHeader', () => {
+  it('deve exibir botões "Avançar para Aguardando Produção" e "Cancelar Ordem de Serviço" quando status for CREATED', () => {
+    const createdOrder: Order = { ...baseOrder, status: 'CREATED' };
+    const handleAdvanceWaiting = vi.fn();
+    const handleCancel = vi.fn();
+
+    render(
+      <MemoryRouter>
+        <OrderDetailHeader
+          order={createdOrder}
+          onAdvanceWaitingProduction={handleAdvanceWaiting}
+          onOpenCancelModal={handleCancel}
+        />
+      </MemoryRouter>
+    );
+
+    const advanceWaitingBtn = screen.getByRole('button', { name: /avançar para aguardando produção/i });
+    const cancelBtn = screen.getByRole('button', { name: /cancelar (pedido|ordem de serviço)/i });
+
+    expect(advanceWaitingBtn).toBeInTheDocument();
+    expect(cancelBtn).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^avançar para produção$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /concluir produção/i })).not.toBeInTheDocument();
+
+    fireEvent.click(advanceWaitingBtn);
+    expect(handleAdvanceWaiting).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(cancelBtn);
+    expect(handleCancel).toHaveBeenCalledTimes(1);
+  });
+
   it('deve exibir botões "Avançar para Produção" e "Cancelar Pedido" quando status for WAITING_PRODUCTION', () => {
     const handleAdvance = vi.fn();
     const handleCancel = vi.fn();

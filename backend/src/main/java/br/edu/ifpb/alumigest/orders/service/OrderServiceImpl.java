@@ -84,17 +84,8 @@ public class OrderServiceImpl implements OrderService {
     }
 
     /**
-     * Converte um orçamento aprovado em Pedido de Venda (Ordem de Serviço) oficial.
-     *
-     * Resiliência a Concorrência (Issue #408):
-     * A anotação @Retryable intercepta violações de unicidade (DataIntegrityViolationException
-     * e TransactionSystemException). Como o @EnableRetry possui precedência (order = 0), o
-     * interceptor de retry atua externamente ao interceptor de transação (@Transactional),
-     * garantindo que cada tentativa de retry execute dentro de uma NOVA transação limpa.
-     * O uso de orderRepository.saveAndFlush força a sincronização imediata dos comandos SQL
-     * com o banco de dados antes da conclusão do método, materializando a constraint UNIQUE
-     * (uk_orders_codigo) e disparando o retry caso outra transação concorrente tenha obtido
-     * o mesmo código no milissegundo de commit.
+     * Converte um orçamento aprovado em Pedido de Venda oficial.
+     * Possui retry para garantir unicidade de código sob concorrência.
      */
     @Override
     @Retryable(
@@ -125,6 +116,7 @@ public class OrderServiceImpl implements OrderService {
                 .clienteNome(resolveCustomerName(budget))
                 .clienteTelefone(resolveCustomerPhone(budget))
                 .clienteEndereco(resolveCustomerAddress(budget))
+                .status(OrderStatus.CREATED)
                 .canalAprovacao(request.canalAprovacao())
                 .dataPrevisaoEntrega(request.dataPrevisaoEntrega())
                 .valorBruto(orZero(budget.getSubtotal()).setScale(2, RoundingMode.HALF_EVEN))
@@ -203,11 +195,7 @@ public class OrderServiceImpl implements OrderService {
             EnumSet.of(BudgetStatus.DRAFT, BudgetStatus.SENT);
 
     /**
-     * Valida que o orçamento está em um status elegível para conversão.
-     * Aceita DRAFT, SENT e APPROVED. Rejeita CANCELLED, REJECTED e EXPIRED.
-     *
-     * @param budget orçamento a ser validado
-     * @throws BusinessException se o status não for elegível para conversão
+     * Valida se o status e a validade do orçamento permitem conversão.
      */
     private void validateBudgetEligibility(Budget budget) {
         if (budget.isExpired()) {
@@ -225,10 +213,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     /**
-     * Valida que o orçamento possui ao menos um item antes de gerar o pedido.
-     *
-     * @param budget orçamento a ser validado
-     * @throws BusinessException se o orçamento não possuir itens
+     * Valida se o orçamento possui itens antes da conversão.
      */
     private void validateBudgetHasItems(Budget budget) {
         if (budget.getItems() == null || budget.getItems().isEmpty()) {
@@ -238,11 +223,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     /**
-     * Garante idempotência: um orçamento só pode possuir um pedido ativo.
-     * Pedidos cancelados permanecem no histórico e não bloqueiam uma nova conversão.
-     *
-     * @param budgetId ID do orçamento
-     * @throws ConflictException se já existir pedido ativo para o orçamento informado
+     * Garante idempotência: valida se já existe um pedido ativo para o orçamento.
      */
     private void validateIdempotency(UUID budgetId) {
         if (orderRepository.existsByOrcamentoIdAndStatusNot(budgetId, OrderStatus.CANCELLED)) {
@@ -252,10 +233,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     /**
-     * Converte todos os itens do orçamento em itens do pedido (snapshot / lock de preços).
-     *
-     * @param budget orçamento de origem
-     * @param order  pedido destino
+     * Converte os itens e opções do orçamento em itens do pedido.
      */
     private void convertItems(Budget budget, Order order) {
         List<BudgetItem> budgetItems = budget.getItems();
@@ -272,20 +250,8 @@ public class OrderServiceImpl implements OrderService {
     }
 
     /**
-     * Constrói um {@link OrderItem} a partir de um {@link BudgetItem} via Builder Pattern.
-     *
-     * <p><strong>Regra financeira:</strong> {@code budgetItem.getSubtotal()} já representa o
-     * total do item (preço unitário × quantidade), conforme calculado pelo
-     * {@code BudgetPricingService}. Portanto:
-     * <ul>
-     *   <li>{@code valorTotal} = subtotal do item (congelado do orçamento)</li>
-     *   <li>{@code valorUnitario} = valorTotal / quantidade (derivado por divisão)</li>
-     * </ul>
-     * Isso evita a multiplicação dupla da quantidade (qty²).
-     *
-     * @param budgetItem item do orçamento original
-     * @param ordem      posição sequencial do item no pedido
-     * @return item do pedido com snapshot dos dados técnicos e financeiros
+     * Constrói o {@link OrderItem} a partir do {@link BudgetItem}, calculando o valor unitário
+     * derivado do subtotal congelado para evitar multiplicação dupla de quantidade.
      */
     private OrderItem buildOrderItem(BudgetItem budgetItem, int ordem) {
         int largura = budgetItem.getWidthMm() != null ? budgetItem.getWidthMm().intValue() : 0;
@@ -317,10 +283,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     /**
-     * Converte as opções de insumo de um item do orçamento em opções do item do pedido.
-     *
-     * @param budgetItem item do orçamento de origem
-     * @param orderItem  item do pedido destino
+     * Converte as opções de insumo do item de orçamento em opções do item do pedido.
      */
     private void convertOptions(BudgetItem budgetItem, OrderItem orderItem) {
         List<BudgetItemOption> opcoes = budgetItem.getOptions();
@@ -349,10 +312,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     /**
-     * Retorna o nome do cliente a partir do orçamento.
-     *
-     * @param budget orçamento de origem
-     * @return nome do cliente ou valor padrão se não disponível
+     * Retorna o nome do cliente a partir do orçamento ou valor padrão.
      */
     private String resolveCustomerName(Budget budget) {
         if (budget.getClient() != null && budget.getClient().getFullName() != null) {
@@ -363,9 +323,6 @@ public class OrderServiceImpl implements OrderService {
 
     /**
      * Retorna o telefone do cliente a partir do objeto de domínio Client.
-     *
-     * @param budget orçamento de origem
-     * @return telefone do cliente ou null
      */
     private String resolveCustomerPhone(Budget budget) {
         if (budget.getClient() != null) {
@@ -374,55 +331,46 @@ public class OrderServiceImpl implements OrderService {
         return null;
     }
 
-  /**
-   * Compõe o endereço do cliente a partir dos campos individuais (street, number, city, state).
-   *
-   * @param budget orçamento de origem
-   * @return endereço formatado ou null
-   */
-  private String resolveCustomerAddress(Budget budget) {
-    if (budget.getClient() == null) {
-      return null;
+    /**
+     * Compõe o endereço do cliente a partir dos campos individuais.
+     */
+    private String resolveCustomerAddress(Budget budget) {
+        if (budget.getClient() == null) {
+            return null;
+        }
+        var c = budget.getClient();
+        var sb = new StringBuilder();
+        if (c.getStreet() != null) {
+            sb.append(c.getStreet());
+        }
+        if (c.getNumber() != null) {
+            sb.append(", ").append(c.getNumber());
+        }
+        if (c.getCity() != null) {
+            sb.append(" - ").append(c.getCity());
+        }
+        if (c.getState() != null) {
+            sb.append("/").append(c.getState());
+        }
+        return !sb.isEmpty() ? sb.toString() : null;
     }
-    var c = budget.getClient();
-    var sb = new StringBuilder();
-    if (c.getStreet() != null) {
-      sb.append(c.getStreet());
-    }
-    if (c.getNumber() != null) {
-      sb.append(", ").append(c.getNumber());
-    }
-    if (c.getCity() != null) {
-      sb.append(" - ").append(c.getCity());
-    }
-    if (c.getState() != null) {
-      sb.append("/").append(c.getState());
-    }
-    return !sb.isEmpty() ? sb.toString() : null;
-  }
 
-  /**
-   * Retorna a condição de pagamento como String a partir do enum PaymentCondition do orçamento.
-   *
-   * @param budget orçamento de origem
-   * @return nome do enum ou null
-   */
-  private String resolvePaymentCondition(Budget budget) {
-    if (budget.getPaymentCondition() != null) {
-      return budget.getPaymentCondition().name();
+    /**
+     * Retorna o identificador da condição de pagamento do orçamento.
+     */
+    private String resolvePaymentCondition(Budget budget) {
+        if (budget.getPaymentCondition() != null) {
+            return budget.getPaymentCondition().name();
+        }
+        return null;
     }
-    return null;
-  }
 
-  /**
-   * Garante que um BigDecimal nunca seja null, retornando ZERO nesse caso.
-   *
-   * @param value valor potencialmente nulo
-   * @return valor original ou BigDecimal.ZERO
-   */
-  private BigDecimal orZero(BigDecimal value) {
-    return value != null ? value : BigDecimal.ZERO;
-  }
+    /**
+     * Garante que um BigDecimal nunca seja null, retornando ZERO nesse caso.
+     */
+    private BigDecimal orZero(BigDecimal value) {
+        return value != null ? value : BigDecimal.ZERO;
+    }
     @Override
     @Transactional
     public OrderResponse updateStatus(UUID id, OrderStatus targetStatus) {
@@ -434,6 +382,7 @@ public class OrderServiceImpl implements OrderService {
         }
         try {
             switch (targetStatus) {
+                case WAITING_PRODUCTION -> order.aguardarProducao();
                 case IN_PRODUCTION -> order.iniciarProducao();
                 case COMPLETED -> order.concluir(null);
                 default -> throw new ConflictException(
