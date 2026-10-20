@@ -36,6 +36,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -53,6 +54,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 /**
  * Testes unitários de {@link OrderServiceImpl}.
@@ -592,6 +595,50 @@ class OrderServiceImplTest {
                 .hasMessageContaining("Não é permitida a transição para o status CANCELLED");
 
         verify(orderRepository, never()).save(any());
+    }
+
+    // =========================================================================
+    // Formatação de Endereço (Critério da Issue #442)
+    // =========================================================================
+    @ParameterizedTest(name = "[{index}] Rua: {0}, Num: {1}, Cid: {2}, UF: {3} -> Esperado: {4}")
+    @CsvSource(value = {
+            "Rua Central, 123, Sapé, PB, 'Rua Central, 123 - Sapé/PB'",
+            "Rua Central, null, Sapé, PB, 'Rua Central - Sapé/PB'",
+            "null, 123, Sapé, PB, '123 - Sapé/PB'",
+            "Rua Central, null, null, PB, 'Rua Central - PB'",
+            "null, null, Sapé, PB, 'Sapé/PB'",
+            "null, null, null, PB, PB",
+            "Rua Central, 123, null, null, 'Rua Central, 123'",
+            "null, null, null, null, null",
+            "   ,    ,    ,   , null" 
+    }, nullValues = {"null"})
+    @DisplayName("[BugFix] Deve formatar strings de endereço de cliente parciais ou em branco corretamente")
+    void deveFormatarEnderecoDoClienteCorretamenteNaConversao(String street, String number, String city, String state, String expectedAddress) {
+        // Arrange
+        client.setStreet(street);
+        client.setNumber(number);
+        client.setCity(city);
+        client.setState(state);
+        
+        given(budgetRepository.findByIdWithDetails(budgetId)).willReturn(Optional.of(budget));
+        given(orderRepository.existsByOrcamentoIdAndStatusNot(budgetId, OrderStatus.CANCELLED)).willReturn(false);
+        given(orderCodeGenerator.generateNextCode()).willReturn("OS-2026-TEST");
+        
+        Order mockSaved = Order.builder().build();
+        
+        given(orderRepository.saveAndFlush(any(Order.class))).willReturn(mockSaved);
+        given(orderMapper.toResponse(mockSaved)).willReturn(buildOrderResponse());
+        
+        ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
+
+        // Act
+        orderService.convertBudgetToOrder(budgetId, request);
+
+        // Assert
+        verify(orderRepository).saveAndFlush(orderCaptor.capture());
+        Order orderEnviadaParaSalvar = orderCaptor.getValue();
+        
+        assertThat(orderEnviadaParaSalvar.getClienteEndereco()).isEqualTo(expectedAddress);
     }
 
     @Test
