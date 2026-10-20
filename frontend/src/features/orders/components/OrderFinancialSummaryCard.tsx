@@ -22,13 +22,13 @@ export const OrderFinancialSummaryCard: React.FC<OrderFinancialSummaryCardProps>
       <div className="space-y-2 text-sm">
         <div className="flex justify-between text-on-surface-variant">
           <span>Valor Bruto:</span>
-          <span className="font-data-mono font-medium">{formatBRL(order.valorBruto)}</span>
+          <span data-testid="financial-summary-gross" className="font-data-mono font-medium">{formatBRL(order.valorBruto)}</span>
         </div>
 
         {order.valorDesconto > 0 && (
           <div className="flex justify-between text-rose-600">
             <span>Desconto Comercial:</span>
-            <span className="font-data-mono font-medium">
+            <span data-testid="financial-summary-discount" className="font-data-mono font-medium">
               - {formatBRL(order.valorDesconto)}
             </span>
           </div>
@@ -37,20 +37,20 @@ export const OrderFinancialSummaryCard: React.FC<OrderFinancialSummaryCardProps>
         {order.taxaInstalacao > 0 && (
           <div className="flex justify-between text-on-surface-variant">
             <span>Taxa de Instalação:</span>
-            <span className="font-data-mono font-medium">+ {formatBRL(order.taxaInstalacao)}</span>
+            <span data-testid="financial-summary-installation" className="font-data-mono font-medium">+ {formatBRL(order.taxaInstalacao)}</span>
           </div>
         )}
 
         {order.taxaFrete > 0 && (
           <div className="flex justify-between text-on-surface-variant">
             <span>Taxa de Frete:</span>
-            <span className="font-data-mono font-medium">+ {formatBRL(order.taxaFrete)}</span>
+            <span data-testid="financial-summary-shipping" className="font-data-mono font-medium">+ {formatBRL(order.taxaFrete)}</span>
           </div>
         )}
 
         <div className="border-t border-outline-variant pt-2 flex justify-between items-baseline font-bold text-base text-on-surface">
           <span>Valor Líquido:</span>
-          <span className="text-primary font-data-mono text-lg">{formatBRL(order.valorLiquido)}</span>
+          <span data-testid="financial-summary-net" className="text-primary font-data-mono text-lg">{formatBRL(order.valorLiquido)}</span>
         </div>
       </div>
 

@@ -5,6 +5,8 @@ export default defineConfig({
   env: {
     apiUrl: process.env.CYPRESS_API_URL || 'http://localhost:8081/api/v1'
   },
+  video: false,
+  screenshotOnRunFailure: false,
   e2e: {
     baseUrl: process.env.CYPRESS_BASE_URL || 'http://localhost:5174',
     specPattern: 'cypress/e2e/**/*.cy.{js,jsx,ts,tsx}',
