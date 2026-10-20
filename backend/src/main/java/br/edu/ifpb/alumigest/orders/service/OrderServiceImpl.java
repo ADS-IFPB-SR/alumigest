@@ -356,7 +356,13 @@ public class OrderServiceImpl implements OrderService {
                 if (hasStreet && hasNumber) {
                         return street.trim() + ", " + number.trim();
                 }
-                return hasStreet ? street.trim() : (hasNumber ? number.trim() : null);
+                if (hasStreet) {
+                        return street.trim();
+                }
+                if (hasNumber) {
+                        return number.trim();
+                }
+                return null;
         }
 
         private String formatLocationPart(String city, String state) {
@@ -366,7 +372,13 @@ public class OrderServiceImpl implements OrderService {
                 if (hasCity && hasState) {
                         return city.trim() + "/" + state.trim();
                 }
-                return hasCity ? city.trim() : (hasState ? state.trim() : null);
+                if (hasCity) {
+                        return city.trim();
+                }
+                if (hasState) {
+                        return state.trim();
+                }
+                return null;
         }
 
     /**
