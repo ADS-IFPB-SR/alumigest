@@ -335,39 +335,39 @@ public class OrderServiceImpl implements OrderService {
      * Compõe o endereço do cliente a partir dos campos individuais.
      */
     private String resolveCustomerAddress(Budget budget) {
-    if (budget == null || budget.getClient() == null) {
-        return null;
-    }
-    
-    var c = budget.getClient();
-    var sb = new StringBuilder();
+                if (budget == null || budget.getClient() == null) {
+                        return null;
+                }
+                
+                var c = budget.getClient();
+                String streetPart = formatStreetPart(c.getStreet(), c.getNumber());
+                String locationPart = formatLocationPart(c.getCity(), c.getState());
+                
+                if (streetPart != null && locationPart != null) {
+                        return streetPart + " - " + locationPart;
+                }
+                return streetPart != null ? streetPart : locationPart;
+        }
 
-    String street = c.getStreet();
-    if (street != null && !street.isBlank()) {
-        sb.append(street.trim());
-    }
+        private String formatStreetPart(String street, String number) {
+                boolean hasStreet = street != null && !street.isBlank();
+                boolean hasNumber = number != null && !number.isBlank();
+                
+                if (hasStreet && hasNumber) {
+                        return street.trim() + ", " + number.trim();
+                }
+                return hasStreet ? street.trim() : (hasNumber ? number.trim() : null);
+        }
 
-    String number = c.getNumber();
-    if (number != null && !number.isBlank()) {
-        if (!sb.isEmpty()) sb.append(", ");
-        sb.append(number.trim());
-    }
-
-    String city = c.getCity();
-    if (city != null && !city.isBlank()) {
-        if (!sb.isEmpty()) sb.append(" - ");
-        sb.append(city.trim());
-    }
-
-    String state = c.getState();
-    if (state != null && !state.isBlank()) {
-        // Usa a barra "/" se já houver conteúdo
-        if (!sb.isEmpty()) sb.append("/");
-        sb.append(state.trim());
-    }
-
-    return !sb.isEmpty() ? sb.toString() : null;
-}
+        private String formatLocationPart(String city, String state) {
+                boolean hasCity = city != null && !city.isBlank();
+                boolean hasState = state != null && !state.isBlank();
+                
+                if (hasCity && hasState) {
+                        return city.trim() + "/" + state.trim();
+                }
+                return hasCity ? city.trim() : (hasState ? state.trim() : null);
+        }
 
     /**
      * Retorna o identificador da condição de pagamento do orçamento.
