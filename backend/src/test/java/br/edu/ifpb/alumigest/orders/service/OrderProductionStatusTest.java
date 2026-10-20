@@ -1,16 +1,13 @@
 package br.edu.ifpb.alumigest.orders.service;
 
+import br.edu.ifpb.alumigest.budgets.repository.BudgetRepository;
 import br.edu.ifpb.alumigest.common.exception.BusinessException;
+import br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException;
 import br.edu.ifpb.alumigest.orders.domain.Order;
 import br.edu.ifpb.alumigest.orders.domain.OrderStatus;
 import br.edu.ifpb.alumigest.orders.dto.OrderResponse;
 import br.edu.ifpb.alumigest.orders.mapper.OrderMapper;
 import br.edu.ifpb.alumigest.orders.repository.OrderRepository;
-import br.edu.ifpb.alumigest.orders.service.OrderPdfService;
-import br.edu.ifpb.alumigest.orders.service.OrderServiceImpl;
-import br.edu.ifpb.alumigest.budgets.repository.BudgetRepository;
-import br.edu.ifpb.alumigest.orders.service.OrderCodeGenerator;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -22,7 +19,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -52,7 +51,6 @@ class OrderProductionStatusTest {
 
     @BeforeEach
     void setUp() {
-        // Inicializa o pedido mockado antes de cada teste
         order = Order.builder()
                 .codigo("OS-2026-0001")
                 .status(OrderStatus.WAITING_PRODUCTION)
@@ -64,40 +62,47 @@ class OrderProductionStatusTest {
     void testTransitionToInProductionSuccess() {
         // Arrange
         when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
+        when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        Order savedOrder = Order.builder().status(OrderStatus.IN_PRODUCTION).build();
-        when(orderRepository.save(order)).thenReturn(savedOrder);
-
-        // Criando um mock basico de OrderResponse para evitar NullPointer
-        OrderResponse mockResponse = new OrderResponse(orderId, "OS-2026-0001", null, null, null, null, null, OrderStatus.IN_PRODUCTION, "Em Produção", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, true, null);
-        when(orderMapper.toResponse(savedOrder)).thenReturn(mockResponse);
+        OrderResponse mockResponse = new OrderResponse(
+                orderId, "OS-2026-0001", null, null, null, null, null,
+                OrderStatus.IN_PRODUCTION, "Em Produção", null, null, null, null, null,
+                null, null, null, null, null, null, null, null, null, null, null, true, null);
+        when(orderMapper.toResponse(order)).thenReturn(mockResponse);
 
         // Act
         OrderResponse result = orderService.updateStatus(orderId, OrderStatus.IN_PRODUCTION);
 
         // Assert
-        assertEquals(OrderStatus.IN_PRODUCTION, result.status());
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.IN_PRODUCTION);
+        assertThat(result.status()).isEqualTo(OrderStatus.IN_PRODUCTION);
         verify(orderRepository, times(1)).save(order);
     }
 
     @Test
-    @DisplayName("Deve transicionar de IN_PRODUCTION para COMPLETED com sucesso")
+    @DisplayName("Deve transicionar de IN_PRODUCTION para COMPLETED com sucesso registrando data de conclusão")
     void testTransitionToCompletedSuccess() {
         // Arrange
-        order = Order.builder().status(OrderStatus.IN_PRODUCTION).build();
+        order = Order.builder()
+                .codigo("OS-2026-0001")
+                .status(OrderStatus.IN_PRODUCTION)
+                .build();
         when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
+        when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        Order savedOrder = Order.builder().status(OrderStatus.COMPLETED).build();
-        when(orderRepository.save(order)).thenReturn(savedOrder);
-
-        OrderResponse mockResponse = new OrderResponse(orderId, "OS-2026-0001", null, null, null, null, null, OrderStatus.COMPLETED, "Concluído", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, true, null);
-        when(orderMapper.toResponse(savedOrder)).thenReturn(mockResponse);
+        OrderResponse mockResponse = new OrderResponse(
+                orderId, "OS-2026-0001", null, null, null, null, null,
+                OrderStatus.COMPLETED, "Concluído", null, null, null, null, null,
+                null, null, null, null, null, null, null, null, null, null, null, true, null);
+        when(orderMapper.toResponse(order)).thenReturn(mockResponse);
 
         // Act
         OrderResponse result = orderService.updateStatus(orderId, OrderStatus.COMPLETED);
 
         // Assert
-        assertEquals(OrderStatus.COMPLETED, result.status());
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.COMPLETED);
+        assertThat(order.getDataConclusao()).isNotNull();
+        assertThat(result.status()).isEqualTo(OrderStatus.COMPLETED);
         verify(orderRepository, times(1)).save(order);
     }
 
@@ -108,10 +113,10 @@ class OrderProductionStatusTest {
         when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
 
         // Act & Assert
-        BusinessException exception = assertThrows(BusinessException.class,
-                () -> orderService.updateStatus(orderId, OrderStatus.WAITING_PRODUCTION));
+        assertThatThrownBy(() -> orderService.updateStatus(orderId, OrderStatus.WAITING_PRODUCTION))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("Não é permitida a transição para o status WAITING_PRODUCTION.");
 
-        assertEquals("Não é permitida a transição para o status WAITING_PRODUCTION.", exception.getMessage());
         verify(orderRepository, never()).save(any());
     }
 
@@ -122,10 +127,10 @@ class OrderProductionStatusTest {
         when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
 
         // Act & Assert
-        BusinessException exception = assertThrows(BusinessException.class,
-                () -> orderService.updateStatus(orderId, OrderStatus.CREATED));
+        assertThatThrownBy(() -> orderService.updateStatus(orderId, OrderStatus.CREATED))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("Não é permitida a transição para o status CREATED.");
 
-        assertEquals("Não é permitida a transição para o status CREATED.", exception.getMessage());
         verify(orderRepository, never()).save(any());
     }
 
@@ -136,10 +141,37 @@ class OrderProductionStatusTest {
         when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
 
         // Act & Assert
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> orderService.updateStatus(orderId, null));
+        assertThatThrownBy(() -> orderService.updateStatus(orderId, null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("O status de destino é obrigatório.");
 
-        assertEquals("O status de destino é obrigatório.", exception.getMessage());
+        verify(orderRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Deve lançar ResourceNotFoundException quando o pedido não for encontrado")
+    void testUpdateStatusOrderNotFoundThrowsException() {
+        // Arrange
+        when(orderRepository.findById(orderId)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        assertThatThrownBy(() -> orderService.updateStatus(orderId, OrderStatus.IN_PRODUCTION))
+                .isInstanceOf(ResourceNotFoundException.class);
+
+        verify(orderRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Deve lançar BusinessException ao tentar concluir pedido que ainda está em WAITING_PRODUCTION")
+    void testTransitionDirectlyToCompletedThrowsException() {
+        // Arrange
+        when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
+
+        // Act & Assert
+        assertThatThrownBy(() -> orderService.updateStatus(orderId, OrderStatus.COMPLETED))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("Apenas pedidos em produção podem ser concluídos.");
+
         verify(orderRepository, never()).save(any());
     }
 }
