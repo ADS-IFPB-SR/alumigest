@@ -25,6 +25,16 @@ describe('Orders Schemas — Testes Formais de QA', () => {
       expect(aliasResult.success).toBe(true);
     });
 
+    it('[BUG-043] deve aceitar o canal de aprovação OUTRO', () => {
+      const outroData = {
+        canalAprovacao: 'OUTRO' as const,
+        dataPrevisaoEntrega: getDefaultDeliveryDate(15),
+      };
+
+      const result = convertOrderSchema.safeParse(outroData);
+      expect(result.success).toBe(true);
+    });
+
     it('[Partição de Equivalência] deve rejeitar canal de aprovação inválido', () => {
       const invalidData = {
         canalAprovacao: 'SINAL_DE_FUMACA',
