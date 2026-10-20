@@ -17,12 +17,14 @@ import br.edu.ifpb.alumigest.orders.domain.OrderItem;
 import br.edu.ifpb.alumigest.orders.domain.OrderStatus;
 import br.edu.ifpb.alumigest.orders.dto.OrderCancelRequest;
 import br.edu.ifpb.alumigest.orders.dto.OrderConvertRequest;
+import br.edu.ifpb.alumigest.orders.dto.OrderPdfDTO;
 import br.edu.ifpb.alumigest.orders.dto.OrderResponse;
 import br.edu.ifpb.alumigest.orders.dto.OrderSummaryResponse;
 import br.edu.ifpb.alumigest.orders.mapper.OrderMapper;
 import br.edu.ifpb.alumigest.orders.repository.OrderRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -71,6 +73,12 @@ class OrderServiceImplTest {
 
     @Mock
     private OrderMapper orderMapper;
+
+    @Mock
+    private OrderPdfService orderPdfService;
+
+    @Mock
+    private LabelPdfService labelPdfService;
 
     @InjectMocks
     private OrderServiceImpl orderService;
@@ -757,5 +765,54 @@ class OrderServiceImplTest {
                 .hasMessageContaining("pelo menos 10 caracteres");
 
         verify(orderRepository, never()).save(any());
+    }
+
+    @Nested
+    @DisplayName("Cenários de Geração de Etiquetas Térmicas (gerarEtiquetasById) [US-17.2]")
+    class GerarEtiquetasByIdTests {
+
+        @Test
+        @DisplayName("Deve gerar etiquetas térmicas com sucesso para pedido existente")
+        void shouldGenerateLabelsSuccessfullyForExistingOrder() {
+            Order savedOrder = buildSavedOrder();
+            byte[] fakeBytes = "%PDF-1.4 labels".getBytes();
+            given(orderRepository.findByIdWithDetails(orderId)).willReturn(Optional.of(savedOrder));
+            given(labelPdfService.gerarEtiquetas(savedOrder, null)).willReturn(fakeBytes);
+
+            OrderPdfDTO result = orderService.gerarEtiquetasById(orderId);
+
+            assertThat(result).isNotNull();
+            assertThat(result.bytes()).isEqualTo(fakeBytes);
+            assertThat(result.filename()).isEqualTo("etiquetas-" + savedOrder.getCodigo().replace("/", "-") + ".pdf");
+            verify(labelPdfService).gerarEtiquetas(savedOrder, null);
+        }
+
+        @Test
+        @DisplayName("Deve repassar itemId ao LabelPdfService quando informado")
+        void shouldPassItemIdToLabelPdfServiceWhenProvided() {
+            Order savedOrder = buildSavedOrder();
+            UUID itemId = UUID.randomUUID();
+            byte[] fakeBytes = "%PDF-1.4 labels single".getBytes();
+            given(orderRepository.findByIdWithDetails(orderId)).willReturn(Optional.of(savedOrder));
+            given(labelPdfService.gerarEtiquetas(savedOrder, itemId)).willReturn(fakeBytes);
+
+            OrderPdfDTO result = orderService.gerarEtiquetasById(orderId, itemId);
+
+            assertThat(result).isNotNull();
+            assertThat(result.bytes()).isEqualTo(fakeBytes);
+            verify(labelPdfService).gerarEtiquetas(savedOrder, itemId);
+        }
+
+        @Test
+        @DisplayName("Deve lançar ResourceNotFoundException quando pedido não existir")
+        void shouldThrowResourceNotFoundExceptionWhenOrderDoesNotExist() {
+            given(orderRepository.findByIdWithDetails(orderId)).willReturn(Optional.empty());
+
+            assertThatThrownBy(() -> orderService.gerarEtiquetasById(orderId))
+                    .isInstanceOf(ResourceNotFoundException.class)
+                    .hasMessageContaining("Pedido");
+
+            verify(labelPdfService, never()).gerarEtiquetas(any(), any());
+        }
     }
 }
