@@ -392,6 +392,96 @@ class OrderControllerTest {
   }
 
   @Nested
+  @DisplayName("GET /api/orders/{id}/labels-pdf — Download Etiquetas Térmicas PDF [US-17.2]")
+  class GerarPdfEtiquetasTests {
+
+    @Test
+    @DisplayName("AC-01: Deve retornar 200 com Content-Type application/pdf via /api/orders/{id}/labels-pdf")
+    void shouldReturn200AndPdfBytesForExistingOrderViaOrdersPath() throws Exception {
+      UUID orderId = UUID.randomUUID();
+      byte[] fakeBytes = "%PDF-1.4 thermal label content".getBytes();
+      OrderPdfDTO pdfDto = new OrderPdfDTO(fakeBytes, "etiquetas-OS-2026-0001.pdf");
+
+      when(orderService.gerarEtiquetasById(orderId, null)).thenReturn(pdfDto);
+
+      mockMvc.perform(get("/api/orders/{id}/labels-pdf", orderId))
+          .andExpect(status().isOk())
+          .andExpect(content().contentType(MediaType.APPLICATION_PDF))
+          .andExpect(header().string("Content-Disposition",
+              org.hamcrest.Matchers.containsString("etiquetas-OS-2026-0001.pdf")));
+    }
+
+    @Test
+    @DisplayName("AC-01: Deve retornar 200 com Content-Type application/pdf via alias /api/v1/orders/{id}/labels-pdf")
+    void shouldReturn200AndPdfBytesForExistingOrderViaV1Path() throws Exception {
+      UUID orderId = UUID.randomUUID();
+      byte[] fakeBytes = "%PDF-1.4 thermal label content".getBytes();
+      OrderPdfDTO pdfDto = new OrderPdfDTO(fakeBytes, "etiquetas-OS-2026-0001.pdf");
+
+      when(orderService.gerarEtiquetasById(orderId, null)).thenReturn(pdfDto);
+
+      mockMvc.perform(get("/api/v1/orders/{id}/labels-pdf", orderId))
+          .andExpect(status().isOk())
+          .andExpect(content().contentType(MediaType.APPLICATION_PDF))
+          .andExpect(header().string("Content-Disposition",
+              org.hamcrest.Matchers.containsString("etiquetas-OS-2026-0001.pdf")));
+    }
+
+    @Test
+    @DisplayName("Deve filtrar por itemId quando informado via query param")
+    void shouldPassItemIdToServiceWhenProvided() throws Exception {
+      UUID orderId = UUID.randomUUID();
+      UUID itemId = UUID.randomUUID();
+      byte[] fakeBytes = "%PDF-1.4 single item label content".getBytes();
+      OrderPdfDTO pdfDto = new OrderPdfDTO(fakeBytes, "etiquetas-OS-2026-0001.pdf");
+
+      when(orderService.gerarEtiquetasById(orderId, itemId)).thenReturn(pdfDto);
+
+      mockMvc.perform(get("/api/orders/{id}/labels-pdf", orderId)
+              .param("itemId", itemId.toString()))
+          .andExpect(status().isOk())
+          .andExpect(content().contentType(MediaType.APPLICATION_PDF));
+
+      verify(orderService).gerarEtiquetasById(orderId, itemId);
+    }
+
+    @Test
+    @DisplayName("AC-01: Deve retornar 404 quando a ordem de serviço não for encontrada")
+    void shouldReturn404WhenOrderNotFoundForLabels() throws Exception {
+      UUID orderId = UUID.randomUUID();
+      when(orderService.gerarEtiquetasById(orderId, null))
+          .thenThrow(new ResourceNotFoundException("Pedido", orderId));
+
+      mockMvc.perform(get("/api/orders/{id}/labels-pdf", orderId))
+          .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("Deve retornar 404 quando o itemId informado não for encontrado na ordem")
+    void shouldReturn404WhenItemIdNotFoundForLabels() throws Exception {
+      UUID orderId = UUID.randomUUID();
+      UUID itemId = UUID.randomUUID();
+      when(orderService.gerarEtiquetasById(orderId, itemId))
+          .thenThrow(new ResourceNotFoundException("Item do Pedido", itemId.toString()));
+
+      mockMvc.perform(get("/api/orders/{id}/labels-pdf", orderId)
+              .param("itemId", itemId.toString()))
+          .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("Deve retornar 422 quando a ordem de serviço não possuir itens para gerar etiquetas")
+    void shouldReturn422WhenOrderHasNoItemsForLabels() throws Exception {
+      UUID orderId = UUID.randomUUID();
+      when(orderService.gerarEtiquetasById(orderId, null))
+          .thenThrow(new BusinessException("A ordem de serviço não possui itens para emissão de etiquetas."));
+
+      mockMvc.perform(get("/api/orders/{id}/labels-pdf", orderId))
+          .andExpect(status().isUnprocessableEntity());
+    }
+  }
+
+  @Nested
   @DisplayName("PATCH /api/v1/orders/{id}/cancel - Cancelar Pedido (US-13.5)")
   class CancelOrderEndpointTests {
 

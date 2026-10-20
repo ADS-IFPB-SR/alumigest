@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
-import { useOrder, useOrders, useCancelOrder, useConvertBudget, useDownloadComprovantePdf } from '../../../features/orders/hooks/useOrders';
+import { useOrder, useOrders, useCancelOrder, useConvertBudget, useDownloadComprovantePdf, useDownloadLabelsPdf } from '../../../features/orders/hooks/useOrders';
 import { ordersApi } from '../../../features/orders/services/ordersApi';
 import type { Order } from '../../../features/orders/types';
 import toast from 'react-hot-toast';
@@ -212,6 +212,56 @@ describe('useOrders hooks', () => {
 
       await waitFor(() => expect(result.current.isError).toBe(true));
       expect(toast.error).toHaveBeenCalledWith('Pedido não encontrado.');
+    });
+  });
+
+  describe('useDownloadLabelsPdf (US-17.4)', () => {
+    it('deve chamar ordersApi.downloadLabelsPdf e exibir toast de sucesso', async () => {
+      vi.mocked(ordersApi.downloadLabelsPdf).mockResolvedValue(undefined);
+
+      const { result } = renderHook(() => useDownloadLabelsPdf(), {
+        wrapper: createWrapper(),
+      });
+
+      result.current.mutate({ id: 'order-1', codigo: 'OS-2026-0001' });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+      expect(ordersApi.downloadLabelsPdf).toHaveBeenCalledWith('order-1', 'OS-2026-0001', undefined);
+      expect(toast.success).toHaveBeenCalledWith('Etiquetas térmicas baixadas com sucesso!');
+    });
+
+    it('deve repassar itemId quando fornecido na mutação', async () => {
+      vi.mocked(ordersApi.downloadLabelsPdf).mockResolvedValue(undefined);
+
+      const { result } = renderHook(() => useDownloadLabelsPdf(), {
+        wrapper: createWrapper(),
+      });
+
+      result.current.mutate({ id: 'order-1', codigo: 'OS-2026-0001', itemId: 'item-99' });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+      expect(ordersApi.downloadLabelsPdf).toHaveBeenCalledWith('order-1', 'OS-2026-0001', 'item-99');
+    });
+
+    it('deve exibir toast de erro com mensagem da API quando o download falha', async () => {
+      const errorResponse = {
+        response: {
+          data: {
+            message: 'A ordem de serviço não possui itens para emissão de etiquetas.',
+          },
+        },
+      };
+
+      vi.mocked(ordersApi.downloadLabelsPdf).mockRejectedValue(errorResponse);
+
+      const { result } = renderHook(() => useDownloadLabelsPdf(), {
+        wrapper: createWrapper(),
+      });
+
+      result.current.mutate({ id: 'order-sem-itens' });
+
+      await waitFor(() => expect(result.current.isError).toBe(true));
+      expect(toast.error).toHaveBeenCalledWith('A ordem de serviço não possui itens para emissão de etiquetas.');
     });
   });
 });
