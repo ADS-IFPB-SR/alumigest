@@ -28,6 +28,7 @@
 | ID | Issue | Tarefa | Duração | Pré-requisito / Bloqueado por | Status |
 |---|:---:|---|:---:|---|:---:|
 | **US-14.1** | [#360](https://github.com/ADS-IFPB-SR/alumigest/issues/360) | [US-14.1](issues/US-14.1-snapshot-imutavel-lock-precos-deep-copy/issue.md) Snapshot Imutável, Lock de Preços e Tabela de Itens Congelados (Full-Stack: Deep copy em 3 níveis, snapshots JSONB, OrderItemsTable no front e testes unitários de blindagem contra reajuste do catálogo) | ~4h | Bloqueado por **#359** (US-13.5) | 🔲 Aberta |
+| **US-14.2** | [#431](https://github.com/ADS-IFPB-SR/alumigest/issues/431) | [US-14.2](issues/US-14.2-testes-e2e-imutabilidade-esquadrias-pedido/issue.md) Testes E2E — Imutabilidade Cadastral e Estrutural das Esquadrias do Pedido (Cypress E2E: modo somente leitura, bloqueio de mutações e renegociação via cancelamento) | ~3h | Bloqueado por **#360** (US-14.1) | ✅ Concluída |
 | **US-14.3** | [#430](https://github.com/ADS-IFPB-SR/alumigest/issues/430) | [US-14.3](issues/US-14.3-blindagem-reajuste-futuro-precos-catalogo/issue.md) Testes E2E — Blindagem contra Reajuste Futuro de Preços no Catálogo (Cypress: Validação BDD do snapshot financeiro R$ 3.500,00, reajuste +20% no catálogo, persistência na O.S., listagem e PDF) | ~3h | Bloqueado por **#360** (US-14.1) | ✅ Concluída |
 
 ---

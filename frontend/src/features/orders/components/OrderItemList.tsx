@@ -68,7 +68,7 @@ export const OrderItemList: React.FC<OrderItemListProps> = ({ items = [] }) => {
                     </div>
                   )}
                 </td>
-                <td className="py-3.5 px-3 text-center whitespace-nowrap">
+                <td className="py-3.5 px-3 text-center whitespace-nowrap" data-testid="order-item-dimensions">
                   <span
                     data-testid={`item-dimensions-${item.id}`}
                     className="inline-block px-2.5 py-1 rounded bg-surface-container-high/60 font-data-mono text-xs text-on-surface font-medium"
@@ -76,7 +76,7 @@ export const OrderItemList: React.FC<OrderItemListProps> = ({ items = [] }) => {
                     {item.larguraMm} × {item.alturaMm} mm
                   </span>
                 </td>
-                <td className="py-3.5 px-4" data-testid={`item-specs-${item.id}`}>
+                <td className="py-3.5 px-4" data-testid="order-item-specs">
                   <div className="flex flex-col gap-1 text-xs">
                     {item.corAluminio && (
                       <div className="flex items-baseline gap-1.5">
@@ -110,14 +110,20 @@ export const OrderItemList: React.FC<OrderItemListProps> = ({ items = [] }) => {
                 </td>
                 <td
                   className="py-3.5 px-2 text-center font-data-mono font-bold text-on-surface text-sm"
-                  data-testid={`item-quantity-${item.id}`}
+                  data-testid="order-item-quantity"
                 >
-                  {item.quantidade}
+                  <span data-testid={`item-quantity-${item.id}`}>{item.quantidade}</span>
                 </td>
-                <td className="py-3.5 px-3 text-right font-data-mono text-xs text-on-surface-variant whitespace-nowrap">
+                <td
+                  className="py-3.5 px-3 text-right font-data-mono text-xs text-on-surface-variant whitespace-nowrap"
+                  data-testid="order-item-unit-price"
+                >
                   <span data-testid={`item-unit-price-${item.id}`}>{formatBRL(item.valorUnitario)}</span>
                 </td>
-                <td className="py-3.5 px-4 text-right font-data-mono font-bold text-sm text-on-surface whitespace-nowrap">
+                <td
+                  className="py-3.5 px-4 text-right font-data-mono font-bold text-sm text-on-surface whitespace-nowrap"
+                  data-testid="order-item-total-price"
+                >
                   <span data-testid={`item-total-price-${item.id}`}>{formatBRL(item.valorTotal)}</span>
                 </td>
               </tr>
