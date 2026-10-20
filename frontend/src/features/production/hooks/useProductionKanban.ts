@@ -1,6 +1,8 @@
+import { useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import type { OrderSummary } from '../../orders/types';
+import { parseApiError } from '../../../utils/error';
+import type { Order, OrderSummary } from '../../orders/types';
 import {
   productionApi,
   type UpdateProductionStatusPayload,
@@ -10,17 +12,17 @@ import {
   type ProductionStatus,
 } from '../types';
 
-
-
 export const PRODUCTION_KANBAN_QUERY_KEY = ['production', 'kanban'] as const;
 
 interface MutationContext {
   previousOrders?: OrderSummary[];
 }
 
+
 export function useProductionKanban() {
   const queryClient = useQueryClient();
 
+  // 1. Consulta principal de pedidos
   const kanbanQuery = useQuery<OrderSummary[], Error>({
     queryKey: PRODUCTION_KANBAN_QUERY_KEY,
     queryFn: productionApi.getProductionOrders,
@@ -28,24 +30,27 @@ export function useProductionKanban() {
 
   const orders = kanbanQuery.data || [];
 
-  const groupedOrders = orders.reduce<Record<ProductionStatus, OrderSummary[]>>(
-    (acc, order) => {
-      const statusKey = normalizeProductionStatus(order.status) || 'WAITING_PRODUCTION';
-      if (!acc[statusKey]) {
-        acc[statusKey] = [];
+  // 2. Agrupamento memoizado descartando status fora do ciclo fabril (ex: CANCELLED, CREATED)
+  const groupedOrders = useMemo(() => {
+    return orders.reduce<Record<ProductionStatus, OrderSummary[]>>(
+      (acc, order) => {
+        const statusKey = normalizeProductionStatus(order.status);
+        if (statusKey) {
+          acc[statusKey].push(order);
+        }
+        return acc;
+      },
+      {
+        WAITING_PRODUCTION: [],
+        IN_PRODUCTION: [],
+        COMPLETED: [],
       }
-      acc[statusKey].push(order);
-      return acc;
-    },
-    {
-      WAITING_PRODUCTION: [],
-      IN_PRODUCTION: [],
-      COMPLETED: [],
-    }
-  );
+    );
+  }, [orders]);
 
+  // 3. Mutação com Atualização Otimista e Rollback
   const updateStatusMutation = useMutation<
-    OrderSummary,
+    Order,
     Error,
     UpdateProductionStatusPayload,
     MutationContext
@@ -64,7 +69,7 @@ export function useProductionKanban() {
           if (order.id === orderId) {
             return {
               ...order,
-              status: status as any,
+              status: status as OrderSummary['status'],
             };
           }
           return order;
@@ -84,9 +89,7 @@ export function useProductionKanban() {
         );
       }
 
-      const err = error as { response?: { data?: { message?: string } } };
-      const message =
-        err?.response?.data?.message || 'Erro ao alterar etapa de produção.';
+      const message = parseApiError(error, 'Erro ao alterar etapa de produção.');
       toast.error(message);
     },
 
