@@ -37,6 +37,22 @@ function isDevBackendOffline(error: any): boolean {
   return typeof status === 'number' && status >= 500;
 }
 
+async function ensureErrorDataDeserialized(error: any): Promise<void> {
+  const data = error?.response?.data;
+  if (data instanceof Blob || (data && typeof data.text === 'function')) {
+    try {
+      const text = await data.text();
+      const json = JSON.parse(text);
+      error.response.data = json;
+      if (json.message && !error.message) {
+        error.message = json.message;
+      }
+    } catch {
+      // Fallback: mantém o Blob intacto se não for possível converter em JSON
+    }
+  }
+}
+
 function buildOrderQueryParams(params?: OrderFilterParams): Record<string, string | number> {
   const queryParams: Record<string, string | number> = {
     page: params?.page ?? 0,
@@ -153,26 +169,31 @@ export const ordersApi = {
    * Chama GET /api/v1/orders/{id}/pdf/comprovante e inicia o download via Blob.
    */
   async downloadComprovantePdf(id: string, codigo?: string): Promise<void> {
-    const response = await api.get(`/orders/${id}/pdf/comprovante`, {
-      responseType: 'blob',
-    });
+    try {
+      const response = await api.get(`/orders/${id}/pdf/comprovante`, {
+        responseType: 'blob',
+      });
 
-    const fallbackFilename = `comprovante-${codigo ?? id}.pdf`;
-    const disposition = (
-      response.headers?.['content-disposition'] ||
-      response.headers?.['Content-Disposition']
-    ) as string | undefined;
-    const filename = extractFilenameFromContentDisposition(disposition, fallbackFilename);
+      const fallbackFilename = `comprovante-${codigo ?? id}.pdf`;
+      const disposition = (
+        response.headers?.['content-disposition'] ||
+        response.headers?.['Content-Disposition']
+      ) as string | undefined;
+      const filename = extractFilenameFromContentDisposition(disposition, fallbackFilename);
 
-    const blob = new Blob([response.data], { type: 'application/pdf' });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', filename);
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    window.URL.revokeObjectURL(url);
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error: any) {
+      await ensureErrorDataDeserialized(error);
+      throw error;
+    }
   },
 
   /**
@@ -197,6 +218,7 @@ export const ordersApi = {
       filename = extractFilenameFromContentDisposition(disposition, fallbackFilename);
       blob = new Blob([response.data], { type: 'application/pdf' });
     } catch (error: any) {
+      await ensureErrorDataDeserialized(error);
       if (isDevBackendOffline(error)) {
         console.info('[AlumiGest Dev Demo] Backend offline. Gerando PDF térmico de demonstração.');
         blob = generateDemoThermalLabelsPdf();
