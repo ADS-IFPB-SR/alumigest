@@ -2,6 +2,7 @@ import React from 'react';
 import { DollarSign, CreditCard } from 'lucide-react';
 import type { Order } from '../types';
 import { formatBRL } from '../../budgets/utils/calculations';
+import { PAYMENT_CONDITION_LABELS } from '../../budgets/types'; 
 
 interface OrderFinancialSummaryCardProps {
   order: Order;
@@ -27,7 +28,9 @@ export const OrderFinancialSummaryCard: React.FC<OrderFinancialSummaryCardProps>
         {order.valorDesconto > 0 && (
           <div className="flex justify-between text-rose-600">
             <span>Desconto Comercial:</span>
-            <span className="font-data-mono font-medium">- {formatBRL(order.valorDesconto)}</span>
+            <span className="font-data-mono font-medium">
+              - {formatBRL(order.valorDesconto)}
+            </span>
           </div>
         )}
 
@@ -58,7 +61,9 @@ export const OrderFinancialSummaryCard: React.FC<OrderFinancialSummaryCardProps>
             <span>Condição de Pagamento:</span>
           </div>
           {order.condicaoPagamento && (
-            <p className="text-on-surface font-medium">{order.condicaoPagamento}</p>
+            <p className="text-on-surface font-medium">
+              {PAYMENT_CONDITION_LABELS[order.condicaoPagamento as keyof typeof PAYMENT_CONDITION_LABELS] || order.condicaoPagamento}
+            </p>
           )}
           {order.observacoesPagamento && (
             <p className="text-on-surface-variant italic">{order.observacoesPagamento}</p>
