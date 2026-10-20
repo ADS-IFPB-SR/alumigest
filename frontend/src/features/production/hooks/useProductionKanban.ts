@@ -14,11 +14,18 @@ import {
 
 export const PRODUCTION_KANBAN_QUERY_KEY = ['production', 'kanban'] as const;
 
+// Referência estável para evitar recriação de array vazio a cada renderização
+const EMPTY_ORDERS: OrderSummary[] = [];
+
 interface MutationContext {
   previousOrders?: OrderSummary[];
 }
 
-
+/**
+ * Hook para gerenciamento do Kanban de Produção (US-18.2).
+ * Integra busca paginada, agrupamento memoizado (filtrando apenas status válidos do fluxo)
+ * e mutação otimista com rollback.
+ */
 export function useProductionKanban() {
   const queryClient = useQueryClient();
 
@@ -28,7 +35,7 @@ export function useProductionKanban() {
     queryFn: productionApi.getProductionOrders,
   });
 
-  const orders = kanbanQuery.data || [];
+  const orders = kanbanQuery.data ?? EMPTY_ORDERS;
 
   // 2. Agrupamento memoizado descartando status fora do ciclo fabril (ex: CANCELLED, CREATED)
   const groupedOrders = useMemo(() => {
