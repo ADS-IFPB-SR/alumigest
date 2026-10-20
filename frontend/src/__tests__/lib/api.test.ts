@@ -67,7 +67,29 @@ describe('Axios api Instance and Interceptors', () => {
       });
     });
 
-    it('deve manter o Blob intacto se o tipo não for application/json', async () => {
+    it('deve extrair o JSON de erro mesmo quando o Blob tiver type vazio ou octet-stream (BUG-485)', async () => {
+      const errorPayload = {
+        status: 422,
+        message: 'A ordem de serviço não possui itens válidos para emissão de etiquetas.',
+      };
+      // Simula navegador onde o MIME type do Blob é vazio ou genérico
+      const blob = new Blob([JSON.stringify(errorPayload)], { type: '' });
+
+      mock.onGet('/orders/order-123/labels-pdf').reply(422, blob);
+
+      const request = api.get('/orders/order-123/labels-pdf', { responseType: 'blob' });
+
+      await expect(request).rejects.toMatchObject({
+        response: {
+          data: {
+            status: 422,
+            message: 'A ordem de serviço não possui itens válidos para emissão de etiquetas.',
+          },
+        },
+      });
+    });
+
+    it('deve manter o Blob intacto se o payload não for um JSON válido', async () => {
       const blob = new Blob(['%PDF-1.4... arquivo corrompido'], { type: 'application/pdf' });
       mock.onGet('/pdf/tecnico').reply(500, blob);
 
