@@ -25,6 +25,12 @@ export const useOrder = (id?: string) => {
     queryKey: ['order', id],
     queryFn: () => ordersApi.getOrderById(id!),
     enabled: Boolean(id),
+    retry: (failureCount, error: any) => {
+      if (!error) return false;
+      if (error?.response?.status === 404) return false;
+      if (error?.message && /not found|não encontrad/i.test(error.message)) return false;
+      return failureCount < 2;
+    },
   });
 };
 
@@ -59,6 +65,25 @@ export const useDownloadComprovantePdf = () => {
     onError: (error: unknown) => {
       const err = error as { response?: { data?: { message?: string } } };
       const message = err?.response?.data?.message || 'Erro ao gerar o comprovante PDF.';
+      toast.error(message);
+    },
+  });
+};
+
+/**
+ * Hook de mutação para baixar as etiquetas térmicas adesivas (100x60mm) do Pedido de Venda em PDF.
+ * US-17.4 (#451) — utiliza o mesmo padrão de download Blob do useDownloadComprovantePdf.
+ */
+export const useDownloadLabelsPdf = () => {
+  return useMutation({
+    mutationFn: ({ id, codigo, itemId }: { id: string; codigo?: string; itemId?: string }) =>
+      ordersApi.downloadLabelsPdf(id, codigo, itemId),
+    onSuccess: () => {
+      toast.success('Etiquetas térmicas baixadas com sucesso!');
+    },
+    onError: (error: unknown) => {
+      const err = error as { response?: { data?: { message?: string } } };
+      const message = err?.response?.data?.message || 'Erro ao gerar as etiquetas térmicas.';
       toast.error(message);
     },
   });

@@ -62,12 +62,18 @@
       describe('OrderDetailPage — [US-13.5] Visualização Detalhada do Pedido de Venda', () => {
         const mockDownloadPdf = vi.fn();
         const mockDownloadComprovante = vi.fn();
+        const mockDownloadLabels = vi.fn();
 
         beforeEach(() => {
           vi.clearAllMocks();
 
           vi.spyOn(useOrdersModule, 'useDownloadComprovantePdf').mockReturnValue({
             mutate: mockDownloadComprovante,
+            isPending: false,
+          } as any);
+
+          vi.spyOn(useOrdersModule, 'useDownloadLabelsPdf').mockReturnValue({
+            mutate: mockDownloadLabels,
             isPending: false,
           } as any);
 
@@ -343,9 +349,32 @@
           });
         });
 
+        it('deve disparar o download das etiquetas térmicas PDF do pedido (US-17.4)', () => {
+          vi.spyOn(useOrdersModule, 'useOrder').mockReturnValue({
+            data: mockOrder,
+            isLoading: false,
+            isError: false,
+          } as any);
+
+          render(
+            <MemoryRouter initialEntries={['/ordens-servico/order-uuid-1']}>
+              <Routes>
+                <Route path="/ordens-servico/:id" element={<OrderDetailPage />} />
+              </Routes>
+            </MemoryRouter>
+          );
+
+          fireEvent.click(screen.getByRole('button', { name: /imprimir etiquetas/i }));
+
+          expect(mockDownloadLabels).toHaveBeenCalledWith({
+            id: 'order-uuid-1',
+            codigo: 'OS-2026-0001',
+          });
+        });
+
         it('deve avançar para WAITING_PRODUCTION ao clicar no CTA quando a ordem estiver em CREATED', () => {
           const createdOrder: Order = { ...mockOrder, status: 'CREATED' };
-          const mockUpdateStatus = vi.fn((status, options) => {
+          const mockUpdateStatus = vi.fn((_status, options) => {
             options?.onSuccess?.();
           });
 

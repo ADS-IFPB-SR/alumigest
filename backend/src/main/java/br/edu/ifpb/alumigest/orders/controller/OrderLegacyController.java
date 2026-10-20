@@ -112,4 +112,21 @@ public class OrderLegacyController {
         OrderResponse response = orderService.cancelOrder(id, request);
         return ResponseEntity.ok(response);
     }
+
+    @GetMapping({"/{id}/labels-pdf", "/{id}/etiquetas-pdf"})
+    public ResponseEntity<byte[]> gerarPdfEtiquetas(
+            @PathVariable UUID id,
+            @RequestParam(required = false) UUID itemId) {
+        OrderPdfDTO pdfDto = orderService.gerarEtiquetasById(id, itemId);
+
+        ContentDisposition contentDisposition = ContentDisposition.attachment()
+                .filename(pdfDto.filename())
+                .build();
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .headers(headers -> headers.setContentDisposition(contentDisposition))
+                .contentLength(pdfDto.bytes().length)
+                .body(pdfDto.bytes());
+    }
 }
