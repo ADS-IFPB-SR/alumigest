@@ -75,6 +75,22 @@ describe('OrderApprovalModal — [US-13.3] Modal de Aprovação e Conversão', (
     });
   });
 
+  it('[BUG-043] deve exibir o canal OUTRO no grid de seleção e permitir selecioná-lo', async () => {
+    renderWithClient(<OrderApprovalModal {...defaultProps} />);
+
+    // Verifica que o botão OUTRO está renderizado
+    const outroBtn = screen.getByRole('button', { name: /Outro/i });
+    expect(outroBtn).toBeInTheDocument();
+
+    // Clica no canal OUTRO
+    fireEvent.click(outroBtn);
+
+    await waitFor(() => {
+      const select = screen.getByTestId('input-canal-aprovacao') as HTMLSelectElement;
+      expect(select.value).toBe('OUTRO');
+    });
+  });
+
   it('deve chamar onClose ao clicar no botão Cancelar', () => {
     const onClose = vi.fn();
     renderWithClient(<OrderApprovalModal {...defaultProps} onClose={onClose} />);

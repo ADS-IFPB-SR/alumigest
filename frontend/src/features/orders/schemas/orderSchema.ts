@@ -5,6 +5,7 @@ export const ApprovalChannelEnum = z.enum([
   'PRESENCIAL',
   'TELEFONE',
   'EMAIL',
+  'OUTRO',
 ] as const, {
   message: 'Selecione um canal de aprovação válido.',
 });
