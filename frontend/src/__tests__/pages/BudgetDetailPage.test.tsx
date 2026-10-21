@@ -21,7 +21,7 @@ const mockBudgetDetail: BudgetDetail = {
   },
   status: 'DRAFT',
   createdAt: '2026-09-20T10:00:00Z',
-  validUntil: '2026-10-20T23:59:59Z',
+  validUntil: '2027-10-20T23:59:59Z',
   subtotal: 1500,
   discountPercent: 0,
   discountValue: 0,

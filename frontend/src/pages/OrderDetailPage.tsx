@@ -84,10 +84,16 @@ export function OrderDetailPage() {
   };
 
   /**
-   * Inicia o download das Etiquetas Térmicas de Identificação de Peças em PDF (US-17.4 / #451).
-   * Delega ao hook useDownloadLabelsPdf que cuida do Blob, filename e toast.
+   * Abre a tela de conferência prévia e impressão das Etiquetas Térmicas (US-17 / Bugs #492 e #493).
    */
-  const handlePrintLabels = () => {
+  const handleOpenThermalLabelsModal = () => {
+    setIsThermalModalOpen(true);
+  };
+
+  /**
+   * Inicia o download das Etiquetas Térmicas em PDF caso o usuário solicite o arquivo.
+   */
+  const handleDownloadLabelsPdf = () => {
     if (!order) return;
     downloadLabels({ id: order.id, codigo: order.codigo });
   };
@@ -173,8 +179,8 @@ export function OrderDetailPage() {
           onOpenCancelModal={() => setIsCancelModalOpen(true)}
           onPrintTechnicalPdf={handlePrintTechnicalPdf}
           onDownloadComprovante={handleDownloadComprovante}
-          onPrintLabels={handlePrintLabels}
-          onOpenThermalModal={() => setIsThermalModalOpen(true)}
+          onPrintLabels={handleOpenThermalLabelsModal}
+          onOpenThermalModal={handleOpenThermalLabelsModal}
         />
 
         {/* Alerta de Cancelamento com Justificativa */}
@@ -212,7 +218,7 @@ export function OrderDetailPage() {
         isOpen={isThermalModalOpen}
         onClose={() => setIsThermalModalOpen(false)}
         order={order}
-        onDownloadPdf={handlePrintLabels}
+        onDownloadPdf={handleDownloadLabelsPdf}
         isDownloadingPdf={isDownloadingLabels}
       />
     </div>

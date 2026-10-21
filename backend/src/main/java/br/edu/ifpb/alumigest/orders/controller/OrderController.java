@@ -35,6 +35,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -175,6 +176,7 @@ public class OrderController {
         return convertBudgetToOrder(budgetId, request);
     }
 
+
     /**
      * Recupera os detalhes completos do pedido de venda pelo seu ID.
      *
@@ -299,6 +301,52 @@ public class OrderController {
                 .headers(headers -> headers.setContentDisposition(contentDisposition))
                 .contentLength(pdfDto.bytes().length)
                 .body(pdfDto.bytes());
+    }
+
+
+    /**
+     * Dispara a impressão direta silenciosa das etiquetas adesivas térmicas (100x60mm)
+     * na impressora térmica física via comandos nativos BPLB (Elgin L42) através do Spooler.
+     * US-17 (#492, #493).
+     */
+    @PostMapping("/{id}/print-thermal")
+    @Operation(
+            summary = "Imprimir etiquetas diretamente na impressora térmica (BPLB / Elgin L42)",
+            description = "Envia comandos BPLB nativos diretamente para a impressora térmica física sem abrir caixas de diálogo no navegador."
+    )
+    public ResponseEntity<br.edu.ifpb.alumigest.orders.dto.PrintThermalResultDTO> imprimirNaTermica(
+            @PathVariable UUID id,
+            @RequestParam(required = false) UUID itemId,
+            @RequestParam(required = false) String printerName) {
+
+        br.edu.ifpb.alumigest.orders.dto.PrintThermalResultDTO result =
+                orderService.printThermalLabels(id, itemId, printerName);
+        return ResponseEntity.ok(result);
+    }
+
+    /**
+     * Gera e exporta o arquivo de comandos nativos BPLB (.prn / .bplb) da ordem de serviço para download.
+     */
+    @GetMapping("/{id}/labels-bplb")
+    @Operation(
+            summary = "Baixar script de comandos BPLB da ordem de serviço (.prn)",
+            description = "Gera o arquivo de script de comandos nativos BPLB para envio direto a portas de comunicação ou testes de simulação."
+    )
+    public ResponseEntity<byte[]> baixarScriptBplb(
+            @PathVariable UUID id,
+            @RequestParam(required = false) UUID itemId) {
+
+        byte[] bplbBytes = orderService.gerarBplbEtiquetasById(id, itemId);
+
+        ContentDisposition contentDisposition = ContentDisposition.attachment()
+                .filename("etiquetas-bplb-" + id + ".prn")
+                .build();
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("application/octet-stream"))
+                .headers(headers -> headers.setContentDisposition(contentDisposition))
+                .contentLength(bplbBytes.length)
+                .body(bplbBytes);
     }
 
     @PatchMapping("/{id}/status")

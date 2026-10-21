@@ -19,17 +19,29 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Resolvedor responsável por extrair, normalizar e compilar os dados da Ordem de Serviço
  * em instâncias imutáveis de {@link ThermalLabelData} para impressão física.
  * US-17.1 — Separação de responsabilidades e regras de extração de dados (#448).
+ * Correção #492 / #493 — Dedução automática de folhas por tipologia e paginação 1:1.
  */
 @Component
 public class ThermalLabelDataResolver {
 
     private static final Logger log = LoggerFactory.getLogger(ThermalLabelDataResolver.class);
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
+    private static final Pattern PATTERN_FOLHAS =
+            Pattern.compile("(\\d+)\\s*(?:folhas?|fls?)\\b", Pattern.CASE_INSENSITIVE);
+    private static final Pattern PATTERN_F_SUFFIX =
+            Pattern.compile("\\b(\\d+)\\s*f\\b", Pattern.CASE_INSENSITIVE);
+    private static final Pattern PATTERN_PLANOS =
+            Pattern.compile("(\\d+)\\s*planos?\\b", Pattern.CASE_INSENSITIVE);
+    private static final Pattern PATTERN_TEMPLATE =
+            Pattern.compile("(\\d+)f\\b", Pattern.CASE_INSENSITIVE);
 
     private static final String NAO_INFORMADO = "Não informado";
     private static final String FALLBACK_EMPRESA = "Alumiportas";
@@ -133,6 +145,52 @@ public class ThermalLabelDataResolver {
         return ordenados;
     }
 
+    /**
+     * Deduz a quantidade de folhas físicas por esquadria através da descrição ou tipologia do modelo.
+     * US-17 / Correção #492: Porta 2 Folhas deve gerar 2 etiquetas (1 por folha).
+     *
+     * @param item item da ordem de serviço
+     * @return quantidade de folhas deduzida (mínimo 1)
+     */
+    public int extrairQuantidadeFolhas(OrderItem item) {
+        if (item == null) {
+            return 1;
+        }
+
+        String descricao = item.getDescricao();
+        if (descricao != null && !descricao.isBlank()) {
+            Matcher mFolhas = PATTERN_FOLHAS.matcher(descricao);
+            if (mFolhas.find()) {
+                return Integer.parseInt(mFolhas.group(1));
+            }
+            Matcher mF = PATTERN_F_SUFFIX.matcher(descricao);
+            if (mF.find()) {
+                return Integer.parseInt(mF.group(1));
+            }
+            Matcher mPlanos = PATTERN_PLANOS.matcher(descricao);
+            if (mPlanos.find()) {
+                return Integer.parseInt(mPlanos.group(1));
+            }
+        }
+
+        if (item.getTemplateConfig() != null && !item.getTemplateConfig().isBlank()) {
+            try {
+                JsonNode root = OBJECT_MAPPER.readTree(item.getTemplateConfig());
+                JsonNode tNode = root.get("templateType");
+                if (tNode != null && !tNode.isNull()) {
+                    Matcher mTemplate = PATTERN_TEMPLATE.matcher(tNode.asText());
+                    if (mTemplate.find()) {
+                        return Integer.parseInt(mTemplate.group(1));
+                    }
+                }
+            } catch (Exception e) {
+                log.debug("Não foi possível extrair templateType do templateConfig: {}", e.getMessage());
+            }
+        }
+
+        return 1;
+    }
+
     private int adicionarEtiquetasDoItem(List<ThermalLabelData> listaEtiquetas,
                                          OrderItem item,
                                          OrderLabelContext ctx,
@@ -146,28 +204,40 @@ public class ThermalLabelDataResolver {
         String vidro = resolverVidro(item);
         String localAmbiente = extrairAmbienteOuLocal(item, ctx.order());
         String codItem = extrairCodigoItem(item, itemIndex);
-        int qtdItem = item.getQuantidade();
+        int qtdEsquadrias = item.getQuantidade();
+        int folhas = extrairQuantidadeFolhas(item);
 
         int contador = contadorGlobal;
-        for (int p = 1; p <= qtdItem; p++) {
-            listaEtiquetas.add(new ThermalLabelData(
-                    ctx.companyName(),
-                    ctx.customerName(),
-                    ctx.orderCode(),
-                    itemIndex,
-                    contador,
-                    ctx.totalPieces(),
-                    descricao,
-                    linha,
-                    largura,
-                    altura,
-                    cor,
-                    vidro,
-                    localAmbiente,
-                    codItem,
-                    ctx.issueDate()
-            ));
-            contador++;
+        for (int esq = 1; esq <= qtdEsquadrias; esq++) {
+            for (int folha = 1; folha <= folhas; folha++) {
+                String sufixoFolha = folhas > 1
+                        ? String.format(Locale.ROOT, "Folha %02d/%02d", folha, folhas)
+                        : String.format(Locale.ROOT, "Peça %02d/%02d", folha, folhas);
+
+                String badge = String.format(Locale.ROOT,
+                        "Item %02d • Esquadria %02d/%02d | %s",
+                        itemIndex, esq, qtdEsquadrias, sufixoFolha);
+
+                listaEtiquetas.add(new ThermalLabelData(
+                        ctx.companyName(),
+                        ctx.customerName(),
+                        ctx.orderCode(),
+                        itemIndex,
+                        contador,
+                        ctx.totalPieces(),
+                        descricao,
+                        linha,
+                        largura,
+                        altura,
+                        cor,
+                        vidro,
+                        localAmbiente,
+                        codItem,
+                        ctx.issueDate(),
+                        badge
+                ));
+                contador++;
+            }
         }
         return contador;
     }
@@ -186,7 +256,7 @@ public class ThermalLabelDataResolver {
         int total = 0;
         for (OrderItem item : items) {
             if (item.getQuantidade() != null && item.getQuantidade() > 0) {
-                total += item.getQuantidade();
+                total += item.getQuantidade() * extrairQuantidadeFolhas(item);
             }
         }
         return total;

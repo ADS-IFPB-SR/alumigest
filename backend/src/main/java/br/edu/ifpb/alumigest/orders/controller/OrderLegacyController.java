@@ -129,4 +129,27 @@ public class OrderLegacyController {
                 .contentLength(pdfDto.bytes().length)
                 .body(pdfDto.bytes());
     }
+
+    @PostMapping("/{id}/print-thermal")
+    public ResponseEntity<br.edu.ifpb.alumigest.orders.dto.PrintThermalResultDTO> imprimirNaTermica(
+            @PathVariable UUID id,
+            @RequestParam(required = false) UUID itemId,
+            @RequestParam(required = false) String printerName) {
+        return ResponseEntity.ok(orderService.printThermalLabels(id, itemId, printerName));
+    }
+
+    @GetMapping("/{id}/labels-bplb")
+    public ResponseEntity<byte[]> baixarScriptBplb(
+            @PathVariable UUID id,
+            @RequestParam(required = false) UUID itemId) {
+        byte[] bplbBytes = orderService.gerarBplbEtiquetasById(id, itemId);
+        ContentDisposition contentDisposition = ContentDisposition.attachment()
+                .filename("etiquetas-bplb-" + id + ".prn")
+                .build();
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("application/octet-stream"))
+                .headers(headers -> headers.setContentDisposition(contentDisposition))
+                .contentLength(bplbBytes.length)
+                .body(bplbBytes);
+    }
 }

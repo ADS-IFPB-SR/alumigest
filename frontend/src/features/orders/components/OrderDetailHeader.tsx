@@ -129,15 +129,16 @@ export const OrderDetailHeader: React.FC<OrderDetailHeaderProps> = ({
           </button>
         )}
 
-        {/* Etiquetas Térmicas de Identificação de Peças em PDF (100x60mm) — US-17.4 (#451) */}
-        {order.status !== 'CANCELLED' && (
+        {/* Etiquetas Térmicas de Identificação de Peças (100x60mm) — US-17 (#492, #493) */}
+        {order.status !== 'CANCELLED' && (onOpenThermalModal || onPrintLabels) && (
           <button
             type="button"
-            id="btn-download-labels-pdf"
-            data-testid="btn-download-labels-pdf"
-            onClick={onPrintLabels}
+            id="btn-open-thermal-modal"
+            data-testid="btn-open-thermal-modal"
+            onClick={onOpenThermalModal || onPrintLabels}
             disabled={isDownloadingLabels}
             className="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium text-amber-800 bg-amber-50 hover:bg-amber-100 disabled:opacity-50 rounded-lg border border-amber-200 transition-colors cursor-pointer disabled:cursor-not-allowed"
+            title="Conferir e imprimir etiquetas térmicas para identificação das peças na fábrica"
           >
             {isDownloadingLabels ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -145,20 +146,6 @@ export const OrderDetailHeader: React.FC<OrderDetailHeaderProps> = ({
               <Tag className="w-4 h-4" />
             )}
             <span>{isDownloadingLabels ? 'Gerando Etiquetas...' : 'Imprimir Etiquetas'}</span>
-          </button>
-        )}
-
-        {/* Visualização Prévia Contínua no Modal Frontend com Filtro por Item — US-17.5 (#474) */}
-        {order.status !== 'CANCELLED' && onOpenThermalModal && (
-          <button
-            type="button"
-            id="btn-open-thermal-modal"
-            data-testid="btn-open-thermal-modal"
-            onClick={onOpenThermalModal}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg border border-slate-300 transition-colors cursor-pointer"
-          >
-            <Eye className="w-4 h-4" />
-            <span>Visualizar Etiquetas</span>
           </button>
         )}
 

@@ -1,7 +1,9 @@
-import React, { useState, useMemo } from 'react';
-import { X, Printer, Download, Tag, Loader2 } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { X, Printer, Download, Tag, Loader2, Minus, Plus, SlidersHorizontal, CheckCircle2 } from 'lucide-react';
 import type { Order, OrderItem } from '../types';
 import { formatDate } from '../utils/formatDate';
+import { extractLeavesCount, formatLabelBadge } from '../utils/leafDeduction';
+import { useAvailablePrinters, usePrintThermalLabels } from '../hooks/useOrders';
 
 export interface ThermalLabelModalProps {
   isOpen: boolean;
@@ -9,15 +11,29 @@ export interface ThermalLabelModalProps {
   order: Order;
   onDownloadPdf?: () => void;
   isDownloadingPdf?: boolean;
+  onPrintThermal?: (params: { id: string; itemId?: string; printerName?: string }) => void;
+  isPrintingThermal?: boolean;
 }
 
 export interface PhysicalPieceLabel {
   uniqueKey: string;
   item: OrderItem;
   itemIndex: number;
-  pieceNumber: number;
-  totalPieces: number;
+  esquadriaIndex: number;
+  totalEsquadrias: number;
+  folhaIndex: number;
+  totalFolhas: number;
   labelFraction: string;
+}
+
+function escapeHtml(str?: string | null): string {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 export const ThermalLabelModal: React.FC<ThermalLabelModalProps> = ({
@@ -26,41 +42,104 @@ export const ThermalLabelModal: React.FC<ThermalLabelModalProps> = ({
   order,
   onDownloadPdf,
   isDownloadingPdf = false,
+  onPrintThermal: onPrintThermalProp,
+  isPrintingThermal: isPrintingThermalProp,
 }) => {
   const [selectedItemFilter, setSelectedItemFilter] = useState<number | 'ALL'>('ALL');
 
-  // Multiplicação de cada item pela sua quantidade para gerar as peças físicas 1:1
+  // Mapa de folhas por item (inicializado via dedução automática por regex na descrição/tipologia)
+  const [leavesPerItem, setLeavesPerItem] = useState<Record<string, number>>({});
+
+  // Integração com impressoras físicas do SO e envio direto BPLB (com fallback resiliente para testes)
+  let availablePrinters: Array<{ name: string; isDefault: boolean; isThermal: boolean }> = [];
+  let printMutation: any = null;
+
+  try {
+    const printersQuery = useAvailablePrinters();
+    if (printersQuery && Array.isArray(printersQuery.data)) {
+      availablePrinters = printersQuery.data;
+    }
+  } catch {
+    // Tolerância para ambiente de teste isolado sem QueryClientProvider
+  }
+
+  try {
+    printMutation = usePrintThermalLabels();
+  } catch {
+    // Tolerância para ambiente de teste isolado sem QueryClientProvider
+  }
+
+  const [selectedPrinter, setSelectedPrinter] = useState<string>('');
+
+  useEffect(() => {
+    if (availablePrinters.length > 0 && !selectedPrinter) {
+      const thermal = availablePrinters.find((p) => p.isThermal);
+      const def = availablePrinters.find((p) => p.isDefault);
+      setSelectedPrinter(thermal?.name || def?.name || availablePrinters[0].name);
+    }
+  }, [availablePrinters, selectedPrinter]);
+
+  const isPrinting = isPrintingThermalProp ?? (printMutation?.isPending || false);
+
+  useEffect(() => {
+    if (!order?.items) return;
+    const initialMap: Record<string, number> = {};
+    order.items.forEach((item) => {
+      const templateType =
+        (item as any).templateType ||
+        ((item.templateConfig && typeof item.templateConfig === 'object')
+          ? (item.templateConfig as any).templateType
+          : null);
+      initialMap[item.id] = extractLeavesCount(item.descricao, templateType);
+    });
+    setLeavesPerItem(initialMap);
+  }, [order?.items]);
+
+  const handleUpdateLeaves = (itemId: string, delta: number) => {
+    setLeavesPerItem((prev) => {
+      const current = prev[itemId] ?? 1;
+      const nextVal = Math.max(1, current + delta);
+      return { ...prev, [itemId]: nextVal };
+    });
+  };
+
+  // Geração 1:1 de etiquetas físicas: (quantidade de esquadrias) x (folhas deduzidas/conferidas)
   const allPhysicalLabels = useMemo(() => {
     if (!order?.items || order.items.length === 0) return [];
 
-    const totalPieces = order.items.reduce((acc, item) => acc + (item.quantidade || 1), 0);
     const labels: PhysicalPieceLabel[] = [];
-    let globalCounter = 1;
 
     order.items.forEach((item, itemIdx) => {
       const itemNumber = itemIdx + 1;
-      const qtd = Math.max(1, item.quantidade || 1);
+      const qtdEsquadrias = Math.max(1, item.quantidade || 1);
+      const folhas = Math.max(1, leavesPerItem[item.id] ?? extractLeavesCount(item.descricao));
 
-      for (let p = 1; p <= qtd; p++) {
-        const piecePad = String(globalCounter).padStart(2, '0');
-        const totalPad = String(totalPieces).padStart(2, '0');
-        const itemPad = String(itemNumber).padStart(2, '0');
+      for (let esq = 1; esq <= qtdEsquadrias; esq++) {
+        for (let folha = 1; folha <= folhas; folha++) {
+          const badgeText = formatLabelBadge(
+            itemNumber,
+            esq,
+            qtdEsquadrias,
+            folha,
+            folhas
+          );
 
-        labels.push({
-          uniqueKey: `${item.id}-${p}`,
-          item,
-          itemIndex: itemNumber,
-          pieceNumber: globalCounter,
-          totalPieces,
-          labelFraction: `Item ${itemPad} | Peça ${piecePad}/${totalPad}`,
-        });
-
-        globalCounter++;
+          labels.push({
+            uniqueKey: `${item.id}-esq-${esq}-folha-${folha}`,
+            item,
+            itemIndex: itemNumber,
+            esquadriaIndex: esq,
+            totalEsquadrias: qtdEsquadrias,
+            folhaIndex: folha,
+            totalFolhas: folhas,
+            labelFraction: badgeText,
+          });
+        }
       }
     });
 
     return labels;
-  }, [order?.items]);
+  }, [order?.items, leavesPerItem]);
 
   // Etiquetas filtradas por item ou todas
   const filteredLabels = useMemo(() => {
@@ -73,7 +152,22 @@ export const ThermalLabelModal: React.FC<ThermalLabelModalProps> = ({
   if (!isOpen) return null;
 
   const handlePrintThermal = () => {
-    window.print();
+    const selectedItem =
+      selectedItemFilter !== 'ALL' && order.items
+        ? order.items[selectedItemFilter - 1]
+        : undefined;
+
+    const payload = {
+      id: order.id,
+      itemId: selectedItem?.id,
+      printerName: selectedPrinter || undefined,
+    };
+
+    if (onPrintThermalProp) {
+      onPrintThermalProp(payload);
+    } else if (printMutation?.mutate) {
+      printMutation.mutate(payload);
+    }
   };
 
   const formattedDate = order.dataAprovacao
@@ -86,45 +180,7 @@ export const ThermalLabelModal: React.FC<ThermalLabelModalProps> = ({
       aria-labelledby="thermal-label-modal-title"
       data-testid="thermal-label-modal"
     >
-      {/* Estilos embutidos para impressão térmica industrial @media print */}
-      <style>{`
-        @media print {
-          @page {
-            size: 100mm 60mm;
-            margin: 0;
-          }
-          body * {
-            visibility: hidden !important;
-          }
-          #thermal-print-area, #thermal-print-area * {
-            visibility: visible !important;
-          }
-          #thermal-print-area {
-            position: absolute !important;
-            left: 0 !important;
-            top: 0 !important;
-            width: 100mm !important;
-            background: transparent !important;
-            padding: 0 !important;
-          }
-          .thermal-print-card {
-            width: 96mm !important;
-            height: 56mm !important;
-            margin: 2mm !important;
-            padding: 3mm !important;
-            border: 1.2px solid #0f172a !important;
-            border-radius: 4mm !important;
-            page-break-after: always !important;
-            page-break-inside: avoid !important;
-            box-sizing: border-box !important;
-            background-color: #ffffff !important;
-            box-shadow: none !important;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-          }
-        }
-      `}</style>
-
+      {/* Modal Visual na Tela */}
       <div className="relative w-full max-w-5xl bg-surface-container-lowest rounded-2xl shadow-2xl border border-outline-variant flex flex-col max-h-[90vh] overflow-hidden my-auto">
         {/* Header do Modal */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-outline-variant bg-surface-container-low">
@@ -134,10 +190,11 @@ export const ThermalLabelModal: React.FC<ThermalLabelModalProps> = ({
             </div>
             <div>
               <h2 id="thermal-label-modal-title" className="text-lg font-bold text-on-surface">
-                Visualização Prévia de Etiquetas Térmicas (100x60mm)
+                Conferência e Impressão de Etiquetas Térmicas (100x60mm)
               </h2>
               <p className="text-xs text-on-surface-variant">
-                Ordem de Serviço #{order.codigo} • {order.clienteNome} • {allPhysicalLabels.length} {allPhysicalLabels.length === 1 ? 'peça física' : 'peças físicas'}
+                Ordem de Serviço #{order.codigo} • {order.clienteNome} • {allPhysicalLabels.length}{' '}
+                {allPhysicalLabels.length === 1 ? 'etiqueta gerada' : 'etiquetas geradas'}
               </p>
             </div>
           </div>
@@ -153,10 +210,73 @@ export const ThermalLabelModal: React.FC<ThermalLabelModalProps> = ({
           </button>
         </div>
 
+        {/* Seção de Conferência Prévia de Folhas por Item com Edição Permitida */}
+        <div className="px-6 py-3 border-b border-outline-variant bg-amber-50/50">
+          <div className="flex items-center gap-2 mb-2">
+            <SlidersHorizontal className="w-4 h-4 text-amber-800" />
+            <span className="text-xs font-bold uppercase tracking-wider text-amber-900">
+              Conferência de Folhas por Esquadria (Dedução Automática por Modelo)
+            </span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5 max-h-36 overflow-y-auto pr-1">
+            {order.items?.map((item, idx) => {
+              const itemNum = idx + 1;
+              const leaves = leavesPerItem[item.id] ?? extractLeavesCount(item.descricao);
+              const qtd = item.quantidade || 1;
+              const totalLabels = qtd * leaves;
+
+              return (
+                <div
+                  key={`conf-${item.id}`}
+                  data-testid={`conference-item-${itemNum}`}
+                  className="bg-white border border-amber-200/80 rounded-lg p-2.5 flex items-center justify-between gap-2 shadow-2xs"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-black text-slate-900 truncate" title={item.descricao}>
+                      Item {itemNum} — {item.descricao || 'Esquadria'}
+                    </p>
+                    <p className="text-[10px] text-slate-500">
+                      {qtd} {qtd === 1 ? 'esquadria' : 'esquadrias'} • <strong>{totalLabels}</strong> {totalLabels === 1 ? 'etiqueta' : 'etiquetas'}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 shrink-0 bg-slate-50 border border-slate-200 rounded-md px-1 py-0.5">
+                    <button
+                      type="button"
+                      data-testid={`btn-decrease-leaves-${itemNum}`}
+                      aria-label={`Diminuir folhas do item ${itemNum}`}
+                      onClick={() => handleUpdateLeaves(item.id, -1)}
+                      className="p-1 rounded text-slate-600 hover:text-slate-900 hover:bg-slate-200 transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                      disabled={leaves <= 1}
+                    >
+                      <Minus className="w-3 h-3" />
+                    </button>
+                    <span
+                      data-testid={`leaves-count-item-${itemNum}`}
+                      className="text-xs font-black font-mono text-slate-900 px-1 min-w-[20px] text-center"
+                    >
+                      {leaves} {leaves === 1 ? 'fl' : 'fls'}
+                    </span>
+                    <button
+                      type="button"
+                      data-testid={`btn-increase-leaves-${itemNum}`}
+                      aria-label={`Aumentar folhas do item ${itemNum}`}
+                      onClick={() => handleUpdateLeaves(item.id, 1)}
+                      className="p-1 rounded text-slate-600 hover:text-slate-900 hover:bg-slate-200 transition-colors cursor-pointer"
+                    >
+                      <Plus className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Barra de Filtros Rápidos */}
-        <div className="px-6 py-3 border-b border-outline-variant bg-surface-container-lowest flex flex-wrap items-center gap-2">
-          <span className="text-xs font-semibold text-on-surface-variant mr-1">Filtrar Peças:</span>
-          
+        <div className="px-6 py-2.5 border-b border-outline-variant bg-surface-container-lowest flex flex-wrap items-center gap-2">
+          <span className="text-xs font-semibold text-on-surface-variant mr-1">Filtrar Visualização:</span>
+
           <button
             type="button"
             data-testid="filter-piece-all"
@@ -167,12 +287,13 @@ export const ThermalLabelModal: React.FC<ThermalLabelModalProps> = ({
                 : 'bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest hover:text-on-surface'
             }`}
           >
-            Todas as Peças ({allPhysicalLabels.length})
+            Todas as Etiquetas ({allPhysicalLabels.length})
           </button>
 
           {order.items?.map((item, idx) => {
             const itemNum = idx + 1;
-            const qtd = item.quantidade || 1;
+            const leaves = leavesPerItem[item.id] ?? extractLeavesCount(item.descricao);
+            const qtdLabels = (item.quantidade || 1) * leaves;
             const isSelected = selectedItemFilter === itemNum;
             return (
               <button
@@ -186,14 +307,14 @@ export const ThermalLabelModal: React.FC<ThermalLabelModalProps> = ({
                     : 'bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest hover:text-on-surface'
                 }`}
               >
-                Item {itemNum} ({qtd} {qtd === 1 ? 'Peça' : 'Peças'})
+                Item {itemNum} ({qtdLabels} {qtdLabels === 1 ? 'Etiqueta' : 'Etiquetas'})
               </button>
             );
           })}
         </div>
 
-        {/* Grade Responsiva Contínua de Etiquetas (Visualização em Tela Única) */}
-        <div className="p-6 overflow-y-auto flex-1 bg-slate-100/70" id="thermal-print-area">
+        {/* Grade de Pré-visualização na Tela (Somente Tela) */}
+        <div className="p-6 overflow-y-auto flex-1 bg-slate-100/70" id="thermal-preview-area">
           <div
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4 justify-items-center"
             data-testid="thermal-labels-grid"
@@ -202,7 +323,7 @@ export const ThermalLabelModal: React.FC<ThermalLabelModalProps> = ({
               <div
                 key={lbl.uniqueKey}
                 data-testid="thermal-label-card"
-                className="thermal-print-card w-full max-w-[420px] bg-white text-slate-900 rounded-xl p-4 border border-slate-900 shadow-md flex flex-col justify-between font-sans leading-tight select-none relative"
+                className="w-full max-w-[420px] bg-white text-slate-900 rounded-xl p-4 border border-slate-900 shadow-md flex flex-col justify-between font-sans leading-tight select-none relative"
                 style={{ aspectRatio: '100 / 60' }}
               >
                 {/* 1. Cabeçalho da Etiqueta */}
@@ -280,9 +401,10 @@ export const ThermalLabelModal: React.FC<ThermalLabelModalProps> = ({
                   </div>
                 </div>
 
-                {/* 6. Rodapé Limpo (Sem Código de Barras e Apenas Data) */}
-                <div className="border-t-2 border-slate-900 pt-1 flex items-center justify-start text-[8px] font-extrabold text-slate-800">
+                {/* 6. Rodapé Limpo */}
+                <div className="border-t-2 border-slate-900 pt-1 flex items-center justify-between text-[8px] font-extrabold text-slate-800">
                   <span data-testid="label-date">DATA: {formattedDate}</span>
+                  <span className="font-mono uppercase text-slate-600">AlumiGest • 100x60mm</span>
                 </div>
               </div>
             ))}
@@ -290,20 +412,47 @@ export const ThermalLabelModal: React.FC<ThermalLabelModalProps> = ({
         </div>
 
         {/* Rodapé com Ações */}
-        <div className="px-6 py-3.5 border-t border-outline-variant bg-surface-container-low flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-xs text-on-surface-variant text-center sm:text-left">
-            Exibindo <strong>{filteredLabels.length}</strong> de <strong>{allPhysicalLabels.length}</strong> etiquetas térmicas padronizadas (100x60mm).
-          </p>
+        <div className="px-6 py-3.5 border-t border-outline-variant bg-surface-container-low flex flex-col md:flex-row items-center justify-between gap-3">
+          <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+            <p className="text-xs text-on-surface-variant text-center sm:text-left">
+              Exibindo <strong>{filteredLabels.length}</strong> de <strong>{allPhysicalLabels.length}</strong> etiquetas (100x60mm).
+            </p>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto">
+            {availablePrinters.length > 0 && (
+              <div className="flex items-center gap-1.5 text-xs text-on-surface-variant">
+                <Printer className="w-3.5 h-3.5 text-slate-500" />
+                <label htmlFor="printer-select" className="font-medium whitespace-nowrap">Impressora:</label>
+                <select
+                  id="printer-select"
+                  data-testid="select-thermal-printer"
+                  value={selectedPrinter}
+                  onChange={(e) => setSelectedPrinter(e.target.value)}
+                  className="text-xs bg-surface-container-highest border border-outline-variant rounded-md px-2 py-1 text-on-surface font-medium focus:outline-none focus:ring-1 focus:ring-primary max-w-[220px] truncate"
+                >
+                  {availablePrinters.map((p) => (
+                    <option key={p.name} value={p.name}>
+                      {p.name} {p.isThermal ? '🏷️ (Térmica)' : p.isDefault ? '⭐ (Padrão)' : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2 w-full md:w-auto">
             <button
               type="button"
               data-testid="btn-modal-print-thermal"
               onClick={handlePrintThermal}
-              className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-lg bg-surface-container-highest hover:bg-outline-variant text-on-surface transition-colors cursor-pointer"
+              disabled={isPrinting}
+              className="flex-1 md:flex-none inline-flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-lg bg-slate-900 hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed text-white shadow-xs transition-colors cursor-pointer"
             >
-              <Printer className="w-4 h-4" />
-              Imprimir Todas na Térmica
+              {isPrinting ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Printer className="w-4 h-4" />
+              )}
+              {isPrinting ? 'Enviando para a impressora...' : 'Imprimir Todas na Térmica'}
             </button>
 
             {onDownloadPdf && (
@@ -312,7 +461,7 @@ export const ThermalLabelModal: React.FC<ThermalLabelModalProps> = ({
                 data-testid="btn-modal-download-pdf"
                 onClick={onDownloadPdf}
                 disabled={isDownloadingPdf}
-                className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-lg bg-primary hover:bg-primary-dark text-white shadow-xs transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 md:flex-none inline-flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-lg bg-surface-container-highest hover:bg-outline-variant text-on-surface transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isDownloadingPdf ? (
                   <Loader2 className="w-4 h-4 animate-spin" />

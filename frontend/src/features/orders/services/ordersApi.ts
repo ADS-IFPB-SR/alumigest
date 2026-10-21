@@ -216,6 +216,38 @@ export const ordersApi = {
   },
 
   /**
+   * Lista as impressoras disponíveis no sistema operacional local.
+   */
+  async getAvailablePrinters(): Promise<Array<{ name: string; isDefault: boolean; isThermal: boolean }>> {
+    try {
+      const response = await api.get<Array<{ name: string; isDefault: boolean; isThermal: boolean }>>('/printers');
+      return response.data || [];
+    } catch {
+      return [];
+    }
+  },
+
+  /**
+   * Dispara a impressão direta silenciosa na impressora térmica física (Elgin L42 / BPLB).
+   * US-17 (#492, #493).
+   */
+  async printLabelsDirectly(id: string, options?: { itemId?: string; printerName?: string }): Promise<{
+    success: boolean;
+    message: string;
+    printerName: string;
+    labelCount: number;
+    bplbPayload?: string;
+  }> {
+    const response = await api.post(`/orders/${id}/print-thermal`, null, {
+      params: {
+        ...(options?.itemId ? { itemId: options.itemId } : {}),
+        ...(options?.printerName ? { printerName: options.printerName } : {}),
+      },
+    });
+    return response.data;
+  },
+
+  /**
    * Lista pedidos de venda com paginação e filtros dinâmicos (US-13.4).
    */
   async getOrders(params?: OrderFilterParams): Promise<PageResponse<OrderSummary>> {

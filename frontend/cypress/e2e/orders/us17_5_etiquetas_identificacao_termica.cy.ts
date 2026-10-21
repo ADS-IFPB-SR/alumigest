@@ -97,13 +97,15 @@ describe('US-17.5: Homologação E2E — Emissão de Etiquetas Térmicas de Iden
     cy.get('[data-testid="btn-open-thermal-modal"]').should('be.visible').click();
     cy.get('[data-testid="thermal-label-modal"]').should('be.visible');
 
-    // Então o sistema gera exatamente uma etiqueta física por exemplar (3 peças no total)
-    cy.get('[data-testid="thermal-label-card"]').should('have.length', 3);
+    // Então o sistema gera exatamente uma etiqueta física por folha (Item 1: 2 janelas * 2 folhas = 4; Item 2: 1 porta * 1 folha = 1; total = 5)
+    cy.get('[data-testid="thermal-label-card"]').should('have.length', 5);
 
-    // E exibe a numeração sequencial fracionada correta em cada uma
-    cy.get('[data-testid="label-piece-fraction"]').eq(0).should('contain.text', 'Item 01 | Peça 01/03');
-    cy.get('[data-testid="label-piece-fraction"]').eq(1).should('contain.text', 'Item 01 | Peça 02/03');
-    cy.get('[data-testid="label-piece-fraction"]').eq(2).should('contain.text', 'Item 02 | Peça 03/03');
+    // E exibe a numeração técnica formatada correta em cada uma
+    cy.get('[data-testid="label-piece-fraction"]').eq(0).should('contain.text', 'Item 01 • Esquadria 01/02 | Folha 01/02');
+    cy.get('[data-testid="label-piece-fraction"]').eq(1).should('contain.text', 'Item 01 • Esquadria 01/02 | Folha 02/02');
+    cy.get('[data-testid="label-piece-fraction"]').eq(2).should('contain.text', 'Item 01 • Esquadria 02/02 | Folha 01/02');
+    cy.get('[data-testid="label-piece-fraction"]').eq(3).should('contain.text', 'Item 01 • Esquadria 02/02 | Folha 02/02');
+    cy.get('[data-testid="label-piece-fraction"]').eq(4).should('contain.text', 'Item 02 • Esquadria 01/01 | Peça 01/01');
   });
 
   it('Cenário 2: Tipografia Técnica Limpa de Alto Contraste (Sem Código de Barras)', () => {
@@ -165,25 +167,24 @@ describe('US-17.5: Homologação E2E — Emissão de Etiquetas Térmicas de Iden
 
     // Então todas as etiquetas físicas da O.S. são apresentadas em grade responsiva contínua em uma única tela
     cy.get('[data-testid="thermal-labels-grid"]').should('be.visible');
-    cy.get('[data-testid="thermal-label-card"]').should('have.length', 3);
+    cy.get('[data-testid="thermal-label-card"]').should('have.length', 5);
 
     // E o operador pode alternar os filtros rápidos:
-    // Filtro Item 1 (2 Peças)
+    // Filtro Item 1 (4 Folhas)
     cy.get('[data-testid="filter-piece-item-1"]').should('be.visible').click();
-    cy.get('[data-testid="thermal-label-card"]').should('have.length', 2);
-    cy.contains('Item 01 | Peça 01/03').should('be.visible');
-    cy.contains('Item 01 | Peça 02/03').should('be.visible');
-    cy.contains('Item 02 | Peça 03/03').should('not.exist');
+    cy.get('[data-testid="thermal-label-card"]').should('have.length', 4);
+    cy.contains('Item 01 • Esquadria 01/02 | Folha 01/02').should('be.visible');
+    cy.contains('Item 02 • Esquadria 01/01 | Peça 01/01').should('not.exist');
 
-    // Filtro Item 2 (1 Peça)
+    // Filtro Item 2 (1 Folha)
     cy.get('[data-testid="filter-piece-item-2"]').should('be.visible').click();
     cy.get('[data-testid="thermal-label-card"]').should('have.length', 1);
-    cy.contains('Item 02 | Peça 03/03').should('be.visible');
-    cy.contains('Item 01 | Peça 01/03').should('not.exist');
+    cy.contains('Item 02 • Esquadria 01/01 | Peça 01/01').should('be.visible');
+    cy.contains('Item 01 • Esquadria 01/02 | Folha 01/02').should('not.exist');
 
-    // Filtro Todas as Peças (3)
+    // Filtro Todas as Peças (5)
     cy.get('[data-testid="filter-piece-all"]').click();
-    cy.get('[data-testid="thermal-label-card"]').should('have.length', 3);
+    cy.get('[data-testid="thermal-label-card"]').should('have.length', 5);
 
     // E a interface disponibiliza botões para "Baixar PDF" e "Imprimir Todas na Térmica"
     cy.get('[data-testid="btn-modal-download-pdf"]').should('be.visible');
@@ -195,7 +196,7 @@ describe('US-17.5: Homologação E2E — Emissão de Etiquetas Térmicas de Iden
   });
 
   it('Cenário 4: Download Direto de Arquivo PDF do Backend com Revogação de Blob URL', () => {
-    // Dado que o usuário aciona a ação de baixar PDF das etiquetas
+    // Dado que o usuário aciona a ação de baixar PDF das etiquetas a partir do modal
     cy.intercept('GET', `**/api/**/orders/${orderId}`, {
       statusCode: 200,
       body: multiItemOrder,
@@ -219,8 +220,9 @@ describe('US-17.5: Homologação E2E — Emissão de Etiquetas Térmicas de Iden
       cy.spy(win.URL, 'revokeObjectURL').as('revokeBlobUrl');
     });
 
-    // Quando o botão Imprimir Etiquetas é clicado
-    cy.get('[data-testid="btn-download-labels-pdf"]').should('be.visible').click();
+    // Quando abre o modal e clica no botão de baixar PDF
+    cy.get('[data-testid="btn-open-thermal-modal"]').click();
+    cy.get('[data-testid="btn-modal-download-pdf"]').should('be.visible').click();
 
     // Então o endpoint é consumido e responde com status HTTP 200 OK e Content-Type: application/pdf
     cy.wait('@downloadLabelsPdf').then(({ response }) => {

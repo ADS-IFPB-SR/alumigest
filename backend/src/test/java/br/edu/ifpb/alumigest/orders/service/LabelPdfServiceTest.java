@@ -128,13 +128,13 @@ class LabelPdfServiceTest {
             assertThat(header).isEqualTo("%PDF-");
 
             try (PdfReader reader = new PdfReader(pdfBytes)) {
-                // Item 1 tem qtd=2 e Item 2 tem qtd=1 => Total = 3 páginas
+                // Item 1 (2 janelas x 2 folhas = 4) e Item 2 (1 porta x 3 folhas = 3) => Total = 7 páginas
                 assertThat(reader.getNumberOfPages())
-                        .as("O documento deve ter exatamente 3 páginas físicas")
-                        .isEqualTo(3);
+                        .as("O documento deve ter exatamente 7 páginas físicas (uma por folha)")
+                        .isEqualTo(7);
 
                 // Validação das dimensões térmicas 100mm x 60mm (283.46 pt x 170.08 pt)
-                for (int i = 1; i <= 3; i++) {
+                for (int i = 1; i <= 7; i++) {
                     Rectangle pageSize = reader.getPageSize(i);
                     assertThat(pageSize.getWidth())
                             .as("Largura da página %d deve ser 100mm (283.46 pt)", i)
@@ -156,29 +156,31 @@ class LabelPdfServiceTest {
             try (PdfReader reader = new PdfReader(pdfBytes)) {
                 String pagina1 = extrairTextoDaPagina(reader, 1);
                 String pagina2 = extrairTextoDaPagina(reader, 2);
-                String pagina3 = extrairTextoDaPagina(reader, 3);
+                String pagina5 = extrairTextoDaPagina(reader, 5);
 
-                // Página 1: Item 1, Peça 1 de 3
+                // Página 1: Item 1, Esquadria 1/2, Folha 1/2
                 assertThat(pagina1).contains("OS-2026-0002");
                 assertThat(pagina1).contains("JOÃO SILVA");
-                assertThat(pagina1).contains("Item 01 | Peça 01/03");
+                assertThat(pagina1).contains("Item 01");
+                assertThat(pagina1).contains("Folha 01/02");
                 assertThat(pagina1).contains("1200 x 1500 mm");
                 assertThat(pagina1).contains("Preto Anodizado");
                 assertThat(pagina1).contains("Incolor 6mm");
                 assertThat(pagina1).contains("Temperado");
 
-                // Página 2: Item 1, Peça 2 de 3
+                // Página 2: Item 1, Esquadria 1/2, Folha 2/2
                 assertThat(pagina2).contains("OS-2026-0002");
-                assertThat(pagina2).contains("Item 01 | Peça 02/03");
+                assertThat(pagina2).contains("Folha 02/02");
                 assertThat(pagina2).contains("1200 x 1500 mm");
 
-                // Página 3: Item 2, Peça 3 de 3
-                assertThat(pagina3).contains("OS-2026-0002");
-                assertThat(pagina3).contains("Item 02 | Peça 03/03");
-                assertThat(pagina3).contains("2000 x 2100 mm");
-                assertThat(pagina3).contains("Branco Anodizado");
-                assertThat(pagina3).contains("Incolor 8mm");
-                assertThat(pagina3).contains("Temperado");
+                // Página 5: Item 2, Esquadria 1/1, Folha 1/3
+                assertThat(pagina5).contains("OS-2026-0002");
+                assertThat(pagina5).contains("Item 02");
+                assertThat(pagina5).contains("Folha 01/03");
+                assertThat(pagina5).contains("2000 x 2100 mm");
+                assertThat(pagina5).contains("Branco Anodizado");
+                assertThat(pagina5).contains("Incolor 8mm");
+                assertThat(pagina5).contains("Temperado");
             }
         }
 
@@ -222,8 +224,8 @@ class LabelPdfServiceTest {
             assertThat(pdfBytes).isNotNull().isNotEmpty();
             try (PdfReader reader = new PdfReader(pdfBytes)) {
                 assertThat(reader.getNumberOfPages())
-                        .as("Item 2 possui quantidade 1, logo deve gerar exatamente 1 página")
-                        .isEqualTo(1);
+                        .as("Item 2 possui 1 esquadria de 3 folhas, logo deve gerar exatamente 3 páginas")
+                        .isEqualTo(3);
             }
         }
     }
@@ -260,7 +262,8 @@ class LabelPdfServiceTest {
             try (PdfReader reader = new PdfReader(pdfBytes)) {
                 assertThat(reader.getNumberOfPages()).isEqualTo(1);
                 String conteudo = extrairTextoDaPagina(reader, 1);
-                assertThat(conteudo).contains("Item 01 | Peça 01/01");
+                assertThat(conteudo).contains("Item 01");
+                assertThat(conteudo).contains("Peça 01/01");
             }
         }
 
@@ -294,10 +297,10 @@ class LabelPdfServiceTest {
             byte[] pdfBytes = labelPdfService.gerarEtiquetas(order);
 
             try (PdfReader reader = new PdfReader(pdfBytes)) {
-                // Mesmo com textos gigantes, deve gerar rigorosamente 2 páginas (1 por peça física)
+                // 2 esquadrias x 6 folhas = 12 páginas físicas
                 assertThat(reader.getNumberOfPages())
-                        .as("Textos longos não podem forçar quebra de página indevida")
-                        .isEqualTo(2);
+                        .as("Deve gerar rigorosamente 12 páginas (2 esquadrias x 6 folhas) sem estourar altura")
+                        .isEqualTo(12);
             }
         }
     }

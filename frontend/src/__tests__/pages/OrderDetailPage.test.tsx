@@ -349,7 +349,7 @@
           });
         });
 
-        it('deve disparar o download das etiquetas térmicas PDF do pedido (US-17.4)', () => {
+        it('deve abrir o modal de conferência de etiquetas ao clicar em "Imprimir Etiquetas" e permitir download se solicitado (US-17.4 / #493)', () => {
           vi.spyOn(useOrdersModule, 'useOrder').mockReturnValue({
             data: mockOrder,
             isLoading: false,
@@ -364,8 +364,13 @@
             </MemoryRouter>
           );
 
+          // Clicar em Imprimir Etiquetas deve abrir o modal de conferência e impressão direta (#493)
           fireEvent.click(screen.getByRole('button', { name: /imprimir etiquetas/i }));
+          expect(screen.getByTestId('thermal-label-modal')).toBeInTheDocument();
+          expect(mockDownloadLabels).not.toHaveBeenCalled();
 
+          // Download PDF agora é acionado opcionalmente dentro do modal
+          fireEvent.click(screen.getByTestId('btn-modal-download-pdf'));
           expect(mockDownloadLabels).toHaveBeenCalledWith({
             id: 'order-uuid-1',
             codigo: 'OS-2026-0001',

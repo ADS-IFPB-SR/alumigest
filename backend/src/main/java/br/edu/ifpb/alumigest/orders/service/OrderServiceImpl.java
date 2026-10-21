@@ -54,6 +54,9 @@ public class OrderServiceImpl implements OrderService {
     private final OrderMapper orderMapper;
     private final OrderPdfService orderPdfService;
     private final LabelPdfService labelPdfService;
+    private final br.edu.ifpb.alumigest.orders.service.thermal.ThermalPrinterService thermalPrinterService;
+    private final br.edu.ifpb.alumigest.orders.service.pdf.ThermalLabelDataResolver thermalLabelDataResolver;
+    private final br.edu.ifpb.alumigest.orders.service.thermal.ThermalLabelBplbRenderer thermalLabelBplbRenderer;
 
     public OrderServiceImpl(
             OrderRepository orderRepository,
@@ -61,13 +64,19 @@ public class OrderServiceImpl implements OrderService {
             OrderCodeGenerator orderCodeGenerator,
             OrderMapper orderMapper,
             OrderPdfService orderPdfService,
-            LabelPdfService labelPdfService) {
+            LabelPdfService labelPdfService,
+            br.edu.ifpb.alumigest.orders.service.thermal.ThermalPrinterService thermalPrinterService,
+            br.edu.ifpb.alumigest.orders.service.pdf.ThermalLabelDataResolver thermalLabelDataResolver,
+            br.edu.ifpb.alumigest.orders.service.thermal.ThermalLabelBplbRenderer thermalLabelBplbRenderer) {
         this.orderRepository = orderRepository;
         this.budgetRepository = budgetRepository;
         this.orderCodeGenerator = orderCodeGenerator;
         this.orderMapper = orderMapper;
         this.orderPdfService = orderPdfService;
         this.labelPdfService = labelPdfService;
+        this.thermalPrinterService = thermalPrinterService;
+        this.thermalLabelDataResolver = thermalLabelDataResolver;
+        this.thermalLabelBplbRenderer = thermalLabelBplbRenderer;
     }
 
     @Override
@@ -169,6 +178,34 @@ public class OrderServiceImpl implements OrderService {
         String codigo = order.getCodigo() != null ? order.getCodigo().replace("/", "-") : id.toString();
         String filename = "etiquetas-" + codigo + ".pdf";
         return new OrderPdfDTO(bytes, filename);
+    }
+
+    @Override
+    public List<br.edu.ifpb.alumigest.orders.dto.PrinterInfoDTO> listAvailablePrinters() {
+        return thermalPrinterService.listAvailablePrinters();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public br.edu.ifpb.alumigest.orders.dto.PrintThermalResultDTO printThermalLabels(UUID id, UUID itemId, String targetPrinter) {
+        Order order = orderRepository.findByIdWithDetails(id)
+                .orElseThrow(() -> new ResourceNotFoundException(RESOURCE_PEDIDO, id.toString()));
+        if (order.getStatus() == OrderStatus.CANCELLED) {
+            throw new BusinessException("Não é possível emitir etiquetas de uma ordem de serviço cancelada.");
+        }
+        return thermalPrinterService.printLabelsDirectly(order, itemId, targetPrinter);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public byte[] gerarBplbEtiquetasById(UUID id, UUID itemId) {
+        Order order = orderRepository.findByIdWithDetails(id)
+                .orElseThrow(() -> new ResourceNotFoundException(RESOURCE_PEDIDO, id.toString()));
+        if (order.getStatus() == OrderStatus.CANCELLED) {
+            throw new BusinessException("Não é possível emitir etiquetas de uma ordem de serviço cancelada.");
+        }
+        List<br.edu.ifpb.alumigest.orders.service.pdf.ThermalLabelData> etiquetas = thermalLabelDataResolver.resolveLabels(order, itemId);
+        return thermalLabelBplbRenderer.renderBplbBytes(etiquetas);
     }
 
     @Override

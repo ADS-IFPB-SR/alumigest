@@ -105,3 +105,35 @@ export const useUpdateOrderStatus = (id?: string) => {
     },
   });
 };
+
+/**
+ * Hook para listar impressoras disponíveis no sistema operacional local.
+ * US-17 (#492, #493).
+ */
+export const useAvailablePrinters = () => {
+  return useQuery({
+    queryKey: ['printers'],
+    queryFn: () => ordersApi.getAvailablePrinters(),
+    staleTime: 30000,
+  });
+};
+
+/**
+ * Hook de mutação para envio direto silencioso à impressora térmica (Elgin L42 / BPLB).
+ * US-17 (#492, #493).
+ */
+export const usePrintThermalLabels = () => {
+  return useMutation({
+    mutationFn: ({ id, itemId, printerName }: { id: string; itemId?: string; printerName?: string }) =>
+      ordersApi.printLabelsDirectly(id, { itemId, printerName }),
+    onSuccess: (data) => {
+      toast.success(data.message || 'Etiquetas enviadas com sucesso para a impressora térmica!');
+    },
+    onError: (error: unknown) => {
+      const err = error as { response?: { data?: { message?: string } } };
+      const message = err?.response?.data?.message || 'Erro ao enviar etiquetas para a impressora térmica.';
+      toast.error(message);
+    },
+  });
+};
+

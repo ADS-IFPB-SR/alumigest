@@ -80,34 +80,50 @@ class ThermalLabelDataResolverTest {
 
             List<ThermalLabelData> etiquetas = resolver.resolveLabels(order);
 
-            assertThat(etiquetas).hasSize(3);
+            // Item 1 (2 janelas x 2 folhas = 4) + Item 2 (1 porta x 1 folha = 1) = 5 etiquetas
+            assertThat(etiquetas).hasSize(5);
 
-            // Peça 1 (Item 1)
+            // Etiqueta 1 (Item 1, Esquadria 1, Folha 1)
             ThermalLabelData e1 = etiquetas.get(0);
             assertThat(e1.companyName()).isEqualTo("ALUMÍNIO & VIDROS PB");
             assertThat(e1.customerName()).isEqualTo("MARCOS SOUZA");
             assertThat(e1.orderCode()).isEqualTo("OS-2026-0001");
             assertThat(e1.itemIndex()).isEqualTo(1);
             assertThat(e1.pieceNumber()).isEqualTo(1);
-            assertThat(e1.totalPieces()).isEqualTo(3);
+            assertThat(e1.totalPieces()).isEqualTo(5);
             assertThat(e1.widthMm()).isEqualTo(1200);
             assertThat(e1.heightMm()).isEqualTo(1000);
             assertThat(e1.issueDate()).isEqualTo(LocalDate.of(2026, 10, 15));
+            assertThat(e1.labelBadge()).isEqualTo("Item 01 • Esquadria 01/02 | Folha 01/02");
 
-            // Peça 2 (Item 1)
+            // Etiqueta 2 (Item 1, Esquadria 1, Folha 2)
             ThermalLabelData e2 = etiquetas.get(1);
             assertThat(e2.itemIndex()).isEqualTo(1);
             assertThat(e2.pieceNumber()).isEqualTo(2);
-            assertThat(e2.totalPieces()).isEqualTo(3);
+            assertThat(e2.totalPieces()).isEqualTo(5);
+            assertThat(e2.labelBadge()).isEqualTo("Item 01 • Esquadria 01/02 | Folha 02/02");
 
-            // Peça 3 (Item 2)
+            // Etiqueta 3 (Item 1, Esquadria 2, Folha 1)
             ThermalLabelData e3 = etiquetas.get(2);
-            assertThat(e3.itemIndex()).isEqualTo(2);
+            assertThat(e3.itemIndex()).isEqualTo(1);
             assertThat(e3.pieceNumber()).isEqualTo(3);
-            assertThat(e3.totalPieces()).isEqualTo(3);
-            assertThat(e3.widthMm()).isEqualTo(900);
-            assertThat(e3.heightMm()).isEqualTo(2100);
-            assertThat(e3.aluminumColor()).isEqualTo("Preto");
+            assertThat(e3.labelBadge()).isEqualTo("Item 01 • Esquadria 02/02 | Folha 01/02");
+
+            // Etiqueta 4 (Item 1, Esquadria 2, Folha 2)
+            ThermalLabelData e4 = etiquetas.get(3);
+            assertThat(e4.itemIndex()).isEqualTo(1);
+            assertThat(e4.pieceNumber()).isEqualTo(4);
+            assertThat(e4.labelBadge()).isEqualTo("Item 01 • Esquadria 02/02 | Folha 02/02");
+
+            // Etiqueta 5 (Item 2, Esquadria 1, Folha 1)
+            ThermalLabelData e5 = etiquetas.get(4);
+            assertThat(e5.itemIndex()).isEqualTo(2);
+            assertThat(e5.pieceNumber()).isEqualTo(5);
+            assertThat(e5.totalPieces()).isEqualTo(5);
+            assertThat(e5.widthMm()).isEqualTo(900);
+            assertThat(e5.heightMm()).isEqualTo(2100);
+            assertThat(e5.aluminumColor()).isEqualTo("Preto");
+            assertThat(e5.labelBadge()).isEqualTo("Item 02 • Esquadria 01/01 | Peça 01/01");
         }
 
         @Test
@@ -326,6 +342,72 @@ class ThermalLabelDataResolverTest {
             assertThatThrownBy(() -> resolver.resolveLabels(order))
                     .isInstanceOf(BusinessException.class)
                     .hasMessageContaining("não possui itens com quantidade válida");
+        }
+    }
+
+    // =========================================================================
+    // 5. Dedução de Folhas por Regex e Tipologia (#492 / #493)
+    // =========================================================================
+
+    @Nested
+    @DisplayName("5. [Dedução de Folhas] Extração de Quantidade de Folhas por Modelo")
+    class DeducaoFolhasTestes {
+
+        @Test
+        @DisplayName("Deve extrair folhas corretamente por padrão 'X Folhas'")
+        void deveExtrairFolhasPorPadraoFolhas() {
+            assertThat(resolver.extrairQuantidadeFolhas(
+                    OrderItem.builder().descricao("Porta de Correr 2 Folhas").build())).isEqualTo(2);
+            assertThat(resolver.extrairQuantidadeFolhas(
+                    OrderItem.builder().descricao("Janela de Correr 4 Folhas Suprema").build())).isEqualTo(4);
+            assertThat(resolver.extrairQuantidadeFolhas(
+                    OrderItem.builder().descricao("Porta 3 folhas sacada").build())).isEqualTo(3);
+            assertThat(resolver.extrairQuantidadeFolhas(
+                    OrderItem.builder().descricao("Porta de Giro 1 Folha").build())).isEqualTo(1);
+        }
+
+        @Test
+        @DisplayName("Deve extrair folhas por sufixo 'XF' ou 'X fls'")
+        void deveExtrairFolhasPorSufixosAbreviados() {
+            assertThat(resolver.extrairQuantidadeFolhas(
+                    OrderItem.builder().descricao("Janela 2F Linha Suprema").build())).isEqualTo(2);
+            assertThat(resolver.extrairQuantidadeFolhas(
+                    OrderItem.builder().descricao("Porta 4F").build())).isEqualTo(4);
+            assertThat(resolver.extrairQuantidadeFolhas(
+                    OrderItem.builder().descricao("Janela 2 fls").build())).isEqualTo(2);
+            assertThat(resolver.extrairQuantidadeFolhas(
+                    OrderItem.builder().descricao("Porta 3 fls alumínio").build())).isEqualTo(3);
+        }
+
+        @Test
+        @DisplayName("Deve extrair folhas por padrão 'X Planos'")
+        void deveExtrairFolhasPorPadraoPlanos() {
+            assertThat(resolver.extrairQuantidadeFolhas(
+                    OrderItem.builder().descricao("Porta de Correr 3 Planos Sacada").build())).isEqualTo(3);
+            assertThat(resolver.extrairQuantidadeFolhas(
+                    OrderItem.builder().descricao("Esquadria 2 planos").build())).isEqualTo(2);
+        }
+
+        @Test
+        @DisplayName("Deve extrair folhas de templateConfig JSON quando descrição for genérica")
+        void deveExtrairFolhasDeTemplateConfigQuandoDescricaoGenerica() {
+            OrderItem item = OrderItem.builder()
+                    .descricao("Esquadria Sob Medida")
+                    .templateConfig("{\"templateType\": \"SLIDING_DOOR_4F\"}")
+                    .build();
+
+            assertThat(resolver.extrairQuantidadeFolhas(item)).isEqualTo(4);
+        }
+
+        @Test
+        @DisplayName("Deve retornar fallback 1 quando item, descrição ou templateConfig forem nulos/inválidos")
+        void deveRetornarFallbackUmParaCasosNulosOuSemFolhas() {
+            assertThat(resolver.extrairQuantidadeFolhas(null)).isEqualTo(1);
+            assertThat(resolver.extrairQuantidadeFolhas(OrderItem.builder().descricao(null).build())).isEqualTo(1);
+            assertThat(resolver.extrairQuantidadeFolhas(OrderItem.builder().descricao("").build())).isEqualTo(1);
+            assertThat(resolver.extrairQuantidadeFolhas(OrderItem.builder().descricao("Painel Fixo").build())).isEqualTo(1);
+            assertThat(resolver.extrairQuantidadeFolhas(
+                    OrderItem.builder().descricao("Esquadria").templateConfig("invalid json").build())).isEqualTo(1);
         }
     }
 }

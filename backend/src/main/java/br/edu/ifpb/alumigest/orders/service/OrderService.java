@@ -8,8 +8,11 @@ import br.edu.ifpb.alumigest.orders.dto.OrderConvertRequest;
 import br.edu.ifpb.alumigest.orders.dto.OrderPdfDTO;
 import br.edu.ifpb.alumigest.orders.dto.OrderResponse;
 import br.edu.ifpb.alumigest.orders.dto.OrderSummaryResponse;
+import br.edu.ifpb.alumigest.orders.dto.PrinterInfoDTO;
+import br.edu.ifpb.alumigest.orders.dto.PrintThermalResultDTO;
 import org.springframework.data.domain.Pageable;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -104,5 +107,31 @@ public interface OrderService {
     );
 
     OrderResponse updateStatus(UUID id, OrderStatus status);
+
+    /**
+     * Lista as impressoras instaladas no sistema operacional do servidor.
+     *
+     * @return lista de impressoras detectadas
+     */
+    List<PrinterInfoDTO> listAvailablePrinters();
+
+    /**
+     * Envia as etiquetas térmicas da ordem de serviço diretamente para a impressora física via BPLB.
+     *
+     * @param id            identificador da ordem de serviço
+     * @param itemId        identificador opcional de item para filtro
+     * @param targetPrinter nome da impressora de destino (opcional)
+     * @return DTO com o resultado da impressão
+     */
+    PrintThermalResultDTO printThermalLabels(UUID id, UUID itemId, String targetPrinter);
+
+    /**
+     * Gera os bytes brutos do script de comandos BPLB para download ou simulação externa.
+     *
+     * @param id     identificador da ordem de serviço
+     * @param itemId identificador opcional de item para filtro
+     * @return array de bytes do script BPLB
+     */
+    byte[] gerarBplbEtiquetasById(UUID id, UUID itemId);
 
 }

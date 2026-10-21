@@ -162,8 +162,10 @@ public class ThermalLabelPdfRenderer {
         pCodigo.setAlignment(Element.ALIGN_RIGHT);
         cellDir.addElement(pCodigo);
 
-        String badgeTexto = String.format(Locale.ROOT, "Item %02d | Peça %02d/%02d",
-                data.itemIndex(), data.pieceNumber(), data.totalPieces());
+        String badgeTexto = data.labelBadge() != null && !data.labelBadge().isBlank()
+                ? data.labelBadge()
+                : String.format(Locale.ROOT, "Item %02d | Peça %02d/%02d",
+                        data.itemIndex(), data.pieceNumber(), data.totalPieces());
         PdfPTable badgeTable = new PdfPTable(1);
         badgeTable.setHorizontalAlignment(Element.ALIGN_RIGHT);
         badgeTable.setWidthPercentage(95);

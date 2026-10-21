@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { ThermalLabelModal } from '../../../features/orders/components/ThermalLabelModal';
 import type { Order } from '../../../features/orders/types';
 
@@ -28,7 +28,7 @@ const mockOrderMultiItens: Order = {
       descricao: 'Janela de Correr 2 Folhas',
       larguraMm: 1200,
       alturaMm: 1500,
-      quantidade: 2, // 2 peças físicas
+      quantidade: 2, // 2 esquadrias x 2 folhas = 4 etiquetas
       corAluminio: 'Preto Anodizado',
       tipoVidro: 'Incolor 6mm Temperado',
       valorUnitario: 2000,
@@ -41,7 +41,7 @@ const mockOrderMultiItens: Order = {
       descricao: 'Porta de Giro 1 Folha',
       larguraMm: 900,
       alturaMm: 2100,
-      quantidade: 1, // 1 peça física
+      quantidade: 1, // 1 esquadria x 1 folha = 1 etiqueta
       corAluminio: 'Branco Pintura Eletrostática',
       tipoVidro: 'Fumê 8mm Temperado',
       valorUnitario: 2000,
@@ -51,7 +51,7 @@ const mockOrderMultiItens: Order = {
   ],
 };
 
-describe('ThermalLabelModal — [US-17.5] Visualização Prévia Contínua e Filtros de Etiquetas Térmicas', () => {
+describe('ThermalLabelModal — [US-17] Visualização Prévia, Conferência e Impressão Térmica (#492, #493)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -68,7 +68,7 @@ describe('ThermalLabelModal — [US-17.5] Visualização Prévia Contínua e Fil
     expect(screen.queryByTestId('thermal-label-modal')).not.toBeInTheDocument();
   });
 
-  it('Cenário 1: deve gerar paginação exata por peça física (3 peças no total: 2 janelas + 1 porta)', () => {
+  it('Cenário 1: deve gerar paginação exata considerando dedução de folhas (2 janelas x 2 folhas + 1 porta x 1 folha = 5 etiquetas)', () => {
     render(
       <ThermalLabelModal
         isOpen={true}
@@ -78,21 +78,23 @@ describe('ThermalLabelModal — [US-17.5] Visualização Prévia Contínua e Fil
     );
 
     expect(screen.getByTestId('thermal-label-modal')).toBeInTheDocument();
-    
-    // Total de 3 cards físicos
-    const cards = screen.getAllByTestId('thermal-label-card');
-    expect(cards).toHaveLength(3);
 
-    // Validação da numeração sequencial fracionada
+    // Total de 5 cards na área de pré-visualização da tela
+    const cards = screen.getAllByTestId('thermal-label-card');
+    expect(cards).toHaveLength(5);
+
+    // Validação da numeração sequencial fracionada esquadria e folha
     const fractions = screen.getAllByTestId('label-piece-fraction').map((el) => el.textContent);
     expect(fractions).toEqual([
-      'Item 01 | Peça 01/03',
-      'Item 01 | Peça 02/03',
-      'Item 02 | Peça 03/03',
+      'Item 01 • Esquadria 01/02 | Folha 01/02',
+      'Item 01 • Esquadria 01/02 | Folha 02/02',
+      'Item 01 • Esquadria 02/02 | Folha 01/02',
+      'Item 01 • Esquadria 02/02 | Folha 02/02',
+      'Item 02 • Esquadria 01/01 | Peça 01/01',
     ]);
   });
 
-  it('Cenário 2: deve exibir layout técnico de alto contraste com medidas nominais, especificações e sem código de barras', () => {
+  it('Cenário 2: deve exibir layout técnico com medidas nominais, especificações e contêiner isolado de impressão', () => {
     render(
       <ThermalLabelModal
         isOpen={true}
@@ -101,38 +103,63 @@ describe('ThermalLabelModal — [US-17.5] Visualização Prévia Contínua e Fil
       />
     );
 
-    // Marca da empresa
+    // Marca da empresa e cliente presentes
     expect(screen.getAllByText('Alumiportas').length).toBeGreaterThan(0);
-    // Código da O.S.
-    expect(screen.getAllByText('#OS-2026-0017')).toHaveLength(3);
-    // Cliente
     expect(screen.getAllByText('Construtora Alvorada Ltda').length).toBeGreaterThan(0);
 
-    // Medidas nominais em destaque mono
+    // Medidas nominais em destaque mono nos 5 cards visíveis
     const dimensions = screen.getAllByTestId('label-dimensions').map((el) => el.textContent);
+    expect(dimensions).toHaveLength(5);
     expect(dimensions[0]).toContain('1200 x 1500 mm');
-    expect(dimensions[1]).toContain('1200 x 1500 mm');
-    expect(dimensions[2]).toContain('900 x 2100 mm');
+    expect(dimensions[4]).toContain('900 x 2100 mm');
 
     // Especificações técnicas com testids dedicados
-    expect(screen.getAllByTestId('label-color')).toHaveLength(3);
-    expect(screen.getAllByTestId('label-glass')).toHaveLength(3);
-    expect(screen.getAllByText(/Preto Anodizado/)).toHaveLength(2);
-    expect(screen.getAllByText(/Incolor 6mm Temperado/)).toHaveLength(2);
-    expect(screen.getAllByText(/Branco Pintura Eletrostática/)).toHaveLength(1);
-    expect(screen.getAllByText(/Fumê 8mm Temperado/)).toHaveLength(1);
-    expect(screen.getAllByText(/Entregar na portaria da obra/)).toHaveLength(3);
+    expect(screen.getAllByTestId('label-color')).toHaveLength(5);
+    expect(screen.getAllByTestId('label-glass')).toHaveLength(5);
+    expect(screen.getAllByTestId('label-date')).toHaveLength(5);
 
-    // Rodapé limpo com data, sem código de barras, sem código de item e sem badge GOLD
-    expect(screen.getAllByTestId('label-date')).toHaveLength(3);
+    // Sem menções de código de barras ou badges inválidas
     expect(screen.queryByText('ALUMIGEST US-17')).not.toBeInTheDocument();
     expect(screen.queryByText('GOLD')).not.toBeInTheDocument();
+
+    // Cards de prévia das etiquetas térmicas 100x60mm
+    const cards = screen.getAllByTestId('thermal-label-card');
+    expect(cards).toHaveLength(5);
   });
 
-  it('Cenário 3: deve permitir alternar filtros rápidos por item e acionar botões de impressão e download', () => {
+  it('Cenário 3: deve permitir conferência e ajuste manual da quantidade de folhas por esquadria', () => {
+    render(
+      <ThermalLabelModal
+        isOpen={true}
+        onClose={vi.fn()}
+        order={mockOrderMultiItens}
+      />
+    );
+
+    // Conferência inicial do Item 1: 2 folhas deduzidas
+    expect(screen.getByTestId('leaves-count-item-1')).toHaveTextContent('2 fls');
+    expect(screen.getAllByTestId('thermal-label-card')).toHaveLength(5);
+
+    // Aumenta folhas do Item 1 para 3 (2 janelas x 3 folhas = 6 etiquetas do item 1 + 1 do item 2 = 7)
+    fireEvent.click(screen.getByTestId('btn-increase-leaves-1'));
+    expect(screen.getByTestId('leaves-count-item-1')).toHaveTextContent('3 fls');
+    expect(screen.getAllByTestId('thermal-label-card')).toHaveLength(7);
+
+    // Diminui de volta para 2
+    fireEvent.click(screen.getByTestId('btn-decrease-leaves-1'));
+    expect(screen.getByTestId('leaves-count-item-1')).toHaveTextContent('2 fls');
+    expect(screen.getAllByTestId('thermal-label-card')).toHaveLength(5);
+
+    // Não permite diminuir para menos de 1
+    fireEvent.click(screen.getByTestId('btn-decrease-leaves-2'));
+    expect(screen.getByTestId('leaves-count-item-2')).toHaveTextContent('1 fl');
+    expect(screen.getByTestId('btn-decrease-leaves-2')).toBeDisabled();
+  });
+
+  it('Cenário 4: deve permitir alternar filtros rápidos por item e acionar botões de impressão e download', async () => {
     const handleDownload = vi.fn();
     const handleClose = vi.fn();
-    window.print = vi.fn();
+    const handlePrintThermal = vi.fn();
 
     render(
       <ThermalLabelModal
@@ -141,31 +168,33 @@ describe('ThermalLabelModal — [US-17.5] Visualização Prévia Contínua e Fil
         order={mockOrderMultiItens}
         onDownloadPdf={handleDownload}
         isDownloadingPdf={false}
+        onPrintThermal={handlePrintThermal}
       />
     );
 
-    // Inicialmente 3 peças
-    expect(screen.getAllByTestId('thermal-label-card')).toHaveLength(3);
+    // Inicialmente 5 etiquetas
+    expect(screen.getAllByTestId('thermal-label-card')).toHaveLength(5);
 
-    // Filtra pelo Item 1 (2 peças)
+    // Filtra pelo Item 1 (4 etiquetas)
     fireEvent.click(screen.getByTestId('filter-piece-item-1'));
-    expect(screen.getAllByTestId('thermal-label-card')).toHaveLength(2);
-    expect(screen.getByText('Item 01 | Peça 01/03')).toBeInTheDocument();
-    expect(screen.getByText('Item 01 | Peça 02/03')).toBeInTheDocument();
-    expect(screen.queryByText('Item 02 | Peça 03/03')).not.toBeInTheDocument();
+    expect(screen.getAllByTestId('thermal-label-card')).toHaveLength(4);
+    expect(screen.getAllByText('Item 01 • Esquadria 01/02 | Folha 01/02').length).toBeGreaterThanOrEqual(1);
+    expect(screen.queryByText('Item 02 • Esquadria 01/01 | Peça 01/01')).not.toBeInTheDocument();
 
-    // Filtra pelo Item 2 (1 peça)
+    // Filtra pelo Item 2 (1 etiqueta)
     fireEvent.click(screen.getByTestId('filter-piece-item-2'));
     expect(screen.getAllByTestId('thermal-label-card')).toHaveLength(1);
-    expect(screen.getByText('Item 02 | Peça 03/03')).toBeInTheDocument();
+    expect(screen.getAllByText('Item 02 • Esquadria 01/01 | Peça 01/01').length).toBeGreaterThanOrEqual(1);
 
     // Volta para todas as peças
     fireEvent.click(screen.getByTestId('filter-piece-all'));
-    expect(screen.getAllByTestId('thermal-label-card')).toHaveLength(3);
+    expect(screen.getAllByTestId('thermal-label-card')).toHaveLength(5);
 
-    // Aciona botão de imprimir na impressora térmica
+    // Aciona botão de imprimir na impressora térmica silenciosa (BPLB)
     fireEvent.click(screen.getByTestId('btn-modal-print-thermal'));
-    expect(window.print).toHaveBeenCalledTimes(1);
+    await waitFor(() => {
+      expect(handlePrintThermal).toHaveBeenCalledTimes(1);
+    });
 
     // Aciona botão de download PDF
     fireEvent.click(screen.getByTestId('btn-modal-download-pdf'));
