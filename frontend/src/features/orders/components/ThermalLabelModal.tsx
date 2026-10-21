@@ -1,7 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import { X, Printer, Download, Tag, Loader2 } from 'lucide-react';
-import type { Order, OrderItem } from '../types';
+import type { Order } from '../types';
 import { formatDate } from '../utils/formatDate';
+import { buildPhysicalLabels, resolveLabelItems } from '../utils/thermalLabels';
+
+export type { PhysicalPieceLabel } from '../utils/thermalLabels';
 
 export interface ThermalLabelModalProps {
   isOpen: boolean;
@@ -11,15 +14,6 @@ export interface ThermalLabelModalProps {
   isDownloadingPdf?: boolean;
 }
 
-export interface PhysicalPieceLabel {
-  uniqueKey: string;
-  item: OrderItem;
-  itemIndex: number;
-  pieceNumber: number;
-  totalPieces: number;
-  labelFraction: string;
-}
-
 export const ThermalLabelModal: React.FC<ThermalLabelModalProps> = ({
   isOpen,
   onClose,
@@ -27,47 +21,24 @@ export const ThermalLabelModal: React.FC<ThermalLabelModalProps> = ({
   onDownloadPdf,
   isDownloadingPdf = false,
 }) => {
-  const [selectedItemFilter, setSelectedItemFilter] = useState<number | 'ALL'>('ALL');
+  // Filtro por ID do item (evita colisão quando dois itens compartilham o mesmo `ordem`)
+  const [selectedItemFilter, setSelectedItemFilter] = useState<string | 'ALL'>('ALL');
+
+  // Itens válidos (quantidade > 0) ordenados por `ordem`, em paridade com o backend (BUG #486)
+  const labelItems = useMemo(() => resolveLabelItems(order?.items), [order?.items]);
 
   // Multiplicação de cada item pela sua quantidade para gerar as peças físicas 1:1
-  const allPhysicalLabels = useMemo(() => {
-    if (!order?.items || order.items.length === 0) return [];
-
-    const totalPieces = order.items.reduce((acc, item) => acc + (item.quantidade || 1), 0);
-    const labels: PhysicalPieceLabel[] = [];
-    let globalCounter = 1;
-
-    order.items.forEach((item, itemIdx) => {
-      const itemNumber = itemIdx + 1;
-      const qtd = Math.max(1, item.quantidade || 1);
-
-      for (let p = 1; p <= qtd; p++) {
-        const piecePad = String(globalCounter).padStart(2, '0');
-        const totalPad = String(totalPieces).padStart(2, '0');
-        const itemPad = String(itemNumber).padStart(2, '0');
-
-        labels.push({
-          uniqueKey: `${item.id}-${p}`,
-          item,
-          itemIndex: itemNumber,
-          pieceNumber: globalCounter,
-          totalPieces,
-          labelFraction: `Item ${itemPad} | Peça ${piecePad}/${totalPad}`,
-        });
-
-        globalCounter++;
-      }
-    });
-
-    return labels;
-  }, [order?.items]);
+  const allPhysicalLabels = useMemo(
+    () => (order ? buildPhysicalLabels(order, labelItems) : []),
+    [order, labelItems],
+  );
 
   // Etiquetas filtradas por item ou todas
   const filteredLabels = useMemo(() => {
     if (selectedItemFilter === 'ALL') {
       return allPhysicalLabels;
     }
-    return allPhysicalLabels.filter((label) => label.itemIndex === selectedItemFilter);
+    return allPhysicalLabels.filter((label) => label.item.id === selectedItemFilter);
   }, [allPhysicalLabels, selectedItemFilter]);
 
   if (!isOpen) return null;
@@ -170,16 +141,14 @@ export const ThermalLabelModal: React.FC<ThermalLabelModalProps> = ({
             Todas as Peças ({allPhysicalLabels.length})
           </button>
 
-          {order.items?.map((item, idx) => {
-            const itemNum = idx + 1;
-            const qtd = item.quantidade || 1;
-            const isSelected = selectedItemFilter === itemNum;
+          {labelItems.map(({ item, itemIndex: itemNum, quantidade: qtd }) => {
+            const isSelected = selectedItemFilter === item.id;
             return (
               <button
                 key={item.id}
                 type="button"
                 data-testid={`filter-piece-item-${itemNum}`}
-                onClick={() => setSelectedItemFilter(itemNum)}
+                onClick={() => setSelectedItemFilter(item.id)}
                 className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
                   isSelected
                     ? 'bg-slate-900 text-white shadow-xs'
@@ -276,7 +245,7 @@ export const ThermalLabelModal: React.FC<ThermalLabelModalProps> = ({
                   {/* 5. Linha de Local / Obs */}
                   <div className="text-[9px] font-bold text-slate-800 border-t border-slate-200 pt-0.5 break-words">
                     <span className="text-slate-500 text-[8px] uppercase">LOCAL / OBS: </span>
-                    <span>{order.observacoes || order.clienteEndereco || 'Não informado'}</span>
+                    <span data-testid="label-local">{lbl.localAmbiente}</span>
                   </div>
                 </div>
 
