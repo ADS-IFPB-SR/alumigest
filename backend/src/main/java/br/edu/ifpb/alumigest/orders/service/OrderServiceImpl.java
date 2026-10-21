@@ -160,14 +160,33 @@ public class OrderServiceImpl implements OrderService {
     /**
      * {@inheritDoc}
      */
+//    @Override
+//    @Transactional(readOnly = true)
+//    public OrderPdfDTO gerarEtiquetasById(UUID id, UUID itemId) {
+//        Order order = orderRepository.findByIdWithDetails(id)
+//                .orElseThrow(() -> new ResourceNotFoundException(RESOURCE_PEDIDO, id.toString()));
+//
+//        byte[] bytes = labelPdfService.gerarEtiquetas(order, itemId);
+//        String codigo = order.getCodigo() != null ? order.getCodigo().replace("/", "-") : id.toString();
+//        String filename = "etiquetas-" + codigo + ".pdf";
+//        return new OrderPdfDTO(bytes, filename);
+//    }
+
     @Override
     @Transactional(readOnly = true)
     public OrderPdfDTO gerarEtiquetasById(UUID id, UUID itemId) {
         Order order = orderRepository.findByIdWithDetails(id)
                 .orElseThrow(() -> new ResourceNotFoundException(RESOURCE_PEDIDO, id.toString()));
+
+        if (order.getStatus() == OrderStatus.CANCELLED) {
+            throw new BusinessException("Não é permitido emitir etiquetas de identificação para uma ordem de serviço cancelada.");
+        }
+
         byte[] bytes = labelPdfService.gerarEtiquetas(order, itemId);
-        String codigo = order.getCodigo() != null ? order.getCodigo().replace("/", "-") : id.toString();
-        String filename = "etiquetas-" + codigo + ".pdf";
+
+        // CORREÇÃO: Remover o .toLowerCase() daqui!
+        String filename = "etiquetas-" + order.getCodigo().replace("/", "-") + ".pdf";
+
         return new OrderPdfDTO(bytes, filename);
     }
 

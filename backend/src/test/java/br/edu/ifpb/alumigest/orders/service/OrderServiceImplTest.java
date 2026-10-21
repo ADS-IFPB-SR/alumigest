@@ -269,7 +269,7 @@ class OrderServiceImplTest {
         );
     }
 
-//  Maylson ->  Vou pegar esse método para aprensetar na materia de Teste - Tabela de Decição
+    //  Maylson ->  Vou pegar esse método para aprensetar na materia de Teste - Tabela de Decição
     @Test
     @DisplayName("[Regra de Negócio] Deve lançar BusinessException quando orçamento está com validade expirada")
     void shouldThrowBusinessExceptionWhenBudgetIsExpired() {
@@ -610,7 +610,7 @@ class OrderServiceImplTest {
             "null, null, null, PB, PB",
             "Rua Central, 123, null, null, 'Rua Central, 123'",
             "null, null, null, null, null",
-            "   ,    ,    ,   , null" 
+            "   ,    ,    ,   , null"
     }, nullValues = {"null"})
     @DisplayName("[BugFix] Deve formatar strings de endereço de cliente parciais ou em branco corretamente")
     void deveFormatarEnderecoDoClienteCorretamenteNaConversao(String street, String number, String city, String state, String expectedAddress) {
@@ -619,16 +619,16 @@ class OrderServiceImplTest {
         client.setNumber(number);
         client.setCity(city);
         client.setState(state);
-        
+
         given(budgetRepository.findByIdWithDetails(budgetId)).willReturn(Optional.of(budget));
         given(orderRepository.existsByOrcamentoIdAndStatusNot(budgetId, OrderStatus.CANCELLED)).willReturn(false);
         given(orderCodeGenerator.generateNextCode()).willReturn("OS-2026-TEST");
-        
+
         Order mockSaved = Order.builder().build();
-        
+
         given(orderRepository.saveAndFlush(any(Order.class))).willReturn(mockSaved);
         given(orderMapper.toResponse(mockSaved)).willReturn(buildOrderResponse());
-        
+
         ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
 
         // Act
@@ -637,7 +637,7 @@ class OrderServiceImplTest {
         // Assert
         verify(orderRepository).saveAndFlush(orderCaptor.capture());
         Order orderEnviadaParaSalvar = orderCaptor.getValue();
-        
+
         assertThat(orderEnviadaParaSalvar.getClienteEndereco()).isEqualTo(expectedAddress);
     }
 
@@ -830,7 +830,10 @@ class OrderServiceImplTest {
 
             assertThat(result).isNotNull();
             assertThat(result.bytes()).isEqualTo(fakeBytes);
+
+            // CORREÇÃO AQUI: Removemos o .toLowerCase() também da validação do teste
             assertThat(result.filename()).isEqualTo("etiquetas-" + savedOrder.getCodigo().replace("/", "-") + ".pdf");
+
             verify(labelPdfService).gerarEtiquetas(savedOrder, null);
         }
 
@@ -859,6 +862,27 @@ class OrderServiceImplTest {
                     .isInstanceOf(ResourceNotFoundException.class)
                     .hasMessageContaining("Pedido");
 
+            verify(labelPdfService, never()).gerarEtiquetas(any(), any());
+        }
+
+        @Test
+        @DisplayName("Deve lançar BusinessException ao tentar gerar etiquetas para ordem cancelada (BUG-484)")
+        void shouldThrowBusinessExceptionWhenOrderIsCancelled() {
+            // Arrange
+            Order savedOrder = Order.builder()
+                    .id(orderId)
+                    .codigo("OS-2026-0001")
+                    .status(OrderStatus.CANCELLED)
+                    .build();
+
+            given(orderRepository.findByIdWithDetails(orderId)).willReturn(Optional.of(savedOrder));
+
+            // Act & Assert
+            assertThatThrownBy(() -> orderService.gerarEtiquetasById(orderId))
+                    .isInstanceOf(BusinessException.class)
+                    .hasMessageContaining("Não é permitido emitir etiquetas de identificação para uma ordem de serviço cancelada.");
+
+            // Garante que o serviço PDF nunca é acionado por segurança
             verify(labelPdfService, never()).gerarEtiquetas(any(), any());
         }
     }
