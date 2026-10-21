@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, Play, CheckCircle, Ban, FileText, Download, Loader2, Tag, Eye } from 'lucide-react';
+import { ArrowLeft, Play, CheckCircle, Ban, FileText, Download, Loader2, Tag } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { Order } from '../types';
 import { OrderStatusBadge } from './OrderStatusBadge';

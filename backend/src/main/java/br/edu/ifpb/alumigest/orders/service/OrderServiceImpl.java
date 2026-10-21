@@ -372,25 +372,51 @@ public class OrderServiceImpl implements OrderService {
      * Compõe o endereço do cliente a partir dos campos individuais.
      */
     private String resolveCustomerAddress(Budget budget) {
-        if (budget.getClient() == null) {
-            return null;
+                if (budget == null || budget.getClient() == null) {
+                        return null;
+                }
+                
+                var c = budget.getClient();
+                String streetPart = formatStreetPart(c.getStreet(), c.getNumber());
+                String locationPart = formatLocationPart(c.getCity(), c.getState());
+                
+                if (streetPart != null && locationPart != null) {
+                        return streetPart + " - " + locationPart;
+                }
+                return streetPart != null ? streetPart : locationPart;
         }
-        var c = budget.getClient();
-        var sb = new StringBuilder();
-        if (c.getStreet() != null) {
-            sb.append(c.getStreet());
+
+        private String formatStreetPart(String street, String number) {
+                boolean hasStreet = street != null && !street.isBlank();
+                boolean hasNumber = number != null && !number.isBlank();
+                
+                if (hasStreet && hasNumber) {
+                        return street.trim() + ", " + number.trim();
+                }
+                if (hasStreet) {
+                        return street.trim();
+                }
+                if (hasNumber) {
+                        return number.trim();
+                }
+                return null;
         }
-        if (c.getNumber() != null) {
-            sb.append(", ").append(c.getNumber());
+
+        private String formatLocationPart(String city, String state) {
+                boolean hasCity = city != null && !city.isBlank();
+                boolean hasState = state != null && !state.isBlank();
+                
+                if (hasCity && hasState) {
+                        return city.trim() + "/" + state.trim();
+                }
+                if (hasCity) {
+                        return city.trim();
+                }
+                if (hasState) {
+                        return state.trim();
+                }
+                return null;
         }
-        if (c.getCity() != null) {
-            sb.append(" - ").append(c.getCity());
-        }
-        if (c.getState() != null) {
-            sb.append("/").append(c.getState());
-        }
-        return !sb.isEmpty() ? sb.toString() : null;
-    }
 
     /**
      * Retorna o identificador da condição de pagamento do orçamento.

@@ -263,5 +263,18 @@ describe('useOrders hooks', () => {
       await waitFor(() => expect(result.current.isError).toBe(true));
       expect(toast.error).toHaveBeenCalledWith('A ordem de serviço não possui itens para emissão de etiquetas.');
     });
+
+    it('deve exibir toast genérico de fallback quando o erro não possuir mensagem estruturada', async () => {
+      vi.mocked(ordersApi.downloadLabelsPdf).mockRejectedValue(new Error('Network Error'));
+
+      const { result } = renderHook(() => useDownloadLabelsPdf(), {
+        wrapper: createWrapper(),
+      });
+
+      result.current.mutate({ id: 'order-sem-mensagem' });
+
+      await waitFor(() => expect(result.current.isError).toBe(true));
+      expect(toast.error).toHaveBeenCalledWith('Erro ao gerar as etiquetas térmicas.');
+    });
   });
 });

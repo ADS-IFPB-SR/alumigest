@@ -1,8 +1,9 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { X, Printer, Download, Tag, Loader2, Minus, Plus, SlidersHorizontal, CheckCircle2 } from 'lucide-react';
+import { X, Printer, Download, Tag, Loader2, Minus, Plus, SlidersHorizontal } from 'lucide-react';
 import type { Order, OrderItem } from '../types';
 import { formatDate } from '../utils/formatDate';
 import { extractLeavesCount, formatLabelBadge } from '../utils/leafDeduction';
+import { resolveLabelItems, resolveLocalAmbiente } from '../utils/thermalLabels';
 import { useAvailablePrinters, usePrintThermalLabels } from '../hooks/useOrders';
 
 export interface ThermalLabelModalProps {
@@ -24,16 +25,7 @@ export interface PhysicalPieceLabel {
   folhaIndex: number;
   totalFolhas: number;
   labelFraction: string;
-}
-
-function escapeHtml(str?: string | null): string {
-  if (!str) return '';
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+  localAmbiente: string;
 }
 
 export const ThermalLabelModal: React.FC<ThermalLabelModalProps> = ({
@@ -45,23 +37,29 @@ export const ThermalLabelModal: React.FC<ThermalLabelModalProps> = ({
   onPrintThermal: onPrintThermalProp,
   isPrintingThermal: isPrintingThermalProp,
 }) => {
-  const [selectedItemFilter, setSelectedItemFilter] = useState<number | 'ALL'>('ALL');
+  // Filtro por ID do item (evita colisão quando dois itens compartilham o mesmo `ordem`)
+  const [selectedItemFilter, setSelectedItemFilter] = useState<string>('ALL');
+
+  // Itens válidos (quantidade > 0) ordenados por `ordem`, em paridade com o backend (BUG #486)
+  const labelItems = useMemo(() => resolveLabelItems(order?.items), [order?.items]);
 
   // Mapa de folhas por item (inicializado via dedução automática por regex na descrição/tipologia)
   const [leavesPerItem, setLeavesPerItem] = useState<Record<string, number>>({});
 
-  // Integração com impressoras físicas do SO e envio direto BPLB (com fallback resiliente para testes)
-  let availablePrinters: Array<{ name: string; isDefault: boolean; isThermal: boolean }> = [];
+  let rawPrintersData: Array<{ name: string; isDefault: boolean; isThermal: boolean }> | undefined;
   let printMutation: any = null;
 
   try {
     const printersQuery = useAvailablePrinters();
-    if (printersQuery && Array.isArray(printersQuery.data)) {
-      availablePrinters = printersQuery.data;
-    }
+    rawPrintersData = printersQuery?.data;
   } catch {
     // Tolerância para ambiente de teste isolado sem QueryClientProvider
   }
+
+  const availablePrinters = useMemo(
+    () => (Array.isArray(rawPrintersData) ? rawPrintersData : []),
+    [rawPrintersData]
+  );
 
   try {
     printMutation = usePrintThermalLabels();
@@ -105,19 +103,19 @@ export const ThermalLabelModal: React.FC<ThermalLabelModalProps> = ({
 
   // Geração 1:1 de etiquetas físicas: (quantidade de esquadrias) x (folhas deduzidas/conferidas)
   const allPhysicalLabels = useMemo(() => {
-    if (!order?.items || order.items.length === 0) return [];
+    if (!order || labelItems.length === 0) return [];
 
     const labels: PhysicalPieceLabel[] = [];
 
-    order.items.forEach((item, itemIdx) => {
-      const itemNumber = itemIdx + 1;
-      const qtdEsquadrias = Math.max(1, item.quantidade || 1);
+    labelItems.forEach(({ item, itemIndex, quantidade }) => {
+      const qtdEsquadrias = Math.max(1, quantidade);
       const folhas = Math.max(1, leavesPerItem[item.id] ?? extractLeavesCount(item.descricao));
+      const localAmbiente = resolveLocalAmbiente(item, order);
 
       for (let esq = 1; esq <= qtdEsquadrias; esq++) {
         for (let folha = 1; folha <= folhas; folha++) {
           const badgeText = formatLabelBadge(
-            itemNumber,
+            itemIndex,
             esq,
             qtdEsquadrias,
             folha,
@@ -127,34 +125,35 @@ export const ThermalLabelModal: React.FC<ThermalLabelModalProps> = ({
           labels.push({
             uniqueKey: `${item.id}-esq-${esq}-folha-${folha}`,
             item,
-            itemIndex: itemNumber,
+            itemIndex,
             esquadriaIndex: esq,
             totalEsquadrias: qtdEsquadrias,
             folhaIndex: folha,
             totalFolhas: folhas,
             labelFraction: badgeText,
+            localAmbiente,
           });
         }
       }
     });
 
     return labels;
-  }, [order?.items, leavesPerItem]);
+  }, [order, labelItems, leavesPerItem]);
 
   // Etiquetas filtradas por item ou todas
   const filteredLabels = useMemo(() => {
     if (selectedItemFilter === 'ALL') {
       return allPhysicalLabels;
     }
-    return allPhysicalLabels.filter((label) => label.itemIndex === selectedItemFilter);
+    return allPhysicalLabels.filter((label) => label.item.id === selectedItemFilter);
   }, [allPhysicalLabels, selectedItemFilter]);
 
   if (!isOpen) return null;
 
   const handlePrintThermal = () => {
     const selectedItem =
-      selectedItemFilter !== 'ALL' && order.items
-        ? order.items[selectedItemFilter - 1]
+      selectedItemFilter !== 'ALL'
+        ? labelItems.find(({ item }) => item.id === selectedItemFilter)?.item
         : undefined;
 
     const payload = {
@@ -219,10 +218,8 @@ export const ThermalLabelModal: React.FC<ThermalLabelModalProps> = ({
             </span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5 max-h-36 overflow-y-auto pr-1">
-            {order.items?.map((item, idx) => {
-              const itemNum = idx + 1;
+            {labelItems.map(({ item, itemIndex: itemNum, quantidade: qtd }) => {
               const leaves = leavesPerItem[item.id] ?? extractLeavesCount(item.descricao);
-              const qtd = item.quantidade || 1;
               const totalLabels = qtd * leaves;
 
               return (
@@ -287,27 +284,26 @@ export const ThermalLabelModal: React.FC<ThermalLabelModalProps> = ({
                 : 'bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest hover:text-on-surface'
             }`}
           >
-            Todas as Etiquetas ({allPhysicalLabels.length})
+            Todas as Peças ({allPhysicalLabels.length})
           </button>
 
-          {order.items?.map((item, idx) => {
-            const itemNum = idx + 1;
+          {labelItems.map(({ item, itemIndex: itemNum, quantidade: qtd }) => {
             const leaves = leavesPerItem[item.id] ?? extractLeavesCount(item.descricao);
-            const qtdLabels = (item.quantidade || 1) * leaves;
-            const isSelected = selectedItemFilter === itemNum;
+            const qtdLabels = qtd * leaves;
+            const isSelected = selectedItemFilter === item.id;
             return (
               <button
                 key={item.id}
                 type="button"
                 data-testid={`filter-piece-item-${itemNum}`}
-                onClick={() => setSelectedItemFilter(itemNum)}
+                onClick={() => setSelectedItemFilter(item.id)}
                 className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
                   isSelected
                     ? 'bg-slate-900 text-white shadow-xs'
                     : 'bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest hover:text-on-surface'
                 }`}
               >
-                Item {itemNum} ({qtdLabels} {qtdLabels === 1 ? 'Etiqueta' : 'Etiquetas'})
+                Item {itemNum} ({qtdLabels} {qtdLabels === 1 ? 'Peça' : 'Peças'})
               </button>
             );
           })}
@@ -397,7 +393,7 @@ export const ThermalLabelModal: React.FC<ThermalLabelModalProps> = ({
                   {/* 5. Linha de Local / Obs */}
                   <div className="text-[9px] font-bold text-slate-800 border-t border-slate-200 pt-0.5 break-words">
                     <span className="text-slate-500 text-[8px] uppercase">LOCAL / OBS: </span>
-                    <span>{order.observacoes || order.clienteEndereco || 'Não informado'}</span>
+                    <span data-testid="label-local">{lbl.localAmbiente}</span>
                   </div>
                 </div>
 

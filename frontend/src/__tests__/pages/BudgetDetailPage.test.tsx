@@ -8,6 +8,9 @@ import type { BudgetDetail } from '../../features/budgets/types';
 
 vi.mock('../../features/budgets/hooks/useBudgets');
 
+// Validade relativa à data atual: evita que o teste de aprovação quebre quando uma data fixa expira
+const VALID_UNTIL_FUTURE = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
 const mockBudgetDetail: BudgetDetail = {
   id: 'budget-123',
   code: 'ORC-2026-001',
@@ -21,7 +24,7 @@ const mockBudgetDetail: BudgetDetail = {
   },
   status: 'DRAFT',
   createdAt: '2026-09-20T10:00:00Z',
-  validUntil: '2027-10-20T23:59:59Z',
+  validUntil: VALID_UNTIL_FUTURE,
   subtotal: 1500,
   discountPercent: 0,
   discountValue: 0,
