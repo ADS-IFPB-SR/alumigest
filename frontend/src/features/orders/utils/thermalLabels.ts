@@ -79,9 +79,12 @@ export function extractAmbienteFromTemplateConfig(templateConfig: JsonConfig | u
   const record = config as Record<string, unknown>;
   for (const key of AMBIENTE_KEYS) {
     const value = record[key];
-    if (value == null) continue;
-    const texto = typeof value === 'string' ? value : String(value);
-    if (texto.trim().length > 0) return texto.trim();
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      if (trimmed.length > 0) return trimmed;
+    } else if (typeof value === 'number' || typeof value === 'boolean') {
+      return String(value);
+    }
   }
 
   return null;

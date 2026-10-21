@@ -78,14 +78,20 @@ describe('thermalLabels — [BUG #486] paridade com ThermalLabelDataResolver', (
       expect(extractAmbienteFromTemplateConfig({ ambiente: '   ', local: 'Sala' })).toBe('Sala');
     });
 
-    it('retorna null para JSON inválido, vazio ou sem chaves conhecidas', () => {
+    it('retorna null para JSON inválido, vazio, objetos aninhados ou sem chaves conhecidas', () => {
       expect(extractAmbienteFromTemplateConfig('{invalido')).toBeNull();
       expect(extractAmbienteFromTemplateConfig('')).toBeNull();
       expect(extractAmbienteFromTemplateConfig(null)).toBeNull();
       expect(extractAmbienteFromTemplateConfig({ largura: 10 })).toBeNull();
       expect(extractAmbienteFromTemplateConfig('[1,2]')).toBeNull();
+      expect(extractAmbienteFromTemplateConfig({ ambiente: { nested: 'obj' } })).toBeNull();
+    });
+
+    it('converte valores numéricos para string formatada', () => {
+      expect(extractAmbienteFromTemplateConfig({ room: 102 })).toBe('102');
     });
   });
+
 
   describe('resolveLocalAmbiente', () => {
     it('prioriza templateConfig, depois observações, depois endereço', () => {

@@ -22,7 +22,7 @@ export const ThermalLabelModal: React.FC<ThermalLabelModalProps> = ({
   isDownloadingPdf = false,
 }) => {
   // Filtro por ID do item (evita colisão quando dois itens compartilham o mesmo `ordem`)
-  const [selectedItemFilter, setSelectedItemFilter] = useState<string | 'ALL'>('ALL');
+  const [selectedItemFilter, setSelectedItemFilter] = useState<string>('ALL');
 
   // Itens válidos (quantidade > 0) ordenados por `ordem`, em paridade com o backend (BUG #486)
   const labelItems = useMemo(() => resolveLabelItems(order?.items), [order?.items]);
