@@ -192,3 +192,74 @@ describe('ThermalLabelModal — [US-17.5] Visualização Prévia Contínua e Fil
     expect(screen.getByText('Baixando PDF...')).toBeInTheDocument();
   });
 });
+
+describe('ThermalLabelModal — [BUG #486] Paridade com o resolvedor do backend', () => {
+  const baseItem = mockOrderMultiItens.items![0];
+
+  const orderDivergente: Order = {
+    ...mockOrderMultiItens,
+    items: [
+      {
+        ...baseItem,
+        id: 'item-porta',
+        descricao: 'Porta de Giro',
+        quantidade: 1,
+        ordem: 2,
+        templateConfig: { ambiente: 'Cozinha' },
+      },
+      {
+        ...baseItem,
+        id: 'item-01',
+        descricao: 'Janela 2 Folhas',
+        quantidade: 0,
+        ordem: 3,
+        templateConfig: '{"ambiente":"Varanda Gourmet"}',
+      },
+      {
+        ...baseItem,
+        id: 'item-janela',
+        descricao: 'Janela Basculante',
+        quantidade: 2,
+        ordem: 1,
+        templateConfig: '{"ambiente":"Quarto Casal"}',
+      },
+    ],
+  };
+
+  it('não gera etiqueta nem botão de filtro para item com quantidade zero', () => {
+    render(<ThermalLabelModal isOpen={true} onClose={vi.fn()} order={orderDivergente} />);
+
+    expect(screen.getAllByTestId('thermal-label-card')).toHaveLength(3);
+    expect(screen.queryByText('Janela 2 Folhas')).not.toBeInTheDocument();
+    expect(screen.queryByText('Varanda Gourmet')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('filter-piece-item-3')).not.toBeInTheDocument();
+    expect(screen.getByText('Todas as Peças (3)')).toBeInTheDocument();
+  });
+
+  it('ordena as etiquetas e os filtros pelo campo ordem do item', () => {
+    render(<ThermalLabelModal isOpen={true} onClose={vi.fn()} order={orderDivergente} />);
+
+    const fractions = screen.getAllByTestId('label-piece-fraction').map((el) => el.textContent);
+    expect(fractions).toEqual([
+      'Item 01 | Peça 01/03',
+      'Item 01 | Peça 02/03',
+      'Item 02 | Peça 03/03',
+    ]);
+
+    expect(screen.getByTestId('filter-piece-item-1')).toHaveTextContent('Item 1 (2 Peças)');
+    expect(screen.getByTestId('filter-piece-item-2')).toHaveTextContent('Item 2 (1 Peça)');
+
+    fireEvent.click(screen.getByTestId('filter-piece-item-2'));
+    expect(screen.getAllByTestId('thermal-label-card')).toHaveLength(1);
+    expect(screen.getByText('Porta de Giro')).toBeInTheDocument();
+  });
+
+  it('exibe o ambiente do templateConfig na linha LOCAL / OBS', () => {
+    render(<ThermalLabelModal isOpen={true} onClose={vi.fn()} order={orderDivergente} />);
+
+    const locais = screen.getAllByTestId('label-local').map((el) => el.textContent);
+    expect(locais).toEqual(['Quarto Casal', 'Quarto Casal', 'Cozinha']);
+    expect(screen.queryByText('Entregar na portaria da obra')).not.toBeInTheDocument();
+  });
+});
+
