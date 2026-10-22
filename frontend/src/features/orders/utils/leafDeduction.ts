@@ -4,10 +4,31 @@
  * US-17 / Correção de Bugs #492 e #493.
  */
 
-const PATTERN_FOLHAS = /(\d+)\s*(?:folhas?|fls?)\b/i;
-const PATTERN_F_SUFFIX = /\b(\d+)\s*f\b/i;
-const PATTERN_PLANOS = /(\d+)\s*planos?\b/i;
-const PATTERN_TEMPLATE_TYPE = /(\d+)f\b/i;
+const PATTERN_FOLHAS = /\b(\d{1,2})\s*(?:folhas?|fls)\b/i;
+const PATTERN_F_SUFFIX = /\b(\d{1,2})\s*f\b/i;
+const PATTERN_PLANOS = /\b(\d{1,2})\s*planos?\b/i;
+const PATTERN_TEMPLATE_TYPE = /(\d{1,2})f\b/i;
+
+function parseMatch(match: RegExpMatchArray | null): number | null {
+  if (!match?.[1]) return null;
+  const parsed = Number.parseInt(match[1], 10);
+  return !Number.isNaN(parsed) && parsed > 0 ? parsed : null;
+}
+
+function extractFromDescription(descricao?: string | null): number | null {
+  if (!descricao) return null;
+
+  return (
+    parseMatch(descricao.match(PATTERN_FOLHAS)) ??
+    parseMatch(descricao.match(PATTERN_F_SUFFIX)) ??
+    parseMatch(descricao.match(PATTERN_PLANOS))
+  );
+}
+
+function extractFromTemplate(templateType?: string | null): number | null {
+  if (!templateType) return null;
+  return parseMatch(templateType.match(PATTERN_TEMPLATE_TYPE));
+}
 
 /**
  * Deduz o número de folhas físicas de uma esquadria com base na sua descrição
@@ -30,35 +51,11 @@ export function extractLeavesCount(
   descricao?: string | null,
   templateType?: string | null
 ): number {
-  if (descricao) {
-    const matchFolhas = descricao.match(PATTERN_FOLHAS);
-    if (matchFolhas && matchFolhas[1]) {
-      const parsed = parseInt(matchFolhas[1], 10);
-      if (!isNaN(parsed) && parsed > 0) return parsed;
-    }
-
-    const matchF = descricao.match(PATTERN_F_SUFFIX);
-    if (matchF && matchF[1]) {
-      const parsed = parseInt(matchF[1], 10);
-      if (!isNaN(parsed) && parsed > 0) return parsed;
-    }
-
-    const matchPlanos = descricao.match(PATTERN_PLANOS);
-    if (matchPlanos && matchPlanos[1]) {
-      const parsed = parseInt(matchPlanos[1], 10);
-      if (!isNaN(parsed) && parsed > 0) return parsed;
-    }
-  }
-
-  if (templateType) {
-    const matchTemplate = templateType.match(PATTERN_TEMPLATE_TYPE);
-    if (matchTemplate && matchTemplate[1]) {
-      const parsed = parseInt(matchTemplate[1], 10);
-      if (!isNaN(parsed) && parsed > 0) return parsed;
-    }
-  }
-
-  return 1;
+  return (
+    extractFromDescription(descricao) ??
+    extractFromTemplate(templateType) ??
+    1
+  );
 }
 
 /**

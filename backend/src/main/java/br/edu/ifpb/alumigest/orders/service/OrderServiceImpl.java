@@ -34,6 +34,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -54,7 +55,6 @@ public class OrderServiceImpl implements OrderService {
     private final OrderMapper orderMapper;
     private final OrderPdfService orderPdfService;
     private final LabelPdfService labelPdfService;
-    private final br.edu.ifpb.alumigest.orders.service.thermal.ThermalPrinterService thermalPrinterService;
     private final br.edu.ifpb.alumigest.orders.service.pdf.ThermalLabelDataResolver thermalLabelDataResolver;
     private final br.edu.ifpb.alumigest.orders.service.thermal.ThermalLabelBplbRenderer thermalLabelBplbRenderer;
 
@@ -65,7 +65,6 @@ public class OrderServiceImpl implements OrderService {
             OrderMapper orderMapper,
             OrderPdfService orderPdfService,
             LabelPdfService labelPdfService,
-            br.edu.ifpb.alumigest.orders.service.thermal.ThermalPrinterService thermalPrinterService,
             br.edu.ifpb.alumigest.orders.service.pdf.ThermalLabelDataResolver thermalLabelDataResolver,
             br.edu.ifpb.alumigest.orders.service.thermal.ThermalLabelBplbRenderer thermalLabelBplbRenderer) {
         this.orderRepository = orderRepository;
@@ -74,7 +73,6 @@ public class OrderServiceImpl implements OrderService {
         this.orderMapper = orderMapper;
         this.orderPdfService = orderPdfService;
         this.labelPdfService = labelPdfService;
-        this.thermalPrinterService = thermalPrinterService;
         this.thermalLabelDataResolver = thermalLabelDataResolver;
         this.thermalLabelBplbRenderer = thermalLabelBplbRenderer;
     }
@@ -174,6 +172,9 @@ public class OrderServiceImpl implements OrderService {
     public OrderPdfDTO gerarEtiquetasById(UUID id, UUID itemId) {
         Order order = orderRepository.findByIdWithDetails(id)
                 .orElseThrow(() -> new ResourceNotFoundException(RESOURCE_PEDIDO, id.toString()));
+        if (order.getStatus() == OrderStatus.CANCELLED) {
+            throw new BusinessException("Não é possível emitir etiquetas de uma ordem de serviço cancelada.");
+        }
         byte[] bytes = labelPdfService.gerarEtiquetas(order, itemId);
         String codigo = order.getCodigo() != null ? order.getCodigo().replace("/", "-") : id.toString();
         String filename = "etiquetas-" + codigo + ".pdf";
@@ -181,19 +182,20 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public List<br.edu.ifpb.alumigest.orders.dto.PrinterInfoDTO> listAvailablePrinters() {
-        return thermalPrinterService.listAvailablePrinters();
-    }
-
-    @Override
     @Transactional(readOnly = true)
-    public br.edu.ifpb.alumigest.orders.dto.PrintThermalResultDTO printThermalLabels(UUID id, UUID itemId, String targetPrinter) {
+    public OrderPdfDTO gerarEtiquetasById(UUID id, UUID itemId, Map<UUID, Integer> customLeavesPerItem) {
+        if (customLeavesPerItem == null || customLeavesPerItem.isEmpty()) {
+            return gerarEtiquetasById(id, itemId);
+        }
         Order order = orderRepository.findByIdWithDetails(id)
                 .orElseThrow(() -> new ResourceNotFoundException(RESOURCE_PEDIDO, id.toString()));
         if (order.getStatus() == OrderStatus.CANCELLED) {
             throw new BusinessException("Não é possível emitir etiquetas de uma ordem de serviço cancelada.");
         }
-        return thermalPrinterService.printLabelsDirectly(order, itemId, targetPrinter);
+        byte[] bytes = labelPdfService.gerarEtiquetas(order, itemId, customLeavesPerItem);
+        String codigo = order.getCodigo() != null ? order.getCodigo().replace("/", "-") : id.toString();
+        String filename = "etiquetas-" + codigo + ".pdf";
+        return new OrderPdfDTO(bytes, filename);
     }
 
     @Override
@@ -204,7 +206,24 @@ public class OrderServiceImpl implements OrderService {
         if (order.getStatus() == OrderStatus.CANCELLED) {
             throw new BusinessException("Não é possível emitir etiquetas de uma ordem de serviço cancelada.");
         }
-        List<br.edu.ifpb.alumigest.orders.service.pdf.ThermalLabelData> etiquetas = thermalLabelDataResolver.resolveLabels(order, itemId);
+        List<br.edu.ifpb.alumigest.orders.service.pdf.ThermalLabelData> etiquetas =
+                thermalLabelDataResolver.resolveLabels(order, itemId);
+        return thermalLabelBplbRenderer.renderBplbBytes(etiquetas);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public byte[] gerarBplbEtiquetasById(UUID id, UUID itemId, Map<UUID, Integer> customLeavesPerItem) {
+        if (customLeavesPerItem == null || customLeavesPerItem.isEmpty()) {
+            return gerarBplbEtiquetasById(id, itemId);
+        }
+        Order order = orderRepository.findByIdWithDetails(id)
+                .orElseThrow(() -> new ResourceNotFoundException(RESOURCE_PEDIDO, id.toString()));
+        if (order.getStatus() == OrderStatus.CANCELLED) {
+            throw new BusinessException("Não é possível emitir etiquetas de uma ordem de serviço cancelada.");
+        }
+        List<br.edu.ifpb.alumigest.orders.service.pdf.ThermalLabelData> etiquetas =
+                thermalLabelDataResolver.resolveLabels(order, itemId, customLeavesPerItem);
         return thermalLabelBplbRenderer.renderBplbBytes(etiquetas);
     }
 

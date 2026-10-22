@@ -69,22 +69,11 @@ class ThermalLabelBplbRendererTest {
             ThermalLabelData data = criarEtiquetaPadrao(1, 1, 1, 1);
             String bplb = renderer.renderBplb(List.of(data));
 
-            // N: Limpa buffer
-            assertThat(bplb).startsWith("N\n");
-            // D9: Densidade 9
-            assertThat(bplb).contains("D9\n");
-            // S2: Velocidade 2 pol/seg
-            assertThat(bplb).contains("S2\n");
-            // JF: Habilita backfeed
-            assertThat(bplb).contains("JF\n");
-            // ZT: Orientação normal
-            assertThat(bplb).contains("ZT\n");
-            // Q480,24: Altura de 480 pontos e gap de 24 pontos (3mm)
-            assertThat(bplb).contains("Q480,24\n");
-            // q800: Largura de 800 pontos (100mm a 203 DPI)
-            assertThat(bplb).contains("q800\n");
-            // P1: Exatamente 1 cópia emitida por etiqueta
-            assertThat(bplb).endsWith("P1\n");
+            // N: Limpa buffer, Parâmetros e P1: Exatamente 1 cópia emitida por etiqueta
+            assertThat(bplb)
+                    .startsWith("N\n")
+                    .contains("D9\n", "S2\n", "JF\n", "ZT\n", "Q480,24\n", "q800\n")
+                    .endsWith("P1\n");
         }
 
         @Test
@@ -114,13 +103,15 @@ class ThermalLabelBplbRendererTest {
             ThermalLabelData data = criarEtiquetaPadrao(1, 1, 1, 2);
             String bplb = renderer.renderBplb(List.of(data));
 
-            assertThat(bplb).contains("MEDIDAS NOMINAIS (L X A)");
-            assertThat(bplb).contains("1600 x 2100 mm");
-            assertThat(bplb).contains("COR: Preto Anodizado");
-            assertThat(bplb).contains("VIDRO: Incolor 6mm Temperado");
-            assertThat(bplb).contains("LOCAL / OBS: Bloco A - Apto 101");
-            assertThat(bplb).contains("DATA: 21/10/2026");
-            assertThat(bplb).contains("ALUMIGEST - 100X60MM");
+            assertThat(bplb).contains(
+                    "MEDIDAS NOMINAIS (L X A)",
+                    "1600 x 2100 mm",
+                    "COR: Preto Anodizado",
+                    "VIDRO: Incolor 6mm Temperado",
+                    "LOCAL / OBS: Bloco A - Apto 101",
+                    "DATA: 21/10/2026",
+                    "ALUMIGEST - 100X60MM"
+            );
         }
 
         @Test
@@ -147,15 +138,15 @@ class ThermalLabelBplbRendererTest {
 
             String bplb = renderer.renderBplb(List.of(dataComAcentos));
 
-            // Não deve conter acentos gráficos NFD/Unicode nos textos sanitizados
-            assertThat(bplb).doesNotContain("Alumínio");
-            assertThat(bplb).contains("Aluminio");
-            assertThat(bplb).contains("Joao Antonio da Conceicao");
-            assertThat(bplb).contains("Portao Eletronico Linha Padrao");
-            assertThat(bplb).contains("Fume 8mm Temperado");
-            // Não deve conter aspas duplas internas que quebrem os comandos BPLB
-            assertThat(bplb).doesNotContain("\"Top\"");
-            assertThat(bplb).doesNotContain("\"Trava\"");
+            // Não deve conter acentos gráficos NFD/Unicode nos textos sanitizados nem aspas internas
+            assertThat(bplb)
+                    .doesNotContain("Alumínio", "\"Top\"", "\"Trava\"")
+                    .contains(
+                            "Aluminio",
+                            "Joao Antonio da Conceicao",
+                            "Portao Eletronico Linha Padrao",
+                            "Fume 8mm Temperado"
+                    );
         }
     }
 }

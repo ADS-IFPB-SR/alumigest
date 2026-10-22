@@ -84,46 +84,57 @@ class ThermalLabelDataResolverTest {
             assertThat(etiquetas).hasSize(5);
 
             // Etiqueta 1 (Item 1, Esquadria 1, Folha 1)
-            ThermalLabelData e1 = etiquetas.get(0);
-            assertThat(e1.companyName()).isEqualTo("ALUMÍNIO & VIDROS PB");
-            assertThat(e1.customerName()).isEqualTo("MARCOS SOUZA");
-            assertThat(e1.orderCode()).isEqualTo("OS-2026-0001");
-            assertThat(e1.itemIndex()).isEqualTo(1);
-            assertThat(e1.pieceNumber()).isEqualTo(1);
-            assertThat(e1.totalPieces()).isEqualTo(5);
-            assertThat(e1.widthMm()).isEqualTo(1200);
-            assertThat(e1.heightMm()).isEqualTo(1000);
-            assertThat(e1.issueDate()).isEqualTo(LocalDate.of(2026, 10, 15));
-            assertThat(e1.labelBadge()).isEqualTo("Item 01 • Esquadria 01/02 | Folha 01/02");
+            assertThat(etiquetas.get(0))
+                    .extracting(
+                            ThermalLabelData::companyName,
+                            ThermalLabelData::customerName,
+                            ThermalLabelData::orderCode,
+                            ThermalLabelData::itemIndex,
+                            ThermalLabelData::pieceNumber,
+                            ThermalLabelData::totalPieces,
+                            ThermalLabelData::widthMm,
+                            ThermalLabelData::heightMm,
+                            ThermalLabelData::issueDate,
+                            ThermalLabelData::labelBadge
+                    ).containsExactly(
+                            "ALUMÍNIO & VIDROS PB",
+                            "MARCOS SOUZA",
+                            "OS-2026-0001",
+                            1,
+                            1,
+                            5,
+                            1200,
+                            1000,
+                            LocalDate.of(2026, 10, 15),
+                            "Item 01 • Esquadria 01/02 | Folha 01/02"
+                    );
 
             // Etiqueta 2 (Item 1, Esquadria 1, Folha 2)
-            ThermalLabelData e2 = etiquetas.get(1);
-            assertThat(e2.itemIndex()).isEqualTo(1);
-            assertThat(e2.pieceNumber()).isEqualTo(2);
-            assertThat(e2.totalPieces()).isEqualTo(5);
-            assertThat(e2.labelBadge()).isEqualTo("Item 01 • Esquadria 01/02 | Folha 02/02");
+            assertThat(etiquetas.get(1))
+                    .extracting(ThermalLabelData::itemIndex, ThermalLabelData::pieceNumber, ThermalLabelData::totalPieces, ThermalLabelData::labelBadge)
+                    .containsExactly(1, 2, 5, "Item 01 • Esquadria 01/02 | Folha 02/02");
 
             // Etiqueta 3 (Item 1, Esquadria 2, Folha 1)
-            ThermalLabelData e3 = etiquetas.get(2);
-            assertThat(e3.itemIndex()).isEqualTo(1);
-            assertThat(e3.pieceNumber()).isEqualTo(3);
-            assertThat(e3.labelBadge()).isEqualTo("Item 01 • Esquadria 02/02 | Folha 01/02");
+            assertThat(etiquetas.get(2))
+                    .extracting(ThermalLabelData::itemIndex, ThermalLabelData::pieceNumber, ThermalLabelData::labelBadge)
+                    .containsExactly(1, 3, "Item 01 • Esquadria 02/02 | Folha 01/02");
 
             // Etiqueta 4 (Item 1, Esquadria 2, Folha 2)
-            ThermalLabelData e4 = etiquetas.get(3);
-            assertThat(e4.itemIndex()).isEqualTo(1);
-            assertThat(e4.pieceNumber()).isEqualTo(4);
-            assertThat(e4.labelBadge()).isEqualTo("Item 01 • Esquadria 02/02 | Folha 02/02");
+            assertThat(etiquetas.get(3))
+                    .extracting(ThermalLabelData::itemIndex, ThermalLabelData::pieceNumber, ThermalLabelData::labelBadge)
+                    .containsExactly(1, 4, "Item 01 • Esquadria 02/02 | Folha 02/02");
 
             // Etiqueta 5 (Item 2, Esquadria 1, Folha 1)
-            ThermalLabelData e5 = etiquetas.get(4);
-            assertThat(e5.itemIndex()).isEqualTo(2);
-            assertThat(e5.pieceNumber()).isEqualTo(5);
-            assertThat(e5.totalPieces()).isEqualTo(5);
-            assertThat(e5.widthMm()).isEqualTo(900);
-            assertThat(e5.heightMm()).isEqualTo(2100);
-            assertThat(e5.aluminumColor()).isEqualTo("Preto");
-            assertThat(e5.labelBadge()).isEqualTo("Item 02 • Esquadria 01/01 | Peça 01/01");
+            assertThat(etiquetas.get(4))
+                    .extracting(
+                            ThermalLabelData::itemIndex,
+                            ThermalLabelData::pieceNumber,
+                            ThermalLabelData::totalPieces,
+                            ThermalLabelData::widthMm,
+                            ThermalLabelData::heightMm,
+                            ThermalLabelData::aluminumColor,
+                            ThermalLabelData::labelBadge
+                    ).containsExactly(2, 5, 5, 900, 2100, "Preto", "Item 02 • Esquadria 01/01 | Peça 01/01");
         }
 
         @Test

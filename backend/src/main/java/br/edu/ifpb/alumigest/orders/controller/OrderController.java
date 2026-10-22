@@ -35,7 +35,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
-import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -303,40 +303,75 @@ public class OrderController {
                 .body(pdfDto.bytes());
     }
 
-
     /**
-     * Dispara a impressão direta silenciosa das etiquetas adesivas térmicas (100x60mm)
-     * na impressora térmica física via comandos nativos BPLB (Elgin L42) através do Spooler.
-     * US-17 (#492, #493).
+     * Gera o PDF térmico 100x60mm considerando o mapa de folhas customizadas pelo operador no modal.
      */
-    @PostMapping("/{id}/print-thermal")
+    @PostMapping({"/{id}/labels-pdf", "/{id}/etiquetas-pdf"})
     @Operation(
-            summary = "Imprimir etiquetas diretamente na impressora térmica (BPLB / Elgin L42)",
-            description = "Envia comandos BPLB nativos diretamente para a impressora térmica física sem abrir caixas de diálogo no navegador."
+            summary = "Gerar etiquetas térmicas em PDF com contagem customizada de folhas",
+            description = "Gera as etiquetas em PDF considerando as folhas conferidas e customizadas pelo operador no modal."
     )
-    public ResponseEntity<br.edu.ifpb.alumigest.orders.dto.PrintThermalResultDTO> imprimirNaTermica(
+    public ResponseEntity<byte[]> gerarPdfEtiquetasComCustomizacao(
             @PathVariable UUID id,
             @RequestParam(required = false) UUID itemId,
-            @RequestParam(required = false) String printerName) {
+            @RequestBody(required = false) Map<UUID, Integer> customLeavesPerItem) {
 
-        br.edu.ifpb.alumigest.orders.dto.PrintThermalResultDTO result =
-                orderService.printThermalLabels(id, itemId, printerName);
-        return ResponseEntity.ok(result);
+        OrderPdfDTO pdfDto = (customLeavesPerItem != null && !customLeavesPerItem.isEmpty())
+                ? orderService.gerarEtiquetasById(id, itemId, customLeavesPerItem)
+                : orderService.gerarEtiquetasById(id, itemId);
+
+        ContentDisposition contentDisposition = ContentDisposition.attachment()
+                .filename(pdfDto.filename())
+                .build();
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .headers(headers -> headers.setContentDisposition(contentDisposition))
+                .contentLength(pdfDto.bytes().length)
+                .body(pdfDto.bytes());
     }
 
     /**
-     * Gera e exporta o arquivo de comandos nativos BPLB (.prn / .bplb) da ordem de serviço para download.
+     * Gera e exporta o arquivo de comandos nativos BPLB (.prn / .bplb) da ordem de serviço.
      */
     @GetMapping("/{id}/labels-bplb")
     @Operation(
             summary = "Baixar script de comandos BPLB da ordem de serviço (.prn)",
-            description = "Gera o arquivo de script de comandos nativos BPLB para envio direto a portas de comunicação ou testes de simulação."
+            description = "Gera o arquivo de script de comandos nativos BPLB para envio direto a impressora USB ou testes de simulação."
     )
     public ResponseEntity<byte[]> baixarScriptBplb(
             @PathVariable UUID id,
             @RequestParam(required = false) UUID itemId) {
 
         byte[] bplbBytes = orderService.gerarBplbEtiquetasById(id, itemId);
+
+        ContentDisposition contentDisposition = ContentDisposition.attachment()
+                .filename("etiquetas-bplb-" + id + ".prn")
+                .build();
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("application/octet-stream"))
+                .headers(headers -> headers.setContentDisposition(contentDisposition))
+                .contentLength(bplbBytes.length)
+                .body(bplbBytes);
+    }
+
+    /**
+     * Gera o script de comandos BPLB (.prn) considerando a contagem de folhas customizadas pelo operador no modal.
+     */
+    @PostMapping("/{id}/labels-bplb")
+    @Operation(
+            summary = "Gerar script BPLB com contagem customizada de folhas",
+            description = "Gera o script BPLB nativo para envio direto à porta USB considerando a contagem de folhas ajustada no modal."
+    )
+    public ResponseEntity<byte[]> gerarScriptBplbComCustomizacao(
+            @PathVariable UUID id,
+            @RequestParam(required = false) UUID itemId,
+            @RequestBody(required = false) Map<UUID, Integer> customLeavesPerItem) {
+
+        byte[] bplbBytes = (customLeavesPerItem != null && !customLeavesPerItem.isEmpty())
+                ? orderService.gerarBplbEtiquetasById(id, itemId, customLeavesPerItem)
+                : orderService.gerarBplbEtiquetasById(id, itemId);
 
         ContentDisposition contentDisposition = ContentDisposition.attachment()
                 .filename("etiquetas-bplb-" + id + ".prn")

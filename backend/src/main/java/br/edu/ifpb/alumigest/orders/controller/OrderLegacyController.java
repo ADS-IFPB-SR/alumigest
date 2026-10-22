@@ -130,13 +130,6 @@ public class OrderLegacyController {
                 .body(pdfDto.bytes());
     }
 
-    @PostMapping("/{id}/print-thermal")
-    public ResponseEntity<br.edu.ifpb.alumigest.orders.dto.PrintThermalResultDTO> imprimirNaTermica(
-            @PathVariable UUID id,
-            @RequestParam(required = false) UUID itemId,
-            @RequestParam(required = false) String printerName) {
-        return ResponseEntity.ok(orderService.printThermalLabels(id, itemId, printerName));
-    }
 
     @GetMapping("/{id}/labels-bplb")
     public ResponseEntity<byte[]> baixarScriptBplb(

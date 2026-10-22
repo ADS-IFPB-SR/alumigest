@@ -72,12 +72,24 @@ export const useDownloadComprovantePdf = () => {
 
 /**
  * Hook de mutação para baixar as etiquetas térmicas adesivas (100x60mm) do Pedido de Venda em PDF.
- * US-17.4 (#451) — utiliza o mesmo padrão de download Blob do useDownloadComprovantePdf.
+ * US-17.4 (#451) — com suporte a folhas conferidas e customizadas pelo operador.
  */
 export const useDownloadLabelsPdf = () => {
   return useMutation({
-    mutationFn: ({ id, codigo, itemId }: { id: string; codigo?: string; itemId?: string }) =>
-      ordersApi.downloadLabelsPdf(id, codigo, itemId),
+    mutationFn: ({
+      id,
+      codigo,
+      itemId,
+      customLeaves,
+    }: {
+      id: string;
+      codigo?: string;
+      itemId?: string;
+      customLeaves?: Record<string, number>;
+    }) =>
+      customLeaves
+        ? ordersApi.downloadLabelsPdf(id, codigo, itemId, customLeaves)
+        : ordersApi.downloadLabelsPdf(id, codigo, itemId),
     onSuccess: () => {
       toast.success('Etiquetas térmicas baixadas com sucesso!');
     },
@@ -102,37 +114,6 @@ export const useUpdateOrderStatus = (id?: string) => {
       if (id) {
         queryClient.invalidateQueries({ queryKey: ['order', id] });
       }
-    },
-  });
-};
-
-/**
- * Hook para listar impressoras disponíveis no sistema operacional local.
- * US-17 (#492, #493).
- */
-export const useAvailablePrinters = () => {
-  return useQuery({
-    queryKey: ['printers'],
-    queryFn: () => ordersApi.getAvailablePrinters(),
-    staleTime: 30000,
-  });
-};
-
-/**
- * Hook de mutação para envio direto silencioso à impressora térmica (Elgin L42 / BPLB).
- * US-17 (#492, #493).
- */
-export const usePrintThermalLabels = () => {
-  return useMutation({
-    mutationFn: ({ id, itemId, printerName }: { id: string; itemId?: string; printerName?: string }) =>
-      ordersApi.printLabelsDirectly(id, { itemId, printerName }),
-    onSuccess: (data) => {
-      toast.success(data.message || 'Etiquetas enviadas com sucesso para a impressora térmica!');
-    },
-    onError: (error: unknown) => {
-      const err = error as { response?: { data?: { message?: string } } };
-      const message = err?.response?.data?.message || 'Erro ao enviar etiquetas para a impressora térmica.';
-      toast.error(message);
     },
   });
 };

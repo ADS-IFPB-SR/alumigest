@@ -8,11 +8,8 @@ import br.edu.ifpb.alumigest.orders.dto.OrderConvertRequest;
 import br.edu.ifpb.alumigest.orders.dto.OrderPdfDTO;
 import br.edu.ifpb.alumigest.orders.dto.OrderResponse;
 import br.edu.ifpb.alumigest.orders.dto.OrderSummaryResponse;
-import br.edu.ifpb.alumigest.orders.dto.PrinterInfoDTO;
-import br.edu.ifpb.alumigest.orders.dto.PrintThermalResultDTO;
 import org.springframework.data.domain.Pageable;
-
-import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -78,6 +75,16 @@ public interface OrderService {
     OrderPdfDTO gerarEtiquetasById(UUID id, UUID itemId);
 
     /**
+     * Gera o documento PDF contendo etiquetas térmicas (100x60mm) considerando as folhas customizadas.
+     *
+     * @param id                  Identificador único (UUID) do pedido
+     * @param itemId              Identificador opcional (UUID) de um item específico
+     * @param customLeavesPerItem Mapa de folhas customizadas pelo operador no modal
+     * @return DTO contendo os bytes do PDF e o nome do arquivo para download
+     */
+    OrderPdfDTO gerarEtiquetasById(UUID id, UUID itemId, Map<UUID, Integer> customLeavesPerItem);
+
+    /**
      * Gera o documento PDF contendo etiquetas térmicas (100x60mm) para todas as
      * peças da Ordem de Serviço / Pedido de Venda.
      *
@@ -87,7 +94,7 @@ public interface OrderService {
      * @throws br.edu.ifpb.alumigest.common.exception.BusinessException         se a ordem não contiver itens válidos
      */
     default OrderPdfDTO gerarEtiquetasById(UUID id) {
-        return gerarEtiquetasById(id, null);
+        return gerarEtiquetasById(id, null, null);
     }
 
     /**
@@ -109,29 +116,22 @@ public interface OrderService {
     OrderResponse updateStatus(UUID id, OrderStatus status);
 
     /**
-     * Lista as impressoras instaladas no sistema operacional do servidor.
-     *
-     * @return lista de impressoras detectadas
-     */
-    List<PrinterInfoDTO> listAvailablePrinters();
-
-    /**
-     * Envia as etiquetas térmicas da ordem de serviço diretamente para a impressora física via BPLB.
-     *
-     * @param id            identificador da ordem de serviço
-     * @param itemId        identificador opcional de item para filtro
-     * @param targetPrinter nome da impressora de destino (opcional)
-     * @return DTO com o resultado da impressão
-     */
-    PrintThermalResultDTO printThermalLabels(UUID id, UUID itemId, String targetPrinter);
-
-    /**
-     * Gera os bytes brutos do script de comandos BPLB para download ou simulação externa.
+     * Gera os bytes brutos do script de comandos BPLB para envio direto à impressora térmica USB.
      *
      * @param id     identificador da ordem de serviço
      * @param itemId identificador opcional de item para filtro
      * @return array de bytes do script BPLB
      */
     byte[] gerarBplbEtiquetasById(UUID id, UUID itemId);
+
+    /**
+     * Gera os bytes brutos do script de comandos BPLB considerando as folhas customizadas pelo operador.
+     *
+     * @param id                  identificador da ordem de serviço
+     * @param itemId              identificador opcional de item para filtro
+     * @param customLeavesPerItem Mapa de folhas customizadas pelo operador no modal
+     * @return array de bytes do script BPLB
+     */
+    byte[] gerarBplbEtiquetasById(UUID id, UUID itemId, Map<UUID, Integer> customLeavesPerItem);
 
 }

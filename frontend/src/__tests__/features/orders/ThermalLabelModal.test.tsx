@@ -190,15 +190,26 @@ describe('ThermalLabelModal — [US-17] Visualização Prévia, Conferência e I
     fireEvent.click(screen.getByTestId('filter-piece-all'));
     expect(screen.getAllByTestId('thermal-label-card')).toHaveLength(5);
 
-    // Aciona botão de imprimir na impressora térmica silenciosa (BPLB)
-    fireEvent.click(screen.getByTestId('btn-modal-print-thermal'));
+    // Verifica nome do botão conforme especificado: 'Impressão Direta'
+    const printBtn = screen.getByTestId('btn-modal-print-thermal');
+    expect(printBtn).toHaveTextContent('Impressão Direta');
+
+    // Aciona botão de impressão direta USB (BPLB)
+    fireEvent.click(printBtn);
     await waitFor(() => {
       expect(handlePrintThermal).toHaveBeenCalledTimes(1);
+      expect(handlePrintThermal).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'order-multi-123',
+          leavesPerItem: expect.any(Object),
+        })
+      );
     });
 
-    // Aciona botão de download PDF
+    // Aciona botão de download PDF repassando as folhas customizadas
     fireEvent.click(screen.getByTestId('btn-modal-download-pdf'));
     expect(handleDownload).toHaveBeenCalledTimes(1);
+    expect(handleDownload).toHaveBeenCalledWith(expect.any(Object));
 
     // Fecha o modal
     fireEvent.click(screen.getByTestId('btn-close-thermal-modal'));

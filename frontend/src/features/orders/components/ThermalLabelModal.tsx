@@ -1,18 +1,20 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { X, Printer, Download, Tag, Loader2, Minus, Plus, SlidersHorizontal } from 'lucide-react';
+import toast from 'react-hot-toast';
 import type { Order, OrderItem } from '../types';
 import { formatDate } from '../utils/formatDate';
 import { extractLeavesCount, formatLabelBadge } from '../utils/leafDeduction';
 import { resolveLabelItems, resolveLocalAmbiente } from '../utils/thermalLabels';
-import { useAvailablePrinters, usePrintThermalLabels } from '../hooks/useOrders';
+import { ordersApi } from '../services/ordersApi';
+import { printDirectToSerialPrinter } from '../utils/webSerialPrinter';
 
 export interface ThermalLabelModalProps {
   isOpen: boolean;
   onClose: () => void;
   order: Order;
-  onDownloadPdf?: () => void;
+  onDownloadPdf?: (customLeaves?: Record<string, number>) => void;
   isDownloadingPdf?: boolean;
-  onPrintThermal?: (params: { id: string; itemId?: string; printerName?: string }) => void;
+  onPrintThermal?: (params: { id: string; itemId?: string; leavesPerItem?: Record<string, number> }) => void;
   isPrintingThermal?: boolean;
 }
 
@@ -46,48 +48,25 @@ export const ThermalLabelModal: React.FC<ThermalLabelModalProps> = ({
   // Mapa de folhas por item (inicializado via dedução automática por regex na descrição/tipologia)
   const [leavesPerItem, setLeavesPerItem] = useState<Record<string, number>>({});
 
-  let rawPrintersData: Array<{ name: string; isDefault: boolean; isThermal: boolean }> | undefined;
-  let printMutation: any = null;
+  const [isDirectPrinting, setIsDirectPrinting] = useState(false);
+  const isPrinting = isPrintingThermalProp ?? isDirectPrinting;
 
-  try {
-    const printersQuery = useAvailablePrinters();
-    rawPrintersData = printersQuery?.data;
-  } catch {
-    // Tolerância para ambiente de teste isolado sem QueryClientProvider
+function getTemplateType(item: OrderItem): string | null {
+  const customItem = item as { templateType?: string; templateConfig?: { templateType?: string } };
+  if (customItem.templateType) {
+    return customItem.templateType;
   }
-
-  const availablePrinters = useMemo(
-    () => (Array.isArray(rawPrintersData) ? rawPrintersData : []),
-    [rawPrintersData]
-  );
-
-  try {
-    printMutation = usePrintThermalLabels();
-  } catch {
-    // Tolerância para ambiente de teste isolado sem QueryClientProvider
+  if (customItem.templateConfig && typeof customItem.templateConfig === 'object') {
+    return customItem.templateConfig.templateType ?? null;
   }
-
-  const [selectedPrinter, setSelectedPrinter] = useState<string>('');
-
-  useEffect(() => {
-    if (availablePrinters.length > 0 && !selectedPrinter) {
-      const thermal = availablePrinters.find((p) => p.isThermal);
-      const def = availablePrinters.find((p) => p.isDefault);
-      setSelectedPrinter(thermal?.name || def?.name || availablePrinters[0].name);
-    }
-  }, [availablePrinters, selectedPrinter]);
-
-  const isPrinting = isPrintingThermalProp ?? (printMutation?.isPending || false);
+  return null;
+}
 
   useEffect(() => {
     if (!order?.items) return;
     const initialMap: Record<string, number> = {};
     order.items.forEach((item) => {
-      const templateType =
-        (item as any).templateType ||
-        ((item.templateConfig && typeof item.templateConfig === 'object')
-          ? (item.templateConfig as any).templateType
-          : null);
+      const templateType = getTemplateType(item);
       initialMap[item.id] = extractLeavesCount(item.descricao, templateType);
     });
     setLeavesPerItem(initialMap);
@@ -150,7 +129,7 @@ export const ThermalLabelModal: React.FC<ThermalLabelModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handlePrintThermal = () => {
+  const handlePrintThermal = async () => {
     const selectedItem =
       selectedItemFilter !== 'ALL'
         ? labelItems.find(({ item }) => item.id === selectedItemFilter)?.item
@@ -159,13 +138,34 @@ export const ThermalLabelModal: React.FC<ThermalLabelModalProps> = ({
     const payload = {
       id: order.id,
       itemId: selectedItem?.id,
-      printerName: selectedPrinter || undefined,
+      leavesPerItem,
     };
 
     if (onPrintThermalProp) {
       onPrintThermalProp(payload);
-    } else if (printMutation?.mutate) {
-      printMutation.mutate(payload);
+      return;
+    }
+
+    try {
+      setIsDirectPrinting(true);
+      const bplbBytes = await ordersApi.getLabelsBplb(order.id, selectedItem?.id, leavesPerItem);
+      const result = await printDirectToSerialPrinter(bplbBytes);
+      if (result.success) {
+        toast.success(result.message || 'Etiquetas impressas diretamente na impressora térmica USB!');
+      } else if (result.message) {
+        toast.error(result.message);
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Falha na comunicação direta com a impressora térmica USB.';
+      toast.error(msg);
+    } finally {
+      setIsDirectPrinting(false);
+    }
+  };
+
+  const handleDownloadPdf = () => {
+    if (onDownloadPdf) {
+      onDownloadPdf(leavesPerItem);
     }
   };
 
@@ -413,26 +413,6 @@ export const ThermalLabelModal: React.FC<ThermalLabelModalProps> = ({
             <p className="text-xs text-on-surface-variant text-center sm:text-left">
               Exibindo <strong>{filteredLabels.length}</strong> de <strong>{allPhysicalLabels.length}</strong> etiquetas (100x60mm).
             </p>
-
-            {availablePrinters.length > 0 && (
-              <div className="flex items-center gap-1.5 text-xs text-on-surface-variant">
-                <Printer className="w-3.5 h-3.5 text-slate-500" />
-                <label htmlFor="printer-select" className="font-medium whitespace-nowrap">Impressora:</label>
-                <select
-                  id="printer-select"
-                  data-testid="select-thermal-printer"
-                  value={selectedPrinter}
-                  onChange={(e) => setSelectedPrinter(e.target.value)}
-                  className="text-xs bg-surface-container-highest border border-outline-variant rounded-md px-2 py-1 text-on-surface font-medium focus:outline-none focus:ring-1 focus:ring-primary max-w-[220px] truncate"
-                >
-                  {availablePrinters.map((p) => (
-                    <option key={p.name} value={p.name}>
-                      {p.name} {p.isThermal ? '🏷️ (Térmica)' : p.isDefault ? '⭐ (Padrão)' : ''}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
           </div>
 
           <div className="flex items-center gap-2 w-full md:w-auto">
@@ -448,14 +428,14 @@ export const ThermalLabelModal: React.FC<ThermalLabelModalProps> = ({
               ) : (
                 <Printer className="w-4 h-4" />
               )}
-              {isPrinting ? 'Enviando para a impressora...' : 'Imprimir Todas na Térmica'}
+              {isPrinting ? 'Enviando para a impressora...' : 'Impressão Direta'}
             </button>
 
             {onDownloadPdf && (
               <button
                 type="button"
                 data-testid="btn-modal-download-pdf"
-                onClick={onDownloadPdf}
+                onClick={handleDownloadPdf}
                 disabled={isDownloadingPdf}
                 className="flex-1 md:flex-none inline-flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-lg bg-surface-container-highest hover:bg-outline-variant text-on-surface transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >

@@ -19,7 +19,7 @@ import java.util.List;
  * - Altura: 60mm = 480 pontos + GAP de 3mm = 24 pontos (comando Q480,24)
  * - Cada etiqueta física gera exatamente 1 emissão impressa (comando P1)
  *
- * US-17 / Correções #492 e #493 — Impressão direta na impressora térmica sem intermediários.
+ * US-17 / Correções #492 e #493.
  */
 @Component
 public class ThermalLabelBplbRenderer {
@@ -31,7 +31,7 @@ public class ThermalLabelBplbRenderer {
      * Renderiza o script completo de comandos BPLB para uma lista de etiquetas.
      *
      * @param etiquetas lista de dados consolidados das etiquetas
-     * @return script em texto pronto para envio ao driver RAW/Spooler da impressora
+     * @return script em texto pronto para envio ao driver RAW/porta serial da impressora
      */
     public String renderBplb(List<ThermalLabelData> etiquetas) {
         if (etiquetas == null || etiquetas.isEmpty()) {
@@ -51,7 +51,7 @@ public class ThermalLabelBplbRenderer {
      * Converte o script BPLB para array de bytes compatível com a impressora Elgin L42.
      *
      * @param etiquetas lista de dados consolidados das etiquetas
-     * @return array de bytes para envio direto via javax.print (DocFlavor.BYTE_ARRAY.AUTOSENSE)
+     * @return array de bytes para envio direto via porta USB / Serial ou Spooler
      */
     public byte[] renderBplbBytes(List<ThermalLabelData> etiquetas) {
         return renderBplb(etiquetas).getBytes(BPLB_CHARSET);
@@ -75,45 +75,45 @@ public class ThermalLabelBplbRenderer {
         // q800: Largura total de impressão de 800 pontos (100mm)
         sb.append("q800\n");
 
-        // 3. Cabeçalho Institucional
+        // 3. Cabeçalho Institucional (Concatenação direta para evitar S3457 e preservar terminador LF estrito BPLB)
         String empresa = sanitize(data.companyName(), 24);
         String osCode = sanitize("#" + data.orderCode(), 16);
-        sb.append(String.format("A30,20,0,4,1,1,N,\"%s\"\n", empresa));
-        sb.append(String.format("A520,20,0,4,1,1,N,\"%s\"\n", osCode));
+        sb.append("A30,20,0,4,1,1,N,\"").append(empresa).append("\"\n");
+        sb.append("A520,20,0,4,1,1,N,\"").append(osCode).append("\"\n");
 
         String cliente = sanitize("CLIENTE: " + data.customerName(), 34);
-        sb.append(String.format("A30,60,0,3,1,1,N,\"%s\"\n", cliente));
+        sb.append("A30,60,0,3,1,1,N,\"").append(cliente).append("\"\n");
 
         // Badge de Rastreabilidade Física (Item / Folha / Peça)
         String badge = sanitize(data.labelBadge(), 35);
-        sb.append(String.format("A440,60,0,2,1,1,N,\"%s\"\n", badge));
+        sb.append("A440,60,0,2,1,1,N,\"").append(badge).append("\"\n");
 
         // 4. Descrição Técnica da Esquadria
         String desc = sanitize(data.description(), 42);
-        sb.append(String.format("A30,105,0,4,1,1,N,\"%s\"\n", desc));
+        sb.append("A30,105,0,4,1,1,N,\"").append(desc).append("\"\n");
 
         // 5. Caixa de Destaque das Medidas Nominais (Xp1,p2,p3,p4,p5: X1, Y1, Espessura, X2, Y2)
-        // Caixa de 740x80 pontos centralizada
-        sb.append("X30,150,3,770,230\n");
-        sb.append("A260,160,0,2,1,1,N,\"MEDIDAS NOMINAIS (L X A)\"\n");
-        String medidas = String.format("%d x %d mm", data.widthMm(), data.heightMm());
-        sb.append(String.format("A220,185,0,4,2,2,N,\"%s\"\n", medidas));
+        // Caixa de 740x90 pontos ajustada para não colidir com o texto interno (Ponto 5 do Code Review)
+        sb.append("X30,145,3,770,235\n");
+        sb.append("A260,155,0,2,1,1,N,\"MEDIDAS NOMINAIS (L X A)\"\n");
+        String medidas = data.widthMm() + " x " + data.heightMm() + " mm";
+        sb.append("A220,180,0,4,2,2,N,\"").append(medidas).append("\"\n");
 
         // 6. Especificações Técnicas de Fábrica
         String cor = sanitize("COR: " + (data.aluminumColor() != null ? data.aluminumColor() : "Padrao"), 30);
         String vidro = sanitize("VIDRO: " + (data.glassType() != null ? data.glassType() : "Nao aplicavel"), 30);
-        sb.append(String.format("A30,245,0,3,1,1,N,\"%s\"\n", cor));
-        sb.append(String.format("A420,245,0,3,1,1,N,\"%s\"\n", vidro));
+        sb.append("A30,245,0,3,1,1,N,\"").append(cor).append("\"\n");
+        sb.append("A420,245,0,3,1,1,N,\"").append(vidro).append("\"\n");
 
         String localObs = sanitize("LOCAL / OBS: " + (data.environmentOrLocation() != null ? data.environmentOrLocation() : "-"), 50);
-        sb.append(String.format("A30,290,0,3,1,1,N,\"%s\"\n", localObs));
+        sb.append("A30,290,0,3,1,1,N,\"").append(localObs).append("\"\n");
 
         // 7. Rodapé com linha divisória
         // LO: Linha horizontal de comprimento 740 e espessura 2 pontos
         sb.append("LO30,340,740,2\n");
 
         String dataEmissao = "DATA: " + (data.issueDate() != null ? data.issueDate().format(DATE_FORMATTER) : "-");
-        sb.append(String.format("A30,355,0,2,1,1,N,\"%s\"\n", dataEmissao));
+        sb.append("A30,355,0,2,1,1,N,\"").append(dataEmissao).append("\"\n");
         sb.append("A560,355,0,2,1,1,N,\"ALUMIGEST - 100X60MM\"\n");
 
         // 8. Comando de Impressão: exatamente 1 cópia por etiqueta física (evita repetições indevidas)

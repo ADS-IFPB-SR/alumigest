@@ -369,12 +369,14 @@
           expect(screen.getByTestId('thermal-label-modal')).toBeInTheDocument();
           expect(mockDownloadLabels).not.toHaveBeenCalled();
 
-          // Download PDF agora é acionado opcionalmente dentro do modal
+          // Download PDF agora é acionado opcionalmente dentro do modal repassando folhas conferidas
           fireEvent.click(screen.getByTestId('btn-modal-download-pdf'));
-          expect(mockDownloadLabels).toHaveBeenCalledWith({
-            id: 'order-uuid-1',
-            codigo: 'OS-2026-0001',
-          });
+          expect(mockDownloadLabels).toHaveBeenCalledWith(
+            expect.objectContaining({
+              id: 'order-uuid-1',
+              codigo: 'OS-2026-0001',
+            })
+          );
         });
 
         it('deve avançar para WAITING_PRODUCTION ao clicar no CTA quando a ordem estiver em CREATED', () => {

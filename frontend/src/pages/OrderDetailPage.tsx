@@ -93,9 +93,9 @@ export function OrderDetailPage() {
   /**
    * Inicia o download das Etiquetas Térmicas em PDF caso o usuário solicite o arquivo.
    */
-  const handleDownloadLabelsPdf = () => {
+  const handleDownloadLabelsPdf = (customLeaves?: Record<string, number>) => {
     if (!order) return;
-    downloadLabels({ id: order.id, codigo: order.codigo });
+    downloadLabels({ id: order.id, codigo: order.codigo, customLeaves });
   };
 
   const handleConfirmCancel = (data: CancelOrderFormData) => {

@@ -75,6 +75,40 @@ describe('ordersApi - PDF downloads & Blob error handling (BUG-485)', () => {
         );
       }
     });
+
+    it('deve baixar as etiquetas térmicas em PDF enviando customLeaves via POST', async () => {
+      const mockPdfBlob = new Blob(['%PDF-1.4 mock labels'], { type: 'application/pdf' });
+      const customLeaves = { 'item-1': 3 };
+      mock.onPost('/orders/order-1/labels-pdf', customLeaves).reply(200, mockPdfBlob, {
+        'content-disposition': 'attachment; filename="etiquetas-OS-2026-0001.pdf"',
+      });
+
+      const appendChildSpy = vi.spyOn(document.body, 'appendChild');
+
+      await ordersApi.downloadLabelsPdf('order-1', 'OS-2026-0001', undefined, customLeaves);
+
+      expect(appendChildSpy).toHaveBeenCalled();
+      expect(window.URL.createObjectURL).toHaveBeenCalled();
+    });
+  });
+
+  describe('getLabelsBplb', () => {
+    it('deve obter bytes BPLB via GET quando não houver customLeaves', async () => {
+      const mockBuffer = new ArrayBuffer(8);
+      mock.onGet('/orders/order-1/labels-bplb').reply(200, mockBuffer);
+
+      const result = await ordersApi.getLabelsBplb('order-1');
+      expect(result).toBeDefined();
+    });
+
+    it('deve obter bytes BPLB via POST quando houver customLeaves', async () => {
+      const mockBuffer = new ArrayBuffer(8);
+      const customLeaves = { 'item-1': 2 };
+      mock.onPost('/orders/order-1/labels-bplb', customLeaves).reply(200, mockBuffer);
+
+      const result = await ordersApi.getLabelsBplb('order-1', undefined, customLeaves);
+      expect(result).toBeDefined();
+    });
   });
 
   describe('downloadComprovantePdf', () => {
