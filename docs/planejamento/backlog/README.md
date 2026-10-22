@@ -41,7 +41,7 @@ Este diretório centraliza todas as User Stories futuras do projeto (**`US-17` a
 | [`US-44`](US-44-trilha-auditoria-imutavel/spec.md) | Registrar Trilha de Auditoria Imutável para Ações Críticas | [#169](https://github.com/ADS-IFPB-SR/alumigest/issues/169) | **7** | 🔵 No Backlog |
 | [`US-45`](US-45-monitoramento-actuator-documentacao/spec.md) | Monitorar Saúde do Sistema com Actuator e Publicar Documentação | [#170](https://github.com/ADS-IFPB-SR/alumigest/issues/170) | **6** | 🔵 No Backlog |
 | [`US-46`](US-46-venda-de-partes/spec.md) | Módulo de Venda Avulsa de Partes (Vidro em m², Alumínio em Metro Linear, Ferragens e Películas) | [#171](https://github.com/ADS-IFPB-SR/alumigest/issues/171) | **4** | 🔵 No Backlog |
-| [`US-47`](US-47-painel-360-clientes/spec.md) | Central 360° do Cliente com Gestão Unificada de Orçamentos, O.S., Ficha Técnica e Etiquetas | [#172](https://github.com/ADS-IFPB-SR/alumigest/issues/172) | **5** | 🔵 No Backlog |
+| [`US-47`](US-47-painel-360-clientes/spec.md) | Central 360° do Cliente com Gestão Unificada de Orçamentos, O.S., Ficha Técnica e Etiquetas | [#496](https://github.com/ADS-IFPB-SR/alumigest/issues/496) | - | 🔵 No Backlog |
 
 ---
 

@@ -1,7 +1,7 @@
 # Especificação Funcional: US-47 — Central 360° do Cliente com Gestão Unificada de Orçamentos, O.S., Ficha Técnica e Etiquetas
 
 **Identificador**: `US-47`  
-**Issue GitHub**: [#172](https://github.com/ADS-IFPB-SR/alumigest/issues/172)  
+**Issue GitHub**: [#496](https://github.com/ADS-IFPB-SR/alumigest/issues/496)  
 **Status**: 🔵 No Backlog (Planejada para Release 2 — Gestão Comercial & Fábrica)  
 **Diretriz de Idioma**: Conforme `PAD-Padroes_de_Codigo.md`, variáveis, atributos Java, colunas SQL, DTOs e enums são em **inglês técnico** (`camelCase`/`snake_case`), e a tradução para `pt-BR` ocorre na camada de UI do Frontend.
 
@@ -104,17 +104,16 @@ Como vendedor, operador comercial ou encarregado de produção da Alumiportas, d
 
 ---
 
-## 📋 Sub-Tarefas / Issues Vinculadas (5 issues)
+## 🧩 Fatias Verticais de Entrega (Escopo Técnico Previsto)
 
-| Sub-Task | Tarefa / Descrição | Status |
-|---|---|:---:|
-| [US-47.1](issues/US-47.1-criar-endpoints-agregados-customers-orders-budgets/issue.md) | Criar endpoints agregados de leitura CQRS para o Painel 360° do Cliente (`GET /dashboard`, `GET /orders`, `GET /budgets`) | 🔲 No Backlog |
-| [US-47.2](issues/US-47.2-criar-servico-e-endpoint-pdf-ficha-tecnica-os/issue.md) | Criar serviço `TechnicalSheetPdfService` e endpoint `GET /api/v1/orders/{id}/technical-sheet.pdf` no backend | 🔲 No Backlog |
-| [US-47.3](issues/US-47.3-criar-hook-e-cliente-api-customers-hub/issue.md) | Criar cliente de API e hook TanStack Query `useCustomerHub` com tipagem estrita no frontend | 🔲 No Backlog |
-| [US-47.4](issues/US-47.4-implementar-pagina-mestre-detalhe-painel-360-clientes/issue.md) | Implementar página `CustomerHubPage` com layout mestre-detalhe, tabelas limpas e modais de Ficha Técnica e Etiquetas | 🔲 No Backlog |
-| [US-47.5](issues/US-47.5-criar-testes-unitarios-e-integracao-do-painel-cliente/issue.md) | Criar suíte de testes unitários e de integração no backend (`MockMvc`) e frontend (`Vitest / RTL`) | 🔲 No Backlog |
+A história será desdobrada em subtarefas técnicas no momento de sua alocação na Sprint correspondente, contemplando:
+1. **Backend CQRS**: Endpoints de leitura agregada (`GET /api/v1/customers/{id}/dashboard`, `GET /orders`, `GET /budgets`);
+2. **Ficha Técnica A4**: Serviço `TechnicalSheetPdfService` com listas de corte de perfis e cálculo de folgas industriais de vidro;
+3. **Frontend Hub**: Componente `CustomerHubPage` com layout mestre-detalhe, Hero com KPIs, tabelas responsivas e card de esquadrias;
+4. **Integração de Mídia**: Emissão de etiquetas térmicas (100x60mm Elgin L42) e comprovantes PDF;
+5. **Qualidade & Testes**: Suíte de testes unitários e de integração (`MockMvc` e `Vitest`) com cobertura $\ge 80\%$.
 
 ---
 
-**Branch de Referência:** `feat/us-47-central-360-clientes-gestao-unificada`  
+**Branch de Referência:** `planejamento`  
 **Protótipo Homologado:** `docs/planejamento/prototipos/painel-clientes-360.html`
