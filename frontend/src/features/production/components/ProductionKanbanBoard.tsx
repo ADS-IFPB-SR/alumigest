@@ -1,6 +1,6 @@
 /* eslint-disable jsx-a11y/no-noninteractive-element-interactions */
 import React, { useState, useMemo } from 'react';
-import { Clock, Wrench, CheckCircle2, Inbox, Layers } from 'lucide-react';
+import { Inbox } from 'lucide-react';
 import type { Order, OrderSummary } from '../../orders/types';
 import { OrderProductionCard } from './OrderProductionCard';
 import {
@@ -10,28 +10,21 @@ import {
 } from '../types';
 import { KANBAN_COLUMNS, calculateTotalPieces } from '../utils/kanbanUtils';
 
-/**
- * Ícone correspondente a cada coluna do fluxo fabril.
- */
-const ColumnIcon: React.FC<{ status: ProductionStatus; className?: string }> = ({
-  status,
-  className = 'w-4 h-4',
-}) => {
-  switch (status) {
-    case 'WAITING_PRODUCTION':
-      return <Clock className={className} />;
-    case 'IN_PRODUCTION':
-      return <Wrench className={className} />;
-    case 'COMPLETED':
-      return <CheckCircle2 className={className} />;
-    default:
-      return <Layers className={className} />;
-  }
+const COLUMN_DOT_COLOR: Record<ProductionStatus, string> = {
+  WAITING_PRODUCTION: 'bg-amber-500',
+  IN_PRODUCTION: 'bg-blue-600',
+  COMPLETED: 'bg-emerald-500',
+};
+
+const COLUMN_BADGE_STYLE: Record<ProductionStatus, string> = {
+  WAITING_PRODUCTION: 'bg-amber-100 text-amber-900 border-2 border-amber-400',
+  IN_PRODUCTION: 'bg-blue-100 text-blue-900 border-2 border-blue-400',
+  COMPLETED: 'bg-emerald-100 text-emerald-900 border-2 border-emerald-400',
 };
 
 /**
  * Componente principal do Quadro Kanban de Acompanhamento da Produção (US-18.4).
- * Apresenta 3 colunas principais com contagem de O.S., total de peças e suporte a drag-and-drop.
+ * Apresenta colunas com fundo destacado (bg-slate-100), bordas bem visíveis e suporte a drag and drop.
  */
 export const ProductionKanbanBoard: React.FC<ProductionKanbanBoardProps> = ({
   orders = [],
@@ -78,7 +71,6 @@ export const ProductionKanbanBoard: React.FC<ProductionKanbanBoardProps> = ({
   };
 
   const handleDragLeave = (e: React.DragEvent<HTMLElement>) => {
-    // Evita resetar o highlight caso o ponteiro esteja sobrevoando um elemento-filho da coluna
     if (!e.currentTarget.contains(e.relatedTarget as Node)) {
       setActiveDropColumn(null);
     }
@@ -93,26 +85,22 @@ export const ProductionKanbanBoard: React.FC<ProductionKanbanBoardProps> = ({
     }
   };
 
-  // Renderizador do corpo da coluna para evitar operadores ternários aninhados (S3358)
+  // Renderizador do corpo da coluna
   const renderColumnContent = (column: (typeof columnsData)[number]) => {
     if (isLoading) {
       return (
         <div data-testid="kanban-skeleton" className="space-y-3">
-          {[1, 2, 3].map((skeletonId) => (
+          {[1, 2].map((i) => (
             <div
-              key={skeletonId}
-              className="animate-pulse bg-white rounded-xl border border-slate-200 p-4 space-y-3 shadow-xs"
+              key={i}
+              className="bg-white rounded-xl border border-slate-300 p-4 space-y-3 animate-pulse shadow-xs"
             >
               <div className="flex justify-between items-center">
-                <div className="h-4 bg-slate-200 rounded-md w-24"></div>
-                <div className="h-4 bg-slate-100 rounded-md w-16"></div>
+                <div className="h-4 bg-slate-200 rounded w-24"></div>
+                <div className="h-4 bg-slate-200 rounded w-16"></div>
               </div>
-              <div className="h-4 bg-slate-200 rounded-md w-3/4"></div>
-              <div className="h-3 bg-slate-100 rounded-md w-1/2"></div>
-              <div className="pt-2 border-t border-slate-100 flex justify-between items-center">
-                <div className="h-3 bg-slate-100 rounded-md w-20"></div>
-                <div className="h-4 bg-slate-100 rounded-md w-12"></div>
-              </div>
+              <div className="h-3 bg-slate-200 rounded w-3/4"></div>
+              <div className="h-3 bg-slate-200 rounded w-1/2"></div>
             </div>
           ))}
         </div>
@@ -132,14 +120,14 @@ export const ProductionKanbanBoard: React.FC<ProductionKanbanBoardProps> = ({
     return (
       <div
         data-testid={`column-empty-${column.id.toLowerCase()}`}
-        className="flex flex-col items-center justify-center h-52 text-center p-6 border-2 border-dashed border-slate-200/90 rounded-xl text-slate-400 bg-white/40"
+        className="flex flex-col items-center justify-center h-48 text-center p-6 border-2 border-dashed border-slate-300 rounded-xl text-slate-400 bg-white/70"
       >
-        <Inbox className="w-8 h-8 mb-2 text-slate-300 stroke-[1.5]" />
-        <p className="text-xs font-semibold text-slate-600 leading-snug">
+        <Inbox className="w-7 h-7 mb-2 text-slate-400 stroke-[1.5]" />
+        <p className="text-xs font-semibold text-slate-700 leading-snug">
           {column.emptyMessage}
         </p>
-        <p className="text-[11px] text-slate-400 mt-1">
-          Arraste uma O.S. para esta coluna para avançar a etapa
+        <p className="text-[11px] text-slate-500 mt-1">
+          Arraste uma O.S. para cá para alterar a etapa
         </p>
       </div>
     );
@@ -149,11 +137,13 @@ export const ProductionKanbanBoard: React.FC<ProductionKanbanBoardProps> = ({
     <section
       data-testid="production-kanban-board"
       aria-label="Quadro Kanban de Produção"
-      className={`grid grid-cols-1 md:grid-cols-3 gap-5 lg:gap-6 items-start w-full ${className}`}
+      className={`grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-5 items-start ${className}`}
     >
       {columnsData.map((column) => {
         const isTarget = activeDropColumn === column.id;
         const count = column.orders.length;
+        const dotColor = COLUMN_DOT_COLOR[column.id];
+        const badgeStyle = COLUMN_BADGE_STYLE[column.id];
 
         return (
           <section
@@ -164,29 +154,26 @@ export const ProductionKanbanBoard: React.FC<ProductionKanbanBoardProps> = ({
             onDragOver={(e) => handleDragOver(e, column.id)}
             onDragLeave={handleDragLeave}
             onDrop={(e) => handleDrop(e, column.id)}
-            className={`flex flex-col rounded-2xl border transition-all duration-200 bg-slate-50/80 shadow-xs ${
-              isTarget ? column.color.dropHighlight : `${column.color.border}`
+            className={`bg-slate-100/80 rounded-2xl border border-slate-300 p-3.5 sm:p-4 flex flex-col shadow-xs transition-all duration-200 ${
+              isTarget ? 'bg-emerald-50 ring-2 ring-emerald-500 border-dashed border-emerald-500' : ''
             }`}
           >
-            {/* Cabeçalho da Coluna com Contadores em Tempo Real */}
-            <header className="p-4 border-b border-slate-200/80 bg-white/70 rounded-t-2xl backdrop-blur-xs flex items-center justify-between gap-3">
+            {/* Cabeçalho da Coluna com Fundo Contrastante e Bordas Visíveis */}
+            <header className="flex items-center justify-between pb-3 border-b border-slate-200 mb-3">
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className={`p-2 rounded-xl flex items-center justify-center shrink-0 ${column.color.iconBg}`}>
-                  <ColumnIcon status={column.id} className={`w-4 h-4 ${column.color.iconColor}`} />
-                </div>
+                <span className={`w-3.5 h-3.5 rounded-full shrink-0 shadow-2xs ${dotColor}`}></span>
                 <div className="min-w-0">
-                  <h3 className="font-bold text-sm text-slate-800 truncate leading-snug">
+                  <h3 className="font-bold text-slate-800 text-sm tracking-wide uppercase truncate">
                     {column.title}
                   </h3>
-                  <p className="text-[11px] text-slate-500 truncate">{column.subtitle}</p>
+                  <p className="text-xs font-semibold text-slate-700 truncate mt-0.5">{column.subtitle}</p>
                 </div>
               </div>
 
-              {/* Badges de Contagem (Total de Pedidos e Total de Peças Físicas) */}
               <div className="flex items-center gap-1.5 shrink-0">
                 {column.totalPieces > 0 && (
                   <span
-                    className="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600 border border-slate-200"
+                    className="hidden sm:inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-white text-slate-800 border-2 border-slate-300 shadow-2xs"
                     title={`Total de esquadrias físicas nesta etapa: ${column.totalPieces}`}
                   >
                     {column.totalPieces} {column.totalPieces === 1 ? 'peça' : 'peças'}
@@ -194,7 +181,8 @@ export const ProductionKanbanBoard: React.FC<ProductionKanbanBoardProps> = ({
                 )}
                 <span
                   data-testid={`column-count-${column.id.toLowerCase()}`}
-                  className={`inline-flex items-center justify-center min-w-6 h-6 px-1.5 text-xs font-bold rounded-full border ${column.color.badgeBg} ${column.color.badgeText} ${column.color.badgeBorder}`}
+                  id={`badgeCount${column.alias || column.id}`}
+                  className={`px-2.5 py-0.5 rounded-full text-xs font-extrabold border-2 shadow-2xs ${badgeStyle}`}
                   title={`${count} ${count === 1 ? 'ordem de serviço' : 'ordens de serviço'}`}
                 >
                   {count}
@@ -203,7 +191,7 @@ export const ProductionKanbanBoard: React.FC<ProductionKanbanBoardProps> = ({
             </header>
 
             {/* Lista Rolável de Cartões da Coluna */}
-            <div className="flex-1 p-3 space-y-3 overflow-y-auto max-h-[calc(100vh-270px)] min-h-[380px]">
+            <div className="space-y-3 overflow-y-auto pr-0.5 min-h-[380px] max-h-[calc(100vh-310px)]">
               {renderColumnContent(column)}
             </div>
           </section>

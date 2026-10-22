@@ -7,10 +7,13 @@ export interface UpdateProductionStatusPayload {
   status: ProductionStatus;
 }
 
-export const productionApi = {
+export type ProductionOrderSummary = OrderSummary & {
+  items?: Array<{ id: string; descricao: string; quantidade: number }>;
+};
 
-  async getProductionOrders(): Promise<OrderSummary[]> {
-    const response = await api.get<{ content?: OrderSummary[] } | OrderSummary[]>('/orders', {
+export const productionApi = {
+  async getProductionOrders(): Promise<ProductionOrderSummary[]> {
+    const response = await api.get<{ content?: ProductionOrderSummary[] } | ProductionOrderSummary[]>('/orders', {
       params: { size: 100 },
     });
 
@@ -20,7 +23,6 @@ export const productionApi = {
     return response.data?.content ?? [];
   },
 
-  
   async updateProductionStatus(payload: UpdateProductionStatusPayload): Promise<Order> {
     const { orderId, status } = payload;
     const response = await api.patch<Order>(

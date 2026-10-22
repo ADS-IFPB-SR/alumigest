@@ -13,6 +13,7 @@ import { ProductTab as ProductsPage } from './pages/ProductsPage';
 import { ProductBuilderPage } from './pages/ProductBuilderPage';
 import { OrderListPage } from './pages/OrderListPage';
 import { OrderDetailPage } from './pages/OrderDetailPage';
+import { ProductionKanbanPage } from './pages/ProductionKanbanPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -39,6 +40,8 @@ export function AppRoutes() {
         <Route path="pedidos/:id" element={<OrderDetailPage />} />
         <Route path="work-orders" element={<OrderListPage />} />
         <Route path="work-orders/:id" element={<OrderDetailPage />} />
+        <Route path="producao" element={<ProductionKanbanPage />} />
+        <Route path="producao/kanban" element={<ProductionKanbanPage />} />
 
         <Route
           path="dashboard"
