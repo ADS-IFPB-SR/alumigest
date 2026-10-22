@@ -1018,6 +1018,143 @@
       justify-content: space-between;
     }
 
+    /* Modal de Ficha Técnica da O.S. (Padrão Folha A4 Fabril) */
+    .sheet-dialog {
+      background: #ffffff;
+      border-radius: 14px;
+      box-shadow: var(--shadow-xl);
+      max-width: 840px;
+      width: 100%;
+      border: 1px solid var(--border-light);
+      overflow: hidden;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .sheet-body-scroll {
+      padding: 1.5rem;
+      background: #f1f5f9;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .sheet-paper {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      box-shadow: var(--shadow-sm);
+      padding: 1.5rem 1.75rem;
+      font-size: 0.8rem;
+      color: #0f172a;
+      display: flex;
+      flex-direction: column;
+      gap: 1.15rem;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .sheet-paper-header {
+      border-bottom: 2px solid #0f172a;
+      padding-bottom: 0.75rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .sheet-company-title {
+      font-family: 'Hanken Grotesk', sans-serif;
+      font-size: 1.15rem;
+      font-weight: 900;
+      letter-spacing: -0.01em;
+      color: #041632;
+    }
+
+    .sheet-badge-top {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      font-weight: 800;
+      background: #0f172a;
+      color: #ffffff;
+      padding: 0.25rem 0.6rem;
+      border-radius: 4px;
+      display: inline-block;
+    }
+
+    .sheet-meta-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.75rem;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 0.75rem 1rem;
+    }
+
+    .sheet-meta-item .meta-k {
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #64748b;
+      letter-spacing: 0.04em;
+    }
+
+    .sheet-meta-item .meta-v {
+      font-weight: 800;
+      font-size: 0.825rem;
+      color: #0f172a;
+      margin-top: 0.15rem;
+    }
+
+    .sheet-section-title {
+      font-family: 'Hanken Grotesk', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #1e3a8a;
+      border-bottom: 1px solid #cbd5e1;
+      padding-bottom: 0.35rem;
+      margin-bottom: 0.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .sheet-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .sheet-table th {
+      background: #f1f5f9;
+      color: #334155;
+      font-weight: 800;
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 0.45rem 0.65rem;
+      border: 1px solid #cbd5e1;
+      text-align: left;
+    }
+
+    .sheet-table td {
+      padding: 0.45rem 0.65rem;
+      border: 1px solid #e2e8f0;
+      color: #1e293b;
+    }
+
+    .sheet-table tr:nth-child(even) td {
+      background: #fafbfc;
+    }
+
+    .cut-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 800;
+      color: #0f172a;
+    }
+
     /* Toast Flutuante */
     .toast-box {
       position: fixed;
@@ -1202,9 +1339,14 @@
             </div>
             <span class="items-drawer-subtitle">Medidas nominais em milímetros (L x A mm)</span>
           </div>
-          <button class="btn btn-action action-thermal" id="btnQuickThermalTop" onclick="openThermalModal(currentOrderId)">
-            🏷️ Imprimir Etiquetas Desta O.S. (100x60mm)
-          </button>
+          <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+            <button class="btn btn-action" style="background: #eff6ff; border-color: #bfdbfe; color: #1e40af; font-weight: 700;" onclick="openTechnicalSheetModal(currentOrderId)">
+              📋 Imprimir Ficha Técnica da O.S.
+            </button>
+            <button class="btn btn-action action-thermal" id="btnQuickThermalTop" onclick="openThermalModal(currentOrderId)">
+              🏷️ Imprimir Etiquetas Desta O.S. (100x60mm)
+            </button>
+          </div>
         </div>
         <div class="items-row-grid" id="itemsGrid">
           <!-- Cards de esquadrias gerados dinamicamente -->
@@ -1276,6 +1418,76 @@
           </button>
           <button class="btn btn-primary" onclick="printThermalDirect()">
             🖨️ Imprimir na Térmica
+          </button>
+        </div>
+      </div>
+  </div>
+
+  <!-- MODAL DE FICHA TÉCNICA DE PRODUÇÃO (A4 FABRIL) -->
+  <div class="modal-overlay" id="techSheetModal">
+    <div class="sheet-dialog">
+      <div class="modal-header-clean">
+        <div style="display: flex; align-items: center; gap: 0.6rem;">
+          <span style="font-size: 1.25rem;">📋</span>
+          <div>
+            <h3 style="font-size: 1rem; margin: 0; color: var(--text-title);">Ficha Técnica de Produção Fabril</h3>
+            <span style="font-size: 0.72rem; color: #64748b;">Listas de corte, folgas de vidro e deduções nominais da O.S.</span>
+          </div>
+        </div>
+        <button class="btn-modal-close" onclick="closeTechnicalSheetModal()">&times;</button>
+      </div>
+
+      <div class="sheet-body-scroll">
+        <div class="sheet-paper">
+          <div class="sheet-paper-header">
+            <div>
+              <div class="sheet-company-title">ALUMIPORTAS ESQUADRIAS DE ALUMÍNIO</div>
+              <div style="font-size: 0.72rem; color: #475569; margin-top: 0.15rem;">
+                Ordem de Produção & Plano de Corte Oficial
+              </div>
+            </div>
+            <div style="text-align: right;">
+              <span class="sheet-badge-top" id="sheetOrderBadge">#OS-2026-0615</span>
+              <div style="font-size: 0.7rem; color: #64748b; margin-top: 0.25rem;" id="sheetDate">Data: 21/10/2026</div>
+            </div>
+          </div>
+
+          <div class="sheet-meta-grid">
+            <div class="sheet-meta-item">
+              <div class="meta-k">Cliente</div>
+              <div class="meta-v" id="sheetClientName">Antônio Alfredo</div>
+            </div>
+            <div class="sheet-meta-item">
+              <div class="meta-k">Documento / Fone</div>
+              <div class="meta-v" id="sheetClientDoc">(83) 98845-2100</div>
+            </div>
+            <div class="sheet-meta-item">
+              <div class="meta-k">Local / Bairro</div>
+              <div class="meta-v" id="sheetClientLoc">Torre • João Pessoa</div>
+            </div>
+            <div class="sheet-meta-item">
+              <div class="meta-k">Situação Fabril</div>
+              <div class="meta-v" id="sheetStatus">EM PRODUÇÃO</div>
+            </div>
+          </div>
+
+          <!-- Conteúdo gerado dinamicamente com as tabelas de cortes de perfis e vidros -->
+          <div id="sheetItemsContainer">
+            <!-- Inserido dinamicamente via JS -->
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer-clean">
+        <span style="font-size: 0.775rem; color: var(--text-muted);">
+          Destino: <strong>🖨️ Impressora A4 Escritório / Prancheta de Montagem</strong>
+        </span>
+        <div style="display: flex; gap: 0.5rem;">
+          <button class="btn btn-secondary" onclick="downloadTechnicalSheetPdf()">
+            📥 Baixar PDF A4
+          </button>
+          <button class="btn btn-primary" onclick="printTechnicalSheetDirect()">
+            🖨️ Imprimir Ficha Técnica
           </button>
         </div>
       </div>
@@ -1584,6 +1796,9 @@
           </td>
           <td style="text-align: right;">
             <div class="action-button-group">
+              <button class="btn-action" title="Imprimir Ficha Técnica de Produção da O.S." onclick="openTechnicalSheetModal('${o.id}')">
+                📋 Ficha
+              </button>
               <button class="btn-action action-thermal" title="Imprimir Etiquetas Térmicas (100x60mm)" onclick="openThermalModal('${o.id}')">
                 🏷️ Etiquetas
               </button>
@@ -1753,6 +1968,120 @@
     function downloadLabelPdf() {
       closeThermalModal();
       showToast("📥 Baixando arquivo PDF das etiquetas térmicas (100x60mm)...");
+    }
+
+    // Modal de Ficha Técnica de Produção da O.S. (A4 Fabril)
+    function openTechnicalSheetModal(orderId) {
+      const client = CLIENTS.find(c => c.id === currentClientId);
+      if (!client) return;
+      const order = client.orders.find(o => o.id === orderId);
+      if (!order) return;
+
+      document.getElementById("sheetOrderBadge").innerText = `#${order.codigo}`;
+      document.getElementById("sheetDate").innerText = `Data: ${order.data}`;
+      document.getElementById("sheetClientName").innerText = client.nome;
+      document.getElementById("sheetClientDoc").innerText = `${client.doc} • ${client.fone}`;
+      document.getElementById("sheetClientLoc").innerText = `${client.bairro} • ${client.cidade}`;
+      document.getElementById("sheetStatus").innerText = order.statusLabel.toUpperCase();
+
+      const container = document.getElementById("sheetItemsContainer");
+      container.innerHTML = "";
+
+      order.itens.forEach((item, idx) => {
+        // Cálculo de corte nominal realista para visualização
+        const larguraCorteMarco = item.largura;
+        const alturaCorteMarco = item.altura;
+        const larguraVidro = Math.max(100, item.largura - 76);
+        const alturaVidro = Math.max(100, item.altura - 76);
+
+        const block = document.createElement("div");
+        block.style.marginBottom = "1.25rem";
+        block.innerHTML = `
+          <div class="sheet-section-title">
+            <span>Item ${String(idx + 1).padStart(2, '0')}: ${item.desc} (${item.qtd} un)</span>
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.775rem;">Medida Nominal: ${item.largura} x ${item.altura} mm</span>
+          </div>
+
+          <div style="font-weight: 700; font-size: 0.72rem; color: #475569; margin-bottom: 0.35rem;">
+            1. LISTA DE CORTE DE PERFIS DE ALUMÍNIO (COR: ${item.cor.toUpperCase()})
+          </div>
+          <table class="sheet-table">
+            <thead>
+              <tr>
+                <th>Código / Perfil</th>
+                <th>Descrição do Componente</th>
+                <th style="text-align: center;">Grau Corte</th>
+                <th style="text-align: center;">Qtd</th>
+                <th style="text-align: right;">Comprimento de Corte</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong class="cut-val">SU-001</strong></td>
+                <td>Marco Superior / Inferior (Largura)</td>
+                <td style="text-align: center;">45° / 45°</td>
+                <td style="text-align: center;">${item.qtd * 2}</td>
+                <td style="text-align: right;"><span class="cut-val">${larguraCorteMarco} mm</span></td>
+              </tr>
+              <tr>
+                <td><strong class="cut-val">SU-002</strong></td>
+                <td>Marco Lateral Direita / Esquerda (Altura)</td>
+                <td style="text-align: center;">45° / 45°</td>
+                <td style="text-align: center;">${item.qtd * 2}</td>
+                <td style="text-align: right;"><span class="cut-val">${alturaCorteMarco} mm</span></td>
+              </tr>
+              <tr>
+                <td><strong class="cut-val">SU-039</strong></td>
+                <td>Perfil Folha Móvel (Dedução de Folga Fabril)</td>
+                <td style="text-align: center;">90° / 90°</td>
+                <td style="text-align: center;">${item.qtd * 2}</td>
+                <td style="text-align: right;"><span class="cut-val">${alturaCorteMarco - 48} mm</span></td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div style="font-weight: 700; font-size: 0.72rem; color: #475569; margin-bottom: 0.35rem;">
+            2. ESPECIFICAÇÃO DE VIDROS & FOLGAS DE DEDUÇÃO
+          </div>
+          <table class="sheet-table">
+            <thead>
+              <tr>
+                <th>Tipo de Vidro</th>
+                <th>Espessura</th>
+                <th style="text-align: center;">Qtd Chapas</th>
+                <th style="text-align: center;">Folga Aplicada</th>
+                <th style="text-align: right;">Medida de Corte do Vidro</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>${item.vidro}</td>
+                <td>Padrão ABNT NBR 10821</td>
+                <td style="text-align: center;">${item.qtd}</td>
+                <td style="text-align: center;"><span style="color: #b45309; font-weight: 700;">-38 mm (L e A)</span></td>
+                <td style="text-align: right;"><span class="cut-val" style="color: #1e3a8a;">${larguraVidro} x ${alturaVidro} mm</span></td>
+              </tr>
+            </tbody>
+          </table>
+        `;
+        container.appendChild(block);
+      });
+
+      document.getElementById("techSheetModal").classList.add("active");
+    }
+
+    function closeTechnicalSheetModal() {
+      document.getElementById("techSheetModal").classList.remove("active");
+    }
+
+    function printTechnicalSheetDirect() {
+      closeTechnicalSheetModal();
+      showToast("🖨️ Ficha Técnica enviada com sucesso para a impressora A4 da produção!");
+    }
+
+    function downloadTechnicalSheetPdf() {
+      closeTechnicalSheetModal();
+      showToast("📥 Baixando Ficha Técnica da O.S. em PDF com listas de corte e folgas...");
     }
 
     function openWhatsApp() {
