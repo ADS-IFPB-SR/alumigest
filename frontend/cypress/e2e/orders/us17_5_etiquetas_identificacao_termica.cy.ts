@@ -157,6 +157,15 @@ describe('US-17.5: Homologação E2E — Emissão de Etiquetas Térmicas de Iden
       body: multiItemOrder,
     }).as('getOrderDetails');
 
+    cy.intercept('GET', `**/api/**/orders/${orderId}/labels-pdf*`, {
+      statusCode: 200,
+      headers: {
+        'content-type': 'application/pdf',
+        'content-disposition': `attachment; filename="etiquetas-${orderCodigo}.pdf"`,
+      },
+      body: '%PDF-1.4\n% AlumiGest Etiquetas Termicas 100x60mm\n%%EOF',
+    }).as('downloadLabelsPdf');
+
     cy.visit(`/ordens-servico/${orderId}`);
     cy.wait('@getOrderDetails');
 
@@ -166,24 +175,32 @@ describe('US-17.5: Homologação E2E — Emissão de Etiquetas Térmicas de Iden
     // Então todas as etiquetas físicas da O.S. são apresentadas em grade responsiva contínua em uma única tela
     cy.get('[data-testid="thermal-labels-grid"]').should('be.visible');
     cy.get('[data-testid="thermal-label-card"]').should('have.length', 3);
+    cy.get('[data-testid="btn-modal-print-thermal"]').should('contain.text', 'Imprimir Todas na Térmica (3)');
 
     // E o operador pode alternar os filtros rápidos:
     // Filtro Item 1 (2 Peças)
     cy.get('[data-testid="filter-piece-item-1"]').should('be.visible').click();
     cy.get('[data-testid="thermal-label-card"]').should('have.length', 2);
+    cy.get('[data-testid="btn-modal-print-thermal"]').should('contain.text', 'Imprimir Peças Filtradas (2)');
     cy.contains('Item 01 | Peça 01/03').should('be.visible');
     cy.contains('Item 01 | Peça 02/03').should('be.visible');
     cy.contains('Item 02 | Peça 03/03').should('not.exist');
 
-    // Filtro Item 2 (1 Peça)
+    // Filtro Item 2 (1 Peça) com validação de rótulo adaptado e download com itemId (BUG #487)
     cy.get('[data-testid="filter-piece-item-2"]').should('be.visible').click();
     cy.get('[data-testid="thermal-label-card"]').should('have.length', 1);
+    cy.get('[data-testid="btn-modal-print-thermal"]').should('contain.text', 'Imprimir Peças Filtradas (1)');
     cy.contains('Item 02 | Peça 03/03').should('be.visible');
     cy.contains('Item 01 | Peça 01/03').should('not.exist');
+
+    // Clica em Baixar PDF com filtro ativo e valida passagem do itemId na URL da requisição
+    cy.get('[data-testid="btn-modal-download-pdf"]').should('be.visible').click();
+    cy.wait('@downloadLabelsPdf').its('request.url').should('include', 'itemId=item-porta-02');
 
     // Filtro Todas as Peças (3)
     cy.get('[data-testid="filter-piece-all"]').click();
     cy.get('[data-testid="thermal-label-card"]').should('have.length', 3);
+    cy.get('[data-testid="btn-modal-print-thermal"]').should('contain.text', 'Imprimir Todas na Térmica (3)');
 
     // E a interface disponibiliza botões para "Baixar PDF" e "Imprimir Todas na Térmica"
     cy.get('[data-testid="btn-modal-download-pdf"]').should('be.visible');

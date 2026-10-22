@@ -472,4 +472,85 @@
           expect(mockUpdateStatus).toHaveBeenCalledWith('COMPLETED', expect.any(Object));
           expect(toast.success).toHaveBeenCalledWith('Ordem de serviço concluída com sucesso.');
         });
+
+        it('[BUG #487]: deve repassar o itemId correspondente ao baixar PDF a partir do ThermalLabelModal com filtro de item ativo', () => {
+          const multiItemOrder: Order = {
+            ...mockOrder,
+            items: [
+              ...mockOrder.items,
+              {
+                id: 'item-2',
+                orderId: 'order-uuid-1',
+                descricao: 'Janela de Correr 2 Folhas',
+                larguraMm: 1200,
+                alturaMm: 1200,
+                quantidade: 1,
+                corAluminio: 'Preto',
+                tipoVidro: 'Incolor 6mm',
+                valorUnitario: 1500,
+                valorTotal: 1500,
+                ordem: 2,
+                options: [],
+              },
+            ],
+          };
+
+          vi.spyOn(useOrdersModule, 'useOrder').mockReturnValue({
+            data: multiItemOrder,
+            isLoading: false,
+            isError: false,
+          } as any);
+
+          render(
+            <MemoryRouter initialEntries={['/ordens-servico/order-uuid-1']}>
+              <Routes>
+                <Route path="/ordens-servico/:id" element={<OrderDetailPage />} />
+              </Routes>
+            </MemoryRouter>
+          );
+
+          // Abre o modal de etiquetas térmicas
+          fireEvent.click(screen.getByRole('button', { name: /visualizar etiquetas/i }));
+          expect(screen.getByTestId('thermal-label-modal')).toBeInTheDocument();
+
+          // Filtra pelo Item 2
+          fireEvent.click(screen.getByTestId('filter-piece-item-2'));
+
+          // Clica em "Baixar PDF" dentro do modal
+          fireEvent.click(screen.getByTestId('btn-modal-download-pdf'));
+
+          expect(mockDownloadLabels).toHaveBeenCalledWith({
+            id: 'order-uuid-1',
+            codigo: 'OS-2026-0001',
+            itemId: 'item-2',
+          });
+        });
+
+        it('[BUG #487]: deve baixar lote completo de etiquetas (sem itemId) ao acionar Baixar PDF no modal no modo ALL', () => {
+          vi.spyOn(useOrdersModule, 'useOrder').mockReturnValue({
+            data: mockOrder,
+            isLoading: false,
+            isError: false,
+          } as any);
+
+          render(
+            <MemoryRouter initialEntries={['/ordens-servico/order-uuid-1']}>
+              <Routes>
+                <Route path="/ordens-servico/:id" element={<OrderDetailPage />} />
+              </Routes>
+            </MemoryRouter>
+          );
+
+          // Abre o modal de etiquetas térmicas
+          fireEvent.click(screen.getByRole('button', { name: /visualizar etiquetas/i }));
+          expect(screen.getByTestId('thermal-label-modal')).toBeInTheDocument();
+
+          // Clica em "Baixar PDF" no modal sem filtrar nenhum item específico
+          fireEvent.click(screen.getByTestId('btn-modal-download-pdf'));
+
+          expect(mockDownloadLabels).toHaveBeenCalledWith({
+            id: 'order-uuid-1',
+            codigo: 'OS-2026-0001',
+          });
+        });
       });
