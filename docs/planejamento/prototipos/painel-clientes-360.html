@@ -1,0 +1,1779 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AlumiGest — Central 360° de Clientes</title>
+  
+  <!-- Tipografia Oficial do AlumiGest -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --primary: #041632;
+      --primary-container: #1b2b48;
+      --primary-accent: #2563eb;
+      --primary-accent-hover: #1d4ed8;
+      
+      --bg-app: #f8fafc;
+      --bg-surface: #ffffff;
+      --bg-surface-subtle: #f1f5f9;
+      --bg-surface-hover: #f8fafc;
+
+      --text-title: #0f172a;
+      --text-body: #334155;
+      --text-muted: #64748b;
+      --text-light: #94a3b8;
+
+      --border-light: #e2e8f0;
+      --border-medium: #cbd5e1;
+
+      --status-aguardando: #b45309;
+      --status-aguardando-bg: #fef3c7;
+      --status-producao: #1d4ed8;
+      --status-producao-bg: #dbeafe;
+      --status-concluido: #047857;
+      --status-concluido-bg: #d1fae5;
+
+      --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
+      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.03);
+      --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg-app);
+      color: var(--text-body);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Topo Compacto & Elegante */
+    header.navbar {
+      background: #ffffff;
+      border-bottom: 1px solid var(--border-light);
+      padding: 0.65rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 56px;
+      flex-shrink: 0;
+      z-index: 30;
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .nav-logo {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: var(--primary);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-family: 'Hanken Grotesk', sans-serif;
+      font-size: 0.95rem;
+      letter-spacing: -0.02em;
+    }
+
+    .nav-title {
+      font-family: 'Hanken Grotesk', sans-serif;
+      font-weight: 800;
+      font-size: 1.05rem;
+      color: var(--text-title);
+      letter-spacing: -0.01em;
+    }
+
+    .nav-tag {
+      font-size: 0.68rem;
+      background: #eff6ff;
+      color: #2563eb;
+      font-weight: 700;
+      padding: 0.2rem 0.5rem;
+      border-radius: 6px;
+      border: 1px solid #bfdbfe;
+    }
+
+    .nav-meta {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    /* Layout Split-Screen Moderno (Master-Detail) */
+    .app-body {
+      display: flex;
+      flex: 1;
+      height: calc(100vh - 56px);
+      overflow: hidden;
+    }
+
+    /* Painel Esquerdo: Lista de Clientes (Compacto, Limpo, Sem Poluição) */
+    aside.clients-sidebar {
+      width: 320px;
+      background: #ffffff;
+      border-right: 1px solid var(--border-light);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      height: 100%;
+    }
+
+    .sidebar-header {
+      padding: 1rem;
+      border-bottom: 1px solid var(--border-light);
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      background: #fafbfc;
+    }
+
+    .sidebar-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .sidebar-title-row h2 {
+      font-family: 'Hanken Grotesk', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: var(--text-title);
+    }
+
+    .client-counter {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      background: #e2e8f0;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+    }
+
+    .search-wrapper {
+      position: relative;
+      width: 100%;
+    }
+
+    .search-wrapper input {
+      width: 100%;
+      background: #ffffff;
+      border: 1px solid var(--border-light);
+      border-radius: 8px;
+      padding: 0.5rem 0.75rem 0.5rem 2.25rem;
+      font-size: 0.825rem;
+      color: var(--text-title);
+      font-family: inherit;
+      transition: all 0.15s;
+    }
+
+    .search-wrapper input:focus {
+      outline: none;
+      border-color: var(--primary-accent);
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12);
+    }
+
+    .search-wrapper svg {
+      position: absolute;
+      left: 0.75rem;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 16px;
+      height: 16px;
+      color: var(--text-light);
+      pointer-events: none;
+    }
+
+    /* Lista Scrollável de Clientes */
+    .clients-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0.5rem 0;
+    }
+
+    .client-item {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid #f8fafc;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      position: relative;
+      gap: 0.75rem;
+    }
+
+    .client-item:hover {
+      background: #f8fafc;
+    }
+
+    .client-item.selected {
+      background: #eff6ff;
+    }
+
+    .client-item.selected::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 3.5px;
+      background: var(--primary-accent);
+      border-radius: 0 4px 4px 0;
+    }
+
+    .client-item-content {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      min-width: 0;
+      flex: 1;
+    }
+
+    .client-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: #f1f5f9;
+      color: var(--primary);
+      font-family: 'Hanken Grotesk', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      border: 1px solid var(--border-light);
+    }
+
+    .client-item.selected .client-avatar {
+      background: var(--primary);
+      color: #ffffff;
+      border-color: var(--primary);
+    }
+
+    .client-text-block {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .client-name-text {
+      font-size: 0.825rem;
+      font-weight: 700;
+      color: var(--text-title);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1.3;
+    }
+
+    .client-item.selected .client-name-text {
+      color: #1e3a8a;
+    }
+
+    .client-sub-text {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      margin-top: 0.15rem;
+    }
+
+    .order-tag {
+      font-size: 0.675rem;
+      font-weight: 700;
+      padding: 0.15rem 0.45rem;
+      border-radius: 6px;
+      background: #f1f5f9;
+      color: #475569;
+      flex-shrink: 0;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .client-item.selected .order-tag {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+
+    /* Painel Direito: Espaço de Trabalho Limpo, Rápido & Sem Cortes */
+    main.client-workspace {
+      flex: 1;
+      height: 100%;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 1.25rem 1.75rem 2rem 1.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.15rem;
+      background: #f8fafc;
+      min-width: 0;
+    }
+
+    /* Regra Fundamental: Nenhum bloco principal do workspace deve sofrer encolhimento do flexbox */
+    .client-hero,
+    .kpi-grid,
+    .tabs-card,
+    .items-drawer-box {
+      flex-shrink: 0;
+      width: 100%;
+    }
+
+    /* Hero Card do Cliente Selecionado */
+    .client-hero {
+      background: #ffffff;
+      border: 1px solid var(--border-light);
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+      box-shadow: var(--shadow-xs);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .hero-info {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+    }
+
+    .hero-avatar {
+      width: 52px;
+      height: 52px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-container) 100%);
+      color: #ffffff;
+      font-family: 'Hanken Grotesk', sans-serif;
+      font-size: 1.35rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .hero-meta h2 {
+      font-family: 'Hanken Grotesk', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: var(--text-title);
+      letter-spacing: -0.02em;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .type-pill {
+      font-size: 0.65rem;
+      font-weight: 800;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .type-pj { background: #e0e7ff; color: #3730a3; }
+    .type-pf { background: #f1f5f9; color: #475569; }
+
+    .hero-details-row {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 0.35rem;
+      flex-wrap: wrap;
+    }
+
+    .hero-details-row span {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.45rem;
+      padding: 0.55rem 1rem;
+      font-size: 0.825rem;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s ease-in-out;
+      border: 1px solid transparent;
+      user-select: none;
+      font-family: inherit;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #ffffff;
+      box-shadow: var(--shadow-xs);
+    }
+
+    .btn-primary:hover {
+      background: #092550;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .btn-accent {
+      background: var(--primary-accent);
+      color: #ffffff;
+      box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
+    }
+
+    .btn-accent:hover {
+      background: var(--primary-accent-hover);
+    }
+
+    .btn-secondary {
+      background: #ffffff;
+      border-color: var(--border-light);
+      color: var(--text-body);
+    }
+
+    .btn-secondary:hover {
+      background: #f8fafc;
+      border-color: var(--border-medium);
+    }
+
+    /* Faixa de KPIs Mínima & Limpa */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+    }
+
+    .kpi-card {
+      background: #ffffff;
+      border: 1px solid var(--border-light);
+      border-radius: 10px;
+      padding: 0.9rem 1.25rem;
+      box-shadow: var(--shadow-xs);
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+
+    .kpi-card .label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-light);
+    }
+
+    .kpi-card .value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--text-title);
+    }
+
+    /* Container de Conteúdo em Abas (Nunca corta, nunca encolhe) */
+    .tabs-card {
+      background: #ffffff;
+      border: 1px solid var(--border-light);
+      border-radius: 12px;
+      box-shadow: var(--shadow-xs);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      min-height: auto;
+    }
+
+    .tab-header-strip {
+      padding: 0 1rem;
+      border-bottom: 1px solid var(--border-light);
+      background: #fafbfc;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .tab-nav-group {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .tab-btn {
+      padding: 0.85rem 1.15rem;
+      font-size: 0.825rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      transition: all 0.15s;
+    }
+
+    .tab-btn:hover {
+      color: var(--primary);
+    }
+
+    .tab-btn.active {
+      color: var(--primary-accent);
+      border-bottom-color: var(--primary-accent);
+      background: #ffffff;
+    }
+
+    .tab-count {
+      font-size: 0.7rem;
+      font-weight: 800;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      background: #f1f5f9;
+      color: #475569;
+    }
+
+    .tab-btn.active .tab-count {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+
+    /* Container com rolagem horizontal segura para a tabela */
+    .table-responsive-container {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* Tabela Limpa, 100% Visível e Alinhada */
+    table.clean-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.8125rem;
+    }
+
+    table.clean-table th {
+      padding: 0.75rem 0.95rem;
+      font-size: 0.6875rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      background: #fafbfc;
+      border-bottom: 1px solid var(--border-light);
+      white-space: nowrap;
+    }
+
+    table.clean-table td {
+      padding: 0.75rem 0.95rem;
+      border-bottom: 1px solid var(--border-light);
+      color: var(--text-body);
+      vertical-align: middle;
+      white-space: nowrap;
+      height: 50px;
+    }
+
+    table.clean-table tbody tr {
+      cursor: pointer;
+      transition: background-color 0.15s ease;
+    }
+
+    table.clean-table tbody tr:hover td {
+      background: #f8fafc;
+    }
+
+    table.clean-table tbody tr.active-row td {
+      background: #f0f7ff !important;
+      border-bottom-color: #bfdbfe;
+    }
+
+    table.clean-table tbody tr.active-row td:first-child {
+      position: relative;
+    }
+
+    table.clean-table tbody tr.active-row td:first-child::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      background: var(--primary-accent);
+      border-radius: 0 3px 3px 0;
+    }
+
+    .mono-code {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 800;
+      font-size: 0.775rem;
+      color: #1e3a8a;
+      background: #eff6ff;
+      border: 1px solid #dbeafe;
+      padding: 0.2rem 0.5rem;
+      border-radius: 6px;
+      display: inline-block;
+      white-space: nowrap;
+    }
+
+    .table-price {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 800;
+      font-size: 0.825rem;
+      color: var(--text-title);
+      white-space: nowrap;
+    }
+
+    .badge-status {
+      font-size: 0.6875rem;
+      font-weight: 700;
+      padding: 0.2rem 0.5rem;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+    }
+
+    .badge-status.producao { background: var(--status-producao-bg); color: var(--status-producao); }
+    .badge-status.aguardando { background: var(--status-aguardando-bg); color: var(--status-aguardando); }
+    .badge-status.concluido { background: var(--status-concluido-bg); color: var(--status-concluido); }
+    .badge-status.aprovado { background: #d1fae5; color: #065f46; }
+    .badge-status.enviado { background: #ede9fe; color: #6d28d9; }
+
+    /* Ações Rápidas em Botões Elegantes e Sem Quebra */
+    .action-button-group {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 0.35rem;
+      white-space: nowrap;
+    }
+
+    .btn-action {
+      padding: 0.35rem 0.6rem;
+      font-size: 0.72rem;
+      font-weight: 600;
+      border-radius: 6px;
+      border: 1px solid var(--border-light);
+      background: #ffffff;
+      color: #334155;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+
+    .btn-action:hover {
+      background: #f1f5f9;
+      border-color: #94a3b8;
+      color: var(--primary);
+    }
+
+    .btn-action.action-thermal {
+      background: #fffbeb;
+      border-color: #fde68a;
+      color: #b45309;
+      font-weight: 700;
+    }
+
+    .btn-action.action-thermal:hover {
+      background: #fef3c7;
+      border-color: #f59e0b;
+      color: #78350f;
+    }
+
+    /* Card Limpo e Dedicado de Esquadrias da O.S. Selecionada */
+    .items-drawer-box {
+      background: #ffffff;
+      border: 1px solid var(--border-light);
+      border-radius: 12px;
+      padding: 1.15rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      box-shadow: var(--shadow-xs);
+    }
+
+    .items-drawer-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-light);
+      padding-bottom: 0.75rem;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+
+    .items-drawer-title-box {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .items-drawer-title {
+      font-family: 'Hanken Grotesk', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: var(--text-title);
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+
+    .items-drawer-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 800;
+      padding: 0.15rem 0.5rem;
+      border-radius: 6px;
+      background: #eff6ff;
+      color: #1e40af;
+      border: 1px solid #bfdbfe;
+    }
+
+    .items-drawer-subtitle {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+
+    .items-row-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 0.85rem;
+    }
+
+    .piece-card-clean {
+      background: #f8fafc;
+      border: 1px solid var(--border-light);
+      border-radius: 8px;
+      padding: 0.85rem 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      transition: all 0.15s ease;
+    }
+
+    .piece-card-clean:hover {
+      background: #ffffff;
+      border-color: #cbd5e1;
+      box-shadow: var(--shadow-xs);
+    }
+
+    .piece-title {
+      font-weight: 700;
+      font-size: 0.825rem;
+      color: var(--text-title);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .piece-dimensions-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 900;
+      font-size: 0.9rem;
+      color: #0f172a;
+      background: #ffffff;
+      border: 1px solid var(--border-light);
+      border-radius: 6px;
+      padding: 0.3rem 0.6rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      width: fit-content;
+      margin: 0.1rem 0;
+    }
+
+    .piece-sub-specs {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    /* Modal de Etiquetas Térmicas Fiel e Limpo */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(4, 22, 50, 0.6);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 1.5rem;
+      animation: fadeIn 0.15s ease-out;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .modal-dialog {
+      background: #ffffff;
+      border-radius: 14px;
+      box-shadow: var(--shadow-xl);
+      max-width: 640px;
+      width: 100%;
+      border: 1px solid var(--border-light);
+      overflow: hidden;
+    }
+
+    .modal-header-clean {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border-light);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #fafbfc;
+    }
+
+    .modal-header-clean h3 {
+      font-family: 'Hanken Grotesk', sans-serif;
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: var(--text-title);
+    }
+
+    .btn-modal-close {
+      background: transparent;
+      border: none;
+      font-size: 1.25rem;
+      color: var(--text-light);
+      cursor: pointer;
+      line-height: 1;
+    }
+
+    .btn-modal-close:hover {
+      color: var(--text-title);
+    }
+
+    .modal-content-clean {
+      padding: 1.5rem;
+      background: #f8fafc;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    /* Etiqueta 100x60mm Fiel */
+    .thermal-label-canvas {
+      width: 400px;
+      height: 240px; /* Proporção 100x60mm */
+      background: #ffffff;
+      border: 2px solid #0f172a;
+      border-radius: 6px;
+      padding: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-shadow: var(--shadow-md);
+      font-family: 'Inter', sans-serif;
+    }
+
+    .tl-header {
+      border-bottom: 2px solid #0f172a;
+      padding-bottom: 0.35rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .tl-company {
+      font-family: 'Hanken Grotesk', sans-serif;
+      font-weight: 900;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .tl-client {
+      font-size: 0.75rem;
+      font-weight: 800;
+      margin-top: 0.15rem;
+      max-width: 230px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .tl-order-box {
+      text-align: right;
+    }
+
+    .tl-order-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      font-weight: 900;
+    }
+
+    .tl-piece-badge {
+      background: #0f172a;
+      color: #ffffff;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.65rem;
+      font-weight: 800;
+      padding: 0.1rem 0.35rem;
+      border-radius: 4px;
+      margin-top: 0.15rem;
+      display: inline-block;
+    }
+
+    .tl-desc {
+      font-weight: 800;
+      font-size: 0.8rem;
+      margin: 0.25rem 0;
+    }
+
+    .tl-measures-highlight {
+      border: 1px solid #0f172a;
+      background: #f8fafc;
+      padding: 0.35rem 0.5rem;
+      border-radius: 4px;
+      text-align: center;
+    }
+
+    .tl-measures-highlight .title {
+      font-size: 0.55rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: #64748b;
+    }
+
+    .tl-measures-highlight .measures {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 900;
+      font-size: 1.15rem;
+      color: #0f172a;
+    }
+
+    .tl-specs {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.65rem;
+      font-weight: 700;
+    }
+
+    .tl-footer {
+      border-top: 2px solid #0f172a;
+      padding-top: 0.3rem;
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.6rem;
+      font-weight: 800;
+      color: #475569;
+    }
+
+    .modal-footer-clean {
+      padding: 1rem 1.25rem;
+      background: #ffffff;
+      border-top: 1px solid var(--border-light);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* Toast Flutuante */
+    .toast-box {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      background: #0f172a;
+      color: #ffffff;
+      padding: 0.75rem 1.2rem;
+      border-radius: 8px;
+      font-size: 0.825rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      box-shadow: var(--shadow-xl);
+      z-index: 200;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .toast-box.active {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Barra de Navegação Superior Compacta -->
+  <header class="navbar">
+    <div class="nav-brand">
+      <div class="nav-logo">AG</div>
+      <span class="nav-title">AlumiGest</span>
+      <span class="nav-tag">Clientes 360°</span>
+    </div>
+
+    <div class="nav-meta">
+      <span>Fábrica: <strong>Alumiportas</strong></span>
+      <span>•</span>
+      <button class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.75rem;" onclick="showToast('Sincronização com o Spooler USB Elgin L42 ativa!')">
+        ⚙️ Configurações
+      </button>
+    </div>
+  </header>
+
+  <!-- Corpo da Aplicação (Layout Master-Detail Limpo) -->
+  <div class="app-body">
+
+    <!-- COLUNA ESQUERDA: LISTA DE CLIENTES -->
+    <aside class="clients-sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-title-row">
+          <h2>Clientes</h2>
+          <span class="client-counter" id="clientCountBadge">6</span>
+        </div>
+        <div class="search-wrapper">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input type="text" id="searchInput" placeholder="Buscar por nome, fone, bairro..." oninput="handleSearch()">
+        </div>
+      </div>
+
+      <!-- Lista de Clientes com Scroll Limpo -->
+      <div class="clients-list" id="clientsList">
+        <!-- Inserido dinamicamente via JS -->
+      </div>
+    </aside>
+
+    <!-- COLUNA DIREITA: PAINEL 360° DO CLIENTE SELECIONADO -->
+    <main class="client-workspace">
+
+      <!-- 1. Card de Identificação Limpo do Cliente Ativo -->
+      <section class="client-hero">
+        <div class="hero-info">
+          <div class="hero-avatar" id="heroAvatar">AR</div>
+          <div class="hero-meta">
+            <h2>
+              <span id="heroName">ANTÔNIO ALFREDO FIGUEIREDO</span>
+              <span class="type-pill type-pf" id="heroType">PF</span>
+            </h2>
+            <div class="hero-details-row">
+              <span>📍 <strong id="heroLocation">Torre • João Pessoa - PB</strong></span>
+              <span>📞 <strong id="heroPhone">(83) 98845-2100</strong></span>
+              <span>🪪 <strong id="heroDoc">042.891.444-09</strong></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="hero-actions">
+          <button class="btn btn-secondary" onclick="openWhatsApp()">
+            💬 WhatsApp
+          </button>
+          <button class="btn btn-accent" onclick="startNewBudget()">
+            ➕ Novo Orçamento
+          </button>
+        </div>
+      </section>
+
+      <!-- 2. Faixa de KPIs Mínima (Sem Caixas Pesadas) -->
+      <section class="kpi-grid">
+        <div class="kpi-card">
+          <span class="label">Total Contratado</span>
+          <span class="value" id="kpiSpent">R$ 13.989,01</span>
+        </div>
+        <div class="kpi-card">
+          <span class="label">Ordens de Serviço</span>
+          <span class="value" id="kpiOrdersCount">4 O.S.</span>
+        </div>
+        <div class="kpi-card">
+          <span class="label">Orçamentos Vinculados</span>
+          <span class="value" id="kpiBudgetsCount">2 Propostas</span>
+        </div>
+      </section>
+
+      <!-- 3. Abas Principais (O.S. e Orçamentos) -->
+      <section class="tabs-card">
+        <div class="tab-header-strip">
+          <div class="tab-nav-group">
+            <button class="tab-btn active" id="tabOrders" onclick="changeTab('orders')">
+              Ordens de Serviço (O.S.)
+              <span class="tab-count" id="countOrders">4</span>
+            </button>
+            <button class="tab-btn" id="tabBudgets" onclick="changeTab('budgets')">
+              Orçamentos
+              <span class="tab-count" id="countBudgets">2</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Tabela de Ordens de Serviço (100% Visível) -->
+        <div id="contentOrders" style="display: block;">
+          <div class="table-responsive-container">
+            <table class="clean-table">
+              <thead>
+                <tr>
+                  <th>Código O.S.</th>
+                  <th>Data</th>
+                  <th>Situação Fabril</th>
+                  <th>Valor Total</th>
+                  <th>Esquadrias</th>
+                  <th style="text-align: right;">Ações Diretas</th>
+                </tr>
+              </thead>
+              <tbody id="ordersTbody">
+                <!-- Linhas geradas dinamicamente -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tabela de Orçamentos (100% Visível) -->
+        <div id="contentBudgets" style="display: none;">
+          <div class="table-responsive-container">
+            <table class="clean-table">
+              <thead>
+                <tr>
+                  <th>Nº Orçamento</th>
+                  <th>Data</th>
+                  <th>Situação</th>
+                  <th>Valor da Proposta</th>
+                  <th style="text-align: right;">Ações Rápidas</th>
+                </tr>
+              </thead>
+              <tbody id="budgetsTbody">
+                <!-- Linhas geradas dinamicamente -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. Detalhamento Fiel & Limpo das Esquadrias da O.S. Ativa -->
+      <section class="items-drawer-box" id="orderItemsSection">
+        <div class="items-drawer-header">
+          <div class="items-drawer-title-box">
+            <div class="items-drawer-title">
+              <span>📐 Esquadrias da O.S.</span>
+              <span class="items-drawer-badge" id="itemsOrderCode">#OS-2026-0615</span>
+            </div>
+            <span class="items-drawer-subtitle">Medidas nominais em milímetros (L x A mm)</span>
+          </div>
+          <button class="btn btn-action action-thermal" id="btnQuickThermalTop" onclick="openThermalModal(currentOrderId)">
+            🏷️ Imprimir Etiquetas Desta O.S. (100x60mm)
+          </button>
+        </div>
+        <div class="items-row-grid" id="itemsGrid">
+          <!-- Cards de esquadrias gerados dinamicamente -->
+        </div>
+      </section>
+
+    </main>
+
+  </div>
+
+  <!-- MODAL DE ETIQUETAS TÉRMICAS 100x60mm -->
+  <div class="modal-overlay" id="thermalModal">
+    <div class="modal-dialog">
+      <div class="modal-header-clean">
+        <h3>🏷️ Impressão de Etiquetas Térmicas (100x60mm)</h3>
+        <button class="btn-modal-close" onclick="closeThermalModal()">&times;</button>
+      </div>
+
+      <div class="modal-content-clean">
+        <p style="font-size: 0.775rem; color: #64748b;">Layout calibrado para bobina Elgin L42 / L42 Pro (Comandos BPLB):</p>
+        
+        <!-- Preview Fiel da Bobina 100x60mm -->
+        <div class="thermal-label-canvas">
+          <div class="tl-header">
+            <div>
+              <div class="tl-company">ALUMIPORTAS</div>
+              <div class="tl-client" id="modalLblClient">ANTÔNIO ALFREDO FIGUEIREDO</div>
+            </div>
+            <div class="tl-order-box">
+              <div class="tl-order-num" id="modalLblOrder">#OS-2026-0615</div>
+              <div class="tl-piece-badge" id="modalLblPiece">Item 01 • Esq 01/12 | Folha 01/01</div>
+            </div>
+          </div>
+
+          <div>
+            <div class="tl-desc" id="modalLblDesc">Porta de Giro 1 Folha Linha Suprema</div>
+            <div class="tl-measures-highlight">
+              <div class="title">MEDIDAS NOMINAIS (L X A)</div>
+              <div class="measures" id="modalLblMeasures">350 x 1470 mm</div>
+            </div>
+          </div>
+
+          <div>
+            <div class="tl-specs">
+              <div><strong>COR:</strong> <span id="modalLblColor">Preto Anodizado</span></div>
+              <div><strong>VIDRO:</strong> <span id="modalLblGlass">Incolor 6mm Temperado</span></div>
+            </div>
+          </div>
+
+          <div class="tl-footer">
+            <span id="modalLblDate">DATA: 21/10/2026</span>
+            <span>ALUMIGEST • 100X60MM</span>
+          </div>
+        </div>
+
+        <div style="font-size: 0.75rem; color: #475569; display: flex; align-items: center; gap: 0.4rem;">
+          <span>Impressora conectada:</span>
+          <strong>🏷️ Elgin L42 (Spooler USB)</strong>
+        </div>
+      </div>
+
+      <div class="modal-footer-clean">
+        <span style="font-size: 0.8rem; color: var(--text-muted);">
+          Total a emitir: <strong id="modalTotalPieces">12 etiquetas</strong>
+        </span>
+        <div style="display: flex; gap: 0.5rem;">
+          <button class="btn btn-secondary" onclick="downloadLabelPdf()">
+            📥 Baixar PDF
+          </button>
+          <button class="btn btn-primary" onclick="printThermalDirect()">
+            🖨️ Imprimir na Térmica
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="toast-box" id="toast">
+    <span id="toastIcon">✅</span>
+    <span id="toastMsg">Operação realizada com sucesso!</span>
+  </div>
+
+  <script>
+    // Dados reais inspirados no sistema legado da Alumiportas
+    const CLIENTS = [
+      {
+        id: 6,
+        nome: "ANTÔNIO ALFREDO FIGUEIREDO DE REZENDE",
+        tipo: "PF",
+        doc: "042.891.444-09",
+        fone: "(83) 98845-2100",
+        bairro: "Torre",
+        cidade: "João Pessoa - PB",
+        orders: [
+          {
+            id: "615",
+            codigo: "OS-2026-0615",
+            data: "18/10/2026",
+            status: "EM_PRODUCAO",
+            statusLabel: "Em Produção",
+            statusClass: "producao",
+            valor: 1444.72,
+            itens: [
+              { desc: "Porta de Giro 1 Folha Linha Suprema", qtd: 12, largura: 350, altura: 1470, cor: "Preto Anodizado", vidro: "Incolor 6mm Temperado" }
+            ]
+          },
+          {
+            id: "618",
+            codigo: "OS-2026-0618",
+            data: "18/10/2026",
+            status: "AGUARDANDO_PRODUCAO",
+            statusLabel: "Aguardando",
+            statusClass: "aguardando",
+            valor: 623.16,
+            itens: [
+              { desc: "Janela Basculante 1 Folha", qtd: 2, largura: 600, altura: 600, cor: "Branco Brilhante", vidro: "Mini-Boreal 4mm" }
+            ]
+          },
+          {
+            id: "620",
+            codigo: "OS-2026-0620",
+            data: "19/10/2026",
+            status: "CONCLUIDO",
+            statusLabel: "Concluído",
+            statusClass: "concluido",
+            valor: 1444.72,
+            itens: [
+              { desc: "Porta de Correr 2 Folhas", qtd: 1, largura: 1600, altura: 2100, cor: "Preto", vidro: "Fumê 8mm Temperado" }
+            ]
+          },
+          {
+            id: "621",
+            codigo: "OS-2026-0621",
+            data: "19/10/2026",
+            status: "EM_PRODUCAO",
+            statusLabel: "Em Produção",
+            statusClass: "producao",
+            valor: 621.30,
+            itens: [
+              { desc: "Box Frontal 2 Folhas Padrão", qtd: 1, largura: 1200, altura: 1900, cor: "Fosco", vidro: "Incolor 8mm Temperado" }
+            ]
+          }
+        ],
+        budgets: [
+          { id: "ORC-1024", data: "15/10/2026", status: "APROVADO", statusLabel: "Aprovado", valor: 2067.88 },
+          { id: "ORC-1030", data: "20/10/2026", status: "ENVIADO", statusLabel: "Enviado", valor: 3450.00 }
+        ]
+      },
+      {
+        id: 1,
+        nome: "CONSUMIDOR FINAL",
+        tipo: "PF",
+        doc: "Não informado",
+        fone: "-",
+        bairro: "Tibirí II",
+        cidade: "Santa Rita - PB",
+        orders: [
+          {
+            id: "1043",
+            codigo: "OS-2026-1043",
+            data: "13/08/2026",
+            status: "CONCLUIDO",
+            statusLabel: "Concluído",
+            statusClass: "concluido",
+            valor: 240.00,
+            itens: [
+              { desc: "Espelho Bisotado 4mm", qtd: 1, largura: 800, altura: 600, cor: "Prata", vidro: "Cristal 4mm" }
+            ]
+          }
+        ],
+        budgets: [
+          { id: "ORC-991", data: "10/08/2026", status: "APROVADO", statusLabel: "Aprovado", valor: 240.00 }
+        ]
+      },
+      {
+        id: 3,
+        nome: "DANTAS XIMENES PRESTACAO DE SERVICOS",
+        tipo: "PJ",
+        doc: "18.392.112/0001-90",
+        fone: "(83) 3224-9980",
+        bairro: "Colinas do Sul",
+        cidade: "João Pessoa - PB",
+        orders: [
+          {
+            id: "1046",
+            codigo: "OS-2026-1046",
+            data: "13/08/2026",
+            status: "EM_PRODUCAO",
+            statusLabel: "Em Produção",
+            statusClass: "producao",
+            valor: 2408.01,
+            itens: [
+              { desc: "Janela 4 Folhas Linha Suprema", qtd: 3, largura: 1500, altura: 1200, cor: "Branco", vidro: "Verde 6mm" }
+            ]
+          }
+        ],
+        budgets: []
+      },
+      {
+        id: 7,
+        nome: "FORTT PLANEJADOS COM. DE MOVEIS EIRELI",
+        tipo: "PJ",
+        doc: "31.982.001/0001-44",
+        fone: "(83) 99120-4400",
+        bairro: "Boa Viagem",
+        cidade: "Recife - PE",
+        orders: [
+          {
+            id: "1049",
+            codigo: "OS-2026-1049",
+            data: "15/08/2026",
+            status: "AGUARDANDO_PRODUCAO",
+            statusLabel: "Aguardando",
+            statusClass: "aguardando",
+            valor: 1003.00,
+            itens: [
+              { desc: "Painel Fixo Vidro Temperado", qtd: 2, largura: 900, altura: 2100, cor: "Preto", vidro: "Fumê 8mm" }
+            ]
+          }
+        ],
+        budgets: [
+          { id: "ORC-1002", data: "12/08/2026", status: "APROVADO", statusLabel: "Aprovado", valor: 1003.00 }
+        ]
+      },
+      {
+        id: 9,
+        nome: "JESSICA PESSOA DOS NASCIMENTO",
+        tipo: "PF",
+        doc: "089.441.222-10",
+        fone: "(83) 98784-4707",
+        bairro: "Manaíra",
+        cidade: "João Pessoa - PB",
+        orders: [],
+        budgets: [
+          { id: "ORC-1042", data: "19/10/2026", status: "ENVIADO", statusLabel: "Enviado", valor: 4200.00 }
+        ]
+      },
+      {
+        id: 10,
+        nome: "MARCOLINO EDIFICACOES LTDA",
+        tipo: "PJ",
+        doc: "09.112.980/0001-02",
+        fone: "(83) 3021-4200",
+        bairro: "Miramar",
+        cidade: "João Pessoa - PB",
+        orders: [
+          {
+            id: "1571",
+            codigo: "OS-2026-1571",
+            data: "20/07/2026",
+            status: "CONCLUIDO",
+            statusLabel: "Concluído",
+            statusClass: "concluido",
+            valor: 2153.29,
+            itens: [
+              { desc: "Porta Pivotante Linha Gold", qtd: 1, largura: 1100, altura: 2400, cor: "Madeirado", vidro: "Refletivo Bronze 6mm" }
+            ]
+          }
+        ],
+        budgets: []
+      }
+    ];
+
+    let currentClientId = 6;
+    let currentOrderId = "615";
+
+    document.addEventListener("DOMContentLoaded", () => {
+      renderClientsList(CLIENTS);
+      selectClient(6);
+    });
+
+    // Renderiza a lista lateral de clientes
+    function renderClientsList(list) {
+      const container = document.getElementById("clientsList");
+      document.getElementById("clientCountBadge").innerText = list.length;
+      container.innerHTML = "";
+
+      list.forEach(c => {
+        const item = document.createElement("div");
+        item.className = `client-item ${c.id === currentClientId ? 'selected' : ''}`;
+        item.id = `sidebar-client-${c.id}`;
+
+        const initials = c.nome.split(" ").map(w => w[0]).filter(Boolean).slice(0, 2).join("");
+
+        item.innerHTML = `
+          <div class="client-item-content">
+            <div class="client-avatar">${initials}</div>
+            <div class="client-text-block">
+              <div class="client-name-text">${c.nome}</div>
+              <div class="client-sub-text">
+                <span>📍 ${c.bairro}</span>
+                <span>•</span>
+                <span>${c.fone}</span>
+              </div>
+            </div>
+          </div>
+          <span class="order-tag">${c.orders.length} O.S.</span>
+        `;
+
+        item.onclick = () => selectClient(c.id);
+        container.appendChild(item);
+      });
+    }
+
+    // Seleciona um cliente e preenche os dados à direita
+    function selectClient(id) {
+      currentClientId = id;
+      const client = CLIENTS.find(c => c.id === id);
+      if (!client) return;
+
+      // Atualiza seleção visual na lista
+      document.querySelectorAll(".client-item").forEach(el => el.classList.remove("selected"));
+      const activeEl = document.getElementById(`sidebar-client-${id}`);
+      if (activeEl) activeEl.classList.add("selected");
+
+      // Hero
+      const initials = client.nome.split(" ").map(w => w[0]).filter(Boolean).slice(0, 2).join("");
+      document.getElementById("heroAvatar").innerText = initials;
+      document.getElementById("heroName").innerText = client.nome;
+      document.getElementById("heroLocation").innerText = `${client.bairro} • ${client.cidade}`;
+      document.getElementById("heroPhone").innerText = client.fone;
+      document.getElementById("heroDoc").innerText = client.doc;
+
+      const typePill = document.getElementById("heroType");
+      typePill.innerText = client.tipo;
+      typePill.className = `type-pill ${client.tipo === 'PJ' ? 'type-pj' : 'type-pf'}`;
+
+      // KPIs
+      const totalSpent = client.orders.reduce((acc, o) => acc + o.valor, 0);
+      document.getElementById("kpiSpent").innerText = `R$ ${totalSpent.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+      document.getElementById("kpiOrdersCount").innerText = `${client.orders.length} O.S.`;
+      document.getElementById("kpiBudgetsCount").innerText = `${client.budgets.length} Propostas`;
+
+      // Tabelas
+      renderOrdersTable(client.orders);
+      renderBudgetsTable(client.budgets);
+
+      // Itens da O.S. (exibe somente se a aba ativa for Ordens de Serviço)
+      const isOrdersTabActive = document.getElementById("tabOrders").classList.contains("active");
+      if (isOrdersTabActive && client.orders.length > 0) {
+        showOrderItems(client.orders[0].id);
+      } else {
+        document.getElementById("orderItemsSection").style.display = "none";
+      }
+    }
+
+    // Renderiza tabela de Ordens de Serviço
+    function renderOrdersTable(orders) {
+      const tbody = document.getElementById("ordersTbody");
+      document.getElementById("countOrders").innerText = orders.length;
+      tbody.innerHTML = "";
+
+      if (orders.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 2.5rem; font-size: 0.85rem;">Nenhuma Ordem de Serviço vinculada a este cliente.</td></tr>`;
+        return;
+      }
+
+      orders.forEach(o => {
+        const tr = document.createElement("tr");
+        tr.id = `order-row-${o.id}`;
+        if (o.id === currentOrderId) tr.classList.add("active-row");
+
+        const totalPecas = o.itens.reduce((acc, i) => acc + i.qtd, 0);
+
+        tr.innerHTML = `
+          <td><span class="mono-code">#${o.codigo}</span></td>
+          <td style="font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: #475569;">${o.data}</td>
+          <td><span class="badge-status ${o.statusClass}">${o.statusLabel}</span></td>
+          <td class="table-price">
+            R$ ${o.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+          </td>
+          <td>
+            <span style="font-size: 0.75rem; font-weight: 600; color: #334155; background: #f1f5f9; padding: 0.15rem 0.45rem; border-radius: 6px;">
+              📐 ${o.itens.length} esq (${totalPecas} un)
+            </span>
+          </td>
+          <td style="text-align: right;">
+            <div class="action-button-group">
+              <button class="btn-action action-thermal" title="Imprimir Etiquetas Térmicas (100x60mm)" onclick="openThermalModal('${o.id}')">
+                🏷️ Etiquetas
+              </button>
+              <button class="btn-action" title="Baixar Comprovante PDF da O.S." onclick="showToast('📄 Baixando comprovante da ordem ${o.codigo} em PDF...')">
+                📄 PDF
+              </button>
+              <button class="btn-action" title="Ver no Kanban Fabril" onclick="showToast('📊 Redirecionando para o Kanban da O.S. ${o.codigo}...')">
+                📊 Kanban
+              </button>
+            </div>
+          </td>
+        `;
+
+        tr.onclick = (e) => {
+          if (!e.target.closest("button")) {
+            showOrderItems(o.id);
+          }
+        };
+
+        tbody.appendChild(tr);
+      });
+    }
+
+    // Renderiza tabela de Orçamentos
+    function renderBudgetsTable(budgets) {
+      const tbody = document.getElementById("budgetsTbody");
+      document.getElementById("countBudgets").innerText = budgets.length;
+      tbody.innerHTML = "";
+
+      if (budgets.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 2.5rem; font-size: 0.85rem;">Nenhum orçamento registrado para este cliente.</td></tr>`;
+        return;
+      }
+
+      budgets.forEach(b => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td><span class="mono-code" style="color: #475569; background: #f1f5f9; border-color: #e2e8f0;">#${b.id}</span></td>
+          <td style="font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: #475569;">${b.data}</td>
+          <td><span class="badge-status ${b.status === 'APROVADO' ? 'aprovado' : 'enviado'}">${b.statusLabel}</span></td>
+          <td class="table-price">
+            R$ ${b.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+          </td>
+          <td style="text-align: right;">
+            <div class="action-button-group">
+              <button class="btn-action" onclick="showToast('📄 Baixando Proposta Comercial do orçamento ${b.id}...')">
+                📄 Proposta PDF
+              </button>
+              <button class="btn-action" style="color: #059669; font-weight: 700;" onclick="showToast('💬 Abrindo proposta ${b.id} no WhatsApp...')">
+                💬 WhatsApp
+              </button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // Exibe as esquadrias e medidas da O.S. selecionada
+    function showOrderItems(orderId) {
+      currentOrderId = orderId;
+      const client = CLIENTS.find(c => c.id === currentClientId);
+      if (!client) return;
+      const order = client.orders.find(o => o.id === orderId);
+      if (!order) return;
+
+      // Atualiza linha ativa na tabela
+      document.querySelectorAll("#ordersTbody tr").forEach(el => el.classList.remove("active-row"));
+      const activeRow = document.getElementById(`order-row-${orderId}`);
+      if (activeRow) activeRow.classList.add("active-row");
+
+      document.getElementById("orderItemsSection").style.display = "flex";
+      document.getElementById("itemsOrderCode").innerText = `#${order.codigo}`;
+
+      const grid = document.getElementById("itemsGrid");
+      grid.innerHTML = "";
+
+      order.itens.forEach((item, idx) => {
+        const card = document.createElement("div");
+        card.className = "piece-card-clean";
+        card.innerHTML = `
+          <div class="piece-title">
+            <span>Item ${String(idx + 1).padStart(2, '0')}: <strong>${item.desc}</strong></span>
+            <span style="color: #2563eb; font-weight: 800; font-size: 0.85rem;">${item.qtd} un</span>
+          </div>
+          <div class="piece-dimensions-tag">
+            <span>📐</span>
+            <span>${item.largura} x ${item.altura} mm</span>
+          </div>
+          <div class="piece-sub-specs">
+            <span>🎨 ${item.cor}</span>
+            <span>•</span>
+            <span>🪟 ${item.vidro}</span>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    // Alternar entre O.S. e Orçamentos
+    function changeTab(tab) {
+      const btnOrders = document.getElementById("tabOrders");
+      const btnBudgets = document.getElementById("tabBudgets");
+      const contentOrders = document.getElementById("contentOrders");
+      const contentBudgets = document.getElementById("contentBudgets");
+      const client = CLIENTS.find(c => c.id === currentClientId);
+
+      if (tab === "orders") {
+        btnOrders.classList.add("active");
+        btnBudgets.classList.remove("active");
+        contentOrders.style.display = "block";
+        contentBudgets.style.display = "none";
+        if (client && client.orders.length > 0) {
+          document.getElementById("orderItemsSection").style.display = "flex";
+        } else {
+          document.getElementById("orderItemsSection").style.display = "none";
+        }
+      } else {
+        btnBudgets.classList.add("active");
+        btnOrders.classList.remove("active");
+        contentBudgets.style.display = "block";
+        contentOrders.style.display = "none";
+        document.getElementById("orderItemsSection").style.display = "none";
+      }
+    }
+
+    // Filtro de Busca
+    function handleSearch() {
+      const q = document.getElementById("searchInput").value.toLowerCase().trim();
+      const filtered = CLIENTS.filter(c =>
+        c.nome.toLowerCase().includes(q) ||
+        c.bairro.toLowerCase().includes(q) ||
+        c.fone.includes(q) ||
+        c.doc.includes(q)
+      );
+      renderClientsList(filtered);
+    }
+
+    // Modal de Etiquetas Térmicas (100x60mm)
+    function openThermalModal(orderId) {
+      const client = CLIENTS.find(c => c.id === currentClientId);
+      const order = client.orders.find(o => o.id === orderId);
+      if (!order || !order.itens[0]) return;
+
+      const item = order.itens[0];
+      document.getElementById("modalLblClient").innerText = client.nome;
+      document.getElementById("modalLblOrder").innerText = `#${order.codigo}`;
+      document.getElementById("modalLblDesc").innerText = item.desc;
+      document.getElementById("modalLblMeasures").innerText = `${item.largura} x ${item.altura} mm`;
+      document.getElementById("modalLblColor").innerText = item.cor;
+      document.getElementById("modalLblGlass").innerText = item.vidro;
+      document.getElementById("modalLblPiece").innerText = `Item 01 • Esq 01/${order.itens.length} | Folha 01/01`;
+      document.getElementById("modalTotalPieces").innerText = `${order.itens.reduce((acc, i) => acc + i.qtd, 0)} etiqueta(s)`;
+
+      document.getElementById("thermalModal").classList.add("active");
+    }
+
+    function closeThermalModal() {
+      document.getElementById("thermalModal").classList.remove("active");
+    }
+
+    function printThermalDirect() {
+      closeThermalModal();
+      showToast("🚀 Comandos nativos BPLB enviados para a impressora térmica Elgin L42!");
+    }
+
+    function downloadLabelPdf() {
+      closeThermalModal();
+      showToast("📥 Baixando arquivo PDF das etiquetas térmicas (100x60mm)...");
+    }
+
+    function openWhatsApp() {
+      const client = CLIENTS.find(c => c.id === currentClientId);
+      showToast(`💬 Iniciando conversa no WhatsApp com ${client.nome}...`);
+    }
+
+    function startNewBudget() {
+      const client = CLIENTS.find(c => c.id === currentClientId);
+      showToast(`✨ Criando novo orçamento com o cliente '${client.nome}' pré-selecionado!`);
+    }
+
+    // Toast
+    let toastTimer;
+    function showToast(msg) {
+      const t = document.getElementById("toast");
+      document.getElementById("toastMsg").innerText = msg;
+      t.classList.add("active");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => t.classList.remove("active"), 3200);
+    }
+  </script>
+</body>
+</html>
