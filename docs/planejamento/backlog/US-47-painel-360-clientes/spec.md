@@ -104,16 +104,18 @@ Como vendedor, operador comercial ou encarregado de produção da Alumiportas, d
 
 ---
 
-## 🧩 Fatias Verticais de Entrega (Escopo Técnico Previsto)
+## 📋 Sub-Tarefas / Issues Vinculadas (5 issues)
 
-A história será desdobrada em subtarefas técnicas no momento de sua alocação na Sprint correspondente, contemplando:
-1. **Backend CQRS**: Endpoints de leitura agregada (`GET /api/v1/customers/{id}/dashboard`, `GET /orders`, `GET /budgets`);
-2. **Ficha Técnica A4**: Serviço `TechnicalSheetPdfService` com listas de corte de perfis e cálculo de folgas industriais de vidro;
-3. **Frontend Hub**: Componente `CustomerHubPage` com layout mestre-detalhe, Hero com KPIs, tabelas responsivas e card de esquadrias;
-4. **Integração de Mídia**: Emissão de etiquetas térmicas (100x60mm Elgin L42) e comprovantes PDF;
-5. **Qualidade & Testes**: Suíte de testes unitários e de integração (`MockMvc` e `Vitest`) com cobertura $\ge 80\%$.
+| Sub-Task | Tarefa / Descrição | Alvo Principal | Status |
+|---|---|---|:---:|
+| [US-47.1](issues/US-47.1-criar-endpoints-agregados-customers-orders-budgets/issue.md) | Criar endpoints REST agregados CQRS (`GET /dashboard`, `GET /orders`, `GET /budgets`) | `backend/.../CustomerHubController.java` | 🔲 No Backlog |
+| [US-47.2](issues/US-47.2-criar-servico-e-endpoint-pdf-ficha-tecnica-os/issue.md) | Criar serviço `TechnicalSheetPdfService` e endpoint da Ficha Técnica A4 | `backend/.../TechnicalSheetPdfService.java` | 🔲 No Backlog |
+| [US-47.3](issues/US-47.3-criar-hook-e-cliente-api-customers-hub/issue.md) | Criar cliente de API e hook TanStack Query `useCustomerHub` | `frontend/.../useCustomerHub.ts` | 🔲 No Backlog |
+| [US-47.4](issues/US-47.4-implementar-pagina-mestre-detalhe-painel-360-clientes/issue.md) | Implementar tela mestre-detalhe com tabelas limpas e modais | `frontend/.../CustomerHubPage.tsx` | 🔲 No Backlog |
+| [US-47.5](issues/US-47.5-criar-testes-unitarios-e-integracao-do-painel-cliente/issue.md) | Criar suíte de testes unitários e de integração (`MockMvc` e `Vitest`) | Testes Backend & Frontend | 🔲 No Backlog |
 
 ---
 
 **Branch de Referência:** `planejamento`  
+**GitHub Issue:** [#496](https://github.com/ADS-IFPB-SR/alumigest/issues/496)  
 **Protótipo Homologado:** `docs/planejamento/prototipos/painel-clientes-360.html`
