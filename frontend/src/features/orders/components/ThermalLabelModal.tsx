@@ -30,6 +30,17 @@ export interface PhysicalPieceLabel {
   localAmbiente: string;
 }
 
+function getTemplateType(item: OrderItem): string | null {
+  const customItem = item as { templateType?: string; templateConfig?: { templateType?: string } };
+  if (customItem.templateType) {
+    return customItem.templateType;
+  }
+  if (customItem.templateConfig && typeof customItem.templateConfig === 'object') {
+    return customItem.templateConfig.templateType ?? null;
+  }
+  return null;
+}
+
 export const ThermalLabelModal: React.FC<ThermalLabelModalProps> = ({
   isOpen,
   onClose,
@@ -50,17 +61,6 @@ export const ThermalLabelModal: React.FC<ThermalLabelModalProps> = ({
 
   const [isDirectPrinting, setIsDirectPrinting] = useState(false);
   const isPrinting = isPrintingThermalProp ?? isDirectPrinting;
-
-function getTemplateType(item: OrderItem): string | null {
-  const customItem = item as { templateType?: string; templateConfig?: { templateType?: string } };
-  if (customItem.templateType) {
-    return customItem.templateType;
-  }
-  if (customItem.templateConfig && typeof customItem.templateConfig === 'object') {
-    return customItem.templateConfig.templateType ?? null;
-  }
-  return null;
-}
 
   useEffect(() => {
     if (!order?.items) return;

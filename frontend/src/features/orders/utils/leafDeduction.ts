@@ -9,7 +9,7 @@ const PATTERN_F_SUFFIX = /\b(\d{1,2})\s*f\b/i;
 const PATTERN_PLANOS = /\b(\d{1,2})\s*planos?\b/i;
 const PATTERN_TEMPLATE_TYPE = /(\d{1,2})f\b/i;
 
-function parseMatch(match: RegExpMatchArray | null): number | null {
+function parseMatch(match: RegExpExecArray | RegExpMatchArray | null): number | null {
   if (!match?.[1]) return null;
   const parsed = Number.parseInt(match[1], 10);
   return !Number.isNaN(parsed) && parsed > 0 ? parsed : null;
@@ -19,15 +19,15 @@ function extractFromDescription(descricao?: string | null): number | null {
   if (!descricao) return null;
 
   return (
-    parseMatch(descricao.match(PATTERN_FOLHAS)) ??
-    parseMatch(descricao.match(PATTERN_F_SUFFIX)) ??
-    parseMatch(descricao.match(PATTERN_PLANOS))
+    parseMatch(PATTERN_FOLHAS.exec(descricao)) ??
+    parseMatch(PATTERN_F_SUFFIX.exec(descricao)) ??
+    parseMatch(PATTERN_PLANOS.exec(descricao))
   );
 }
 
 function extractFromTemplate(templateType?: string | null): number | null {
   if (!templateType) return null;
-  return parseMatch(templateType.match(PATTERN_TEMPLATE_TYPE));
+  return parseMatch(PATTERN_TEMPLATE_TYPE.exec(templateType));
 }
 
 /**

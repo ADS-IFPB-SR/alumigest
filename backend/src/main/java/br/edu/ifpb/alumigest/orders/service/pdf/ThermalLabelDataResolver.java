@@ -35,15 +35,15 @@ public class ThermalLabelDataResolver {
     private static final Logger log = LoggerFactory.getLogger(ThermalLabelDataResolver.class);
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-    // Regexes com quantificadores possessivos para blindagem contra backtracking superlinear (SonarQube S8786)
+    // Regexes com quantificadores estritamente limitados para blindagem contra backtracking superlinear (SonarQube S8786)
     private static final Pattern PATTERN_FOLHAS =
-            Pattern.compile("(\\d++)[ \\t]*+(?:folhas?|fls?)\\b", Pattern.CASE_INSENSITIVE);
+            Pattern.compile("\\b(\\d{1,2})\\s*(?:folhas?|fls)\\b", Pattern.CASE_INSENSITIVE);
     private static final Pattern PATTERN_F_SUFFIX =
-            Pattern.compile("\\b(\\d++)[ \\t]*+f\\b", Pattern.CASE_INSENSITIVE);
+            Pattern.compile("\\b(\\d{1,2})\\s*f\\b", Pattern.CASE_INSENSITIVE);
     private static final Pattern PATTERN_PLANOS =
-            Pattern.compile("(\\d++)[ \\t]*+planos?\\b", Pattern.CASE_INSENSITIVE);
+            Pattern.compile("\\b(\\d{1,2})\\s*planos?\\b", Pattern.CASE_INSENSITIVE);
     private static final Pattern PATTERN_TEMPLATE =
-            Pattern.compile("(\\d++)f\\b", Pattern.CASE_INSENSITIVE);
+            Pattern.compile("(\\d{1,2})f\\b", Pattern.CASE_INSENSITIVE);
 
     private static final String NAO_INFORMADO = "Não informado";
     private static final String FALLBACK_EMPRESA = "Alumiportas";

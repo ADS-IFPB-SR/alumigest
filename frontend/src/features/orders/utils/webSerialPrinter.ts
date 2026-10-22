@@ -9,6 +9,39 @@ export interface SerialPrintResult {
   message?: string;
 }
 
+function toUint8Array(payload: Uint8Array | ArrayBuffer | string): Uint8Array {
+  if (typeof payload === 'string') {
+    return new TextEncoder().encode(payload);
+  }
+  if (payload instanceof Uint8Array) {
+    return payload;
+  }
+  return new Uint8Array(payload);
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function closePortSilently(port: any): Promise<void> {
+  if (port?.readable && !port.readable.locked) {
+    try {
+      await port.close();
+    } catch {
+      // Ignora erro no fechamento de porta de fallback
+    }
+  }
+}
+
+function handlePrintCatch(error: unknown): SerialPrintResult {
+  if (error instanceof DOMException && error.name === 'NotFoundError') {
+    return {
+      success: false,
+      message: 'Nenhuma porta USB ou impressora foi selecionada pelo operador.',
+    };
+  }
+
+  const message = error instanceof Error ? error.message : 'Falha na comunicação direta com a porta USB.';
+  throw new Error(message, { cause: error });
+}
+
 /**
  * Envia um payload binário ou de texto (comandos nativos BPLB) diretamente
  * para a impressora térmica conectada via porta Serial/USB.
@@ -36,15 +69,7 @@ export async function printDirectToSerialPrinter(
     await port.open({ baudRate });
 
     const writer = port.writable.getWriter();
-
-    const data: Uint8Array =
-      typeof payload === 'string'
-        ? new TextEncoder().encode(payload)
-        : payload instanceof Uint8Array
-          ? payload
-          : new Uint8Array(payload);
-
-    await writer.write(data);
+    await writer.write(toUint8Array(payload));
     writer.releaseLock();
     await port.close();
 
@@ -53,22 +78,7 @@ export async function printDirectToSerialPrinter(
       message: 'Comandos BPLB enviados diretamente para a impressora térmica via USB com sucesso.',
     };
   } catch (error: unknown) {
-    if (port && port.readable && !port.readable.locked) {
-      try {
-        await port.close();
-      } catch {
-        // Ignora erro no fechamento de porta de fallback
-      }
-    }
-
-    if (error instanceof DOMException && error.name === 'NotFoundError') {
-      return {
-        success: false,
-        message: 'Nenhuma porta USB ou impressora foi selecionada pelo operador.',
-      };
-    }
-
-    const message = error instanceof Error ? error.message : 'Falha na comunicação direta com a porta USB.';
-    throw new Error(message, { cause: error });
+    await closePortSilently(port);
+    return handlePrintCatch(error);
   }
 }
