@@ -146,6 +146,7 @@ describe('ThermalLabelModal — [US-17.5] Visualização Prévia Contínua e Fil
 
     // Inicialmente 3 peças
     expect(screen.getAllByTestId('thermal-label-card')).toHaveLength(3);
+    expect(screen.getByTestId('btn-modal-print-thermal')).toHaveTextContent('Imprimir Todas na Térmica (3)');
 
     // Filtra pelo Item 1 (2 peças)
     fireEvent.click(screen.getByTestId('filter-piece-item-1'));
@@ -153,15 +154,18 @@ describe('ThermalLabelModal — [US-17.5] Visualização Prévia Contínua e Fil
     expect(screen.getByText('Item 01 | Peça 01/03')).toBeInTheDocument();
     expect(screen.getByText('Item 01 | Peça 02/03')).toBeInTheDocument();
     expect(screen.queryByText('Item 02 | Peça 03/03')).not.toBeInTheDocument();
+    expect(screen.getByTestId('btn-modal-print-thermal')).toHaveTextContent('Imprimir Peças Filtradas (2)');
 
     // Filtra pelo Item 2 (1 peça)
     fireEvent.click(screen.getByTestId('filter-piece-item-2'));
     expect(screen.getAllByTestId('thermal-label-card')).toHaveLength(1);
     expect(screen.getByText('Item 02 | Peça 03/03')).toBeInTheDocument();
+    expect(screen.getByTestId('btn-modal-print-thermal')).toHaveTextContent('Imprimir Peças Filtradas (1)');
 
     // Volta para todas as peças
     fireEvent.click(screen.getByTestId('filter-piece-all'));
     expect(screen.getAllByTestId('thermal-label-card')).toHaveLength(3);
+    expect(screen.getByTestId('btn-modal-print-thermal')).toHaveTextContent('Imprimir Todas na Térmica (3)');
 
     // Aciona botão de imprimir na impressora térmica
     fireEvent.click(screen.getByTestId('btn-modal-print-thermal'));
@@ -170,10 +174,55 @@ describe('ThermalLabelModal — [US-17.5] Visualização Prévia Contínua e Fil
     // Aciona botão de download PDF
     fireEvent.click(screen.getByTestId('btn-modal-download-pdf'));
     expect(handleDownload).toHaveBeenCalledTimes(1);
+    expect(handleDownload).toHaveBeenCalledWith(undefined);
 
     // Fecha o modal
     fireEvent.click(screen.getByTestId('btn-close-thermal-modal'));
     expect(handleClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('[BUG #487]: deve repassar o itemId correspondente ao baixar PDF com filtro de item ativo e adaptar rótulo de impressão térmica', () => {
+    const handleDownload = vi.fn();
+
+    render(
+      <ThermalLabelModal
+        isOpen={true}
+        onClose={vi.fn()}
+        order={mockOrderMultiItens}
+        onDownloadPdf={handleDownload}
+        isDownloadingPdf={false}
+      />
+    );
+
+    const printThermalBtn = screen.getByTestId('btn-modal-print-thermal');
+    const downloadPdfBtn = screen.getByTestId('btn-modal-download-pdf');
+
+    // 1. Estado inicial ('ALL'): rótulo com total de peças físicas
+    expect(printThermalBtn).toHaveTextContent('Imprimir Todas na Térmica (3)');
+
+    // 2. Filtra pelo Item 2 (1 peça): rótulo dinâmico e download repassa itemId 'item-porta-2'
+    fireEvent.click(screen.getByTestId('filter-piece-item-2'));
+    expect(printThermalBtn).toHaveTextContent('Imprimir Peças Filtradas (1)');
+
+    fireEvent.click(downloadPdfBtn);
+    expect(handleDownload).toHaveBeenCalledTimes(1);
+    expect(handleDownload).toHaveBeenLastCalledWith('item-porta-2');
+
+    // 3. Filtra pelo Item 1 (2 peças): rótulo dinâmico e download repassa itemId 'item-janela-1'
+    fireEvent.click(screen.getByTestId('filter-piece-item-1'));
+    expect(printThermalBtn).toHaveTextContent('Imprimir Peças Filtradas (2)');
+
+    fireEvent.click(downloadPdfBtn);
+    expect(handleDownload).toHaveBeenCalledTimes(2);
+    expect(handleDownload).toHaveBeenLastCalledWith('item-janela-1');
+
+    // 4. Retorna para todas as peças: rótulo volta para 'Imprimir Todas na Térmica (3)' e repassa undefined
+    fireEvent.click(screen.getByTestId('filter-piece-all'));
+    expect(printThermalBtn).toHaveTextContent('Imprimir Todas na Térmica (3)');
+
+    fireEvent.click(downloadPdfBtn);
+    expect(handleDownload).toHaveBeenCalledTimes(3);
+    expect(handleDownload).toHaveBeenLastCalledWith(undefined);
   });
 
   it('deve desabilitar o botão "Baixar PDF" quando isDownloadingPdf for true', () => {
