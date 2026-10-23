@@ -32,12 +32,16 @@ export const ProductionKanbanMetrics: React.FC<ProductionKanbanMetricsProps> = (
                 inProduction++;
             }
 
-            const deadline = getDeadlineStatus(order.dataPrevisaoEntrega);
-            if (deadline === 'LATE' || deadline === 'CRITICAL') {
-                urgentCount++;
-            }
-            if (deadline === 'LATE') {
-                lateCount++;
+            // Apenas pedidos em aberto/ativos na esteira de produção (não concluídos)
+            // devem ser considerados para alertas de prazo crítico ou atraso
+            if (normalized !== 'COMPLETED') {
+                const deadline = getDeadlineStatus(order.dataPrevisaoEntrega);
+                if (deadline === 'LATE' || deadline === 'CRITICAL') {
+                    urgentCount++;
+                }
+                if (deadline === 'LATE') {
+                    lateCount++;
+                }
             }
         });
 
