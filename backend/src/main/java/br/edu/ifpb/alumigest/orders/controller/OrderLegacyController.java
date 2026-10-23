@@ -129,4 +129,20 @@ public class OrderLegacyController {
                 .contentLength(pdfDto.bytes().length)
                 .body(pdfDto.bytes());
     }
+
+
+    @GetMapping("/{id}/labels-bplb")
+    public ResponseEntity<byte[]> baixarScriptBplb(
+            @PathVariable UUID id,
+            @RequestParam(required = false) UUID itemId) {
+        byte[] bplbBytes = orderService.gerarBplbEtiquetasById(id, itemId);
+        ContentDisposition contentDisposition = ContentDisposition.attachment()
+                .filename("etiquetas-bplb-" + id + ".prn")
+                .build();
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("application/octet-stream"))
+                .headers(headers -> headers.setContentDisposition(contentDisposition))
+                .contentLength(bplbBytes.length)
+                .body(bplbBytes);
+    }
 }

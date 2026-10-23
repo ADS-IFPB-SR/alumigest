@@ -34,6 +34,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -54,6 +55,8 @@ public class OrderServiceImpl implements OrderService {
     private final OrderMapper orderMapper;
     private final OrderPdfService orderPdfService;
     private final LabelPdfService labelPdfService;
+    private final br.edu.ifpb.alumigest.orders.service.pdf.ThermalLabelDataResolver thermalLabelDataResolver;
+    private final br.edu.ifpb.alumigest.orders.service.thermal.ThermalLabelBplbRenderer thermalLabelBplbRenderer;
 
     public OrderServiceImpl(
             OrderRepository orderRepository,
@@ -61,13 +64,17 @@ public class OrderServiceImpl implements OrderService {
             OrderCodeGenerator orderCodeGenerator,
             OrderMapper orderMapper,
             OrderPdfService orderPdfService,
-            LabelPdfService labelPdfService) {
+            LabelPdfService labelPdfService,
+            br.edu.ifpb.alumigest.orders.service.pdf.ThermalLabelDataResolver thermalLabelDataResolver,
+            br.edu.ifpb.alumigest.orders.service.thermal.ThermalLabelBplbRenderer thermalLabelBplbRenderer) {
         this.orderRepository = orderRepository;
         this.budgetRepository = budgetRepository;
         this.orderCodeGenerator = orderCodeGenerator;
         this.orderMapper = orderMapper;
         this.orderPdfService = orderPdfService;
         this.labelPdfService = labelPdfService;
+        this.thermalLabelDataResolver = thermalLabelDataResolver;
+        this.thermalLabelBplbRenderer = thermalLabelBplbRenderer;
     }
 
     @Override
@@ -160,15 +167,55 @@ public class OrderServiceImpl implements OrderService {
     /**
      * {@inheritDoc}
      */
-    @Override
-    @Transactional(readOnly = true)
-    public OrderPdfDTO gerarEtiquetasById(UUID id, UUID itemId) {
+    private OrderPdfDTO buildEtiquetasPdf(UUID id, UUID itemId, Map<UUID, Integer> customLeavesPerItem) {
         Order order = orderRepository.findByIdWithDetails(id)
                 .orElseThrow(() -> new ResourceNotFoundException(RESOURCE_PEDIDO, id.toString()));
-        byte[] bytes = labelPdfService.gerarEtiquetas(order, itemId);
+        if (order.getStatus() == OrderStatus.CANCELLED) {
+            throw new BusinessException("Não é possível emitir etiquetas de uma ordem de serviço cancelada.");
+        }
+        byte[] bytes = (customLeavesPerItem != null && !customLeavesPerItem.isEmpty())
+                ? labelPdfService.gerarEtiquetas(order, itemId, customLeavesPerItem)
+                : labelPdfService.gerarEtiquetas(order, itemId);
         String codigo = order.getCodigo() != null ? order.getCodigo().replace("/", "-") : id.toString();
         String filename = "etiquetas-" + codigo + ".pdf";
         return new OrderPdfDTO(bytes, filename);
+    }
+
+    private byte[] buildBplbEtiquetas(UUID id, UUID itemId, Map<UUID, Integer> customLeavesPerItem) {
+        Order order = orderRepository.findByIdWithDetails(id)
+                .orElseThrow(() -> new ResourceNotFoundException(RESOURCE_PEDIDO, id.toString()));
+        if (order.getStatus() == OrderStatus.CANCELLED) {
+            throw new BusinessException("Não é possível emitir etiquetas de uma ordem de serviço cancelada.");
+        }
+        List<br.edu.ifpb.alumigest.orders.service.pdf.ThermalLabelData> etiquetas =
+                (customLeavesPerItem != null && !customLeavesPerItem.isEmpty())
+                        ? thermalLabelDataResolver.resolveLabels(order, itemId, customLeavesPerItem)
+                        : thermalLabelDataResolver.resolveLabels(order, itemId);
+        return thermalLabelBplbRenderer.renderBplbBytes(etiquetas);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public OrderPdfDTO gerarEtiquetasById(UUID id, UUID itemId) {
+        return buildEtiquetasPdf(id, itemId, null);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public OrderPdfDTO gerarEtiquetasById(UUID id, UUID itemId, Map<UUID, Integer> customLeavesPerItem) {
+        return buildEtiquetasPdf(id, itemId, customLeavesPerItem);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public byte[] gerarBplbEtiquetasById(UUID id, UUID itemId) {
+        return buildBplbEtiquetas(id, itemId, null);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public byte[] gerarBplbEtiquetasById(UUID id, UUID itemId, Map<UUID, Integer> customLeavesPerItem) {
+        return buildBplbEtiquetas(id, itemId, customLeavesPerItem);
     }
 
     @Override

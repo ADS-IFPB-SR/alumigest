@@ -198,18 +198,28 @@ export const ordersApi = {
 
   /**
    * Baixa as etiquetas térmicas adesivas (100x60mm) da Ordem de Serviço em PDF (US-17.2 / US-17.4 / #451).
-   * Chama GET /api/v1/orders/{id}/labels-pdf com suporte a filtro opcional por item e inicia o download via Blob.
+   * Chama GET/POST /api/v1/orders/{id}/labels-pdf com suporte a filtro opcional por item e folhas customizadas.
    */
-  async downloadLabelsPdf(id: string, codigo?: string, itemId?: string): Promise<void> {
+  async downloadLabelsPdf(
+    id: string,
+    codigo?: string,
+    itemId?: string,
+    customLeaves?: Record<string, number>
+  ): Promise<void> {
     let blob: Blob;
     const fallbackFilename = `etiquetas-${codigo ?? id}.pdf`;
     let filename = fallbackFilename;
 
     try {
-      const response = await api.get(`/orders/${id}/labels-pdf`, {
-        params: itemId ? { itemId } : undefined,
-        responseType: 'blob',
-      });
+      const response = customLeaves && Object.keys(customLeaves).length > 0
+        ? await api.post(`/orders/${id}/labels-pdf`, customLeaves, {
+            params: itemId ? { itemId } : undefined,
+            responseType: 'blob',
+          })
+        : await api.get(`/orders/${id}/labels-pdf`, {
+            params: itemId ? { itemId } : undefined,
+            responseType: 'blob',
+          });
 
       const disposition = (
         response.headers?.['content-disposition'] ||
@@ -235,6 +245,27 @@ export const ordersApi = {
     link.click();
     link.remove();
     window.URL.revokeObjectURL(url);
+  },
+
+  /**
+   * Obtém os bytes binários do script nativo BPLB para envio direto via Web Serial USB à impressora térmica.
+   * US-17 / Correções #492 e #493.
+   */
+  async getLabelsBplb(
+    id: string,
+    itemId?: string,
+    customLeaves?: Record<string, number>
+  ): Promise<ArrayBuffer> {
+    const response = customLeaves && Object.keys(customLeaves).length > 0
+      ? await api.post(`/orders/${id}/labels-bplb`, customLeaves, {
+          params: itemId ? { itemId } : undefined,
+          responseType: 'arraybuffer',
+        })
+      : await api.get(`/orders/${id}/labels-bplb`, {
+          params: itemId ? { itemId } : undefined,
+          responseType: 'arraybuffer',
+        });
+    return response.data;
   },
 
   /**

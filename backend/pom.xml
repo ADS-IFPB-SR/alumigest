@@ -33,6 +33,8 @@
             **/exception/**,
             **/br/edu/ifpb/alumigest/AlumiGestApplication.java
         </sonar.coverage.exclusions>
+        <!-- Default argLine to allow plugins like Pitest/Surefire to run without jacoco:prepare-agent failing -->
+        <argLine></argLine>
     </properties>
 
     <dependencies>
@@ -192,6 +194,7 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
+                    <release>21</release>
                     <annotationProcessorPaths>
                         <path>
                             <groupId>org.mapstruct</groupId>
@@ -199,6 +202,32 @@
                             <version>${mapstruct.version}</version>
                         </path>
                     </annotationProcessorPaths>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.pitest</groupId>
+                <artifactId>pitest-maven</artifactId>
+                <version>1.19.6</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.pitest</groupId>
+                        <artifactId>pitest-junit5-plugin</artifactId>
+                        <version>1.2.1</version>
+                    </dependency>
+                </dependencies>
+                <configuration>
+                    <targetClasses>
+                        <param>br.edu.ifpb.alumigest.orders.service.pdf.ThermalLabelDataResolver</param>
+                    </targetClasses>
+                    <targetTests>
+                        <param>br.edu.ifpb.alumigest.orders.service.pdf.ThermalLabelDataResolverTest</param>
+                    </targetTests>
+                    <argLine>-XX:+EnableDynamicAgentLoading -Dnet.bytebuddy.experimental=true --add-opens=java.base/java.lang=ALL-UNNAMED</argLine>
+                    <jvmArgs>
+                        <value>-XX:+EnableDynamicAgentLoading</value>
+                        <value>-Dnet.bytebuddy.experimental=true</value>
+                        <value>--add-opens=java.base/java.lang=ALL-UNNAMED</value>
+                    </jvmArgs>
                 </configuration>
             </plugin>
         </plugins>
