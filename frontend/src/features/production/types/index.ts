@@ -67,3 +67,24 @@ export interface ProductionKanbanBoardProps {
   /** Classes CSS adicionais para o container do quadro */
   className?: string;
 }
+
+/**
+ * Opções de filtro por período / prazo de entrega (US-18.5).
+ * - ALL: Exibe todos os prazos sem restrição.
+ * - LATE: Apenas pedidos com prazo estourado (atrasados).
+ * - CRITICAL: Pedidos com prazo crítico (entrega em até 3 dias).
+ * - NORMAL: Pedidos com prazo regular (mais de 3 dias).
+ */
+export type DeadlineFilterOption = 'ALL' | 'LATE' | 'CRITICAL' | 'NORMAL';
+
+/**
+ * Estado que armazena todos os filtros aplicados na tela do Kanban.
+ */
+export  interface ProductionFilterState {
+  /** Termo textual digitado pelo usuário (busca por código da OS, cliente ou orçamento) */
+  searchTerm: string;
+  /** Filtro selecionado por prazo de entrega */
+  deadlineFilter: DeadlineFilterOption;
+  /** Filtro selecionado por etapa/status de produção */
+  statusFilter: 'ALL' | ProductionStatus;
+}
