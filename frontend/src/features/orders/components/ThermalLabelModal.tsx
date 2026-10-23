@@ -12,7 +12,7 @@ export interface ThermalLabelModalProps {
   isOpen: boolean;
   onClose: () => void;
   order: Order;
-  onDownloadPdf?: (customLeaves?: Record<string, number>) => void;
+  onDownloadPdf?: (itemId?: string, customLeaves?: Record<string, number>) => void;
   isDownloadingPdf?: boolean;
   onPrintThermal?: (params: { id: string; itemId?: string; leavesPerItem?: Record<string, number> }) => void;
   isPrintingThermal?: boolean;
@@ -127,6 +127,17 @@ export const ThermalLabelModal: React.FC<ThermalLabelModalProps> = ({
     return allPhysicalLabels.filter((label) => label.item.id === selectedItemFilter);
   }, [allPhysicalLabels, selectedItemFilter]);
 
+  // ID do item selecionado no filtro rápido (ou undefined quando em 'ALL')
+  const activeItemId = selectedItemFilter === 'ALL' ? undefined : selectedItemFilter;
+
+  // Rótulo dinâmico da impressão térmica de acordo com o filtro selecionado (Bugs #487 e #493)
+  const printButtonLabel = useMemo(() => {
+    if (selectedItemFilter === 'ALL') {
+      return `Impressão Direta (${allPhysicalLabels.length})`;
+    }
+    return `Impressão Direta Filtradas (${filteredLabels.length})`;
+  }, [selectedItemFilter, allPhysicalLabels.length, filteredLabels.length]);
+
   if (!isOpen) return null;
 
   const handlePrintThermal = async () => {
@@ -164,9 +175,7 @@ export const ThermalLabelModal: React.FC<ThermalLabelModalProps> = ({
   };
 
   const handleDownloadPdf = () => {
-    if (onDownloadPdf) {
-      onDownloadPdf(leavesPerItem);
-    }
+    onDownloadPdf?.(activeItemId, leavesPerItem);
   };
 
   const formattedDate = order.dataAprovacao
@@ -428,7 +437,7 @@ export const ThermalLabelModal: React.FC<ThermalLabelModalProps> = ({
               ) : (
                 <Printer className="w-4 h-4" />
               )}
-              {isPrinting ? 'Enviando para a impressora...' : 'Impressão Direta'}
+              {isPrinting ? 'Enviando para a impressora...' : printButtonLabel}
             </button>
 
             {onDownloadPdf && (

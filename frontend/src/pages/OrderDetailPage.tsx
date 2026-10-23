@@ -92,10 +92,22 @@ export function OrderDetailPage() {
 
   /**
    * Inicia o download das Etiquetas Térmicas em PDF caso o usuário solicite o arquivo.
+   * Suporta filtro opcional por itemId específico via modal térmico (BUG #487)
+   * e customização de folhas conferidas (Bugs #492 e #493).
+   * Delega ao hook useDownloadLabelsPdf que cuida do Blob, filename e toast.
    */
-  const handleDownloadLabelsPdf = (customLeaves?: Record<string, number>) => {
+  const handleDownloadLabelsPdf = (
+    itemId?: string,
+    customLeaves?: Record<string, number>
+  ) => {
     if (!order) return;
-    downloadLabels({ id: order.id, codigo: order.codigo, customLeaves });
+    const sanitizedItemId = typeof itemId === 'string' ? itemId : undefined;
+    downloadLabels({
+      id: order.id,
+      codigo: order.codigo,
+      ...(sanitizedItemId ? { itemId: sanitizedItemId } : {}),
+      customLeaves,
+    });
   };
 
   const handleConfirmCancel = (data: CancelOrderFormData) => {
