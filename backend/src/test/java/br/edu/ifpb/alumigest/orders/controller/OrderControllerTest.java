@@ -479,6 +479,17 @@ class OrderControllerTest {
       mockMvc.perform(get("/api/orders/{id}/labels-pdf", orderId))
           .andExpect(status().isUnprocessableEntity());
     }
+
+    @Test
+    @DisplayName("Deve retornar 422 quando a ordem de serviço estiver cancelada (BUG-484)")
+    void shouldReturn422WhenOrderIsCancelled() throws Exception {
+      UUID orderId = UUID.randomUUID();
+      when(orderService.gerarEtiquetasById(orderId, null))
+          .thenThrow(new BusinessException("Não é permitido emitir etiquetas de identificação para uma ordem de serviço cancelada."));
+
+      mockMvc.perform(get("/api/orders/{id}/labels-pdf", orderId))
+          .andExpect(status().isUnprocessableEntity());
+    }
   }
 
   @Nested

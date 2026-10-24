@@ -269,7 +269,6 @@ class OrderServiceImplTest {
         );
     }
 
-    //  Maylson ->  Vou pegar esse método para aprensetar na materia de Teste - Tabela de Decição
     @Test
     @DisplayName("[Regra de Negócio] Deve lançar BusinessException quando orçamento está com validade expirada")
     void shouldThrowBusinessExceptionWhenBudgetIsExpired() {
@@ -830,10 +829,30 @@ class OrderServiceImplTest {
 
             assertThat(result).isNotNull();
             assertThat(result.bytes()).isEqualTo(fakeBytes);
-
-            // CORREÇÃO AQUI: Removemos o .toLowerCase() também da validação do teste
             assertThat(result.filename()).isEqualTo("etiquetas-" + savedOrder.getCodigo().replace("/", "-") + ".pdf");
 
+            verify(labelPdfService).gerarEtiquetas(savedOrder, null);
+        }
+
+        @Test
+        @DisplayName("Deve usar ID como fallback no nome do arquivo quando codigo for nulo")
+        void shouldFallbackToOrderIdInFilenameWhenCodigoIsNull() {
+            // Arrange
+            Order savedOrder = Order.builder()
+                    .id(orderId)
+                    .codigo(null)
+                    .status(OrderStatus.WAITING_PRODUCTION)
+                    .build();
+            byte[] fakeBytes = "%PDF-1.4 labels".getBytes();
+            given(orderRepository.findByIdWithDetails(orderId)).willReturn(Optional.of(savedOrder));
+            given(labelPdfService.gerarEtiquetas(savedOrder, null)).willReturn(fakeBytes);
+
+            // Act
+            OrderPdfDTO result = orderService.gerarEtiquetasById(orderId);
+
+            // Assert
+            assertThat(result).isNotNull();
+            assertThat(result.filename()).isEqualTo("etiquetas-" + orderId + ".pdf");
             verify(labelPdfService).gerarEtiquetas(savedOrder, null);
         }
 

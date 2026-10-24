@@ -160,18 +160,6 @@ public class OrderServiceImpl implements OrderService {
     /**
      * {@inheritDoc}
      */
-//    @Override
-//    @Transactional(readOnly = true)
-//    public OrderPdfDTO gerarEtiquetasById(UUID id, UUID itemId) {
-//        Order order = orderRepository.findByIdWithDetails(id)
-//                .orElseThrow(() -> new ResourceNotFoundException(RESOURCE_PEDIDO, id.toString()));
-//
-//        byte[] bytes = labelPdfService.gerarEtiquetas(order, itemId);
-//        String codigo = order.getCodigo() != null ? order.getCodigo().replace("/", "-") : id.toString();
-//        String filename = "etiquetas-" + codigo + ".pdf";
-//        return new OrderPdfDTO(bytes, filename);
-//    }
-
     @Override
     @Transactional(readOnly = true)
     public OrderPdfDTO gerarEtiquetasById(UUID id, UUID itemId) {
@@ -183,9 +171,8 @@ public class OrderServiceImpl implements OrderService {
         }
 
         byte[] bytes = labelPdfService.gerarEtiquetas(order, itemId);
-
-        // CORREÇÃO: Remover o .toLowerCase() daqui!
-        String filename = "etiquetas-" + order.getCodigo().replace("/", "-") + ".pdf";
+        String codigo = order.getCodigo() != null ? order.getCodigo().replace("/", "-") : id.toString();
+        String filename = "etiquetas-" + codigo + ".pdf";
 
         return new OrderPdfDTO(bytes, filename);
     }
