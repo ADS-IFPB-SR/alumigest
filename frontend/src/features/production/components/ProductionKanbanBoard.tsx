@@ -80,7 +80,27 @@ export const ProductionKanbanBoard: React.FC<ProductionKanbanBoardProps> = ({
     e.preventDefault();
     setActiveDropColumn(null);
     const orderId = e.dataTransfer.getData('text/plain');
-    if (orderId && onMoveOrder) {
+    if (!orderId) {
+      return;
+    }
+
+    // Identifica o status de origem via dataTransfer ou pelas colunas atuais
+    const transferSourceStatus = e.dataTransfer.getData('sourceStatus') as ProductionStatus | '';
+    let sourceStatus: ProductionStatus | undefined = transferSourceStatus || undefined;
+
+    if (!sourceStatus) {
+      const foundColumn = columnsData.find((col) =>
+        col.orders.some((o) => o.id === orderId)
+      );
+      sourceStatus = foundColumn?.id;
+    }
+
+    // Se soltou na mesma coluna (sourceStatus === targetStatus), aborta imediatamente (no-op)
+    if (sourceStatus === targetStatus) {
+      return;
+    }
+
+    if (onMoveOrder) {
       onMoveOrder(orderId, targetStatus);
     }
   };
