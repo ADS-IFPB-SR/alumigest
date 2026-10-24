@@ -4,10 +4,10 @@
 |---|---|
 | **Projeto** | AlumiGest — Sistema de Gestão para Vidraçaria e Esquadrias |
 | **Sprint** | 07 — Gestão Fabril: Etiquetas de Identificação de Peças (US-17) e Painel Kanban de Produção (US-18) |
-| **Período** | 13/10/2026 a 27/10/2026 (14 dias) — **Em Andamento (D09)** |
+| **Período** | 13/10/2026 a 27/10/2026 (14 dias) — **🟢 Concluída (100% Entregue em 23/10/2026)** |
 | **Scrum Master / PO** | José Guylherme dos Santos Melo — Product Owner & Scrum Master |
-| **Tech Lead** | Guilherme Kauã Matos da Silva — Tech Lead & Engenharia |
-| **Versão** | 1.0 (Alinhado com a ATA de Planning e GitHub Projects) |
+| **Tech Lead** | Italo Jefferson Lima dos Santos — Tech Lead & Engenharia |
+| **Versão** | 2.0 (Fechamento Oficial e Conclusão das US-17 e US-18 no GitHub) |
 | **Governança** | Docs-as-Code — Oficial de Governança (`alumigest-doc-governor`) |
 
 ---
@@ -26,28 +26,33 @@ Iniciar e consolidar a **Release 2 (Gestão de Produção & Fábrica)** do Alumi
 
 O backlog foi dimensionado em **10 Story Points** distribuídos em **11 Fatias Verticais (*Thin Vertical Slices*)**, totalizando **27.0 horas estimadas**:
 
-| Subtarefa | Descrição Técnica da Fatia | Tipo / Módulo | Horas | Responsável Principal | Status In-Sprint (21/10) |
-|:---:|---|---|:---:|---|:---:|
-| **`US-17.1`** | Criar serviço `LabelPdfService` usando OpenPDF com layout térmico, cliente, medidas, cor, vidro e paginação | Backend Core / PDF | 3.0h | Italo Jefferson | 🟢 Concluído |
-| **`US-17.2`** | Adicionar endpoint `GET /api/orders/{orderId}/labels-pdf` no `OrderController` com stream `application/pdf` | Backend REST / API | 2.0h | Guilherme Kauã | 🟢 Concluído |
-| **`US-17.3`** | Criar bateria de testes unitários do `LabelPdfService` validando geração de bytes e contagem de peças | Testes Unitários | 2.0h | Italo Jefferson | 🟢 Concluído |
-| **`US-17.4`** | Adicionar botão "Imprimir Etiquetas" na tela de detalhes do pedido (`OrderDetailPage.tsx`) com modal e feedback visual | Frontend UI / Ações | 2.0h | Júlio Kennedy | 🟢 Concluído |
-| **`US-18.1`** | Implementar endpoint `PATCH /api/orders/{id}/production-status` no backend com gravação de `data_conclusao` | Backend Core / Regras | 3.0h | Gabriel de Souza | 🟡 Em Andamento / PR |
-| **`US-18.2`** | Criar hook React Query `useProductionKanban` e serviços Axios de produção (`productionApi.ts`) | Frontend State / API | 2.0h | Maylson Rodrigues | 🟡 Em Andamento |
-| **`US-18.3`** | Criar componente `OrderProductionCard` no frontend com indicador de SLA, contagem de peças e ações | Frontend UI / Cards | 3.0h | Joseph Nichollas | 🟡 Em Andamento |
-| **`US-18.4`** | Criar componente `ProductionKanbanBoard` com colunas de status fabril e transições contextuais | Frontend UI / Kanban | 3.0h | Herbert Carvalho | 🟡 Em Andamento |
-| **`US-18.5`** | Criar página `ProductionKanbanPage` com filtros de busca por código, cliente e estágio | Fatia Vertical UI | 3.0h | Maylson Rodrigues | 🟡 Em Andamento |
-| **`US-18.6`** | Configurar rota `/producao` no React Router e atalho "Produção (Kanban)" no menu lateral (`Sidebar.tsx`) | Frontend Nav | 1.0h | Júlio Kennedy | 🟡 Em Andamento |
-| **`US-18.7`** | Documentar endpoints no OpenAPI/Swagger e implementar testes de integração para status fabril | Testes & Docs | 3.0h | Gabriel de Souza | 🟡 Em Andamento |
-| **Total** | **Sprint Backlog Oficial** | **11 Fatias Verticais** | **27.0h** | **Equipe Completa** | 🔵 **Em Andamento (D09)** |
+| Subtarefa | Descrição Técnica da Fatia | Tipo / Módulo | Horas | Executor Real (GitHub) | PR no GitHub | Status In-Sprint |
+|:---:|---|---|:---:|---|:---:|:---:|
+| **`US-17.1`** | Criar serviço `LabelPdfService` usando OpenPDF com layout térmico, cliente, medidas, cor, vidro e paginação | Backend Core / PDF | 3.0h | **Italo Jefferson** | PR #448 / PR #463 | 🟢 Concluído |
+| **`US-17.2`** | Adicionar endpoint `GET /api/orders/{orderId}/labels-pdf` no `OrderController` com stream `application/pdf` | Backend REST / API | 2.0h | **Guilherme Kauã** | PR #449 / PR #465 | 🟢 Concluído |
+| **`US-17.3`** | Criar bateria de testes unitários do `LabelPdfService` validando geração de bytes e contagem de peças | Testes Unitários | 2.0h | **Italo Jefferson** | PR #448 / PR #463 | 🟢 Concluído |
+| **`US-17.4`** | Adicionar botão "Imprimir Etiquetas" na tela de detalhes do pedido (`OrderDetailPage.tsx`) com modal e feedback visual | Frontend UI / Ações | 2.0h | **Júlio Kennedy** | PR #451 / PR #470 | 🟢 Concluído |
+| **`US-18.1`** | Implementar endpoint `PATCH /api/orders/{id}/production-status` no backend com gravação de `data_conclusao` | Backend Core / Regras | 3.0h | **José Guylherme** | PR #452 / PR #472 | 🟢 Concluído |
+| **`US-18.2`** | Criar hook React Query `useProductionKanban` e serviços Axios de produção (`productionApi.ts`) | Frontend State / API | 2.0h | **Gabriel de Souza** *(Testes: Italo J.)* | PR #453 / PR #488 / PR #507 | 🟢 Concluído |
+| **`US-18.3`** | Criar componente `OrderProductionCard` no frontend com indicador de SLA, contagem de peças e ações | Frontend UI / Cards | 3.0h | **Maylson Rodrigues** | PR #454 / PR #471 | 🟢 Concluído |
+| **`US-18.4`** | Criar componente `ProductionKanbanBoard` com colunas de status fabril e transições contextuais | Frontend UI / Kanban | 3.0h | **Júlio Kennedy** | PR #455 / PR #482 | 🟢 Concluído |
+| **`US-18.5`** | Criar página `ProductionKanbanPage` com filtros de busca por código, cliente e estágio | Fatia Vertical UI | 3.0h | **Joseph Nichollas** | PR #456 / PR #505 | 🟢 Concluído |
+| **`US-18.6`** | Configurar rota `/producao` no React Router e atalho "Produção (Kanban)" no menu lateral (`Sidebar.tsx`) | Frontend Nav | 1.0h | **Guilherme Kauã** | PR #457 / PR #508 | 🟢 Concluído |
+| **`US-18.7`** | Documentar endpoints no OpenAPI/Swagger e implementar testes de integração para status fabril | Testes & Docs | 3.0h | **Maylson Rodrigues** *(Invariantes: Italo J.)* | PR #481 | 🟢 Concluído |
+| **Total** | **Sprint Backlog Oficial** | **11 Fatias Verticais** | **27.0h** | **Equipe Completa** | — | 🟢 **Concluída (100%)** |
 
 ---
 
-## 3. 🔍 Acompanhamento In-Sprint (Situação em 21/10/2026 — D09)
+## 3. 🔍 Acompanhamento e Conclusão das User Stories (Situação em 23/10/2026)
 
-* **Módulo US-17 (Etiquetas Térmicas):** Todas as 4 fatias verticais foram implementadas. Durante a validação funcional no chão de fábrica e testes com a impressora térmica física Elgin L42, surgiram dois apontamentos críticos formalizados em issues de BUG (#492 e #493) que foram absorvidos no ciclo da sprint.
-* **Módulo US-18 (Painel Kanban):** Backend com endpoints de transição fabril em fase de integração; componentes visuais do Kanban em desenvolvimento no frontend.
-* **Previsão de Entrega:** O ciclo está no 9º dia (D09 de D14), mantendo o cronograma regular para finalização e homologação da Release 2 até 27/10/2026.
+* **Módulo US-17 (Etiquetas Térmicas):** Todas as 4 fatias verticais foram implementadas, validadas e integradas na branch `develop` através do **PR consolidado #509**. A esteira de etiquetas contemplou correções de bugs (#485 via PR #491, #486 via PR #494, #487 via PR #497 e #492/#493 via PR #495), garantindo layout térmico fiel, cálculo de frações de folhas no backend e preservação de contadores globais.
+* **Módulo US-18 (Painel Kanban de Produção):** Todas as 7 fatias verticais foram implementadas com sucesso:
+  * Backend: endpoint `PATCH /api/v1/orders/{id}/production-status` com preenchimento atômico de `completion_date`, validações de transição fabril e proteção contra pedidos cancelados;
+  * Frontend: hook `useProductionKanban`, cards informativos com cálculo de urgência de prazo/SLA (`OrderProductionCard`), quadro Kanban completo em 3 colunas (`ProductionKanbanBoard`), página dedicada (`ProductionKanbanPage`) com filtros instantâneos e atalho no menu lateral (`Sidebar.tsx`);
+  * Testes: suítes unitárias, integração MockMvc e testes E2E dedicados à US-18.
+* **Situação das Histórias Pai no GitHub:**
+  * **US-17 (#142):** 🟢 **Finalizada e Mesclada** no GitHub.
+  * **US-18 (#143):** 🟢 **Finalizada e Mesclada** no GitHub.
 
 ---
 
@@ -58,15 +63,15 @@ Durante o ciclo de execução da Sprint 07, além do escopo funcional das User S
 ### 4.1 BUGs da US-17 (Etiquetas Térmicas de Identificação)
 Identificados durante a homologação funcional no chão de fábrica e testes com a impressora física:
 
-| Issue | Título / Descrição | Severidade | Autor | Status / Resolução |
-|:---:|---|:---:|:---:|---|
-| **#483** | Cálculo incorreto de `totalPieces` e reset de `pieceNumber` ao filtrar etiquetas térmicas por `itemId` | P2 - Alto | GMSantos20 | 🟡 Aberta / Tratamento na esteira de etiquetas |
-| **#484** | Ausência de validação no backend para bloqueio de emissão de etiquetas em ordens canceladas | P2 - Alto | GMSantos20 | 🟡 Aberta / Validação via `OrderStatus.CANCELLED` |
-| **#485** | Mascaramento de mensagens de erro HTTP 422/404 em `downloadLabelsPdf` devido ao `responseType: 'blob'` | P2 - Alto | GMSantos20 | ✅ **Resolvido (PR #491)** via desserialização de blob JSON |
-| **#486** | Divergência de ordenação, quantidade zero e leitura de ambiente no `ThermalLabelModal` | P2 - Alto | GMSantos20 | ✅ **Resolvido (PR #494)** com alinhamento às regras do backend |
-| **#487** | Botão 'Baixar PDF' no `ThermalLabelModal` ignora o filtro ativo e rótulo de impressão é estático | P3 - Médio | GMSantos20 | 🟡 Aberta / Em tratamento |
-| **#492** | Dimensões 100x60mm incorretas, multiplicação de etiquetas (1 item gerando 4 cópias) e dedução de folhas por esquadria | P1 - Crítico | GMSantos20 | 🟡 Aberta / Em revisão no **PR #495** |
-| **#493** | Impressão térmica baixava PDF em vez de emitir diretamente para a impressora física (Elgin L42) | P2 - Alto | GMSantos20 | 🟡 Aberta / Em revisão no **PR #495** |
+| Issue | Título / Descrição | Severidade | Autor Issue | Resolvido por | Resolução / PR |
+|:---:|---|:---:|:---:|:---:|---|
+| **#483** | Cálculo incorreto de `totalPieces` e reset de `pieceNumber` ao filtrar etiquetas térmicas por `itemId` | P2 - Alto | GMSantos20 | **Herbert Carvalho** | ✅ **Resolvido (PR #509)** com totalização global |
+| **#484** | Ausência de validação no backend para bloqueio de emissão de etiquetas em ordens canceladas | P2 - Alto | GMSantos20 | **Maylson Rodrigues** | ✅ **Resolvido (PR #509)** via validação de `OrderStatus.CANCELLED` |
+| **#485** | Mascaramento de mensagens de erro HTTP 422/404 em `downloadLabelsPdf` devido ao `responseType: 'blob'` | P2 - Alto | GMSantos20 | **Joseph Nichollas** | ✅ **Resolvido (PR #491)** via desserialização de blob JSON |
+| **#486** | Divergência de ordenação, quantidade zero e leitura de ambiente no `ThermalLabelModal` | P2 - Alto | GMSantos20 | **Guilherme Kauã** | ✅ **Resolvido (PR #494)** com alinhamento às regras do backend |
+| **#487** | Botão 'Baixar PDF' no `ThermalLabelModal` ignora o filtro ativo e rótulo de impressão é estático | P3 - Médio | GMSantos20 | **Júlio Kennedy** | ✅ **Resolvido (PR #497)** com repasse dinâmico de filtro |
+| **#492** | Dimensões 100x60mm incorretas, multiplicação de etiquetas (1 item gerando 4 cópias) e dedução de folhas por esquadria | P1 - Crítico | GMSantos20 | **Italo Jefferson** | ✅ **Resolvido (PR #495)** no layout térmico e motor backend |
+| **#493** | Impressão térmica baixava PDF em vez de emitir diretamente para a impressora física (Elgin L42) | P2 - Alto | GMSantos20 | **Italo Jefferson** | ✅ **Resolvido (PR #495)** com script nativo e `@media print` |
 
 ### 4.2 BUGs e Débitos Extras Resolvidos pela Equipe (Fora do Backlog Original)
 Itens não previstos no planejamento inicial da Sprint 07, mas prontamente absorvidos e solucionados pelo time de engenharia para blindagem da Release 2:

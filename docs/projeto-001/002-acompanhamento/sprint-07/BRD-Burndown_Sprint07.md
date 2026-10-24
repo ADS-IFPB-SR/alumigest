@@ -1,22 +1,22 @@
-# BRD — Burndown Chart — Sprint 07 (Em Andamento)
+# BRD — Burndown Chart — Sprint 07 (Concluída)
 
 | Campo | Valor |
 |---|---|
 | **Projeto** | AlumiGest — Sistema de Gestão para Vidraçaria e Esquadrias |
 | **Sprint** | 07 — Gestão Fabril: Etiquetas de Identificação de Peças (US-17) e Painel Kanban de Produção (US-18) |
-| **Período** | 13/10/2026 a 27/10/2026 (14 dias) — **Situação em 21/10/2026 (D09)** |
+| **Período** | 13/10/2026 a 27/10/2026 (14 dias) — **Situação em 23/10/2026 (D11 — Concluída)** |
 | **Fonte dos Dados** | GitHub Projects / ZenHub Board (`label:sprint-07`) |
 | **Total de Story Points Planejados** | 10 pts (US-17: 5 pts + US-18: 5 pts) |
 | **Total de Horas Estimadas** | 27.0h (11 Fatias Verticais) |
-| **Pontos Concluídos (até D09)** | 5 pts (US-17 fatias técnicas concluídas, em validação de bugs #492/#493) |
-| **Pontos Restantes** | 5 pts (US-18 Kanban em andamento) |
+| **Pontos Concluídos** | 10 pts (US-17: 5 pts + US-18: 5 pts — 100% Entregue) |
+| **Pontos Restantes** | 0 pts (0.0h restantes) |
 | **Governança** | Docs-as-Code — Oficial de Governança (`alumigest-doc-governor`) |
 
 ---
 
 ## 1. 📈 Gráfico e Evolução da Queima de Pontos
 
-O ciclo da Sprint 07 compreende 14 dias com foco inicial na emissão de etiquetas técnicas (US-17) e no Painel Kanban fabril (US-18):
+O ciclo da Sprint 07 compreendeu 14 dias com foco inicial na emissão de etiquetas técnicas (US-17) e no Painel Kanban fabril (US-18), com entrega de 100% dos pontos em D11:
 
 ```
 Story Points Restantes
@@ -25,13 +25,13 @@ Story Points Restantes
  8 |     * * (US-17.1 e US-17.2: Backend OpenPDF e REST implementados)
  7 |         *
  6 |           * (US-17.3 e US-17.4: Testes unitários e botão no frontend)
- 5 |             * * * (21/10 - D09: US-17 concluída; US-18 em desenvolvimento ativo)
- 4 |                   . (Projeção: US-18.1 a US-18.4)
- 2 |                     . (Projeção: US-18.5 e US-18.6)
+ 5 |             * * * (21/10 - D09: US-17 concluída e integrada)
+ 3 |                   * (22/10 - D10: US-18.1 a US-18.4 concluídas)
+ 0 |                     * (23/10 - D11: US-18.5 a US-18.7 concluídas e integradas no GitHub)
  0 +-------------------------------------------------
      D1  D3  D5  D7  D9  D11 D13 D14 (Dias da Sprint)
 ```
-*(Legenda: `*` histórico real até D09 | `.` projeção até D14)*
+*(Legenda: `*` histórico real de queima até conclusão em D11)*
 
 ---
 
@@ -46,21 +46,18 @@ Story Points Restantes
 | 17/10 | D05 | 6 pts | 18.0h | **`US-17.3` e `US-17.4` concluídas:** Testes unitários e botão na UI (PR #470); endpoint `PATCH /production-status` (PR #472) |
 | 19/10 | D07 | 5 pts | 18.0h | **US-17 tecnicamente integrada (5 pts):** Homologação em fábrica e abertura dos bugs de etiquetas (#483 a #487); Kanban Board UI (PR #482) |
 | 20/10 | D08 | 5 pts | 16.0h | Resolução in-sprint dos bugs #485 (PR #491) e #486 (PR #494); correções de endereço e pagamento (PR #479, #480); canal OUTRO (PR #489); abertura dos bugs térmicos #492 e #493 |
-| 21/10 | D09 | 5 pts | 14.0h | **Situação Atual:** US-18 em desenvolvimento; PR #495 em revisão de código |
-| 23/10 | D11 | *(3 pts)* | *(8.0h)* | *Projeção:* Conclusão dos componentes visuais do Kanban (`US-18.3` a `US-18.5`) |
-| 26/10 | D13 | *(1 pt)* | *(3.0h)* | *Projeção:* Testes de integração, Swagger e rota `/producao` (`US-18.6` e `US-18.7`) |
-| 27/10 | D14 | *(0 pts)* | *(0.0h)* | *Projeção:* Fechamento da sprint, Review, Retrospectiva e homologação da Release 2 |
+| 21/10 | D09 | 5 pts | 14.0h | PR #495 em revisão de código; avanço na esteira do Kanban de produção |
+| 22/10 | D10 | 3 pts | 6.0h | **`US-18.1`, `US-18.2`, `US-18.3` e `US-18.4` concluídas:** endpoint de status, hook TanStack Query, cards de produção e quadro Kanban com colunas fabris |
+| 23/10 | D11 | **0 pts** | **0.0h** | **🟢 Conclusão Oficial da Sprint 07:** `US-18.5` (página Kanban e filtros), `US-18.6` (rota e menu lateral PR #508) e `US-18.7` (OpenAPI e testes) concluídas e mescladas. US-17 integrada via PR #509 e US-18 100% entregue no GitHub |
 
 ---
 
-## 3. 🎯 Análise de Ritmo, Velocidade e Carga Extra de Sustentação
+## 3. 🎯 Análise de Ritmo, Velocidade e Fechamento do Ciclo
 
-* **Velocidade Parcial das User Stories (até D09):** 5 Story Points de novas funcionalidades entregues em 9 dias de sprint (~0.55 pts/dia).
-* **Carga de Trabalho Extrabacklog (Bugs e Débitos):** A equipe absorveu um volume substancial de correções não estimadas originalmente no backlog:
-  * **7 Bugs de Campo da US-17:** #483, #484, #485 (fechada no PR #491), #486 (fechada no PR #494), #487, #492 e #493;
-  * **8+ PRs de Estabilização da Release 2:** Tratamento de canal `OUTRO` (PR #489), separação de aliases de rotas (PR #466 e #469), blindagem contra reajuste futuro (#478), e tratamento de UI no endereço e resumo financeiro (PR #479, #480).
-* **Projeção de Cumprimento do Escopo:** Apesar do expressivo desvio de esforço para blindagem de bugs, o Kanban (US-18) avançou de forma paralela no frontend e backend, mantendo a estimativa viável para homologação integral da Release 2 até 27/10/2026.
+* **Velocidade Efetiva:** 10 Story Points entregues em 11 dias de sprint (~0.91 pts/dia), finalizando antecipadamente em relação ao período máximo de 14 dias (D14).
+* **Carga de Sustentação & Resolução de BUGs:** Além das 11 fatias verticais planejadas, a equipe solucionou 7 bugs de campo da US-17 (#483 a #487, #492, #493) e incorporou mais de 8 PRs de estabilização da Release 2 sem comprometer o prazo da iteração.
+* **Resultado Final:** 100% das entregas das User Stories **US-17** e **US-18** foram finalizadas, validadas e mescladas no GitHub, habilitando o avanço para a Sprint 08 da Release 2.
 
 ---
 
-*Burndown em acompanhamento — Atualizado em 21/10/2026 (D09 da Sprint 07)*
+*Burndown oficial consolidado — Fechamento da Sprint 07 em 23/10/2026 (D11)*

@@ -4,7 +4,7 @@
 **Release**: Release 2 (v2.0.0) — Gestão de Produção & Fábrica  
 **Período da Sprint 07**: 13/10/2026 a 27/10/2026  
 **Created**: 2026-10-14  
-**Status**: APPROVED (Sprint Ativa — Padrão BDD Gherkin)  
+**Status**: 🟢 CONCLUÍDA (100% Entregue)  
 **Diretriz de Idioma**: Conforme `PAD-Padroes_de_Codigo.md`, todo o código-fonte (entidades, atributos Java, colunas SQL, DTOs e enums) é escrito em **inglês técnico** (`camelCase`/`snake_case`), e a tradução para o Português do Brasil (`pt-BR`) é realizada estritamente na camada visual de UI do Frontend e nas mensagens ao usuário.
 
 ---
@@ -31,13 +31,13 @@ Os dois grandes desafios operacionais resolvidos nesta sprint são:
 
 #### 🧪 Critérios de Aceitação (Dado que / Quando / Então)
 
-- [ ] **Cenário 1: Geração de Etiquetas Térmicas (100x50mm) com Paginação por Exemplar Físico de Peça**
+- [x] **Cenário 1: Geração de Etiquetas Térmicas (100x50mm) com Paginação por Exemplar Físico de Peça**
   - **Dado que** o operador visualiza uma Ordem de Serviço aprovada na página `OrderDetailPage` contendo itens com quantidades unitárias e múltiplas (ex: Item 1 com 2 janelas e Item 2 com 1 porta, totalizando 3 peças físicas)
   - **Quando** clica no botão "Imprimir Etiquetas (100x50mm)"
   - **Então** o backend compila um documento PDF único no formato térmico padronizado (100 mm de largura por 50 mm de altura, ou 283.46 pt $\times$ 141.73 pt)
   - **E** o documento possui paginação exata por peça física (3 páginas), exibindo em cada uma a numeração sequencial fracionada (ex: "Item 01 | Peça 01/03", "Item 01 | Peça 02/03", "Item 02 | Peça 03/03").
 
-- [ ] **Cenário 2: Tipografia Técnica Limpa de Alto Contraste (Sem Código de Barras)**
+- [x] **Cenário 2: Tipografia Técnica Limpa de Alto Contraste (Sem Código de Barras)**
   - **Dado que** a etiqueta é renderizada para impressoras térmicas industriais (Zebra, Elgin, Argox) conforme `prototipo_etiquetas.html`
   - **Quando** os dados técnicos são diagramados no layout OpenPDF
   - **Então** cada etiqueta deve exibir obrigatoriamente:
@@ -50,21 +50,21 @@ Os dois grandes desafios operacionais resolvidos nesta sprint são:
     7. Local / Observações de entrega e instalação;
     8. Rodapé limpo com código do item, data de emissão e carimbo sem elementos de código de barras.
 
-- [ ] **Cenário 3: Visualização Prévia Contínua no Modal Frontend com Filtro por Item**
+- [x] **Cenário 3: Visualização Prévia Contínua no Modal Frontend com Filtro por Item**
   - **Dado que** o operador aciona a ação de etiquetas na página de detalhes da O.S.
   - **Quando** o modal `ThermalLabelModal` for exibido
   - **Então** todas as etiquetas físicas são renderizadas em grade contínua em tela única
   - **E** o operador pode alternar os filtros rápidos: "Todas as Peças (N)", "Item 1 (X Peças)", "Item 2 (Y Peças)"
   - **E** a interface disponibiliza botões para "Baixar PDF" e "Imprimir Todas na Térmica" (usando `@media print` com `@page { size: 100mm 50mm; margin: 0; }`).
 
-- [ ] **Cenário 4: Download Direto de Arquivo PDF do Backend**
+- [x] **Cenário 4: Download Direto de Arquivo PDF do Backend**
   - **Dado que** o usuário aciona a ação de baixar PDF das etiquetas
   - **Quando** o endpoint `GET /api/v1/orders/{orderId}/labels-pdf` for consumido
   - **Então** o backend responde com status HTTP `200 OK` e `Content-Type: application/pdf`
   - **E** o cabeçalho `Content-Disposition` sugere o nome de arquivo `etiquetas-OS-YYYY-NNNN.pdf`
   - **E** o frontend revoga determinística e imediatamente o Blob URL em memória (`URL.revokeObjectURL`) para prevenir vazamento de memória.
 
-- [ ] **Cenário 5: Tratamento para Ordens Inexistentes ou sem Itens**
+- [x] **Cenário 5: Tratamento para Ordens Inexistentes ou sem Itens**
   - **Dado que** um ID de O.S. inválido ou sem itens cadastrados é informado
   - **Quando** o endpoint `GET /api/v1/orders/{orderId}/labels-pdf` for acionado
   - **Então** o backend retorna HTTP `404 Not Found` (se ordem inexistente) ou `422 Unprocessable Entity` (se ordem não contiver itens) com mensagem amigável em pt-BR no payload padronizado `ErrorResponse`.
@@ -81,7 +81,7 @@ Os dois grandes desafios operacionais resolvidos nesta sprint são:
 
 #### 🧪 Critérios de Aceitação (Dado que / Quando / Então)
 
-- [ ] **Cenário 1: Visualização do Quadro Kanban em 3 Colunas e KPIs de Fábrica**
+- [x] **Cenário 1: Visualização do Quadro Kanban em 3 Colunas e KPIs de Fábrica**
   - **Dado que** o operador acessa o item "Kanban de Produção" no menu lateral (rota `/producao`)
   - **Quando** a página `ProductionKanbanPage` for carregada
   - **Então** o sistema renderiza 3 colunas distintas com tradução na UI:
@@ -91,7 +91,7 @@ Os dois grandes desafios operacionais resolvidos nesta sprint são:
   - **E** cada coluna exibe um badge com a contagem atualizada de ordens naquele estágio
   - **E** a barra superior exibe KPIs consolidados: "OSs em Produção", "Área Total ($m^2$)", "OSs Urgentes" e "Entrega no Prazo (%)".
 
-- [ ] **Cenário 2: Apresentação dos Cards de O.S. e Checklist de Etapas Fabris**
+- [x] **Cenário 2: Apresentação dos Cards de O.S. e Checklist de Etapas Fabris**
   - **Dado que** as Ordens de Serviço ativas são listadas nas respectivas colunas
   - **Quando** o componente `OrderProductionCard` for renderizado
   - **Então** exibe:
@@ -105,30 +105,30 @@ Os dois grandes desafios operacionais resolvidos nesta sprint são:
       - **Amarelo**: prazo restante entre $0$ e $3$ dias (atenção);
       - **Vermelho**: prazo vencido / atrasado ($< 0$ dias).
 
-- [ ] **Cenário 3: Movimentação de Status via Drag & Drop ou Botões Contextuais**
+- [x] **Cenário 3: Movimentação de Status via Drag & Drop ou Botões Contextuais**
   - **Dado que** uma O.S. está em uma coluna fabril
   - **Quando** o operador arrasta o card para a próxima coluna ou clica no botão contextual de avanço ("Iniciar Produção" / "Concluir Produção")
   - **Então** o backend processa a transição via `PATCH /api/v1/orders/{id}/production-status` com body `{"status": "IN_PRODUCTION"}`
   - **E** o card é movido imediatamente na interface com feedback de sucesso (Toast notification).
 
-- [ ] **Cenário 4: Preenchimento Automático da Data de Conclusão Real**
+- [x] **Cenário 4: Preenchimento Automático da Data de Conclusão Real**
   - **Dado que** a produção de uma O.S. é finalizada (transição para `COMPLETED`)
   - **Quando** a transição é confirmada no backend
   - **Então** o campo `completion_date` da entidade `Order` é preenchido atomicamente com a data atual (`LocalDate.now()`)
   - **E** todas as etapas construtivas do checklist são marcadas como concluídas (100%).
 
-- [ ] **Cenário 5: Bloqueio de Transições Inválidas e Ordens Canceladas**
+- [x] **Cenário 5: Bloqueio de Transições Inválidas e Ordens Canceladas**
   - **Dado que** uma O.S. possui status `CANCELLED` ou o usuário tenta pular de `WAITING_PRODUCTION` diretamente para `COMPLETED`
   - **Quando** o endpoint `PATCH /api/v1/orders/{id}/production-status` é acionado
   - **Então** o backend rejeita a alteração retornando HTTP `422 Unprocessable Entity` com mensagem descritiva ("Transição de status fabril inválida")
   - **E** o estado do banco e da interface permanece consistente.
 
-- [ ] **Cenário 6: Filtros Rápidos de Busca e Seleção Operacional**
+- [x] **Cenário 6: Filtros Rápidos de Busca e Seleção Operacional**
   - **Dado que** o quadro do Kanban contém dezenas de ordens de serviço
   - **Quando** o usuário digita no campo de busca (`search` por código ou cliente) ou aplica os filtros de linha, estoque e prioridade
   - **Então** os cards das colunas são filtrados de forma reativa e instantânea.
 
-- [ ] **Cenário 7: Abertura Rápida da Ficha Técnica / Cortes (Modal PCP)**
+- [x] **Cenário 7: Abertura Rápida da Ficha Técnica / Cortes (Modal PCP)**
   - **Dado que** o operador necessita conferir o plano de corte de uma O.S.
   - **Quando** clica no ícone de visualização ("Ver Ficha Técnica / Cortes") do card
   - **Então** o modal `OrderTechnicalSheetModal` é aberto exibindo cliente, acabamento, especificações do vidro e plano de corte detalhado dos perfis.

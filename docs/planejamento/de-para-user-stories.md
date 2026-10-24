@@ -27,9 +27,9 @@ Este documento é a **referência oficial de sincronização** entre a numeraç�
 | **US-15** | **US-15** | Sprint 06 | Gestão de Status, Prazos e Cancelamento de Pedidos | [#139](https://github.com/ADS-IFPB-SR/alumigest/issues/139) | 🟢 Concluída |
 | **US-16** | **US-16** | Sprint 06 | Emissão do Comprovante do Pedido de Venda em PDF | [#140](https://github.com/ADS-IFPB-SR/alumigest/issues/140) | 🟢 Concluída |
 | **US-17** | ❌ **DESCARTADA** | Sprint 06 | Gerar Ordens de Produção (OP) Individuais por Peça | — | 🚫 Removida do Escopo |
-| **US-18** | **US-17** | Sprint 07 | Emitir Etiquetas de Identificação de Peças por Item do Pedido | [#142](https://github.com/ADS-IFPB-SR/alumigest/issues/142) | 🔵 Ativa (13/10 a 27/10) |
+| **US-18** | **US-17** | Sprint 07 | Emitir Etiquetas de Identificação de Peças por Item do Pedido | [#142](https://github.com/ADS-IFPB-SR/alumigest/issues/142) | 🟢 Concluída |
 | **US-19** | ❌ **DESCARTADA** | Sprint 06 | Atualizar Status de Produção via Scanner de QR Code | — | 🚫 Removida do Escopo |
-| **US-20** | **US-18** | Sprint 07 | Acompanhar Produção via Painel Kanban de Pedidos de Venda | [#143](https://github.com/ADS-IFPB-SR/alumigest/issues/143) | 🔵 Ativa (13/10 a 27/10) |
+| **US-20** | **US-18** | Sprint 07 | Acompanhar Produção via Painel Kanban de Pedidos de Venda | [#143](https://github.com/ADS-IFPB-SR/alumigest/issues/143) | 🟢 Concluída |
 | **US-21** | **US-19** | Sprint 07 | Consolidar Lista Linear e Plana de Corte do Pedido | [#144](https://github.com/ADS-IFPB-SR/alumigest/issues/144) | 🔄 Renumerada (-2) |
 | **US-22** | **US-20** | Sprint 07 | Gerar Ficha Técnica de Montagem por Item do Pedido | [#145](https://github.com/ADS-IFPB-SR/alumigest/issues/145) | 🔄 Renumerada (-2) |
 | **US-23** | ❌ **DESCARTADA** | Sprint 07 | Emitir Romaneio de Oficina em PDF com Checklist de Conferência | — | 🚫 Removida do Escopo |

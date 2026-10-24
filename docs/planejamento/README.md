@@ -28,14 +28,15 @@ Este diretório centraliza a documentação de planejamento, especificações fu
 | [Sprint 04](sprint-04/spec.md) | 01/09 a 14/09/2026 | Templates SVG, Descontos Base e Quality SonarQube | `quality #245`, `US-05`, `US-46`, `US-09 (P1)` | **41** | 🟢 Concluída |
 | [Sprint 05](sprint-05/spec.md) | 15/09 a 28/09/2026 | Conclusão de Descontos, PDFs em 2 Vias e Homologação R1 via DoD | `US-09 (P2)`, `US-10`, `US-11` (DoD R1) | **24** | 🟢 Concluída |
 | [Sprint 06](sprint-06/README.md) | 29/09 a 12/10/2026 | Pedidos de Venda, Lock de Preços e Comprovante Oficial | `US-13`, `US-14`, `US-15`, `US-16` | **43** | 🟢 Concluída |
+| [Sprint 07](sprint-07/README.md) | 13/10 a 27/10/2026 | Gestão Fabril: Etiquetas Técnicas & Painel Kanban de Produção | `US-17`, `US-18` | **11** | 🟢 Concluída |
 
 ---
 
-### 🔵 Sprint Ativa (Release 2 — Gestão Fabril & Pedidos)
+### 🔵 Próxima Sprint (Release 2 — Gestão Fabril & Pedidos)
 
-| Sprint | Período Oficial | Módulo / Escopo Principal | User Stories | Total Issues | Status |
-| :--- | :---: | :--- | :--- | :---: | :---: |
-| **[Sprint 07](sprint-07/README.md)** | **13/10/2026 a 27/10/2026** | **Gestão Fabril: Etiquetas Técnicas & Painel Kanban de Produção** | **`US-17`, `US-18`** | **11** | 🔵 **Planejada / Ativa** |
+| Sprint | Período Previsto | Módulo / Escopo Principal | User Stories Sugeridas | Status |
+| :--- | :---: | :--- | :--- | :---: |
+| **Sprint 08** | **28/10/2026 a 10/11/2026** | **Lista de Corte Linear/Plana & Ficha Técnica de Montagem** | **`US-19`, `US-20`** | 🔵 **Aguardando Planning** |
 
 ---
 
@@ -44,8 +45,8 @@ Este diretório centraliza a documentação de planejamento, especificações fu
 Todas as histórias subsequentes da **Release 2**, **Release 3** e **Sustentação** estão organizadas no [Backlog Centralizado](backlog/README.md). Conforme a equipe realizar cada Sprint Planning, novas pastas de sprint serão criadas selecionando histórias deste backlog:
 
 - **Fábrica & Chão de Fábrica (Release 2)**:
-  - [`US-17`](sprint-07/spec.md) — Etiquetas de Identificação de Peças (100x50mm) *(Em execução na Sprint 07)*
-  - [`US-18`](sprint-07/spec.md) — Painel Kanban de Produção *(Em execução na Sprint 07)*
+  - [`US-17`](sprint-07/spec.md) — Etiquetas de Identificação de Peças (100x50mm) *(Concluída na Sprint 07)*
+  - [`US-18`](sprint-07/spec.md) — Painel Kanban de Produção *(Concluída na Sprint 07)*
   - [`US-19`](backlog/US-19-lista-corte-pedido/spec.md) — Lista Consolidada de Corte (Romaneio)
   - [`US-20`](backlog/US-20-ficha-tecnica-montagem/spec.md) — Ficha Técnica de Montagem de Esquadrias
   - [`US-21`](backlog/US-21-reserva-baixa-estoque/spec.md) — Reserva e Baixa Automática de Estoque

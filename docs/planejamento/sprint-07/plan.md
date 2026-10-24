@@ -1,6 +1,6 @@
 # Implementation Plan: Sprint 07 — Gestão Fabril: Etiquetas de Identificação de Peças & Painel Kanban de Produção
 
-**Branch**: `003-etiquetas-kanban-producao` | **Período da Sprint 07**: 13/10/2026 a 27/10/2026 | **Spec**: [spec.md](spec.md)
+**Branch**: `003-etiquetas-kanban-producao` | **Período da Sprint 07**: 13/10/2026 a 27/10/2026 | **Spec**: [spec.md](spec.md) | **Status**: 🟢 Concluído
 
 **Input**: Feature specification from `docs/planejamento/sprint-07/spec.md`
 
