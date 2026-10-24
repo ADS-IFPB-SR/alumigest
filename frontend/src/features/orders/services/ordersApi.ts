@@ -238,13 +238,29 @@ export const ordersApi = {
     }
 
     const url = window.URL.createObjectURL(blob);
+    // Abre diretamente a página com o PDF no navegador para impressão (Ctrl + Shift + P) sem baixar no disco
+    try {
+      if (typeof window !== 'undefined' && typeof window.open === 'function') {
+        const printWindow = window.open(url, '_blank');
+        if (printWindow) {
+          printWindow.focus();
+        }
+      }
+    } catch {
+      // Fallback para ambientes restritos ou testes
+    }
+
+    // Garante acionamento de abertura em nova aba no navegador
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', filename);
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
     document.body.appendChild(link);
-    link.click();
     link.remove();
-    window.URL.revokeObjectURL(url);
+
+    setTimeout(() => {
+      window.URL.revokeObjectURL(url);
+    }, 120000);
   },
 
   /**

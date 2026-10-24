@@ -10,6 +10,7 @@ describe('ordersApi - PDF downloads & Blob error handling (BUG-485)', () => {
     mock = new MockAdapter(api);
     vi.spyOn(window.URL, 'createObjectURL').mockReturnValue('blob:http://localhost/mock-blob-url');
     vi.spyOn(window.URL, 'revokeObjectURL').mockImplementation(() => {});
+    vi.spyOn(window, 'open').mockImplementation(() => null);
   });
 
   afterEach(() => {
