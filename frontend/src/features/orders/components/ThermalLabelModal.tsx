@@ -133,9 +133,9 @@ export const ThermalLabelModal: React.FC<ThermalLabelModalProps> = ({
   // Rótulo dinâmico da impressão térmica de acordo com o filtro selecionado (Bugs #487 e #493)
   const printButtonLabel = useMemo(() => {
     if (selectedItemFilter === 'ALL') {
-      return `Impressão Direta (${allPhysicalLabels.length})`;
+      return `Imprimir (${allPhysicalLabels.length})`;
     }
-    return `Impressão Direta Filtradas (${filteredLabels.length})`;
+    return `Imprimir Filtradas (${filteredLabels.length})`;
   }, [selectedItemFilter, allPhysicalLabels.length, filteredLabels.length]);
 
   if (!isOpen) return null;
@@ -425,35 +425,20 @@ export const ThermalLabelModal: React.FC<ThermalLabelModalProps> = ({
           </div>
 
           <div className="flex items-center gap-2 w-full md:w-auto">
-            <button
-              type="button"
-              data-testid="btn-modal-print-thermal"
-              onClick={handlePrintThermal}
-              disabled={isPrinting}
-              className="flex-1 md:flex-none inline-flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-lg bg-slate-900 hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed text-white shadow-xs transition-colors cursor-pointer"
-            >
-              {isPrinting ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Printer className="w-4 h-4" />
-              )}
-              {isPrinting ? 'Enviando para a impressora...' : printButtonLabel}
-            </button>
-
             {onDownloadPdf && (
               <button
                 type="button"
                 data-testid="btn-modal-download-pdf"
                 onClick={handleDownloadPdf}
                 disabled={isDownloadingPdf}
-                className="flex-1 md:flex-none inline-flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-lg bg-surface-container-highest hover:bg-outline-variant text-on-surface transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 md:flex-none inline-flex items-center justify-center gap-1.5 px-5 py-2.5 text-sm font-semibold rounded-lg bg-slate-900 hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed text-white shadow-xs transition-colors cursor-pointer"
               >
                 {isDownloadingPdf ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
-                  <Download className="w-4 h-4" />
+                  <Printer className="w-4 h-4" />
                 )}
-                {isDownloadingPdf ? 'Baixando PDF...' : 'Baixar PDF'}
+                {isDownloadingPdf ? 'Abrindo Impressão...' : printButtonLabel}
               </button>
             )}
           </div>

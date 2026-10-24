@@ -174,43 +174,27 @@ describe('ThermalLabelModal — [US-17] Visualização Prévia, Conferência e I
 
     // Inicialmente 5 etiquetas
     expect(screen.getAllByTestId('thermal-label-card')).toHaveLength(5);
-    expect(screen.getByTestId('btn-modal-print-thermal')).toHaveTextContent('Impressão Direta (5)');
+    expect(screen.getByTestId('btn-modal-download-pdf')).toHaveTextContent('Imprimir (5)');
 
     // Filtra pelo Item 1 (4 etiquetas)
     fireEvent.click(screen.getByTestId('filter-piece-item-1'));
     expect(screen.getAllByTestId('thermal-label-card')).toHaveLength(4);
     expect(screen.getAllByText('Item 01 • Esquadria 01/02 | Folha 01/02').length).toBeGreaterThanOrEqual(1);
     expect(screen.queryByText('Item 02 • Esquadria 01/01 | Peça 01/01')).not.toBeInTheDocument();
-    expect(screen.getByTestId('btn-modal-print-thermal')).toHaveTextContent('Impressão Direta Filtradas (4)');
+    expect(screen.getByTestId('btn-modal-download-pdf')).toHaveTextContent('Imprimir Filtradas (4)');
 
     // Filtra pelo Item 2 (1 etiqueta)
     fireEvent.click(screen.getByTestId('filter-piece-item-2'));
     expect(screen.getAllByTestId('thermal-label-card')).toHaveLength(1);
     expect(screen.getAllByText('Item 02 • Esquadria 01/01 | Peça 01/01').length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByTestId('btn-modal-print-thermal')).toHaveTextContent('Impressão Direta Filtradas (1)');
+    expect(screen.getByTestId('btn-modal-download-pdf')).toHaveTextContent('Imprimir Filtradas (1)');
 
     // Volta para todas as peças
     fireEvent.click(screen.getByTestId('filter-piece-all'));
     expect(screen.getAllByTestId('thermal-label-card')).toHaveLength(5);
-    expect(screen.getByTestId('btn-modal-print-thermal')).toHaveTextContent('Impressão Direta (5)');
+    expect(screen.getByTestId('btn-modal-download-pdf')).toHaveTextContent('Imprimir (5)');
 
-    // Verifica nome do botão conforme especificado: 'Impressão Direta'
-    const printBtn = screen.getByTestId('btn-modal-print-thermal');
-    expect(printBtn).toHaveTextContent('Impressão Direta');
-
-    // Aciona botão de impressão direta USB (BPLB)
-    fireEvent.click(printBtn);
-    await waitFor(() => {
-      expect(handlePrintThermal).toHaveBeenCalledTimes(1);
-      expect(handlePrintThermal).toHaveBeenCalledWith(
-        expect.objectContaining({
-          id: 'order-multi-123',
-          leavesPerItem: expect.any(Object),
-        })
-      );
-    });
-
-    // Aciona botão de download PDF repassando as folhas customizadas
+    // Aciona botão de impressão repassando as folhas customizadas
     fireEvent.click(screen.getByTestId('btn-modal-download-pdf'));
     expect(handleDownload).toHaveBeenCalledTimes(1);
     expect(handleDownload).toHaveBeenCalledWith(undefined, expect.any(Object));
@@ -220,7 +204,7 @@ describe('ThermalLabelModal — [US-17] Visualização Prévia, Conferência e I
     expect(handleClose).toHaveBeenCalledTimes(1);
   });
 
-  it('[BUG #487]: deve repassar o itemId correspondente ao baixar PDF com filtro de item ativo e adaptar rótulo de impressão térmica', () => {
+  it('[BUG #487]: deve repassar o itemId correspondente ao clicar em Imprimir com filtro de item ativo', () => {
     const handleDownload = vi.fn();
 
     render(
@@ -233,38 +217,37 @@ describe('ThermalLabelModal — [US-17] Visualização Prévia, Conferência e I
       />
     );
 
-    const printThermalBtn = screen.getByTestId('btn-modal-print-thermal');
-    const downloadPdfBtn = screen.getByTestId('btn-modal-download-pdf');
+    const printBtn = screen.getByTestId('btn-modal-download-pdf');
 
     // 1. Estado inicial ('ALL'): rótulo com total de etiquetas físicas calculadas com dedução
-    expect(printThermalBtn).toHaveTextContent('Impressão Direta (5)');
+    expect(printBtn).toHaveTextContent('Imprimir (5)');
 
-    // 2. Filtra pelo Item 2 (1 etiqueta): rótulo dinâmico e download repassa itemId 'item-porta-2'
+    // 2. Filtra pelo Item 2 (1 etiqueta): rótulo dinâmico e impressão repassa itemId 'item-porta-2'
     fireEvent.click(screen.getByTestId('filter-piece-item-2'));
-    expect(printThermalBtn).toHaveTextContent('Impressão Direta Filtradas (1)');
+    expect(printBtn).toHaveTextContent('Imprimir Filtradas (1)');
 
-    fireEvent.click(downloadPdfBtn);
+    fireEvent.click(printBtn);
     expect(handleDownload).toHaveBeenCalledTimes(1);
     expect(handleDownload).toHaveBeenLastCalledWith('item-porta-2', expect.any(Object));
 
-    // 3. Filtra pelo Item 1 (4 etiquetas): rótulo dinâmico e download repassa itemId 'item-janela-1'
+    // 3. Filtra pelo Item 1 (4 etiquetas): rótulo dinâmico e impressão repassa itemId 'item-janela-1'
     fireEvent.click(screen.getByTestId('filter-piece-item-1'));
-    expect(printThermalBtn).toHaveTextContent('Impressão Direta Filtradas (4)');
+    expect(printBtn).toHaveTextContent('Imprimir Filtradas (4)');
 
-    fireEvent.click(downloadPdfBtn);
+    fireEvent.click(printBtn);
     expect(handleDownload).toHaveBeenCalledTimes(2);
     expect(handleDownload).toHaveBeenLastCalledWith('item-janela-1', expect.any(Object));
 
-    // 4. Retorna para todas as peças: rótulo volta para 'Impressão Direta (5)' e repassa undefined
+    // 4. Retorna para todas as peças: rótulo volta para 'Imprimir (5)' e repassa undefined
     fireEvent.click(screen.getByTestId('filter-piece-all'));
-    expect(printThermalBtn).toHaveTextContent('Impressão Direta (5)');
+    expect(printBtn).toHaveTextContent('Imprimir (5)');
 
-    fireEvent.click(downloadPdfBtn);
+    fireEvent.click(printBtn);
     expect(handleDownload).toHaveBeenCalledTimes(3);
     expect(handleDownload).toHaveBeenLastCalledWith(undefined, expect.any(Object));
   });
 
-  it('deve desabilitar o botão "Baixar PDF" quando isDownloadingPdf for true', () => {
+  it('deve desabilitar o botão "Imprimir" quando isDownloadingPdf for true', () => {
     render(
       <ThermalLabelModal
         isOpen={true}
@@ -275,9 +258,9 @@ describe('ThermalLabelModal — [US-17] Visualização Prévia, Conferência e I
       />
     );
 
-    const downloadBtn = screen.getByTestId('btn-modal-download-pdf');
-    expect(downloadBtn).toBeDisabled();
-    expect(screen.getByText('Baixando PDF...')).toBeInTheDocument();
+    const printBtn = screen.getByTestId('btn-modal-download-pdf');
+    expect(printBtn).toBeDisabled();
+    expect(screen.getByText('Abrindo Impressão...')).toBeInTheDocument();
   });
 });
 
