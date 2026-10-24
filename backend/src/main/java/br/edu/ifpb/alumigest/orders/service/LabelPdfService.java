@@ -38,8 +38,10 @@ public class LabelPdfService {
     /** Altura da etiqueta térmica em pontos (60 mm = 170.08 pt). */
     public static final float ALTURA_ETIQUETA_PT = 170.08f;
 
-    private static final float MARGEM_HORIZONTAL = 8.0f;
-    private static final float MARGEM_VERTICAL = 4.0f;
+    private static final float MARGEM_ESQUERDA = 7.0f;
+    private static final float MARGEM_DIREITA = 3.0f;
+    private static final float MARGEM_SUPERIOR = 5.0f;
+    private static final float MARGEM_INFERIOR = 2.0f;
 
     private final ThermalLabelDataResolver dataResolver;
     private final ThermalLabelPdfRenderer pdfRenderer;
@@ -94,14 +96,14 @@ public class LabelPdfService {
         List<ThermalLabelData> etiquetas = dataResolver.resolveLabels(order, itemId, customLeavesPerItem);
 
         Rectangle pageSize = new Rectangle(LARGURA_ETIQUETA_PT, ALTURA_ETIQUETA_PT);
-        Document document = new Document(pageSize, MARGEM_HORIZONTAL, MARGEM_HORIZONTAL,
-                MARGEM_VERTICAL, MARGEM_VERTICAL);
+        Document document = new Document(pageSize, MARGEM_ESQUERDA, MARGEM_DIREITA,
+                MARGEM_SUPERIOR, MARGEM_INFERIOR);
 
         try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             PdfWriter.getInstance(document, out);
             document.open();
 
-            float larguraUtil = LARGURA_ETIQUETA_PT - (MARGEM_HORIZONTAL * 2);
+            float larguraUtil = LARGURA_ETIQUETA_PT - MARGEM_ESQUERDA - MARGEM_DIREITA;
 
             for (int i = 0; i < etiquetas.size(); i++) {
                 if (i > 0) {

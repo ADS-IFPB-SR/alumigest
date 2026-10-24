@@ -301,7 +301,7 @@ public class ThermalLabelDataResolver {
 
     private String resolverDescricao(OrderItem item) {
         if (item.getDescricao() != null && !item.getDescricao().isBlank()) {
-            return item.getDescricao();
+            return truncarTexto(item.getDescricao(), 60);
         }
         return "Esquadria de Alumínio";
     }
