@@ -221,6 +221,7 @@ describe('OrderProductionCard Component', () => {
       card.dispatchEvent(dragEvent);
 
       expect(setDataMock).toHaveBeenCalledWith('text/plain', 'order-uuid-1');
+      expect(setDataMock).toHaveBeenCalledWith('sourceStatus', 'WAITING_PRODUCTION');
       expect(dragEvent.dataTransfer.effectAllowed).toBe('move');
       expect(card).toHaveClass('opacity-50');
 

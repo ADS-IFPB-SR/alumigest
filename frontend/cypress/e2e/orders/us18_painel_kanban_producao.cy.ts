@@ -265,4 +265,32 @@ describe('US-18: Acompanhar Produção via Painel Kanban de Pedidos de Venda (Su
     cy.get('[data-testid="btn-new-order"]').click();
     cy.url().should('include', '/orcamentos');
   });
+
+  it('Cenário 8 [Bug #498]: Drag-and-drop de pedido na mesma coluna é no-op e não dispara requisição nem erro', () => {
+    cy.visit('/producao');
+    cy.wait('@getProductionOrders');
+
+    // Espiona se haverá alguma requisição de alteração de status
+    cy.intercept('PATCH', '**/orders/*/production-status', cy.spy().as('statusRequest'));
+
+    const dataTransfer = new DataTransfer();
+
+    cy.contains('[data-testid="order-production-card"]', 'OS-2026-0001')
+      .trigger('dragstart', { dataTransfer });
+
+    cy.get('[data-testid="kanban-column-waiting_production"]')
+      .trigger('dragover', { dataTransfer })
+      .trigger('drop', { dataTransfer });
+
+    // Garante que nenhuma requisição de rede foi enviada
+    cy.get('@statusRequest').should('not.have.been.called');
+
+    // Permanece na mesma coluna
+    cy.get('[data-testid="kanban-column-waiting_production"]').within(() => {
+      cy.contains('OS-2026-0001').should('be.visible');
+    });
+
+    // Nenhum toast de erro é exibido
+    cy.get('[role="status"]').should('not.exist');
+  });
 });

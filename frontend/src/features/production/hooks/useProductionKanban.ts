@@ -110,6 +110,10 @@ export function useProductionKanban() {
   });
 
   const handleMoveOrder = (orderId: string, newStatus: ProductionStatus) => {
+    const currentOrder = orders.find((o) => o.id === orderId);
+    if (currentOrder && normalizeProductionStatus(currentOrder.status) === newStatus) {
+      return;
+    }
     updateStatusMutation.mutate({ orderId, status: newStatus });
   };
 

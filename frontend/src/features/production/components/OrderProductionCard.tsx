@@ -1,6 +1,7 @@
 import React from 'react';
 import { Calendar, Eye, AlertCircle, Clock, Package } from 'lucide-react';
 import type { Order, OrderSummary } from '../../orders/types';
+import { normalizeProductionStatus } from '../types';
 import { formatDate } from '../../orders/utils/formatDate';
 import { getDeadlineStatus } from '../utils/deadlineUtils';
 
@@ -53,6 +54,10 @@ export const OrderProductionCard: React.FC<OrderProductionCardProps> = ({
       onDragStart={(e) => {
         if (e.dataTransfer) {
           e.dataTransfer.setData('text/plain', order.id);
+          const normalizedStatus = normalizeProductionStatus(order.status);
+          if (normalizedStatus) {
+            e.dataTransfer.setData('sourceStatus', normalizedStatus);
+          }
           e.dataTransfer.effectAllowed = 'move';
         }
         e.currentTarget.classList.add('opacity-50', 'scale-[0.98]');
