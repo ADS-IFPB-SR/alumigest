@@ -176,6 +176,27 @@ describe('useProductionKanban Hook — [US-18.2 / #502]', () => {
         expect(toast.error).toHaveBeenCalledWith('Transição inválida para o pedido.');
       });
     });
+
+    it('EP-05: deve ignorar (no-op) e não disparar mutação nem toast ao tentar mover pedido para o mesmo status [Bug #498]', async () => {
+      const initialOrders: OrderSummary[] = [
+        createMockOrder('ord-1', 'WAITING_PRODUCTION'),
+      ];
+      vi.mocked(productionApi.getProductionOrders).mockResolvedValue(initialOrders);
+
+      const { result } = renderHook(() => useProductionKanban(), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      act(() => {
+        result.current.onMoveOrder('ord-1', 'WAITING_PRODUCTION');
+      });
+
+      expect(productionApi.updateProductionStatus).not.toHaveBeenCalled();
+      expect(toast.success).not.toHaveBeenCalled();
+      expect(toast.error).not.toHaveBeenCalled();
+    });
   });
 
   // =========================================================================

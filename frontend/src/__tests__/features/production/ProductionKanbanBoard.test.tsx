@@ -281,6 +281,49 @@ describe('ProductionKanbanBoard Component (US-18.4)', () => {
 
       expect(mockOnMoveOrder).not.toHaveBeenCalled();
     });
+
+    it('deve abortar (no-op) e não chamar onMoveOrder se o pedido for solto na mesma coluna via dataTransfer [Bug #498]', () => {
+      render(
+        <ProductionKanbanBoard
+          orders={[orderWaiting1]}
+          onMoveOrder={mockOnMoveOrder}
+        />
+      );
+
+      const waitingColumn = screen.getByTestId('kanban-column-waiting_production');
+
+      fireEvent.drop(waitingColumn, {
+        dataTransfer: {
+          getData: (format: string) => {
+            if (format === 'text/plain') return 'ord-1';
+            if (format === 'sourceStatus') return 'WAITING_PRODUCTION';
+            return '';
+          },
+        },
+      });
+
+      expect(mockOnMoveOrder).not.toHaveBeenCalled();
+    });
+
+    it('deve abortar (no-op) e não chamar onMoveOrder se o pedido for solto na mesma coluna inferido por columnsData [Bug #498]', () => {
+      render(
+        <ProductionKanbanBoard
+          orders={[orderWaiting1]}
+          onMoveOrder={mockOnMoveOrder}
+        />
+      );
+
+      const waitingColumn = screen.getByTestId('kanban-column-waiting_production');
+
+      // Sem informar sourceStatus no dataTransfer, deve inferir que ord-1 já está na coluna WAITING_PRODUCTION
+      fireEvent.drop(waitingColumn, {
+        dataTransfer: {
+          getData: (format: string) => (format === 'text/plain' ? 'ord-1' : ''),
+        },
+      });
+
+      expect(mockOnMoveOrder).not.toHaveBeenCalled();
+    });
   });
 
   describe('Ação de Visualizar Detalhes do Pedido', () => {
