@@ -10,7 +10,7 @@ export interface ThermalLabelModalProps {
   isOpen: boolean;
   onClose: () => void;
   order: Order;
-  onDownloadPdf?: () => void;
+  onDownloadPdf?: (itemId?: string) => void;
   isDownloadingPdf?: boolean;
 }
 
@@ -41,10 +41,25 @@ export const ThermalLabelModal: React.FC<ThermalLabelModalProps> = ({
     return allPhysicalLabels.filter((label) => label.item.id === selectedItemFilter);
   }, [allPhysicalLabels, selectedItemFilter]);
 
+  // ID do item selecionado no filtro rápido (ou undefined quando em 'ALL')
+  const activeItemId = selectedItemFilter === 'ALL' ? undefined : selectedItemFilter;
+
+  // Rótulo dinâmico da impressão térmica de acordo com o filtro selecionado
+  const printButtonLabel = useMemo(() => {
+    if (selectedItemFilter === 'ALL') {
+      return `Imprimir Todas na Térmica (${allPhysicalLabels.length})`;
+    }
+    return `Imprimir Peças Filtradas (${filteredLabels.length})`;
+  }, [selectedItemFilter, allPhysicalLabels.length, filteredLabels.length]);
+
   if (!isOpen) return null;
 
   const handlePrintThermal = () => {
     window.print();
+  };
+
+  const handleDownloadPdf = () => {
+    onDownloadPdf?.(activeItemId);
   };
 
   const formattedDate = order.dataAprovacao
@@ -272,14 +287,14 @@ export const ThermalLabelModal: React.FC<ThermalLabelModalProps> = ({
               className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-lg bg-surface-container-highest hover:bg-outline-variant text-on-surface transition-colors cursor-pointer"
             >
               <Printer className="w-4 h-4" />
-              Imprimir Todas na Térmica
+              {printButtonLabel}
             </button>
 
             {onDownloadPdf && (
               <button
                 type="button"
                 data-testid="btn-modal-download-pdf"
-                onClick={onDownloadPdf}
+                onClick={handleDownloadPdf}
                 disabled={isDownloadingPdf}
                 className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-lg bg-primary hover:bg-primary-dark text-white shadow-xs transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
