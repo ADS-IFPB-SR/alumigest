@@ -159,7 +159,6 @@ describe('ThermalLabelModal — [US-17] Visualização Prévia, Conferência e I
   it('Cenário 4: deve permitir alternar filtros rápidos por item e acionar botões de impressão e download', async () => {
     const handleDownload = vi.fn();
     const handleClose = vi.fn();
-    const handlePrintThermal = vi.fn();
 
     render(
       <ThermalLabelModal
@@ -168,7 +167,6 @@ describe('ThermalLabelModal — [US-17] Visualização Prévia, Conferência e I
         order={mockOrderMultiItens}
         onDownloadPdf={handleDownload}
         isDownloadingPdf={false}
-        onPrintThermal={handlePrintThermal}
       />
     );
 

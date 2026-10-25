@@ -44,8 +44,6 @@ export const ThermalLabelModal: React.FC<ThermalLabelModalProps> = ({
   order,
   onDownloadPdf,
   isDownloadingPdf = false,
-  onPrintThermal: _onPrintThermalProp,
-  isPrintingThermal: _isPrintingThermalProp,
 }) => {
   // Filtro por ID do item (evita colisão quando dois itens compartilham o mesmo `ordem`)
   const [selectedItemFilter, setSelectedItemFilter] = useState<string>('ALL');

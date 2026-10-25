@@ -202,7 +202,7 @@ export const ordersApi = {
    */
   async downloadLabelsPdf(
     id: string,
-    _codigo?: string,
+    codigo?: string,
     itemId?: string,
     customLeaves?: Record<string, number>
   ): Promise<void> {
@@ -231,25 +231,31 @@ export const ordersApi = {
     }
 
     const url = window.URL.createObjectURL(blob);
-    // Abre diretamente a página com o PDF no navegador para impressão (Ctrl + Shift + P) sem baixar no disco
+    let openedInNewTab = false;
+
+    // Tenta abrir diretamente a visualização do PDF no navegador para impressão (Ctrl + Shift + P)
     try {
       if (typeof window !== 'undefined' && typeof window.open === 'function') {
         const printWindow = window.open(url, '_blank');
         if (printWindow) {
           printWindow.focus();
+          openedInNewTab = true;
         }
       }
     } catch {
-      // Fallback para ambientes restritos ou testes
+      // Fallback para bloqueio de pop-up ou ambientes restritos
     }
 
-    // Garante acionamento de abertura em nova aba no navegador
-    const link = document.createElement('a');
-    link.href = url;
-    link.target = '_blank';
-    link.rel = 'noopener noreferrer';
-    document.body.appendChild(link);
-    link.remove();
+    // Se a abertura direta em nova aba falhou (ex: bloqueador de pop-ups), dispara download do arquivo
+    if (!openedInNewTab && typeof document !== 'undefined') {
+      const fallbackFilename = `etiquetas-${codigo ?? id}.pdf`;
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', fallbackFilename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    }
 
     setTimeout(() => {
       window.URL.revokeObjectURL(url);
