@@ -101,37 +101,49 @@ public class ThermalLabelDataResolver {
                     "A ordem de serviço não possui itens com quantidade válida para emissão de etiquetas.");
         }
 
-        OrderLabelContext context = new OrderLabelContext(
+        OrderLabelContext context = criarContexto(order, totalPecasOS);
+
+        return processarItens(itensOrdenados, itemId, context, customLeavesPerItem);
+    }
+
+    private OrderLabelContext criarContexto(Order order, int totalPecasOS) {
+        String codigo = order.getCodigo() != null ? order.getCodigo() : "OS-S/COD";
+        LocalDate dataAprovacao = order.getDataAprovacao() != null
+                ? order.getDataAprovacao()
+                : LocalDate.now(ZoneOffset.UTC);
+
+        return new OrderLabelContext(
                 order,
                 resolverNomeEmpresa(),
                 resolverNomeCliente(order),
-                order.getCodigo() != null ? order.getCodigo() : "OS-S/COD",
-                order.getDataAprovacao() != null ? order.getDataAprovacao() : LocalDate.now(ZoneOffset.UTC),
+                codigo,
+                dataAprovacao,
                 totalPecasOS
         );
+    }
 
+    private List<ThermalLabelData> processarItens(List<OrderItem> itensOrdenados,
+                                                  UUID itemId,
+                                                  OrderLabelContext context,
+                                                  Map<UUID, Integer> customLeavesPerItem) {
         List<ThermalLabelData> listaEtiquetas = new ArrayList<>();
         int contadorGlobal = 1;
         int itemIndex = 1;
 
-        // 3. Itera sobre a ordem completa, assegurando que o contadorGlobal avance corretamente
+        // Itera sobre a ordem completa, assegurando que o contadorGlobal avance corretamente
         for (OrderItem item : itensOrdenados) {
             if (item.getQuantidade() == null || item.getQuantidade() <= 0) {
                 log.debug("Ignorando item ID {} sem quantidade positiva para emissão de etiquetas.", item.getId());
                 continue;
             }
 
-            int indexUtilizado = (item.getOrdem() != null && item.getOrdem() > 0) ? item.getOrdem() : itemIndex;
-            boolean deveGerarEtiqueta = (itemId == null || Objects.equals(item.getId(), itemId));
+            int indexUtilizado = resolverIndexItem(item, itemIndex);
+            boolean deveGerarEtiqueta = itemId == null || Objects.equals(item.getId(), itemId);
 
             if (deveGerarEtiqueta) {
-                // Adiciona as etiquetas deste item no lote de impressão e avança o contador
                 contadorGlobal = adicionarEtiquetasDoItem(listaEtiquetas, item, context, indexUtilizado, contadorGlobal, customLeavesPerItem);
             } else {
-                // Item filtrado: não gera etiqueta, mas AVANÇA o contadorGlobal silenciosamente
-                int folhas = (customLeavesPerItem != null && item.getId() != null && customLeavesPerItem.containsKey(item.getId()))
-                        ? Math.max(1, customLeavesPerItem.get(item.getId()))
-                        : extrairQuantidadeFolhas(item);
+                int folhas = obterFolhasDoItem(item, customLeavesPerItem);
                 contadorGlobal += item.getQuantidade() * folhas;
             }
 
@@ -139,6 +151,20 @@ public class ThermalLabelDataResolver {
         }
 
         return listaEtiquetas;
+    }
+
+    private int resolverIndexItem(OrderItem item, int fallbackIndex) {
+        if (item.getOrdem() != null && item.getOrdem() > 0) {
+            return item.getOrdem();
+        }
+        return fallbackIndex;
+    }
+
+    private int obterFolhasDoItem(OrderItem item, Map<UUID, Integer> customLeavesPerItem) {
+        if (customLeavesPerItem != null && item.getId() != null && customLeavesPerItem.containsKey(item.getId())) {
+            return Math.max(1, customLeavesPerItem.get(item.getId()));
+        }
+        return extrairQuantidadeFolhas(item);
     }
 
     /**
@@ -244,9 +270,7 @@ public class ThermalLabelDataResolver {
         String codItem = extrairCodigoItem(item, itemIndex);
         int qtdEsquadrias = item.getQuantidade();
 
-        int folhas = (customLeavesPerItem != null && item.getId() != null && customLeavesPerItem.containsKey(item.getId()))
-                ? Math.max(1, customLeavesPerItem.get(item.getId()))
-                : extrairQuantidadeFolhas(item);
+        int folhas = obterFolhasDoItem(item, customLeavesPerItem);
 
         int contador = contadorGlobal;
         for (int esq = 1; esq <= qtdEsquadrias; esq++) {
@@ -297,10 +321,7 @@ public class ThermalLabelDataResolver {
         int total = 0;
         for (OrderItem item : items) {
             if (item.getQuantidade() != null && item.getQuantidade() > 0) {
-                int folhas = (customLeavesPerItem != null && item.getId() != null && customLeavesPerItem.containsKey(item.getId()))
-                        ? Math.max(1, customLeavesPerItem.get(item.getId()))
-                        : extrairQuantidadeFolhas(item);
-                total += item.getQuantidade() * folhas;
+                total += item.getQuantidade() * obterFolhasDoItem(item, customLeavesPerItem);
             }
         }
         return total;
