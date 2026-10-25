@@ -23,7 +23,13 @@ describe('productionApi', () => {
 
       const result = await productionApi.getProductionOrders();
 
-      expect(api.get).toHaveBeenCalledWith('/orders', { params: { size: 100 } });
+      expect(api.get).toHaveBeenCalledWith('/orders', {
+        params: {
+          size: 100,
+          sort: 'createdAt,desc',
+          status: 'WAITING_PRODUCTION,IN_PRODUCTION,COMPLETED',
+        },
+      });
       expect(result).toEqual(mockOrders);
     });
 
@@ -34,6 +40,19 @@ describe('productionApi', () => {
       const result = await productionApi.getProductionOrders();
 
       expect(result).toEqual(mockOrders);
+    });
+
+    it('deve ordenar por createdAt,desc para exibir pedidos mais recentes primeiro (#503)', async () => {
+      vi.mocked(api.get).mockResolvedValueOnce({ data: { content: [] } });
+
+      await productionApi.getProductionOrders();
+
+      expect(api.get).toHaveBeenCalledWith('/orders', {
+        params: expect.objectContaining({
+          sort: 'createdAt,desc',
+          status: 'WAITING_PRODUCTION,IN_PRODUCTION,COMPLETED',
+        }),
+      });
     });
   });
 
