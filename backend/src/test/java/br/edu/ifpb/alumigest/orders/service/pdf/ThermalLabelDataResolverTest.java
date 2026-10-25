@@ -6,6 +6,7 @@ import br.edu.ifpb.alumigest.catalog.domain.Product;
 import br.edu.ifpb.alumigest.common.exception.BusinessException;
 import br.edu.ifpb.alumigest.orders.domain.Order;
 import br.edu.ifpb.alumigest.orders.domain.OrderItem;
+import br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -419,6 +420,82 @@ class ThermalLabelDataResolverTest {
             assertThat(resolver.extrairQuantidadeFolhas(OrderItem.builder().descricao("Painel Fixo").build())).isEqualTo(1);
             assertThat(resolver.extrairQuantidadeFolhas(
                     OrderItem.builder().descricao("Esquadria").templateConfig("invalid json").build())).isEqualTo(1);
+        }
+    }
+
+    // =========================================================================
+    // 6. Filtragem de Itens Específicos (Geração de PDF Individual)
+    // =========================================================================
+
+    @Nested
+    @DisplayName("6. Filtragem de Itens Específicos (Geração de PDF Individual)")
+    class FiltragemDeItensTestes {
+
+        @Test
+        @DisplayName("Deve gerar etiquetas APENAS para o item filtrado, preservando a numeração global e o total de peças da O.S.")
+        void deveGerarApenasParaOItemFiltradoComNumeracaoGlobal() {
+            // Arrange
+            Order order = Order.builder()
+                    .id(UUID.randomUUID())
+                    .codigo("OS-FILTRO-01")
+                    .build();
+
+            // Item 1: 2 peças (Peças 1/6 e 2/6)
+            UUID idItem1 = UUID.randomUUID();
+            OrderItem item1 = OrderItem.builder().id(idItem1).quantidade(2).descricao("Item 1").ordem(1).build();
+
+            // Item 2: 1 peça (Peça 3/6) - <-- É este que vamos filtrar!
+            UUID idItem2 = UUID.randomUUID();
+            OrderItem item2 = OrderItem.builder().id(idItem2).quantidade(1).descricao("Item 2").ordem(2).build();
+
+            // Item 3: 3 peças (Peças 4/6, 5/6 e 6/6)
+            UUID idItem3 = UUID.randomUUID();
+            OrderItem item3 = OrderItem.builder().id(idItem3).quantidade(3).descricao("Item 3").ordem(3).build();
+
+            order.addItem(item1);
+            order.addItem(item2);
+            order.addItem(item3);
+
+            // Act - Filtrando apenas o Item 2
+            List<ThermalLabelData> etiquetas = resolver.resolveLabels(order, idItem2);
+
+            // Assert
+            assertThat(etiquetas)
+                    .as("Deve retornar apenas 1 etiqueta correspondente à quantidade do Item 2")
+                    .hasSize(1);
+
+            ThermalLabelData etiqueta = etiquetas.get(0);
+            
+            assertThat(etiqueta.description())
+                    .as("A etiqueta gerada deve ser a do Item 2")
+                    .isEqualTo("Item 2");
+            
+            assertThat(etiqueta.pieceNumber())
+                    .as("A numeração deve continuar avançando invisivelmente (pulou as 2 do Item 1)")
+                    .isEqualTo(3);
+            
+            assertThat(etiqueta.totalPieces())
+                    .as("O denominador deve representar o total da Ordem de Serviço completa (2+1+3)")
+                    .isEqualTo(6);
+        }
+
+        @Test
+        @DisplayName("Deve lançar ResourceNotFoundException se o itemId passado não pertencer à Ordem de Serviço")
+        void deveLancarExcecaoSeItemNaoPertencerAOs() {
+            // Arrange
+            Order order = Order.builder()
+                    .codigo("OS-FILTRO-404")
+                    .build();
+            
+            order.addItem(OrderItem.builder().id(UUID.randomUUID()).quantidade(2).build());
+
+            UUID idInexistente = UUID.randomUUID();
+
+            // Act & Assert
+            assertThatThrownBy(() -> resolver.resolveLabels(order, idInexistente))
+                    .isInstanceOf(ResourceNotFoundException.class)
+                    .hasMessageContaining("Item do Pedido")
+                    .hasMessageContaining(idInexistente.toString());
         }
     }
 }

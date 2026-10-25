@@ -91,8 +91,10 @@ public class ThermalLabelDataResolver {
         Objects.requireNonNull(order,
                 "A ordem de serviço não pode ser nula para resolução de etiquetas térmicas.");
 
-        List<OrderItem> itensOrdenados = filtrarEOrdenarItens(order.getItems(), itemId);
+        // 1. Valida e ordena TODOS os itens (sem excluir nenhum da lista)
+        List<OrderItem> itensOrdenados = ordenarEValidarItens(order.getItems(), itemId);
 
+        // 2. O total reflete a soma real de todas as peças da O.S. considerando folhas deduzidas/customizadas
         int totalPecasOS = calcularTotalPecas(itensOrdenados, customLeavesPerItem);
         if (totalPecasOS == 0) {
             throw new BusinessException(
@@ -108,10 +110,11 @@ public class ThermalLabelDataResolver {
                 totalPecasOS
         );
 
-        List<ThermalLabelData> listaEtiquetas = new ArrayList<>(totalPecasOS);
+        List<ThermalLabelData> listaEtiquetas = new ArrayList<>();
         int contadorGlobal = 1;
         int itemIndex = 1;
 
+        // 3. Itera sobre a ordem completa, assegurando que o contadorGlobal avance corretamente
         for (OrderItem item : itensOrdenados) {
             if (item.getQuantidade() == null || item.getQuantidade() <= 0) {
                 log.debug("Ignorando item ID {} sem quantidade positiva para emissão de etiquetas.", item.getId());
@@ -119,7 +122,19 @@ public class ThermalLabelDataResolver {
             }
 
             int indexUtilizado = (item.getOrdem() != null && item.getOrdem() > 0) ? item.getOrdem() : itemIndex;
-            contadorGlobal = adicionarEtiquetasDoItem(listaEtiquetas, item, context, indexUtilizado, contadorGlobal, customLeavesPerItem);
+            boolean deveGerarEtiqueta = (itemId == null || Objects.equals(item.getId(), itemId));
+
+            if (deveGerarEtiqueta) {
+                // Adiciona as etiquetas deste item no lote de impressão e avança o contador
+                contadorGlobal = adicionarEtiquetasDoItem(listaEtiquetas, item, context, indexUtilizado, contadorGlobal, customLeavesPerItem);
+            } else {
+                // Item filtrado: não gera etiqueta, mas AVANÇA o contadorGlobal silenciosamente
+                int folhas = (customLeavesPerItem != null && item.getId() != null && customLeavesPerItem.containsKey(item.getId()))
+                        ? Math.max(1, customLeavesPerItem.get(item.getId()))
+                        : extrairQuantidadeFolhas(item);
+                contadorGlobal += item.getQuantidade() * folhas;
+            }
+
             itemIndex++;
         }
 
@@ -127,10 +142,16 @@ public class ThermalLabelDataResolver {
     }
 
     /**
-     * Filtra e ordena os itens da ordem pelo campo {@code ordem}, aplicando opcionalmente
-     * um filtro por {@code itemId}. Centraliza a validação de nulidade e existência do item.
+     * Valida a existência do item e ordena a lista pelo campo {@code ordem}.
+     * Retorna a coleção integralmente para garantir o cálculo global da O.S.
+     *
+     * @param items  lista bruta de itens da ordem
+     * @param itemId identificador opcional para verificar a existência de um item específico
+     * @return lista ordenada contendo TODOS os itens
+     * @throws BusinessException         se a lista for nula ou vazia
+     * @throws ResourceNotFoundException se {@code itemId} for informado mas não encontrado
      */
-    private List<OrderItem> filtrarEOrdenarItens(List<OrderItem> items, UUID itemId) {
+    private List<OrderItem> ordenarEValidarItens(List<OrderItem> items, UUID itemId) {
         if (items == null || items.isEmpty()) {
             throw new BusinessException(
                     "A ordem de serviço não possui itens para emissão de etiquetas.");
@@ -139,11 +160,12 @@ public class ThermalLabelDataResolver {
         List<OrderItem> ordenados = new ArrayList<>(items);
         ordenados.sort(Comparator.comparingInt(i -> i.getOrdem() != null ? i.getOrdem() : 0));
 
+        // Mantém o lançamento de erro 404 se o ID enviado não pertencer a esta O.S.
         if (itemId != null) {
-            ordenados = ordenados.stream()
-                    .filter(i -> Objects.equals(i.getId(), itemId))
-                    .toList();
-            if (ordenados.isEmpty()) {
+            boolean itemExisteNaOs = ordenados.stream()
+                    .anyMatch(i -> Objects.equals(i.getId(), itemId));
+            
+            if (!itemExisteNaOs) {
                 throw new ResourceNotFoundException("Item do Pedido", itemId.toString());
             }
         }
