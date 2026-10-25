@@ -3,5 +3,6 @@
     "sonarlint.connectedMode.project": {
         "connectionId": "https-sonar-italohub-cloud-",
         "projectKey": "alumigest-frontend"
-    }
+    },
+    "java.configuration.updateBuildConfiguration": "interactive"
 }

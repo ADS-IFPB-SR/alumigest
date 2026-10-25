@@ -18,6 +18,7 @@
 | **US-17.2** | [US-17.2](issues/US-17.2-adicionar-endpoint-get-api-orders-orderid-labels-pdf/issue.md) Adicionar endpoint `GET /api/orders/{orderId}/labels-pdf` no `OrderController` retornando documento `application/pdf` com cabeçalho de download | ~2h | Backend REST / API | 🟢 Concluída |
 | **US-17.3** | [US-17.3](issues/US-17.3-criar-teste-unitario-do-labelpdfservice/issue.md) Criar bateria de testes unitários do `LabelPdfService` validando geração de bytes, contagem exata de páginas por peças físicas e tratamento de exceções | ~2h | Testes Unitários | 🟢 Concluída |
 | **US-17.4** | [US-17.4](issues/US-17.4-adicionar-botao-imprimir-etiquetas-no-frontend/issue.md) Adicionar botão "Imprimir Etiquetas" na tela de detalhes do pedido no frontend (`OrderDetailPage.tsx`) com estado de carregamento e download do blob | ~2h | Frontend UI / Ações | 🟢 Concluída |
+| **US-17.5** | [US-17.5](https://github.com/ADS-IFPB-SR/alumigest/issues/474) Testes E2E — Validação dos Cenários de Aceitação de Etiquetas Térmicas de Identificação via Cypress | ~3h | Testes E2E / QA | 🟢 Concluída |
 
 ---
 
@@ -36,12 +37,21 @@
 
 ---
 
+## 🧪 Qualidade & Homologação Integrada (QA)
+**Issue GitHub**: [#514](https://github.com/ADS-IFPB-SR/alumigest/issues/514) | **Prioridade**: P1 (DoD & Homologação)
+
+| ID | Tarefa | Duração | Tipo | Status |
+|---|---|:---:|---|:---:|
+| **QA-05** | [QA-05](issues/QA-05-homologacao-integrada-gestao-fabril/issue.md) Plano de Teste e Homologação Integrada da Gestão Fabril (Etiquetas Térmicas & Kanban de Produção — Sprint 07) cobrindo suítes Cypress, baterias unitárias e relatório formal [RET](../../projeto-001/003-teste/sprint-07/RET-Relatorio_Execucao_Testes_Sprint07.md) | ~5h | Qualidade / QA | 🟢 Concluída |
+
+---
+
 ## 📊 Resumo de Esforço da Sprint 07
 
-- **Total de Horas Estimadas**: **~27 horas** (10 Story Points).
-- **Duração Máxima por Tarefa**: Nenhuma tarefa ultrapassa **4 horas** (todas variam entre 1h e 3h).
+- **Total de Horas Estimadas**: **~35 horas** (15 Story Points).
 - **Cobertura de Testes**:
-  - Cada fatia vertical possui testes unitários dedicados escolhidos e implementados pelo desenvolvedor.
-  - A tarefa **US-17.3** cobre o motor de geração de etiquetas OpenPDF.
+  - Cada fatia vertical possui testes unitários dedicados.
+  - A tarefa **US-17.5** cobre a jornada Cypress de emissão de etiquetas.
   - A tarefa **US-18.7** cobre a máquina de estados e integração dos endpoints de produção com MockMvc.
-- **Definition of Done (DoD)**: Padronizado com 7 critérios em todas as 11 issues.
+  - A tarefa **QA-05** consolida o plano de testes formal e a homologação E2E da Release 2.
+- **Definition of Done (DoD)**: Padronizado com critérios estritos em todas as tarefas e homologação oficial via QA-05.

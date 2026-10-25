@@ -20,6 +20,7 @@ Esta pasta contém o pacote completo de engenharia da **Sprint 07** do projeto *
 | [US-17.2](issues/US-17.2-adicionar-endpoint-get-api-orders-orderid-labels-pdf/issue.md) | Adicionar endpoint `GET /api/orders/{orderId}/labels-pdf` no backend retornando documento `application/pdf` com cabeçalho de download | ~2h | Backend REST / API | 🟢 Concluída |
 | [US-17.3](issues/US-17.3-criar-teste-unitario-do-labelpdfservice/issue.md) | Criar bateria de testes unitários do `LabelPdfService` validando geração de bytes, contagem exata de páginas por peças físicas e tratamento de exceções | ~2h | Testes Unitários | 🟢 Concluída |
 | [US-17.4](issues/US-17.4-adicionar-botao-imprimir-etiquetas-no-frontend/issue.md) | Adicionar botão "Imprimir Etiquetas" na tela de detalhes do pedido no frontend (`OrderDetailPage.tsx`) com estado de carregamento e download do blob | ~2h | Frontend UI / Ações | 🟢 Concluída |
+| [US-17.5](https://github.com/ADS-IFPB-SR/alumigest/issues/474) | Testes E2E — Validação dos Cenários de Aceitação de Etiquetas Térmicas de Identificação via Cypress | ~3h | Testes E2E / QA | 🟢 Concluída |
 
 ---
 
@@ -35,6 +36,15 @@ Esta pasta contém o pacote completo de engenharia da **Sprint 07** do projeto *
 | [US-18.5](issues/US-18.5-criar-pagina-productionkanbanpage-com-filtros-de-busca/issue.md) | Criar página `ProductionKanbanPage` com filtros de busca por código, cliente, período de entrega e métricas resumidas por estágio | ~3h | Fatia Vertical Frontend | 🟢 Concluída |
 | [US-18.6](issues/US-18.6-configurar-rota-producao-e-menu-lateral-no-frontend/issue.md) | Configurar rota `/producao` no React Router e adicionar atalho "Produção (Kanban)" no menu lateral do frontend (`Sidebar.tsx`) | ~1h | Frontend Routing / Nav | 🟢 Concluída |
 | [US-18.7](issues/US-18.7-documentar-endpoints-no-openapi-swagger-e-testes-unitarios/issue.md) | Documentar endpoints no OpenAPI/Swagger e implementar testes unitários e de integração no backend para transições de status fabril | ~3h | Testes & Docs | 🟢 Concluída |
+
+---
+
+### 🧪 Qualidade & Homologação Integrada (QA)
+**Issue GitHub**: [#514](https://github.com/ADS-IFPB-SR/alumigest/issues/514) | **Prioridade**: P1 (DoD & Homologação)
+
+| Sub-Task | Tarefa | Duração | Tipo | Status |
+|---|---|:---:|---|:---:|
+| [QA-05](issues/QA-05-homologacao-integrada-gestao-fabril/issue.md) | Plano de Teste e Homologação Integrada da Gestão Fabril (Etiquetas Térmicas & Kanban de Produção — Sprint 07) | ~5h | Qualidade / QA | 🟢 Concluída |
 
 ---
 
