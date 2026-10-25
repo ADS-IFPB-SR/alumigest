@@ -202,13 +202,11 @@ export const ordersApi = {
    */
   async downloadLabelsPdf(
     id: string,
-    codigo?: string,
+    _codigo?: string,
     itemId?: string,
     customLeaves?: Record<string, number>
   ): Promise<void> {
     let blob: Blob;
-    const fallbackFilename = `etiquetas-${codigo ?? id}.pdf`;
-    let filename = fallbackFilename;
 
     try {
       const response = customLeaves && Object.keys(customLeaves).length > 0
@@ -221,11 +219,6 @@ export const ordersApi = {
             responseType: 'blob',
           });
 
-      const disposition = (
-        response.headers?.['content-disposition'] ||
-        response.headers?.['Content-Disposition']
-      ) as string | undefined;
-      filename = extractFilenameFromContentDisposition(disposition, fallbackFilename);
       blob = new Blob([response.data], { type: 'application/pdf' });
     } catch (error: any) {
       await ensureErrorDataDeserialized(error);

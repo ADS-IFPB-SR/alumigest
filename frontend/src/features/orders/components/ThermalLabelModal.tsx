@@ -1,12 +1,9 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { X, Printer, Download, Tag, Loader2, Minus, Plus, SlidersHorizontal } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { X, Printer, Tag, Loader2, Minus, Plus, SlidersHorizontal } from 'lucide-react';
 import type { Order, OrderItem } from '../types';
 import { formatDate } from '../utils/formatDate';
 import { extractLeavesCount, formatLabelBadge } from '../utils/leafDeduction';
 import { resolveLabelItems, resolveLocalAmbiente } from '../utils/thermalLabels';
-import { ordersApi } from '../services/ordersApi';
-import { printDirectToSerialPrinter } from '../utils/webSerialPrinter';
 
 export interface ThermalLabelModalProps {
   isOpen: boolean;
@@ -47,8 +44,8 @@ export const ThermalLabelModal: React.FC<ThermalLabelModalProps> = ({
   order,
   onDownloadPdf,
   isDownloadingPdf = false,
-  onPrintThermal: onPrintThermalProp,
-  isPrintingThermal: isPrintingThermalProp,
+  onPrintThermal: _onPrintThermalProp,
+  isPrintingThermal: _isPrintingThermalProp,
 }) => {
   // Filtro por ID do item (evita colisão quando dois itens compartilham o mesmo `ordem`)
   const [selectedItemFilter, setSelectedItemFilter] = useState<string>('ALL');
@@ -58,9 +55,6 @@ export const ThermalLabelModal: React.FC<ThermalLabelModalProps> = ({
 
   // Mapa de folhas por item (inicializado via dedução automática por regex na descrição/tipologia)
   const [leavesPerItem, setLeavesPerItem] = useState<Record<string, number>>({});
-
-  const [isDirectPrinting, setIsDirectPrinting] = useState(false);
-  const isPrinting = isPrintingThermalProp ?? isDirectPrinting;
 
   useEffect(() => {
     if (!order?.items) return;
@@ -140,39 +134,6 @@ export const ThermalLabelModal: React.FC<ThermalLabelModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handlePrintThermal = async () => {
-    const selectedItem =
-      selectedItemFilter !== 'ALL'
-        ? labelItems.find(({ item }) => item.id === selectedItemFilter)?.item
-        : undefined;
-
-    const payload = {
-      id: order.id,
-      itemId: selectedItem?.id,
-      leavesPerItem,
-    };
-
-    if (onPrintThermalProp) {
-      onPrintThermalProp(payload);
-      return;
-    }
-
-    try {
-      setIsDirectPrinting(true);
-      const bplbBytes = await ordersApi.getLabelsBplb(order.id, selectedItem?.id, leavesPerItem);
-      const result = await printDirectToSerialPrinter(bplbBytes);
-      if (result.success) {
-        toast.success(result.message || 'Etiquetas impressas diretamente na impressora térmica USB!');
-      } else if (result.message) {
-        toast.error(result.message);
-      }
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Falha na comunicação direta com a impressora térmica USB.';
-      toast.error(msg);
-    } finally {
-      setIsDirectPrinting(false);
-    }
-  };
 
   const handleDownloadPdf = () => {
     onDownloadPdf?.(activeItemId, leavesPerItem);
