@@ -129,6 +129,57 @@ function getDemoOrdersPage(params?: OrderFilterParams): PageResponse<OrderSummar
   };
 }
 
+async function fetchLabelsPdfBlob(
+  id: string,
+  itemId?: string,
+  customLeaves?: Record<string, number>
+): Promise<Blob> {
+  const hasCustomLeaves = Boolean(customLeaves && Object.keys(customLeaves).length > 0);
+  const endpoint = `/orders/${id}/labels-pdf`;
+  const config = {
+    params: itemId ? { itemId } : undefined,
+    responseType: 'blob' as const,
+  };
+
+  try {
+    const response = hasCustomLeaves
+      ? await api.post(endpoint, customLeaves, config)
+      : await api.get(endpoint, config);
+
+    return new Blob([response.data], { type: 'application/pdf' });
+  } catch (error: any) {
+    await ensureErrorDataDeserialized(error);
+    if (isDevBackendOffline(error)) {
+      console.info('[AlumiGest Dev Demo] Backend offline. Gerando PDF térmico de demonstração.');
+      return generateDemoThermalLabelsPdf();
+    }
+    throw error;
+  }
+}
+
+function openPdfOrDownloadFallback(url: string, fallbackFilename: string): void {
+  try {
+    if (typeof window !== 'undefined' && typeof window.open === 'function') {
+      const printWindow = window.open(url, '_blank');
+      if (printWindow) {
+        printWindow.focus();
+        return;
+      }
+    }
+  } catch {
+    // Fallback silencioso para bloqueador de pop-ups
+  }
+
+  if (typeof document !== 'undefined') {
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', fallbackFilename);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  }
+}
+
 export const ordersApi = {
   async getOrderById(id: string): Promise<Order> {
     try {
@@ -206,56 +257,10 @@ export const ordersApi = {
     itemId?: string,
     customLeaves?: Record<string, number>
   ): Promise<void> {
-    let blob: Blob;
-
-    try {
-      const response = customLeaves && Object.keys(customLeaves).length > 0
-        ? await api.post(`/orders/${id}/labels-pdf`, customLeaves, {
-            params: itemId ? { itemId } : undefined,
-            responseType: 'blob',
-          })
-        : await api.get(`/orders/${id}/labels-pdf`, {
-            params: itemId ? { itemId } : undefined,
-            responseType: 'blob',
-          });
-
-      blob = new Blob([response.data], { type: 'application/pdf' });
-    } catch (error: any) {
-      await ensureErrorDataDeserialized(error);
-      if (isDevBackendOffline(error)) {
-        console.info('[AlumiGest Dev Demo] Backend offline. Gerando PDF térmico de demonstração.');
-        blob = generateDemoThermalLabelsPdf();
-      } else {
-        throw error;
-      }
-    }
-
+    const blob = await fetchLabelsPdfBlob(id, itemId, customLeaves);
     const url = window.URL.createObjectURL(blob);
-    let openedInNewTab = false;
 
-    // Tenta abrir diretamente a visualização do PDF no navegador para impressão (Ctrl + Shift + P)
-    try {
-      if (typeof window !== 'undefined' && typeof window.open === 'function') {
-        const printWindow = window.open(url, '_blank');
-        if (printWindow) {
-          printWindow.focus();
-          openedInNewTab = true;
-        }
-      }
-    } catch {
-      // Fallback para bloqueio de pop-up ou ambientes restritos
-    }
-
-    // Se a abertura direta em nova aba falhou (ex: bloqueador de pop-ups), dispara download do arquivo
-    if (!openedInNewTab && typeof document !== 'undefined') {
-      const fallbackFilename = `etiquetas-${codigo ?? id}.pdf`;
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', fallbackFilename);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-    }
+    openPdfOrDownloadFallback(url, `etiquetas-${codigo ?? id}.pdf`);
 
     setTimeout(() => {
       window.URL.revokeObjectURL(url);

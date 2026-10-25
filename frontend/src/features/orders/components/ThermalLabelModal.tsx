@@ -11,8 +11,6 @@ export interface ThermalLabelModalProps {
   order: Order;
   onDownloadPdf?: (itemId?: string, customLeaves?: Record<string, number>) => void;
   isDownloadingPdf?: boolean;
-  onPrintThermal?: (params: { id: string; itemId?: string; leavesPerItem?: Record<string, number> }) => void;
-  isPrintingThermal?: boolean;
 }
 
 export interface PhysicalPieceLabel {
