@@ -133,6 +133,7 @@ export const ProductionKanbanBoard: React.FC<ProductionKanbanBoardProps> = ({
           key={order.id}
           order={order}
           onClickDetails={onClickDetails}
+          onMoveOrder={onMoveOrder}
         />
       ));
     }
