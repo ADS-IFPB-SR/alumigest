@@ -291,4 +291,108 @@ describe('OrderProductionCard Component', () => {
       expect(screen.getByText('Vidro Temperado 8mm')).toBeInTheDocument();
     });
   });
+
+  describe('Botão de avanço rápido de etapa touch/mobile (BUG-504)', () => {
+    const mockOnMoveOrder = vi.fn();
+
+    beforeEach(() => {
+      mockOnMoveOrder.mockClear();
+    });
+
+    it('deve renderizar botão "Iniciar Produção" e chamar onMoveOrder com IN_PRODUCTION ao clicar quando status for WAITING_PRODUCTION', () => {
+      render(
+        <OrderProductionCard
+          order={baseOrder}
+          onClickDetails={mockOnClickDetails}
+          onMoveOrder={mockOnMoveOrder}
+        />
+      );
+
+      const advanceBtn = screen.getByTestId('btn-advance-order-uuid-1');
+      expect(advanceBtn).toBeInTheDocument();
+      expect(advanceBtn).toHaveTextContent('Iniciar Produção');
+      expect(advanceBtn).toHaveAttribute(
+        'aria-label',
+        'Iniciar Produção: mover ordem de serviço OS-2026-0001 para a próxima etapa'
+      );
+
+      fireEvent.click(advanceBtn);
+      expect(mockOnMoveOrder).toHaveBeenCalledTimes(1);
+      expect(mockOnMoveOrder).toHaveBeenCalledWith('order-uuid-1', 'IN_PRODUCTION');
+    });
+
+    it('deve renderizar botão "Finalizar" e chamar onMoveOrder com COMPLETED ao clicar quando status for IN_PRODUCTION', () => {
+      const orderInProduction: Order = {
+        ...baseOrder,
+        status: 'IN_PRODUCTION',
+      };
+
+      render(
+        <OrderProductionCard
+          order={orderInProduction}
+          onClickDetails={mockOnClickDetails}
+          onMoveOrder={mockOnMoveOrder}
+        />
+      );
+
+      const advanceBtn = screen.getByTestId('btn-advance-order-uuid-1');
+      expect(advanceBtn).toBeInTheDocument();
+      expect(advanceBtn).toHaveTextContent('Finalizar');
+      expect(advanceBtn).toHaveAttribute(
+        'aria-label',
+        'Finalizar: mover ordem de serviço OS-2026-0001 para a próxima etapa'
+      );
+
+      fireEvent.click(advanceBtn);
+      expect(mockOnMoveOrder).toHaveBeenCalledTimes(1);
+      expect(mockOnMoveOrder).toHaveBeenCalledWith('order-uuid-1', 'COMPLETED');
+    });
+
+    it('NÃO deve renderizar o botão de avanço quando status for COMPLETED (etapa final)', () => {
+      const orderCompleted: Order = {
+        ...baseOrder,
+        status: 'COMPLETED',
+      };
+
+      render(
+        <OrderProductionCard
+          order={orderCompleted}
+          onClickDetails={mockOnClickDetails}
+          onMoveOrder={mockOnMoveOrder}
+        />
+      );
+
+      expect(screen.queryByTestId('btn-advance-order-uuid-1')).not.toBeInTheDocument();
+    });
+
+    it('NÃO deve renderizar o botão de avanço quando onMoveOrder não for fornecido (retrocompatibilidade desktop)', () => {
+      render(
+        <OrderProductionCard
+          order={baseOrder}
+          onClickDetails={mockOnClickDetails}
+        />
+      );
+
+      expect(screen.queryByTestId('btn-advance-order-uuid-1')).not.toBeInTheDocument();
+    });
+
+    it('deve parar a propagação do evento ao clicar no botão de avanço rápido', () => {
+      render(
+        <OrderProductionCard
+          order={baseOrder}
+          onClickDetails={mockOnClickDetails}
+          onMoveOrder={mockOnMoveOrder}
+        />
+      );
+
+      const advanceBtn = screen.getByTestId('btn-advance-order-uuid-1');
+      const clickEvent = new MouseEvent('click', { bubbles: true, cancelable: true });
+      const stopPropagationSpy = vi.spyOn(clickEvent, 'stopPropagation');
+
+      advanceBtn.dispatchEvent(clickEvent);
+
+      expect(stopPropagationSpy).toHaveBeenCalled();
+      expect(mockOnMoveOrder).toHaveBeenCalledWith('order-uuid-1', 'IN_PRODUCTION');
+    });
+  });
 });

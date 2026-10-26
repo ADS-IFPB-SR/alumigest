@@ -344,6 +344,23 @@ describe('ProductionKanbanBoard Component (US-18.4)', () => {
       expect(mockOnClickDetails).toHaveBeenCalledTimes(1);
       expect(mockOnClickDetails).toHaveBeenCalledWith('ord-1');
     });
+
+    it('deve repassar callback onMoveOrder para o OrderProductionCard permitindo avanço rápido via clique (BUG-504)', () => {
+      render(
+        <ProductionKanbanBoard
+          orders={[orderWaiting1]}
+          onClickDetails={mockOnClickDetails}
+          onMoveOrder={mockOnMoveOrder}
+        />
+      );
+
+      const advanceBtn = screen.getByTestId('btn-advance-ord-1');
+      expect(advanceBtn).toBeInTheDocument();
+      fireEvent.click(advanceBtn);
+
+      expect(mockOnMoveOrder).toHaveBeenCalledTimes(1);
+      expect(mockOnMoveOrder).toHaveBeenCalledWith('ord-1', 'IN_PRODUCTION');
+    });
   });
 
   describe('Função utilitária calculateTotalPieces', () => {
