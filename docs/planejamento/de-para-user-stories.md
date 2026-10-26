@@ -80,10 +80,8 @@ Este documento é a **referência oficial de sincronização** entre a numeraç�
   - Antiga `US-22` (Ficha de Montagem): virou **`US-20`** ([#145](https://github.com/ADS-IFPB-SR/alumigest/issues/145), `-2`).
   - Antiga `US-23` (Romaneio Oficina em PDF): **Descartada**.
 - **Sprint 08**:
-  - Antiga `US-24` (Reserva e Baixa de Estoque): virou **`US-21`** ([#146](https://github.com/ADS-IFPB-SR/alumigest/issues/146), `-3`).
-  - Antiga `US-25` (Perdas e Sucata): **Descartada**.
-  - Antiga `US-26` (Posição e Kardex): virou **`US-22`** ([#147](https://github.com/ADS-IFPB-SR/alumigest/issues/147), `-4`).
-  - Antiga `US-27` (Homologação Release 2): virou **`US-23`** ([#148](https://github.com/ADS-IFPB-SR/alumigest/issues/148)) -> **Descontinuada como US**, critérios absorvidos no DoD de US-22.
+  - Priorização de **`US-46`** (Venda Avulsa de Partes / Insumos — [#171](https://github.com/ADS-IFPB-SR/alumigest/issues/171)) e **`US-47`** (Central 360° do Cliente — [#496](https://github.com/ADS-IFPB-SR/alumigest/issues/496)).
+  - Backlog fabril complementar de estoque (`US-21` / `US-22`) planejado para sequência após alinhamento de planning.
 - **Sprint 09 (`US-28` a `US-30` antigas)**:
   - Deslocamento contínuo em **`-4`**: **`US-24`** ([#149](https://github.com/ADS-IFPB-SR/alumigest/issues/149)), **`US-25`** ([#150](https://github.com/ADS-IFPB-SR/alumigest/issues/150)), **`US-26`** ([#151](https://github.com/ADS-IFPB-SR/alumigest/issues/151)).
 - **Sprint 10 (`US-31` a `US-33` antigas)**:
