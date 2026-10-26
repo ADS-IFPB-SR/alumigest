@@ -13,8 +13,8 @@
 
 ### Presentes:
 * **José Guylherme dos Santos Melo** — *Product Owner (PO) & Representante da Alumiportas*
-* **Guilherme Kauã Matos da Silva** — *Tech Lead & Desenvolvedor*
-* **Italo Jefferson Lima dos Santos** — *Desenvolvedor & Engenheiro de Software*
+* **Guilherme Kauã Matos da Silva** — *Desenvolvedor*
+* **Italo Jefferson Lima dos Santos** — *Desenvolvedor, Tech Lead & Engenheiro de Software*
 * **Joseph Nichollas Abreu Cavalcante** — *Desenvolvedor & DevOps*
 * **Maylson da Silva Rodrigues** — *Desenvolvedor*
 * **Júlio Kennedy dos Santos Silva** — *Desenvolvedor*
