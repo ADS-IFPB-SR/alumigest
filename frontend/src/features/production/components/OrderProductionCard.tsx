@@ -1,21 +1,34 @@
 import React from 'react';
-import { Calendar, Eye, AlertCircle, Clock, Package } from 'lucide-react';
+import { Calendar, Eye, AlertCircle, Clock, Package, ChevronRight } from 'lucide-react';
 import type { Order, OrderSummary } from '../../orders/types';
-import { normalizeProductionStatus } from '../types';
+import { normalizeProductionStatus, type ProductionStatus } from '../types';
 import { formatDate } from '../../orders/utils/formatDate';
 import { getDeadlineStatus } from '../utils/deadlineUtils';
+
+/** Mapa de próxima etapa na máquina de estados de produção */
+const NEXT_STATUS_MAP: Partial<Record<ProductionStatus, { status: ProductionStatus; label: string }>> = {
+  WAITING_PRODUCTION: { status: 'IN_PRODUCTION', label: 'Iniciar Produção' },
+  IN_PRODUCTION:      { status: 'COMPLETED',     label: 'Finalizar' },
+};
 
 interface OrderProductionCardProps {
   order: Order | OrderSummary;
   onClickDetails: (orderId: string) => void;
+  /** Callback opcional para mover o card para a próxima etapa via botão (fallback touch/mobile) */
+  onMoveOrder?: (orderId: string, newStatus: ProductionStatus) => void;
 }
 
 export const OrderProductionCard: React.FC<OrderProductionCardProps> = ({
   order,
   onClickDetails,
+  onMoveOrder,
 }) => {
   // 1. Regra de negócio real de prazo de entrega
   const deadlineStatus = getDeadlineStatus(order.dataPrevisaoEntrega);
+
+  // Próxima etapa calculada a partir do status atual (para botão de avanço rápido — BUG-504)
+  const currentNormalized = normalizeProductionStatus(order.status);
+  const nextStep = currentNormalized ? NEXT_STATUS_MAP[currentNormalized] ?? null : null;
 
   // 2. Mapeamento de prioridade/urgência baseado no prazo real
   const alertConfig = {
@@ -118,7 +131,7 @@ export const OrderProductionCard: React.FC<OrderProductionCardProps> = ({
       </div>
 
       {/* 3. Rodapé do Card: Data de Aprovação, Badges e Botão Detalhes */}
-      <div className="flex items-center justify-between pt-2 border-t border-slate-200 text-xs">
+      <div className="flex items-center justify-between flex-wrap gap-y-2 pt-2 border-t border-slate-200 text-xs">
         <div className="flex items-center gap-1.5 font-bold text-slate-900" title="Data de Aprovação do Pedido">
           <Calendar className="w-3.5 h-3.5 text-slate-700 shrink-0" />
           <span className="font-semibold text-slate-900">{formatDate(order.dataAprovacao)}</span>
@@ -149,6 +162,25 @@ export const OrderProductionCard: React.FC<OrderProductionCardProps> = ({
             {clientInitials}
           </span>
         </div>
+
+        {/* Botão de avanço rápido de etapa — fallback para dispositivos touch/móveis (BUG-504) */}
+        {nextStep && onMoveOrder && (
+          <button
+            type="button"
+            id={`btn-advance-${order.id}`}
+            data-testid={`btn-advance-${order.id}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              onMoveOrder(order.id, nextStep.status);
+            }}
+            aria-label={`${nextStep.label}: mover ordem de serviço ${order.codigo} para a próxima etapa`}
+            title={nextStep.label}
+            className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-800 text-white hover:bg-slate-950 active:scale-95 transition-all duration-150 shrink-0 touch-manipulation select-none"
+          >
+            {nextStep.label}
+            <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+        )}
       </div>
     </div>
   );
