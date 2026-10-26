@@ -72,12 +72,24 @@ export const useDownloadComprovantePdf = () => {
 
 /**
  * Hook de mutação para baixar as etiquetas térmicas adesivas (100x60mm) do Pedido de Venda em PDF.
- * US-17.4 (#451) — utiliza o mesmo padrão de download Blob do useDownloadComprovantePdf.
+ * US-17.4 (#451) — com suporte a folhas conferidas e customizadas pelo operador.
  */
 export const useDownloadLabelsPdf = () => {
   return useMutation({
-    mutationFn: ({ id, codigo, itemId }: { id: string; codigo?: string; itemId?: string }) =>
-      ordersApi.downloadLabelsPdf(id, codigo, itemId),
+    mutationFn: ({
+      id,
+      codigo,
+      itemId,
+      customLeaves,
+    }: {
+      id: string;
+      codigo?: string;
+      itemId?: string;
+      customLeaves?: Record<string, number>;
+    }) =>
+      customLeaves
+        ? ordersApi.downloadLabelsPdf(id, codigo, itemId, customLeaves)
+        : ordersApi.downloadLabelsPdf(id, codigo, itemId),
     onSuccess: () => {
       toast.success('Etiquetas térmicas baixadas com sucesso!');
     },
@@ -105,3 +117,4 @@ export const useUpdateOrderStatus = (id?: string) => {
     },
   });
 };
+

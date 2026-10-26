@@ -349,7 +349,7 @@
           });
         });
 
-        it('deve disparar o download das etiquetas térmicas PDF do pedido (US-17.4)', () => {
+        it('deve abrir o modal de conferência de etiquetas ao clicar em "Imprimir Etiquetas" e permitir download se solicitado (US-17.4 / #493)', () => {
           vi.spyOn(useOrdersModule, 'useOrder').mockReturnValue({
             data: mockOrder,
             isLoading: false,
@@ -364,12 +364,19 @@
             </MemoryRouter>
           );
 
+          // Clicar em Imprimir Etiquetas deve abrir o modal de conferência e impressão direta (#493)
           fireEvent.click(screen.getByRole('button', { name: /imprimir etiquetas/i }));
+          expect(screen.getByTestId('thermal-label-modal')).toBeInTheDocument();
+          expect(mockDownloadLabels).not.toHaveBeenCalled();
 
-          expect(mockDownloadLabels).toHaveBeenCalledWith({
-            id: 'order-uuid-1',
-            codigo: 'OS-2026-0001',
-          });
+          // Download PDF agora é acionado opcionalmente dentro do modal repassando folhas conferidas
+          fireEvent.click(screen.getByTestId('btn-modal-download-pdf'));
+          expect(mockDownloadLabels).toHaveBeenCalledWith(
+            expect.objectContaining({
+              id: 'order-uuid-1',
+              codigo: 'OS-2026-0001',
+            })
+          );
         });
 
         it('deve avançar para WAITING_PRODUCTION ao clicar no CTA quando a ordem estiver em CREATED', () => {
@@ -510,7 +517,7 @@
           );
 
           // Abre o modal de etiquetas térmicas
-          fireEvent.click(screen.getByRole('button', { name: /visualizar etiquetas/i }));
+          fireEvent.click(screen.getByTestId('btn-open-thermal-modal'));
           expect(screen.getByTestId('thermal-label-modal')).toBeInTheDocument();
 
           // Filtra pelo Item 2
@@ -519,11 +526,13 @@
           // Clica em "Baixar PDF" dentro do modal
           fireEvent.click(screen.getByTestId('btn-modal-download-pdf'));
 
-          expect(mockDownloadLabels).toHaveBeenCalledWith({
-            id: 'order-uuid-1',
-            codigo: 'OS-2026-0001',
-            itemId: 'item-2',
-          });
+          expect(mockDownloadLabels).toHaveBeenCalledWith(
+            expect.objectContaining({
+              id: 'order-uuid-1',
+              codigo: 'OS-2026-0001',
+              itemId: 'item-2',
+            })
+          );
         });
 
         it('[BUG #487]: deve baixar lote completo de etiquetas (sem itemId) ao acionar Baixar PDF no modal no modo ALL', () => {
@@ -542,15 +551,22 @@
           );
 
           // Abre o modal de etiquetas térmicas
-          fireEvent.click(screen.getByRole('button', { name: /visualizar etiquetas/i }));
+          fireEvent.click(screen.getByTestId('btn-open-thermal-modal'));
           expect(screen.getByTestId('thermal-label-modal')).toBeInTheDocument();
 
           // Clica em "Baixar PDF" no modal sem filtrar nenhum item específico
           fireEvent.click(screen.getByTestId('btn-modal-download-pdf'));
 
-          expect(mockDownloadLabels).toHaveBeenCalledWith({
-            id: 'order-uuid-1',
-            codigo: 'OS-2026-0001',
-          });
+          expect(mockDownloadLabels).toHaveBeenCalledWith(
+            expect.objectContaining({
+              id: 'order-uuid-1',
+              codigo: 'OS-2026-0001',
+            })
+          );
+          expect(mockDownloadLabels).not.toHaveBeenCalledWith(
+            expect.objectContaining({
+              itemId: expect.anything(),
+            })
+          );
         });
       });

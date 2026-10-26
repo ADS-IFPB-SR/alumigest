@@ -84,17 +84,29 @@ export function OrderDetailPage() {
   };
 
   /**
-   * Inicia o download das Etiquetas Térmicas de Identificação de Peças em PDF (US-17.4 / #451).
-   * Suporta filtro opcional por itemId específico via modal térmico (BUG #487).
+   * Abre a tela de conferência prévia e impressão das Etiquetas Térmicas (US-17 / Bugs #492 e #493).
+   */
+  const handleOpenThermalLabelsModal = () => {
+    setIsThermalModalOpen(true);
+  };
+
+  /**
+   * Inicia o download das Etiquetas Térmicas em PDF caso o usuário solicite o arquivo.
+   * Suporta filtro opcional por itemId específico via modal térmico (BUG #487)
+   * e customização de folhas conferidas (Bugs #492 e #493).
    * Delega ao hook useDownloadLabelsPdf que cuida do Blob, filename e toast.
    */
-  const handlePrintLabels = (itemId?: string) => {
+  const handleDownloadLabelsPdf = (
+    itemId?: string,
+    customLeaves?: Record<string, number>
+  ) => {
     if (!order) return;
     const sanitizedItemId = typeof itemId === 'string' ? itemId : undefined;
     downloadLabels({
       id: order.id,
       codigo: order.codigo,
       ...(sanitizedItemId ? { itemId: sanitizedItemId } : {}),
+      customLeaves,
     });
   };
 
@@ -179,8 +191,8 @@ export function OrderDetailPage() {
           onOpenCancelModal={() => setIsCancelModalOpen(true)}
           onPrintTechnicalPdf={handlePrintTechnicalPdf}
           onDownloadComprovante={handleDownloadComprovante}
-          onPrintLabels={() => handlePrintLabels()}
-          onOpenThermalModal={() => setIsThermalModalOpen(true)}
+          onPrintLabels={handleOpenThermalLabelsModal}
+          onOpenThermalModal={handleOpenThermalLabelsModal}
         />
 
         {/* Alerta de Cancelamento com Justificativa */}
@@ -218,7 +230,7 @@ export function OrderDetailPage() {
         isOpen={isThermalModalOpen}
         onClose={() => setIsThermalModalOpen(false)}
         order={order}
-        onDownloadPdf={handlePrintLabels}
+        onDownloadPdf={handleDownloadLabelsPdf}
         isDownloadingPdf={isDownloadingLabels}
       />
     </div>

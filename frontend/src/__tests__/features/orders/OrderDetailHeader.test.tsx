@@ -236,7 +236,7 @@ describe('OrderDetailHeader', () => {
         </MemoryRouter>
       );
 
-      const previewBtn = screen.getByRole('button', { name: /visualizar etiquetas/i });
+      const previewBtn = screen.getByRole('button', { name: /imprimir etiquetas/i });
       expect(previewBtn).toBeInTheDocument();
 
       fireEvent.click(previewBtn);

@@ -34,35 +34,35 @@ public class ThermalLabelPdfRenderer {
             DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     private static final Font FONTE_EMPRESA =
-            FontFactory.getFont(FontFactory.HELVETICA_BOLD, 6.0f, new Color(71, 85, 105));
+            FontFactory.getFont(FontFactory.HELVETICA_BOLD, 6.0f, Color.BLACK);
     private static final Font FONTE_CLIENTE =
-            FontFactory.getFont(FontFactory.HELVETICA_BOLD, 7.5f, new Color(15, 23, 42));
+            FontFactory.getFont(FontFactory.HELVETICA_BOLD, 7.5f, Color.BLACK);
     private static final Font FONTE_CODIGO_OS =
-            FontFactory.getFont(FontFactory.HELVETICA_BOLD, 8.0f, new Color(15, 23, 42));
+            FontFactory.getFont(FontFactory.HELVETICA_BOLD, 8.5f, Color.BLACK);
     private static final Font FONTE_BADGE =
             FontFactory.getFont(FontFactory.HELVETICA_BOLD, 6.5f, Color.WHITE);
 
     private static final Font FONTE_DESCRICAO =
-            FontFactory.getFont(FontFactory.HELVETICA_BOLD, 7.5f, new Color(15, 23, 42));
+            FontFactory.getFont(FontFactory.HELVETICA_BOLD, 7.5f, Color.BLACK);
 
     private static final Font FONTE_MEDIDAS_TITULO =
-            FontFactory.getFont(FontFactory.HELVETICA_BOLD, 5.0f, new Color(71, 85, 105));
+            FontFactory.getFont(FontFactory.HELVETICA_BOLD, 5.5f, Color.BLACK);
     private static final Font FONTE_MEDIDAS_VALOR =
-            FontFactory.getFont(FontFactory.HELVETICA_BOLD, 12.0f, new Color(2, 6, 23));
+            FontFactory.getFont(FontFactory.HELVETICA_BOLD, 13.5f, Color.BLACK);
 
     private static final Font FONTE_SPEC_ROTULO =
-            FontFactory.getFont(FontFactory.HELVETICA_BOLD, 5.5f, new Color(100, 116, 139));
+            FontFactory.getFont(FontFactory.HELVETICA_BOLD, 5.5f, Color.BLACK);
     private static final Font FONTE_SPEC_VALOR =
-            FontFactory.getFont(FontFactory.HELVETICA_BOLD, 6.5f, new Color(15, 23, 42));
+            FontFactory.getFont(FontFactory.HELVETICA_BOLD, 6.5f, Color.BLACK);
 
     private static final Font FONTE_RODAPE_ROTULO =
-            FontFactory.getFont(FontFactory.HELVETICA_BOLD, 5.5f, new Color(100, 116, 139));
+            FontFactory.getFont(FontFactory.HELVETICA_BOLD, 5.5f, Color.BLACK);
     private static final Font FONTE_RODAPE_VALOR =
-            FontFactory.getFont(FontFactory.HELVETICA_BOLD, 6.0f, new Color(15, 23, 42));
+            FontFactory.getFont(FontFactory.HELVETICA_BOLD, 6.0f, Color.BLACK);
 
-    private static final Color COR_BORDA_CARD = new Color(15, 23, 42);
-    private static final Color COR_FUNDO_MEDIDAS = new Color(241, 245, 249);
-    private static final Color COR_FUNDO_BADGE = new Color(15, 23, 42);
+    private static final Color COR_BORDA_CARD = Color.BLACK;
+    private static final Color COR_FUNDO_MEDIDAS = Color.WHITE;
+    private static final Color COR_FUNDO_BADGE = Color.BLACK;
 
     /**
      * Renderiza o card completo da etiqueta térmica a partir do snapshot de dados.
@@ -80,7 +80,7 @@ public class ThermalLabelPdfRenderer {
 
         // 1. Linha do Cabeçalho com borda inferior
         PdfPCell c1 = criarLinhaCard(Rectangle.BOTTOM, 1.5f);
-        c1.setPaddingTop(2.5f);
+        c1.setPaddingTop(1.5f);
         c1.setPaddingBottom(1.5f);
         c1.addElement(construirCabecalho(data));
         card.addCell(c1);
@@ -94,29 +94,29 @@ public class ThermalLabelPdfRenderer {
 
         // 3. Linha das Medidas Nominais
         PdfPCell c3 = criarLinhaCard(Rectangle.NO_BORDER, 0f);
-        c3.setPaddingTop(1.0f);
-        c3.setPaddingBottom(1.0f);
+        c3.setPaddingTop(1.5f);
+        c3.setPaddingBottom(1.5f);
         c3.addElement(construirBlocoMedidas(data));
         card.addCell(c3);
 
         // 4. Linha de Especificações Técnicas (Cor e Vidro)
         PdfPCell c4 = criarLinhaCard(Rectangle.NO_BORDER, 0f);
-        c4.setPaddingTop(0.5f);
-        c4.setPaddingBottom(0.5f);
+        c4.setPaddingTop(0.8f);
+        c4.setPaddingBottom(0.8f);
         c4.addElement(construirBlocoEspecificacoes(data));
         card.addCell(c4);
 
         // 5. Linha de Localização / Ambiente
         PdfPCell c5 = criarLinhaCard(Rectangle.NO_BORDER, 0f);
-        c5.setPaddingTop(0.5f);
+        c5.setPaddingTop(0.8f);
         c5.setPaddingBottom(1.0f);
         c5.addElement(construirBlocoLocalAmbiente(data));
         card.addCell(c5);
 
         // 6. Linha do Rodapé Limpo com borda superior
         PdfPCell c6 = criarLinhaCard(Rectangle.TOP, 1.2f);
-        c6.setPaddingTop(1.0f);
-        c6.setPaddingBottom(2.5f);
+        c6.setPaddingTop(1.5f);
+        c6.setPaddingBottom(2.0f);
         c6.addElement(construirRodape(data));
         card.addCell(c6);
 
@@ -128,8 +128,8 @@ public class ThermalLabelPdfRenderer {
         cell.setBorder(bordas);
         cell.setBorderWidth(borderWidth);
         cell.setBorderColor(COR_BORDA_CARD);
-        cell.setPaddingLeft(5.0f);
-        cell.setPaddingRight(5.0f);
+        cell.setPaddingLeft(6.0f);
+        cell.setPaddingRight(6.0f);
         return cell;
     }
 
@@ -146,7 +146,10 @@ public class ThermalLabelPdfRenderer {
         // Coluna Esquerda: Razão Social e Nome do Cliente
         PdfPCell cellEsq = new PdfPCell();
         cellEsq.setBorder(Rectangle.NO_BORDER);
-        cellEsq.setPadding(0);
+        cellEsq.setPaddingTop(0.5f);
+        cellEsq.setPaddingBottom(0.5f);
+        cellEsq.setPaddingLeft(0);
+        cellEsq.setPaddingRight(0);
         cellEsq.addElement(new Phrase(data.companyName(), FONTE_EMPRESA));
         cellEsq.addElement(new Phrase("CLIENTE: " + data.customerName(), FONTE_CLIENTE));
         table.addCell(cellEsq);
@@ -154,16 +157,21 @@ public class ThermalLabelPdfRenderer {
         // Coluna Direita: Código da OS e Badge da Peça Física
         PdfPCell cellDir = new PdfPCell();
         cellDir.setBorder(Rectangle.NO_BORDER);
-        cellDir.setPadding(0);
+        cellDir.setPaddingTop(0.5f);
+        cellDir.setPaddingBottom(0.5f);
+        cellDir.setPaddingLeft(0);
+        cellDir.setPaddingRight(0);
         cellDir.setHorizontalAlignment(Element.ALIGN_RIGHT);
 
         Paragraph pCodigo = new Paragraph(data.orderCode(), FONTE_CODIGO_OS);
-        pCodigo.setLeading(8.0f);
+        pCodigo.setLeading(9.5f);
         pCodigo.setAlignment(Element.ALIGN_RIGHT);
         cellDir.addElement(pCodigo);
 
-        String badgeTexto = String.format(Locale.ROOT, "Item %02d | Peça %02d/%02d",
-                data.itemIndex(), data.pieceNumber(), data.totalPieces());
+        String badgeTexto = data.labelBadge() != null && !data.labelBadge().isBlank()
+                ? data.labelBadge()
+                : String.format(Locale.ROOT, "Item %02d | Peça %02d/%02d",
+                        data.itemIndex(), data.pieceNumber(), data.totalPieces());
         PdfPTable badgeTable = new PdfPTable(1);
         badgeTable.setHorizontalAlignment(Element.ALIGN_RIGHT);
         badgeTable.setWidthPercentage(95);
@@ -173,7 +181,7 @@ public class ThermalLabelPdfRenderer {
         badgeCell.setCellEvent(new BordaArredondadaBoxEvent(3.0f, null, 0f, COR_FUNDO_BADGE));
         badgeCell.setHorizontalAlignment(Element.ALIGN_CENTER);
         badgeCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
-        badgeCell.setPaddingTop(1.0f);
+        badgeCell.setPaddingTop(1.5f);
         badgeCell.setPaddingBottom(1.5f);
         badgeTable.addCell(badgeCell);
 
@@ -189,7 +197,10 @@ public class ThermalLabelPdfRenderer {
 
         PdfPCell cellDesc = new PdfPCell();
         cellDesc.setBorder(Rectangle.NO_BORDER);
-        cellDesc.setPadding(0);
+        cellDesc.setPaddingTop(0.5f);
+        cellDesc.setPaddingBottom(0.5f);
+        cellDesc.setPaddingLeft(0);
+        cellDesc.setPaddingRight(0);
         cellDesc.addElement(new Phrase(data.description(), FONTE_DESCRICAO));
         table.addCell(cellDesc);
 
@@ -203,19 +214,19 @@ public class ThermalLabelPdfRenderer {
         PdfPCell cell = new PdfPCell();
         cell.setBorder(Rectangle.NO_BORDER);
         cell.setCellEvent(new BordaArredondadaBoxEvent(3.5f, COR_BORDA_CARD, 0.7f, COR_FUNDO_MEDIDAS));
-        cell.setPaddingTop(1.0f);
-        cell.setPaddingBottom(1.5f);
+        cell.setPaddingTop(3.0f);
+        cell.setPaddingBottom(3.5f);
         cell.setHorizontalAlignment(Element.ALIGN_CENTER);
 
         Paragraph titulo = new Paragraph("MEDIDAS NOMINAIS (L x A)", FONTE_MEDIDAS_TITULO);
-        titulo.setLeading(5.5f);
+        titulo.setLeading(6.5f);
         titulo.setAlignment(Element.ALIGN_CENTER);
         cell.addElement(titulo);
 
         String medidasTexto = String.format(Locale.ROOT, "%d x %d mm",
                 data.widthMm(), data.heightMm());
         Paragraph valor = new Paragraph(medidasTexto, FONTE_MEDIDAS_VALOR);
-        valor.setLeading(12.0f);
+        valor.setLeading(14.5f);
         valor.setAlignment(Element.ALIGN_CENTER);
         cell.addElement(valor);
 
@@ -235,7 +246,10 @@ public class ThermalLabelPdfRenderer {
 
         PdfPCell cellCor = new PdfPCell();
         cellCor.setBorder(Rectangle.NO_BORDER);
-        cellCor.setPadding(0);
+        cellCor.setPaddingTop(0.5f);
+        cellCor.setPaddingBottom(0.5f);
+        cellCor.setPaddingLeft(0);
+        cellCor.setPaddingRight(0);
         Phrase phraseCor = new Phrase();
         phraseCor.add(new Phrase("COR / ACABAMENTO: ", FONTE_SPEC_ROTULO));
         phraseCor.add(new Phrase(data.aluminumColor(), FONTE_SPEC_VALOR));
@@ -244,7 +258,10 @@ public class ThermalLabelPdfRenderer {
 
         PdfPCell cellVidro = new PdfPCell();
         cellVidro.setBorder(Rectangle.NO_BORDER);
-        cellVidro.setPadding(0);
+        cellVidro.setPaddingTop(0.5f);
+        cellVidro.setPaddingBottom(0.5f);
+        cellVidro.setPaddingLeft(0);
+        cellVidro.setPaddingRight(0);
         Phrase phraseVidro = new Phrase();
         phraseVidro.add(new Phrase("VIDRO ESPECIFICADO: ", FONTE_SPEC_ROTULO));
         phraseVidro.add(new Phrase(data.glassType(), FONTE_SPEC_VALOR));
@@ -260,7 +277,10 @@ public class ThermalLabelPdfRenderer {
 
         PdfPCell cell = new PdfPCell();
         cell.setBorder(Rectangle.NO_BORDER);
-        cell.setPadding(0);
+        cell.setPaddingTop(0.5f);
+        cell.setPaddingBottom(0.5f);
+        cell.setPaddingLeft(0);
+        cell.setPaddingRight(0);
 
         Phrase phrase = new Phrase();
         phrase.add(new Phrase("LOCAL / OBS: ", FONTE_SPEC_ROTULO));
@@ -277,8 +297,10 @@ public class ThermalLabelPdfRenderer {
 
         PdfPCell cellData = new PdfPCell();
         cellData.setBorder(Rectangle.NO_BORDER);
-        cellData.setPaddingTop(0.5f);
-        cellData.setPaddingBottom(0);
+        cellData.setPaddingTop(1.0f);
+        cellData.setPaddingBottom(1.5f);
+        cellData.setPaddingLeft(0);
+        cellData.setPaddingRight(0);
 
         Phrase phraseData = new Phrase();
         phraseData.add(new Phrase("DATA: ", FONTE_RODAPE_ROTULO));

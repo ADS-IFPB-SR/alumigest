@@ -17,19 +17,33 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Resolvedor responsável por extrair, normalizar e compilar os dados da Ordem de Serviço
  * em instâncias imutáveis de {@link ThermalLabelData} para impressão física.
  * US-17.1 — Separação de responsabilidades e regras de extração de dados (#448).
+ * Correção #492 / #493 — Dedução automática de folhas por tipologia e paginação 1:1.
  */
 @Component
 public class ThermalLabelDataResolver {
 
     private static final Logger log = LoggerFactory.getLogger(ThermalLabelDataResolver.class);
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
+    // Regexes com quantificadores estritamente limitados para blindagem contra backtracking superlinear (SonarQube S8786)
+    private static final Pattern PATTERN_FOLHAS =
+            Pattern.compile("\\b(\\d{1,2})\\s*(?:folhas?|fls)\\b", Pattern.CASE_INSENSITIVE);
+    private static final Pattern PATTERN_F_SUFFIX =
+            Pattern.compile("\\b(\\d{1,2})\\s*f\\b", Pattern.CASE_INSENSITIVE);
+    private static final Pattern PATTERN_PLANOS =
+            Pattern.compile("\\b(\\d{1,2})\\s*planos?\\b", Pattern.CASE_INSENSITIVE);
+    private static final Pattern PATTERN_TEMPLATE =
+            Pattern.compile("(\\d{1,2})f\\b", Pattern.CASE_INSENSITIVE);
 
     private static final String NAO_INFORMADO = "Não informado";
     private static final String FALLBACK_EMPRESA = "Alumiportas";
@@ -49,74 +63,112 @@ public class ThermalLabelDataResolver {
      * @throws BusinessException se a ordem não contiver itens
      */
     public List<ThermalLabelData> resolveLabels(Order order) {
-        return resolveLabels(order, null);
+        return resolveLabels(order, null, null);
     }
 
     /**
      * Resolve todos os dados necessários para impressão das etiquetas térmicas da ordem,
      * com suporte a filtro opcional por item específico.
-     * Gera uma entrada individual em {@link ThermalLabelData} para cada peça física.
      *
      * @param order  ordem de serviço de origem
      * @param itemId identificador opcional de um item específico para filtragem
      * @return lista de dados de etiquetas em sequência física
-     * @throws BusinessException         se a ordem não contiver itens ou peças válidas
-     * @throws ResourceNotFoundException se o itemId for informado mas não pertencer à ordem
      */
     public List<ThermalLabelData> resolveLabels(Order order, UUID itemId) {
+        return resolveLabels(order, itemId, null);
+    }
+
+    /**
+     * Resolve os dados de etiquetas térmicas considerando o mapa opcional de folhas customizadas
+     * conferidas e ajustadas pelo operador no frontend.
+     *
+     * @param order                ordem de serviço de origem
+     * @param itemId               identificador opcional de item
+     * @param customLeavesPerItem  mapa opcional de folhas por item (id do item -> folhas)
+     * @return lista de dados consolidados para impressão
+     */
+    public List<ThermalLabelData> resolveLabels(Order order, UUID itemId, Map<UUID, Integer> customLeavesPerItem) {
         Objects.requireNonNull(order,
                 "A ordem de serviço não pode ser nula para resolução de etiquetas térmicas.");
 
         // 1. Valida e ordena TODOS os itens (sem excluir nenhum da lista)
         List<OrderItem> itensOrdenados = ordenarEValidarItens(order.getItems(), itemId);
 
-        // 2. O total agora reflete a soma real de todas as peças da O.S.
-        int totalPecasOS = calcularTotalPecas(itensOrdenados);
+        // 2. O total reflete a soma real de todas as peças da O.S. considerando folhas deduzidas/customizadas
+        int totalPecasOS = calcularTotalPecas(itensOrdenados, customLeavesPerItem);
         if (totalPecasOS == 0) {
             throw new BusinessException(
                     "A ordem de serviço não possui itens com quantidade válida para emissão de etiquetas.");
         }
 
-        OrderLabelContext context = new OrderLabelContext(
+        OrderLabelContext context = criarContexto(order, totalPecasOS);
+
+        return processarItens(itensOrdenados, itemId, context, customLeavesPerItem);
+    }
+
+    private OrderLabelContext criarContexto(Order order, int totalPecasOS) {
+        String codigo = order.getCodigo() != null ? order.getCodigo() : "OS-S/COD";
+        LocalDate dataAprovacao = order.getDataAprovacao() != null
+                ? order.getDataAprovacao()
+                : LocalDate.now(ZoneOffset.UTC);
+
+        return new OrderLabelContext(
                 order,
                 resolverNomeEmpresa(),
                 resolverNomeCliente(order),
-                order.getCodigo() != null ? order.getCodigo() : "OS-S/COD",
-                order.getDataAprovacao() != null ? order.getDataAprovacao() : LocalDate.now(ZoneOffset.UTC),
+                codigo,
+                dataAprovacao,
                 totalPecasOS
         );
+    }
 
+    private List<ThermalLabelData> processarItens(List<OrderItem> itensOrdenados,
+                                                  UUID itemId,
+                                                  OrderLabelContext context,
+                                                  Map<UUID, Integer> customLeavesPerItem) {
         List<ThermalLabelData> listaEtiquetas = new ArrayList<>();
         int contadorGlobal = 1;
         int itemIndex = 1;
 
-        // 3. Itera sobre a ordem completa, assegurando que o contadorGlobal avance corretamente
+        // Itera sobre a ordem completa, assegurando que o contadorGlobal avance corretamente
         for (OrderItem item : itensOrdenados) {
             if (item.getQuantidade() == null || item.getQuantidade() <= 0) {
                 log.debug("Ignorando item ID {} sem quantidade positiva para emissão de etiquetas.", item.getId());
                 continue;
             }
 
-            int indexUtilizado = (item.getOrdem() != null && item.getOrdem() > 0) ? item.getOrdem() : itemIndex;
-            
-            boolean deveGerarEtiqueta = (itemId == null || Objects.equals(item.getId(), itemId));
+            int indexUtilizado = resolverIndexItem(item, itemIndex);
+            boolean deveGerarEtiqueta = itemId == null || Objects.equals(item.getId(), itemId);
 
             if (deveGerarEtiqueta) {
-                // Adiciona as etiquetas deste item no lote de impressão e avança o contador
-                contadorGlobal = adicionarEtiquetasDoItem(listaEtiquetas, item, context, indexUtilizado, contadorGlobal);
+                contadorGlobal = adicionarEtiquetasDoItem(listaEtiquetas, item, context, indexUtilizado, contadorGlobal, customLeavesPerItem);
             } else {
-                // Item filtrado: não gera PDF, mas AVANÇA o contadorGlobal silenciosamente
-                contadorGlobal += item.getQuantidade();
+                int folhas = obterFolhasDoItem(item, customLeavesPerItem);
+                contadorGlobal += item.getQuantidade() * folhas;
             }
-            
+
             itemIndex++;
         }
 
         return listaEtiquetas;
     }
 
+    private int resolverIndexItem(OrderItem item, int fallbackIndex) {
+        if (item.getOrdem() != null && item.getOrdem() > 0) {
+            return item.getOrdem();
+        }
+        return fallbackIndex;
+    }
+
+    private int obterFolhasDoItem(OrderItem item, Map<UUID, Integer> customLeavesPerItem) {
+        if (customLeavesPerItem != null && item.getId() != null && customLeavesPerItem.containsKey(item.getId())) {
+            return Math.max(1, customLeavesPerItem.get(item.getId()));
+        }
+        return extrairQuantidadeFolhas(item);
+    }
+
     /**
-     * Valida a existência do item e ordena a lista.
+     * Valida a existência do item e ordena a lista pelo campo {@code ordem}.
      * Retorna a coleção integralmente para garantir o cálculo global da O.S.
      *
      * @param items  lista bruta de itens da ordem
@@ -147,11 +199,67 @@ public class ThermalLabelDataResolver {
         return ordenados;
     }
 
+    /**
+     * Deduz a quantidade de folhas físicas por esquadria através da descrição ou tipologia do modelo.
+     * Refatorado para manter a complexidade cognitiva < 15 (SonarQube S3776).
+     *
+     * @param item item da ordem de serviço
+     * @return quantidade de folhas deduzida (mínimo 1)
+     */
+    public int extrairQuantidadeFolhas(OrderItem item) {
+        if (item == null) {
+            return 1;
+        }
+
+        int folhasDescricao = extrairDeDescricao(item.getDescricao());
+        if (folhasDescricao > 1) {
+            return folhasDescricao;
+        }
+
+        return extrairDeTemplateConfig(item.getTemplateConfig());
+    }
+
+    private int extrairDeDescricao(String descricao) {
+        if (descricao == null || descricao.isBlank()) {
+            return 1;
+        }
+
+        for (Pattern pattern : List.of(PATTERN_FOLHAS, PATTERN_F_SUFFIX, PATTERN_PLANOS)) {
+            Matcher m = pattern.matcher(descricao);
+            if (m.find()) {
+                return Integer.parseInt(m.group(1));
+            }
+        }
+        return 1;
+    }
+
+    private int extrairDeTemplateConfig(String templateConfig) {
+        if (templateConfig == null || templateConfig.isBlank()) {
+            return 1;
+        }
+
+        try {
+            JsonNode root = OBJECT_MAPPER.readTree(templateConfig);
+            JsonNode tNode = root.get("templateType");
+            if (tNode != null && !tNode.isNull()) {
+                Matcher mTemplate = PATTERN_TEMPLATE.matcher(tNode.asText());
+                if (mTemplate.find()) {
+                    return Integer.parseInt(mTemplate.group(1));
+                }
+            }
+        } catch (Exception e) {
+            log.debug("Não foi possível extrair templateType do templateConfig: {}", e.getMessage());
+        }
+
+        return 1;
+    }
+
     private int adicionarEtiquetasDoItem(List<ThermalLabelData> listaEtiquetas,
                                          OrderItem item,
                                          OrderLabelContext ctx,
                                          int itemIndex,
-                                         int contadorGlobal) {
+                                         int contadorGlobal,
+                                         Map<UUID, Integer> customLeavesPerItem) {
         String descricao = resolverDescricao(item);
         String linha = extrairLinhaOuGrupo(item);
         int largura = item.getLarguraMm() != null ? item.getLarguraMm() : 0;
@@ -160,28 +268,41 @@ public class ThermalLabelDataResolver {
         String vidro = resolverVidro(item);
         String localAmbiente = extrairAmbienteOuLocal(item, ctx.order());
         String codItem = extrairCodigoItem(item, itemIndex);
-        int qtdItem = item.getQuantidade();
+        int qtdEsquadrias = item.getQuantidade();
+
+        int folhas = obterFolhasDoItem(item, customLeavesPerItem);
 
         int contador = contadorGlobal;
-        for (int p = 1; p <= qtdItem; p++) {
-            listaEtiquetas.add(new ThermalLabelData(
-                    ctx.companyName(),
-                    ctx.customerName(),
-                    ctx.orderCode(),
-                    itemIndex,
-                    contador,
-                    ctx.totalPieces(),
-                    descricao,
-                    linha,
-                    largura,
-                    altura,
-                    cor,
-                    vidro,
-                    localAmbiente,
-                    codItem,
-                    ctx.issueDate()
-            ));
-            contador++;
+        for (int esq = 1; esq <= qtdEsquadrias; esq++) {
+            for (int folha = 1; folha <= folhas; folha++) {
+                String sufixoFolha = folhas > 1
+                        ? String.format(Locale.ROOT, "Folha %02d/%02d", folha, folhas)
+                        : String.format(Locale.ROOT, "Peça %02d/%02d", folha, folhas);
+
+                String badge = String.format(Locale.ROOT,
+                        "Item %02d • Esquadria %02d/%02d | %s",
+                        itemIndex, esq, qtdEsquadrias, sufixoFolha);
+
+                listaEtiquetas.add(new ThermalLabelData(
+                        ctx.companyName(),
+                        ctx.customerName(),
+                        ctx.orderCode(),
+                        itemIndex,
+                        contador,
+                        ctx.totalPieces(),
+                        descricao,
+                        linha,
+                        largura,
+                        altura,
+                        cor,
+                        vidro,
+                        localAmbiente,
+                        codItem,
+                        ctx.issueDate(),
+                        badge
+                ));
+                contador++;
+            }
         }
         return contador;
     }
@@ -196,11 +317,11 @@ public class ThermalLabelDataResolver {
     ) {
     }
 
-    private int calcularTotalPecas(List<OrderItem> items) {
+    private int calcularTotalPecas(List<OrderItem> items, Map<UUID, Integer> customLeavesPerItem) {
         int total = 0;
         for (OrderItem item : items) {
             if (item.getQuantidade() != null && item.getQuantidade() > 0) {
-                total += item.getQuantidade();
+                total += item.getQuantidade() * obterFolhasDoItem(item, customLeavesPerItem);
             }
         }
         return total;
@@ -223,23 +344,9 @@ public class ThermalLabelDataResolver {
 
     private String resolverDescricao(OrderItem item) {
         if (item.getDescricao() != null && !item.getDescricao().isBlank()) {
-            return truncarTexto(item.getDescricao().trim(), 48);
+            return truncarTexto(item.getDescricao(), 60);
         }
-        return "Esquadria Padrão";
-    }
-
-    private String resolverCor(OrderItem item) {
-        if (item.getCorAluminio() != null && !item.getCorAluminio().isBlank()) {
-            return truncarTexto(item.getCorAluminio(), 25);
-        }
-        return NAO_INFORMADO;
-    }
-
-    private String resolverVidro(OrderItem item) {
-        if (item.getTipoVidro() != null && !item.getTipoVidro().isBlank()) {
-            return truncarTexto(item.getTipoVidro(), 28);
-        }
-        return NAO_INFORMADO;
+        return "Esquadria de Alumínio";
     }
 
     public String extrairLinhaOuGrupo(OrderItem item) {
@@ -264,40 +371,45 @@ public class ThermalLabelDataResolver {
         return "Esquadria";
     }
 
-    public String extrairAmbienteOuLocal(OrderItem item, Order order) {
-        String valorJson = extrairAmbienteDoTemplateConfig(item.getTemplateConfig());
-        if (valorJson != null && !valorJson.isBlank()) {
-            return truncarTexto(valorJson.trim(), 52);
-        }
-        if (order.getObservacoes() != null && !order.getObservacoes().isBlank()) {
-            return truncarTexto(order.getObservacoes().trim(), 52);
-        }
-        if (order.getClienteEndereco() != null && !order.getClienteEndereco().isBlank()) {
-            return truncarTexto(order.getClienteEndereco().trim(), 52);
+    private String resolverCor(OrderItem item) {
+        if (item.getCorAluminio() != null && !item.getCorAluminio().isBlank()) {
+            return truncarTexto(item.getCorAluminio(), 25);
         }
         return NAO_INFORMADO;
     }
 
-    private String extrairAmbienteDoTemplateConfig(String templateConfig) {
-        if (templateConfig == null || templateConfig.isBlank()) {
-            return null;
+    private String resolverVidro(OrderItem item) {
+        if (item.getTipoVidro() != null && !item.getTipoVidro().isBlank()) {
+            return truncarTexto(item.getTipoVidro(), 28);
         }
-        try {
-            JsonNode root = OBJECT_MAPPER.readTree(templateConfig);
-            if (root == null) {
-                return null;
-            }
-            for (String key : List.of("ambiente", "room", "local",
-                    "environment", "location", "notes")) {
-                JsonNode node = root.get(key);
-                if (node != null && !node.isNull() && !node.asText().isBlank()) {
-                    return node.asText().trim();
+        return NAO_INFORMADO;
+    }
+
+    public String extrairAmbienteOuLocal(OrderItem item, Order order) {
+        if (item.getTemplateConfig() != null && !item.getTemplateConfig().isBlank()) {
+            try {
+                JsonNode root = OBJECT_MAPPER.readTree(item.getTemplateConfig());
+                List<String> chavesAmbiente = List.of("ambiente", "room", "local", "environment", "location", "notes");
+                for (String chave : chavesAmbiente) {
+                    JsonNode node = root.get(chave);
+                    if (node != null && !node.isNull() && !node.asText().isBlank()) {
+                        return truncarTexto(node.asText().trim(), 52);
+                    }
                 }
+            } catch (Exception e) {
+                log.debug("TemplateConfig não é JSON válido para extração de ambiente: {}", e.getMessage());
             }
-        } catch (Exception e) {
-            log.debug("Falha ao extrair ambiente do templateConfig: {}", e.getMessage());
         }
-        return null;
+
+        if (order.getObservacoes() != null && !order.getObservacoes().isBlank()) {
+            return truncarTexto(order.getObservacoes().trim(), 52);
+        }
+
+        if (order.getClienteEndereco() != null && !order.getClienteEndereco().isBlank()) {
+            return truncarTexto(order.getClienteEndereco().trim(), 52);
+        }
+
+        return NAO_INFORMADO;
     }
 
     public String extrairCodigoItem(OrderItem item, int itemIndex) {

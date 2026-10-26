@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -37,8 +38,10 @@ public class LabelPdfService {
     /** Altura da etiqueta térmica em pontos (60 mm = 170.08 pt). */
     public static final float ALTURA_ETIQUETA_PT = 170.08f;
 
-    private static final float MARGEM_HORIZONTAL = 8.0f;
-    private static final float MARGEM_VERTICAL = 4.0f;
+    private static final float MARGEM_ESQUERDA = 7.0f;
+    private static final float MARGEM_DIREITA = 3.0f;
+    private static final float MARGEM_SUPERIOR = 5.0f;
+    private static final float MARGEM_INFERIOR = 2.0f;
 
     private final ThermalLabelDataResolver dataResolver;
     private final ThermalLabelPdfRenderer pdfRenderer;
@@ -77,17 +80,30 @@ public class LabelPdfService {
      * @throws BusinessException se order não tiver itens ou ocorrer erro de geração
      */
     public byte[] gerarEtiquetas(Order order, UUID itemId) {
-        List<ThermalLabelData> etiquetas = dataResolver.resolveLabels(order, itemId);
+        return gerarEtiquetas(order, itemId, null);
+    }
+
+    /**
+     * Gera o documento PDF com etiquetas adesivas térmicas (100mm x 60mm) para os
+     * exemplares físicos de uma ordem de serviço, considerando folhas customizadas pelo operador.
+     *
+     * @param order               ordem de serviço de origem
+     * @param itemId              identificador opcional de um item específico para filtragem
+     * @param customLeavesPerItem mapa opcional de quantidade customizada de folhas por item
+     * @return array de bytes contendo o PDF gerado
+     */
+    public byte[] gerarEtiquetas(Order order, UUID itemId, Map<UUID, Integer> customLeavesPerItem) {
+        List<ThermalLabelData> etiquetas = dataResolver.resolveLabels(order, itemId, customLeavesPerItem);
 
         Rectangle pageSize = new Rectangle(LARGURA_ETIQUETA_PT, ALTURA_ETIQUETA_PT);
-        Document document = new Document(pageSize, MARGEM_HORIZONTAL, MARGEM_HORIZONTAL,
-                MARGEM_VERTICAL, MARGEM_VERTICAL);
+        Document document = new Document(pageSize, MARGEM_ESQUERDA, MARGEM_DIREITA,
+                MARGEM_SUPERIOR, MARGEM_INFERIOR);
 
         try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             PdfWriter.getInstance(document, out);
             document.open();
 
-            float larguraUtil = LARGURA_ETIQUETA_PT - (MARGEM_HORIZONTAL * 2);
+            float larguraUtil = LARGURA_ETIQUETA_PT - MARGEM_ESQUERDA - MARGEM_DIREITA;
 
             for (int i = 0; i < etiquetas.size(); i++) {
                 if (i > 0) {

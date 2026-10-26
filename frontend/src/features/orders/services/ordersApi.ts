@@ -129,6 +129,57 @@ function getDemoOrdersPage(params?: OrderFilterParams): PageResponse<OrderSummar
   };
 }
 
+async function fetchLabelsPdfBlob(
+  id: string,
+  itemId?: string,
+  customLeaves?: Record<string, number>
+): Promise<Blob> {
+  const hasCustomLeaves = Boolean(customLeaves && Object.keys(customLeaves).length > 0);
+  const endpoint = `/orders/${id}/labels-pdf`;
+  const config = {
+    params: itemId ? { itemId } : undefined,
+    responseType: 'blob' as const,
+  };
+
+  try {
+    const response = hasCustomLeaves
+      ? await api.post(endpoint, customLeaves, config)
+      : await api.get(endpoint, config);
+
+    return new Blob([response.data], { type: 'application/pdf' });
+  } catch (error: any) {
+    await ensureErrorDataDeserialized(error);
+    if (isDevBackendOffline(error)) {
+      console.info('[AlumiGest Dev Demo] Backend offline. Gerando PDF térmico de demonstração.');
+      return generateDemoThermalLabelsPdf();
+    }
+    throw error;
+  }
+}
+
+function openPdfOrDownloadFallback(url: string, fallbackFilename: string): void {
+  try {
+    if (typeof window !== 'undefined' && typeof window.open === 'function') {
+      const printWindow = window.open(url, '_blank');
+      if (printWindow) {
+        printWindow.focus();
+        return;
+      }
+    }
+  } catch {
+    // Fallback silencioso para bloqueador de pop-ups
+  }
+
+  if (typeof document !== 'undefined') {
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', fallbackFilename);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  }
+}
+
 export const ordersApi = {
   async getOrderById(id: string): Promise<Order> {
     try {
@@ -198,43 +249,43 @@ export const ordersApi = {
 
   /**
    * Baixa as etiquetas térmicas adesivas (100x60mm) da Ordem de Serviço em PDF (US-17.2 / US-17.4 / #451).
-   * Chama GET /api/v1/orders/{id}/labels-pdf com suporte a filtro opcional por item e inicia o download via Blob.
+   * Chama GET/POST /api/v1/orders/{id}/labels-pdf com suporte a filtro opcional por item e folhas customizadas.
    */
-  async downloadLabelsPdf(id: string, codigo?: string, itemId?: string): Promise<void> {
-    let blob: Blob;
-    const fallbackFilename = `etiquetas-${codigo ?? id}.pdf`;
-    let filename = fallbackFilename;
-
-    try {
-      const response = await api.get(`/orders/${id}/labels-pdf`, {
-        params: itemId ? { itemId } : undefined,
-        responseType: 'blob',
-      });
-
-      const disposition = (
-        response.headers?.['content-disposition'] ||
-        response.headers?.['Content-Disposition']
-      ) as string | undefined;
-      filename = extractFilenameFromContentDisposition(disposition, fallbackFilename);
-      blob = new Blob([response.data], { type: 'application/pdf' });
-    } catch (error: any) {
-      await ensureErrorDataDeserialized(error);
-      if (isDevBackendOffline(error)) {
-        console.info('[AlumiGest Dev Demo] Backend offline. Gerando PDF térmico de demonstração.');
-        blob = generateDemoThermalLabelsPdf();
-      } else {
-        throw error;
-      }
-    }
-
+  async downloadLabelsPdf(
+    id: string,
+    codigo?: string,
+    itemId?: string,
+    customLeaves?: Record<string, number>
+  ): Promise<void> {
+    const blob = await fetchLabelsPdfBlob(id, itemId, customLeaves);
     const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', filename);
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    window.URL.revokeObjectURL(url);
+
+    openPdfOrDownloadFallback(url, `etiquetas-${codigo ?? id}.pdf`);
+
+    setTimeout(() => {
+      window.URL.revokeObjectURL(url);
+    }, 120000);
+  },
+
+  /**
+   * Obtém os bytes binários do script nativo BPLB para envio direto via Web Serial USB à impressora térmica.
+   * US-17 / Correções #492 e #493.
+   */
+  async getLabelsBplb(
+    id: string,
+    itemId?: string,
+    customLeaves?: Record<string, number>
+  ): Promise<ArrayBuffer> {
+    const response = customLeaves && Object.keys(customLeaves).length > 0
+      ? await api.post(`/orders/${id}/labels-bplb`, customLeaves, {
+          params: itemId ? { itemId } : undefined,
+          responseType: 'arraybuffer',
+        })
+      : await api.get(`/orders/${id}/labels-bplb`, {
+          params: itemId ? { itemId } : undefined,
+          responseType: 'arraybuffer',
+        });
+    return response.data;
   },
 
   /**
