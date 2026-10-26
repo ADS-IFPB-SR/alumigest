@@ -17,7 +17,6 @@ export const productionApi = {
       params: {
         size: 100,
         sort: 'createdAt,desc',
-        status: 'WAITING_PRODUCTION,IN_PRODUCTION,COMPLETED',
       },
     });
 
