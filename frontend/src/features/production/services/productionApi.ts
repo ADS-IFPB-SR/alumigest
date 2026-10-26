@@ -14,7 +14,10 @@ export type ProductionOrderSummary = OrderSummary & {
 export const productionApi = {
   async getProductionOrders(): Promise<ProductionOrderSummary[]> {
     const response = await api.get<{ content?: ProductionOrderSummary[] } | ProductionOrderSummary[]>('/orders', {
-      params: { size: 100 },
+      params: {
+        size: 100,
+        sort: 'createdAt,desc',
+      },
     });
 
     if (Array.isArray(response.data)) {
