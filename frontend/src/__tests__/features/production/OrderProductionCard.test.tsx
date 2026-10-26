@@ -179,6 +179,23 @@ describe('OrderProductionCard Component', () => {
       expect(badge).toBeInTheDocument();
       expect(badge.closest('span')).toHaveClass('bg-rose-100');
     });
+
+      it('não deve exibir badge "Atrasado" para pedidos concluídos (COMPLETED), mesmo com data vencida', () => {
+      const completedLateOrder: Order = {
+        ...baseOrder,
+        status: 'COMPLETED',
+        dataPrevisaoEntrega: '2026-10-14', // Ontem em relação a 16/10
+      };
+
+      render(
+        <OrderProductionCard
+          order={completedLateOrder}
+          onClickDetails={mockOnClickDetails}
+        />
+      );
+
+      expect(screen.queryByText('Atrasado')).not.toBeInTheDocument();
+    });
   });
 
   describe('Interações e Acessibilidade', () => {

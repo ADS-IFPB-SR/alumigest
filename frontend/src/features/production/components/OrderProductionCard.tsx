@@ -23,14 +23,17 @@ export const OrderProductionCard: React.FC<OrderProductionCardProps> = ({
   onClickDetails,
   onMoveOrder,
 }) => {
-  // 1. Regra de negócio real de prazo de entrega
-  const deadlineStatus = getDeadlineStatus(order.dataPrevisaoEntrega);
-
-  // Próxima etapa calculada a partir do status atual (para botão de avanço rápido — BUG-504)
+  // 1. Descobre o status atual normalizado primeiro
   const currentNormalized = normalizeProductionStatus(order.status);
   const nextStep = currentNormalized ? NEXT_STATUS_MAP[currentNormalized] ?? null : null;
 
-  // 2. Mapeamento de prioridade/urgência baseado no prazo real
+  // 2. Regra de negócio de prazo de entrega
+  // Se já está concluído, cancela qualquer alerta de atraso
+  const deadlineStatus = currentNormalized === 'COMPLETED' 
+    ? 'NORMAL' 
+    : getDeadlineStatus(order.dataPrevisaoEntrega);
+
+  // 3. Mapeamento de prioridade/urgência baseado no prazo real
   const alertConfig = {
     LATE: {
       label: 'Atrasado',
