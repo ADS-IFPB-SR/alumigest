@@ -509,5 +509,6 @@ class OrderControllerIntegrationTest {
                             .content("{\"status\":\"STATUS_TOTALMENTE_INVALIDO\"}"))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.status").value(400));
+        }
     }
 }
