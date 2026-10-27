@@ -57,6 +57,7 @@ docker-compose.override.yml
 .specify/
 specs/
 .agents/skills/speckit-*
+.agents/workflows/
 
 # Configurações Locais
 .env
