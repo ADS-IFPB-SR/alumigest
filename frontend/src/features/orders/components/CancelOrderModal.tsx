@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -32,11 +32,16 @@ export const CancelOrderModal: React.FC<CancelOrderModalProps> = ({
     },
   });
 
+  const handleClose = useCallback(() => {
+    if (isSubmitting) return;
+    reset();
+    onClose();
+  }, [isSubmitting, reset, onClose]);
+
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        reset();
-        onClose();
+        handleClose();
       }
     };
     if (isOpen) {
@@ -47,17 +52,12 @@ export const CancelOrderModal: React.FC<CancelOrderModalProps> = ({
       document.removeEventListener('keydown', handleKey);
       document.body.style.overflow = '';
     };
-  }, [isOpen, onClose, reset]);
+  }, [isOpen, handleClose]);
 
   if (!isOpen) return null;
 
   const handleFormSubmit = (data: CancelOrderFormData) => {
     onConfirm(data);
-  };
-
-  const handleClose = () => {
-    reset();
-    onClose();
   };
 
   return createPortal(
@@ -68,8 +68,9 @@ export const CancelOrderModal: React.FC<CancelOrderModalProps> = ({
       {/* Backdrop escurecido padrão do sistema cobrindo 100% da viewport */}
       <button
         type="button"
-        className="fixed inset-0 w-full h-full bg-black/70 backdrop-blur-xs transition-opacity cursor-default border-0"
+        className="fixed inset-0 w-full h-full bg-black/70 backdrop-blur-xs transition-opacity cursor-default border-0 disabled:cursor-not-allowed"
         onClick={handleClose}
+        disabled={isSubmitting}
         tabIndex={-1}
         aria-label="Fechar fundo do modal"
       />
@@ -83,7 +84,9 @@ export const CancelOrderModal: React.FC<CancelOrderModalProps> = ({
           <button
             type="button"
             onClick={handleClose}
-            className="text-on-surface-variant hover:text-on-surface p-1 rounded-lg hover:bg-surface-container-high transition-colors"
+            disabled={isSubmitting}
+            className="text-on-surface-variant hover:text-on-surface p-1 rounded-lg hover:bg-surface-container-high transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            aria-label="Fechar modal"
           >
             <X className="w-5 h-5" />
           </button>
@@ -106,7 +109,8 @@ export const CancelOrderModal: React.FC<CancelOrderModalProps> = ({
               id="justificativa"
               rows={4}
               placeholder="Descreva o motivo comercial do cancelamento..."
-              className={`w-full px-3 py-2 text-sm rounded-lg border bg-surface-container-lowest text-on-surface focus:outline-hidden focus:ring-2 transition-all ${
+              disabled={isSubmitting}
+              className={`w-full px-3 py-2 text-sm rounded-lg border bg-surface-container-lowest text-on-surface focus:outline-hidden focus:ring-2 transition-all disabled:opacity-60 disabled:cursor-not-allowed ${
                 errors.justificativa
                   ? 'border-rose-500 focus:ring-rose-500/20'
                   : 'border-outline-variant focus:ring-primary/20 focus:border-primary'

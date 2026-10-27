@@ -25,6 +25,12 @@ export const useOrder = (id?: string) => {
     queryKey: ['order', id],
     queryFn: () => ordersApi.getOrderById(id!),
     enabled: Boolean(id),
+    retry: (failureCount, error: any) => {
+      if (!error) return false;
+      if (error?.response?.status === 404) return false;
+      if (error?.message && /not found|não encontrad/i.test(error.message)) return false;
+      return failureCount < 2;
+    },
   });
 };
 
@@ -64,6 +70,37 @@ export const useDownloadComprovantePdf = () => {
   });
 };
 
+/**
+ * Hook de mutação para baixar as etiquetas térmicas adesivas (100x60mm) do Pedido de Venda em PDF.
+ * US-17.4 (#451) — com suporte a folhas conferidas e customizadas pelo operador.
+ */
+export const useDownloadLabelsPdf = () => {
+  return useMutation({
+    mutationFn: ({
+      id,
+      codigo,
+      itemId,
+      customLeaves,
+    }: {
+      id: string;
+      codigo?: string;
+      itemId?: string;
+      customLeaves?: Record<string, number>;
+    }) =>
+      customLeaves
+        ? ordersApi.downloadLabelsPdf(id, codigo, itemId, customLeaves)
+        : ordersApi.downloadLabelsPdf(id, codigo, itemId),
+    onSuccess: () => {
+      toast.success('Etiquetas térmicas baixadas com sucesso!');
+    },
+    onError: (error: unknown) => {
+      const err = error as { response?: { data?: { message?: string } } };
+      const message = err?.response?.data?.message || 'Erro ao gerar as etiquetas térmicas.';
+      toast.error(message);
+    },
+  });
+};
+
 export const useUpdateOrderStatus = (id?: string) => {
   const queryClient = useQueryClient();
 
@@ -80,3 +117,4 @@ export const useUpdateOrderStatus = (id?: string) => {
     },
   });
 };
+

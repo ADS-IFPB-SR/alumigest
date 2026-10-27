@@ -1,5 +1,10 @@
 import { api } from '../../../lib/api';
 import { extractFilenameFromContentDisposition } from '../../budgets/services/budgetsApi';
+import {
+  demoOrder,
+  demoOrderSummaries,
+  generateDemoThermalLabelsPdf,
+} from '../mocks/demoOrdersData';
 import type {
   Order,
   OrderCancelRequest,
@@ -25,10 +30,168 @@ export interface PageResponse<T> {
 
 export type OrderPageResponse = PageResponse<OrderSummary>;
 
+function isDevBackendOffline(error: any): boolean {
+  if (!import.meta.env.DEV) return false;
+  if (!error?.response) return true;
+  const status = error.response?.status;
+  return typeof status === 'number' && status >= 500;
+}
+
+async function ensureErrorDataDeserialized(error: any): Promise<void> {
+  const data = error?.response?.data;
+  if (data instanceof Blob || (data && typeof data.text === 'function')) {
+    try {
+      const text = await data.text();
+      const json = JSON.parse(text);
+      error.response.data = json;
+      if (json.message && !error.message) {
+        error.message = json.message;
+      }
+    } catch {
+      // Fallback: mantém o Blob intacto se não for possível converter em JSON
+    }
+  }
+}
+
+function buildOrderQueryParams(params?: OrderFilterParams): Record<string, string | number> {
+  const queryParams: Record<string, string | number> = {
+    page: params?.page ?? 0,
+    size: params?.size ?? 10,
+  };
+
+  const search = params?.search?.trim();
+  if (search && search.length >= 2) {
+    queryParams.search = search;
+  }
+
+  if (params?.channel) {
+    queryParams.channel = params.channel;
+  }
+
+  if (params?.status) {
+    queryParams.status = params.status;
+  }
+
+  return queryParams;
+}
+
+function parsePageResponse(data: any, queryParams: Record<string, string | number>): PageResponse<OrderSummary> {
+  const pageNumber = data.page?.number ?? data.number ?? (typeof data.page === 'number' ? data.page : queryParams.page);
+  const pageSize = data.page?.size ?? data.size ?? queryParams.size;
+  const totalElements = data.page?.totalElements ?? data.totalElements ?? 0;
+  const totalPages = data.page?.totalPages ?? data.totalPages ?? 1;
+
+  return {
+    content: data.content || [],
+    page: {
+      size: Number(pageSize),
+      number: Number(pageNumber),
+      totalElements: Number(totalElements),
+      totalPages: Number(totalPages),
+    },
+    totalElements: Number(totalElements),
+    totalPages: Number(totalPages),
+    size: Number(pageSize),
+    number: Number(pageNumber),
+  };
+}
+
+function getDemoOrdersPage(params?: OrderFilterParams): PageResponse<OrderSummary> {
+  let filtered = [...demoOrderSummaries];
+  if (params?.status) {
+    filtered = filtered.filter((o) => o.status === params.status);
+  }
+  if (params?.channel) {
+    filtered = filtered.filter((o) => o.canalAprovacao === params.channel);
+  }
+  if (params?.search) {
+    const s = params.search.toLowerCase();
+    filtered = filtered.filter(
+      (o) =>
+        o.codigo.toLowerCase().includes(s) ||
+        o.clienteNome.toLowerCase().includes(s)
+    );
+  }
+  const size = Number(params?.size ?? 10);
+  const number = Number(params?.page ?? 0);
+  return {
+    content: filtered,
+    page: {
+      size,
+      number,
+      totalElements: filtered.length,
+      totalPages: 1,
+    },
+    totalElements: filtered.length,
+    totalPages: 1,
+    size,
+    number,
+  };
+}
+
+async function fetchLabelsPdfBlob(
+  id: string,
+  itemId?: string,
+  customLeaves?: Record<string, number>
+): Promise<Blob> {
+  const hasCustomLeaves = Boolean(customLeaves && Object.keys(customLeaves).length > 0);
+  const endpoint = `/orders/${id}/labels-pdf`;
+  const config = {
+    params: itemId ? { itemId } : undefined,
+    responseType: 'blob' as const,
+  };
+
+  try {
+    const response = hasCustomLeaves
+      ? await api.post(endpoint, customLeaves, config)
+      : await api.get(endpoint, config);
+
+    return new Blob([response.data], { type: 'application/pdf' });
+  } catch (error: any) {
+    await ensureErrorDataDeserialized(error);
+    if (isDevBackendOffline(error)) {
+      console.info('[AlumiGest Dev Demo] Backend offline. Gerando PDF térmico de demonstração.');
+      return generateDemoThermalLabelsPdf();
+    }
+    throw error;
+  }
+}
+
+function openPdfOrDownloadFallback(url: string, fallbackFilename: string): void {
+  try {
+    if (typeof window !== 'undefined' && typeof window.open === 'function') {
+      const printWindow = window.open(url, '_blank');
+      if (printWindow) {
+        printWindow.focus();
+        return;
+      }
+    }
+  } catch {
+    // Fallback silencioso para bloqueador de pop-ups
+  }
+
+  if (typeof document !== 'undefined') {
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', fallbackFilename);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  }
+}
+
 export const ordersApi = {
   async getOrderById(id: string): Promise<Order> {
-    const response = await api.get<Order>(`/orders/${id}`);
-    return response.data;
+    try {
+      const response = await api.get<Order>(`/orders/${id}`);
+      return response.data;
+    } catch (error: any) {
+      if (isDevBackendOffline(error)) {
+        console.info('[AlumiGest Dev Demo] Backend offline. Fornecendo dados de demonstração da O.S.');
+        return { ...demoOrder, id };
+      }
+      throw error;
+    }
   },
 
   /**
@@ -57,74 +220,92 @@ export const ordersApi = {
    * Chama GET /api/v1/orders/{id}/pdf/comprovante e inicia o download via Blob.
    */
   async downloadComprovantePdf(id: string, codigo?: string): Promise<void> {
-    const response = await api.get(`/orders/${id}/pdf/comprovante`, {
-      responseType: 'blob',
-    });
+    try {
+      const response = await api.get(`/orders/${id}/pdf/comprovante`, {
+        responseType: 'blob',
+      });
 
-    const fallbackFilename = `comprovante-${codigo ?? id}.pdf`;
-    const disposition = (
-      response.headers?.['content-disposition'] ||
-      response.headers?.['Content-Disposition']
-    ) as string | undefined;
-    const filename = extractFilenameFromContentDisposition(disposition, fallbackFilename);
+      const fallbackFilename = `comprovante-${codigo ?? id}.pdf`;
+      const disposition = (
+        response.headers?.['content-disposition'] ||
+        response.headers?.['Content-Disposition']
+      ) as string | undefined;
+      const filename = extractFilenameFromContentDisposition(disposition, fallbackFilename);
 
-    const blob = new Blob([response.data], { type: 'application/pdf' });
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error: any) {
+      await ensureErrorDataDeserialized(error);
+      throw error;
+    }
+  },
+
+  /**
+   * Baixa as etiquetas térmicas adesivas (100x60mm) da Ordem de Serviço em PDF (US-17.2 / US-17.4 / #451).
+   * Chama GET/POST /api/v1/orders/{id}/labels-pdf com suporte a filtro opcional por item e folhas customizadas.
+   */
+  async downloadLabelsPdf(
+    id: string,
+    codigo?: string,
+    itemId?: string,
+    customLeaves?: Record<string, number>
+  ): Promise<void> {
+    const blob = await fetchLabelsPdfBlob(id, itemId, customLeaves);
     const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', filename);
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    window.URL.revokeObjectURL(url);
+
+    openPdfOrDownloadFallback(url, `etiquetas-${codigo ?? id}.pdf`);
+
+    setTimeout(() => {
+      window.URL.revokeObjectURL(url);
+    }, 120000);
+  },
+
+  /**
+   * Obtém os bytes binários do script nativo BPLB para envio direto via Web Serial USB à impressora térmica.
+   * US-17 / Correções #492 e #493.
+   */
+  async getLabelsBplb(
+    id: string,
+    itemId?: string,
+    customLeaves?: Record<string, number>
+  ): Promise<ArrayBuffer> {
+    const response = customLeaves && Object.keys(customLeaves).length > 0
+      ? await api.post(`/orders/${id}/labels-bplb`, customLeaves, {
+          params: itemId ? { itemId } : undefined,
+          responseType: 'arraybuffer',
+        })
+      : await api.get(`/orders/${id}/labels-bplb`, {
+          params: itemId ? { itemId } : undefined,
+          responseType: 'arraybuffer',
+        });
+    return response.data;
   },
 
   /**
    * Lista pedidos de venda com paginação e filtros dinâmicos (US-13.4).
    */
   async getOrders(params?: OrderFilterParams): Promise<PageResponse<OrderSummary>> {
-    const queryParams: Record<string, string | number> = {
-      page: params?.page ?? 0,
-      size: params?.size ?? 10,
-    };
+    const queryParams = buildOrderQueryParams(params);
 
-    const search = params?.search;
-    if (search && search.trim().length >= 2) {
-      queryParams.search = search.trim();
+    try {
+      const response = await api.get<any>('/orders', {
+        params: queryParams,
+      });
+      return parsePageResponse(response.data || {}, queryParams);
+    } catch (error: any) {
+      if (isDevBackendOffline(error)) {
+        console.info('[AlumiGest Dev Demo] Backend offline. Exibindo lista de demonstração de O.S.');
+        return getDemoOrdersPage(params);
+      }
+      throw error;
     }
-
-    const channel = params?.channel;
-    if (channel) {
-      queryParams.channel = channel;
-    }
-
-    if (params?.status) {
-      queryParams.status = params.status;
-    }
-
-    const response = await api.get<any>('/orders', {
-      params: queryParams,
-    });
-
-    const data = response.data || {};
-    const pageNumber = data.page?.number ?? data.number ?? (typeof data.page === 'number' ? data.page : queryParams.page);
-    const pageSize = data.page?.size ?? data.size ?? queryParams.size;
-    const totalElements = data.page?.totalElements ?? data.totalElements ?? 0;
-    const totalPages = data.page?.totalPages ?? data.totalPages ?? 1;
-
-    return {
-      content: data.content || [],
-      page: {
-        size: Number(pageSize),
-        number: Number(pageNumber),
-        totalElements: Number(totalElements),
-        totalPages: Number(totalPages),
-      },
-      totalElements: Number(totalElements),
-      totalPages: Number(totalPages),
-      size: Number(pageSize),
-      number: Number(pageNumber),
-    };
   },
 };
 

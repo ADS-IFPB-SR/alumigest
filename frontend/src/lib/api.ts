@@ -38,15 +38,17 @@ api.interceptors.response.use(
     return response;
   },
   async (error) => {
-    if (
-      error.response?.data instanceof Blob &&
-      error.response.data.type.includes('application/json')
-    ) {
+    const data = error.response?.data;
+    if (data instanceof Blob || (data && typeof data.text === 'function')) {
       try {
-        const text = await error.response.data.text();
-        error.response.data = JSON.parse(text);
+        const text = await data.text();
+        const json = JSON.parse(text);
+        error.response.data = json;
+        if (json.message && !error.message) {
+          error.message = json.message;
+        }
       } catch {
-        // Fallback: mantém o Blob intacto se não for possível parsear
+        // Fallback: mantém o Blob intacto se não for possível parsear como JSON
       }
     }
     throw error;

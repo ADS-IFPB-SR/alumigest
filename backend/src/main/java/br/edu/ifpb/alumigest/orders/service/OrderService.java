@@ -9,7 +9,7 @@ import br.edu.ifpb.alumigest.orders.dto.OrderPdfDTO;
 import br.edu.ifpb.alumigest.orders.dto.OrderResponse;
 import br.edu.ifpb.alumigest.orders.dto.OrderSummaryResponse;
 import org.springframework.data.domain.Pageable;
-
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -63,6 +63,41 @@ public interface OrderService {
     OrderPdfDTO gerarComprovanteById(UUID id);
 
     /**
+     * Gera o documento PDF contendo etiquetas térmicas (100x60mm) para identificação
+     * das peças da Ordem de Serviço / Pedido de Venda, com suporte a filtro opcional por item.
+     *
+     * @param id     Identificador único (UUID) do pedido
+     * @param itemId Identificador opcional (UUID) de um item específico para filtragem de etiquetas
+     * @return DTO contendo os bytes do PDF e o nome do arquivo para download
+     * @throws br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException se o pedido ou item não for encontrado
+     * @throws br.edu.ifpb.alumigest.common.exception.BusinessException         se a ordem não contiver itens válidos
+     */
+    OrderPdfDTO gerarEtiquetasById(UUID id, UUID itemId);
+
+    /**
+     * Gera o documento PDF contendo etiquetas térmicas (100x60mm) considerando as folhas customizadas.
+     *
+     * @param id                  Identificador único (UUID) do pedido
+     * @param itemId              Identificador opcional (UUID) de um item específico
+     * @param customLeavesPerItem Mapa de folhas customizadas pelo operador no modal
+     * @return DTO contendo os bytes do PDF e o nome do arquivo para download
+     */
+    OrderPdfDTO gerarEtiquetasById(UUID id, UUID itemId, Map<UUID, Integer> customLeavesPerItem);
+
+    /**
+     * Gera o documento PDF contendo etiquetas térmicas (100x60mm) para todas as
+     * peças da Ordem de Serviço / Pedido de Venda.
+     *
+     * @param id Identificador único (UUID) do pedido
+     * @return DTO contendo os bytes do PDF e o nome do arquivo para download
+     * @throws br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException se o pedido não for encontrado
+     * @throws br.edu.ifpb.alumigest.common.exception.BusinessException         se a ordem não contiver itens válidos
+     */
+    default OrderPdfDTO gerarEtiquetasById(UUID id) {
+        return gerarEtiquetasById(id, null, null);
+    }
+
+    /**
      * Lista pedidos de venda de forma paginada com suporte a filtros dinâmicos.
      *
      * @param status   filtro opcional por status do pedido
@@ -79,5 +114,24 @@ public interface OrderService {
     );
 
     OrderResponse updateStatus(UUID id, OrderStatus status);
+
+    /**
+     * Gera os bytes brutos do script de comandos BPLB para envio direto à impressora térmica USB.
+     *
+     * @param id     identificador da ordem de serviço
+     * @param itemId identificador opcional de item para filtro
+     * @return array de bytes do script BPLB
+     */
+    byte[] gerarBplbEtiquetasById(UUID id, UUID itemId);
+
+    /**
+     * Gera os bytes brutos do script de comandos BPLB considerando as folhas customizadas pelo operador.
+     *
+     * @param id                  identificador da ordem de serviço
+     * @param itemId              identificador opcional de item para filtro
+     * @param customLeavesPerItem Mapa de folhas customizadas pelo operador no modal
+     * @return array de bytes do script BPLB
+     */
+    byte[] gerarBplbEtiquetasById(UUID id, UUID itemId, Map<UUID, Integer> customLeavesPerItem);
 
 }

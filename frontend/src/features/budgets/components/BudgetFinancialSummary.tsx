@@ -214,6 +214,7 @@ export const BudgetFinancialSummary: React.FC<BudgetFinancialSummaryProps> = ({
               onClick={onSave}
               disabled={!canSave}
               className="w-full"
+              id="btn-salvar-proposta"
             >
               {isSaving ? 'Salvando...' : 'Salvar e Gerar Proposta'}
             </Button>

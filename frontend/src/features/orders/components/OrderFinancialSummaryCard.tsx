@@ -2,6 +2,7 @@ import React from 'react';
 import { DollarSign, CreditCard } from 'lucide-react';
 import type { Order } from '../types';
 import { formatBRL } from '../../budgets/utils/calculations';
+import { PAYMENT_CONDITION_LABELS } from '../../budgets/types'; 
 
 interface OrderFinancialSummaryCardProps {
   order: Order;
@@ -21,33 +22,35 @@ export const OrderFinancialSummaryCard: React.FC<OrderFinancialSummaryCardProps>
       <div className="space-y-2 text-sm">
         <div className="flex justify-between text-on-surface-variant">
           <span>Valor Bruto:</span>
-          <span className="font-data-mono font-medium">{formatBRL(order.valorBruto)}</span>
+          <span data-testid="financial-summary-gross" className="font-data-mono font-medium">{formatBRL(order.valorBruto)}</span>
         </div>
 
         {order.valorDesconto > 0 && (
           <div className="flex justify-between text-rose-600">
             <span>Desconto Comercial:</span>
-            <span className="font-data-mono font-medium">- {formatBRL(order.valorDesconto)}</span>
+            <span data-testid="financial-summary-discount" className="font-data-mono font-medium">
+              - {formatBRL(order.valorDesconto)}
+            </span>
           </div>
         )}
 
         {order.taxaInstalacao > 0 && (
           <div className="flex justify-between text-on-surface-variant">
             <span>Taxa de Instalação:</span>
-            <span className="font-data-mono font-medium">+ {formatBRL(order.taxaInstalacao)}</span>
+            <span data-testid="financial-summary-installation" className="font-data-mono font-medium">+ {formatBRL(order.taxaInstalacao)}</span>
           </div>
         )}
 
         {order.taxaFrete > 0 && (
           <div className="flex justify-between text-on-surface-variant">
             <span>Taxa de Frete:</span>
-            <span className="font-data-mono font-medium">+ {formatBRL(order.taxaFrete)}</span>
+            <span data-testid="financial-summary-shipping" className="font-data-mono font-medium">+ {formatBRL(order.taxaFrete)}</span>
           </div>
         )}
 
         <div className="border-t border-outline-variant pt-2 flex justify-between items-baseline font-bold text-base text-on-surface">
           <span>Valor Líquido:</span>
-          <span className="text-primary font-data-mono text-lg">{formatBRL(order.valorLiquido)}</span>
+          <span data-testid="financial-summary-net" className="text-primary font-data-mono text-lg">{formatBRL(order.valorLiquido)}</span>
         </div>
       </div>
 
@@ -58,7 +61,9 @@ export const OrderFinancialSummaryCard: React.FC<OrderFinancialSummaryCardProps>
             <span>Condição de Pagamento:</span>
           </div>
           {order.condicaoPagamento && (
-            <p className="text-on-surface font-medium">{order.condicaoPagamento}</p>
+            <p className="text-on-surface font-medium">
+              {PAYMENT_CONDITION_LABELS[order.condicaoPagamento as keyof typeof PAYMENT_CONDITION_LABELS] || order.condicaoPagamento}
+            </p>
           )}
           {order.observacoesPagamento && (
             <p className="text-on-surface-variant italic">{order.observacoesPagamento}</p>

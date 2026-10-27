@@ -7,7 +7,8 @@ public enum ApprovalChannel {
   WHATSAPP("WhatsApp"),
   PRESENCIAL("Presencial"),
   TELEFONE("Telefone"),
-  EMAIL("E-mail");
+  EMAIL("E-mail"),
+  OUTRO("Outro");
 
   private final String description;
 

@@ -65,3 +65,5 @@ modular-prototype.html
 .scannerwork/
 target/
 scratch/
+/*.pdf
+/*.zip
