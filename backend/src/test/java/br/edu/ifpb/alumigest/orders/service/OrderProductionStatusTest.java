@@ -115,7 +115,7 @@ class OrderProductionStatusTest {
         // Act & Assert
         assertThatThrownBy(() -> orderService.updateStatus(orderId, OrderStatus.WAITING_PRODUCTION))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage("Não é permitida a transição para o status WAITING_PRODUCTION.");
+                .hasMessage("Apenas pedidos recém-criados podem avançar para aguardando produção.");
 
         verify(orderRepository, never()).save(any());
     }

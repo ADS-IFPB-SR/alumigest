@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
@@ -30,9 +31,10 @@ class OrderTest {
 
         assertThat(order.getAtivo()).isTrue();
         assertThat(order.getStatus()).isEqualTo(OrderStatus.CREATED);
-        assertThat(order.getDataAprovacao()).isEqualTo(LocalDate.now(ZoneOffset.UTC));
+        ZoneId zoneBrasil = ZoneId.of("America/Sao_Paulo");
+        assertThat(order.getDataAprovacao()).isEqualTo(LocalDate.now(zoneBrasil));
         assertThat(order.getDataPrevisaoEntrega())
-                .isEqualTo(LocalDate.now(ZoneOffset.UTC).plusDays(15));
+                .isEqualTo(LocalDate.now(zoneBrasil).plusDays(15));
         assertThat(order.getCreatedAt()).isNotNull();
         assertThat(order.getUpdatedAt()).isNotNull();
     }
