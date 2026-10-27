@@ -456,17 +456,13 @@ public class OrderServiceImpl implements OrderService {
         if (targetStatus == null) {
             throw new IllegalArgumentException("O status de destino é obrigatório.");
         }
-        try {
-            switch (targetStatus) {
-                case WAITING_PRODUCTION -> order.aguardarProducao();
-                case IN_PRODUCTION -> order.iniciarProducao();
-                case COMPLETED -> order.concluir(null);
-                default -> throw new ConflictException(
-                        "Não é permitida a transição para o status " + targetStatus + "."
-                );
-            }
-        } catch (BusinessException ex) {
-            throw new ConflictException(ex.getMessage());
+        switch (targetStatus) {
+            case WAITING_PRODUCTION -> order.aguardarProducao();
+            case IN_PRODUCTION -> order.iniciarProducao();
+            case COMPLETED -> order.concluir(null);
+            default -> throw new BusinessException(
+                    "Não é permitida a transição para o status " + targetStatus + "."
+            );
         }
         Order savedOrder = orderRepository.save(order);
         return orderMapper.toResponse(savedOrder);

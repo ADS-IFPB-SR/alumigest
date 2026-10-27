@@ -360,8 +360,8 @@ class OrderControllerIntegrationTest {
     }
 
     @Nested
-    @DisplayName("PATCH /api/v1/orders/{id}/status — Máquina de Estados US-15.1")
-    class UpdateStatusTests {
+    @DisplayName("PATCH /api/v1/orders/{id}/production-status — Máquina de Estados US-18.1")
+    class UpdateProductionStatusTests {
 
         @Test
         @DisplayName("Deve transitar de CREATED para WAITING_PRODUCTION com sucesso")
@@ -388,7 +388,7 @@ class OrderControllerIntegrationTest {
         }
 
         @Test
-        @DisplayName("Deve rejeitar salto direto de CREATED para IN_PRODUCTION com 409 Conflict")
+        @DisplayName("Deve rejeitar salto direto de CREATED para IN_PRODUCTION com 422 Unprocessable Entity")
         void shouldRejectDirectJumpFromCreatedToInProduction() throws Exception {
             Order order = Order.builder()
                     .codigo("OS-2026-0902")
@@ -404,7 +404,7 @@ class OrderControllerIntegrationTest {
 
             mockMvc.perform(patch("/api/v1/orders/{id}/status", order.getId())
                             .param("status", "IN_PRODUCTION"))
-                    .andExpect(status().isConflict())
+                    .andExpect(status().isUnprocessableEntity())
                     .andExpect(jsonPath("$.message").value(containsString("Apenas pedidos aguardando produção podem entrar em produção.")));
         }
 
@@ -412,7 +412,8 @@ class OrderControllerIntegrationTest {
         @DisplayName("Deve transitar de WAITING_PRODUCTION para IN_PRODUCTION com sucesso")
         void shouldTransitionFromWaitingProductionToInProduction() throws Exception {
             mockMvc.perform(patch("/api/v1/orders/{id}/status", existingOrder.getId())
-                            .param("status", "IN_PRODUCTION"))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"status\":\"IN_PRODUCTION\"}"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.status").value("IN_PRODUCTION"));
 
@@ -427,7 +428,8 @@ class OrderControllerIntegrationTest {
             orderRepository.saveAndFlush(existingOrder);
 
             mockMvc.perform(patch("/api/v1/orders/{id}/status", existingOrder.getId())
-                            .param("status", "COMPLETED"))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"status\":\"COMPLETED\"}"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.status").value("COMPLETED"))
                     .andExpect(jsonPath("$.dataConclusao").exists());
@@ -435,6 +437,78 @@ class OrderControllerIntegrationTest {
             Order updated = orderRepository.findById(existingOrder.getId()).orElseThrow();
             assertThat(updated.getStatus()).isEqualTo(OrderStatus.COMPLETED);
             assertThat(updated.getDataConclusao()).isNotNull();
+        }
+
+        @Test
+        @DisplayName("Deve rejeitar salto direto com 422 Unprocessable Entity")
+        void shouldRejectDirectJumpFromWaitingProductionToCompleted() throws Exception {
+            mockMvc.perform(patch("/api/orders/{id}/production-status", existingOrder.getId())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"status\":\"COMPLETED\"}"))
+                    .andExpect(status().isUnprocessableEntity())
+                    .andExpect(jsonPath("$.status").value(422))
+                    .andExpect(jsonPath("$.message")
+                            .value(containsString("Apenas pedidos em produção podem ser concluídos.")));
+        }
+
+        @Test
+        @DisplayName("Deve rejeitar transição de pedido já concluído com 422 Unprocessable Entity")
+        void shouldRejectTransitionWhenAlreadyCompleted() throws Exception {
+            existingOrder.iniciarProducao();
+            LocalDate dataConclusao = LocalDate.now(ZoneOffset.UTC);
+            existingOrder.concluir(dataConclusao);
+            orderRepository.saveAndFlush(existingOrder);
+
+            mockMvc.perform(patch("/api/orders/{id}/production-status", existingOrder.getId())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"status\":\"IN_PRODUCTION\"}"))
+                    .andExpect(status().isUnprocessableEntity())
+                    .andExpect(jsonPath("$.status").value(422));
+        }
+
+        @Test
+        @DisplayName("Deve rejeitar transição para status inválido com 422 Unprocessable Entity")
+        void shouldRejectInvalidTargetStatus() throws Exception {
+            mockMvc.perform(patch("/api/orders/{id}/production-status", existingOrder.getId())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"status\":\"CANCELLED\"}"))
+                    .andExpect(status().isUnprocessableEntity())
+                    .andExpect(jsonPath("$.status").value(422));
+        }
+
+        @Test
+        @DisplayName("Deve aceitar status em português EM_PRODUCAO com sucesso")
+        void shouldAcceptPortugueseStatus() throws Exception {
+            mockMvc.perform(patch("/api/orders/{id}/production-status", existingOrder.getId())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"status\":\"EM_PRODUCAO\"}"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value("IN_PRODUCTION"));
+        }
+
+        @Test
+        @DisplayName("Deve rejeitar transição redundante quando pedido já está em produção com 422 Unprocessable Entity")
+        void shouldRejectRedundantTransitionWhenAlreadyInProduction() throws Exception {
+            existingOrder.iniciarProducao();
+            orderRepository.saveAndFlush(existingOrder);
+
+            mockMvc.perform(patch("/api/orders/{id}/production-status", existingOrder.getId())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"status\":\"IN_PRODUCTION\"}"))
+                    .andExpect(status().isUnprocessableEntity())
+                    .andExpect(jsonPath("$.status").value(422))
+                    .andExpect(jsonPath("$.message")
+                            .value(containsString("Apenas pedidos aguardando produção podem entrar em produção.")));
+        }
+
+        @Test
+        @DisplayName("Deve retornar 400 Bad Request quando formato textual do status for desconhecido no JSON")
+        void shouldReturn400WhenStatusIsMalformedInJson() throws Exception {
+            mockMvc.perform(patch("/api/orders/{id}/production-status", existingOrder.getId())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"status\":\"STATUS_TOTALMENTE_INVALIDO\"}"))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.status").value(400));
         }
     }
 }

@@ -428,6 +428,10 @@ export function BudgetDetailPage() {
 
   const handleStatusChange = (newStatus: BudgetStatus) => {
     if (!budget || budget.status === newStatus || isUpdatingStatus) return;
+    if (newStatus === 'APPROVED') {
+      setShowApprovalModal(true);
+      return;
+    }
     updateStatus({ id: budget.id, status: newStatus });
   };
 

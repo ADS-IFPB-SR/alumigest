@@ -7,6 +7,7 @@ import br.edu.ifpb.alumigest.orders.dto.OrderCancelRequest;
 import br.edu.ifpb.alumigest.orders.dto.OrderConvertRequest;
 import br.edu.ifpb.alumigest.orders.dto.OrderPdfDTO;
 import br.edu.ifpb.alumigest.orders.dto.OrderResponse;
+import br.edu.ifpb.alumigest.orders.dto.OrderStatusUpdateRequest;
 import br.edu.ifpb.alumigest.orders.dto.OrderSummaryResponse;
 import br.edu.ifpb.alumigest.orders.service.OrderService;
 import io.swagger.v3.oas.annotations.Hidden;
@@ -98,11 +99,23 @@ public class OrderLegacyController {
                 .body(pdfDto.bytes());
     }
 
-    @PatchMapping("/{id}/status")
+    @PatchMapping({"/{id}/production-status", "/{id}/status"})
     public ResponseEntity<OrderResponse> updateStatus(
             @PathVariable UUID id,
-            @RequestParam OrderStatus status) {
-        return ResponseEntity.ok(orderService.updateStatus(id, status));
+            @RequestBody(required = false) @Valid OrderStatusUpdateRequest request,
+            @RequestParam(name = "status", required = false) String statusParam) {
+        OrderStatus targetStatus = null;
+        if (request != null && request.status() != null) {
+            targetStatus = request.status();
+        } else if (statusParam != null && !statusParam.isBlank()) {
+            targetStatus = OrderStatus.fromString(statusParam);
+        }
+
+        if (targetStatus == null) {
+            throw new IllegalArgumentException("O status de destino é obrigatório.");
+        }
+
+        return ResponseEntity.ok(orderService.updateStatus(id, targetStatus));
     }
 
     @PatchMapping("/{id}/cancel")

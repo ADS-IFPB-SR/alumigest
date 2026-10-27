@@ -13,6 +13,7 @@ import { ProductTab as ProductsPage } from './pages/ProductsPage';
 import { ProductBuilderPage } from './pages/ProductBuilderPage';
 import { OrderListPage } from './pages/OrderListPage';
 import { OrderDetailPage } from './pages/OrderDetailPage';
+import { ProductionKanbanPage } from './pages/ProductionKanbanPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -60,6 +61,10 @@ export function AppRoutes() {
         <Route path="pedidos/:id" element={<OrderDetailRedirect />} />
         <Route path="work-orders" element={<OrderListRedirect />} />
         <Route path="work-orders/:id" element={<OrderDetailRedirect />} />
+
+        {/* Rotas oficiais da Gestão Fabril / Painel Kanban (US-18) */}
+        <Route path="producao" element={<ProductionKanbanPage />} />
+        <Route path="producao/kanban" element={<ProductionKanbanPage />} />
 
         <Route
           path="dashboard"

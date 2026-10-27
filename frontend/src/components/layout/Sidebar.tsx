@@ -5,6 +5,7 @@ const navItems = [
   { path: '/kanban', label: 'Kanban', icon: 'view_kanban' },
   { path: '/orcamentos', label: 'Orçamentos', icon: 'receipt_long' },
   { path: '/ordens-servico', label: 'Ordens de Serviço', icon: 'assignment' },
+  { path: '/producao', label: 'Produção (Kanban)', icon: 'precision_manufacturing' },
   { path: '/', label: 'Catálogo de Materiais', icon: 'inventory_2' },
   { path: '/estoque', label: 'Estoque', icon: 'inventory' },
   { path: '/produtos', label: 'Produtos', icon: 'category' },

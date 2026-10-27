@@ -20,6 +20,7 @@ import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -33,6 +34,8 @@ import java.util.UUID;
 @Entity
 @Table(name = "tb_orders")
 public class Order {
+
+    public static final ZoneId ZONE_BRASIL = ZoneId.of("America/Sao_Paulo");
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -66,7 +69,7 @@ public class Order {
     private ApprovalChannel canalAprovacao;
 
     @Column(name = "data_aprovacao", nullable = false)
-    private LocalDate dataAprovacao = LocalDate.now(ZoneOffset.UTC);
+    private LocalDate dataAprovacao = LocalDate.now(ZONE_BRASIL);
 
     @Column(name = "data_previsao_entrega", nullable = false)
     private LocalDate dataPrevisaoEntrega;
@@ -127,7 +130,7 @@ public class Order {
         this.status = builder.status != null ? builder.status : OrderStatus.CREATED;
         this.canalAprovacao = builder.canalAprovacao;
         this.dataAprovacao = builder.dataAprovacao != null
-                ? builder.dataAprovacao : LocalDate.now(ZoneOffset.UTC);
+                ? builder.dataAprovacao : LocalDate.now(ZONE_BRASIL);
         this.dataPrevisaoEntrega = builder.dataPrevisaoEntrega;
         this.dataConclusao = builder.dataConclusao;
         this.valorBruto = builder.valorBruto != null ? builder.valorBruto : BigDecimal.ZERO;
@@ -151,7 +154,7 @@ public class Order {
         this.createdAt = OffsetDateTime.now(ZoneOffset.UTC);
         this.updatedAt = OffsetDateTime.now(ZoneOffset.UTC);
         if (this.dataAprovacao == null) {
-            this.dataAprovacao = LocalDate.now(ZoneOffset.UTC);
+            this.dataAprovacao = LocalDate.now(ZONE_BRASIL);
         }
         if (this.dataPrevisaoEntrega == null) {
             this.dataPrevisaoEntrega = this.dataAprovacao.plusDays(15);
@@ -222,7 +225,7 @@ public class Order {
             throw new BusinessException("Apenas pedidos em produção podem ser concluídos.");
         }
         this.status = OrderStatus.COMPLETED;
-        this.dataConclusao = dataConclusao != null ? dataConclusao : LocalDate.now(ZoneOffset.UTC);
+        this.dataConclusao = dataConclusao != null ? dataConclusao : LocalDate.now(ZONE_BRASIL);
     }
 
     /**
@@ -419,7 +422,7 @@ public class Order {
         private String clienteEndereco;
         private OrderStatus status = OrderStatus.CREATED;
         private ApprovalChannel canalAprovacao;
-        private LocalDate dataAprovacao = LocalDate.now(ZoneOffset.UTC);
+        private LocalDate dataAprovacao = LocalDate.now(ZONE_BRASIL);
         private LocalDate dataPrevisaoEntrega;
         private LocalDate dataConclusao;
         private BigDecimal valorBruto = BigDecimal.ZERO;
