@@ -21,6 +21,7 @@ import br.edu.ifpb.alumigest.orders.dto.OrderResponse;
 import br.edu.ifpb.alumigest.orders.dto.OrderSummaryResponse;
 import br.edu.ifpb.alumigest.orders.mapper.OrderMapper;
 import br.edu.ifpb.alumigest.orders.repository.OrderRepository;
+import br.edu.ifpb.alumigest.orders.domain.OrderCancelledEvent;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -29,6 +30,7 @@ import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.TransactionSystemException;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -57,6 +59,7 @@ public class OrderServiceImpl implements OrderService {
     private final LabelPdfService labelPdfService;
     private final br.edu.ifpb.alumigest.orders.service.pdf.ThermalLabelDataResolver thermalLabelDataResolver;
     private final br.edu.ifpb.alumigest.orders.service.thermal.ThermalLabelBplbRenderer thermalLabelBplbRenderer;
+    private final ApplicationEventPublisher eventPublisher;
 
     public OrderServiceImpl(
             OrderRepository orderRepository,
@@ -66,7 +69,8 @@ public class OrderServiceImpl implements OrderService {
             OrderPdfService orderPdfService,
             LabelPdfService labelPdfService,
             br.edu.ifpb.alumigest.orders.service.pdf.ThermalLabelDataResolver thermalLabelDataResolver,
-            br.edu.ifpb.alumigest.orders.service.thermal.ThermalLabelBplbRenderer thermalLabelBplbRenderer) {
+            br.edu.ifpb.alumigest.orders.service.thermal.ThermalLabelBplbRenderer thermalLabelBplbRenderer,
+            ApplicationEventPublisher eventPublisher) {
         this.orderRepository = orderRepository;
         this.budgetRepository = budgetRepository;
         this.orderCodeGenerator = orderCodeGenerator;
@@ -75,6 +79,7 @@ public class OrderServiceImpl implements OrderService {
         this.labelPdfService = labelPdfService;
         this.thermalLabelDataResolver = thermalLabelDataResolver;
         this.thermalLabelBplbRenderer = thermalLabelBplbRenderer;
+        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -229,6 +234,11 @@ public class OrderServiceImpl implements OrderService {
 
         order.cancelar(request.justificativa());
         order = orderRepository.save(order);
+
+        // Dispara o evento para o contexto de Budgets escutar e reabrir o orçamento
+        if (order.getOrcamentoId() != null) {
+            eventPublisher.publishEvent(new OrderCancelledEvent(order.getOrcamentoId()));
+        }
 
         return orderMapper.toResponse(order);
     }
