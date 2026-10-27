@@ -53,6 +53,8 @@ Durante a iteração, a equipe absorveu e solucionou **8 defeitos técnicos e de
 6. **BUG #498 (Corrigido):** Drag-and-drop de card na mesma coluna do Kanban disparava requisição PUT redundante gerando erro 422. Corrigido com guarda condicional no frontend.
 7. **BUG #500 (Corrigido):** Card de produção exibia o número de linhas de itens em vez do somatório total de peças físicas da ordem. Corrigido com cálculo ponderado no card.
 8. **BUG #501 (Corrigido):** Badge visual "Atrasado" permanecia visível para ordens já concluídas (`COMPLETED`). Corrigido no `OrderProductionCard.tsx`.
+9. **BUG #524 (Identificado na Homologação pelo PO):** Duplicidade do item Kanban na barra lateral (`Sidebar.tsx`) apontando para rota legada `/kanban`. Aberto no GitHub Projects ([#524](https://github.com/ADS-IFPB-SR/alumigest/issues/524)).
+10. **BUG #525 (Identificado na Homologação pelo PO):** Colunas do Kanban sem scroll vertical, ocultando ordens de serviço inferiores em listas com muitos itens. Aberto no GitHub Projects ([#525](https://github.com/ADS-IFPB-SR/alumigest/issues/525)).
 
 ---
 
@@ -62,8 +64,8 @@ Durante a iteração, a equipe absorveu e solucionou **8 defeitos técnicos e de
 * **Story Points Concluídos:** 15 pts (**Taxa de Conclusão: 100%**)
 * **Horas Estimadas Totais:** ~35.0h
 * **Fatias Verticais Entregues:** 11 fatias + 1 task E2E + 1 plano QA
-* **Bugs Resolvidos In-Sprint:** 8 (#484, #485, #486, #487, #492, #493, #498, #500, #501)
-* **Homologação QA:** Issue [#514](https://github.com/ADS-IFPB-SR/alumigest/issues/514) (QA-05) aprovada com 100% dos testes E2E e unitários.
+* **Bugs Mapeados na Sprint:** 10 (8 corrigidos in-sprint + 2 triados em homologação de campo pelo PO)
+* **Homologação QA:** Issue [#514](https://github.com/ADS-IFPB-SR/alumigest/issues/514) (QA-05 / PR #526) aprovada com 100% dos testes E2E e unitários (1.765 testes aprovados).
 * **Release:** Release 2 (v2.0.0 — Gestão Fabril) homologada.
 
 ---

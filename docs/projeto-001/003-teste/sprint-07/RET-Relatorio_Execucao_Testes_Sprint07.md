@@ -63,6 +63,8 @@ Durante a execução dos testes e validação da esteira da Sprint 07, foram tra
 | **#498** | Drag-and-drop de pedido na mesma coluna do Kanban disparava PUT desnecessário e gerava erro 422 | 🟡 Média | ✅ Corrigido | Verificação antecipada de igualdade de coluna de origem e destino |
 | **#500** | Card de produção exibia quantidade de linhas de itens em vez do total de peças físicas | 🟡 Média | ✅ Corrigido | Soma correta do campo `quantidade` dos itens do pedido |
 | **#501** | Badge de 'Atrasado' era renderizado para pedidos com status `COMPLETED` cujo prazo expirou | 🟡 Média | ✅ Corrigido | Condicional ajustada no `OrderProductionCard` para desconsiderar SLA após conclusão |
+| **#524** | Duplicidade de item Kanban na barra lateral (Sidebar) apontando para rota legada `/kanban` | 🟢 Baixa | 🟡 Aberto (PO) | [Issue #524](https://github.com/ADS-IFPB-SR/alumigest/issues/524) registrada pelo PO José Guylherme em teste manual exploratório |
+| **#525** | Painel Kanban sem rolagem vertical (scroll), ocultando ordens de serviço inferiores nas colunas | 🟡 Média | 🟡 Aberto (PO) | [Issue #525](https://github.com/ADS-IFPB-SR/alumigest/issues/525) registrada pelo PO José Guylherme em teste manual exploratório |
 
 ---
 

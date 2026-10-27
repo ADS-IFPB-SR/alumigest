@@ -1,11 +1,13 @@
 # 📌 Sprint 08 — Venda Avulsa de Partes e Central 360° do Cliente
 
-**Período Oficial da Sprint 08**: [A definir na Sprint Planning]  
+**Período Oficial da Sprint 08**: 26/10/2026 em diante  
 **Status**: 🔵 Planejada / Em Definição  
-**Total de Tarefas**: [A definir na Sprint Planning]  
-**Esforço Total Estimado**: [A definir na Sprint Planning] (Story Points: [A definir])  
+**Product Owner (PO)**: José Guylherme dos Santos Melo  
+**Scrum Master**: Maylson da Silva Rodrigues  
+**Equipe de Desenvolvimento**: Guilherme Kauã, Italo Jefferson, Joseph Nichollas, Júlio Kennedy, Herbert Carvalho, Gabriel de Souza  
+**Escopo Oficial Aprovado**: **US-46** e **US-47**  
 
-Esta pasta contém o pacote de engenharia da **Sprint 08** do projeto **AlumiGest**, compreendendo as User Stories **US-46 e US-47**:
+Esta pasta contém o pacote de engenharia da **Sprint 08** do projeto **AlumiGest**, compreendendo as User Stories deliberadas **US-46 e US-47**:
 - **US-46**: Módulo de Venda Avulsa de Partes (Vidro em m², Alumínio em Metro Linear, Ferragens e Películas).
 - **US-47**: Central 360° do Cliente com Gestão Unificada de Orçamentos, O.S., Ficha Técnica e Etiquetas.
 

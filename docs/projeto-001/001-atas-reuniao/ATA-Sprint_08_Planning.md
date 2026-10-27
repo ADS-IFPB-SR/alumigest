@@ -13,10 +13,10 @@
 
 ### Presentes:
 * **José Guylherme dos Santos Melo** — *Product Owner (PO) & Representante da Alumiportas*
+* **Maylson da Silva Rodrigues** — *Scrum Master*
 * **Guilherme Kauã Matos da Silva** — *Desenvolvedor*
 * **Italo Jefferson Lima dos Santos** — *Desenvolvedor, Tech Lead & Engenheiro de Software*
 * **Joseph Nichollas Abreu Cavalcante** — *Desenvolvedor & DevOps*
-* **Maylson da Silva Rodrigues** — *Desenvolvedor*
 * **Júlio Kennedy dos Santos Silva** — *Desenvolvedor*
 * **Herbert Carvalho dos Santos** — *Desenvolvedor*
 * **Gabriel de Souza Nascimento** — *Desenvolvedor*
@@ -72,7 +72,8 @@
 
 ## 5. ✍️ Assinatura e Homologação da Ata
 
-*Ata preliminar registrada para deliberação na cerimônia oficial de Sprint Planning.*
+*Ata oficial registrada e homologada na cerimônia de Sprint Planning.*
 
-
-* **José Guylherme dos Santos Melo** — *Product Owner & Scrum Master*
+* **José Guylherme dos Santos Melo** — *Product Owner (PO)*
+* **Maylson da Silva Rodrigues** — *Scrum Master*
+* **Equipe de Desenvolvimento AlumiGest**

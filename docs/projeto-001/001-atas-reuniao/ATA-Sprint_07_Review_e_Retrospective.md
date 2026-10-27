@@ -54,8 +54,9 @@ A **Sprint 07** consolidou a operacionalização da fábrica do AlumiGest (Relea
 | **US-18 (#143)** | As 7 fatias verticais (`US-18.1` a `US-18.7`) foram implementadas, cobrindo endpoint `PATCH`, hook `useProductionKanban`, card, board, tela e navegação. | 🟢 **100% Concluída** (PRs mesclados em `develop`) |
 | **QA-05 (#514)** | Plano de testes integrado, validação de transições de status fabril, bloqueio de cancelados e relatório formal [RET](../003-teste/sprint-07/RET-Relatorio_Execucao_Testes_Sprint07.md). | 🟢 **Homologado** |
 | **Defeitos In-Sprint** | Tratamento de 8 bugs identificados durante testes (#484, #485, #486, #487, #492, #493, #498, #500, #501). | 🟢 **Corrigidos & Integrados** |
+| **Bugs de Homologação de Campo (PO)** | 2 defeitos de usabilidade/layout identificados em testes manuais exploratórios pelo PO ([#524](https://github.com/ADS-IFPB-SR/alumigest/issues/524) e [#525](https://github.com/ADS-IFPB-SR/alumigest/issues/525)) registrados formalmente no GitHub Projects. | 🟡 **Abertos / Triados para Fix** |
 
-**Resumo Quantitativo:** 11 fatias verticais planejadas + 1 subtarefa E2E + 1 plano de homologação QA = **100% de conclusão do escopo**.
+**Resumo Quantitativo:** 11 fatias verticais planejadas + 1 subtarefa E2E + 1 plano de homologação QA + 10 defeitos mapeados (8 corrigidos in-sprint e 2 triados pelo PO) = **100% de conclusão do escopo da Release 2**.
 
 ### 4.2 Incrementos Entregues
 
@@ -87,11 +88,13 @@ A **Sprint 07** consolidou a operacionalização da fábrica do AlumiGest (Relea
 * **Trabalho em Pares e Resolução Ágil de Bugs:** A equipe tratou mais de 8 defeitos in-sprint sem comprometer as metas principais da release.
 * **Fatiamento Vertical:** A estratégia de fatias verticais finas ($\le 4\text{h}$) facilitou a integração contínua e a testabilidade das entregas.
 * **Qualidade e Cobertura:** Adoção de suítes completas de E2E com Cypress antes do fechamento formal da sprint.
+* **Testes Exploratórios de Campo pelo PO:** A validação manual conduzida diretamente pelo Product Owner na branch de homologação identificou anomalias reais de usabilidade (#524 e #525) antes da entrada em produção.
 
 ### 5.2 O que pode ser melhorado (Oportunidades de Evolução)
 * **Dependência de PRs Base:** No início da segunda semana (19/10), integrantes relataram bloqueios temporários aguardando aprovação e mesclagem de PRs fundamentais.
 * **Ambiente de Testes Físicos:** Dificuldade pontual de sincronia para testes físicos na impressora térmica Elgin L42. Recomenda-se manter ambiente mockado de comandos de porta serial/impressora.
 * **Complexidade de Drag-and-Drop:** Ajustes finos no DnD na mesma coluna geraram retrabalho que poderia ter sido antecipado na fase de refinamento técnico.
+* **Validação de Densidade de Componentes no Frontend:** Faltou validar o comportamento de overflow e scroll no Kanban com grande volume de O.S., o que causou o ocultamento visual de cards em resoluções menores.
 
 ---
 
@@ -99,9 +102,11 @@ A **Sprint 07** consolidou a operacionalização da fábrica do AlumiGest (Relea
 
 | Ação de Melhoria | Responsável | Prazo |
 |---|:---:|:---:|
+| Corrigir bugs de homologação de campo #524 (Sidebar legada) e #525 (Scroll Kanban) | Equipe Dev | Sprint 08 (Imediato) |
+| Formalizar transição ágil: **Maylson da Silva Rodrigues assume como Scrum Master** e **José Guylherme atua dedicado como PO** | Maylson & Guylherme | Sprint 08 |
 | Reduzir o tempo de fila de revisão de PRs estruturais para menos de 24h | Tech Lead & Revisores | Sprint 08 |
 | Isolar completamente lógica de hardware/impressoras através de emulador/driver mock | Backend Team | Sprint 08 |
-| Iniciar o refinamento detalhado da US-47 (Central 360° do Cliente) e venda de partes | PO & Arquitetura | Planejamento 08 |
+| Executar as User Stories **US-46** (Venda de Partes) e **US-47** (Central 360° do Cliente) | Toda a Equipe | Sprint 08 |
 
 ---
 
