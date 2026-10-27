@@ -62,12 +62,18 @@
       describe('OrderDetailPage — [US-13.5] Visualização Detalhada do Pedido de Venda', () => {
         const mockDownloadPdf = vi.fn();
         const mockDownloadComprovante = vi.fn();
+        const mockDownloadLabels = vi.fn();
 
         beforeEach(() => {
           vi.clearAllMocks();
 
           vi.spyOn(useOrdersModule, 'useDownloadComprovantePdf').mockReturnValue({
             mutate: mockDownloadComprovante,
+            isPending: false,
+          } as any);
+
+          vi.spyOn(useOrdersModule, 'useDownloadLabelsPdf').mockReturnValue({
+            mutate: mockDownloadLabels,
             isPending: false,
           } as any);
 
@@ -341,5 +347,226 @@
             id: 'order-uuid-1',
             codigo: 'OS-2026-0001',
           });
+        });
+
+        it('deve abrir o modal de conferência de etiquetas ao clicar em "Imprimir Etiquetas" e permitir download se solicitado (US-17.4 / #493)', () => {
+          vi.spyOn(useOrdersModule, 'useOrder').mockReturnValue({
+            data: mockOrder,
+            isLoading: false,
+            isError: false,
+          } as any);
+
+          render(
+            <MemoryRouter initialEntries={['/ordens-servico/order-uuid-1']}>
+              <Routes>
+                <Route path="/ordens-servico/:id" element={<OrderDetailPage />} />
+              </Routes>
+            </MemoryRouter>
+          );
+
+          // Clicar em Imprimir Etiquetas deve abrir o modal de conferência e impressão direta (#493)
+          fireEvent.click(screen.getByRole('button', { name: /imprimir etiquetas/i }));
+          expect(screen.getByTestId('thermal-label-modal')).toBeInTheDocument();
+          expect(mockDownloadLabels).not.toHaveBeenCalled();
+
+          // Download PDF agora é acionado opcionalmente dentro do modal repassando folhas conferidas
+          fireEvent.click(screen.getByTestId('btn-modal-download-pdf'));
+          expect(mockDownloadLabels).toHaveBeenCalledWith(
+            expect.objectContaining({
+              id: 'order-uuid-1',
+              codigo: 'OS-2026-0001',
+            })
+          );
+        });
+
+        it('deve avançar para WAITING_PRODUCTION ao clicar no CTA quando a ordem estiver em CREATED', () => {
+          const createdOrder: Order = { ...mockOrder, status: 'CREATED' };
+          const mockUpdateStatus = vi.fn((_status, options) => {
+            options?.onSuccess?.();
+          });
+
+          vi.spyOn(useOrdersModule, 'useOrder').mockReturnValue({
+            data: createdOrder,
+            isLoading: false,
+            isError: false,
+          } as any);
+
+          vi.spyOn(useOrdersModule, 'useUpdateOrderStatus').mockReturnValue({
+            mutate: mockUpdateStatus,
+            isPending: false,
+          } as any);
+
+          render(
+            <MemoryRouter initialEntries={['/ordens-servico/order-uuid-1']}>
+              <Routes>
+                <Route path="/ordens-servico/:id" element={<OrderDetailPage />} />
+              </Routes>
+            </MemoryRouter>
+          );
+
+          const advanceWaitingBtn = screen.getByRole('button', { name: /avançar para aguardando produção/i });
+          expect(advanceWaitingBtn).toBeInTheDocument();
+
+          fireEvent.click(advanceWaitingBtn);
+
+          expect(mockUpdateStatus).toHaveBeenCalledWith('WAITING_PRODUCTION', expect.any(Object));
+          expect(toast.success).toHaveBeenCalledWith('Ordem de serviço avançada para aguardando produção.');
+        });
+
+        it('deve avançar para IN_PRODUCTION ao clicar no CTA quando a ordem estiver em WAITING_PRODUCTION', () => {
+          const mockUpdateStatus = vi.fn((status, options) => {
+            options?.onSuccess?.();
+          });
+
+          vi.spyOn(useOrdersModule, 'useOrder').mockReturnValue({
+            data: mockOrder, // status: 'WAITING_PRODUCTION'
+            isLoading: false,
+            isError: false,
+          } as any);
+
+          vi.spyOn(useOrdersModule, 'useUpdateOrderStatus').mockReturnValue({
+            mutate: mockUpdateStatus,
+            isPending: false,
+          } as any);
+
+          render(
+            <MemoryRouter initialEntries={['/ordens-servico/order-uuid-1']}>
+              <Routes>
+                <Route path="/ordens-servico/:id" element={<OrderDetailPage />} />
+              </Routes>
+            </MemoryRouter>
+          );
+
+          const advanceProductionBtn = screen.getByRole('button', { name: /avançar para produção/i });
+          expect(advanceProductionBtn).toBeInTheDocument();
+
+          fireEvent.click(advanceProductionBtn);
+
+          expect(mockUpdateStatus).toHaveBeenCalledWith('IN_PRODUCTION', expect.any(Object));
+          expect(toast.success).toHaveBeenCalledWith('Ordem de serviço avançada para produção.');
+        });
+
+        it('deve avançar para COMPLETED ao clicar no CTA quando a ordem estiver em IN_PRODUCTION', () => {
+          const inProductionOrder: Order = { ...mockOrder, status: 'IN_PRODUCTION' };
+          const mockUpdateStatus = vi.fn((status, options) => {
+            options?.onSuccess?.();
+          });
+
+          vi.spyOn(useOrdersModule, 'useOrder').mockReturnValue({
+            data: inProductionOrder,
+            isLoading: false,
+            isError: false,
+          } as any);
+
+          vi.spyOn(useOrdersModule, 'useUpdateOrderStatus').mockReturnValue({
+            mutate: mockUpdateStatus,
+            isPending: false,
+          } as any);
+
+          render(
+            <MemoryRouter initialEntries={['/ordens-servico/order-uuid-1']}>
+              <Routes>
+                <Route path="/ordens-servico/:id" element={<OrderDetailPage />} />
+              </Routes>
+            </MemoryRouter>
+          );
+
+          const completeBtn = screen.getByRole('button', { name: /concluir produção/i });
+          expect(completeBtn).toBeInTheDocument();
+
+          fireEvent.click(completeBtn);
+
+          expect(mockUpdateStatus).toHaveBeenCalledWith('COMPLETED', expect.any(Object));
+          expect(toast.success).toHaveBeenCalledWith('Ordem de serviço concluída com sucesso.');
+        });
+
+        it('[BUG #487]: deve repassar o itemId correspondente ao baixar PDF a partir do ThermalLabelModal com filtro de item ativo', () => {
+          const multiItemOrder: Order = {
+            ...mockOrder,
+            items: [
+              ...mockOrder.items,
+              {
+                id: 'item-2',
+                orderId: 'order-uuid-1',
+                descricao: 'Janela de Correr 2 Folhas',
+                larguraMm: 1200,
+                alturaMm: 1200,
+                quantidade: 1,
+                corAluminio: 'Preto',
+                tipoVidro: 'Incolor 6mm',
+                valorUnitario: 1500,
+                valorTotal: 1500,
+                ordem: 2,
+                options: [],
+              },
+            ],
+          };
+
+          vi.spyOn(useOrdersModule, 'useOrder').mockReturnValue({
+            data: multiItemOrder,
+            isLoading: false,
+            isError: false,
+          } as any);
+
+          render(
+            <MemoryRouter initialEntries={['/ordens-servico/order-uuid-1']}>
+              <Routes>
+                <Route path="/ordens-servico/:id" element={<OrderDetailPage />} />
+              </Routes>
+            </MemoryRouter>
+          );
+
+          // Abre o modal de etiquetas térmicas
+          fireEvent.click(screen.getByTestId('btn-open-thermal-modal'));
+          expect(screen.getByTestId('thermal-label-modal')).toBeInTheDocument();
+
+          // Filtra pelo Item 2
+          fireEvent.click(screen.getByTestId('filter-piece-item-2'));
+
+          // Clica em "Baixar PDF" dentro do modal
+          fireEvent.click(screen.getByTestId('btn-modal-download-pdf'));
+
+          expect(mockDownloadLabels).toHaveBeenCalledWith(
+            expect.objectContaining({
+              id: 'order-uuid-1',
+              codigo: 'OS-2026-0001',
+              itemId: 'item-2',
+            })
+          );
+        });
+
+        it('[BUG #487]: deve baixar lote completo de etiquetas (sem itemId) ao acionar Baixar PDF no modal no modo ALL', () => {
+          vi.spyOn(useOrdersModule, 'useOrder').mockReturnValue({
+            data: mockOrder,
+            isLoading: false,
+            isError: false,
+          } as any);
+
+          render(
+            <MemoryRouter initialEntries={['/ordens-servico/order-uuid-1']}>
+              <Routes>
+                <Route path="/ordens-servico/:id" element={<OrderDetailPage />} />
+              </Routes>
+            </MemoryRouter>
+          );
+
+          // Abre o modal de etiquetas térmicas
+          fireEvent.click(screen.getByTestId('btn-open-thermal-modal'));
+          expect(screen.getByTestId('thermal-label-modal')).toBeInTheDocument();
+
+          // Clica em "Baixar PDF" no modal sem filtrar nenhum item específico
+          fireEvent.click(screen.getByTestId('btn-modal-download-pdf'));
+
+          expect(mockDownloadLabels).toHaveBeenCalledWith(
+            expect.objectContaining({
+              id: 'order-uuid-1',
+              codigo: 'OS-2026-0001',
+            })
+          );
+          expect(mockDownloadLabels).not.toHaveBeenCalledWith(
+            expect.objectContaining({
+              itemId: expect.anything(),
+            })
+          );
         });
       });

@@ -36,8 +36,12 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -152,7 +156,7 @@ class OrderControllerIntegrationTest {
                     .andExpect(status().isCreated())
                     .andExpect(header().string("Location", containsString("/api/v1/orders/")))
                     .andExpect(jsonPath("$.codigo").exists())
-                    .andExpect(jsonPath("$.status").value("WAITING_PRODUCTION"));
+                    .andExpect(jsonPath("$.status").value("CREATED"));
 
             Budget updatedBudget = budgetRepository.findById(draftBudget.getId()).orElseThrow();
             assertThat(updatedBudget.getStatus()).isEqualTo(BudgetStatus.APPROVED);
@@ -161,6 +165,7 @@ class OrderControllerIntegrationTest {
                     .filter(o -> o.getOrcamentoId().equals(draftBudget.getId()))
                     .findFirst().orElseThrow();
 
+            assertThat(savedOrder.getStatus()).isEqualTo(OrderStatus.CREATED);
             assertThat(savedOrder.getItems()).hasSize(1);
             assertThat(savedOrder.getItems().get(0).getLarguraMm()).isEqualTo(1000);
             assertThat(savedOrder.getItems().get(0).getAlturaMm()).isEqualTo(1000);
@@ -309,6 +314,201 @@ class OrderControllerIntegrationTest {
                     .andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.status").value(404))
                     .andExpect(jsonPath("$.message").exists());
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/v1/orders/{id}/labels-pdf — Download Etiquetas Térmicas PDF [US-17.2]")
+    class DownloadLabelsPdfTests {
+
+        @Test
+        @DisplayName("Sucesso (200): Deve retornar binário do PDF de etiquetas e headers corretos via /api/v1/orders/{id}/labels-pdf")
+        void downloadLabelsPdfSuccessViaV1Path() throws Exception {
+            MvcResult result = mockMvc.perform(get("/api/v1/orders/{id}/labels-pdf", existingOrder.getId()))
+                    .andExpect(status().isOk())
+                    .andExpect(header().string("Content-Type", "application/pdf"))
+                    .andExpect(header().string("Content-Disposition", containsString("attachment")))
+                    .andExpect(header().string("Content-Disposition", containsString("etiquetas-PED-INTEGRACAO-01.pdf")))
+                    .andReturn();
+
+            byte[] pdfContent = result.getResponse().getContentAsByteArray();
+            assertThat(pdfContent).isNotEmpty();
+        }
+
+        @Test
+        @DisplayName("Sucesso (200): Deve retornar binário do PDF de etiquetas via alias /api/orders/{id}/labels-pdf")
+        void downloadLabelsPdfSuccessViaOrdersPath() throws Exception {
+            MvcResult result = mockMvc.perform(get("/api/orders/{id}/labels-pdf", existingOrder.getId()))
+                    .andExpect(status().isOk())
+                    .andExpect(header().string("Content-Type", "application/pdf"))
+                    .andExpect(header().string("Content-Disposition", containsString("attachment")))
+                    .andExpect(header().string("Content-Disposition", containsString("etiquetas-PED-INTEGRACAO-01.pdf")))
+                    .andReturn();
+
+            byte[] pdfContent = result.getResponse().getContentAsByteArray();
+            assertThat(pdfContent).isNotEmpty();
+        }
+
+        @Test
+        @DisplayName("Erro (404): Pedido inexistente para emissão de etiquetas térmicas PDF")
+        void downloadLabelsPdfNotFound() throws Exception {
+            mockMvc.perform(get("/api/v1/orders/{id}/labels-pdf", UUID.randomUUID()))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.status").value(404))
+                    .andExpect(jsonPath("$.message").exists());
+        }
+    }
+
+    @Nested
+    @DisplayName("PATCH /api/v1/orders/{id}/production-status — Máquina de Estados US-18.1")
+    class UpdateProductionStatusTests {
+
+        @Test
+        @DisplayName("Deve transitar de CREATED para WAITING_PRODUCTION com sucesso")
+        void shouldTransitionFromCreatedToWaitingProduction() throws Exception {
+            Order order = Order.builder()
+                    .codigo("OS-2026-0901")
+                    .clienteNome("Cliente Transicao")
+                    .status(OrderStatus.CREATED)
+                    .canalAprovacao(ApprovalChannel.WHATSAPP)
+                    .valorBruto(new BigDecimal("1000.00"))
+                    .valorLiquido(new BigDecimal("1000.00"))
+                    .orcamentoId(UUID.randomUUID())
+                    .dataPrevisaoEntrega(LocalDate.now(ZoneOffset.UTC).plusDays(10))
+                    .build();
+            order = orderRepository.saveAndFlush(order);
+
+            mockMvc.perform(patch("/api/v1/orders/{id}/status", order.getId())
+                            .param("status", "WAITING_PRODUCTION"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value("WAITING_PRODUCTION"));
+
+            Order updated = orderRepository.findById(order.getId()).orElseThrow();
+            assertThat(updated.getStatus()).isEqualTo(OrderStatus.WAITING_PRODUCTION);
+        }
+
+        @Test
+        @DisplayName("Deve rejeitar salto direto de CREATED para IN_PRODUCTION com 422 Unprocessable Entity")
+        void shouldRejectDirectJumpFromCreatedToInProduction() throws Exception {
+            Order order = Order.builder()
+                    .codigo("OS-2026-0902")
+                    .clienteNome("Cliente Transicao Invalida")
+                    .status(OrderStatus.CREATED)
+                    .canalAprovacao(ApprovalChannel.WHATSAPP)
+                    .valorBruto(new BigDecimal("1000.00"))
+                    .valorLiquido(new BigDecimal("1000.00"))
+                    .orcamentoId(UUID.randomUUID())
+                    .dataPrevisaoEntrega(LocalDate.now(ZoneOffset.UTC).plusDays(10))
+                    .build();
+            order = orderRepository.saveAndFlush(order);
+
+            mockMvc.perform(patch("/api/v1/orders/{id}/status", order.getId())
+                            .param("status", "IN_PRODUCTION"))
+                    .andExpect(status().isUnprocessableEntity())
+                    .andExpect(jsonPath("$.message").value(containsString("Apenas pedidos aguardando produção podem entrar em produção.")));
+        }
+
+        @Test
+        @DisplayName("Deve transitar de WAITING_PRODUCTION para IN_PRODUCTION com sucesso")
+        void shouldTransitionFromWaitingProductionToInProduction() throws Exception {
+            mockMvc.perform(patch("/api/v1/orders/{id}/status", existingOrder.getId())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"status\":\"IN_PRODUCTION\"}"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value("IN_PRODUCTION"));
+
+            Order updated = orderRepository.findById(existingOrder.getId()).orElseThrow();
+            assertThat(updated.getStatus()).isEqualTo(OrderStatus.IN_PRODUCTION);
+        }
+
+        @Test
+        @DisplayName("Deve transitar de IN_PRODUCTION para COMPLETED preenchendo dataConclusao")
+        void shouldTransitionFromInProductionToCompleted() throws Exception {
+            existingOrder.iniciarProducao();
+            orderRepository.saveAndFlush(existingOrder);
+
+            mockMvc.perform(patch("/api/v1/orders/{id}/status", existingOrder.getId())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"status\":\"COMPLETED\"}"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value("COMPLETED"))
+                    .andExpect(jsonPath("$.dataConclusao").exists());
+
+            Order updated = orderRepository.findById(existingOrder.getId()).orElseThrow();
+            assertThat(updated.getStatus()).isEqualTo(OrderStatus.COMPLETED);
+            assertThat(updated.getDataConclusao()).isNotNull();
+        }
+
+        @Test
+        @DisplayName("Deve rejeitar salto direto com 422 Unprocessable Entity")
+        void shouldRejectDirectJumpFromWaitingProductionToCompleted() throws Exception {
+            mockMvc.perform(patch("/api/orders/{id}/production-status", existingOrder.getId())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"status\":\"COMPLETED\"}"))
+                    .andExpect(status().isUnprocessableEntity())
+                    .andExpect(jsonPath("$.status").value(422))
+                    .andExpect(jsonPath("$.message")
+                            .value(containsString("Apenas pedidos em produção podem ser concluídos.")));
+        }
+
+        @Test
+        @DisplayName("Deve rejeitar transição de pedido já concluído com 422 Unprocessable Entity")
+        void shouldRejectTransitionWhenAlreadyCompleted() throws Exception {
+            existingOrder.iniciarProducao();
+            LocalDate dataConclusao = LocalDate.now(ZoneOffset.UTC);
+            existingOrder.concluir(dataConclusao);
+            orderRepository.saveAndFlush(existingOrder);
+
+            mockMvc.perform(patch("/api/orders/{id}/production-status", existingOrder.getId())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"status\":\"IN_PRODUCTION\"}"))
+                    .andExpect(status().isUnprocessableEntity())
+                    .andExpect(jsonPath("$.status").value(422));
+        }
+
+        @Test
+        @DisplayName("Deve rejeitar transição para status inválido com 422 Unprocessable Entity")
+        void shouldRejectInvalidTargetStatus() throws Exception {
+            mockMvc.perform(patch("/api/orders/{id}/production-status", existingOrder.getId())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"status\":\"CANCELLED\"}"))
+                    .andExpect(status().isUnprocessableEntity())
+                    .andExpect(jsonPath("$.status").value(422));
+        }
+
+        @Test
+        @DisplayName("Deve aceitar status em português EM_PRODUCAO com sucesso")
+        void shouldAcceptPortugueseStatus() throws Exception {
+            mockMvc.perform(patch("/api/orders/{id}/production-status", existingOrder.getId())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"status\":\"EM_PRODUCAO\"}"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value("IN_PRODUCTION"));
+        }
+
+        @Test
+        @DisplayName("Deve rejeitar transição redundante quando pedido já está em produção com 422 Unprocessable Entity")
+        void shouldRejectRedundantTransitionWhenAlreadyInProduction() throws Exception {
+            existingOrder.iniciarProducao();
+            orderRepository.saveAndFlush(existingOrder);
+
+            mockMvc.perform(patch("/api/orders/{id}/production-status", existingOrder.getId())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"status\":\"IN_PRODUCTION\"}"))
+                    .andExpect(status().isUnprocessableEntity())
+                    .andExpect(jsonPath("$.status").value(422))
+                    .andExpect(jsonPath("$.message")
+                            .value(containsString("Apenas pedidos aguardando produção podem entrar em produção.")));
+        }
+
+        @Test
+        @DisplayName("Deve retornar 400 Bad Request quando formato textual do status for desconhecido no JSON")
+        void shouldReturn400WhenStatusIsMalformedInJson() throws Exception {
+            mockMvc.perform(patch("/api/orders/{id}/production-status", existingOrder.getId())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"status\":\"STATUS_TOTALMENTE_INVALIDO\"}"))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.status").value(400));
         }
     }
 }

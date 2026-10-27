@@ -7,6 +7,7 @@ import {
   useOrder,
   useCancelOrder,
   useDownloadComprovantePdf,
+  useDownloadLabelsPdf,
   OrderDetailHeader,
   useUpdateOrderStatus,
   OrderCancelledAlert,
@@ -15,6 +16,7 @@ import {
   OrderFinancialSummaryCard,
   OrderItemList,
   CancelOrderModal,
+  ThermalLabelModal,
   type CancelOrderFormData,
 } from '../features/orders';
 
@@ -25,8 +27,21 @@ export function OrderDetailPage() {
   const { mutate: updateOrderStatus, isPending: isUpdatingStatus } = useUpdateOrderStatus(id);
   const { mutate: downloadPdfTecnico, isPending: isDownloadingPdf } = useDownloadPdfTecnico();
   const { mutate: downloadComprovante, isPending: isDownloadingComprovante } = useDownloadComprovantePdf();
+  const { mutate: downloadLabels, isPending: isDownloadingLabels } = useDownloadLabelsPdf();
 
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [isThermalModalOpen, setIsThermalModalOpen] = useState(false);
+
+  const handleAdvanceToWaitingProduction = () => {
+    updateOrderStatus('WAITING_PRODUCTION', {
+      onSuccess: () => {
+        toast.success('Ordem de serviço avançada para aguardando produção.');
+      },
+      onError: () => {
+        toast.error('Não foi possível avançar a ordem para aguardando produção.');
+      },
+    });
+  };
 
   const handleAdvanceProduction = () => {
     updateOrderStatus('IN_PRODUCTION', {
@@ -66,6 +81,33 @@ export function OrderDetailPage() {
   const handleDownloadComprovante = () => {
     if (!order) return;
     downloadComprovante({ id: order.id, codigo: order.codigo });
+  };
+
+  /**
+   * Abre a tela de conferência prévia e impressão das Etiquetas Térmicas (US-17 / Bugs #492 e #493).
+   */
+  const handleOpenThermalLabelsModal = () => {
+    setIsThermalModalOpen(true);
+  };
+
+  /**
+   * Inicia o download das Etiquetas Térmicas em PDF caso o usuário solicite o arquivo.
+   * Suporta filtro opcional por itemId específico via modal térmico (BUG #487)
+   * e customização de folhas conferidas (Bugs #492 e #493).
+   * Delega ao hook useDownloadLabelsPdf que cuida do Blob, filename e toast.
+   */
+  const handleDownloadLabelsPdf = (
+    itemId?: string,
+    customLeaves?: Record<string, number>
+  ) => {
+    if (!order) return;
+    const sanitizedItemId = typeof itemId === 'string' ? itemId : undefined;
+    downloadLabels({
+      id: order.id,
+      codigo: order.codigo,
+      ...(sanitizedItemId ? { itemId: sanitizedItemId } : {}),
+      customLeaves,
+    });
   };
 
   const handleConfirmCancel = (data: CancelOrderFormData) => {
@@ -142,11 +184,15 @@ export function OrderDetailPage() {
           isUpdatingStatus={isUpdatingStatus}
           isDownloadingPdf={isDownloadingPdf}
           isDownloadingComprovante={isDownloadingComprovante}
+          isDownloadingLabels={isDownloadingLabels}
+          onAdvanceWaitingProduction={handleAdvanceToWaitingProduction}
           onAdvanceProduction={handleAdvanceProduction}
           onCompleteProduction={handleCompleteProduction}
           onOpenCancelModal={() => setIsCancelModalOpen(true)}
           onPrintTechnicalPdf={handlePrintTechnicalPdf}
           onDownloadComprovante={handleDownloadComprovante}
+          onPrintLabels={handleOpenThermalLabelsModal}
+          onOpenThermalModal={handleOpenThermalLabelsModal}
         />
 
         {/* Alerta de Cancelamento com Justificativa */}
@@ -177,6 +223,15 @@ export function OrderDetailPage() {
         isSubmitting={isCanceling}
         onClose={() => setIsCancelModalOpen(false)}
         onConfirm={handleConfirmCancel}
+      />
+
+      {/* Modal de Visualização Prévia Contínua de Etiquetas Térmicas (US-17.5) */}
+      <ThermalLabelModal
+        isOpen={isThermalModalOpen}
+        onClose={() => setIsThermalModalOpen(false)}
+        order={order}
+        onDownloadPdf={handleDownloadLabelsPdf}
+        isDownloadingPdf={isDownloadingLabels}
       />
     </div>
   );

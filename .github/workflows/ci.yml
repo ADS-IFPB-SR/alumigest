@@ -5,6 +5,7 @@ on:
     branches: [ "main", "master", "develop" ]
   pull_request:
     types: [opened, synchronize, reopened]
+  merge_group:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -68,7 +69,7 @@ jobs:
 
       # ---- SonarQube Analysis ----
       - name: SonarQube Analysis (Backend)
-        if: github.event_name == 'push' || github.event_name == 'pull_request'
+        if: github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'merge_group'
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
@@ -140,7 +141,7 @@ jobs:
 
       # ---- SonarQube Analysis ----
       - name: SonarQube Analysis (Frontend)
-        if: github.event_name == 'push' || github.event_name == 'pull_request'
+        if: github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'merge_group'
         uses: sonarsource/sonarqube-scan-action@v4
         with:
           projectBaseDir: frontend/

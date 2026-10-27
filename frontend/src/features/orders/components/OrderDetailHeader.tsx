@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, Play, CheckCircle, Ban, FileText, Download, Loader2 } from 'lucide-react';
+import { ArrowLeft, Play, CheckCircle, Ban, FileText, Download, Loader2, Tag } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { Order } from '../types';
 import { OrderStatusBadge } from './OrderStatusBadge';
@@ -8,28 +8,38 @@ interface OrderDetailHeaderProps {
   order: Order;
   isDownloadingPdf?: boolean;
   isDownloadingComprovante?: boolean;
+  isDownloadingLabels?: boolean;
   isUpdatingStatus?: boolean;
+  onAdvanceWaitingProduction?: () => void;
   onAdvanceProduction?: () => void;
   onCompleteProduction?: () => void;
   onOpenCancelModal?: () => void;
   onPrintTechnicalPdf?: () => void;
   onDownloadComprovante?: () => void;
+  onPrintLabels?: () => void;
+  onOpenThermalModal?: () => void;
 }
 
 export const OrderDetailHeader: React.FC<OrderDetailHeaderProps> = ({
   order,
   isDownloadingPdf = false,
   isDownloadingComprovante = false,
+  isDownloadingLabels = false,
   isUpdatingStatus = false,
+  onAdvanceWaitingProduction,
   onAdvanceProduction,
   onCompleteProduction,
   onOpenCancelModal,
   onPrintTechnicalPdf,
   onDownloadComprovante,
+  onPrintLabels,
+  onOpenThermalModal,
 }) => {
-  const isAwaitingProduction = order.status === 'CREATED' || order.status === 'WAITING_PRODUCTION';
+  const isCreated = order.status === 'CREATED';
+  const isWaitingProduction = order.status === 'WAITING_PRODUCTION';
   const isInProduction = order.status === 'IN_PRODUCTION';
   const isCompleted = order.status === 'COMPLETED';
+  const canCancel = isCreated || isWaitingProduction;
 
   return (
     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-outline-variant">
@@ -55,12 +65,14 @@ export const OrderDetailHeader: React.FC<OrderDetailHeaderProps> = ({
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        {/* Ação de Cancelamento: disponível apenas quando ainda não iniciou fabricação física */}
-        {isAwaitingProduction && (
+        {/* Ação de Cancelamento: disponível apenas quando ainda não iniciou fabricação física (CRIADO ou AGUARDANDO_PRODUCAO) */}
+        {canCancel && (
           <button
             type="button"
+            id="btn-cancel-order"
+            data-testid="btn-cancel-order"
             onClick={onOpenCancelModal}
-            className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-lg border border-rose-200 transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-lg border border-rose-200 transition-colors cursor-pointer"
           >
             <Ban className="w-4 h-4" />
             Cancelar Ordem de Serviço
@@ -71,6 +83,8 @@ export const OrderDetailHeader: React.FC<OrderDetailHeaderProps> = ({
         {isInProduction && (
           <button
             type="button"
+            id="btn-cancel-order-restricted"
+            data-testid="btn-cancel-order-restricted"
             disabled
             title="Cancelamento bloqueado: o material já está em processo de corte e usinagem na fábrica."
             className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-slate-400 bg-slate-100 rounded-lg border border-slate-200 cursor-not-allowed opacity-60"
@@ -115,10 +129,51 @@ export const OrderDetailHeader: React.FC<OrderDetailHeaderProps> = ({
           </button>
         )}
 
-        {/* CTA 1: Avançar para Produção (quando CRIADO ou AGUARDANDO_PRODUCAO) */}
-        {isAwaitingProduction && (
+        {/* Etiquetas Térmicas de Identificação de Peças (100x60mm) — US-17 (#492, #493) */}
+        {order.status !== 'CANCELLED' && (onOpenThermalModal || onPrintLabels) && (
           <button
             type="button"
+            id="btn-open-thermal-modal"
+            data-testid="btn-open-thermal-modal"
+            onClick={onOpenThermalModal || onPrintLabels}
+            disabled={isDownloadingLabels}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium text-amber-800 bg-amber-50 hover:bg-amber-100 disabled:opacity-50 rounded-lg border border-amber-200 transition-colors cursor-pointer disabled:cursor-not-allowed"
+            title="Conferir e imprimir etiquetas térmicas para identificação das peças na fábrica"
+          >
+            {isDownloadingLabels ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Tag className="w-4 h-4" />
+            )}
+            <span>{isDownloadingLabels ? 'Gerando Etiquetas...' : 'Imprimir Etiquetas'}</span>
+          </button>
+        )}
+
+        {/* CTA 1: Avançar para Aguardando Produção (quando CRIADO) */}
+        {isCreated && (
+          <button
+            type="button"
+            id="btn-advance-waiting-production"
+            data-testid="btn-advance-waiting-production"
+            onClick={onAdvanceWaitingProduction}
+            disabled={isUpdatingStatus}
+            className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-primary hover:bg-primary-dark rounded-lg shadow-sm transition-colors"
+          >
+            {isUpdatingStatus ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Play className="w-4 h-4" />
+            )}
+            {isUpdatingStatus ? 'Avançando...' : 'Avançar para Aguardando Produção'}
+          </button>
+        )}
+
+        {/* CTA 2: Avançar para Produção (quando AGUARDANDO_PRODUCAO) */}
+        {isWaitingProduction && (
+          <button
+            type="button"
+            id="btn-advance-production"
+            data-testid="btn-advance-production"
             onClick={onAdvanceProduction}
             disabled={isUpdatingStatus}
             className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-primary hover:bg-primary-dark rounded-lg shadow-sm transition-colors"
@@ -132,10 +187,11 @@ export const OrderDetailHeader: React.FC<OrderDetailHeaderProps> = ({
           </button>
         )}
 
-        {/* CTA 2: Concluir Produção (quando EM_PRODUCAO) */}
+        {/* CTA 3: Concluir Produção (quando EM_PRODUCAO) */}
         {isInProduction && (
           <button
             type="button"
+            data-testid="btn-complete-production"
             onClick={onCompleteProduction}
             disabled={isUpdatingStatus}
             className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm transition-colors"

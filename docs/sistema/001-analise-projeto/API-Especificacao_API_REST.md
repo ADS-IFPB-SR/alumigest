@@ -4,8 +4,8 @@
 |---|---|
 | **Projeto** | AlumiGest — Sistema de Gestão para Vidraçaria e Esquadrias |
 | **Sigla** | ALG |
-| **Versão** | 2.1 (Atualizado para Sprint 4) |
-| **Data** | 23/09/2026 |
+| **Versão** | 2.2 (Atualizado para Sprint 7 — Transição R2) |
+| **Data** | 17/10/2026 |
 | **Base URL** | `http://localhost:8080/api` |
 
 ---
@@ -17,6 +17,7 @@
 | 05/08/2026 | 1.0 | Versão inicial — Endpoints da Release 1 (Materiais) | Ítalo Jefferson / Equipe AlumiGest |
 | 21/08/2026 | 2.0 | Atualização Sprint 3 — Módulo de Produtos com Templates Paramétricos SVG, Requisitos de Categorias e Orçamentos com Romaneio | Equipe de Engenharia AlumiGest |
 | 23/09/2026 | 2.1 | Atualização Sprint 4 — Módulo de Orçamentos com Descontos Comerciais (US-09), Emissão de PDF Comercial e WhatsApp (US-10) e Emissão de PDF Técnico de Oficina (US-11) | Equipe de Engenharia AlumiGest |
+| 17/10/2026 | 2.2 | Atualização Sprint 7 — Módulo de Ordens de Serviço (US-13 a US-16) e Emissão de Etiquetas Térmicas 100x60mm por Peça Física (US-17) | Equipe de Engenharia AlumiGest |
 
 ---
 
@@ -493,7 +494,60 @@ Gera e exporta a ficha de corte e usinagem da oficina (Romaneio Técnico de Fabr
 
 ---
 
-## 7. Resumo Geral de Rotas da API
+## 7. Módulo de Ordens de Serviço e Pedidos de Venda (`/api/v1/orders`)
+
+> **Perfis:** ADMINISTRADOR, VENDEDOR, OPERADOR  
+> **Base Paths:** `/api/v1/orders`, `/api/orders`, `/api/v1/ordens-servico`
+
+### GET `/api/v1/orders/{id}/labels-pdf` *(US-17)*
+Gera e exporta as **etiquetas térmicas adesivas de identificação física** das esquadrias da Ordem de Serviço em formato binário PDF industrial (OpenPDF com dimensões exatas de 100x60mm / 283.46pt $\times$ 170.08pt) para envio à bobina de impressão térmica contínua de bancada. Mapeado também nos aliases `GET /api/orders/{id}/labels-pdf` e `GET /api/v1/orders/{id}/etiquetas-pdf`.
+
+> **Perfis:** ADMINISTRADOR, OPERADOR, VENDEDOR  
+> **Headers de Resposta:**  
+> - `Content-Type: application/pdf`  
+> - `Content-Disposition: attachment; filename="etiquetas-OS-YYYY-NNNN.pdf"`  
+> - `Content-Length: {tamanho_bytes}`
+
+**Parâmetros de Consulta (Query Params):**
+- `itemId` *(UUID, opcional)*: Identificador específico de um item da O.S. Se informado, compila apenas as etiquetas das peças pertencentes a este item; se omitido, compila todas as peças físicas da ordem completa.
+
+**Invariantes e Regras de Diagramação (OpenPDF):**
+- **Paginação Fracionada 1:1:** Cada peça física informada na O.S. gera exatamente uma página (Ex: 2 itens de quantidades 2 e 1 geram 3 páginas: `Item 01 | Peça 01/03`, `Item 01 | Peça 02/03`, `Item 02 | Peça 03/03`).
+- **Dimensão Física Térmica:** `100 mm x 60 mm` com margem de segurança de 3mm (8pt).
+- **Fidelidade Visual Vetorial:** Moldura com cantos curvos (raio 6pt), caixa de medidas nominais destacada com cantos curvos (raio 3.5pt) e badge escuro da peça física (raio 3pt) renderizados via `PdfContentByte.roundRectangle`.
+- **Tipografia de Alto Contraste:** Impressão monocromática nítida sem código de barras, otimizada para impressoras térmicas industriais (Zebra, Elgin, Argox).
+- **Resolução de Localização:** Campo `LOCAL / OBS:` extraído prioritariamente de `order.observacoes` (observações da obra/instalação) e alternativamente do endereço cadastral `order.clienteEndereco`.
+- **Rodapé Padronizado:** Apenas a data de aprovação formatada (`DATA: dd/MM/yyyy`) alinhada à esquerda.
+
+**Respostas HTTP:**
+- `200 OK`: Arquivo binário PDF gerado com sucesso.
+- `400 Bad Request`: Identificador de O.S. ou item com formato UUID inválido.
+- `404 Not Found`: Ordem de serviço ou item não encontrado.
+- `422 Unprocessable Entity`: A ordem de serviço não possui itens válidos para emissão de etiquetas térmicas.
+
+---
+
+### GET `/api/v1/orders` *(US-13.4)*
+Lista pedidos de venda / ordens de serviço de forma paginada com suporte a ordenação, busca textual por código (`OS-YYYY-NNNN`) ou cliente e filtros dinâmicos por status (`status`) e canal (`channel`).
+
+### GET `/api/v1/orders/{id}` *(US-13.5)*
+Consulta detalhada do snapshot imutável da Ordem de Serviço, incluindo cliente, itens, opções, medidas, cor, vidro e histórico de transições de status.
+
+### POST `/api/v1/orders/convert/{budgetId}` *(US-13.2 / US-13.3)*
+Converte um orçamento elegível (`DRAFT`, `SENT` ou `APPROVED`) em Pedido de Venda/O.S., promovendo atomicamente o orçamento para `APPROVED`, gerando código sequencial `OS-YYYY-NNNN` e congelando o snapshot de preços.
+
+### GET `/api/v1/orders/{id}/receipt-pdf` *(US-16)*
+Gera o comprovante formal do pedido de venda em PDF institucional A4 para o cliente.
+
+### PATCH `/api/v1/orders/{id}/status` *(US-13.6)*
+Altera o status do ciclo de vida da O.S. (`CREATED` $\rightarrow$ `WAITING_PRODUCTION` $\rightarrow$ `IN_PRODUCTION` $\rightarrow$ `COMPLETED`).
+
+### PATCH `/api/v1/orders/{id}/cancel` *(US-13.7)*
+Cancela formalmente a ordem de serviço mediante justificativa obrigatória registrada em auditoria.
+
+---
+
+## 8. Resumo Geral de Rotas da API
 
 | Método | Rota | Descrição | Módulo | Release / US |
 |---|---|---|---|:---:|
@@ -524,4 +578,12 @@ Gera e exporta a ficha de corte e usinagem da oficina (Romaneio Técnico de Fabr
 | `GET` | `/api/budgets/{id}/pdf/comercial` | Emitir Proposta Comercial em PDF A4 | `budgets` | R1 / US-10 |
 | `GET` | `/api/budgets/{id}/resumo-whatsapp` | Obter texto formatado para envio no WhatsApp | `budgets` | R1 / US-10 |
 | `GET` | `/api/budgets/{id}/pdf/tecnico` | Emitir Via Técnica de Oficina em PDF (Sem Preços) | `budgets` | R1 / US-11 |
+| **Ordens de Serviço / Pedidos de Venda (Orders)** | | | | |
+| `GET` | `/api/v1/orders` | Listar pedidos de venda paginados com filtros e busca | `orders` | R2 / US-13.4 |
+| `GET` | `/api/v1/orders/{id}` | Detalhes do snapshot imutável do pedido | `orders` | R2 / US-13.5 |
+| `POST` | `/api/v1/orders/convert/{budgetId}` | Converter orçamento aprovado em pedido de venda | `orders` | R2 / US-13.2 |
+| `PATCH` | `/api/v1/orders/{id}/status` | Atualizar status do ciclo de vida da O.S. | `orders` | R2 / US-13.6 |
+| `PATCH` | `/api/v1/orders/{id}/cancel` | Cancelar ordem de serviço com justificativa formal | `orders` | R2 / US-13.7 |
+| `GET` | `/api/v1/orders/{id}/receipt-pdf` | Emitir comprovante de pedido de venda em PDF A4 | `orders` | R2 / US-16 |
+| `GET` | `/api/v1/orders/{id}/labels-pdf` | Emitir etiquetas térmicas adesivas (100x60mm) por exemplar físico | `orders` | R2 / US-17 |
 

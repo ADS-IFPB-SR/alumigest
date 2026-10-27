@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { X, CheckCircle2, Calendar, MessageSquare, Phone, Users, Mail, FileText } from 'lucide-react';
+import { X, CheckCircle2, Calendar, MessageSquare, Phone, Users, Mail, FileText, HelpCircle } from 'lucide-react';
 import {
   orderConvertSchema,
   getDefaultDeliveryDate,
@@ -29,6 +29,7 @@ const CHANNELS: { value: ApprovalChannel; label: string; icon: React.FC<{ classN
   { value: 'PRESENCIAL', label: APPROVAL_CHANNEL_LABELS.PRESENCIAL, icon: Users },
   { value: 'TELEFONE', label: APPROVAL_CHANNEL_LABELS.TELEFONE, icon: Phone },
   { value: 'EMAIL', label: APPROVAL_CHANNEL_LABELS.EMAIL, icon: Mail },
+  { value: 'OUTRO', label: APPROVAL_CHANNEL_LABELS.OUTRO, icon: HelpCircle },
 ];
 
 export const OrderApprovalModal: React.FC<OrderApprovalModalProps> = ({
@@ -171,7 +172,7 @@ export const OrderApprovalModal: React.FC<OrderApprovalModalProps> = ({
             </label>
 
             {/* Grid de Seleção Rápida por Cartões */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2">
+            <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 mb-2">
               {CHANNELS.map(({ value, label, icon: Icon }) => {
                 const isSelected = selectedChannel === value;
                 return (

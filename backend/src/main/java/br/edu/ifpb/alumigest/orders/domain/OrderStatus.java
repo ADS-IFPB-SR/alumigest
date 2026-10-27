@@ -1,5 +1,8 @@
 package br.edu.ifpb.alumigest.orders.domain;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import java.text.Normalizer;
+
 /**
  * Estados do ciclo de vida de um Pedido de Venda.
  */
@@ -26,6 +29,37 @@ public enum OrderStatus {
 
   public String getLabel() {
     return description;
+  }
+
+  /**
+   * Converte uma representação textual (em inglês ou português) para {@link OrderStatus}.
+   *
+   * @param value valor textual do status
+   * @return valor enum correspondente
+   */
+  @JsonCreator
+  public static OrderStatus fromString(String value) {
+    if (value == null || value.isBlank()) {
+      return null;
+    }
+    String normalized = Normalizer.normalize(value.trim().toUpperCase(), Normalizer.Form.NFD)
+            .replaceAll("\\p{M}", "")
+            .replace(" ", "_");
+
+    return switch (normalized) {
+      case "WAITING_PRODUCTION", "AGUARDANDO_PRODUCAO" -> WAITING_PRODUCTION;
+      case "IN_PRODUCTION", "EM_PRODUCAO" -> IN_PRODUCTION;
+      case "COMPLETED", "CONCLUIDO" -> COMPLETED;
+      case "CANCELLED", "CANCELADO" -> CANCELLED;
+      case "CREATED", "CRIADO" -> CREATED;
+      default -> {
+        try {
+          yield OrderStatus.valueOf(normalized);
+        } catch (IllegalArgumentException e) {
+          throw new IllegalArgumentException("Status de pedido inválido: " + value);
+        }
+      }
+    };
   }
 
   /**

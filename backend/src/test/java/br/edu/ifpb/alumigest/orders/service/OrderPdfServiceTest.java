@@ -1,7 +1,6 @@
 package br.edu.ifpb.alumigest.orders.service;
 
 import br.edu.ifpb.alumigest.budgets.config.CompanyProperties;
-import br.edu.ifpb.alumigest.common.exception.BusinessException;
 import br.edu.ifpb.alumigest.orders.domain.ApprovalChannel;
 import br.edu.ifpb.alumigest.orders.domain.Order;
 import br.edu.ifpb.alumigest.orders.domain.OrderItem;

@@ -6,9 +6,10 @@ import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -17,8 +18,9 @@ import br.edu.ifpb.alumigest.common.exception.BusinessException;
 import br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException;
 import br.edu.ifpb.alumigest.orders.domain.ApprovalChannel;
 import br.edu.ifpb.alumigest.orders.domain.OrderStatus;
-import br.edu.ifpb.alumigest.orders.dto.OrderPdfDTO;
 import br.edu.ifpb.alumigest.orders.dto.OrderCancelRequest;
+import br.edu.ifpb.alumigest.orders.dto.OrderConvertRequest;
+import br.edu.ifpb.alumigest.orders.dto.OrderPdfDTO;
 import br.edu.ifpb.alumigest.orders.dto.OrderResponse;
 import br.edu.ifpb.alumigest.orders.dto.OrderSummaryResponse;
 import br.edu.ifpb.alumigest.orders.service.OrderService;
@@ -31,6 +33,8 @@ import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -39,7 +43,8 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-@WebMvcTest(OrderController.class)
+@SuppressWarnings({"java:S5738", "deprecation"})
+@WebMvcTest({OrderController.class, OrderLegacyController.class})
 @AutoConfigureMockMvc(addFilters = false)
 @DisplayName("OrderController - Testes de Integração WebMvc")
 class OrderControllerTest {
@@ -55,7 +60,7 @@ class OrderControllerTest {
   class FindAllEndpointTests {
 
     @Test
-    @DisplayName("Deve retornar status 200 OK e lista paginada de pedidos sumarizados")
+    @DisplayName("Deve retornar status 200 OK e lista paginada de pedidos sumarizados na rota canônica /api/v1/orders")
     void shouldReturn200AndPageOfSummarizedOrders() throws Exception {
       UUID orderId = UUID.randomUUID();
       UUID budgetId = UUID.randomUUID();
@@ -92,13 +97,18 @@ class OrderControllerTest {
           .andExpect(jsonPath("$.content[0].valorLiquido").value(1500.00));
     }
 
-    @Test
-    @DisplayName("Deve aceitar requisições também através do alias canônico /api/v1/ordens-servico")
-    void shouldAcceptCanonicalPortugueseAlias() throws Exception {
+    @ParameterizedTest(name = "Deve aceitar requisições através do alias legado {0}")
+    @ValueSource(strings = {
+        "/api/v1/ordens-servico",
+        "/api/orders",
+        "/api/ordens-servico",
+        "/api/pedidos"
+    })
+    void shouldAcceptLegacyAliases(String endpoint) throws Exception {
       PageResponse<OrderSummaryResponse> emptyResponse = PageResponse.of(new PageImpl<>(Collections.emptyList()));
       when(orderService.findAll(any(), any(), any(), any())).thenReturn(emptyResponse);
 
-      mockMvc.perform(get("/api/v1/ordens-servico")
+      mockMvc.perform(get(endpoint)
               .param("page", "0")
               .param("size", "10")
               .contentType(MediaType.APPLICATION_JSON))
@@ -148,8 +158,146 @@ class OrderControllerTest {
     }
   }
 
-    @Nested
-    @DisplayName("GET /api/v1/orders/{id} - Detalhe do Pedido")
+  @Nested
+  @DisplayName("POST /api/v1/orders/convert/{budgetId} - Converter Orçamento em Pedido (US-13.2)")
+  class ConvertBudgetEndpointTests {
+
+    @Test
+    @DisplayName("Deve converter orçamento na rota canônica /api/v1/orders/convert/{budgetId}")
+    void shouldConvertOnCanonicalRoute() throws Exception {
+      UUID budgetId = UUID.randomUUID();
+      UUID orderId = UUID.randomUUID();
+      OrderResponse response = new OrderResponse(
+          orderId,
+          "OS-2026-0001",
+          budgetId,
+          null,
+          "Cliente Teste",
+          "(83) 98888-7777",
+          "Av. Central, 500",
+          OrderStatus.WAITING_PRODUCTION,
+          "Aguardando Produção",
+          ApprovalChannel.PRESENCIAL,
+          "Presencial",
+          LocalDate.now(),
+          LocalDate.now().plusDays(10),
+          null,
+          new BigDecimal("1500.00"),
+          BigDecimal.ZERO,
+          BigDecimal.ZERO,
+          BigDecimal.ZERO,
+          new BigDecimal("1500.00"),
+          "A vista",
+          null,
+          "Obs",
+          null,
+          OffsetDateTime.now(),
+          OffsetDateTime.now(),
+          true,
+          Collections.emptyList()
+      );
+
+      when(orderService.convertBudgetToOrder(eq(budgetId), any(OrderConvertRequest.class))).thenReturn(response);
+
+      mockMvc.perform(post("/api/v1/orders/convert/{budgetId}", budgetId)
+              .contentType(MediaType.APPLICATION_JSON)
+              .content("{\"canalAprovacao\":\"PRESENCIAL\",\"dataPrevisaoEntrega\":\"2026-10-30\",\"observacoes\":\"Obs\"}"))
+          .andExpect(status().isCreated())
+          .andExpect(header().string("Location", org.hamcrest.Matchers.containsString("/api/v1/orders/" + orderId)))
+          .andExpect(jsonPath("$.id").value(orderId.toString()))
+          .andExpect(jsonPath("$.codigo").value("OS-2026-0001"));
+    }
+
+    @Test
+    @DisplayName("Deve aceitar conversão no alias retrocompatível /api/v1/orders/from-budget/{budgetId}")
+    void shouldConvertOnFromBudgetAlias() throws Exception {
+      UUID budgetId = UUID.randomUUID();
+      UUID orderId = UUID.randomUUID();
+      OrderResponse response = new OrderResponse(
+          orderId,
+          "OS-2026-0001",
+          budgetId,
+          null,
+          "Cliente Teste",
+          "(83) 98888-7777",
+          "Av. Central, 500",
+          OrderStatus.WAITING_PRODUCTION,
+          "Aguardando Produção",
+          ApprovalChannel.PRESENCIAL,
+          "Presencial",
+          LocalDate.now(),
+          LocalDate.now().plusDays(10),
+          null,
+          new BigDecimal("1500.00"),
+          BigDecimal.ZERO,
+          BigDecimal.ZERO,
+          BigDecimal.ZERO,
+          new BigDecimal("1500.00"),
+          "A vista",
+          null,
+          "Obs",
+          null,
+          OffsetDateTime.now(),
+          OffsetDateTime.now(),
+          true,
+          Collections.emptyList()
+      );
+
+      when(orderService.convertBudgetToOrder(eq(budgetId), any(OrderConvertRequest.class))).thenReturn(response);
+
+      mockMvc.perform(post("/api/v1/orders/from-budget/{budgetId}", budgetId)
+              .contentType(MediaType.APPLICATION_JSON)
+              .content("{\"canalAprovacao\":\"PRESENCIAL\",\"dataPrevisaoEntrega\":\"2026-10-30\",\"observacoes\":\"Obs\"}"))
+          .andExpect(status().isCreated())
+          .andExpect(header().string("Location", org.hamcrest.Matchers.containsString("/api/v1/orders/" + orderId)));
+    }
+
+    @Test
+    @DisplayName("Deve aceitar conversão no alias legado /api/orders/from-budget/{budgetId}")
+    void shouldConvertOnLegacyApiOrdersAlias() throws Exception {
+      UUID budgetId = UUID.randomUUID();
+      UUID orderId = UUID.randomUUID();
+      OrderResponse response = new OrderResponse(
+          orderId,
+          "OS-2026-0001",
+          budgetId,
+          null,
+          "Cliente Teste",
+          "(83) 98888-7777",
+          "Av. Central, 500",
+          OrderStatus.WAITING_PRODUCTION,
+          "Aguardando Produção",
+          ApprovalChannel.PRESENCIAL,
+          "Presencial",
+          LocalDate.now(),
+          LocalDate.now().plusDays(10),
+          null,
+          new BigDecimal("1500.00"),
+          BigDecimal.ZERO,
+          BigDecimal.ZERO,
+          BigDecimal.ZERO,
+          new BigDecimal("1500.00"),
+          "A vista",
+          null,
+          "Obs",
+          null,
+          OffsetDateTime.now(),
+          OffsetDateTime.now(),
+          true,
+          Collections.emptyList()
+      );
+
+      when(orderService.convertBudgetToOrder(eq(budgetId), any(OrderConvertRequest.class))).thenReturn(response);
+
+      mockMvc.perform(post("/api/orders/from-budget/{budgetId}", budgetId)
+              .contentType(MediaType.APPLICATION_JSON)
+              .content("{\"canalAprovacao\":\"PRESENCIAL\",\"dataPrevisaoEntrega\":\"2026-10-30\",\"observacoes\":\"Obs\"}"))
+          .andExpect(status().isCreated());
+    }
+  }
+
+  @Nested
+  @DisplayName("GET /api/v1/orders/{id} - Detalhe do Pedido")
     class FindByIdEndpointTests {
 
     @Test
@@ -240,6 +388,107 @@ class OrderControllerTest {
 
       mockMvc.perform(get("/api/v1/orders/{id}/pdf/comprovante", orderId))
           .andExpect(status().isNotFound());
+    }
+  }
+
+  @Nested
+  @DisplayName("GET /api/orders/{id}/labels-pdf — Download Etiquetas Térmicas PDF [US-17.2]")
+  class GerarPdfEtiquetasTests {
+
+    @Test
+    @DisplayName("AC-01: Deve retornar 200 com Content-Type application/pdf via /api/orders/{id}/labels-pdf")
+    void shouldReturn200AndPdfBytesForExistingOrderViaOrdersPath() throws Exception {
+      UUID orderId = UUID.randomUUID();
+      byte[] fakeBytes = "%PDF-1.4 thermal label content".getBytes();
+      OrderPdfDTO pdfDto = new OrderPdfDTO(fakeBytes, "etiquetas-OS-2026-0001.pdf");
+
+      when(orderService.gerarEtiquetasById(orderId, null)).thenReturn(pdfDto);
+
+      mockMvc.perform(get("/api/orders/{id}/labels-pdf", orderId))
+          .andExpect(status().isOk())
+          .andExpect(content().contentType(MediaType.APPLICATION_PDF))
+          .andExpect(header().string("Content-Disposition",
+              org.hamcrest.Matchers.containsString("etiquetas-OS-2026-0001.pdf")));
+    }
+
+    @Test
+    @DisplayName("AC-01: Deve retornar 200 com Content-Type application/pdf via alias /api/v1/orders/{id}/labels-pdf")
+    void shouldReturn200AndPdfBytesForExistingOrderViaV1Path() throws Exception {
+      UUID orderId = UUID.randomUUID();
+      byte[] fakeBytes = "%PDF-1.4 thermal label content".getBytes();
+      OrderPdfDTO pdfDto = new OrderPdfDTO(fakeBytes, "etiquetas-OS-2026-0001.pdf");
+
+      when(orderService.gerarEtiquetasById(orderId, null)).thenReturn(pdfDto);
+
+      mockMvc.perform(get("/api/v1/orders/{id}/labels-pdf", orderId))
+          .andExpect(status().isOk())
+          .andExpect(content().contentType(MediaType.APPLICATION_PDF))
+          .andExpect(header().string("Content-Disposition",
+              org.hamcrest.Matchers.containsString("etiquetas-OS-2026-0001.pdf")));
+    }
+
+    @Test
+    @DisplayName("Deve filtrar por itemId quando informado via query param")
+    void shouldPassItemIdToServiceWhenProvided() throws Exception {
+      UUID orderId = UUID.randomUUID();
+      UUID itemId = UUID.randomUUID();
+      byte[] fakeBytes = "%PDF-1.4 single item label content".getBytes();
+      OrderPdfDTO pdfDto = new OrderPdfDTO(fakeBytes, "etiquetas-OS-2026-0001.pdf");
+
+      when(orderService.gerarEtiquetasById(orderId, itemId)).thenReturn(pdfDto);
+
+      mockMvc.perform(get("/api/orders/{id}/labels-pdf", orderId)
+              .param("itemId", itemId.toString()))
+          .andExpect(status().isOk())
+          .andExpect(content().contentType(MediaType.APPLICATION_PDF));
+
+      verify(orderService).gerarEtiquetasById(orderId, itemId);
+    }
+
+    @Test
+    @DisplayName("AC-01: Deve retornar 404 quando a ordem de serviço não for encontrada")
+    void shouldReturn404WhenOrderNotFoundForLabels() throws Exception {
+      UUID orderId = UUID.randomUUID();
+      when(orderService.gerarEtiquetasById(orderId, null))
+          .thenThrow(new ResourceNotFoundException("Pedido", orderId));
+
+      mockMvc.perform(get("/api/orders/{id}/labels-pdf", orderId))
+          .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("Deve retornar 404 quando o itemId informado não for encontrado na ordem")
+    void shouldReturn404WhenItemIdNotFoundForLabels() throws Exception {
+      UUID orderId = UUID.randomUUID();
+      UUID itemId = UUID.randomUUID();
+      when(orderService.gerarEtiquetasById(orderId, itemId))
+          .thenThrow(new ResourceNotFoundException("Item do Pedido", itemId.toString()));
+
+      mockMvc.perform(get("/api/orders/{id}/labels-pdf", orderId)
+              .param("itemId", itemId.toString()))
+          .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("Deve retornar 422 quando a ordem de serviço não possuir itens para gerar etiquetas")
+    void shouldReturn422WhenOrderHasNoItemsForLabels() throws Exception {
+      UUID orderId = UUID.randomUUID();
+      when(orderService.gerarEtiquetasById(orderId, null))
+          .thenThrow(new BusinessException("A ordem de serviço não possui itens para emissão de etiquetas."));
+
+      mockMvc.perform(get("/api/orders/{id}/labels-pdf", orderId))
+          .andExpect(status().isUnprocessableEntity());
+    }
+
+    @Test
+    @DisplayName("Deve retornar 422 quando a ordem de serviço estiver cancelada (BUG-484)")
+    void shouldReturn422WhenOrderIsCancelled() throws Exception {
+      UUID orderId = UUID.randomUUID();
+      when(orderService.gerarEtiquetasById(orderId, null))
+          .thenThrow(new BusinessException("Não é permitido emitir etiquetas de identificação para uma ordem de serviço cancelada."));
+
+      mockMvc.perform(get("/api/orders/{id}/labels-pdf", orderId))
+          .andExpect(status().isUnprocessableEntity());
     }
   }
 
@@ -340,6 +589,156 @@ class OrderControllerTest {
               .content("{\"justificativa\":\"Tentativa de cancelamento tardio pelo cliente.\"}"))
           .andExpect(status().isUnprocessableEntity())
           .andExpect(jsonPath("$.message").value("Não é possível cancelar um pedido no status Em Produção"));
+    }
+  }
+
+  @Nested
+  @DisplayName("PATCH /api/orders/{id}/production-status - Atualização de Status Kanban (US-18.1)")
+  class UpdateProductionStatusEndpointTests {
+
+    private OrderResponse buildResponse(UUID id, OrderStatus status, LocalDate dataConclusao) {
+      return new OrderResponse(
+          id,
+          "OS-2026-0001",
+          UUID.randomUUID(),
+          null,
+          "Cliente Teste",
+          "(83) 98888-7777",
+          "Av. Central, 500",
+          status,
+          status.getDescricao(),
+          ApprovalChannel.WHATSAPP,
+          "WhatsApp",
+          LocalDate.now(),
+          LocalDate.now().plusDays(15),
+          dataConclusao,
+          new BigDecimal("2500.00"),
+          BigDecimal.ZERO,
+          BigDecimal.ZERO,
+          BigDecimal.ZERO,
+          new BigDecimal("2500.00"),
+          "A vista",
+          null,
+          "Sem observacoes",
+          null,
+          OffsetDateTime.now(),
+          OffsetDateTime.now(),
+          true,
+          Collections.emptyList()
+      );
+    }
+
+    @Test
+    @DisplayName("Deve retornar 200 OK ao atualizar status para IN_PRODUCTION via JSON body")
+    void shouldReturn200WhenUpdatingToInProductionViaBody() throws Exception {
+      UUID orderId = UUID.randomUUID();
+      OrderResponse response = buildResponse(orderId, OrderStatus.IN_PRODUCTION, null);
+
+      when(orderService.updateStatus(orderId, OrderStatus.IN_PRODUCTION))
+          .thenReturn(response);
+
+      mockMvc.perform(patch("/api/orders/{id}/production-status", orderId)
+              .contentType(MediaType.APPLICATION_JSON)
+              .content("{\"status\":\"IN_PRODUCTION\"}"))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.id").value(orderId.toString()))
+          .andExpect(jsonPath("$.status").value("IN_PRODUCTION"));
+    }
+
+    @Test
+    @DisplayName("Deve retornar 200 OK ao atualizar para COMPLETED preenchendo dataConclusao")
+    void shouldReturn200WhenUpdatingToCompletedWithDataConclusao() throws Exception {
+      UUID orderId = UUID.randomUUID();
+      LocalDate hoje = LocalDate.now();
+      OrderResponse response = buildResponse(orderId, OrderStatus.COMPLETED, hoje);
+
+      when(orderService.updateStatus(orderId, OrderStatus.COMPLETED))
+          .thenReturn(response);
+
+      mockMvc.perform(patch("/api/v1/orders/{id}/production-status", orderId)
+              .contentType(MediaType.APPLICATION_JSON)
+              .content("{\"status\":\"COMPLETED\"}"))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.status").value("COMPLETED"))
+          .andExpect(jsonPath("$.dataConclusao").value(hoje.toString()));
+    }
+
+    @Test
+    @DisplayName("Deve retornar 200 OK ao atualizar status via query param status")
+    void shouldReturn200WhenUpdatingViaQueryParam() throws Exception {
+      UUID orderId = UUID.randomUUID();
+      OrderResponse response = buildResponse(orderId, OrderStatus.IN_PRODUCTION, null);
+
+      when(orderService.updateStatus(orderId, OrderStatus.IN_PRODUCTION))
+          .thenReturn(response);
+
+      mockMvc.perform(patch("/api/v1/orders/{id}/production-status", orderId)
+              .param("status", "IN_PRODUCTION"))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.status").value("IN_PRODUCTION"));
+    }
+
+    @Test
+    @DisplayName("Deve retornar 422 UNPROCESSABLE ENTITY quando transição for inválida")
+    void shouldReturn422WhenTransitionIsInvalid() throws Exception {
+      UUID orderId = UUID.randomUUID();
+      when(orderService.updateStatus(orderId, OrderStatus.COMPLETED))
+          .thenThrow(new BusinessException("Apenas pedidos em produção podem ser concluídos."));
+
+      mockMvc.perform(patch("/api/orders/{id}/production-status", orderId)
+              .contentType(MediaType.APPLICATION_JSON)
+              .content("{\"status\":\"COMPLETED\"}"))
+          .andExpect(status().isUnprocessableEntity())
+          .andExpect(jsonPath("$.status").value(422))
+          .andExpect(jsonPath("$.message")
+              .value("Apenas pedidos em produção podem ser concluídos."));
+    }
+
+    @Test
+    @DisplayName("Deve retornar 404 NOT FOUND quando pedido não for encontrado")
+    void shouldReturn404WhenOrderNotFound() throws Exception {
+      UUID orderId = UUID.randomUUID();
+      when(orderService.updateStatus(eq(orderId), any(OrderStatus.class)))
+          .thenThrow(new ResourceNotFoundException("Pedido", orderId));
+
+      mockMvc.perform(patch("/api/orders/{id}/production-status", orderId)
+              .contentType(MediaType.APPLICATION_JSON)
+              .content("{\"status\":\"IN_PRODUCTION\"}"))
+          .andExpect(status().isNotFound())
+          .andExpect(jsonPath("$.status").value(404));
+    }
+
+    @Test
+    @DisplayName("Deve retornar 400 BAD REQUEST quando status não for informado")
+    void shouldReturn400WhenStatusIsMissing() throws Exception {
+      UUID orderId = UUID.randomUUID();
+
+      mockMvc.perform(patch("/api/orders/{id}/production-status", orderId))
+          .andExpect(status().isBadRequest())
+          .andExpect(jsonPath("$.status").value(400));
+    }
+
+    @Test
+    @DisplayName("Deve retornar 400 BAD REQUEST quando status for inválido no JSON body")
+    void shouldReturn400WhenStatusIsInvalidInJsonBody() throws Exception {
+      UUID orderId = UUID.randomUUID();
+
+      mockMvc.perform(patch("/api/orders/{id}/production-status", orderId)
+              .contentType(MediaType.APPLICATION_JSON)
+              .content("{\"status\":\"STATUS_INEXISTENTE\"}"))
+          .andExpect(status().isBadRequest())
+          .andExpect(jsonPath("$.status").value(400));
+    }
+
+    @Test
+    @DisplayName("Deve retornar 400 BAD REQUEST quando status for inválido via query param")
+    void shouldReturn400WhenStatusIsInvalidInQueryParam() throws Exception {
+      UUID orderId = UUID.randomUUID();
+
+      mockMvc.perform(patch("/api/orders/{id}/production-status", orderId)
+              .param("status", "STATUS_INEXISTENTE"))
+          .andExpect(status().isBadRequest())
+          .andExpect(jsonPath("$.status").value(400));
     }
   }
 }

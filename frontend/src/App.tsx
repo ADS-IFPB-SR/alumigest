@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useParams, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
 import { DashboardLayout } from './components/layout/DashboardLayout';
@@ -13,6 +13,7 @@ import { ProductTab as ProductsPage } from './pages/ProductsPage';
 import { ProductBuilderPage } from './pages/ProductBuilderPage';
 import { OrderListPage } from './pages/OrderListPage';
 import { OrderDetailPage } from './pages/OrderDetailPage';
+import { ProductionKanbanPage } from './pages/ProductionKanbanPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -21,6 +22,26 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+/**
+ * Redireciona a listagem legada preservando query params e hash.
+ * Ex.: /pedidos?status=APPROVED → /ordens-servico?status=APPROVED
+ */
+function OrderListRedirect() {
+  const location = useLocation();
+  return <Navigate to={`/ordens-servico${location.search}${location.hash}`} replace />;
+}
+
+/**
+ * Redireciona rotas alias de detalhe preservando o parâmetro :id, query params e hash.
+ * Ex.: /pedidos/abc-123 → /ordens-servico/abc-123
+ */
+function OrderDetailRedirect() {
+  const { id } = useParams<{ id: string }>();
+  const location = useLocation();
+  const target = id ? `/ordens-servico/${id}` : '/ordens-servico';
+  return <Navigate to={`${target}${location.search}${location.hash}`} replace />;
+}
 
 export function AppRoutes() {
   return (
@@ -35,10 +56,15 @@ export function AppRoutes() {
         <Route path="orcamentos/:id/editar" element={<BudgetEditor />} />
         <Route path="ordens-servico" element={<OrderListPage />} />
         <Route path="ordens-servico/:id" element={<OrderDetailPage />} />
-        <Route path="pedidos" element={<OrderListPage />} />
-        <Route path="pedidos/:id" element={<OrderDetailPage />} />
-        <Route path="work-orders" element={<OrderListPage />} />
-        <Route path="work-orders/:id" element={<OrderDetailPage />} />
+        {/* Aliases legados → redirecionam para a URL canônica /ordens-servico preservando parâmetros */}
+        <Route path="pedidos" element={<OrderListRedirect />} />
+        <Route path="pedidos/:id" element={<OrderDetailRedirect />} />
+        <Route path="work-orders" element={<OrderListRedirect />} />
+        <Route path="work-orders/:id" element={<OrderDetailRedirect />} />
+
+        {/* Rotas oficiais da Gestão Fabril / Painel Kanban (US-18) */}
+        <Route path="producao" element={<ProductionKanbanPage />} />
+        <Route path="producao/kanban" element={<ProductionKanbanPage />} />
 
         <Route
           path="dashboard"

@@ -26,13 +26,14 @@ export const ORDER_STATUS_COLORS: Record<OrderStatus, { bg: string; text: string
   CANCELLED: { bg: 'bg-rose-100', text: 'text-rose-800', border: 'border-rose-300' },
 };
 
-export type ApprovalChannel = 'WHATSAPP' | 'PRESENCIAL' | 'TELEFONE' | 'EMAIL';
+export type ApprovalChannel = 'WHATSAPP' | 'PRESENCIAL' | 'TELEFONE' | 'EMAIL' | 'OUTRO';
 
 export const APPROVAL_CHANNEL_LABELS: Record<ApprovalChannel, string> = {
   WHATSAPP: 'WhatsApp',
   PRESENCIAL: 'Presencial',
   TELEFONE: 'Telefone',
   EMAIL: 'E-mail',
+  OUTRO: 'Outro',
 };
 
 export interface OrderItemOption {

@@ -67,3 +67,42 @@ describe('Sidebar Component - [US-16.2]', () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('Sidebar Component - [US-18.6]', () => {
+  it('deve renderizar o atalho Produção (Kanban) apontando para /producao', () => {
+    render(
+      <MemoryRouter initialEntries={['/dashboard']}>
+        <Sidebar isOpen={true} onClose={vi.fn()} />
+      </MemoryRouter>
+    );
+
+    const producaoLink = screen.getByRole('link', { name: /produção \(kanban\)/i });
+    expect(producaoLink).toBeInTheDocument();
+    expect(producaoLink).toHaveAttribute('href', '/producao');
+    expect(producaoLink).toHaveTextContent('precision_manufacturing');
+  });
+
+  it('deve aplicar estilo de rota ativa quando o usuário estiver em /producao', () => {
+    render(
+      <MemoryRouter initialEntries={['/producao']}>
+        <Sidebar isOpen={true} onClose={vi.fn()} />
+      </MemoryRouter>
+    );
+
+    const producaoLink = screen.getByRole('link', { name: /produção \(kanban\)/i });
+    expect(producaoLink.className).toContain('bg-primary');
+    expect(producaoLink.className).toContain('text-on-primary');
+  });
+
+  it('deve manter o item Produção (Kanban) ativo quando o usuário navegar para /producao/kanban', () => {
+    render(
+      <MemoryRouter initialEntries={['/producao/kanban']}>
+        <Sidebar isOpen={true} onClose={vi.fn()} />
+      </MemoryRouter>
+    );
+
+    const producaoLink = screen.getByRole('link', { name: /produção \(kanban\)/i });
+    expect(producaoLink.className).toContain('bg-primary');
+    expect(producaoLink.className).toContain('text-on-primary');
+  });
+});
