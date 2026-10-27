@@ -134,4 +134,12 @@ public interface OrderService {
      */
     byte[] gerarBplbEtiquetasById(UUID id, UUID itemId, Map<UUID, Integer> customLeavesPerItem);
 
+    /**
+     * Recupera a ordem de serviço mais recente gerada a partir do orçamento informado.
+     *
+     * @param budgetId identificador único do orçamento
+     * @return Optional contendo a ordem de serviço mais recente ou vazio
+     */
+    java.util.Optional<OrderSummaryResponse> findLatestByBudgetId(UUID budgetId);
+
 }

@@ -80,6 +80,9 @@ public class Order {
     @Column(name = "valor_bruto", nullable = false, precision = 12, scale = 2)
     private BigDecimal valorBruto = BigDecimal.ZERO;
 
+    @Column(name = "valor_mao_de_obra", nullable = false, precision = 12, scale = 2)
+    private BigDecimal valorMaoDeObra = BigDecimal.ZERO;
+
     @Column(name = "valor_desconto", nullable = false, precision = 12, scale = 2)
     private BigDecimal valorDesconto = BigDecimal.ZERO;
 
@@ -134,6 +137,7 @@ public class Order {
         this.dataPrevisaoEntrega = builder.dataPrevisaoEntrega;
         this.dataConclusao = builder.dataConclusao;
         this.valorBruto = builder.valorBruto != null ? builder.valorBruto : BigDecimal.ZERO;
+        this.valorMaoDeObra = builder.valorMaoDeObra != null ? builder.valorMaoDeObra : BigDecimal.ZERO;
         this.valorDesconto = builder.valorDesconto != null ? builder.valorDesconto : BigDecimal.ZERO;
         this.taxaInstalacao = builder.taxaInstalacao != null ? builder.taxaInstalacao : BigDecimal.ZERO;
         this.taxaFrete = builder.taxaFrete != null ? builder.taxaFrete : BigDecimal.ZERO;
@@ -315,6 +319,10 @@ public class Order {
         return valorBruto;
     }
 
+    public BigDecimal getValorMaoDeObra() {
+        return valorMaoDeObra;
+    }
+
     public BigDecimal getValorDesconto() {
         return valorDesconto;
     }
@@ -426,6 +434,7 @@ public class Order {
         private LocalDate dataPrevisaoEntrega;
         private LocalDate dataConclusao;
         private BigDecimal valorBruto = BigDecimal.ZERO;
+        private BigDecimal valorMaoDeObra = BigDecimal.ZERO;
         private BigDecimal valorDesconto = BigDecimal.ZERO;
         private BigDecimal taxaInstalacao = BigDecimal.ZERO;
         private BigDecimal taxaFrete = BigDecimal.ZERO;
@@ -498,6 +507,11 @@ public class Order {
 
         public Builder valorBruto(BigDecimal valorBruto) {
             this.valorBruto = valorBruto;
+            return this;
+        }
+
+        public Builder valorMaoDeObra(BigDecimal valorMaoDeObra) {
+            this.valorMaoDeObra = valorMaoDeObra;
             return this;
         }
 

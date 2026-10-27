@@ -27,6 +27,7 @@ public record OrderResponse(
     LocalDate dataPrevisaoEntrega,
     LocalDate dataConclusao,
     BigDecimal valorBruto,
+    BigDecimal valorMaoDeObra,
     BigDecimal valorDesconto,
     BigDecimal taxaInstalacao,
     BigDecimal taxaFrete,
@@ -40,4 +41,40 @@ public record OrderResponse(
     Boolean ativo,
     List<OrderItemResponse> items
 ) {
+    public OrderResponse(
+        UUID id,
+        String codigo,
+        UUID orcamentoId,
+        UUID clienteId,
+        String clienteNome,
+        String clienteTelefone,
+        String clienteEndereco,
+        OrderStatus status,
+        String statusDescricao,
+        ApprovalChannel canalAprovacao,
+        String canalAprovacaoDescricao,
+        LocalDate dataAprovacao,
+        LocalDate dataPrevisaoEntrega,
+        LocalDate dataConclusao,
+        BigDecimal valorBruto,
+        BigDecimal valorDesconto,
+        BigDecimal taxaInstalacao,
+        BigDecimal taxaFrete,
+        BigDecimal valorLiquido,
+        String condicaoPagamento,
+        String observacoesPagamento,
+        String observacoes,
+        String justificativaCancelamento,
+        OffsetDateTime createdAt,
+        OffsetDateTime updatedAt,
+        Boolean ativo,
+        List<OrderItemResponse> items
+    ) {
+        this(id, codigo, orcamentoId, clienteId, clienteNome, clienteTelefone, clienteEndereco,
+             status, statusDescricao, canalAprovacao, canalAprovacaoDescricao,
+             dataAprovacao, dataPrevisaoEntrega, dataConclusao,
+             valorBruto, BigDecimal.ZERO, valorDesconto, taxaInstalacao, taxaFrete, valorLiquido,
+             condicaoPagamento, observacoesPagamento, observacoes, justificativaCancelamento,
+             createdAt, updatedAt, ativo, items);
+    }
 }

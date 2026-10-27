@@ -88,6 +88,7 @@ export interface Order {
   dataPrevisaoEntrega: string;
   dataConclusao?: string | null;
   valorBruto: number;
+  valorMaoDeObra?: number;
   valorDesconto: number;
   taxaInstalacao: number;
   taxaFrete: number;
@@ -116,6 +117,7 @@ export interface OrderSummary {
   dataAprovacao: string;
   dataPrevisaoEntrega: string;
   valorLiquido: number;
+  valorMaoDeObra?: number;
   quantidadeItens: number;
   createdAt: string;
 }
@@ -136,4 +138,5 @@ export interface OrderFilterParams {
   status?: OrderStatus;
   search?: string;
   channel?: ApprovalChannel;
+  sort?: string;
 }

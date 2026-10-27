@@ -384,7 +384,7 @@ export function BudgetDetailPage() {
 
   const isCancelled = budget?.status === 'CANCELLED';
   const isApproved = budget?.status === 'APPROVED';
-  const orderSearchParams = isApproved && budget?.code ? { search: budget.code, size: 1 } : undefined;
+  const orderSearchParams = isApproved && budget?.code ? { search: budget.code, size: 1, sort: 'createdAt,desc' } : undefined;
   const { data: linkedOrders } = useOrders(orderSearchParams);
   const linkedOrder = isApproved ? linkedOrders?.content?.[0] : undefined;
   const isOrderCancelled = linkedOrder?.status === 'CANCELLED';

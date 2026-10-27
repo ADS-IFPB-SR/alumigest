@@ -307,6 +307,18 @@ export const ordersApi = {
       throw error;
     }
   },
+
+  /**
+   * Busca a ordem de serviço mais recente vinculada a um orçamento.
+   */
+  async getLatestOrderByBudgetId(budgetId: string): Promise<OrderSummary | null> {
+    try {
+      const response = await api.get<OrderSummary>(`/orders/by-budget/${budgetId}`);
+      return response.data;
+    } catch {
+      return null;
+    }
+  },
 };
 
 export const orderApi = ordersApi;

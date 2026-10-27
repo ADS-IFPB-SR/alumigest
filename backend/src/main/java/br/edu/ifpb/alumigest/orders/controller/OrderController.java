@@ -21,6 +21,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.MediaType;
@@ -94,7 +95,7 @@ public class OrderController {
             @RequestParam(name = "search", required = false) String search,
             @Parameter(hidden = true)
             @RequestParam(name = "busca", required = false) String busca,
-            @ParameterObject @PageableDefault(size = 10, sort = "createdAt") Pageable pageable) {
+            @ParameterObject @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
 
         String searchTerm = (search != null && !search.isBlank()) ? search : busca;
         PageResponse<OrderSummaryResponse> response = orderService.findAll(status, channel, searchTerm, pageable);
@@ -210,6 +211,36 @@ public class OrderController {
 
         OrderResponse response = orderService.findDetailedById(id);
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Recupera a ordem de serviço mais recente vinculada a um orçamento.
+     *
+     * @param budgetId Identificador único (UUID) do orçamento de origem
+     * @return 200 OK com o resumo da O.S. mais recente ou 404 Not Found
+     */
+    @GetMapping("/by-budget/{budgetId}")
+    @Operation(
+            summary = "Buscar ordem de serviço mais recente por orçamento",
+            description = "Retorna a ordem de serviço mais recente gerada a partir do orçamento informado (ordenação decrescente por data de criação)."
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Ordem de serviço localizada com sucesso",
+            content = @Content(schema = @Schema(implementation = OrderSummaryResponse.class))
+    )
+    @ApiResponse(
+            responseCode = "404",
+            description = "Nenhuma ordem de serviço vinculada ao orçamento",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+    )
+    public ResponseEntity<OrderSummaryResponse> findLatestByBudgetId(
+            @Parameter(description = "Identificador único (UUID) do orçamento", required = true)
+            @PathVariable UUID budgetId) {
+
+        return orderService.findLatestByBudgetId(budgetId)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     /**
