@@ -83,30 +83,49 @@ A **Sprint 07** consolidou a operacionalização da fábrica do AlumiGest (Relea
 
 ## 5. 🔄 Retrospectiva da Equipe
 
-### 5.1 O que funcionou muito bem (Pontos Fortes)
-* **Comunicação e Alinhamento Contínuo:** A realização consistente das Dailies e o registro no modelo Docs-as-Code permitiram identificar bloqueios rapidamente.
-* **Trabalho em Pares e Resolução Ágil de Bugs:** A equipe tratou mais de 8 defeitos in-sprint sem comprometer as metas principais da release.
-* **Fatiamento Vertical:** A estratégia de fatias verticais finas ($\le 4\text{h}$) facilitou a integração contínua e a testabilidade das entregas.
-* **Qualidade e Cobertura:** Adoção de suítes completas de E2E com Cypress antes do fechamento formal da sprint.
-* **Testes Exploratórios de Campo pelo PO:** A validação manual conduzida diretamente pelo Product Owner na branch de homologação identificou anomalias reais de usabilidade (#524 e #525) antes da entrada em produção.
+### 5.1 🗣️ Relatos Individuais dos Membros da Equipe
 
-### 5.2 O que pode ser melhorado (Oportunidades de Evolução)
-* **Dependência de PRs Base:** No início da segunda semana (19/10), integrantes relataram bloqueios temporários aguardando aprovação e mesclagem de PRs fundamentais.
-* **Ambiente de Testes Físicos:** Dificuldade pontual de sincronia para testes físicos na impressora térmica Elgin L42. Recomenda-se manter ambiente mockado de comandos de porta serial/impressora.
-* **Complexidade de Drag-and-Drop:** Ajustes finos no DnD na mesma coluna geraram retrabalho que poderia ter sido antecipado na fase de refinamento técnico.
-* **Validação de Densidade de Componentes no Frontend:** Faltou validar o comportamento de overflow e scroll no Kanban com grande volume de O.S., o que causou o ocultamento visual de cards em resoluções menores.
+| Integrante | O que foi Bom / Pontos Positivos | O que pode Melhorar / Pontos Negativos |
+|---|---|---|
+| **Guilherme Kauã** | Bom volume de tasks distribuídas, o que viabilizou maior ritmo de desenvolvimento e conserto de bugs. | Tarefas que ficaram bloqueadas aguardando alguém finalizar uma dependência demorada. |
+| **Joseph Nichollas** | — | Pessoas retendo tasks por tempo excessivo bloqueando as demais; bugs documentados que não se reproduziam/existiam; PRs abertos por muito tempo (revisados com alterações pendentes). |
+| **Italo Jefferson** | Boa participação geral da equipe; o fato de o protótipo ter sido concebido antes facilitou e acelerou muito a implementação. | Demora na aprovação e merge dos Pull Requests. |
+| **Maylson da Silva** | Boa comunicação do time e excelente organização dos cards no quadro. | Tasks que travam umas às outras por dependência direta (sem maior gravidade, mas gera gargalo). |
+| **Herbert Carvalho** | Atuação focada na sustentação e correção pontual de defeitos durante a sprint. | Pouca participação nas tarefas centrais de desenvolvimento de features novas. |
+| **José Guylherme (PO)** | Testes manuais exploratórios em homologação de campo garantiram a detecção precoce de anomalias reais de layout (#524 e #525) antes da entrada em produção; 100% dos testes automatizados aprovados. | Necessidade de reduzir o tempo de feedback entre revisões de PRs e alinhamento de critérios de bug. |
+
+---
+
+### 5.2 🌟 Síntese dos Pontos Fortes (O que funcionou muito bem)
+* **Comunicação, Alinhamento e Organização:** Comunicação fluida da equipe, realização diária de Dailies e excelente organização dos cards no GitHub Projects/ZenHub.
+* **Prototipação Prévia como Acelerador:** A elaboração de protótipos prévios reduziu ambiguidades e destravou a codificação das telas e componentes.
+* **Bom Volume e Ritmo de Entregas:** Alto volume de fatias verticais concluídas, possibilitando evolução sólida de código novo e resolução ágil de defeitos.
+* **Homologação e Testes Exploratórios:** Validação funcional direta pelo PO identificou problemas reais de usabilidade antes do release final.
+* **Cobertura Automatizada Robusta:** 1.765 testes automatizados aprovados (882 Backend + 883 Frontend + 11 Cypress E2E), atingindo 100% de sucesso.
+
+---
+
+### 5.3 ⚠️ Síntese das Oportunidades de Evolução (O que pode ser melhorado)
+* **Gargalos de Dependência e Retenção de Tarefas:** Tarefas críticas retidas por muito tempo acabaram bloqueando fatias verticais subsequentes de outros desenvolvedores.
+* **Fila de Revisão e Ciclo de Vida dos PRs:** Pull Requests ficaram aguardando revisão ou aprovação de correções por tempo excessivo.
+* **Triagem e Critérios de Abertura de BUGs:** Relato de apontamentos de bugs que não existiam ou não se reproduziam, demandando tempo desnecessário de análise da equipe.
+* **Distribuição de Carga:** Necessidade de balancear melhor a distribuição entre desenvolvimento de novas histórias e tarefas exclusivas de correção de bugs.
+* **Validação de Layout em Alta Densidade:** Ausência de scroll vertical no Kanban quando há muitas ordens de serviço acumuladas.
 
 ---
 
 ## 6. 🎯 Plano de Ação para a Sprint 08
 
-| Ação de Melhoria | Responsável | Prazo |
-|---|:---:|:---:|
-| Corrigir bugs de homologação de campo #524 (Sidebar legada) e #525 (Scroll Kanban) | Equipe Dev | Sprint 08 (Imediato) |
-| Formalizar transição ágil: **Maylson da Silva Rodrigues assume como Scrum Master** e **José Guylherme atua dedicado como PO** | Maylson & Guylherme | Sprint 08 |
-| Reduzir o tempo de fila de revisão de PRs estruturais para menos de 24h | Tech Lead & Revisores | Sprint 08 |
-| Isolar completamente lógica de hardware/impressoras através de emulador/driver mock | Backend Team | Sprint 08 |
-| Executar as User Stories **US-46** (Venda de Partes) e **US-47** (Central 360° do Cliente) | Toda a Equipe | Sprint 08 |
+Com base direta nos depoimentos da retrospectiva, a equipe acordou os seguintes compromissos:
+
+| Ação de Melhoria | Origem / Motivação | Responsável | Prazo |
+|---|---|:---:|:---:|
+| **SLA de Revisão de PRs ($\le 24\text{h}$):** Priorizar a revisão e o tratamento de apontamentos de PRs antes de puxar tarefas novas | Feedbacks de Joseph, Italo e Guilherme Kauã | Tech Lead & Revisores | Sprint 08 |
+| **Mitigação de Bloqueios de Tasks:** Desacoplar fatias verticais e sinalizar imediatamente bloqueios na Daily se uma task passar de 24h sem progresso | Feedbacks de Guilherme Kauã, Maylson e Joseph | Scrum Master (Maylson) | Sprint 08 |
+| **Critério Estrito para Abertura de BUGs:** Toda issue de bug deve conter passo a passo de reprodução e evidência (vídeo/print) antes da atribuição | Feedback de Joseph Nichollas | PO & Equipe de QA | Sprint 08 |
+| **Correção dos Bugs #524 (Sidebar) e #525 (Scroll Kanban):** Eliminar a duplicidade de menu e habilitar scroll independente no Kanban | Homologação do PO | Equipe Frontend | Sprint 08 (Imediato) |
+| **Transição de Liderança Ágil:** Maylson assume como Scrum Master oficial e José Guylherme atua dedicado como Product Owner (PO) | Governança da Sprint 08 | Maylson & Guylherme | Sprint 08 |
+| **Equilíbrio no Backlog:** Garantir participação de todos os membros nas fatias da US-46 e US-47 | Feedback de Herbert Carvalho | Scrum Master & PO | Sprint 08 |
 
 ---
 
