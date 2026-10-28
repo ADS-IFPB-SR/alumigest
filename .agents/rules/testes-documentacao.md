@@ -6,7 +6,8 @@ Toda sprint no AlumiGest deve manter sua tríade documental consolidada exclusiv
 2. **RTM-Roteiro_de_Testes_Manuais_SprintXX.md:** Guia operacional passo a passo para reprodução e homologação manual pelo Product Owner (PO) e validadores.
 3. **RET-Relatorio_Execucao_Testes_SprintXX.md:** Relatório formal de execução automatizada, métricas SonarQube, duração de cada it(), PRs e catalogação de defeitos no RBD.
 
-> **Nota de Governança:** Pastas legadas como `docs/sistema/003-teste/` devem conter apenas ponteiros e redirecionamentos para a pasta canônica da sprint em `docs/projeto-001/003-teste/sprint-XX/`.
+> **Nota de Governança e Centralização Única:**  
+> A pasta `docs/projeto-001/003-teste/` é a **ÚNICA** pasta de testes do repositório AlumiGest. A criação de pastas duplicadas como `docs/sistema/003-teste/` é terminantemente **PROIBIDA**. Todos os planos gerais (`PLT`), registros de bugs (`RBD`) e tríades por sprint (`sprint-XX/`) residem exclusivamente em `docs/projeto-001/003-teste/`.
 
 ## 2. Padrão Rígido de Formatação para Roteiros de Testes Manuais (RTM)
 - **PROIBIDO:** Nunca utilize tabelas Markdown para descrever passos de execução de testes manuais (anti-padrão de colunas `Passo | Ação | Comportamento | Validação`). Células de tabelas com múltiplas linhas ou caracteres especiais quebram o parser de Markdown e colapsam o texto em uma linha única crua e ilegível no preview do VS Code.

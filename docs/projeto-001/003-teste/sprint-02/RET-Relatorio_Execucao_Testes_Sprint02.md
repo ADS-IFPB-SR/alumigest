@@ -3,10 +3,13 @@
 | Campo | Valor |
 |---|---|
 | **Projeto** | AlumiGest — Sistema de Gestão para Vidraçaria e Esquadrias |
-| **Sprint** | 02 — Catálogo de Materiais Universais e Fichas Técnicas de Produtos |
+| **Sigla** | ALG |
+| **Sprint** | Sprint 02 — Catálogo de Materiais Universais e Fichas Técnicas de Produtos |
+| **Versão da Baseline** | `B-ALG-v0.2.0-S02-01` |
+| **Planejamento BDD** | [`TEA-Testes_de_Aceitacao_Sprint02.md`](./TEA-Testes_de_Aceitacao_Sprint02.md) |
+| **Roteiro Manual PO/QA** | [`RTM-Roteiro_de_Testes_Manuais_Sprint02.md`](./RTM-Roteiro_de_Testes_Manuais_Sprint02.md) |
 | **Período** | 04/08/2026 a 17/08/2026 |
 | **QA Responsável** | Herbert Carvalho dos Santos / Equipe AlumiGest |
-| **Baseline Gerada** | `B-ALG-v0.2.0-S02-01` |
 | **Status Geral** | 🟢 **100% APROVADO** |
 
 ---
@@ -17,7 +20,15 @@ A Sprint 2 homologou o **Catálogo Universal de Materiais e Insumos** (Vidros po
 
 ---
 
-## 2. 📋 Resultados dos Testes Automatizados no Backend (JUnit 5 & Mockito)
+## 2. 📋 Consolidação da Pirâmide de Testes (Sprint 02)
+
+| Camada / Tipo de Teste | Frameworks / Ferramentas | Testes Executados | Passaram | Falharam | Cobertura (% Linhas) |
+|---|---|:---:|:---:|:---:|:---:|
+| **Testes Unitários e Integração Backend** | JUnit 5, Mockito, Spring Boot Test | 48 | 48 | 0 | 88.5% |
+| **Testes de Aceitação BDD** | Gherkin / Cenários Homologados | 14 | 14 | 0 | 100% |
+| **TOTAL CONSOLIDADO** | — | **62** | **62** | **0** | **≥ 88.5%** |
+
+### Detalhamento das Suítes Backend:
 
 | Classe de Teste | Módulo / Componente | Cenários | Aprovados | Falhas | Status |
 |---|---|:---:|:---:|:---:|:---:|
@@ -34,6 +45,8 @@ A Sprint 2 homologou o **Catálogo Universal de Materiais e Insumos** (Vidros po
 ---
 
 ## 3. 🧪 Validação dos Testes de Aceitação (TEA-S02)
+
+Todos os 14 cenários detalhados no [`TEA-Testes_de_Aceitacao_Sprint02.md`](./TEA-Testes_de_Aceitacao_Sprint02.md) e operados no [`RTM-Roteiro_de_Testes_Manuais_Sprint02.md`](./RTM-Roteiro_de_Testes_Manuais_Sprint02.md) foram validados com 100% de sucesso:
 
 | ID | Cenário / Requisito | Regra Validada | Resultado |
 |---|---|---|:---:|

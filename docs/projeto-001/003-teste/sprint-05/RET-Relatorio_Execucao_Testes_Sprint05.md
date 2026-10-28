@@ -3,7 +3,12 @@
 | Campo | Valor |
 |---|---|
 | **Projeto** | AlumiGest — Sistema de Gestão para Vidraçaria e Esquadrias |
-| **Sprint** | 05 — Fechamento US-09, PDF Via Comercial (US-10), PDF Via Técnica de Oficina (US-11) e Homologação da Release 1 |
+| **Sigla** | ALG |
+| **Sprint** | Sprint 05 — Fechamento US-09, PDF Via Comercial (US-10), PDF Via Técnica de Oficina (US-11) e Homologação da Release 1 |
+| **Versão da Baseline** | `B-ALG-v1.0.0-S05-01` (Release 1) |
+| **Planejamento BDD** | [`TEA-Testes_de_Aceitacao_Sprint05.md`](./TEA-Testes_de_Aceitacao_Sprint05.md) |
+| **Roteiro Manual PO/QA** | [`RTM-Roteiro_de_Testes_Manuais_Sprint05.md`](./RTM-Roteiro_de_Testes_Manuais_Sprint05.md) |
+| **Relatórios de Apoio QA** | [`RTE-QA-02`](./RTE-QA-02-Relatorio_Testes_Orcamentos.md) \| [`RTE-QA-04`](./RTE-QA-04-Relatorio_Testes_Via_Tecnica.md) |
 | **Período** | 15/09/2026 a 28/09/2026 |
 | **QA Responsável** | Herbert Carvalho dos Santos / Joseph Cavalcante / Equipe AlumiGest |
 | **Status Geral** | 🟢 **QA-02 (Orçamentos): APROVADO** \| 🟢 **QA-04 (Via Técnica): APROVADO** \| 🟡 **BUGs #348/#349: Em Observação** |

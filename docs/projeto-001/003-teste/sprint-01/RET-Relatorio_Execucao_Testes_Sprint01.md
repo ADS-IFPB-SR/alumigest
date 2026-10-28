@@ -3,7 +3,9 @@
 | Campo | Valor |
 |---|---|
 | **Projeto** | AlumiGest — Sistema de Gestão para Vidraçaria e Esquadrias |
+| **Sigla** | ALG |
 | **Sprint** | 01 — Iniciação, Governança e Casca Base da Arquitetura |
+| **Planejamento & Critérios** | [`TEA-Testes_de_Aceitacao_Sprint01.md`](./TEA-Testes_de_Aceitacao_Sprint01.md) |
 | **Período** | 28/07/2026 a 03/08/2026 |
 | **QA Responsável** | Equipe de Engenharia / Italo Santos |
 | **Baseline Gerada** | `B-ALG-v0.1.0-S01-01` |

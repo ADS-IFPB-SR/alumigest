@@ -1,17 +1,19 @@
-# TEA — Testes de Aceitação — Sprint 01
+# 🧪 TEA — Testes de Aceitação — Sprint 01
 
 | Campo | Valor |
 |---|---|
-| **Projeto** | AlumiGest |
-| **Sprint** | 01 — Planejamento |
+| **Projeto** | AlumiGest — Sistema de Gestão para Vidraçaria e Esquadrias |
+| **Sigla** | ALG |
+| **Sprint** | 01 — Iniciação, Governança e Casca Base da Arquitetura |
 | **Versão** | 1.0 |
 | **Data** | 05/08/2026 |
+| **Relatório Técnico Equivalente** | [`RET-Relatorio_Execucao_Testes_Sprint01.md`](./RET-Relatorio_Execucao_Testes_Sprint01.md) |
 
 ---
 
 ## 1. Objetivo da Sprint 1
 
-A Sprint 1 foi dedicada ao **planejamento do projeto**. Não houve desenvolvimento de código, portanto os critérios de aceitação são sobre os artefatos de documentação.
+A Sprint 1 foi dedicada ao **planejamento do projeto, governança de branches e casca base da arquitetura**. Os critérios de aceitação foram direcionados aos artefatos de documentação, pipelines de CI/CD e estrutura de monorepo.
 
 ---
 
@@ -40,13 +42,15 @@ A Sprint 1 foi dedicada ao **planejamento do projeto**. Não houve desenvolvimen
 | 6 | O PGC lista ferramentas e versões do ambiente de desenvolvimento | ✅ Aceito |
 | 7 | O PGC descreve a estratégia de branches (Git Flow adaptado) | ✅ Aceito |
 
-### TEA-S01-03: Estrutura do Repositório
+### TEA-S01-03: Estrutura do Repositório e Infraestrutura Base
 
 | # | Critério | Status |
 |---|---|---|
-| 1 | O repositório monorepo está criado com a estrutura de diretórios conforme PGC | ✅ Aceito |
-| 2 | Os diretórios `docs/sistema/` e `docs/projeto-001/` existem com subpastas | ✅ Aceito |
-| 3 | Os diretórios `backend/` e `frontend/` existem na raiz | ✅ Aceito |
+| 1 | O repositório monorepo está criado com a estrutura de diretórios padronizada | ✅ Aceito |
+| 2 | Os diretórios `docs/sistema/` e `docs/projeto-001/` existem com subpastas organizadas | ✅ Aceito |
+| 3 | Os diretórios `backend/` e `frontend/` existem na raiz do projeto | ✅ Aceito |
+| 4 | O pipeline de CI/CD GitHub Actions executa build Maven e TypeScript a cada PR | ✅ Aceito |
+| 5 | O Docker Compose sobe PostgreSQL 16 com extensão `uuid-ossp` | ✅ Aceito |
 
 ---
 
@@ -57,7 +61,7 @@ A Sprint 1 foi dedicada ao **planejamento do projeto**. Não houve desenvolvimen
 | Total de critérios | 16 |
 | Aceitos | 16 |
 | Rejeitados | 0 |
-| Taxa de aceitação | **100%** |
+| **Taxa de aceitação** | **100%** |
 
 ---
 

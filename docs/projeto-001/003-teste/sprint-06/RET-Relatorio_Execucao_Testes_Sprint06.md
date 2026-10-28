@@ -3,7 +3,12 @@
 | Campo | Valor |
 |---|---|
 | **Projeto** | AlumiGest — Sistema de Gestão para Vidraçaria e Esquadrias |
-| **Sprint** | 06 — Ordens de Serviço (O.S.) / Pedidos de Venda, Lock de Preços e Comprovante Oficial (Release 2) |
+| **Sigla** | ALG |
+| **Sprint** | Sprint 06 — Ordens de Serviço (O.S.) / Pedidos de Venda, Lock de Preços e Comprovante Oficial (Release 2) |
+| **Versão da Baseline** | `B-ALG-v0.6.0-S06-01` (Release 2) |
+| **Planejamento BDD** | [`TEA-Testes_de_Aceitacao_Sprint06.md`](./TEA-Testes_de_Aceitacao_Sprint06.md) |
+| **Roteiro Manual PO/QA** | [`RTM-Roteiro_de_Testes_Manuais_Sprint06.md`](./RTM-Roteiro_de_Testes_Manuais_Sprint06.md) |
+| **Ata de Review & Retrospectiva** | [`ATA-Sprint_06_Review_e_Retrospective.md`](../../001-atas-reuniao/ATA-Sprint_06_Review_e_Retrospective.md) |
 | **Período** | 29/09/2026 a 12/10/2026 (Consolidação em 14/10/2026) |
 | **QA Responsável** | Herbert Carvalho dos Santos / Joseph Cavalcante / Equipe AlumiGest |
 | **Status Geral** | 🟢 **APROVADO (100% dos Cenários BDD e Testes de Integração)** |

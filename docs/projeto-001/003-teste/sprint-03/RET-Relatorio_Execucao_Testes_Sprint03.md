@@ -3,7 +3,11 @@
 | Campo | Valor |
 |---|---|
 | **Projeto** | AlumiGest — Sistema de Gestão para Vidraçaria e Esquadrias |
-| **Sprint** | 03 — Clientes (Backend), Motor de Orçamentos e Testes E2E Cypress |
+| **Sigla** | ALG |
+| **Sprint** | Sprint 03 — Clientes (Backend), Motor de Orçamentos e Testes E2E Cypress |
+| **Planejamento BDD** | [`TEA-Testes_de_Aceitacao_Sprint03.md`](./TEA-Testes_de_Aceitacao_Sprint03.md) |
+| **Roteiro Manual PO/QA** | [`RTM-Roteiro_de_Testes_Manuais_Sprint03.md`](./RTM-Roteiro_de_Testes_Manuais_Sprint03.md) |
+| **Relatório UI (QA-01.2)** | [`RTE-QA-01.2-Relatorio_Testes_UI_Produtos.md`](./RTE-QA-01.2-Relatorio_Testes_UI_Produtos.md) |
 | **Período** | 18/08/2026 a 01/09/2026 |
 | **QA Responsável** | Herbert Carvalho dos Santos / Equipe AlumiGest |
 | **Status Geral** | 🟢 **BACKEND: 141/141 APROVADOS (100%)** \| 🟢 **VITEST FRONTEND: 40/40 APROVADOS (100%)** \| 🟢 **E2E CYPRESS: 23/23 SPECS APROVADAS** |

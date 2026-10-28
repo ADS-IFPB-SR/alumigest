@@ -4,7 +4,7 @@
 |---|---|
 | **Projeto** | AlumiGest — Sistema de Gestão para Vidraçaria e Esquadrias |
 | **Sigla** | ALG |
-| **Versão** | 2.3.0 (Tríade Documental de Testes: TEA, RTM e RET, Expansão E2E Cypress e Release 2) |
+| **Versão** | 2.4.0 (Retrofit da Tríade Documental Canônica: Sprints 02 a 07 padronizadas sob Docs-as-Code) |
 | **Data** | 28/10/2026 |
 | **Responsável de QA** | Herbert Carvalho dos Santos / Jose Guylherme / Equipe de Engenharia e QA |
 | **Governança** | Docs-as-Code — Oficial de Governança (`alumigest-doc-governor`) |
@@ -55,17 +55,25 @@ Para garantir rastreabilidade rigorosa entre os requisitos, a especificação fo
    - Especificação de todos os cenários da sprint em formato BDD/Gherkin estruturado.
    - Padrão canônico da tabela de cenários E2E:
      `[#] | [Cenário E2E] | [Arquivo .cy.ts] | [Estratégia & Massa] | [Dado] | [Quando] | [Então] | [Status]`
-   - Discrimina a **Estratégia de Execução**:
-     - *E2E Integrado Real (Full Stack):* Execução integrada contra a API REST real e banco PostgreSQL populado via seeds.
-     - *E2E Mockado / Frontend-Isolated:* Execução com isolamento de rede via `cy.intercept` e fixtures JSON.
+   - Discrimina a **Estratégia de Execução** (Fullstack Integrado Real vs Mockado).
 
 2. **`RTM-Roteiro_de_Testes_Manuais_SprintXX.md` (Guia de Reprodução Operacional na UI):**
-   - Roteiro passo a passo permitindo que testadores, desenvolvedores e o Product Owner reproduzam visualmente e manualmente cada cenário E2E na interface gráfica web.
-   - Inclui: Pré-requisitos de inicialização de ambiente, dados necessários, sequenciamento exato de cliques e digitações, comportamentos visuais esperados e validações de sucesso/erro.
+   - Fichas Operacionais Executivas permitindo a reprodução manual com seletores reais de interface (`[data-cy="..."]` / `[data-testid="..."]`) e matriz defensiva contra defeitos do RBD.
 
 3. **`RET-Relatorio_Execucao_Testes_SprintXX.md` (Evidências Formais de Execução e Homologação):**
-   - Registro formal das evidências de execução da suíte automatizada (`it()`), taxas de aprovação, métricas do SonarQube, duração de execução e links para PRs/commits.
-   - Rastreamento e catalogação de bugs e defeitos encontrados no ciclo in-sprint, vinculados ao catálogo oficial [`RBD-Registro_de_Bugs_e_Defeitos.md`](file:///c:/Users/italo/Desktop/Projects/alumigest/docs/projeto-001/003-teste/RBD-Registro_de_Bugs_e_Defeitos.md).
+   - Registro formal das evidências da suíte automatizada, tempos de execução, métricas SonarQube e catalogação de defeitos no RBD.
+
+#### 📊 Matriz Histórica de Cobertura Documental por Sprint
+
+| Sprint | Escopo de Domínio / Release | Planejamento BDD | Roteiro Manual PO/QA | Relatório Técnico | Status de Governança |
+|:---:|---|:---:|:---:|:---:|:---:|
+| **Sprint 01** | Planejamento Arquitetural e Docs | — | — | [`RET-S01`](./sprint-01/RET-Relatorio_Execucao_Testes_Sprint01.md) | 🟢 Homologado (Sem Código) |
+| **Sprint 02** | Catálogo de Insumos Base (Release 1) | [`TEA-S02`](./sprint-02/TEA-Testes_de_Aceitacao_Sprint02.md) | [`RTM-S02`](./sprint-02/RTM-Roteiro_de_Testes_Manuais_Sprint02.md) | [`RET-S02`](./sprint-02/RET-Relatorio_Execucao_Testes_Sprint02.md) | 🟢 Tríade Canônica |
+| **Sprint 03** | Clientes, Orçamentos e 23 Cypress Specs | [`TEA-S03`](./sprint-03/TEA-Testes_de_Aceitacao_Sprint03.md) | [`RTM-S03`](./sprint-03/RTM-Roteiro_de_Testes_Manuais_Sprint03.md) | [`RET-S03`](./sprint-03/RET-Relatorio_Execucao_Testes_Sprint03.md) | 🟢 Tríade Canônica |
+| **Sprint 04** | Studio CAD SVG, Budget V2 e Descontos | [`TEA-S04`](./sprint-04/TEA-Testes_de_Aceitacao_Sprint04.md) | [`RTM-S04`](./sprint-04/RTM-Roteiro_de_Testes_Manuais_Sprint04.md) | [`RET-S04`](./sprint-04/RET-Relatorio_Execucao_Testes_Sprint04.md) | 🟢 Tríade Canônica |
+| **Sprint 05** | Homologação R1, Orçamentos e Via Técnica | [`TEA-S05`](./sprint-05/TEA-Testes_de_Aceitacao_Sprint05.md) | [`RTM-S05`](./sprint-05/RTM-Roteiro_de_Testes_Manuais_Sprint05.md) | [`RET-S05`](./sprint-05/RET-Relatorio_Execucao_Testes_Sprint05.md) | 🟢 Tríade Canônica |
+| **Sprint 06** | Pedidos de Venda, Lock de Preços e PDF R2 | [`TEA-S06`](./sprint-06/TEA-Testes_de_Aceitacao_Sprint06.md) | [`RTM-S06`](./sprint-06/RTM-Roteiro_de_Testes_Manuais_Sprint06.md) | [`RET-S06`](./sprint-06/RET-Relatorio_Execucao_Testes_Sprint06.md) | 🟢 Tríade Canônica |
+| **Sprint 07** | Gestão Fabril, Kanban e Etiquetas Térmicas | [`TEA-S07`](./sprint-07/TEA-Testes_de_Aceitacao_Sprint07.md) | [`RTM-S07`](./sprint-07/RTM-Roteiro_de_Testes_Manuais_Sprint07.md) | [`RET-S07`](./sprint-07/RET-Relatorio_Execucao_Testes_Sprint07.md) | 🟢 Tríade Canônica |
 
 ---
 
