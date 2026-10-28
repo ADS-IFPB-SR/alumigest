@@ -126,4 +126,11 @@ Como encarregado de fábrica, gerente de produção ou operador da Alumiportas, 
 
 ---
 
+## 🔗 Referências & Protótipos
+
+- 📊 **Protótipo Interativo do Kanban de Produção**: [../../prototipos/prototipo_kambam.html](../../prototipos/prototipo_kambam.html)
+- 🏛️ **Constituição do Projeto**: [../../constitution.md](../../constitution.md)
+
+---
+
 **Branch:** `feat/us-18-painel-kanban-producao-pedidos`

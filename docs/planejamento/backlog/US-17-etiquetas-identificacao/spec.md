@@ -97,4 +97,11 @@ Como encarregado de produção, operador de corte ou montador da Alumiportas, de
 
 ---
 
+## 🔗 Referências & Protótipos
+
+- 🏷️ **Protótipo Visual de Impressão Térmica**: [../../prototipos/prototipo_etiquetas.html](../../prototipos/prototipo_etiquetas.html)
+- 🏛️ **Constituição do Projeto**: [../../constitution.md](../../constitution.md)
+
+---
+
 **Branch:** `feat/us-17-etiquetas-identificacao-termica-pecas`
