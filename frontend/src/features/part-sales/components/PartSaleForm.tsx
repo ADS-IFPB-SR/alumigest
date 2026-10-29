@@ -4,6 +4,82 @@ import type { MaterialCategoryType, PartSaleItem } from '../types/partSaleTypes'
 import { AluminumItemFields } from './AluminumItemFields';
 import { usePartCalculation } from '../hooks/usePartCalculation';
 
+const CATEGORY_DISPLAY_LABELS: Record<MaterialCategoryType, string> = {
+  PROFILE: 'Alumínio',
+  GLASS: 'Vidro',
+  FILM: 'Película',
+  HARDWARE: 'Ferragem',
+};
+
+const CATEGORY_BADGE_CLASSES: Record<MaterialCategoryType, string> = {
+  PROFILE: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30',
+  GLASS: 'bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 border-cyan-500/30',
+  FILM: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30',
+  HARDWARE: 'bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-500/30',
+};
+
+function resolveItemWidthMm(category: MaterialCategoryType, width: number | ''): number | null {
+  if (category === 'PROFILE' || category === 'HARDWARE') {
+    return null;
+  }
+  return typeof width === 'number' ? width : null;
+}
+
+function formatItemDimensions(item: PartSaleItem): string {
+  if (item.category === 'PROFILE') {
+    return `${item.heightMm} mm (Comp.)`;
+  }
+  if (item.widthMm) {
+    return `${item.heightMm} x ${item.widthMm} mm`;
+  }
+  return '-';
+}
+
+function generateItemId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return `item-${Date.now()}`;
+}
+
+interface ValidatePartFormArgs {
+  description: string;
+  quantity: number | '';
+  heightMm: number | '';
+  unitPrice: number | '';
+  category: MaterialCategoryType;
+}
+
+function validatePartForm({
+  description,
+  quantity,
+  heightMm,
+  unitPrice,
+  category,
+}: ValidatePartFormArgs): string | null {
+  if (!description.trim()) {
+    return 'Informe a descrição do material.';
+  }
+  const qty = typeof quantity === 'number' ? quantity : 0;
+  if (qty <= 0) {
+    return 'A quantidade deve ser maior que zero.';
+  }
+  if (category === 'PROFILE') {
+    const height = typeof heightMm === 'number' ? heightMm : 0;
+    if (height <= 0) {
+      return 'O comprimento deve ser maior que zero.';
+    }
+    if (height > 6000) {
+      return 'O comprimento não pode exceder 6000 mm (1 barra padrão).';
+    }
+  }
+  const price = typeof unitPrice === 'number' ? unitPrice : 0;
+  if (price <= 0) {
+    return 'O preço de venda deve ser maior que zero.';
+  }
+  return null;
+}
+
 export function PartSaleForm() {
   const [category, setCategory] = useState<MaterialCategoryType>('PROFILE');
   const [description, setDescription] = useState('');
@@ -33,7 +109,7 @@ export function PartSaleForm() {
     return {
       category,
       heightMm,
-      widthMm: category === 'PROFILE' || category === 'HARDWARE' ? null : (typeof widthMm === 'number' ? widthMm : null),
+      widthMm: resolveItemWidthMm(category, widthMm),
       quantity,
       unitPrice,
       lossFactor: category === 'PROFILE' ? lossFactor : 0,
@@ -45,13 +121,20 @@ export function PartSaleForm() {
     debounceMs: 150,
   });
 
-  const handleAddItem = (e?: React.FormEvent) => {
+  const handleAddItem = (e?: React.SyntheticEvent) => {
     if (e) e.preventDefault();
     setFormError(null);
 
-    const desc = description.trim();
-    if (!desc) {
-      setFormError('Informe a descrição do material.');
+    const validationError = validatePartForm({
+      description,
+      quantity,
+      heightMm,
+      unitPrice,
+      category,
+    });
+
+    if (validationError) {
+      setFormError(validationError);
       return;
     }
 
@@ -59,27 +142,6 @@ export function PartSaleForm() {
     const height = typeof heightMm === 'number' ? heightMm : 0;
     const width = typeof widthMm === 'number' ? widthMm : 0;
     const price = typeof unitPrice === 'number' ? unitPrice : 0;
-
-    if (qty <= 0) {
-      setFormError('A quantidade deve ser maior que zero.');
-      return;
-    }
-
-    if (category === 'PROFILE') {
-      if (height <= 0) {
-        setFormError('O comprimento deve ser maior que zero.');
-        return;
-      }
-      if (height > 6000) {
-        setFormError('O comprimento não pode exceder 6000 mm (1 barra padrão).');
-        return;
-      }
-    }
-
-    if (price <= 0) {
-      setFormError('O preço de venda deve ser maior que zero.');
-      return;
-    }
 
     // Apuração da medida calculada e subtotal
     const calculatedMeasure = calculation?.calculatedUnitMeasure ?? (
@@ -91,13 +153,13 @@ export function PartSaleForm() {
     const subtotal = calculation?.totalPrice ?? Number((calculatedMeasure * price).toFixed(2));
 
     const newItem: PartSaleItem = {
-      id: `item-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      id: generateItemId(),
       category,
-      categoryLabel: category === 'PROFILE' ? 'Alumínio' : category === 'GLASS' ? 'Vidro' : category === 'FILM' ? 'Película' : 'Ferragem',
-      description: desc.toUpperCase(),
+      categoryLabel: CATEGORY_DISPLAY_LABELS[category] || 'Item',
+      description: description.trim().toUpperCase(),
       quantity: qty,
       heightMm: height,
-      widthMm: category === 'PROFILE' || category === 'HARDWARE' ? null : width,
+      widthMm: resolveItemWidthMm(category, width),
       unitPrice: price,
       lossFactor: category === 'PROFILE' ? lossFactor : 0,
       calculatedUnitMeasure: calculatedMeasure,
@@ -238,7 +300,7 @@ export function PartSaleForm() {
                     min="1"
                     value={quantity}
                     placeholder="1"
-                    onChange={(e) => setQuantity(e.target.value === '' ? '' : parseInt(e.target.value, 10))}
+                    onChange={(e) => setQuantity(e.target.value === '' ? '' : Number.parseInt(e.target.value, 10))}
                     className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 rounded-lg outline-none font-bold focus:border-primary"
                   />
                 </div>
@@ -253,7 +315,7 @@ export function PartSaleForm() {
                         type="number"
                         value={heightMm}
                         placeholder="2000"
-                        onChange={(e) => setHeightMm(e.target.value === '' ? '' : parseInt(e.target.value, 10))}
+                        onChange={(e) => setHeightMm(e.target.value === '' ? '' : Number.parseInt(e.target.value, 10))}
                         className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 rounded-lg outline-none font-mono font-bold focus:border-primary"
                       />
                     </div>
@@ -266,7 +328,7 @@ export function PartSaleForm() {
                         type="number"
                         value={widthMm}
                         placeholder="800"
-                        onChange={(e) => setWidthMm(e.target.value === '' ? '' : parseInt(e.target.value, 10))}
+                        onChange={(e) => setWidthMm(e.target.value === '' ? '' : Number.parseInt(e.target.value, 10))}
                         className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 rounded-lg outline-none font-mono font-bold focus:border-primary"
                       />
                     </div>
@@ -281,7 +343,7 @@ export function PartSaleForm() {
                     type="number"
                     value={unitPrice}
                     placeholder="0.00"
-                    onChange={(e) => setUnitPrice(e.target.value === '' ? '' : parseFloat(e.target.value))}
+                    onChange={(e) => setUnitPrice(e.target.value === '' ? '' : Number.parseFloat(e.target.value))}
                     className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 rounded-lg outline-none font-mono font-bold focus:border-primary"
                   />
                 </div>
@@ -341,24 +403,14 @@ export function PartSaleForm() {
                         <td className="py-2.5 px-3">
                           <span
                             className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
-                              item.category === 'PROFILE'
-                                ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30'
-                                : item.category === 'GLASS'
-                                ? 'bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 border-cyan-500/30'
-                                : item.category === 'FILM'
-                                ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30'
-                                : 'bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-500/30'
+                              CATEGORY_BADGE_CLASSES[item.category] || CATEGORY_BADGE_CLASSES.HARDWARE
                             }`}
                           >
                             {item.categoryLabel}
                           </span>
                         </td>
                         <td className="py-2.5 px-3 font-mono text-slate-600 dark:text-slate-300">
-                          {item.category === 'PROFILE'
-                            ? `${item.heightMm} mm (Comp.)`
-                            : item.widthMm
-                            ? `${item.heightMm} x ${item.widthMm} mm`
-                            : '-'}
+                          {formatItemDimensions(item)}
                         </td>
                         <td className="py-2.5 px-3 text-center font-bold text-slate-900 dark:text-slate-100">{item.quantity}</td>
                         <td className="py-2.5 px-3 text-right font-mono text-slate-600 dark:text-slate-300">
@@ -427,7 +479,7 @@ export function PartSaleForm() {
                   data-testid="input-discount-amount"
                   value={discountAmount}
                   placeholder="0,00"
-                  onChange={(e) => setDiscountAmount(e.target.value === '' ? '' : parseFloat(e.target.value))}
+                  onChange={(e) => setDiscountAmount(e.target.value === '' ? '' : Number.parseFloat(e.target.value))}
                   className="w-24 px-2 py-1 text-right font-mono font-bold text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 rounded outline-none focus:border-primary"
                 />
               </div>

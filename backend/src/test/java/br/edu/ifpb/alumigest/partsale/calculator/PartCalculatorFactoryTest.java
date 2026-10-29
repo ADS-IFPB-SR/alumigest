@@ -26,8 +26,9 @@ class PartCalculatorFactoryTest {
     void deveResolverCalculadoraDePerfilDeAluminio() {
         PartItemCalculator calculator = factory.getCalculator(MaterialCategoryType.PROFILE);
 
-        assertThat(calculator).isNotNull();
-        assertThat(calculator).isSameAs(profileCalculator);
+        assertThat(calculator)
+                .isNotNull()
+                .isSameAs(profileCalculator);
         assertThat(calculator.getCategory()).isEqualTo(MaterialCategoryType.PROFILE);
     }
 

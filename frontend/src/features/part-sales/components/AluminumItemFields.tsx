@@ -18,6 +18,23 @@ export interface AluminumItemFieldsProps {
   disabled?: boolean;
 }
 
+function resolveLengthErrorMessage(
+  errorFromProps?: string,
+  isOverLength?: boolean,
+  isZeroOrNegative?: boolean
+): string | undefined {
+  if (errorFromProps) {
+    return errorFromProps;
+  }
+  if (isOverLength) {
+    return 'O comprimento não pode exceder 6000 mm (barra industrial)';
+  }
+  if (isZeroOrNegative) {
+    return 'O comprimento deve ser maior que zero';
+  }
+  return undefined;
+}
+
 export const AluminumItemFields: React.FC<AluminumItemFieldsProps> = ({
   lengthMm,
   quantity,
@@ -34,13 +51,11 @@ export const AluminumItemFields: React.FC<AluminumItemFieldsProps> = ({
   const isOverLength = typeof lengthMm === 'number' && lengthMm > 6000;
   const isZeroOrNegative = typeof lengthMm === 'number' && lengthMm <= 0;
 
-  const lengthErrorMessage =
-    errors?.length ||
-    (isOverLength
-      ? 'O comprimento não pode exceder 6000 mm (barra industrial)'
-      : isZeroOrNegative
-      ? 'O comprimento deve ser maior que zero'
-      : undefined);
+  const lengthErrorMessage = resolveLengthErrorMessage(
+    errors?.length,
+    isOverLength,
+    isZeroOrNegative
+  );
 
   return (
     <div className="space-y-4" data-testid="aluminum-item-fields">
@@ -55,7 +70,7 @@ export const AluminumItemFields: React.FC<AluminumItemFieldsProps> = ({
             className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-bold bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/30"
           >
             <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-            Metro Linear (m)
+            <span>Metro Linear (m)</span>
           </span>
         </div>
 
@@ -86,7 +101,7 @@ export const AluminumItemFields: React.FC<AluminumItemFieldsProps> = ({
             value={quantity}
             placeholder="1"
             onChange={(e) => {
-              const val = e.target.value === '' ? '' : parseInt(e.target.value, 10);
+              const val = e.target.value === '' ? '' : Number.parseInt(e.target.value, 10);
               onQuantityChange(val);
             }}
             className={`w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border rounded-lg outline-none font-bold text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 transition ${
@@ -120,7 +135,7 @@ export const AluminumItemFields: React.FC<AluminumItemFieldsProps> = ({
               value={lengthMm}
               placeholder="Ex: 2500"
               onChange={(e) => {
-                const val = e.target.value === '' ? '' : parseInt(e.target.value, 10);
+                const val = e.target.value === '' ? '' : Number.parseInt(e.target.value, 10);
                 onLengthChange(val);
               }}
               className={`w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border rounded-lg outline-none font-mono font-bold text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 pr-10 transition ${
@@ -167,7 +182,7 @@ export const AluminumItemFields: React.FC<AluminumItemFieldsProps> = ({
                 value={unitPrice}
                 placeholder="0.00"
                 onChange={(e) => {
-                  const val = e.target.value === '' ? '' : parseFloat(e.target.value);
+                  const val = e.target.value === '' ? '' : Number.parseFloat(e.target.value);
                   onPriceChange(val);
                 }}
                 className={`w-full pl-9 pr-3 py-2 text-sm bg-white dark:bg-slate-900 border rounded-lg outline-none font-mono font-bold text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 transition ${
