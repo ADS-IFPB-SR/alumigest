@@ -1,4 +1,4 @@
-package br.edu.ifpb.alumigest.budgets.service.listener;
+package br.edu.ifpb.alumigest.budgets.service;
 
 import br.edu.ifpb.alumigest.budgets.service.BudgetService;
 import br.edu.ifpb.alumigest.orders.domain.OrderCancelledEvent;
