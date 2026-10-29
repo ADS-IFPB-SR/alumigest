@@ -103,6 +103,35 @@ describe('OrderProductionCard Component', () => {
       expect(screen.getByText('3 PEÇAS')).toBeInTheDocument();
     });
 
+    it('deve exibir o total real de peças físicas e não a quantidade de linhas quando há item com múltiplas unidades (BUG #500)', () => {
+      const orderSingleItemTenUnits: Order = {
+        ...baseOrder,
+        items: [
+          {
+            id: 'item-10-units',
+            descricao: 'Janela 2 Folhas 1000x1000',
+            quantidade: 10,
+            valorUnitario: 500,
+            valorTotal: 5000,
+            ordem: 0,
+          },
+        ],
+      };
+
+      render(
+        <OrderProductionCard
+          order={orderSingleItemTenUnits}
+          onClickDetails={mockOnClickDetails}
+        />
+      );
+
+      // Deve exibir 10x na linha do item e 10 PEÇAS no badge, mesmo sendo 1 única linha de item
+      expect(screen.getByText('10x')).toBeInTheDocument();
+      expect(screen.getByText('Janela 2 Folhas 1000x1000')).toBeInTheDocument();
+      expect(screen.getByText('10 PEÇAS')).toBeInTheDocument();
+      expect(screen.queryByText('1 PEÇA')).not.toBeInTheDocument();
+    });
+
     it('não deve exibir badge de prazo quando o status for NORMAL', () => {
       render(
         <OrderProductionCard
@@ -128,6 +157,23 @@ describe('OrderProductionCard Component', () => {
       expect(screen.getByText('OS-2026-0002')).toBeInTheDocument();
       expect(screen.getByText('Contém 4 esquadrias')).toBeInTheDocument();
       expect(screen.getByText('4 PEÇAS')).toBeInTheDocument();
+    });
+
+    it('deve exibir o total de peças no resumo e na badge para pedido com 10 unidades físicas (BUG #500)', () => {
+      const summaryTenPieces: OrderSummary = {
+        ...baseOrderSummary,
+        quantidadeItens: 10,
+      };
+
+      render(
+        <OrderProductionCard
+          order={summaryTenPieces}
+          onClickDetails={mockOnClickDetails}
+        />
+      );
+
+      expect(screen.getByText('Contém 10 esquadrias')).toBeInTheDocument();
+      expect(screen.getByText('10 PEÇAS')).toBeInTheDocument();
     });
 
     it('deve utilizar singular "esquadria" e "PEÇA" quando a quantidade for 1', () => {

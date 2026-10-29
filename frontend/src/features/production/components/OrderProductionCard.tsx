@@ -49,9 +49,11 @@ export const OrderProductionCard: React.FC<OrderProductionCardProps> = ({
   }[deadlineStatus];
 
   // Identifica total de peças lidando tanto com Order quanto com OrderSummary
-  const totalPecas = 'quantidadeItens' in order && typeof order.quantidadeItens === 'number'
-    ? order.quantidadeItens
-    : ('items' in order && order.items?.reduce((acc, item) => acc + (item.quantidade || 1), 0)) || 0;
+  const totalPecas = 'items' in order && Array.isArray(order.items) && order.items.length > 0
+    ? order.items.reduce((acc, item) => acc + (item.quantidade || 1), 0)
+    : ('quantidadeItens' in order && typeof order.quantidadeItens === 'number'
+        ? order.quantidadeItens
+        : 0);
 
   // Extrai iniciais do cliente para avatar fabril
   const clientInitials = (order.clienteNome || 'OS')
