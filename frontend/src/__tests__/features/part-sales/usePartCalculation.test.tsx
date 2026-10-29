@@ -10,7 +10,7 @@ vi.mock('../../../features/part-sales/services/partSaleApi', () => ({
   },
 }));
 
-describe('usePartCalculation Hook (US-46.2)', () => {
+describe('usePartCalculation Hook (US-46)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -42,7 +42,7 @@ describe('usePartCalculation Hook (US-46.2)', () => {
     expect(partSaleApi.calculateItem).toHaveBeenCalledWith(payload);
   });
 
-  it('deve calcular localmente via fallback se a API falhar', async () => {
+  it('deve calcular localmente via fallback para PROFILE se a API falhar', async () => {
     vi.mocked(partSaleApi.calculateItem).mockRejectedValueOnce(new Error('Network error'));
 
     const payload: CalculatePartItemPayload = {
@@ -66,10 +66,58 @@ describe('usePartCalculation Hook (US-46.2)', () => {
     expect(result.current.calculation?.totalPrice).toBe(200);
   });
 
+  it('deve calcular localmente via fallback para HARDWARE (contagem por unidade inteira)', async () => {
+    vi.mocked(partSaleApi.calculateItem).mockRejectedValueOnce(new Error('Network error'));
+
+    const payload: CalculatePartItemPayload = {
+      category: 'HARDWARE',
+      quantity: 10,
+      unitPrice: 28.5,
+      heightMm: 0,
+    };
+
+    const { result } = renderHook(() =>
+      usePartCalculation({ payload, debounceMs: 10 })
+    );
+
+    await waitFor(() => {
+      expect(result.current.calculation).not.toBeNull();
+    });
+
+    // 10 unidades * R$ 28,50 = R$ 285,00
+    expect(result.current.calculation?.calculatedUnitMeasure).toBe(10);
+    expect(result.current.calculation?.totalPrice).toBe(285);
+  });
+
+  it('deve calcular localmente via fallback para GLASS com piso mínimo de 0.25 m²', async () => {
+    vi.mocked(partSaleApi.calculateItem).mockRejectedValueOnce(new Error('Network error'));
+
+    // Peça pequena de 300 x 400 mm = 0.12 m² -> deve aplicar piso de 0.25 m²
+    const payload: CalculatePartItemPayload = {
+      category: 'GLASS',
+      heightMm: 300,
+      widthMm: 400,
+      quantity: 1,
+      unitPrice: 200,
+    };
+
+    const { result } = renderHook(() =>
+      usePartCalculation({ payload, debounceMs: 10 })
+    );
+
+    await waitFor(() => {
+      expect(result.current.calculation).not.toBeNull();
+    });
+
+    // 0.25 m² * R$ 200 = R$ 50,00
+    expect(result.current.calculation?.calculatedUnitMeasure).toBe(0.25);
+    expect(result.current.calculation?.totalPrice).toBe(50);
+  });
+
   it('deve retornar null se dimensões ou quantidades forem inválidas', async () => {
     const payload: CalculatePartItemPayload = {
       category: 'PROFILE',
-      heightMm: 0, // inválido
+      heightMm: 0, // inválido para perfil
       quantity: 1,
       unitPrice: 45,
     };
