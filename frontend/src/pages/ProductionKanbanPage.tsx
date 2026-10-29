@@ -88,7 +88,7 @@ export function ProductionKanbanPage() {
     return (
         <div
             data-testid="production-kanban-page"
-            className="flex-1 flex flex-col h-full min-h-0 w-full space-y-4"
+            className="flex-1 flex flex-col min-h-0 w-full space-y-4 overflow-y-auto"
         >
             {/* 1. Breadcrumbs, Título e Ações do Topo */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 flex-none">
@@ -201,7 +201,7 @@ export function ProductionKanbanPage() {
             )}
 
             {/* 5. Quadro Kanban Interativo (3 Colunas + Drag and Drop) */}
-            <div className="flex-1 min-h-0">
+            <div className="flex-1 min-h-0 overflow-y-auto pb-2">
                 <ProductionKanbanBoard
                     orders={filteredOrders}
                     isLoading={isLoading}

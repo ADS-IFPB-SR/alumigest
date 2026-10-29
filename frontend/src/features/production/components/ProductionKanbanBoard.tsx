@@ -212,7 +212,7 @@ export const ProductionKanbanBoard: React.FC<ProductionKanbanBoardProps> = ({
             </header>
 
             {/* Lista Rolável de Cartões da Coluna */}
-            <div className="space-y-3 overflow-y-auto pr-0.5 min-h-[380px] max-h-[calc(100vh-310px)]">
+            <div data-testid={`column-scroll-${column.id.toLowerCase()}`} className="flex-1 min-h-[200px] max-h-[calc(100vh-420px)] space-y-3 overflow-y-auto pr-1 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-slate-400">
               {renderColumnContent(column)}
             </div>
           </section>

@@ -372,5 +372,25 @@ describe('ProductionKanbanBoard Component (US-18.4)', () => {
     it('deve retornar 0 para listas vazias ou sem itens', () => {
       expect(calculateTotalPieces([])).toBe(0);
     });
+
+    it('deve aplicar classes de rolagem vertical independente e responsiva em cada coluna [Bug #525]', () => {
+      render(
+        <ProductionKanbanBoard
+          orders={[orderWaiting1, orderWaiting2, orderInProd, orderCompleted]}
+        />
+      );
+
+      const scrollContainers = [
+        screen.getByTestId('column-scroll-waiting_production'),
+        screen.getByTestId('column-scroll-in_production'),
+        screen.getByTestId('column-scroll-completed'),
+      ];
+
+      scrollContainers.forEach((container) => {
+        expect(container).toHaveClass('overflow-y-auto');
+        expect(container).toHaveClass('min-h-[200px]');
+        expect(container).toHaveClass('max-h-[calc(100vh-420px)]');
+      });
+    });
   });
 });

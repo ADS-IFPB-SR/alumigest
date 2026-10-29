@@ -273,6 +273,10 @@ describe('ProductionKanbanPage Component (US-18.5)', () => {
     expect(screen.getByTestId('kanban-error-state')).toBeInTheDocument();
     expect(screen.getByText('Erro de conexão com o servidor.')).toBeInTheDocument();
 
+    const pageContainer = screen.getByTestId('production-kanban-page');
+    expect(pageContainer).toHaveClass('overflow-y-auto');
+    expect(pageContainer).not.toHaveClass('overflow-hidden');
+
     const retryBtn = screen.getByText('Tentar Novamente');
     fireEvent.click(retryBtn);
 
