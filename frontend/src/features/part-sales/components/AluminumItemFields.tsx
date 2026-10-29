@@ -45,9 +45,9 @@ export const AluminumItemFields: React.FC<AluminumItemFieldsProps> = ({
   return (
     <div className="space-y-4" data-testid="aluminum-item-fields">
       {/* 1. Header do Tipo e Badge Âmbar */}
-      <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-outline-variant/60 dark:border-outline/30">
+      <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-200 dark:border-slate-800">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-bold uppercase tracking-wider text-on-surface">
+          <span className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-100">
             Especificações de Corte (Alumínio)
           </span>
           <span
@@ -60,7 +60,7 @@ export const AluminumItemFields: React.FC<AluminumItemFieldsProps> = ({
         </div>
 
         {lossFactor > 0 && (
-          <span className="text-[11px] font-medium text-on-surface-variant bg-surface-container dark:bg-surface-container-high px-2 py-0.5 rounded border border-outline-variant/60 dark:border-outline/30">
+          <span className="text-[11px] font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700">
             Perda de corte: +{(lossFactor * 100).toFixed(0)}%
           </span>
         )}
@@ -72,7 +72,7 @@ export const AluminumItemFields: React.FC<AluminumItemFieldsProps> = ({
         <div>
           <label
             htmlFor="aluminum-quantity"
-            className="block text-xs font-semibold text-on-surface-variant dark:text-outline-variant uppercase mb-1"
+            className="block text-xs font-semibold text-slate-700 dark:text-slate-200 uppercase mb-1"
           >
             Qtd (Barras/Pedaços) *
           </label>
@@ -89,10 +89,10 @@ export const AluminumItemFields: React.FC<AluminumItemFieldsProps> = ({
               const val = e.target.value === '' ? '' : parseInt(e.target.value, 10);
               onQuantityChange(val);
             }}
-            className={`w-full px-3 py-2 text-sm bg-surface-container-lowest dark:bg-surface-container-high/20 border rounded-lg outline-none font-bold text-on-surface dark:text-inverse-on-surface transition ${
+            className={`w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border rounded-lg outline-none font-bold text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 transition ${
               errors?.quantity
                 ? 'border-error focus:ring-1 focus:ring-error'
-                : 'border-outline-variant dark:border-outline/40 focus:border-primary dark:focus:border-primary-fixed focus:ring-1 focus:ring-primary'
+                : 'border-slate-300 dark:border-slate-700 focus:border-amber-500 dark:focus:border-amber-400 focus:ring-1 focus:ring-amber-500'
             }`}
           />
           {errors?.quantity && (
@@ -104,7 +104,7 @@ export const AluminumItemFields: React.FC<AluminumItemFieldsProps> = ({
         <div>
           <label
             htmlFor="aluminum-length"
-            className="block text-xs font-semibold text-on-surface-variant dark:text-outline-variant uppercase mb-1"
+            className="block text-xs font-semibold text-slate-700 dark:text-slate-200 uppercase mb-1"
           >
             Comprimento (mm) *
           </label>
@@ -123,13 +123,13 @@ export const AluminumItemFields: React.FC<AluminumItemFieldsProps> = ({
                 const val = e.target.value === '' ? '' : parseInt(e.target.value, 10);
                 onLengthChange(val);
               }}
-              className={`w-full px-3 py-2 text-sm bg-surface-container-lowest dark:bg-surface-container-high/20 border rounded-lg outline-none font-mono font-bold text-on-surface dark:text-inverse-on-surface pr-10 transition ${
+              className={`w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border rounded-lg outline-none font-mono font-bold text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 pr-10 transition ${
                 lengthErrorMessage
                   ? 'border-error focus:ring-1 focus:ring-error'
-                  : 'border-outline-variant dark:border-outline/40 focus:border-primary dark:focus:border-primary-fixed focus:ring-1 focus:ring-primary'
+                  : 'border-slate-300 dark:border-slate-700 focus:border-amber-500 dark:focus:border-amber-400 focus:ring-1 focus:ring-amber-500'
               }`}
             />
-            <span className="absolute right-3 top-2.5 text-xs font-semibold text-on-surface-variant select-none">
+            <span className="absolute right-3 top-2.5 text-xs font-semibold text-slate-500 dark:text-slate-400 select-none">
               mm
             </span>
           </div>
@@ -138,7 +138,7 @@ export const AluminumItemFields: React.FC<AluminumItemFieldsProps> = ({
               {lengthErrorMessage}
             </p>
           ) : (
-            <p className="text-[10px] text-on-surface-variant mt-1">
+            <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">
               Máx. 6000 mm (1 barra padrão)
             </p>
           )}
@@ -149,12 +149,12 @@ export const AluminumItemFields: React.FC<AluminumItemFieldsProps> = ({
           <div>
             <label
               htmlFor="aluminum-price"
-              className="block text-xs font-semibold text-on-surface-variant dark:text-outline-variant uppercase mb-1"
+              className="block text-xs font-semibold text-slate-700 dark:text-slate-200 uppercase mb-1"
             >
               Preço/Metro (R$) *
             </label>
             <div className="relative">
-              <span className="absolute left-3 top-2.5 text-xs font-semibold text-on-surface-variant select-none">
+              <span className="absolute left-3 top-2.5 text-xs font-semibold text-slate-500 dark:text-slate-400 select-none">
                 R$
               </span>
               <input
@@ -170,10 +170,10 @@ export const AluminumItemFields: React.FC<AluminumItemFieldsProps> = ({
                   const val = e.target.value === '' ? '' : parseFloat(e.target.value);
                   onPriceChange(val);
                 }}
-                className={`w-full pl-9 pr-3 py-2 text-sm bg-surface-container-lowest dark:bg-surface-container-high/20 border rounded-lg outline-none font-mono font-bold text-on-surface dark:text-inverse-on-surface transition ${
+                className={`w-full pl-9 pr-3 py-2 text-sm bg-white dark:bg-slate-900 border rounded-lg outline-none font-mono font-bold text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 transition ${
                   errors?.unitPrice
                     ? 'border-error focus:ring-1 focus:ring-error'
-                    : 'border-outline-variant dark:border-outline/40 focus:border-primary dark:focus:border-primary-fixed focus:ring-1 focus:ring-primary'
+                    : 'border-slate-300 dark:border-slate-700 focus:border-amber-500 dark:focus:border-amber-400 focus:ring-1 focus:ring-amber-500'
                 }`}
               />
             </div>
@@ -188,17 +188,17 @@ export const AluminumItemFields: React.FC<AluminumItemFieldsProps> = ({
       {calculatedMeters != null && calculatedMeters > 0 && (
         <div
           data-testid="panel-calculated-meters"
-          className="bg-amber-500/10 dark:bg-amber-500/5 border border-amber-500/30 dark:border-amber-500/20 rounded-lg p-3 flex flex-wrap items-center justify-between gap-3 text-xs"
+          className="bg-amber-500/10 dark:bg-amber-500/10 border border-amber-500/30 dark:border-amber-500/30 rounded-lg p-3 flex flex-wrap items-center justify-between gap-3 text-xs"
         >
           <div className="flex items-center gap-2">
-            <span className="font-semibold text-on-surface">
+            <span className="font-semibold text-slate-800 dark:text-slate-200">
               Metragem Faturável:
             </span>
             <span className="font-mono font-bold text-amber-700 dark:text-amber-400 text-sm">
               {calculatedMeters.toFixed(4)} m
             </span>
             {lossFactor > 0 && (
-              <span className="text-[10px] text-on-surface-variant">
+              <span className="text-[10px] text-slate-600 dark:text-slate-400">
                 (inclui {lossFactor * 100}% de perda)
               </span>
             )}
@@ -206,8 +206,8 @@ export const AluminumItemFields: React.FC<AluminumItemFieldsProps> = ({
 
           {totalPrice != null && totalPrice > 0 && (
             <div className="flex items-center gap-2">
-              <span className="font-semibold text-on-surface">Subtotal:</span>
-              <span className="font-mono font-bold text-on-surface text-sm">
+              <span className="font-semibold text-slate-800 dark:text-slate-200">Subtotal:</span>
+              <span className="font-mono font-bold text-slate-900 dark:text-slate-100 text-sm">
                 {new Intl.NumberFormat('pt-BR', {
                   style: 'currency',
                   currency: 'BRL',

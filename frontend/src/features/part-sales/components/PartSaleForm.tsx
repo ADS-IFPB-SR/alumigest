@@ -153,13 +153,13 @@ export function PartSaleForm() {
         {/* ESQUERDA: FORMULÁRIO DE INSERÇÃO & TABELA */}
         <div className="lg:col-span-8 space-y-6">
           {/* Bloco Informações do Material */}
-          <form onSubmit={handleAddItem} className="bg-surface-container-low/60 dark:bg-surface-container-low border border-outline-variant/80 dark:border-outline/30 p-5 sm:p-6 rounded-xl space-y-5">
-            <h3 className="text-xs sm:text-sm font-bold text-on-surface uppercase tracking-wider flex items-center gap-2">
+          <form onSubmit={handleAddItem} className="bg-slate-50/70 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 p-5 sm:p-6 rounded-xl space-y-5">
+            <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider flex items-center gap-2">
               Informações do Material
             </h3>
 
             {formError && (
-              <div className="p-3 bg-error-container/20 border border-error/40 rounded-lg text-xs font-semibold text-error">
+              <div className="p-3 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/40 rounded-lg text-xs font-semibold text-rose-700 dark:text-rose-400">
                 {formError}
               </div>
             )}
@@ -167,7 +167,7 @@ export function PartSaleForm() {
             {/* Linha 1: Categoria e Descrição */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label htmlFor="part-category-select" className="block text-xs font-semibold text-on-surface-variant dark:text-outline-variant uppercase mb-1">
+                <label htmlFor="part-category-select" className="block text-xs font-semibold text-slate-700 dark:text-slate-200 uppercase mb-1">
                   Categoria *
                 </label>
                 <select
@@ -183,17 +183,17 @@ export function PartSaleForm() {
                       setHeightMm(2500);
                     }
                   }}
-                  className="w-full px-3 py-2 text-sm bg-surface-container-lowest dark:bg-surface-container-high/20 border border-outline-variant dark:border-outline/40 rounded-lg focus:border-primary dark:focus:border-primary-fixed focus:ring-1 focus:ring-primary outline-none font-semibold text-on-surface dark:text-inverse-on-surface"
+                  className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg focus:border-primary dark:focus:border-primary-fixed focus:ring-1 focus:ring-primary outline-none font-semibold text-slate-900 dark:text-slate-100"
                 >
-                  <option value="PROFILE">Perfil de Alumínio (Metro)</option>
-                  <option value="GLASS">Vidro (Cálculo m²)</option>
-                  <option value="FILM">Película (Cálculo m²)</option>
-                  <option value="HARDWARE">Ferragem (Unidade)</option>
+                  <option value="PROFILE" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">Perfil de Alumínio (Metro)</option>
+                  <option value="GLASS" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">Vidro (Cálculo m²)</option>
+                  <option value="FILM" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">Película (Cálculo m²)</option>
+                  <option value="HARDWARE" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">Ferragem (Unidade)</option>
                 </select>
               </div>
 
               <div className="md:col-span-2">
-                <label htmlFor="part-description-input" className="block text-xs font-semibold text-on-surface-variant dark:text-outline-variant uppercase mb-1">
+                <label htmlFor="part-description-input" className="block text-xs font-semibold text-slate-700 dark:text-slate-200 uppercase mb-1">
                   Descrição do Material *
                 </label>
                 <input
@@ -207,7 +207,7 @@ export function PartSaleForm() {
                   }
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="w-full px-3 py-2 text-sm bg-surface-container-lowest dark:bg-surface-container-high/20 border border-outline-variant dark:border-outline/40 rounded-lg focus:border-primary dark:focus:border-primary-fixed focus:ring-1 focus:ring-primary outline-none font-bold text-on-surface dark:text-inverse-on-surface uppercase"
+                  className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg focus:border-primary dark:focus:border-primary-fixed focus:ring-1 focus:ring-primary outline-none font-bold text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 uppercase"
                 />
               </div>
             </div>
@@ -229,7 +229,7 @@ export function PartSaleForm() {
               /* Fallback Genérico para Vidro / Película / Ferragem */
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
-                  <label htmlFor="part-generic-quantity" className="block text-xs font-semibold text-on-surface-variant dark:text-outline-variant uppercase mb-1">
+                  <label htmlFor="part-generic-quantity" className="block text-xs font-semibold text-slate-700 dark:text-slate-200 uppercase mb-1">
                     Qtd *
                   </label>
                   <input
@@ -237,48 +237,52 @@ export function PartSaleForm() {
                     type="number"
                     min="1"
                     value={quantity}
+                    placeholder="1"
                     onChange={(e) => setQuantity(e.target.value === '' ? '' : parseInt(e.target.value, 10))}
-                    className="w-full px-3 py-2 text-sm bg-surface-container-lowest dark:bg-surface-container-high/20 border border-outline-variant dark:border-outline/40 text-on-surface dark:text-inverse-on-surface rounded-lg outline-none font-bold focus:border-primary"
+                    className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 rounded-lg outline-none font-bold focus:border-primary"
                   />
                 </div>
                 {category !== 'HARDWARE' && (
                   <>
                     <div>
-                      <label htmlFor="part-generic-height" className="block text-xs font-semibold text-on-surface-variant dark:text-outline-variant uppercase mb-1">
+                      <label htmlFor="part-generic-height" className="block text-xs font-semibold text-slate-700 dark:text-slate-200 uppercase mb-1">
                         Altura (mm) *
                       </label>
                       <input
                         id="part-generic-height"
                         type="number"
                         value={heightMm}
+                        placeholder="2000"
                         onChange={(e) => setHeightMm(e.target.value === '' ? '' : parseInt(e.target.value, 10))}
-                        className="w-full px-3 py-2 text-sm bg-surface-container-lowest dark:bg-surface-container-high/20 border border-outline-variant dark:border-outline/40 text-on-surface dark:text-inverse-on-surface rounded-lg outline-none font-mono font-bold focus:border-primary"
+                        className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 rounded-lg outline-none font-mono font-bold focus:border-primary"
                       />
                     </div>
                     <div>
-                      <label htmlFor="part-generic-width" className="block text-xs font-semibold text-on-surface-variant dark:text-outline-variant uppercase mb-1">
+                      <label htmlFor="part-generic-width" className="block text-xs font-semibold text-slate-700 dark:text-slate-200 uppercase mb-1">
                         Largura (mm) *
                       </label>
                       <input
                         id="part-generic-width"
                         type="number"
                         value={widthMm}
+                        placeholder="800"
                         onChange={(e) => setWidthMm(e.target.value === '' ? '' : parseInt(e.target.value, 10))}
-                        className="w-full px-3 py-2 text-sm bg-surface-container-lowest dark:bg-surface-container-high/20 border border-outline-variant dark:border-outline/40 text-on-surface dark:text-inverse-on-surface rounded-lg outline-none font-mono font-bold focus:border-primary"
+                        className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 rounded-lg outline-none font-mono font-bold focus:border-primary"
                       />
                     </div>
                   </>
                 )}
                 <div>
-                  <label htmlFor="part-generic-price" className="block text-xs font-semibold text-on-surface-variant dark:text-outline-variant uppercase mb-1">
+                  <label htmlFor="part-generic-price" className="block text-xs font-semibold text-slate-700 dark:text-slate-200 uppercase mb-1">
                     Preço Venda (R$) *
                   </label>
                   <input
                     id="part-generic-price"
                     type="number"
                     value={unitPrice}
+                    placeholder="0.00"
                     onChange={(e) => setUnitPrice(e.target.value === '' ? '' : parseFloat(e.target.value))}
-                    className="w-full px-3 py-2 text-sm bg-surface-container-lowest dark:bg-surface-container-high/20 border border-outline-variant dark:border-outline/40 text-on-surface dark:text-inverse-on-surface rounded-lg outline-none font-mono font-bold focus:border-primary"
+                    className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 rounded-lg outline-none font-mono font-bold focus:border-primary"
                   />
                 </div>
               </div>
@@ -299,27 +303,27 @@ export function PartSaleForm() {
           </form>
 
           {/* TABELA DE ITENS ADICIONADOS */}
-          <div className="border border-outline-variant/80 dark:border-outline/30 rounded-xl overflow-hidden bg-surface-container-lowest dark:bg-surface-container-low shadow-2xs">
-            <div className="px-4 py-3 bg-surface-container/60 dark:bg-surface-container-high/40 border-b border-outline-variant/60 dark:border-outline/30 flex justify-between items-center">
-              <span className="text-xs font-bold uppercase text-on-surface tracking-wider">
+          <div className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden bg-white dark:bg-slate-900/50 shadow-2xs">
+            <div className="px-4 py-3 bg-slate-100/70 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
+              <span className="text-xs font-bold uppercase text-slate-900 dark:text-slate-100 tracking-wider">
                 Itens Adicionados à Venda
               </span>
               <span
                 data-testid="badge-total-items-count"
-                className="text-xs bg-surface-container-high dark:bg-surface-container-highest text-on-surface-variant dark:text-inverse-on-surface font-bold px-2 py-0.5 rounded-full"
+                className="text-xs bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-100 font-bold px-2.5 py-0.5 rounded-full"
               >
                 {items.length} item(ns)
               </span>
             </div>
 
             {items.length === 0 ? (
-              <div className="p-8 text-center text-on-surface-variant text-xs font-medium">
+              <div className="p-8 text-center text-slate-500 dark:text-slate-400 text-xs font-medium">
                 Nenhum item adicionado à venda até o momento.
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs" data-testid="table-part-items">
-                  <thead className="bg-surface-container/40 dark:bg-surface-container-high/20 border-b border-outline-variant/60 dark:border-outline/30 text-on-surface-variant font-bold uppercase tracking-wider">
+                  <thead className="bg-slate-50 dark:bg-slate-800/40 border-b border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold uppercase tracking-wider">
                     <tr>
                       <th className="py-2.5 px-3">Item / Descrição</th>
                       <th className="py-2.5 px-3">Categoria</th>
@@ -330,10 +334,10 @@ export function PartSaleForm() {
                       <th className="py-2.5 px-3 text-center">Ação</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-outline-variant/30 dark:divide-outline/20">
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                     {items.map((item) => (
-                      <tr key={item.id} className="hover:bg-surface-container-low/50 dark:hover:bg-surface-container-high/20 transition">
-                        <td className="py-2.5 px-3 font-bold text-on-surface">{item.description}</td>
+                      <tr key={item.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
+                        <td className="py-2.5 px-3 font-bold text-slate-900 dark:text-slate-100">{item.description}</td>
                         <td className="py-2.5 px-3">
                           <span
                             className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
@@ -349,18 +353,18 @@ export function PartSaleForm() {
                             {item.categoryLabel}
                           </span>
                         </td>
-                        <td className="py-2.5 px-3 font-mono text-on-surface-variant">
+                        <td className="py-2.5 px-3 font-mono text-slate-600 dark:text-slate-300">
                           {item.category === 'PROFILE'
                             ? `${item.heightMm} mm (Comp.)`
                             : item.widthMm
                             ? `${item.heightMm} x ${item.widthMm} mm`
                             : '-'}
                         </td>
-                        <td className="py-2.5 px-3 text-center font-bold text-on-surface">{item.quantity}</td>
-                        <td className="py-2.5 px-3 text-right font-mono text-on-surface-variant">
+                        <td className="py-2.5 px-3 text-center font-bold text-slate-900 dark:text-slate-100">{item.quantity}</td>
+                        <td className="py-2.5 px-3 text-right font-mono text-slate-600 dark:text-slate-300">
                           {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.unitPrice)}
                         </td>
-                        <td className="py-2.5 px-3 text-right font-mono font-bold text-on-surface">
+                        <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-900 dark:text-slate-100">
                           {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.totalPrice)}
                         </td>
                         <td className="py-2.5 px-3 text-center">
@@ -368,7 +372,7 @@ export function PartSaleForm() {
                             type="button"
                             onClick={() => handleRemoveItem(item.id)}
                             aria-label={`Remover item ${item.description}`}
-                            className="p-1.5 text-on-surface-variant hover:text-error dark:hover:text-error transition cursor-pointer"
+                            className="p-1.5 text-slate-400 hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-400 transition cursor-pointer"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -384,35 +388,35 @@ export function PartSaleForm() {
 
         {/* DIREITA: RESUMO DA VENDA */}
         <div className="lg:col-span-4 space-y-4">
-          <div className="bg-surface-container-low/60 dark:bg-surface-container-low border border-outline-variant/80 dark:border-outline/30 rounded-xl p-6 space-y-5">
+          <div className="bg-slate-50/70 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl p-6 space-y-5">
             <div>
-              <h3 className="text-sm font-bold text-on-surface uppercase tracking-wider">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider">
                 Resumo da Venda
               </h3>
-              <p className="text-[11px] text-on-surface-variant font-medium">Valores calculados em tempo real</p>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Valores calculados em tempo real</p>
             </div>
 
-            <div className="space-y-3 text-xs border-b border-outline-variant/60 dark:border-outline/30 pb-4">
+            <div className="space-y-3 text-xs border-b border-slate-200 dark:border-slate-800 pb-4">
               <div className="flex justify-between items-center">
-                <span className="text-on-surface-variant font-medium">Total de Peças:</span>
-                <span className="font-bold text-on-surface text-sm" data-testid="summary-total-pieces">
+                <span className="text-slate-600 dark:text-slate-300 font-medium">Total de Peças:</span>
+                <span className="font-bold text-slate-900 dark:text-slate-100 text-sm" data-testid="summary-total-pieces">
                   {totalQuantity}
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-on-surface-variant font-medium">Área / Medida Total:</span>
-                <span className="font-bold text-on-surface font-mono text-sm" data-testid="summary-total-measure">
+                <span className="text-slate-600 dark:text-slate-300 font-medium">Área / Medida Total:</span>
+                <span className="font-bold text-slate-900 dark:text-slate-100 font-mono text-sm" data-testid="summary-total-measure">
                   {totalCalculatedMeasure.toFixed(2)} m²/m
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-on-surface-variant font-medium">Subtotal Bruto:</span>
-                <span className="font-mono font-bold text-on-surface text-sm" data-testid="summary-subtotal">
+                <span className="text-slate-600 dark:text-slate-300 font-medium">Subtotal Bruto:</span>
+                <span className="font-mono font-bold text-slate-900 dark:text-slate-100 text-sm" data-testid="summary-subtotal">
                   {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(subtotalAmount)}
                 </span>
               </div>
               <div className="flex justify-between items-center gap-2 pt-1">
-                <label htmlFor="summary-discount-input" className="text-on-surface-variant font-medium">
+                <label htmlFor="summary-discount-input" className="text-slate-700 dark:text-slate-200 font-medium">
                   Desconto (R$):
                 </label>
                 <input
@@ -422,20 +426,21 @@ export function PartSaleForm() {
                   step="0.01"
                   data-testid="input-discount-amount"
                   value={discountAmount}
+                  placeholder="0,00"
                   onChange={(e) => setDiscountAmount(e.target.value === '' ? '' : parseFloat(e.target.value))}
-                  className="w-24 px-2 py-1 text-right font-mono font-bold text-xs bg-surface-container-lowest dark:bg-surface-container-high/20 border border-outline-variant dark:border-outline/40 text-on-surface dark:text-inverse-on-surface rounded outline-none focus:border-primary"
+                  className="w-24 px-2 py-1 text-right font-mono font-bold text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 rounded outline-none focus:border-primary"
                 />
               </div>
             </div>
 
             {/* Total Final */}
             <div className="pt-1 text-center space-y-1">
-              <p className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">
+              <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                 Valor Total da Venda
               </p>
               <p
                 data-testid="summary-total-amount"
-                className="text-3xl font-extrabold text-on-surface tracking-tight font-mono"
+                className="text-3xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight font-mono"
               >
                 {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalAmount)}
               </p>
@@ -447,9 +452,9 @@ export function PartSaleForm() {
                 type="button"
                 data-testid="btn-export-pdf"
                 disabled={items.length === 0}
-                className="w-full py-2.5 px-4 bg-surface-container-lowest dark:bg-surface-container-high/30 border border-outline-variant dark:border-outline/40 hover:bg-surface-container-high text-on-surface dark:text-inverse-on-surface text-xs font-bold rounded-lg transition flex items-center justify-center gap-2 shadow-2xs disabled:opacity-50 cursor-pointer"
+                className="w-full py-2.5 px-4 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 text-xs font-bold rounded-lg transition flex items-center justify-center gap-2 shadow-2xs disabled:opacity-50 cursor-pointer"
               >
-                <FileText className="w-4 h-4 text-rose-500" />
+                <FileText className="w-4 h-4 text-rose-500 dark:text-rose-400" />
                 <span>Exportar PDF</span>
               </button>
               <button
