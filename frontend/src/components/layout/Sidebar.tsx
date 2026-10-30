@@ -7,6 +7,7 @@ const navItems = [
   { path: '/ordens-servico', label: 'Ordens de Serviço', icon: 'assignment' },
   { path: '/producao', label: 'Produção (Kanban)', icon: 'precision_manufacturing' },
   { path: '/', label: 'Catálogo de Materiais', icon: 'inventory_2' },
+  { path: '/vendas/avulsa', label: 'Venda Avulsa', icon: 'shopping_cart' },
   { path: '/estoque', label: 'Estoque', icon: 'inventory' },
   { path: '/produtos', label: 'Produtos', icon: 'category' },
   { path: '/clientes', label: 'Clientes', icon: 'group' },
@@ -28,6 +29,9 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     }
     if (itemPath === '/ordens-servico') {
       return isNavLinkActive || location.pathname.startsWith('/ordens-servico') || location.pathname.startsWith('/pedidos') || location.pathname.startsWith('/work-orders');
+    }
+    if (itemPath === '/vendas/avulsa') {
+      return isNavLinkActive || location.pathname.startsWith('/vendas');
     }
     return isNavLinkActive || location.pathname.startsWith(itemPath);
   };
