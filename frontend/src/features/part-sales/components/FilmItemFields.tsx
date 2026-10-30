@@ -1,17 +1,17 @@
 interface FilmItemFieldsProps {
-  widthMm: number | '';
-  heightMm: number | '';
-  quantity: number | '';
-  unitPrice: number | '';
-  lossFactor: number;
-  disabled?: boolean;
-  onWidthChange: (val: number | '') => void;
-  onHeightChange: (val: number | '') => void;
-  onQuantityChange: (val: number | '') => void;
-  onPriceChange: (val: number | '') => void;
-  onLossFactorChange: (val: number) => void;
-  calculatedArea?: number;
-  totalPrice?: number;
+  readonly widthMm: number | '';
+  readonly heightMm: number | '';
+  readonly quantity: number | '';
+  readonly unitPrice: number | '';
+  readonly lossFactor: number;
+  readonly disabled?: boolean;
+  readonly onWidthChange: (val: number | '') => void;
+  readonly onHeightChange: (val: number | '') => void;
+  readonly onQuantityChange: (val: number | '') => void;
+  readonly onPriceChange: (val: number | '') => void;
+  readonly onLossFactorChange: (val: number) => void;
+  readonly calculatedArea?: number;
+  readonly totalPrice?: number;
 }
 
 export function FilmItemFields({
@@ -59,7 +59,7 @@ export function FilmItemFields({
             disabled={disabled}
             value={quantity}
             placeholder="1"
-            onChange={(e) => onQuantityChange(e.target.value === '' ? '' : parseInt(e.target.value, 10))}
+            onChange={(e) => onQuantityChange(e.target.value === '' ? '' : Number.parseInt(e.target.value, 10))}
             className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg outline-none font-bold focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed"
           />
         </div>
@@ -77,7 +77,7 @@ export function FilmItemFields({
             disabled={disabled}
             value={heightMm}
             placeholder="2000"
-            onChange={(e) => onHeightChange(e.target.value === '' ? '' : parseInt(e.target.value, 10))}
+            onChange={(e) => onHeightChange(e.target.value === '' ? '' : Number.parseInt(e.target.value, 10))}
             className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg outline-none font-mono font-bold focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed"
           />
         </div>
@@ -95,7 +95,7 @@ export function FilmItemFields({
             disabled={disabled}
             value={widthMm}
             placeholder="1000"
-            onChange={(e) => onWidthChange(e.target.value === '' ? '' : parseInt(e.target.value, 10))}
+            onChange={(e) => onWidthChange(e.target.value === '' ? '' : Number.parseInt(e.target.value, 10))}
             className={`w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border rounded-lg outline-none font-mono font-bold focus:ring-1 disabled:opacity-50 disabled:cursor-not-allowed ${
               isOversized 
                 ? 'border-rose-500 focus:border-rose-500 focus:ring-rose-500 text-rose-600 dark:text-rose-400' 
@@ -117,7 +117,7 @@ export function FilmItemFields({
             step="1"
             disabled={disabled}
             value={Math.round(lossFactor * 100)}
-            onChange={(e) => onLossFactorChange(e.target.value === '' ? 0 : parseFloat(e.target.value) / 100)}
+            onChange={(e) => onLossFactorChange(e.target.value === '' ? 0 : Number.parseFloat(e.target.value) / 100)}
             className="w-full px-3 py-2 text-sm bg-slate-50 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg outline-none font-mono font-bold focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed"
           />
         </div>
@@ -136,7 +136,7 @@ export function FilmItemFields({
             disabled={disabled}
             value={unitPrice}
             placeholder="0.00"
-            onChange={(e) => onPriceChange(e.target.value === '' ? '' : parseFloat(e.target.value))}
+            onChange={(e) => onPriceChange(e.target.value === '' ? '' : Number.parseFloat(e.target.value))}
             className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg outline-none font-mono font-bold focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed"
           />
         </div>

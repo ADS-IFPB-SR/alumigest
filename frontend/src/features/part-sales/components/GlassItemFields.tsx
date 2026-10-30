@@ -1,17 +1,17 @@
 import { useState, useEffect } from 'react';
 
 interface GlassItemFieldsProps {
-  widthMm: number | '';
-  heightMm: number | '';
-  quantity: number | '';
-  unitPrice: number | '';
-  disabled?: boolean;
-  onWidthChange: (val: number | '') => void;
-  onHeightChange: (val: number | '') => void;
-  onQuantityChange: (val: number | '') => void;
-  onPriceChange: (val: number | '') => void;
-  calculatedArea?: number;
-  totalPrice?: number;
+  readonly widthMm: number | '';
+  readonly heightMm: number | '';
+  readonly quantity: number | '';
+  readonly unitPrice: number | '';
+  readonly disabled?: boolean;
+  readonly onWidthChange: (val: number | '') => void;
+  readonly onHeightChange: (val: number | '') => void;
+  readonly onQuantityChange: (val: number | '') => void;
+  readonly onPriceChange: (val: number | '') => void;
+  readonly calculatedArea?: number;
+  readonly totalPrice?: number;
 }
 
 export function GlassItemFields({
@@ -65,7 +65,7 @@ export function GlassItemFields({
             disabled={disabled}
             value={quantity}
             placeholder="1"
-            onChange={(e) => onQuantityChange(e.target.value === '' ? '' : parseInt(e.target.value, 10))}
+            onChange={(e) => onQuantityChange(e.target.value === '' ? '' : Number.parseInt(e.target.value, 10))}
             className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg outline-none font-bold focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed"
           />
         </div>
@@ -83,7 +83,7 @@ export function GlassItemFields({
             disabled={disabled}
             value={heightMm}
             placeholder="2000"
-            onChange={(e) => onHeightChange(e.target.value === '' ? '' : parseInt(e.target.value, 10))}
+            onChange={(e) => onHeightChange(e.target.value === '' ? '' : Number.parseInt(e.target.value, 10))}
             className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg outline-none font-mono font-bold focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed"
           />
         </div>
@@ -101,7 +101,7 @@ export function GlassItemFields({
             disabled={disabled}
             value={widthMm}
             placeholder="1000"
-            onChange={(e) => onWidthChange(e.target.value === '' ? '' : parseInt(e.target.value, 10))}
+            onChange={(e) => onWidthChange(e.target.value === '' ? '' : Number.parseInt(e.target.value, 10))}
             className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg outline-none font-mono font-bold focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed"
           />
         </div>
@@ -120,7 +120,7 @@ export function GlassItemFields({
             disabled={disabled}
             value={unitPrice}
             placeholder="0.00"
-            onChange={(e) => onPriceChange(e.target.value === '' ? '' : parseFloat(e.target.value))}
+            onChange={(e) => onPriceChange(e.target.value === '' ? '' : Number.parseFloat(e.target.value))}
             className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg outline-none font-mono font-bold focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed"
           />
         </div>
