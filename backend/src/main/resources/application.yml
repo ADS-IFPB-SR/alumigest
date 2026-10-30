@@ -13,7 +13,7 @@ spring:
   datasource:
     url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:alumigest_db}
     username: ${POSTGRES_USER:postgres}
-    password: ${POSTGRES_PASSWORD:Fullmetal12.}
+    password: ${POSTGRES_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 10
