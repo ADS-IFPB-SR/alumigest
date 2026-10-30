@@ -1,5 +1,3 @@
-import React from 'react';
-
 interface FilmItemFieldsProps {
   widthMm: number | '';
   heightMm: number | '';
