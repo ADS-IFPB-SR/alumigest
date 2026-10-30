@@ -16,9 +16,9 @@ export function DashboardLayout() {
       <div className="flex-1 flex flex-col h-screen overflow-hidden bg-background relative">
         <Topbar onMenuClick={() => setIsMobileMenuOpen(true)} />
 
-        <main className="flex-1 min-h-0 overflow-x-hidden overflow-y-auto w-full relative scroll-smooth">
-          <div className="min-h-full flex flex-col w-full p-2.5 sm:p-4 lg:p-5 transition-all duration-300">
-            <div className="flex-1 min-h-0 w-full bg-surface-container-lowest border border-outline-variant rounded-xl sm:rounded-2xl shadow-sm sm:shadow-md overflow-x-hidden overflow-y-auto relative group hover:shadow-lg transition-all duration-300 ease-out p-4 sm:p-5 lg:p-6 flex flex-col">
+        <main className="flex-1 overflow-x-hidden overflow-y-auto w-full relative scroll-smooth">
+          <div className="min-h-full flex flex-col w-full h-full p-2.5 sm:p-4 lg:p-5 transition-all duration-300">
+            <div className="flex-1 w-full bg-surface-container-lowest border border-outline-variant rounded-xl sm:rounded-2xl shadow-sm sm:shadow-md overflow-hidden relative group hover:shadow-lg transition-all duration-300 ease-out p-4 sm:p-5 lg:p-6 flex flex-col">
               <Outlet />
             </div>
           </div>

@@ -388,8 +388,17 @@ describe('ProductionKanbanBoard Component (US-18.4)', () => {
 
       scrollContainers.forEach((container) => {
         expect(container).toHaveClass('overflow-y-auto');
-        expect(container).toHaveClass('min-h-[200px]');
-        expect(container).toHaveClass('max-h-[calc(100vh-420px)]');
+        expect(container).toHaveClass('flex-1');
+        expect(container).toHaveClass('min-h-0');
+        expect(container).not.toHaveClass('min-h-[200px]');
+        expect(container.className).not.toMatch(/max-h-\[calc/);
+      });
+
+      // Colunas e grid devem permitir encolhimento flex (min-h-0) para que a rolagem ocorra dentro da coluna
+      expect(screen.getByTestId('production-kanban-board')).toHaveClass('md:flex-1', 'md:min-h-0', 'md:grid-rows-1');
+      expect(screen.getByTestId('production-kanban-board')).not.toHaveClass('items-start');
+      ['waiting_production', 'in_production', 'completed'].forEach((status) => {
+        expect(screen.getByTestId(`kanban-column-${status}`)).toHaveClass('flex', 'flex-col', 'min-h-0');
       });
     });
   });
