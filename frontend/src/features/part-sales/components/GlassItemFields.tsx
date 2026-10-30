@@ -133,12 +133,17 @@ export function GlassItemFields({
       >
         <div>
           {showMinimumAreaWarning ? (
-            <p data-testid="warning-minimum-area" className="text-xs font-semibold text-cyan-600 dark:text-cyan-400 flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-cyan-500 animate-pulse"></span>
-              Piso Mínimo Aplicado (0,25 m² por peça)
+            <p
+              data-testid="warning-minimum-area"
+              className="text-xs font-semibold text-cyan-600 dark:text-cyan-400 flex items-center gap-1.5"
+            >
+              <span className="w-2 h-2 rounded-full bg-cyan-500 animate-pulse" />
+              <span>Piso Mínimo Aplicado (0,25 m² por peça)</span>
             </p>
           ) : (
-            <p className="text-[11px] text-slate-500 dark:text-slate-400">Dimensões acima do piso mínimo padrão.</p>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+              Dimensões acima do piso mínimo padrão.
+            </p>
           )}
         </div>
         
