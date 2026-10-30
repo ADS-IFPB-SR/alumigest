@@ -5,7 +5,7 @@ import type {
   CreatePartSaleRequest,
   PartSaleResponse,
   PartSaleStatus,
-} from '../types';
+} from '../types/partSaleTypes';
 
 export const partSaleApi = {
   async calculateItem(payload: CalculatePartItemPayload): Promise<CalculatePartItemResult> {
@@ -38,4 +38,3 @@ export const partSaleApi = {
 };
 
 export const partSalesApi = partSaleApi;
-

@@ -1,5 +1,6 @@
 package br.edu.ifpb.alumigest.partsale.controller;
 
+import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -39,7 +40,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("PartSaleController [US-46.1] - MockMvc REST API Tests")
+@DisplayName("PartSaleController [US-46] - MockMvc REST API Tests")
 class PartSaleControllerTest {
 
   private MockMvc mockMvc;
@@ -65,8 +66,8 @@ class PartSaleControllerTest {
   class CalculateItemEndpoint {
 
     @Test
-    @DisplayName("Deve retornar 200 com item calculado com sucesso")
-    void shouldCalculateItemSuccessfully() throws Exception {
+    @DisplayName("Deve retornar 200 com item de ferragem calculado com sucesso (US-46.1)")
+    void shouldCalculateHardwareItemSuccessfully() throws Exception {
       CalculatePartItemRequest request = new CalculatePartItemRequest(
           MaterialCategoryType.HARDWARE,
           null,
@@ -91,6 +92,36 @@ class PartSaleControllerTest {
           .andExpect(jsonPath("$.calculatedUnitMeasure").value(4.0))
           .andExpect(jsonPath("$.unitPrice").value(50.00))
           .andExpect(jsonPath("$.totalPrice").value(200.00));
+    }
+
+    @Test
+    @DisplayName("Deve calcular com sucesso item de perfil de alumínio e retornar 200 OK (US-46.2)")
+    void deveRetornar200ECalculoCorretoParaPerfilDeAluminio() throws Exception {
+      // 2500 mm * 4 peças com 5% de perda (0.05) = 10.5000 m faturáveis * 45.00 = R$ 472,50
+      CalculatePartItemRequest request = new CalculatePartItemRequest(
+          MaterialCategoryType.PROFILE,
+          null,
+          2500,
+          4,
+          new BigDecimal("45.00"),
+          new BigDecimal("0.05")
+      );
+
+      CalculatePartItemResponse response = new CalculatePartItemResponse(
+          new BigDecimal("10.5000"),
+          new BigDecimal("45.00"),
+          new BigDecimal("472.50")
+      );
+
+      when(partSaleService.calculateItem(any(CalculatePartItemRequest.class))).thenReturn(response);
+
+      mockMvc.perform(post("/api/v1/part-sales/calculate-item")
+              .contentType(MediaType.APPLICATION_JSON)
+              .content(objectMapper.writeValueAsString(request)))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.calculatedUnitMeasure", is(10.5)))
+          .andExpect(jsonPath("$.unitPrice", is(45.0)))
+          .andExpect(jsonPath("$.totalPrice", is(472.5)));
     }
 
     @Test

@@ -11,7 +11,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-@DisplayName("PartCalculatorFactory [US-46.1] - Formal QA Tests")
+@DisplayName("PartCalculatorFactory [US-46] - Formal QA Tests")
 class PartCalculatorFactoryTest {
 
   @Nested
@@ -19,19 +19,35 @@ class PartCalculatorFactoryTest {
   class EquivalencePartitioning {
 
     @Test
-    @DisplayName("EP1: Deve resolver com sucesso calculadora cadastrada para a categoria")
-    void shouldResolveRegisteredCalculator() {
-      PartItemCalculator hardwareCalc = mock(PartItemCalculator.class);
-      when(hardwareCalc.getCategory()).thenReturn(MaterialCategoryType.HARDWARE);
+    @DisplayName("EP1: Deve resolver com sucesso calculadora cadastrada para perfil de alumínio (US-46.2)")
+    void shouldResolveAluminumProfileCalculator() {
+      AluminumProfilePartCalculator profileCalculator = new AluminumProfilePartCalculator();
+      PartCalculatorFactory factory = new PartCalculatorFactory(List.of(profileCalculator));
 
-      PartCalculatorFactory factory = new PartCalculatorFactory(List.of(hardwareCalc));
+      PartItemCalculator resolved = factory.getCalculator(MaterialCategoryType.PROFILE);
 
-      PartItemCalculator resolved = factory.getCalculator(MaterialCategoryType.HARDWARE);
-      assertThat(resolved).isSameAs(hardwareCalc);
+      assertThat(resolved)
+          .isNotNull()
+          .isSameAs(profileCalculator);
+      assertThat(resolved.getCategory()).isEqualTo(MaterialCategoryType.PROFILE);
     }
 
     @Test
-    @DisplayName("EP2: Deve lançar exceção quando não houver calculadora cadastrada para a categoria")
+    @DisplayName("EP2: Deve resolver com sucesso calculadora cadastrada para ferragem (US-46.1)")
+    void shouldResolveHardwareCalculator() {
+      HardwarePartCalculator hardwareCalculator = new HardwarePartCalculator();
+      PartCalculatorFactory factory = new PartCalculatorFactory(List.of(hardwareCalculator));
+
+      PartItemCalculator resolved = factory.getCalculator(MaterialCategoryType.HARDWARE);
+
+      assertThat(resolved)
+          .isNotNull()
+          .isSameAs(hardwareCalculator);
+      assertThat(resolved.getCategory()).isEqualTo(MaterialCategoryType.HARDWARE);
+    }
+
+    @Test
+    @DisplayName("EP3: Deve lançar exceção quando não houver calculadora cadastrada para a categoria")
     void shouldThrowWhenCalculatorNotRegistered() {
       PartItemCalculator hardwareCalc = mock(PartItemCalculator.class);
       when(hardwareCalc.getCategory()).thenReturn(MaterialCategoryType.HARDWARE);
@@ -59,4 +75,3 @@ class PartCalculatorFactoryTest {
     }
   }
 }
-
