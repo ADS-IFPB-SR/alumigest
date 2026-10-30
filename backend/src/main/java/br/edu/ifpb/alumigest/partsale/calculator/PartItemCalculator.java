@@ -1,13 +1,15 @@
 package br.edu.ifpb.alumigest.partsale.calculator;
 
-import br.edu.ifpb.alumigest.catalog.domain.Material;
-import br.edu.ifpb.alumigest.partsale.dto.CalculatePartItemRequestDTO;
-import br.edu.ifpb.alumigest.partsale.dto.CalculatePartItemResponseDTO;
-import br.edu.ifpb.alumigest.partsale.domain.PartMaterialType;
+import br.edu.ifpb.alumigest.catalog.domain.MaterialCategoryType;
+import br.edu.ifpb.alumigest.partsale.dto.CalculatePartItemRequest;
+import br.edu.ifpb.alumigest.partsale.dto.CalculatePartItemResponse;
 
+/**
+ * Contrato Strategy para cálculos especialistas de cada categoria de material avulso.
+ */
 public interface PartItemCalculator {
-    
-    boolean supports(PartMaterialType type);
-    
-    CalculatePartItemResponseDTO calculate(CalculatePartItemRequestDTO request, Material material);
+
+    MaterialCategoryType getCategory();
+
+    CalculatePartItemResponse calculate(CalculatePartItemRequest request);
 }

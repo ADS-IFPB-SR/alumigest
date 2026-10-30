@@ -1,6 +1,6 @@
 package br.edu.ifpb.alumigest.partsale.calculator;
 
-import br.edu.ifpb.alumigest.partsale.domain.PartMaterialType;
+import br.edu.ifpb.alumigest.catalog.domain.MaterialCategoryType;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -11,25 +11,20 @@ import java.util.stream.Collectors;
 @Component
 public class PartItemCalculatorFactory {
 
-    private final Map<PartMaterialType, PartItemCalculator> calculators;
+    private final Map<MaterialCategoryType, PartItemCalculator> calculators;
 
-    // O Spring injeta automaticamente as duas implementações (Glass e Film) na lista
     public PartItemCalculatorFactory(List<PartItemCalculator> calculatorList) {
         this.calculators = calculatorList.stream()
-                .collect(Collectors.toMap(
-                        calc -> {
-                            if (calc.supports(PartMaterialType.GLASS)) return PartMaterialType.GLASS;
-                            if (calc.supports(PartMaterialType.FILM)) return PartMaterialType.FILM;
-                            throw new IllegalArgumentException("Calculador não suportado: " + calc.getClass().getName());
-                        },
-                        Function.identity()
-                ));
+            .collect(Collectors.toMap(PartItemCalculator::getCategory, Function.identity()));
     }
 
-    public PartItemCalculator getCalculator(PartMaterialType type) {
-        PartItemCalculator calculator = calculators.get(type);
+    public PartItemCalculator getCalculator(MaterialCategoryType category) {
+        if (category == null) {
+            throw new IllegalArgumentException("A categoria do material não pode ser nula");
+        }
+        PartItemCalculator calculator = calculators.get(category);
         if (calculator == null) {
-            throw new IllegalArgumentException("Nenhum motor de cálculo encontrado para o tipo: " + type);
+            throw new IllegalArgumentException("Calculadora não encontrada para a categoria: " + category);
         }
         return calculator;
     }

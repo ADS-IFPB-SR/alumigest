@@ -2,14 +2,14 @@ package br.edu.ifpb.alumigest.partsale.service;
 
 import br.edu.ifpb.alumigest.catalog.domain.Material;
 import br.edu.ifpb.alumigest.common.exception.BusinessException;
-import br.edu.ifpb.alumigest.partsale.dto.CalculatePartItemRequestDTO;
+import br.edu.ifpb.alumigest.partsale.dto.CalculatePartItemRequest;
 import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 
 @Service
 public class PartSaleValidationService {
 
-    public void validatePhysicalLimits(CalculatePartItemRequestDTO request, Material material) {
+    public void validatePhysicalLimits(CalculatePartItemRequest request, Material material) {
         
         // Converte o Integer do request para BigDecimal e compara com o limite máximo
         if (material.getMaxWidthMm() != null && 

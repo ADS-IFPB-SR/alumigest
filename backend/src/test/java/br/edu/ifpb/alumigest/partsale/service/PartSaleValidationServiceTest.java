@@ -1,9 +1,9 @@
 package br.edu.ifpb.alumigest.partsale.service;
 
 import br.edu.ifpb.alumigest.catalog.domain.Material;
+import br.edu.ifpb.alumigest.catalog.domain.MaterialCategoryType;
 import br.edu.ifpb.alumigest.common.exception.BusinessException;
-import br.edu.ifpb.alumigest.partsale.domain.PartMaterialType;
-import br.edu.ifpb.alumigest.partsale.dto.CalculatePartItemRequestDTO;
+import br.edu.ifpb.alumigest.partsale.dto.CalculatePartItemRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -32,8 +32,8 @@ class PartSaleValidationServiceTest {
     @Test
     @DisplayName("Não deve lançar erro se as dimensões solicitadas couberem na chapa de fábrica")
     void shouldNotThrowExceptionIfDimensionsAreValid() {
-        CalculatePartItemRequestDTO request = new CalculatePartItemRequestDTO(
-                catalogMaterial.getId(), PartMaterialType.GLASS, 1500, 2000, 1, null
+        CalculatePartItemRequest request = new CalculatePartItemRequest(
+                MaterialCategoryType.GLASS, 1500, 2000, 1, new BigDecimal("100.00"), null
         );
 
         assertThatCode(() -> validationService.validatePhysicalLimits(request, catalogMaterial))
@@ -43,9 +43,8 @@ class PartSaleValidationServiceTest {
     @Test
     @DisplayName("Deve lançar BusinessException se a largura for maior que a capacidade da chapa")
     void shouldThrowBusinessExceptionIfWidthIsExceeded() {
-        // Largura 3500mm (estoura os 3210mm)
-        CalculatePartItemRequestDTO request = new CalculatePartItemRequestDTO(
-                catalogMaterial.getId(), PartMaterialType.GLASS, 3500, 2000, 1, null
+        CalculatePartItemRequest request = new CalculatePartItemRequest(
+                MaterialCategoryType.GLASS, 3500, 2000, 1, new BigDecimal("100.00"), null
         );
 
         assertThatThrownBy(() -> validationService.validatePhysicalLimits(request, catalogMaterial))
@@ -56,9 +55,8 @@ class PartSaleValidationServiceTest {
     @Test
     @DisplayName("Deve lançar BusinessException se a altura for maior que a capacidade da chapa")
     void shouldThrowBusinessExceptionIfHeightIsExceeded() {
-        // Altura 6500mm (estoura os 6000mm)
-        CalculatePartItemRequestDTO request = new CalculatePartItemRequestDTO(
-                catalogMaterial.getId(), PartMaterialType.GLASS, 1000, 6500, 1, null
+        CalculatePartItemRequest request = new CalculatePartItemRequest(
+                MaterialCategoryType.GLASS, 1000, 6500, 1, new BigDecimal("100.00"), null
         );
 
         assertThatThrownBy(() -> validationService.validatePhysicalLimits(request, catalogMaterial))

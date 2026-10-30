@@ -14,6 +14,7 @@ import { ProductBuilderPage } from './pages/ProductBuilderPage';
 import { OrderListPage } from './pages/OrderListPage';
 import { OrderDetailPage } from './pages/OrderDetailPage';
 import { ProductionKanbanPage } from './pages/ProductionKanbanPage';
+import { PartSaleFormPage } from './pages/PartSaleFormPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -65,6 +66,10 @@ export function AppRoutes() {
         {/* Rotas oficiais da Gestão Fabril / Painel Kanban (US-18) */}
         <Route path="producao" element={<ProductionKanbanPage />} />
         <Route path="producao/kanban" element={<ProductionKanbanPage />} />
+
+        {/* Módulo de Venda Avulsa de Partes (US-46) */}
+        <Route path="venda-avulsa" element={<PartSaleFormPage />} />
+        <Route path="vendas/partes/nova" element={<PartSaleFormPage />} />
 
         <Route
           path="dashboard"

@@ -1,9 +1,8 @@
 package br.edu.ifpb.alumigest.partsale.calculator;
 
-import br.edu.ifpb.alumigest.catalog.domain.Material;
-import br.edu.ifpb.alumigest.partsale.dto.CalculatePartItemRequestDTO;
-import br.edu.ifpb.alumigest.partsale.dto.CalculatePartItemResponseDTO;
-import br.edu.ifpb.alumigest.partsale.domain.PartMaterialType;
+import br.edu.ifpb.alumigest.catalog.domain.MaterialCategoryType;
+import br.edu.ifpb.alumigest.partsale.dto.CalculatePartItemRequest;
+import br.edu.ifpb.alumigest.partsale.dto.CalculatePartItemResponse;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -12,40 +11,29 @@ import java.math.RoundingMode;
 @Component
 public class FilmPartCalculator implements PartItemCalculator {
 
-    private static final BigDecimal MM_TO_M_DIVISOR = new BigDecimal("1000");
+    private static final BigDecimal ONE_MILLION = new BigDecimal("1000000");
 
     @Override
-    public boolean supports(PartMaterialType type) {
-        return PartMaterialType.FILM.equals(type);
+    public MaterialCategoryType getCategory() {
+        return MaterialCategoryType.FILM;
     }
 
     @Override
-    public CalculatePartItemResponseDTO calculate(CalculatePartItemRequestDTO request, Material material) {
-        BigDecimal widthM = BigDecimal.valueOf(request.widthMm()).divide(MM_TO_M_DIVISOR, 4, RoundingMode.HALF_UP);
-        BigDecimal heightM = BigDecimal.valueOf(request.heightMm()).divide(MM_TO_M_DIVISOR, 4, RoundingMode.HALF_UP);
-        BigDecimal quantity = BigDecimal.valueOf(request.quantity());
+    public CalculatePartItemResponse calculate(CalculatePartItemRequest request) {
+        // Cálculo da área líquida em m² (L x A / 1.000.000) * Qtd
+        BigDecimal netArea = BigDecimal.valueOf(request.widthMm())
+            .multiply(BigDecimal.valueOf(request.heightMm()))
+            .divide(ONE_MILLION, 4, RoundingMode.HALF_UP)
+            .multiply(BigDecimal.valueOf(request.quantity()));
 
-        // Área total real
-        BigDecimal totalNetArea = widthM.multiply(heightM).multiply(quantity).setScale(4, RoundingMode.HALF_UP);
-
-        // Pega o lossFactor do REQUEST (conforme a spec)
+        // Pega o lossFactor do REQUEST e aplica o acréscimo de perda de bobina
         BigDecimal lossFactor = request.lossFactor() != null ? request.lossFactor() : BigDecimal.ZERO;
-        BigDecimal multiplier = BigDecimal.ONE.add(lossFactor);
+        BigDecimal billableArea = netArea.multiply(BigDecimal.ONE.add(lossFactor));
+        
+        // Valor total usando o preço unitário do request
+        BigDecimal totalPrice = billableArea.multiply(request.unitPrice());
 
-        // Área faturável
-        BigDecimal totalBillableArea = totalNetArea.multiply(multiplier).setScale(4, RoundingMode.HALF_UP);
-
-        // Pega o preço de VENDA do material
-        BigDecimal unitPrice = material.getSalePrice();
-        BigDecimal totalPrice = totalBillableArea.multiply(unitPrice).setScale(2, RoundingMode.HALF_UP);
-
-        return new CalculatePartItemResponseDTO(
-                material.getId(),
-                PartMaterialType.FILM,
-                totalNetArea,
-                totalBillableArea,
-                unitPrice,
-                totalPrice
-        );
+        // Retorna exatamente a assinatura do DTO de resposta: (área faturável, preço unitário, total)
+        return new CalculatePartItemResponse(billableArea, request.unitPrice(), totalPrice);
     }
 }
