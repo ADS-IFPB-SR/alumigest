@@ -1,50 +1,77 @@
 package br.edu.ifpb.alumigest.partsale.calculator;
 
-import br.edu.ifpb.alumigest.catalog.domain.MaterialCategoryType;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-
-import java.util.List;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import br.edu.ifpb.alumigest.catalog.domain.MaterialCategoryType;
+import java.util.List;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+
+@DisplayName("PartCalculatorFactory [US-46] - Formal QA Tests")
 class PartCalculatorFactoryTest {
 
-    private PartCalculatorFactory factory;
-    private AluminumProfilePartCalculator profileCalculator;
+  @Nested
+  @DisplayName("Partição de Equivalência (EP)")
+  class EquivalencePartitioning {
 
-    @BeforeEach
-    void setUp() {
-        profileCalculator = new AluminumProfilePartCalculator();
-        factory = new PartCalculatorFactory(List.of(profileCalculator));
+    @Test
+    @DisplayName("EP1: Deve resolver com sucesso calculadora cadastrada para perfil de alumínio (US-46.2)")
+    void shouldResolveAluminumProfileCalculator() {
+      AluminumProfilePartCalculator profileCalculator = new AluminumProfilePartCalculator();
+      PartCalculatorFactory factory = new PartCalculatorFactory(List.of(profileCalculator));
+
+      PartItemCalculator resolved = factory.getCalculator(MaterialCategoryType.PROFILE);
+
+      assertThat(resolved)
+          .isNotNull()
+          .isSameAs(profileCalculator);
+      assertThat(resolved.getCategory()).isEqualTo(MaterialCategoryType.PROFILE);
     }
 
     @Test
-    @DisplayName("Deve resolver a calculadora de perfil de alumínio com sucesso")
-    void deveResolverCalculadoraDePerfilDeAluminio() {
-        PartItemCalculator calculator = factory.getCalculator(MaterialCategoryType.PROFILE);
+    @DisplayName("EP2: Deve resolver com sucesso calculadora cadastrada para ferragem (US-46.1)")
+    void shouldResolveHardwareCalculator() {
+      HardwarePartCalculator hardwareCalculator = new HardwarePartCalculator();
+      PartCalculatorFactory factory = new PartCalculatorFactory(List.of(hardwareCalculator));
 
-        assertThat(calculator)
-                .isNotNull()
-                .isSameAs(profileCalculator);
-        assertThat(calculator.getCategory()).isEqualTo(MaterialCategoryType.PROFILE);
+      PartItemCalculator resolved = factory.getCalculator(MaterialCategoryType.HARDWARE);
+
+      assertThat(resolved)
+          .isNotNull()
+          .isSameAs(hardwareCalculator);
+      assertThat(resolved.getCategory()).isEqualTo(MaterialCategoryType.HARDWARE);
     }
 
     @Test
-    @DisplayName("Deve lançar exceção quando a categoria solicitada não tiver calculadora registrada")
-    void deveLancarExcecaoQuandoTipoSemCalculadora() {
-        assertThatThrownBy(() -> factory.getCalculator(MaterialCategoryType.GLASS))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("Calculadora não encontrada para a categoria: GLASS");
+    @DisplayName("EP3: Deve lançar exceção quando não houver calculadora cadastrada para a categoria")
+    void shouldThrowWhenCalculatorNotRegistered() {
+      PartItemCalculator hardwareCalc = mock(PartItemCalculator.class);
+      when(hardwareCalc.getCategory()).thenReturn(MaterialCategoryType.HARDWARE);
+
+      PartCalculatorFactory factory = new PartCalculatorFactory(List.of(hardwareCalc));
+
+      assertThatThrownBy(() -> factory.getCalculator(MaterialCategoryType.GLASS))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("Calculadora não encontrada para a categoria: GLASS");
     }
+  }
+
+  @Nested
+  @DisplayName("Análise de Valor Limite e Decisão (BVA & Branch Coverage)")
+  class BoundaryAndBranchCoverage {
 
     @Test
-    @DisplayName("Deve lançar exceção quando a categoria for nula")
-    void deveLancarExcecaoQuandoCategoriaNula() {
-        assertThatThrownBy(() -> factory.getCalculator(null))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("A categoria do material não pode ser nula");
+    @DisplayName("BVA1: Deve rejeitar categoria nula com IllegalArgumentException")
+    void shouldRejectNullCategory() {
+      PartCalculatorFactory factory = new PartCalculatorFactory(List.of());
+
+      assertThatThrownBy(() -> factory.getCalculator(null))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("A categoria do material não pode ser nula");
     }
+  }
 }

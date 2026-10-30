@@ -9,7 +9,7 @@ import br.edu.ifpb.alumigest.partsale.dto.CalculatePartItemResponse;
  */
 public interface PartItemCalculator {
 
-    MaterialCategoryType getCategory();
+  MaterialCategoryType getCategory();
 
-    CalculatePartItemResponse calculate(CalculatePartItemRequest request);
+  CalculatePartItemResponse calculate(CalculatePartItemRequest request);
 }

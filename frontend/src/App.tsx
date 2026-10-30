@@ -9,12 +9,12 @@ import { BudgetDetailPage } from './pages/BudgetDetailPage';
 import { BudgetEditor } from './features/budgets/components/BudgetEditor';
 import { PlaceholderPage } from './pages/PlaceholderPage';
 import { SeparateSalePage } from './pages/SeparateSalePage';
+import { PartSaleFormPage } from './pages/PartSaleFormPage';
 import { ProductTab as ProductsPage } from './pages/ProductsPage';
 import { ProductBuilderPage } from './pages/ProductBuilderPage';
 import { OrderListPage } from './pages/OrderListPage';
 import { OrderDetailPage } from './pages/OrderDetailPage';
 import { ProductionKanbanPage } from './pages/ProductionKanbanPage';
-import { PartSaleFormPage } from './pages/PartSaleFormPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -52,6 +52,10 @@ export function AppRoutes() {
 
         <Route path="orcamentos" element={<BudgetsPage />} />
         <Route path="orcamentos/venda-avulsa" element={<SeparateSalePage />} />
+        {/* Módulo de Venda Avulsa de Partes (US-46) */}
+        <Route path="venda-avulsa" element={<PartSaleFormPage />} />
+        <Route path="vendas/avulsa" element={<PartSaleFormPage />} />
+        <Route path="vendas/partes/nova" element={<PartSaleFormPage />} />
         <Route path="orcamentos/novo" element={<BudgetNewPage />} />
         <Route path="orcamentos/:id" element={<BudgetDetailPage />} />
         <Route path="orcamentos/:id/editar" element={<BudgetEditor />} />
@@ -66,10 +70,6 @@ export function AppRoutes() {
         {/* Rotas oficiais da Gestão Fabril / Painel Kanban (US-18) */}
         <Route path="producao" element={<ProductionKanbanPage />} />
         <Route path="producao/kanban" element={<ProductionKanbanPage />} />
-
-        {/* Módulo de Venda Avulsa de Partes (US-46) */}
-        <Route path="venda-avulsa" element={<PartSaleFormPage />} />
-        <Route path="vendas/partes/nova" element={<PartSaleFormPage />} />
 
         <Route
           path="dashboard"

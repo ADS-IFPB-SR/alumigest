@@ -7,3 +7,5 @@ export function PartSaleFormPage() {
     </div>
   );
 }
+
+export { PartSaleFormPage as PartSalePage };
