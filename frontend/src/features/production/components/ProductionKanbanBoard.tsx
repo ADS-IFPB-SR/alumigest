@@ -158,7 +158,7 @@ export const ProductionKanbanBoard: React.FC<ProductionKanbanBoardProps> = ({
     <section
       data-testid="production-kanban-board"
       aria-label="Quadro Kanban de Produção"
-      className={`grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-5 items-start ${className}`}
+      className={`grid grid-cols-1 md:grid-cols-3 md:grid-rows-1 md:flex-1 md:min-h-0 gap-4 lg:gap-5 ${className}`}
     >
       {columnsData.map((column) => {
         const isTarget = activeDropColumn === column.id;
@@ -175,12 +175,12 @@ export const ProductionKanbanBoard: React.FC<ProductionKanbanBoardProps> = ({
             onDragOver={(e) => handleDragOver(e, column.id)}
             onDragLeave={handleDragLeave}
             onDrop={(e) => handleDrop(e, column.id)}
-            className={`bg-slate-100/80 rounded-2xl border border-slate-300 p-3.5 sm:p-4 flex flex-col shadow-xs transition-all duration-200 ${
+            className={`bg-slate-100/80 rounded-2xl border border-slate-300 p-3.5 sm:p-4 flex flex-col min-h-0 shadow-xs transition-all duration-200 ${
               isTarget ? 'bg-emerald-50 ring-2 ring-emerald-500 border-dashed border-emerald-500' : ''
             }`}
           >
             {/* Cabeçalho da Coluna com Fundo Contrastante e Bordas Visíveis */}
-            <header className="flex items-center justify-between pb-3 border-b border-slate-200 mb-3">
+            <header className="flex-none flex items-center justify-between pb-3 border-b border-slate-200 mb-3">
               <div className="flex items-center gap-2.5 min-w-0">
                 <span className={`w-3.5 h-3.5 rounded-full shrink-0 shadow-2xs ${dotColor}`}></span>
                 <div className="min-w-0">
@@ -212,7 +212,7 @@ export const ProductionKanbanBoard: React.FC<ProductionKanbanBoardProps> = ({
             </header>
 
             {/* Lista Rolável de Cartões da Coluna */}
-            <div className="space-y-3 overflow-y-auto pr-0.5 min-h-[380px] max-h-[calc(100vh-310px)]">
+            <div data-testid={`column-scroll-${column.id.toLowerCase()}`} className="flex-1 min-h-0 space-y-3 overflow-y-auto pr-1 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-slate-400">
               {renderColumnContent(column)}
             </div>
           </section>

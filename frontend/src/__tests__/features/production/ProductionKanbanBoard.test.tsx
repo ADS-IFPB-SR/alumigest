@@ -372,5 +372,34 @@ describe('ProductionKanbanBoard Component (US-18.4)', () => {
     it('deve retornar 0 para listas vazias ou sem itens', () => {
       expect(calculateTotalPieces([])).toBe(0);
     });
+
+    it('deve aplicar classes de rolagem vertical independente e responsiva em cada coluna [Bug #525]', () => {
+      render(
+        <ProductionKanbanBoard
+          orders={[orderWaiting1, orderWaiting2, orderInProd, orderCompleted]}
+        />
+      );
+
+      const scrollContainers = [
+        screen.getByTestId('column-scroll-waiting_production'),
+        screen.getByTestId('column-scroll-in_production'),
+        screen.getByTestId('column-scroll-completed'),
+      ];
+
+      scrollContainers.forEach((container) => {
+        expect(container).toHaveClass('overflow-y-auto');
+        expect(container).toHaveClass('flex-1');
+        expect(container).toHaveClass('min-h-0');
+        expect(container).not.toHaveClass('min-h-[200px]');
+        expect(container.className).not.toMatch(/max-h-\[calc/);
+      });
+
+      // Colunas e grid devem permitir encolhimento flex (min-h-0) para que a rolagem ocorra dentro da coluna
+      expect(screen.getByTestId('production-kanban-board')).toHaveClass('md:flex-1', 'md:min-h-0', 'md:grid-rows-1');
+      expect(screen.getByTestId('production-kanban-board')).not.toHaveClass('items-start');
+      ['waiting_production', 'in_production', 'completed'].forEach((status) => {
+        expect(screen.getByTestId(`kanban-column-${status}`)).toHaveClass('flex', 'flex-col', 'min-h-0');
+      });
+    });
   });
 });
