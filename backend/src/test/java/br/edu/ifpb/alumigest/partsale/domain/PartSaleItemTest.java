@@ -180,8 +180,9 @@ class PartSaleItemTest {
       // Comparação com null
       assertThat(item1.equals(null)).isFalse();
 
-      assertThat(item1).isEqualTo(item2);
-      assertThat(item1).hasSameHashCodeAs(item2);
+      assertThat(item1)
+          .isEqualTo(item2)
+          .hasSameHashCodeAs(item2);
 
       idField.set(item2, id2);
       assertThat(item1).isNotEqualTo(item2);
