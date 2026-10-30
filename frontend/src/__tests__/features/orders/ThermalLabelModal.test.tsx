@@ -332,3 +332,33 @@ describe('ThermalLabelModal — [BUG #486] Paridade com o resolvedor do backend'
   });
 });
 
+describe('ThermalLabelModal — [BUG #510] Numeração única de itens com ordem duplicada', () => {
+  const baseItem = mockOrderMultiItens.items![0];
+
+  const orderOrdemDuplicada: Order = {
+    ...mockOrderMultiItens,
+    codigo: 'OS-2026-0043',
+    items: [
+      { ...baseItem, id: 'item-a', descricao: 'Janela Maxim-ar', quantidade: 2, ordem: 1 },
+      { ...baseItem, id: 'item-b', descricao: 'Porta de Giro', quantidade: 1, ordem: 1 },
+      { ...baseItem, id: 'item-c', descricao: 'Janela Basculante', quantidade: 3, ordem: 2 },
+    ],
+  };
+
+  it('exibe filtros rápidos com rótulos incrementais e únicos por item', () => {
+    render(<ThermalLabelModal isOpen={true} onClose={vi.fn()} order={orderOrdemDuplicada} />);
+
+    expect(screen.getByTestId('filter-piece-item-1')).toHaveTextContent('Item 1 (2 Peças)');
+    expect(screen.getByTestId('filter-piece-item-2')).toHaveTextContent('Item 2 (1 Peça)');
+    expect(screen.getByTestId('filter-piece-item-3')).toHaveTextContent('Item 3 (3 Peças)');
+    expect(screen.getAllByText(/^Item 1 \(/)).toHaveLength(1);
+  });
+
+  it('exibe o badge do segundo item como Item 02 nas etiquetas', () => {
+    render(<ThermalLabelModal isOpen={true} onClose={vi.fn()} order={orderOrdemDuplicada} />);
+
+    const fractions = screen.getAllByTestId('label-piece-fraction').map((el) => el.textContent);
+    expect(fractions[2]).toBe('Item 02 • Esquadria 01/01 | Peça 01/01');
+    expect(fractions.slice(3).every((f) => f?.startsWith('Item 03'))).toBe(true);
+  });
+});

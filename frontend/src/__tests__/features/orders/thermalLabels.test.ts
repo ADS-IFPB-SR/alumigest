@@ -58,6 +58,42 @@ describe('thermalLabels — [BUG #486] paridade com ThermalLabelDataResolver', (
       expect(grupos.map((g) => g.itemIndex)).toEqual([1, 2]);
     });
 
+    it('[BUG #510] atribui índices únicos quando itens distintos compartilham o mesmo ordem', () => {
+      const grupos = resolveLabelItems([
+        makeItem({ id: 'janela', ordem: 1, quantidade: 2 }),
+        makeItem({ id: 'porta', ordem: 1, quantidade: 1 }),
+        makeItem({ id: 'basculante', ordem: 2, quantidade: 3 }),
+      ]);
+
+      expect(grupos.map((g) => [g.item.id, g.itemIndex])).toEqual([
+        ['janela', 1],
+        ['porta', 2],
+        ['basculante', 3],
+      ]);
+    });
+
+    it('[BUG #510] não reutiliza o índice 1 ao misturar ordem ausente com ordem positiva', () => {
+      const grupos = resolveLabelItems([
+        makeItem({ id: 'sem-ordem', ordem: 0 }),
+        makeItem({ id: 'com-ordem', ordem: 1 }),
+      ]);
+
+      expect(grupos.map((g) => g.itemIndex)).toEqual([1, 2]);
+    });
+
+    it('[BUG #510] mantém numeração contígua ignorando itens sem quantidade', () => {
+      const grupos = resolveLabelItems([
+        makeItem({ id: 'a', ordem: 1, quantidade: 1 }),
+        makeItem({ id: 'zerado', ordem: 2, quantidade: 0 }),
+        makeItem({ id: 'b', ordem: 3, quantidade: 1 }),
+      ]);
+
+      expect(grupos.map((g) => [g.item.id, g.itemIndex])).toEqual([
+        ['a', 1],
+        ['b', 2],
+      ]);
+    });
+
     it('retorna lista vazia para itens nulos ou vazios', () => {
       expect(resolveLabelItems(undefined)).toEqual([]);
       expect(resolveLabelItems([])).toEqual([]);
@@ -122,6 +158,27 @@ describe('thermalLabels — [BUG #486] paridade com ThermalLabelDataResolver', (
         'Item 02 | Peça 03/03',
       ]);
       expect(labels.every((l) => l.item.id !== 'zerado')).toBe(true);
+    });
+
+    it('[BUG #510] gera badges com itens incrementais quando o campo ordem se repete', () => {
+      const labels = buildPhysicalLabels({
+        observacoes: null,
+        clienteEndereco: null,
+        items: [
+          makeItem({ id: 'janela', ordem: 1, quantidade: 2 }),
+          makeItem({ id: 'porta', ordem: 1, quantidade: 1 }),
+          makeItem({ id: 'basculante', ordem: 2, quantidade: 3 }),
+        ],
+      });
+
+      expect(labels.map((l) => l.labelFraction)).toEqual([
+        'Item 01 | Peça 01/06',
+        'Item 01 | Peça 02/06',
+        'Item 02 | Peça 03/06',
+        'Item 03 | Peça 04/06',
+        'Item 03 | Peça 05/06',
+        'Item 03 | Peça 06/06',
+      ]);
     });
 
     it('retorna lista vazia quando nenhum item possui quantidade positiva', () => {

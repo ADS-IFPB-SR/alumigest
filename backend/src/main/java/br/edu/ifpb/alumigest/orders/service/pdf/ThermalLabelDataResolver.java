@@ -137,7 +137,8 @@ public class ThermalLabelDataResolver {
                 continue;
             }
 
-            int indexUtilizado = resolverIndexItem(item, itemIndex);
+            // BUG #510: índice sequencial único (1..N) dos itens válidos, independente do campo `ordem`
+            int indexUtilizado = itemIndex;
             boolean deveGerarEtiqueta = itemId == null || Objects.equals(item.getId(), itemId);
 
             if (deveGerarEtiqueta) {
@@ -151,13 +152,6 @@ public class ThermalLabelDataResolver {
         }
 
         return listaEtiquetas;
-    }
-
-    private int resolverIndexItem(OrderItem item, int fallbackIndex) {
-        if (item.getOrdem() != null && item.getOrdem() > 0) {
-            return item.getOrdem();
-        }
-        return fallbackIndex;
     }
 
     private int obterFolhasDoItem(OrderItem item, Map<UUID, Integer> customLeavesPerItem) {
