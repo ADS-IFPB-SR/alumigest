@@ -8,6 +8,7 @@ import static org.mockito.Mockito.when;
 import br.edu.ifpb.alumigest.catalog.domain.Material;
 import br.edu.ifpb.alumigest.catalog.domain.MaterialCategoryType;
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -142,7 +143,9 @@ class PartSaleTest {
       when(item.getTotalPrice()).thenReturn(BigDecimal.TEN);
       sale.addItem(item);
 
-      assertThatThrownBy(() -> sale.getItems().add(mock(PartSaleItem.class)))
+      List<PartSaleItem> items = sale.getItems();
+      PartSaleItem dummy = mock(PartSaleItem.class);
+      assertThatThrownBy(() -> items.add(dummy))
           .isInstanceOf(UnsupportedOperationException.class);
     }
   }

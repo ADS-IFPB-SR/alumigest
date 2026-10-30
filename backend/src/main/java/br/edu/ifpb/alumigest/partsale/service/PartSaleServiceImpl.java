@@ -18,7 +18,6 @@ import br.edu.ifpb.alumigest.partsale.dto.PartSaleItemResponse;
 import br.edu.ifpb.alumigest.partsale.dto.PartSaleResponse;
 import br.edu.ifpb.alumigest.partsale.repository.PartSaleRepository;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -88,7 +87,9 @@ public class PartSaleServiceImpl implements PartSaleService {
           itemReq.unitPrice(),
           null
       );
-      CalculatePartItemResponse calcResp = calculateItem(calcReq);
+      CalculatePartItemResponse calcResp = calculatorFactory
+          .getCalculator(itemReq.materialType())
+          .calculate(calcReq);
 
       PartSaleItem item = new PartSaleItem(
           material,

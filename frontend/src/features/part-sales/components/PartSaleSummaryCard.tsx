@@ -75,8 +75,8 @@ export function PartSaleSummaryCard({
             step="1.00"
             placeholder="0,00"
             onChange={(e) => {
-              const val = parseFloat(e.target.value);
-              onDiscountChange(isNaN(val) ? 0 : Math.max(0, val));
+              const val = Number.parseFloat(e.target.value);
+              onDiscountChange(Number.isNaN(val) ? 0 : Math.max(0, val));
             }}
             className="w-24 text-right px-2 py-1 text-xs border border-slate-300 rounded font-semibold bg-white focus:ring-1 focus:ring-navy-900 outline-none"
           />

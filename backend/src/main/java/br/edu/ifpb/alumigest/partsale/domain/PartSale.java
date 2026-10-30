@@ -15,6 +15,7 @@ import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -82,14 +83,14 @@ public class PartSale {
 
   @PrePersist
   void prePersist() {
-    OffsetDateTime now = OffsetDateTime.now();
+    OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
     this.createdAt = now;
     this.updatedAt = now;
   }
 
   @PreUpdate
   void preUpdate() {
-    this.updatedAt = OffsetDateTime.now();
+    this.updatedAt = OffsetDateTime.now(ZoneOffset.UTC);
   }
 
   /**

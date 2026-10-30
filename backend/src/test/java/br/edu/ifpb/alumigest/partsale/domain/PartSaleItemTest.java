@@ -71,17 +71,19 @@ class PartSaleItemTest {
     @DisplayName("Deve rejeitar quantidade nula, zero ou negativa (BVA)")
     void shouldRejectInvalidQuantity() {
       Material mat = createMockMaterial(UUID.randomUUID(), "Roldana");
+      BigDecimal measure = new BigDecimal("1.0");
+      BigDecimal price = new BigDecimal("10.0");
 
       assertThatThrownBy(() -> new PartSaleItem(mat, MaterialCategoryType.HARDWARE, null, null, null,
-          new BigDecimal("1.0"), new BigDecimal("10.0"), new BigDecimal("10.0")))
+          measure, price, price))
           .isInstanceOf(IllegalArgumentException.class);
 
       assertThatThrownBy(() -> new PartSaleItem(mat, MaterialCategoryType.HARDWARE, null, null, 0,
-          new BigDecimal("1.0"), new BigDecimal("10.0"), new BigDecimal("10.0")))
+          measure, price, price))
           .isInstanceOf(IllegalArgumentException.class);
 
       assertThatThrownBy(() -> new PartSaleItem(mat, MaterialCategoryType.HARDWARE, null, null, -1,
-          new BigDecimal("1.0"), new BigDecimal("10.0"), new BigDecimal("10.0")))
+          measure, price, price))
           .isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -89,21 +91,25 @@ class PartSaleItemTest {
     @DisplayName("Deve rejeitar preço unitário ou total nulo/negativo (BVA)")
     void shouldRejectInvalidPrices() {
       Material mat = createMockMaterial(UUID.randomUUID(), "Roldana");
+      BigDecimal measure = new BigDecimal("1.0");
+      BigDecimal posPrice = new BigDecimal("10.0");
+      BigDecimal negUnitPrice = new BigDecimal("-1.0");
+      BigDecimal negTotalPrice = new BigDecimal("-5.0");
 
       assertThatThrownBy(() -> new PartSaleItem(mat, MaterialCategoryType.HARDWARE, null, null, 1,
-          new BigDecimal("1.0"), null, new BigDecimal("10.0")))
+          measure, null, posPrice))
           .isInstanceOf(IllegalArgumentException.class);
 
       assertThatThrownBy(() -> new PartSaleItem(mat, MaterialCategoryType.HARDWARE, null, null, 1,
-          new BigDecimal("1.0"), new BigDecimal("-1.0"), new BigDecimal("10.0")))
+          measure, negUnitPrice, posPrice))
           .isInstanceOf(IllegalArgumentException.class);
 
       assertThatThrownBy(() -> new PartSaleItem(mat, MaterialCategoryType.HARDWARE, null, null, 1,
-          new BigDecimal("1.0"), new BigDecimal("10.0"), null))
+          measure, posPrice, null))
           .isInstanceOf(IllegalArgumentException.class);
 
       assertThatThrownBy(() -> new PartSaleItem(mat, MaterialCategoryType.HARDWARE, null, null, 1,
-          new BigDecimal("1.0"), new BigDecimal("10.0"), new BigDecimal("-5.0")))
+          measure, posPrice, negTotalPrice))
           .isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -111,17 +117,19 @@ class PartSaleItemTest {
     @DisplayName("Deve rejeitar dependências obrigatórias nulas")
     void shouldRejectNullMandatoryDependencies() {
       Material mat = createMockMaterial(UUID.randomUUID(), "Roldana");
+      BigDecimal measure = new BigDecimal("1.0");
+      BigDecimal price = new BigDecimal("10.0");
 
       assertThatThrownBy(() -> new PartSaleItem(null, MaterialCategoryType.HARDWARE, null, null, 1,
-          new BigDecimal("1.0"), new BigDecimal("10.0"), new BigDecimal("10.0")))
+          measure, price, price))
           .isInstanceOf(NullPointerException.class);
 
       assertThatThrownBy(() -> new PartSaleItem(mat, null, null, null, 1,
-          new BigDecimal("1.0"), new BigDecimal("10.0"), new BigDecimal("10.0")))
+          measure, price, price))
           .isInstanceOf(NullPointerException.class);
 
       assertThatThrownBy(() -> new PartSaleItem(mat, MaterialCategoryType.HARDWARE, null, null, 1,
-          null, new BigDecimal("10.0"), new BigDecimal("10.0")))
+          null, price, price))
           .isInstanceOf(NullPointerException.class);
     }
   }
@@ -173,7 +181,7 @@ class PartSaleItemTest {
       assertThat(item1.equals(null)).isFalse();
 
       assertThat(item1).isEqualTo(item2);
-      assertThat(item1.hashCode()).isEqualTo(item2.hashCode());
+      assertThat(item1).hasSameHashCodeAs(item2);
 
       idField.set(item2, id2);
       assertThat(item1).isNotEqualTo(item2);

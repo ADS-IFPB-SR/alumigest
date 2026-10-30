@@ -31,6 +31,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -124,54 +126,17 @@ class PartSaleControllerTest {
           .andExpect(jsonPath("$.totalPrice", is(472.5)));
     }
 
-    @Test
-    @DisplayName("Deve retornar 400 Bad Request quando categoria for nula")
-    void shouldReturn400WhenCategoryIsNull() throws Exception {
-      String json = """
-          {
-            "category": null,
-            "quantity": 2,
-            "unitPrice": 10.00
-          }
-          """;
-
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "{\"category\": null, \"quantity\": 2, \"unitPrice\": 10.00}",
+        "{\"category\": \"HARDWARE\", \"quantity\": 0, \"unitPrice\": 10.00}",
+        "{\"category\": \"HARDWARE\", \"quantity\": 1, \"unitPrice\": -5.00}"
+    })
+    @DisplayName("Deve retornar 400 Bad Request para payloads de cálculo inválidos")
+    void shouldReturn400ForInvalidCalculatePayloads(String invalidJson) throws Exception {
       mockMvc.perform(post("/api/v1/part-sales/calculate-item")
               .contentType(MediaType.APPLICATION_JSON)
-              .content(json))
-          .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    @DisplayName("Deve retornar 400 Bad Request quando quantidade for menor ou igual a zero (BVA)")
-    void shouldReturn400WhenQuantityIsZeroOrNegative() throws Exception {
-      String json = """
-          {
-            "category": "HARDWARE",
-            "quantity": 0,
-            "unitPrice": 10.00
-          }
-          """;
-
-      mockMvc.perform(post("/api/v1/part-sales/calculate-item")
-              .contentType(MediaType.APPLICATION_JSON)
-              .content(json))
-          .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    @DisplayName("Deve retornar 400 Bad Request quando preço unitário for zero ou negativo (BVA)")
-    void shouldReturn400WhenUnitPriceIsZeroOrNegative() throws Exception {
-      String json = """
-          {
-            "category": "HARDWARE",
-            "quantity": 1,
-            "unitPrice": -5.00
-          }
-          """;
-
-      mockMvc.perform(post("/api/v1/part-sales/calculate-item")
-              .contentType(MediaType.APPLICATION_JSON)
-              .content(json))
+              .content(invalidJson))
           .andExpect(status().isBadRequest());
     }
   }
@@ -225,66 +190,17 @@ class PartSaleControllerTest {
           .andExpect(jsonPath("$.totalAmount").value(40.00));
     }
 
-    @Test
-    @DisplayName("Deve retornar 400 Bad Request quando clientId for nulo")
-    void shouldReturn400WhenClientIdIsNull() throws Exception {
-      String json = """
-          {
-            "clientId": null,
-            "items": [
-              {
-                "materialType": "HARDWARE",
-                "referenceId": "11111111-1111-1111-1111-111111111111",
-                "quantity": 1,
-                "unitPrice": 10.00
-              }
-            ]
-          }
-          """;
-
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "{\"clientId\": null, \"items\": [{\"materialType\": \"HARDWARE\", \"referenceId\": \"11111111-1111-1111-1111-111111111111\", \"quantity\": 1, \"unitPrice\": 10.00}]}",
+        "{\"clientId\": \"11111111-1111-1111-1111-111111111111\", \"items\": []}",
+        "{\"clientId\": \"11111111-1111-1111-1111-111111111111\", \"discountAmount\": -10.00, \"items\": [{\"materialType\": \"HARDWARE\", \"referenceId\": \"11111111-1111-1111-1111-111111111111\", \"quantity\": 1, \"unitPrice\": 10.00}]}"
+    })
+    @DisplayName("Deve retornar 400 Bad Request para payloads de criação inválidos")
+    void shouldReturn400ForInvalidCreatePayloads(String invalidJson) throws Exception {
       mockMvc.perform(post("/api/v1/part-sales")
               .contentType(MediaType.APPLICATION_JSON)
-              .content(json))
-          .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    @DisplayName("Deve retornar 400 Bad Request quando lista de itens estiver vazia")
-    void shouldReturn400WhenItemsIsEmpty() throws Exception {
-      String json = """
-          {
-            "clientId": "11111111-1111-1111-1111-111111111111",
-            "items": []
-          }
-          """;
-
-      mockMvc.perform(post("/api/v1/part-sales")
-              .contentType(MediaType.APPLICATION_JSON)
-              .content(json))
-          .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    @DisplayName("Deve retornar 400 Bad Request quando desconto for negativo (BVA)")
-    void shouldReturn400WhenDiscountIsNegative() throws Exception {
-      String json = """
-          {
-            "clientId": "11111111-1111-1111-1111-111111111111",
-            "discountAmount": -10.00,
-            "items": [
-              {
-                "materialType": "HARDWARE",
-                "referenceId": "11111111-1111-1111-1111-111111111111",
-                "quantity": 1,
-                "unitPrice": 10.00
-              }
-            ]
-          }
-          """;
-
-      mockMvc.perform(post("/api/v1/part-sales")
-              .contentType(MediaType.APPLICATION_JSON)
-              .content(json))
+              .content(invalidJson))
           .andExpect(status().isBadRequest());
     }
   }

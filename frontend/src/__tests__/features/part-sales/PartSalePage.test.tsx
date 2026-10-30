@@ -111,7 +111,7 @@ describe('PartSalePage [US-46.1] - Integrated Flow Tests', () => {
     });
 
     expect(createSpy.mock.calls[0][0].status).toBe('APPROVED');
-    expect(createSpy.mock.calls[0][0].items.length).toBe(1);
+    expect(createSpy.mock.calls[0][0].items).toHaveLength(1);
     expect(createSpy.mock.calls[0][0].items[0].materialType).toBe('HARDWARE');
   });
 });

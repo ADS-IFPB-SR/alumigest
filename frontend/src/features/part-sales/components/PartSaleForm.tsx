@@ -58,6 +58,26 @@ function generateItemId(): string {
   return `item-${Date.now()}`;
 }
 
+function validateProfileDimensions(heightMm: number | ''): string | null {
+  const height = typeof heightMm === 'number' ? heightMm : 0;
+  if (height <= 0) {
+    return 'O comprimento deve ser maior que zero.';
+  }
+  if (height > 6000) {
+    return 'O comprimento não pode exceder 6000 mm (1 barra padrão).';
+  }
+  return null;
+}
+
+function validateAreaDimensions(heightMm: number | '', widthMm: number | ''): string | null {
+  const height = typeof heightMm === 'number' ? heightMm : 0;
+  const width = typeof widthMm === 'number' ? widthMm : 0;
+  if (height <= 0 || width <= 0) {
+    return 'Altura e largura (mm) devem ser maiores que zero.';
+  }
+  return null;
+}
+
 interface ValidatePartFormArgs {
   description: string;
   quantity: number | '';
@@ -78,31 +98,55 @@ function validatePartForm({
   if (!description.trim()) {
     return 'Informe a descrição do material.';
   }
-  const qty = typeof quantity === 'number' ? quantity : 0;
-  if (qty <= 0) {
+  if (typeof quantity !== 'number' || quantity <= 0) {
     return 'A quantidade deve ser maior que zero.';
   }
   if (category === 'PROFILE') {
-    const height = typeof heightMm === 'number' ? heightMm : 0;
-    if (height <= 0) {
-      return 'O comprimento deve ser maior que zero.';
-    }
-    if (height > 6000) {
-      return 'O comprimento não pode exceder 6000 mm (1 barra padrão).';
-    }
+    const error = validateProfileDimensions(heightMm);
+    if (error) return error;
   }
   if (category === 'GLASS' || category === 'FILM') {
-    const height = typeof heightMm === 'number' ? heightMm : 0;
-    const width = typeof widthMm === 'number' ? widthMm : 0;
-    if (height <= 0 || width <= 0) {
-      return 'Altura e largura (mm) devem ser maiores que zero.';
-    }
+    const error = validateAreaDimensions(heightMm, widthMm);
+    if (error) return error;
   }
-  const price = typeof unitPrice === 'number' ? unitPrice : 0;
-  if (price <= 0) {
+  if (typeof unitPrice !== 'number' || unitPrice <= 0) {
     return 'O preço de venda deve ser maior que zero.';
   }
   return null;
+}
+
+function resolveMaterialPlaceholder(category: MaterialCategoryType): string {
+  if (category === 'PROFILE') {
+    return 'Ex: PERFIL U LINHA SUPREMA BRANCO';
+  }
+  if (category === 'HARDWARE') {
+    return 'Ex: ROLDANA DUPLA SUPREMA 112';
+  }
+  return 'Ex: VIDRO 8MM INCOLOR TEMPERADO';
+}
+
+interface FallbackMeasureParams {
+  category: MaterialCategoryType;
+  qty: number;
+  height: number;
+  width: number;
+  lossFactor: number;
+}
+
+function calculateFallbackMeasure({
+  category,
+  qty,
+  height,
+  width,
+  lossFactor,
+}: FallbackMeasureParams): number {
+  if (category === 'PROFILE') {
+    return Number(((height / 1000) * qty * (1 + (lossFactor || 0))).toFixed(4));
+  }
+  if (category === 'GLASS' || category === 'FILM') {
+    return Number(((height * width) / 1_000_000 * qty).toFixed(4));
+  }
+  return qty;
 }
 
 interface CustomerOption {
@@ -243,13 +287,9 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
     const price = typeof unitPrice === 'number' ? unitPrice : 0;
 
     // Apuração da medida calculada e subtotal
-    const calculatedMeasure = calculation?.calculatedUnitMeasure ?? (
-      category === 'PROFILE'
-        ? Number(((height / 1000) * qty * (1 + (lossFactor || 0))).toFixed(4))
-        : category === 'GLASS' || category === 'FILM'
-        ? Number(((height * width) / 1_000_000 * qty).toFixed(4))
-        : qty
-    );
+    const calculatedMeasure =
+      calculation?.calculatedUnitMeasure ??
+      calculateFallbackMeasure({ category, qty, height, width, lossFactor });
 
     const subtotal = calculation?.totalPrice ?? Number((calculatedMeasure * price).toFixed(2));
 
@@ -475,13 +515,7 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
                   id="part-description-input"
                   type="text"
                   data-testid="input-part-description"
-                  placeholder={
-                    category === 'PROFILE'
-                      ? 'Ex: PERFIL U LINHA SUPREMA BRANCO'
-                      : category === 'HARDWARE'
-                      ? 'Ex: ROLDANA DUPLA SUPREMA 112'
-                      : 'Ex: VIDRO 8MM INCOLOR TEMPERADO'
-                  }
+                  placeholder={resolveMaterialPlaceholder(category)}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg focus:border-primary dark:focus:border-primary-fixed focus:ring-1 focus:ring-primary outline-none font-bold text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 uppercase"

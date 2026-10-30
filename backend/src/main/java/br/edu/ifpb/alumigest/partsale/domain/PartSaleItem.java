@@ -65,6 +65,7 @@ public class PartSaleItem {
   /**
    * Construtor completo do item da venda de partes.
    */
+  @SuppressWarnings("java:S107")
   public PartSaleItem(
       Material material,
       MaterialCategoryType materialType,

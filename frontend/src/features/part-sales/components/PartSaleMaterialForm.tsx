@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, type SyntheticEvent } from 'react';
 import { Plus, Edit3 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useHardwares } from '@/features/catalog/hooks/useCatalog';
@@ -44,7 +44,7 @@ export function PartSaleMaterialForm({ onAddItem }: PartSaleMaterialFormProps) {
     }
   };
 
-  const handleInsert = (e: React.FormEvent) => {
+  const handleInsert = (e: SyntheticEvent) => {
     e.preventDefault();
 
     if (!description.trim()) {
@@ -57,8 +57,8 @@ export function PartSaleMaterialForm({ onAddItem }: PartSaleMaterialFormProps) {
       return;
     }
 
-    const priceNum = parseFloat(unitPrice.replace(',', '.'));
-    if (isNaN(priceNum) || priceNum < 0) {
+    const priceNum = Number.parseFloat(unitPrice.replace(',', '.'));
+    if (Number.isNaN(priceNum) || priceNum < 0) {
       toast.error('Informe um preço unitário válido');
       return;
     }
@@ -68,8 +68,8 @@ export function PartSaleMaterialForm({ onAddItem }: PartSaleMaterialFormProps) {
     let hNum: number | null = null;
 
     if (materialType === 'GLASS' || materialType === 'FILM') {
-      wNum = widthMm ? parseInt(widthMm, 10) : null;
-      hNum = heightMm ? parseInt(heightMm, 10) : null;
+      wNum = widthMm ? Number.parseInt(widthMm, 10) : null;
+      hNum = heightMm ? Number.parseInt(heightMm, 10) : null;
 
       if (!wNum || wNum <= 0 || !hNum || hNum <= 0) {
         toast.error('Altura e largura (mm) são obrigatórias para vidros e películas');
@@ -204,7 +204,7 @@ export function PartSaleMaterialForm({ onAddItem }: PartSaleMaterialFormProps) {
               value={quantity}
               min="1"
               step="1"
-              onChange={(e) => setQuantity(parseInt(e.target.value, 10) || 1)}
+              onChange={(e) => setQuantity(Number.parseInt(e.target.value, 10) || 1)}
               className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-navy-900 focus:border-navy-900 outline-none font-bold text-slate-800"
             />
           </div>
