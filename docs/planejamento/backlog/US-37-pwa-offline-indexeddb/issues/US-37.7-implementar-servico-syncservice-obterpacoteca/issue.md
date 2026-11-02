@@ -1,55 +1,47 @@
-# [US-37.7] Implementar serviço `SyncService.obterPacoteCampo(Long teamId)` agregando OPs e OSs em `backend/src/main/java/br/edu/ifpb/alumigest/sync/service/SyncService.java`
+# [US-37.7] Implementar `SyncService` no backend agregando catálogo e orquestrando cálculos com `BudgetService`
 
 ## 📌 Metadados da Issue
 
 - **ID da Tarefa**: `US-37.7`
-- **US Pai**: `US-37: Instalar PWA e Consultar OPs e OS Offline via IndexedDB`
-- **Release**: Release 3 (v3.0.0) — Financeiro, Instalações & Gestão
-- **Fase**: `Phase 2: User Story 1 - Instalação PWA e Cache de Dados Operacionais (Priority: P1) 🎯 MVP`
-- **User Story**: [US1]
-- **Sub-área**: `Geral`
-- **Execução Paralela**: ❌ Não (Execução sequencial recomendada)
+- **US Pai**: `US-37: Instalar PWA Desktop/Mobile e Elaborar Rascunhos de Orçamentos Offline`
+- **Release**: Release 3 (v3.0.0) — Comercial, Financeiro & Sustentação
+- **Fase**: `Phase 3: Backend Services & Business Orchestration`
+- **User Story**: [US2 - Backend Sync Engine]
+- **Sub-área**: `Backend`
+- **Execução Paralela**: ❌ Não
 - **Arquivo / Alvo Principal**: `backend/src/main/java/br/edu/ifpb/alumigest/sync/service/SyncService.java`
-- **Labels Sugeridas**: `release-3`, `pwa`, `offline`, `performance`, `backend`, `java`, `mvp`, `user-story-1`
+- **Labels Sugeridas**: `release-3`, `backend`, `java`, `spring-boot`, `solid`, `business-logic`
 
 ---
 
 ## 🎯 Objetivo & Descrição
 
-Implementar serviço `SyncService.obterPacoteCampo(Long teamId)` agregando OPs e OSs em `backend/src/main/java/br/edu/ifpb/alumigest/sync/service/SyncService.java`.
+Implementar a interface e o serviço `SyncService` / `SyncServiceImpl`:
+1. `obterCatalogoVendas()`: consulta templates de esquadrias ativos, opções de perfis/vidros e clientes recentes para alimentar o cache do PWA.
+2. `sincronizarRascunhos(List<BudgetDraftSyncRequest>)`: processa cada rascunho de orçamento recebido em lote de forma transacional e idempotente (evitando duplicar orçamentos com o mesmo `clientDraftId`), invocando o `BudgetService` para executar a precificação oficial, corte de perfis, cálculo de m² e geração do código `ORC-YYYY-NNNN`.
 
-### Contexto da Fase / Épico
-**Objetivo da User Story**: Permitir instalação do app e salvar OPs/OSs localmente para consulta offline.
-
-Esta issue faz parte da entrega da **Release 3** do AlumiGest. Deve seguir rigorosamente as diretrizes arquiteturais da Constituição do Projeto (IndexedDB com Dexie, PWA com Vite, compressão no cliente e commits em PT-BR).
+### Princípios SOLID
+- **Single Responsibility (SRP)**: O `SyncService` apenas coordena a entrada e saída do lote de sincronização; a matemática de precificação e criação do orçamento continua sob responsabilidade exclusiva do `BudgetService`.
 
 ---
 
 ## 🛠️ Checklist de Implementação
 
-- [ ] Analisar os requisitos específicos no arquivo de especificação (`docs/planejamento/sprint-14/spec.md`)
-- [ ] Verificar os modelos e tipos no modelo de dados (`docs/planejamento/sprint-14/data-model.md`) ou contratos (`docs/planejamento/sprint-14/contracts/api-sync.md`)
-- [ ] Implementar a alteração necessária em `backend/src/main/java/br/edu/ifpb/alumigest/sync/service/SyncService.java`
-- [ ] Garantir que o código compila e segue as diretrizes do Checkstyle/Oxlint
-- [ ] Executar validação local conforme o cenário relevante do `quickstart.md`
+- [ ] Criar interface `SyncService` e implementação `SyncServiceImpl`.
+- [ ] Injetar `TemplateRepository`, `ClientRepository` e `BudgetService`.
+- [ ] Implementar verificação de idempotência por `clientDraftId` em cache ou banco.
+- [ ] Garantir transacionalidade (`@Transactional`) para consistência dos registros.
+- [ ] Criar testes unitários em `SyncServiceTest` com Mockito testando cenários de sucesso, retry de rascunhos duplicados e validação de rascunho inválido.
 
 ---
 
 ## ✅ Critérios de Aceitação
 
-1. A funcionalidade descrita em `T007` deve estar completamente implementada no arquivo alvo.
-2. Nenhum erro de compilação ou regressão deve ser introduzido no projeto.
-3. Se for backend, deve compilar com `mvn clean compile` sem warnings bloqueantes.
-4. Se for frontend, deve validar com `npm run build` com tipagem estrita do TypeScript.
-5. **Validação Específica**: Carregar OSs online, desativar conexão e navegar pelos detalhes da OS em modo offline.
+1. O serviço compila sem warnings e atinge cobertura $\ge 80\%$ no `SyncServiceTest`.
+2. Todos os orçamentos gerados a partir de rascunhos passam pelas mesmas regras oficiais de validação e cálculo do sistema.
 
 ---
 
 ## 🔗 Referências & Documentos Relacionados
 
-- 📑 **Especificação Funcional**: [spec.md](../spec.md)
-- ⚙️ **Plano de Implementação**: [plan.md](../plan.md)
-- 🗃️ **Modelo de Dados**: [data-model.md](../data-model.md)
-- 🔌 **Contrato de API**: [contracts/api-sync.md](../contracts/api-sync.md)
-- 🚀 **Guia de Validação Rápida**: [quickstart.md](../quickstart.md)
-- 🏛️ **Constituição do Projeto**: [constitution.md](../../constitution.md)
+- 📑 **Especificação Funcional**: [spec.md](../../spec.md)

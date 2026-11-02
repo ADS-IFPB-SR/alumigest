@@ -54,13 +54,14 @@ Todas as histórias subsequentes da **Release 2**, **Release 3** e **Sustentaç�
   - [`US-23`](backlog/US-23-homologacao-release-2/spec.md) — Homologação Integrada da Release 2 (v2.0.0)
 
 - **Financeiro & Campo (Release 3)**:
-  - [`US-24`](backlog/US-24-cobranca-pix-dinamico/spec.md), [`US-25`](backlog/US-25-webhook-pix-confirmacao/spec.md), [`US-26`](backlog/US-26-modal-pix-historico/spec.md) — Pagamentos PIX & Webhooks
-  - [`US-27`](backlog/US-27-parcelamento-pedidos/spec.md), [`US-28`](backlog/US-28-contas-receber-inadimplencia/spec.md), [`US-29`](backlog/US-29-extrato-financeiro-recibo/spec.md) — Contas a Receber e Parcelamentos
-  - [`US-30`](backlog/US-30-fluxo-caixa-mensal/spec.md) — Fluxo de Caixa Mensal
-  - [`US-31`](backlog/US-31-execucao-os-campo-pwa/spec.md), [`US-32`](backlog/US-32-calendario-instalacoes/spec.md), [`US-33`](backlog/US-33-emissao-os-pdf/spec.md) — Instalação e Ordens de Serviço (OS PWA)
-  - [`US-34`](backlog/US-34-dashboard-kpis-comerciais/spec.md), [`US-35`](backlog/US-35-dre-gerencial/spec.md), [`US-36`](backlog/US-36-exportacao-relatorios-executivos/spec.md) — Dashboards, DRE e Relatórios Executivos
-  - [`US-37`](backlog/US-37-pwa-offline-indexeddb/spec.md), [`US-38`](backlog/US-38-sincronizacao-fila-fotos-background/spec.md), [`US-39`](backlog/US-39-compressao-imagens-otimizacao/spec.md) — Modo Offline & PWA Performance
-  - [`US-40`](backlog/US-40-carga-inicial-importador-csv/spec.md), [`US-41`](backlog/US-41-homologacao-release-3/spec.md), [`US-42`](backlog/US-42-guias-treinamento-central-ajuda/spec.md) — Carga Inicial, Treinamento e Homologação R3
+  - [`US-24`](backlog/US-24-cobranca-pix-dinamico/spec.md), [`US-25`](backlog/US-25-webhook-pix-confirmacao/spec.md), [`US-26`](backlog/US-26-modal-pix-historico/spec.md) — Cobrança PIX Dinâmico com QR Code, Webhook e Modal Interativo
+  - *Descartadas (absorvidas pela US-30)*: `US-27` a `US-29` (Contas a Receber/Recibos), `US-34` a `US-36` (DRE/Dashboards)
+
+  - [`US-30`](backlog/US-30-fluxo-caixa-mensal/spec.md) — Fluxo de Caixa Mensal e Gestão de Despesas Operacionais *(Substitui e absorve o escopo financeiro das US-24 a US-29 e US-34 a US-36)*
+  - [`US-33`](backlog/US-33-emissao-os-pdf/spec.md) — Emissão de Ordem de Serviço (OS) em PDF Padronizado
+  - [`US-37`](backlog/US-37-pwa-offline-indexeddb/spec.md) — Instalação PWA Desktop/Mobile e Rascunhos de Orçamentos Offline (IndexedDB)
+  - [`US-40`](backlog/US-40-carga-inicial-importador-csv/spec.md), [`US-41`](backlog/US-41-homologacao-release-3/spec.md) — Carga Inicial CSV e Homologação R3
+  - *Descartadas*: `US-31` e `US-32` (Execução em Campo/Calendário), `US-38` e `US-39` (Fila de Fotos e Compressão de Imagens), `US-42` (Guias de Treinamento) — ver [descartadas](backlog/descartadas/)
 
 - **Sustentação & Governança**:
   - [`US-43`](backlog/US-43-backup-disaster-recovery/spec.md) — Backup e Disaster Recovery

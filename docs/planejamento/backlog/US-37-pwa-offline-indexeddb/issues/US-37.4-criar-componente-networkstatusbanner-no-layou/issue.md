@@ -1,55 +1,44 @@
-# [US-37.4] Criar componente `NetworkStatusBanner` no layout principal em `frontend/src/features/pwa/components/NetworkStatusBanner.tsx`
+# [US-37.4] Criar componente `NetworkStatusBanner` e modal de fila de rascunhos pendentes
 
 ## 📌 Metadados da Issue
 
 - **ID da Tarefa**: `US-37.4`
-- **US Pai**: `US-37: Instalar PWA e Consultar OPs e OS Offline via IndexedDB`
-- **Release**: Release 3 (v3.0.0) — Financeiro, Instalações & Gestão
-- **Fase**: `Phase 1: Setup & Foundational`
-- **User Story**: Não aplicável (Infra/Fundação/Polish)
-- **Sub-área**: `Geral`
-- **Execução Paralela**: ❌ Não (Execução sequencial recomendada)
-- **Arquivo / Alvo Principal**: `frontend/src/features/pwa/components/NetworkStatusBanner.tsx`
-- **Labels Sugeridas**: `release-3`, `pwa`, `offline`, `performance`, `frontend`, `typescript`, `pwa`
+- **US Pai**: `US-37: Instalar PWA Desktop/Mobile e Elaborar Rascunhos de Orçamentos Offline`
+- **Release**: Release 3 (v3.0.0) — Comercial, Financeiro & Sustentação
+- **Fase**: `Phase 2: Componentes de UI e Feedback`
+- **User Story**: [US1 - Operação Offline e Sincronização]
+- **Sub-área**: `Frontend`
+- **Execução Paralela**: ✅ Sim
+- **Arquivo / Alvo Principal**: `frontend/src/features/pwa/components/NetworkStatusBanner.tsx`, `frontend/src/features/pwa/components/DraftsQueueModal.tsx`
+- **Labels Sugeridas**: `release-3`, `pwa`, `ui`, `components`, `frontend`, `tailwind`
 
 ---
 
 ## 🎯 Objetivo & Descrição
 
-Criar componente `NetworkStatusBanner` no layout principal em `frontend/src/features/pwa/components/NetworkStatusBanner.tsx`.
-
-### Contexto da Fase / Épico
-**Propósito da Fase**: Configuração do Vite PWA, Workbox e Dexie.js no Frontend
-
-Esta issue faz parte da entrega da **Release 3** do AlumiGest. Deve seguir rigorosamente as diretrizes arquiteturais da Constituição do Projeto (IndexedDB com Dexie, PWA com Vite, compressão no cliente e commits em PT-BR).
+Criar os componentes visuais de feedback para o vendedor:
+1. `NetworkStatusBanner`: barra superior discreta alertando quando a aplicação está operando offline ("Modo Offline — Orçamentos salvos localmente"). Ao reconectar, exibe transição temporária em verde ("Conexão restabelecida — Sincronizando rascunhos...").
+2. `DraftsQueueModal`: modal acessível pelo cabeçalho exibindo a lista de rascunhos pendentes de envio com medidas, nome do cliente e botão "Tentar Sincronizar Agora".
 
 ---
 
 ## 🛠️ Checklist de Implementação
 
-- [ ] Analisar os requisitos específicos no arquivo de especificação (`docs/planejamento/sprint-14/spec.md`)
-- [ ] Verificar os modelos e tipos no modelo de dados (`docs/planejamento/sprint-14/data-model.md`) ou contratos (`docs/planejamento/sprint-14/contracts/api-sync.md`)
-- [ ] Implementar a alteração necessária em `frontend/src/features/pwa/components/NetworkStatusBanner.tsx`
-- [ ] Garantir que o código compila e segue as diretrizes do Checkstyle/Oxlint
-- [ ] Executar validação local conforme o cenário relevante do `quickstart.md`
+- [ ] Criar `NetworkStatusBanner.tsx` usando Tailwind CSS com animação suave de entrada/saída.
+- [ ] Criar `DraftsQueueModal.tsx` listando os rascunhos salvos no IndexedDB (`clientDraftId`, `clientName`, `templateName`, `widthMm` x `heightMm`).
+- [ ] Adicionar botão de retry manual por item e botão "Sincronizar Todos".
+- [ ] Integrar no layout principal da aplicação (`AppLayout.tsx`).
 
 ---
 
 ## ✅ Critérios de Aceitação
 
-1. A funcionalidade descrita em `T004` deve estar completamente implementada no arquivo alvo.
-2. Nenhum erro de compilação ou regressão deve ser introduzido no projeto.
-3. Se for backend, deve compilar com `mvn clean compile` sem warnings bloqueantes.
-4. Se for frontend, deve validar com `npm run build` com tipagem estrita do TypeScript.
-
+1. O banner deve ser visível apenas quando `isOnline === false` ou durante os 4 segundos após o retorno da conexão.
+2. O usuário pode abrir o modal de fila a qualquer momento para auditar os orçamentos que foram criados offline.
+3. Total responsividade em telas mobile (smartphones) e desktop.
 
 ---
 
 ## 🔗 Referências & Documentos Relacionados
 
-- 📑 **Especificação Funcional**: [spec.md](../spec.md)
-- ⚙️ **Plano de Implementação**: [plan.md](../plan.md)
-- 🗃️ **Modelo de Dados**: [data-model.md](../data-model.md)
-- 🔌 **Contrato de API**: [contracts/api-sync.md](../contracts/api-sync.md)
-- 🚀 **Guia de Validação Rápida**: [quickstart.md](../quickstart.md)
-- 🏛️ **Constituição do Projeto**: [constitution.md](../../constitution.md)
+- 📑 **Especificação Funcional**: [spec.md](../../spec.md)

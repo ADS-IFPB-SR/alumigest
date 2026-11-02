@@ -32,11 +32,11 @@ Como líder de equipe de campo ou expedidor da Alumiportas, desejo emitir o docu
   - **Então** inclui o termo de garantia de 12 meses para fixação/vedação e 90 dias para acessórios,
   - **E** disponibiliza linhas para assinatura do instalador responsável e assinatura/documento (CPF/RG) do cliente recebedor.
 
-- [ ] **Cenário 4: Inclusão de Assinatura Digital e Fotos em O.S. Concluída**
-  - **Dado que** a O.S. já foi concluída em campo com assinatura digital coletada via PWA,
+- [ ] **Cenário 4: Reemissão e Histórico de O.S. Concluída**
+  - **Dado que** a O.S. já foi executada e finalizada,
   - **Quando** o PDF é reemitido no painel administrativo,
-  - **Então** o documento estampa a imagem da assinatura capturada no campo de aceite com o timestamp de confirmação,
-  - **E** anexa uma folha suplementar com as fotos de comprovação do "Antes" e "Depois".
+  - **Então** o documento exibe o carimbo de conclusão com data/hora e identificação do instalador responsável,
+  - **E** mantém todos os termos de garantia e discriminação das peças originais.
 
 - [ ] **Cenário 5: Tratamento de Impressão Direta e Pré-visualização**
   - **Dado que** o documento foi compilado com sucesso,

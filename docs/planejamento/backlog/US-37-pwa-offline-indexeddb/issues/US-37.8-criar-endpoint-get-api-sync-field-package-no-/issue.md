@@ -1,55 +1,45 @@
-# [US-37.8] Criar endpoint GET /api/sync/field-package no `SyncController` em `backend/src/main/java/br/edu/ifpb/alumigest/sync/controller/SyncController.java`
+# [US-37.8] Criar endpoints `GET /api/v1/sync/sales-catalog` e `POST /api/v1/sync/budget-drafts` no `SyncController`
 
 ## 📌 Metadados da Issue
 
 - **ID da Tarefa**: `US-37.8`
-- **US Pai**: `US-37: Instalar PWA e Consultar OPs e OS Offline via IndexedDB`
-- **Release**: Release 3 (v3.0.0) — Financeiro, Instalações & Gestão
-- **Fase**: `Phase 2: User Story 1 - Instalação PWA e Cache de Dados Operacionais (Priority: P1) 🎯 MVP`
-- **User Story**: [US1]
-- **Sub-área**: `Geral`
-- **Execução Paralela**: ❌ Não (Execução sequencial recomendada)
-- **Arquivo / Alvo Principal**: `SyncController`
-- **Labels Sugeridas**: `release-3`, `pwa`, `offline`, `performance`, `backend`, `java`, `mvp`, `user-story-1`
+- **US Pai**: `US-37: Instalar PWA Desktop/Mobile e Elaborar Rascunhos de Orçamentos Offline`
+- **Release**: Release 3 (v3.0.0) — Comercial, Financeiro & Sustentação
+- **Fase**: `Phase 3: Controller & API Contracts`
+- **User Story**: [US2 - Backend Sync Engine]
+- **Sub-área**: `Backend`
+- **Execução Paralela**: ❌ Não
+- **Arquivo / Alvo Principal**: `backend/src/main/java/br/edu/ifpb/alumigest/sync/controller/SyncController.java`
+- **Labels Sugeridas**: `release-3`, `backend`, `java`, `rest-api`, `spring-boot`, `swagger`
 
 ---
 
 ## 🎯 Objetivo & Descrição
 
-Criar endpoint GET /api/sync/field-package no `SyncController` em `backend/src/main/java/br/edu/ifpb/alumigest/sync/controller/SyncController.java`.
-
-### Contexto da Fase / Épico
-**Objetivo da User Story**: Permitir instalação do app e salvar OPs/OSs localmente para consulta offline.
-
-Esta issue faz parte da entrega da **Release 3** do AlumiGest. Deve seguir rigorosamente as diretrizes arquiteturais da Constituição do Projeto (IndexedDB com Dexie, PWA com Vite, compressão no cliente e commits em PT-BR).
+Criar os endpoints RESTful no `SyncController`:
+1. `GET /api/v1/sync/sales-catalog`: responde com o catálogo comercial estruturado para cache do PWA (`200 OK`).
+2. `POST /api/v1/sync/budget-drafts`: recebe lote de rascunhos em JSON, processa no `SyncService` e retorna lista de `BudgetDraftSyncResponse` com os orçamentos oficiais criados (`200 OK` / `207 Multi-Status`).
+3. Documentar no Swagger OpenAPI com tags e descrições técnicas.
 
 ---
 
 ## 🛠️ Checklist de Implementação
 
-- [ ] Analisar os requisitos específicos no arquivo de especificação (`docs/planejamento/sprint-14/spec.md`)
-- [ ] Verificar os modelos e tipos no modelo de dados (`docs/planejamento/sprint-14/data-model.md`) ou contratos (`docs/planejamento/sprint-14/contracts/api-sync.md`)
-- [ ] Implementar a alteração necessária em `SyncController`
-- [ ] Garantir que o código compila e segue as diretrizes do Checkstyle/Oxlint
-- [ ] Executar validação local conforme o cenário relevante do `quickstart.md`
+- [ ] Criar classe `SyncController` com anotações `@RestController`, `@RequestMapping("/api/v1/sync")`, `@RequiredArgsConstructor`.
+- [ ] Implementar endpoint `GET /sales-catalog`.
+- [ ] Implementar endpoint `POST /budget-drafts` com validação de payload `@Valid`.
+- [ ] Adicionar anotações Swagger/OpenAPI (`@Operation`, `@ApiResponse`).
+- [ ] Criar testes de integração com `MockMvc` em `SyncControllerTest`.
 
 ---
 
 ## ✅ Critérios de Aceitação
 
-1. A funcionalidade descrita em `T008` deve estar completamente implementada no arquivo alvo.
-2. Nenhum erro de compilação ou regressão deve ser introduzido no projeto.
-3. Se for backend, deve compilar com `mvn clean compile` sem warnings bloqueantes.
-4. Se for frontend, deve validar com `npm run build` com tipagem estrita do TypeScript.
-5. **Validação Específica**: Carregar OSs online, desativar conexão e navegar pelos detalhes da OS em modo offline.
+1. Endpoints respondem com códigos HTTP padronizados (`200 OK`, `400 Bad Request`, `401 Unauthorized`).
+2. Testes de integração `SyncControllerTest` passando com sucesso.
 
 ---
 
 ## 🔗 Referências & Documentos Relacionados
 
-- 📑 **Especificação Funcional**: [spec.md](../spec.md)
-- ⚙️ **Plano de Implementação**: [plan.md](../plan.md)
-- 🗃️ **Modelo de Dados**: [data-model.md](../data-model.md)
-- 🔌 **Contrato de API**: [contracts/api-sync.md](../contracts/api-sync.md)
-- 🚀 **Guia de Validação Rápida**: [quickstart.md](../quickstart.md)
-- 🏛️ **Constituição do Projeto**: [constitution.md](../../constitution.md)
+- 📑 **Especificação Funcional**: [spec.md](../../spec.md)

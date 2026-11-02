@@ -1,55 +1,48 @@
-# [US-37.2] Criar schema do banco local IndexedDB com Dexie em `frontend/src/features/pwa/db/offlineDb.ts`
+# [US-37.2] Criar schema do banco local IndexedDB com Dexie para catálogo e rascunhos de orçamentos
 
 ## 📌 Metadados da Issue
 
 - **ID da Tarefa**: `US-37.2`
-- **US Pai**: `US-37: Instalar PWA e Consultar OPs e OS Offline via IndexedDB`
-- **Release**: Release 3 (v3.0.0) — Financeiro, Instalações & Gestão
+- **US Pai**: `US-37: Instalar PWA Desktop/Mobile e Elaborar Rascunhos de Orçamentos Offline`
+- **Release**: Release 3 (v3.0.0) — Comercial, Financeiro & Sustentação
 - **Fase**: `Phase 1: Setup & Foundational`
-- **User Story**: Não aplicável (Infra/Fundação/Polish)
-- **Sub-área**: `Geral`
-- **Execução Paralela**: ❌ Não (Execução sequencial recomendada)
+- **User Story**: Não aplicável (Persistência Local)
+- **Sub-área**: `Frontend`
+- **Execução Paralela**: ❌ Não
 - **Arquivo / Alvo Principal**: `frontend/src/features/pwa/db/offlineDb.ts`
-- **Labels Sugeridas**: `release-3`, `pwa`, `offline`, `performance`, `frontend`, `typescript`, `pwa`
+- **Labels Sugeridas**: `release-3`, `pwa`, `indexeddb`, `dexie`, `frontend`, `typescript`
 
 ---
 
 ## 🎯 Objetivo & Descrição
 
-Criar schema do banco local IndexedDB com Dexie em `frontend/src/features/pwa/db/offlineDb.ts`.
-
-### Contexto da Fase / Épico
-**Propósito da Fase**: Configuração do Vite PWA, Workbox e Dexie.js no Frontend
-
-Esta issue faz parte da entrega da **Release 3** do AlumiGest. Deve seguir rigorosamente as diretrizes arquiteturais da Constituição do Projeto (IndexedDB com Dexie, PWA com Vite, compressão no cliente e commits em PT-BR).
+Criar a camada de persistência local baseada em IndexedDB usando `Dexie.js` para armazenar:
+1. `salesCatalog`: cache de modelos de esquadrias ativos, acabamentos de perfis, tipos de vidros e acessórios.
+2. `recentClients`: clientes recentes para seleção rápida na criação de orçamentos no local da obra.
+3. `budgetDrafts`: rascunhos de orçamentos preenchidos offline contendo dimensões brutas (largura, altura em mm), modelo selecionado e status de sincronização (`PENDING_SYNC`, `SYNCING`, `SYNCED`, `FAILED`).
 
 ---
 
 ## 🛠️ Checklist de Implementação
 
-- [ ] Analisar os requisitos específicos no arquivo de especificação (`docs/planejamento/sprint-14/spec.md`)
-- [ ] Verificar os modelos e tipos no modelo de dados (`docs/planejamento/sprint-14/data-model.md`) ou contratos (`docs/planejamento/sprint-14/contracts/api-sync.md`)
-- [ ] Implementar a alteração necessária em `frontend/src/features/pwa/db/offlineDb.ts`
-- [ ] Garantir que o código compila e segue as diretrizes do Checkstyle/Oxlint
-- [ ] Executar validação local conforme o cenário relevante do `quickstart.md`
+- [ ] Instalar o pacote `dexie` em `frontend/` se necessário.
+- [ ] Criar `offlineDb.ts` estendendo `Dexie` com tipagem forte:
+  - Tabela `salesCatalog`: `id, code, name, category, defaultWidthMm, defaultHeightMm, updatedAt`
+  - Tabela `recentClients`: `id, name, phone, document, city`
+  - Tabela `budgetDrafts`: `clientDraftId, clientId, clientName, templateId, templateCode, widthMm, heightMm, components, syncStatus, createdAt`
+- [ ] Exportar singleton `db` e métodos auxiliares para salvar rascunho (`saveBudgetDraft`), listar pendentes (`getPendingDrafts`) e atualizar status pós-sincronização (`updateDraftStatus`).
+- [ ] Criar teste unitário em Vitest validando inserção, consulta e atualização de status de rascunhos no IndexedDB.
 
 ---
 
 ## ✅ Critérios de Aceitação
 
-1. A funcionalidade descrita em `T002` deve estar completamente implementada no arquivo alvo.
-2. Nenhum erro de compilação ou regressão deve ser introduzido no projeto.
-3. Se for backend, deve compilar com `mvn clean compile` sem warnings bloqueantes.
-4. Se for frontend, deve validar com `npm run build` com tipagem estrita do TypeScript.
-
+1. As operações CRUD no banco local IndexedDB devem ser atômicas e assíncronas (retornando Promises tipadas).
+2. O schema deve ser versionado adequadamente no Dexie (`db.version(1).stores({...})`).
+3. `npm run test` e `npm run build` devem passar sem erros.
 
 ---
 
 ## 🔗 Referências & Documentos Relacionados
 
-- 📑 **Especificação Funcional**: [spec.md](../spec.md)
-- ⚙️ **Plano de Implementação**: [plan.md](../plan.md)
-- 🗃️ **Modelo de Dados**: [data-model.md](../data-model.md)
-- 🔌 **Contrato de API**: [contracts/api-sync.md](../contracts/api-sync.md)
-- 🚀 **Guia de Validação Rápida**: [quickstart.md](../quickstart.md)
-- 🏛️ **Constituição do Projeto**: [constitution.md](../../constitution.md)
+- 📑 **Especificação Funcional**: [spec.md](../../spec.md)

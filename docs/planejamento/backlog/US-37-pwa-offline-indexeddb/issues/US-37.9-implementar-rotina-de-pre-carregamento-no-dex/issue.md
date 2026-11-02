@@ -1,55 +1,45 @@
-# [US-37.9] Implementar rotina de pré-carregamento no Dexie.js ao abrir o app online
+# [US-37.9] Integrar formulário de orçamento no frontend para salvar rascunho offline em IndexedDB e sincronizar
 
 ## 📌 Metadados da Issue
 
 - **ID da Tarefa**: `US-37.9`
-- **US Pai**: `US-37: Instalar PWA e Consultar OPs e OS Offline via IndexedDB`
-- **Release**: Release 3 (v3.0.0) — Financeiro, Instalações & Gestão
-- **Fase**: `Phase 2: User Story 1 - Instalação PWA e Cache de Dados Operacionais (Priority: P1) 🎯 MVP`
-- **User Story**: [US1]
-- **Sub-área**: `Geral`
-- **Execução Paralela**: ❌ Não (Execução sequencial recomendada)
-- **Arquivo / Alvo Principal**: `Conforme especificação da tarefa`
-- **Labels Sugeridas**: `release-3`, `pwa`, `offline`, `performance`, `frontend`, `typescript`, `pwa`, `mvp`, `user-story-1`
+- **US Pai**: `US-37: Instalar PWA Desktop/Mobile e Elaborar Rascunhos de Orçamentos Offline`
+- **Release**: Release 3 (v3.0.0) — Comercial, Financeiro & Sustentação
+- **Fase**: `Phase 4: Frontend Integration & End-to-End Validation`
+- **User Story**: [US1 - Operação Offline e Sincronização]
+- **Sub-área**: `Frontend`
+- **Execução Paralela**: ❌ Não
+- **Arquivo / Alvo Principal**: `frontend/src/features/budgets/components/BudgetForm.tsx`, `frontend/src/features/pwa/services/pwaSyncService.ts`
+- **Labels Sugeridas**: `release-3`, `pwa`, `offline`, `budgets`, `frontend`, `react`, `typescript`
 
 ---
 
 ## 🎯 Objetivo & Descrição
 
-Implementar rotina de pré-carregamento no Dexie.js ao abrir o app online.
-
-### Contexto da Fase / Épico
-**Objetivo da User Story**: Permitir instalação do app e salvar OPs/OSs localmente para consulta offline.
-
-Esta issue faz parte da entrega da **Release 3** do AlumiGest. Deve seguir rigorosamente as diretrizes arquiteturais da Constituição do Projeto (IndexedDB com Dexie, PWA com Vite, compressão no cliente e commits em PT-BR).
+Integrar o fluxo de criação de orçamentos no frontend para operar de forma transparente em modo offline:
+1. Quando `isOnline === false`, o botão "Salvar Rascunho Offline" grava os dados brutos no IndexedDB (`budgetDrafts`) via `saveBudgetDraft`.
+2. Quando a conexão retorna, dispara a sincronização automática em segundo plano via `useSyncDrafts`, notificando o vendedor com um toast amigável: "Orçamento sincronizado com sucesso! Código oficial gerado: ORC-YYYY-NNNN".
+3. Fornecer atalho na interface para visualizar e editar rascunhos salvos no dispositivo antes do envio.
 
 ---
 
 ## 🛠️ Checklist de Implementação
 
-- [ ] Analisar os requisitos específicos no arquivo de especificação (`docs/planejamento/sprint-14/spec.md`)
-- [ ] Verificar os modelos e tipos no modelo de dados (`docs/planejamento/sprint-14/data-model.md`) ou contratos (`docs/planejamento/sprint-14/contracts/api-sync.md`)
-- [ ] Implementar a alteração necessária em `Conforme especificação da tarefa`
-- [ ] Garantir que o código compila e segue as diretrizes do Checkstyle/Oxlint
-- [ ] Executar validação local conforme o cenário relevante do `quickstart.md`
+- [ ] Ajustar `BudgetForm.tsx` para detectar estado offline via `useNetworkStatus`.
+- [ ] Alimentar dropdown de templates e clientes a partir do IndexedDB caso o cache do TanStack Query não esteja preenchido.
+- [ ] Salvar os dados brutos sem tentar realizar cálculo de regras de negócio locais.
+- [ ] Validar fluxo E2E simulando perda de conectividade com Chrome DevTools Network Offline.
 
 ---
 
 ## ✅ Critérios de Aceitação
 
-1. A funcionalidade descrita em `T009` deve estar completamente implementada no arquivo alvo.
-2. Nenhum erro de compilação ou regressão deve ser introduzido no projeto.
-3. Se for backend, deve compilar com `mvn clean compile` sem warnings bloqueantes.
-4. Se for frontend, deve validar com `npm run build` com tipagem estrita do TypeScript.
-5. **Validação Específica**: Carregar OSs online, desativar conexão e navegar pelos detalhes da OS em modo offline.
+1. O vendedor consegue abrir o aplicativo PWA sem internet, preencher as medidas de uma esquadria e salvar o rascunho sem travar a interface.
+2. Ao restabelecer a conexão, o rascunho é enviado automaticamente e o orçamento oficial é registrado no banco do backend com todos os cálculos oficiais.
+3. `npm run test` e `npm run build` passando com sucesso.
 
 ---
 
 ## 🔗 Referências & Documentos Relacionados
 
-- 📑 **Especificação Funcional**: [spec.md](../spec.md)
-- ⚙️ **Plano de Implementação**: [plan.md](../plan.md)
-- 🗃️ **Modelo de Dados**: [data-model.md](../data-model.md)
-- 🔌 **Contrato de API**: [contracts/api-sync.md](../contracts/api-sync.md)
-- 🚀 **Guia de Validação Rápida**: [quickstart.md](../quickstart.md)
-- 🏛️ **Constituição do Projeto**: [constitution.md](../../constitution.md)
+- 📑 **Especificação Funcional**: [spec.md](../../spec.md)
