@@ -1,55 +1,42 @@
-# [US] Criar componente `CashFlowSummaryCards` e `CashFlowProjectionChart` no frontend em `frontend/src/features/finance/components/`
+# [US-30.7] Criar Controlador REST `CashFlowController`
 
-## 📌 Metadados da Issue
-
-- **ID da Tarefa**: `US`
-- **US Pai**: `US-30: Acompanhar Fluxo de Caixa Diário e Mensal`
-- **Release**: Release 3 (v3.0.0) — Financeiro, Instalações & Gestão
-- **Fase**: `Phase 3: User Story 2 - Painel de Fluxo de Caixa (Priority: P1) 🎯 MVP`
-- **User Story**: [US2]
-- **Sub-área**: `Geral`
-- **Execução Paralela**: ❌ Não (Execução sequencial recomendada)
-- **Arquivo / Alvo Principal**: `frontend/src/features/finance/components/`
-- **Labels Sugeridas**: `release-3`, `finance`, `cash-flow`, `frontend`, `typescript`, `react`, `mvp`, `user-story-2`
+## 📋 Metadados da Issue
+- **ID da Tarefa**: `US-30.7`
+- **US Pai**: `US-30: Fluxo de Caixa Mensal & Gestão de Despesas (Substituto do Excel)`
+- **Sprint**: Sprint 09 (Fechamento Funcional)
+- **Camada**: Backend / API REST Controller
+- **Alvo Principal**: `backend/src/main/java/br/edu/ifpb/alumigest/finance/controller/CashFlowController.java`
+- **Labels**: `backend`, `controller`, `rest-api`, `openapi`, `sprint-09`
 
 ---
 
 ## 🎯 Objetivo & Descrição
-
-Criar componente `CashFlowSummaryCards` e `CashFlowProjectionChart` no frontend em `frontend/src/features/finance/components/`.
-
-### Contexto da Fase / Épico
-**Objetivo da User Story**: Painel consolidado com total de entradas do dia por método e projeção de recebimentos futuros.
-
-Esta issue faz parte da entrega da **Release 3** do AlumiGest. Deve seguir rigorosamente as diretrizes arquiteturais da Constituição do Projeto (Clean Architecture / Package-by-Feature no módulo `financeDTOs em Records Java, transações atômicas e commits em PT-BR).
+Implementar os endpoints REST do módulo financeiro em `/api/v1/finance/cash-flow` e `/api/v1/finance/expenses`, com validações Jakarta, tratamento centralizado de exceções e documentação SpringDoc OpenAPI.
 
 ---
 
-## 🛠️ Checklist de Implementação
+## 📐 Endpoints da API
 
-- [ ] Analisar os requisitos específicos no arquivo de especificação (`docs/planejamento/sprint-11/spec.md`)
-- [ ] Verificar os modelos e tipos no modelo de dados (`docs/planejamento/sprint-11/data-model.md`) ou contratos (`docs/planejamento/sprint-11/contracts/api-cash-flow.md`)
-- [ ] Implementar a alteração necessária em `frontend/src/features/finance/components/`
-- [ ] Garantir que o código compila e segue as diretrizes do Checkstyle/Oxlint
-- [ ] Executar validação local conforme o cenário relevante do `quickstart.md`
+1. **`GET /api/v1/finance/cash-flow/summary`**
+   - **Query Params:** `year` (int, default = ano corrente), `month` (int 1..12, default = mês corrente)
+   - **Retorno:** HTTP 200 com `ApiResponse<CashFlowSummaryResponse>` contendo totais e saldo líquido.
+
+2. **`GET /api/v1/finance/cash-flow/movements`**
+   - **Query Params:** `year` (int), `month` (int)
+   - **Retorno:** HTTP 200 com `ApiResponse<List<CashFlowMovementResponse>>` ordenados cronologicamente.
+
+3. **`POST /api/v1/finance/expenses`**
+   - **Body:** `ExpenseCreateRequest` validado com `@Valid`
+   - **Retorno:** HTTP 201 Created com a despesa persistida.
+
+4. **`DELETE /api/v1/finance/expenses/{id}`**
+   - **Path Variable:** `id` (UUID)
+   - **Retorno:** HTTP 204 No Content.
 
 ---
 
-## ✅ Critérios de Aceitação
-
-1. A funcionalidade descrita em `T013` deve estar completamente implementada no arquivo alvo.
-2. Nenhum erro de compilação ou regressão deve ser introduzido no projeto.
-3. Se for backend, deve compilar com `mvn clean compile` sem warnings bloqueantes.
-4. Se for frontend, deve validar com `npm run build` com tipagem estrita do TypeScript.
-5. **Validação Específica**: Consultar resumo de fluxo de caixa e verificar curva de recebimentos projetada para os próximos 30 dias.
-
----
-
-## 🔗 Referências & Documentos Relacionados
-
-- 📑 **Especificação Funcional**: [spec.md](../spec.md)
-- ⚙️ **Plano de Implementação**: [plan.md](../plan.md)
-- 🗃️ **Modelo de Dados**: [data-model.md](../data-model.md)
-- 🔌 **Contrato de API**: [contracts/api-cash-flow.md](../contracts/api-cash-flow.md)
-- 🚀 **Guia de Validação Rápida**: [quickstart.md](../quickstart.md)
-- 🏛️ **Constituição do Projeto**: [constitution.md](../../constitution.md)
+## 🚦 Critérios de Aceitação
+1. Requisição com mês inválido (ex: `month=13`) ou ano negativo retorna HTTP 400 Bad Request.
+2. Cadastro de despesa com valor zerado/negativo é rejeitado pelo Bean Validation com HTTP 400.
+3. Endpoints documentados com anotações `@Tag(name = "Financeiro")`, `@Operation` e `@ApiResponse`.
+4. Testes `MockMvc` cobrem retornos de sucesso e cenários de erro.

@@ -1,55 +1,87 @@
-# [US] Criar entidade JPA `CashFlow` em `backend/src/main/java/br/edu/ifpb/alumigest/finance/domain/CashFlow.java`
+# [US-30.2] Criar Entidade JPA `CashFlow` e Enums de Domínio
 
-## 📌 Metadados da Issue
-
-- **ID da Tarefa**: `US`
-- **US Pai**: `US-30: Realizar Baixa Financeira Manual com Parciais, Juros e Descontos`
-- **Release**: Release 3 (v3.0.0) — Financeiro, Instalações & Gestão
-- **Fase**: `Phase 1: Setup & Foundational`
-- **User Story**: Não aplicável (Infra/Fundação/Polish)
-- **Sub-área**: `Geral`
-- **Execução Paralela**: ❌ Não (Execução sequencial recomendada)
-- **Arquivo / Alvo Principal**: `backend/src/main/java/br/edu/ifpb/alumigest/finance/domain/CashFlow.java`
-- **Labels Sugeridas**: `release-3`, `finance`, `cash-flow`, `backend`, `java`
+## 📋 Metadados da Issue
+- **ID da Tarefa**: `US-30.2`
+- **US Pai**: `US-30: Fluxo de Caixa Mensal & Gestão de Despesas (Substituto do Excel)`
+- **Sprint**: Sprint 09 (Fechamento Funcional)
+- **Camada**: Backend / Domínio JPA
+- **Alvo Principal**: `backend/src/main/java/br/edu/ifpb/alumigest/finance/domain/CashFlow.java`
+- **Labels**: `backend`, `domain`, `jpa`, `finance`, `sprint-09`
 
 ---
 
 ## 🎯 Objetivo & Descrição
+Mapear a entidade JPA `CashFlow` e os enums de apoio (`MovementType`, `ExpenseCategory`, `PaymentMethod`) no pacote `br.edu.ifpb.alumigest.finance.domain`.
 
-Criar entidade JPA `CashFlow` em `backend/src/main/java/br/edu/ifpb/alumigest/finance/domain/CashFlow.java`.
-
-### Contexto da Fase / Épico
-**Propósito da Fase**: Migration Flyway V14, Entidade JPA CashFlow e Repository
-
-Esta issue faz parte da entrega da **Release 3** do AlumiGest. Deve seguir rigorosamente as diretrizes arquiteturais da Constituição do Projeto (Clean Architecture / Package-by-Feature no módulo `financeDTOs em Records Java, transações atômicas e commits em PT-BR).
+A entidade deve respeitar o princípio de encapsulamento, immutabilidade de valores monetários e precisão via `BigDecimal`.
 
 ---
 
-## 🛠️ Checklist de Implementação
+## 📐 Especificação Técnica
 
-- [ ] Analisar os requisitos específicos no arquivo de especificação (`docs/planejamento/sprint-11/spec.md`)
-- [ ] Verificar os modelos e tipos no modelo de dados (`docs/planejamento/sprint-11/data-model.md`) ou contratos (`docs/planejamento/sprint-11/contracts/api-cash-flow.md`)
-- [ ] Implementar a alteração necessária em `backend/src/main/java/br/edu/ifpb/alumigest/finance/domain/CashFlow.java`
-- [ ] Garantir que o código compila e segue as diretrizes do Checkstyle/Oxlint
-- [ ] Executar validação local conforme o cenário relevante do `quickstart.md`
+### 1. Enums de Domínio
+- **`MovementType`**:
+  - `INFLOW` (Entrada / Receita)
+  - `OUTFLOW` (Saída / Despesa)
+- **`ExpenseCategory`**:
+  - `ORDER_SALE` (Receita de Ordem de Serviço)
+  - `PART_SALE` (Receita de Venda Avulsa)
+  - `MATERIAIS` (Compra de perfis, chapas de vidro, ferragens e insumos)
+  - `OPERACIONAL` (Energia elétrica, água, aluguel, manutenção de maquinário, combustível)
+  - `PESSOAL` (Comissões, diárias e folha da oficina)
+  - `RETIRADA` (Pró-labore ou retiradas da gestão)
+  - `OUTROS` (Despesas diversas)
+- **`PaymentMethod`**:
+  - `PIX`, `DINHEIRO`, `CARTAO_CREDITO`, `CARTAO_DEBITO`, `BOLETO`, `TRANSFERENCIA`
+
+### 2. Atributos da Entidade `CashFlow`
+```java
+@Entity
+@Table(name = "tb_cash_flows")
+public class CashFlow {
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "movement_type", nullable = false, length = 10)
+    private MovementType movementType;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "category", nullable = false, length = 30)
+    private ExpenseCategory category;
+
+    @Column(nullable = false, length = 255)
+    private String description;
+
+    @Column(nullable = false, precision = 15, scale = 2)
+    private BigDecimal amount;
+
+    @Column(name = "flow_date", nullable = false)
+    private LocalDate flowDate;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_method", nullable = false, length = 20)
+    private PaymentMethod paymentMethod;
+
+    @Column(name = "order_id")
+    private UUID orderId;
+
+    @Column(name = "part_sale_id")
+    private UUID partSaleId;
+
+    @Column(name = "is_cancelled", nullable = false)
+    private boolean isCancelled = false;
+
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
+    private Instant createdAt;
+}
+```
 
 ---
 
-## ✅ Critérios de Aceitação
-
-1. A funcionalidade descrita em `T002` deve estar completamente implementada no arquivo alvo.
-2. Nenhum erro de compilação ou regressão deve ser introduzido no projeto.
-3. Se for backend, deve compilar com `mvn clean compile` sem warnings bloqueantes.
-4. Se for frontend, deve validar com `npm run build` com tipagem estrita do TypeScript.
-
-
----
-
-## 🔗 Referências & Documentos Relacionados
-
-- 📑 **Especificação Funcional**: [spec.md](../spec.md)
-- ⚙️ **Plano de Implementação**: [plan.md](../plan.md)
-- 🗃️ **Modelo de Dados**: [data-model.md](../data-model.md)
-- 🔌 **Contrato de API**: [contracts/api-cash-flow.md](../contracts/api-cash-flow.md)
-- 🚀 **Guia de Validação Rápida**: [quickstart.md](../quickstart.md)
-- 🏛️ **Constituição do Projeto**: [constitution.md](../../constitution.md)
+## 🚦 Critérios de Aceitação
+1. A entidade compila sem warnings com Hibernate 6 e JPA 3.
+2. Contém construtores estáticos ou métodos de fábrica claros (ex: `CashFlow.createInflowFromOrder(...)` e `CashFlow.createExpense(...)`).
+3. Método `cancel()` para marcação de estorno seguro sem delete físico (*soft-reversal*).

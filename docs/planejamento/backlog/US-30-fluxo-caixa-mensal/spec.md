@@ -1,109 +1,104 @@
-# Especificação Funcional: US-30 — Acompanhar Fluxo de Caixa Mensal
+# Especificação Funcional: US-30 — Fluxo de Caixa Mensal & Gestão de Despesas (Substituto do Excel)
 
 **Identificador**: `US-30`  
 **Issue GitHub**: [#155](https://github.com/ADS-IFPB-SR/alumigest/issues/155)  
-**Status**: 🔵 No Backlog (Aguardando Sprint Planning)  
+**Status**: 📅 Planejada para a Sprint 09 (Fechamento Funcional)  
 **Diretriz de Idioma**: Conforme `PAD-Padroes_de_Codigo.md`, variáveis, atributos Java, colunas SQL, DTOs e enums são em **inglês técnico** (`camelCase`/`snake_case`), e a tradução para `pt-BR` ocorre na camada de UI do Frontend.
 
 ---
 
 ## 🎯 Objetivo de Negócio
 
-Como diretor ou gestor financeiro da Alumiportas, desejo acompanhar o fluxo de caixa mensal consolidando entradas operacionais realizadas (PIX, dinheiro, cartões e títulos quitados), previsões de recebimento futuro e projeções de saldo diário/mensal, garantindo previsibilidade de liquidez para aquisições de matéria-prima e planejamento orçamentário.
+Como gestor da Alumiportas, desejo que cada **Ordem de Serviço (O.S.) / Pedido de Venda aprovado seja automaticamente contabilizado como entrada financeira** no caixa e que eu possa **lançar rapidamente as despesas operacionais** da oficina (fornecedores de alumínio e vidro, energia, combustível, manutenção), para acompanhar o **saldo líquido real do mês** em um painel consolidado e intuitivo, **eliminando a necessidade de redigitar dados em planilhas do Excel**.
 
 ---
 
-## 🧪 Critérios de Aceitação (Dado que / Quando / Então)
+## 🚦 Critérios de Aceitação (Dado que / Quando / Então)
 
-- [ ] **Cenário 1: Consulta do Resumo Consolidado do Mês (Regime de Caixa)**
-  - **Dado que** o gestor acessa a página `CashFlowPage` (`/financeiro/fluxo-de-caixa`),
-  - **Quando** o sistema carrega o mês corrente (ex: Outubro/2026),
-  - **Então** exibe os indicadores agregados:
-    - `totalRealizedInflows` (Total de Entradas Efetivamente Liquidadas)
-    - `totalProjectedInflows` (Total de Entradas Previstas para o Período)
-    - `netBalance` (Saldo Líquido Operacional)
-  - **E** exibe a evolução diária em gráfico de barras/linha interativo (`CashFlowProjectionChart`).
+### Cenário 1: Contabilização Automática de Entradas a partir da O.S. (Zero Retrabalho)
+- **Dado que** um orçamento é aprovado e convertido formalmente em Pedido de Venda / O.S. (`US-13`),
+- **Quando** a transação de conversão for concluída com sucesso pelo backend (`OrderService`),
+- **Então** o sistema gera automaticamente uma movimentação de entrada (`movementType = INFLOW`) na tabela `tb_cash_flows`,
+- **E** preenche automaticamente: `amount` (valor total líquido da O.S.), `flowDate` (data da aprovação), `orderId` (UUID do pedido), `description` ("O.S. PED-YYYY-NNNN - [Nome do Cliente]") e `paymentMethod` (canal informado na aprovação).
 
-- [ ] **Cenário 2: Projeção de Entradas com Base nas Parcelas a Vencer**
-  - **Dado que** existem parcelas cadastradas no módulo de contas a receber com vencimentos futuros no mês selecionado,
-  - **Quando** o backend apura as projeções via `CashFlowService`,
-  - **Então** agrega todas as parcelas `PENDING` agrupadas por dia de vencimento (`dueDate`),
-  - **E** plota no gráfico uma linha tracejada diferenciando "Realizado" de "Projetado".
+### Cenário 2: Lançamento Simplificado de Despesas Operacionais (Saídas)
+- **Dado que** a oficina realiza um pagamento operacional (ex: compra de perfis de alumínio, chapa de vidro com têmpera parceira, conta de luz ou combustível),
+- **Quando** o operador clica no botão `+ Nova Despesa` na página financeira e preenche:
+  - Descrição (ex: "Compra Perfis Linha Suprema - Fornecedor X")
+  - Categoria (`MATERIAIS`, `OPERACIONAL`, `PESSOAL`, `RETIRADA`, `OUTROS`)
+  - Data do Pagamento (`flowDate`)
+  - Valor em R$ (`amount`)
+  - Forma de Pagamento (`PIX`, `BOLETO`, `CARTAO`, `DINHEIRO`)
+- **Então** o backend persiste a movimentação de saída (`movementType = OUTFLOW`) associada à categoria,
+- **E** atualiza instantaneamente o saldo do mês em tela.
 
-- [ ] **Cenário 3: Discriminação por Método de Pagamento**
-  - **Dado que** as entradas operacionais foram recebidas por diferentes meios,
-  - **Quando** o usuário visualiza a seção "Entradas por Canal de Pagamento",
-  - **Então** o sistema apresenta a distribuição percentual e em Reais por `PaymentMethod` (PIX, Cartão de Crédito, Boleto, Dinheiro em Espécie).
+### Cenário 3: Painel Consolidado de Fluxo de Caixa Mensal (Substituto do Excel)
+- **Dado que** o gestor acessa `/financeiro/fluxo-de-caixa`,
+- **Quando** o painel for renderizado para o mês selecionado (padrão: mês corrente),
+- **Então** o backend entrega e o frontend exibe os 3 cartões principais de métricas:
+  - 🟢 **Total de Entradas:** Soma de todas as O.S. e receitas do mês selecionado.
+  - 🔴 **Total de Despesas:** Soma de todas as saídas e gastos operacionais lançados no mês.
+  - 🔵 **Saldo Líquido do Mês:** Diferença matemática estrita ($\text{Entradas} - \text{Despesas}$).
 
-- [ ] **Cenário 4: Navegação entre Meses Anteriores e Comparativo Histórico**
-  - **Dado que** o gestor deseja avaliar a evolução da serralheria no último trimestre,
-  - **Quando** altera o seletor de mês/ano para os períodos anteriores,
-  - **Então** os dados são recalculados instantaneamente via React Query,
-  - **E** exibe percentual de variação em relação ao mês anterior (ex: "+12.4% em relação a Setembro").
+### Cenário 4: Extrato Cronológico de Movimentações com Filtro por Mês/Ano
+- **Dado que** o gestor deseja auditar as movimentações de um determinado período,
+- **Quando** seleciona o mês e ano no seletor de período,
+- **Então** a tabela lista todas as movimentações em ordem cronológica decrescente,
+- **E** exibe badges visuais claras (Verde para `Entrada` com link direto para a O.S. correspondente; Vermelho para `Despesa` com sua categoria),
+- **E** permite busca textual instantânea por cliente, número de O.S. ou descrição da despesa.
 
-- [ ] **Cenário 5: Detalhamento Analítico das Movimentações do Período**
-  - **Dado que** o gestor clica em um dia específico do calendário ou gráfico,
-  - **Quando** abre o modal/gaveta de detalhamento analítico,
-  - **Então** lista cada lançamento individual com data/hora, O.S. de origem, cliente, valor e canal de recebimento.
+### Cenário 5: Tratamento de Cancelamento de Pedido de Venda
+- **Dado que** uma Ordem de Serviço previamente contabilizada é cancelada formalmente (`OrderStatus = CANCELLED` na US-15),
+- **Quando** o cancelamento for processado no backend,
+- **Então** a entrada correspondente na `tb_cash_flows` é marcada como estornada/cancelada ou um lançamento de estorno é computado,
+- **E** o saldo do mês é recalculado de forma atômica e transparente.
 
 ---
 
-## 📋 Regras de Negócio e Restrições
+## 📐 Regras de Negócio e Princípios SOLID
 
-- **RN-01 (Segregação de Regimes Contábeis):** A visão de "Realizado" considera estritamente a data de liquidação (`paymentDate`). A visão de "Projetado" considera as datas pactuadas de vencimento (`dueDate`).
-- **RN-02 (Precisão Matemática):** Cálculos de fluxo de caixa e totalizações devem utilizar `BigDecimal` com arredondamento `HALF_UP`.
-- **RN-03 (Diretriz de Idioma em Variáveis):** Estruturas técnicas e de domínio em inglês: `CashFlow`, `cash_flows`, `movementType` (`INFLOW`, `OUTFLOW`), `totalRealizedInflows`, `totalProjectedInflows`, `netBalance`, `flowDate`.
+- **RN-01 (Lógica de Negócio Estrita no Backend - Arquitetura Limpa):** Todos os cálculos de agregação de entradas, saídas e saldo líquido do mês devem ser processados no backend via queries indexadas ou serviço Spring (`CashFlowService`). O frontend jamais deve calcular totais financeiros em memória a partir de arrays brutos.
+- **RN-02 (Precisão Monetária):** Todos os valores monetários utilizam `BigDecimal` no Java e `NUMERIC(15,2)` no PostgreSQL, com arredondamento `HALF_UP`.
+- **RN-03 (Desacoplamento e Single Responsibility):** O módulo `finance` atua como um Bounded Context independente. A integração com `orders` ocorre de forma desacoplada (via Event Listener Spring ou chamada transacional em Service), garantindo que alterações no módulo fabril não quebrem o financeiro.
+- **RN-04 (Zero Redigitação):** É terminantemente proibido exigir input manual para vendas que já possuem Ordem de Serviço cadastrada no sistema.
 
 ---
 
-## 🔌 Especificação Técnica
+## 🛠️ Especificação Técnica Resumida
 
 ### Backend (Spring Boot 3 / JPA / PostgreSQL)
-- **Tabela:** `cash_flows` (migration `V14__create_cash_flows_schema.sql`)
-  - Colunas: `id`, `movement_type`, `amount`, `payment_method`, `flow_date`, `order_id`, `receivable_id`, `description`, `created_at`.
-- **Endpoints:**
-  - `GET /api/v1/finance/cash-flow/summary?year=2026&month=10` (resumo mensal agregado)
-  - `GET /api/v1/finance/cash-flow/daily-projection?startDate=...&endDate=...` (dados diários para gráfico)
+- **Tabela:** `tb_cash_flows` (Flyway Migration `V23__create_cash_flows_schema.sql`):
+  ```sql
+  CREATE TABLE tb_cash_flows (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      movement_type VARCHAR(10) NOT NULL, -- INFLOW ou OUTFLOW
+      category VARCHAR(30) NOT NULL,      -- ORDER_SALE, MATERIAIS, OPERACIONAL, etc.
+      description VARCHAR(255) NOT NULL,
+      amount NUMERIC(15,2) NOT NULL,
+      flow_date DATE NOT NULL,
+      payment_method VARCHAR(20) NOT NULL,
+      order_id UUID REFERENCES tb_orders(id) ON DELETE SET NULL,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+  );
+  ```
+- **Endpoints REST:**
+  - `GET /api/v1/finance/cash-flow/summary?year=2026&month=11`: Retorna totais (`totalInflows`, `totalOutflows`, `netBalance`).
+  - `GET /api/v1/finance/cash-flow/movements?year=2026&month=11`: Lista paginada das movimentações do mês.
+  - `POST /api/v1/finance/expenses`: Cadastra uma nova despesa operacional manual.
+  - `DELETE /api/v1/finance/expenses/{id}`: Remove ou estorna uma despesa lançada erroneamente.
 
-### Frontend (React 19 / Chart.js ou Recharts / TanStack Query / Tailwind)
-- **Páginas & Componentes:**
-  - `CashFlowPage.tsx` (`/financeiro/fluxo-de-caixa`)
-  - `CashFlowSummaryCards.tsx` (cards de métricas de topo)
-  - `CashFlowProjectionChart.tsx` (gráfico comparativo realizado vs projetado)
-  - `CashFlowChannelDistribution.tsx` (gráfico de rosca por canal)
+### Frontend (React 19 / TanStack Query / Tailwind)
+- **Componentes:**
+  - `CashFlowPage.tsx` (`/financeiro/fluxo-de-caixa`): Página central de controle.
+  - `CashFlowSummaryCards.tsx`: 3 cartões de destaque (Receitas, Despesas e Saldo Líquido).
+  - `ExpenseModal.tsx`: Modal rápido para registrar despesas da oficina.
+  - `CashFlowTable.tsx`: Tabela cronológica limpa com cores indicativas e filtros.
 
 ---
 
-## 🛡️ Definition of Done (DoD)
+## 🏁 Definition of Done (DoD)
 
-- [ ] Testes unitários do `CashFlowServiceTest` cobrindo agregação de entradas, distinção entre realizado e projetado e cálculo de saldo líquido.
-- [ ] Teste de integração do endpoint `/summary` com transações reais gravadas no banco de testes.
-- [ ] Validação visual do gráfico com dados simulados e estados de carregamento suave.
+- [ ] Teste unitário de `CashFlowServiceTest` validando cálculo de saldo mensal e criação de entrada automática ao aprovar O.S.
+- [ ] Testes de integração `MockMvc` cobrindo o endpoint de sumário financeiro e criação de despesa.
+- [ ] Interface reativa validada no Vitest com atualização instantânea de saldo ao adicionar despesa.
 - [ ] Cobertura de testes $\ge 80\%$ e SonarQube Quality Gate verde.
-
----
-
-## 📋 Sub-Tarefas / Issues Vinculadas (10 issues)
-
-| Sub-Task | Tarefa / Descrição | Status |
-|---|---|:---:|
-| [US-30.1](issues/US-30.1-criar-migration-flyway-backend-src-main-resou/issue.md) | Criar migration Flyway `backend/src/main/resources/db/migration/V14__create_cash_flows_schema.sql` com tabela `cash_flows` | 🔲 No Backlog |
-| [US-30.2](issues/US-30.2-criar-entidade-jpa-cashflow-em-backend-src-ma/issue.md) | Criar entidade JPA `CashFlow` em `backend/src/main/java/br/edu/ifpb/alumigest/finance/domain/CashFlow.java` | 🔲 No Backlog |
-| [US-30.3](issues/US-30.3-criar-repositorio-cashflowrepository-com-quer/issue.md) | Criar repositório `CashFlowRepository` com queries de agregação por período | 🔲 No Backlog |
-| [US-30.4](issues/US-30.4-criar-record-monthlycashflowresponse-em-back/issue.md) | Criar record `CashFlowSummaryResponse` em `backend/src/main/java/br/edu/ifpb/alumigest/finance/dto/CashFlowSummaryResponse.java` | 🔲 No Backlog |
-| [US-30.5](issues/US-30.5-implementar-servico-cashflowservice-obterresu/issue.md) | Implementar serviço `CashFlowService.obterResumoFluxoCaixa(LocalDate inicio, LocalDate fim)` agregando entradas e previsões | 🔲 No Backlog |
-| [US-30.6](issues/US-30.6-criar-endpoint-get-api-finance-cash-flow-month/issue.md) | Criar endpoint GET `/api/v1/finance/cash-flow/summary` no `CashFlowController` | 🔲 No Backlog |
-| [US-30.7](issues/US-30.7-criar-componente-monthlycashflowcards-e-grafi/issue.md) | Criar componente `CashFlowSummaryCards` e `CashFlowProjectionChart` no frontend | 🔲 No Backlog |
-| [US-30.8](issues/US-30.8-criar-pagina-monthlycashflowpage-e-registrar-ro/issue.md) | Criar página `CashFlowPage` e registrar rota `/financeiro/fluxo-de-caixa` no React Router | 🔲 No Backlog |
-| [US-30.9](issues/US-30.9-criar-testes-unitarios-do-cashflowservicetest/issue.md) | Criar testes unitários do `CashFlowServiceTest` | 🔲 No Backlog |
-| [US-30.10](issues/US-30.10-documentacao-openapi-e-atalho-de-menu/issue.md) | Documentação OpenAPI e atalho de menu no frontend | 🔲 No Backlog |
-
----
-
-## 🔗 Referências & Governança
-- 🏛️ **Constituição do Projeto**: [../../constitution.md](../../constitution.md)
-- 🗺️ **Tabela De-Para Oficial**: [../../de-para-user-stories.md](../../de-para-user-stories.md)
-
----
-
-**Branch:** `feat/us-30-fluxo-caixa-mensal`

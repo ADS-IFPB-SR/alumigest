@@ -1,55 +1,62 @@
-# [US] Implementar serviço `CashFlowService.obterResumoFluxoCaixa(LocalDate inicio, LocalDate fim)` agregando entradas e previsões em `backend/src/main/java/br/edu/ifpb/alumigest/finance/service/CashFlowService.java`
+# [US-30.5] Implementar Serviço `CashFlowService` com Regras de Negócio Financeiras
 
-## 📌 Metadados da Issue
-
-- **ID da Tarefa**: `US`
-- **US Pai**: `US-30: Acompanhar Fluxo de Caixa Diário e Mensal`
-- **Release**: Release 3 (v3.0.0) — Financeiro, Instalações & Gestão
-- **Fase**: `Phase 3: User Story 2 - Painel de Fluxo de Caixa (Priority: P1) 🎯 MVP`
-- **User Story**: [US2]
-- **Sub-área**: `Geral`
-- **Execução Paralela**: ❌ Não (Execução sequencial recomendada)
-- **Arquivo / Alvo Principal**: `backend/src/main/java/br/edu/ifpb/alumigest/finance/service/CashFlowService.java`
-- **Labels Sugeridas**: `release-3`, `finance`, `cash-flow`, `backend`, `java`, `mvp`, `user-story-2`
+## 📋 Metadados da Issue
+- **ID da Tarefa**: `US-30.5`
+- **US Pai**: `US-30: Fluxo de Caixa Mensal & Gestão de Despesas (Substituto do Excel)`
+- **Sprint**: Sprint 09 (Fechamento Funcional)
+- **Camada**: Backend / Camada de Serviço (`@Service`)
+- **Alvo Principal**: `backend/src/main/java/br/edu/ifpb/alumigest/finance/service/CashFlowService.java`
+- **Labels**: `backend`, `service`, `solid`, `clean-architecture`, `sprint-09`
 
 ---
 
 ## 🎯 Objetivo & Descrição
-
-Implementar serviço `CashFlowService.obterResumoFluxoCaixa(LocalDate inicio, LocalDate fim)` agregando entradas e previsões em `backend/src/main/java/br/edu/ifpb/alumigest/finance/service/CashFlowService.java`.
-
-### Contexto da Fase / Épico
-**Objetivo da User Story**: Painel consolidado com total de entradas do dia por método e projeção de recebimentos futuros.
-
-Esta issue faz parte da entrega da **Release 3** do AlumiGest. Deve seguir rigorosamente as diretrizes arquiteturais da Constituição do Projeto (Clean Architecture / Package-by-Feature no módulo `financeDTOs em Records Java, transações atômicas e commits em PT-BR).
-
----
-
-## 🛠️ Checklist de Implementação
-
-- [ ] Analisar os requisitos específicos no arquivo de especificação (`docs/planejamento/sprint-11/spec.md`)
-- [ ] Verificar os modelos e tipos no modelo de dados (`docs/planejamento/sprint-11/data-model.md`) ou contratos (`docs/planejamento/sprint-11/contracts/api-cash-flow.md`)
-- [ ] Implementar a alteração necessária em `backend/src/main/java/br/edu/ifpb/alumigest/finance/service/CashFlowService.java`
-- [ ] Garantir que o código compila e segue as diretrizes do Checkstyle/Oxlint
-- [ ] Executar validação local conforme o cenário relevante do `quickstart.md`
+Implementar a interface `CashFlowService` e sua implementação `CashFlowServiceImpl` com as regras de negócio centrais do fluxo de caixa:
+1. **Calcular Resumo Mensal:** Apurar total de entradas, total de saídas e saldo líquido com precisão via `BigDecimal`.
+2. **Registrar Entrada de O.S.:** Método idempotente chamado pelo módulo de pedidos para criar a entrada correspondente.
+3. **Estornar Entrada de O.S.:** Método para cancelar a entrada financeira quando a O.S. for cancelada.
+4. **Cadastrar Despesa:** Salvar uma saída operacional manual.
+5. **Remover Despesa:** Excluir ou cancelar uma despesa lançada erroneamente.
 
 ---
 
-## ✅ Critérios de Aceitação
+## 📐 Métodos Obrigatórios do Contrato `CashFlowService`
 
-1. A funcionalidade descrita em `T011` deve estar completamente implementada no arquivo alvo.
-2. Nenhum erro de compilação ou regressão deve ser introduzido no projeto.
-3. Se for backend, deve compilar com `mvn clean compile` sem warnings bloqueantes.
-4. Se for frontend, deve validar com `npm run build` com tipagem estrita do TypeScript.
-5. **Validação Específica**: Consultar resumo de fluxo de caixa e verificar curva de recebimentos projetada para os próximos 30 dias.
+```java
+public interface CashFlowService {
+
+    CashFlowSummaryResponse getMonthlySummary(int year, int month);
+
+    List<CashFlowMovementResponse> getMovementsByMonth(int year, int month);
+
+    CashFlowMovementResponse registerExpense(ExpenseCreateRequest request);
+
+    void deleteExpense(UUID expenseId);
+
+    void registerOrderInflow(
+        UUID orderId, 
+        String orderCode, 
+        String customerName, 
+        BigDecimal totalAmount, 
+        LocalDate approvalDate, 
+        String channel
+    );
+
+    void cancelOrderInflow(UUID orderId);
+}
+```
 
 ---
 
-## 🔗 Referências & Documentos Relacionados
+## 🚦 Regras de Negócio e Blindagens
+- **RN-01 (Cálculo de Saldo Líquido):** $\text{netBalance} = \text{totalInflows} - \text{totalOutflows}$.
+- **RN-02 (Idempotência no Registro de O.S.):** Se já existir um lançamento `INFLOW` ativo para aquele `orderId`, o método não duplica a movimentação (registra log informativo e retorna pacificamente).
+- **RN-03 (Mapeamento de Canal):** Canais como `WHATSAPP`, `PRESENCIAL`, `EMAIL` são mapeados de forma amigável no campo `payment_method` ou mantêm o enum correspondente.
+- **RN-04 (Tratamento de Exceções):** Lançamento de `ResourceNotFoundException` caso a despesa a ser excluída não exista.
 
-- 📑 **Especificação Funcional**: [spec.md](../spec.md)
-- ⚙️ **Plano de Implementação**: [plan.md](../plan.md)
-- 🗃️ **Modelo de Dados**: [data-model.md](../data-model.md)
-- 🔌 **Contrato de API**: [contracts/api-cash-flow.md](../contracts/api-cash-flow.md)
-- 🚀 **Guia de Validação Rápida**: [quickstart.md](../quickstart.md)
-- 🏛️ **Constituição do Projeto**: [constitution.md](../../constitution.md)
+---
+
+## 🚦 Critérios de Aceitação
+1. Todas as operações de escrita são decoradas com `@Transactional`.
+2. O cálculo de saldo líquido e agrupamentos por mês é 100% testado em `CashFlowServiceTest`.
+3. Cobertura de testes unitários $\ge 80\%$.

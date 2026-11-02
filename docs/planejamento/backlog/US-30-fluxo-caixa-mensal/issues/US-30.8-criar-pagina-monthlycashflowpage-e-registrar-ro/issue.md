@@ -1,55 +1,33 @@
-# [US] Criar página `CashFlowPage` e registrar rota `/financeiro/fluxo-de-caixa` no React Router
+# [US-30.8] Criar Componentes Frontend: `CashFlowSummaryCards`, `ExpenseModal` e `CashFlowTable`
 
-## 📌 Metadados da Issue
-
-- **ID da Tarefa**: `US`
-- **US Pai**: `US-30: Acompanhar Fluxo de Caixa Diário e Mensal`
-- **Release**: Release 3 (v3.0.0) — Financeiro, Instalações & Gestão
-- **Fase**: `Phase 3: User Story 2 - Painel de Fluxo de Caixa (Priority: P1) 🎯 MVP`
-- **User Story**: [US2]
-- **Sub-área**: `Geral`
-- **Execução Paralela**: ❌ Não (Execução sequencial recomendada)
-- **Arquivo / Alvo Principal**: `Conforme especificação da tarefa`
-- **Labels Sugeridas**: `release-3`, `finance`, `cash-flow`, `frontend`, `typescript`, `react`, `mvp`, `user-story-2`
+## 📋 Metadados da Issue
+- **ID da Tarefa**: `US-30.8`
+- **US Pai**: `US-30: Fluxo de Caixa Mensal & Gestão de Despesas (Substituto do Excel)`
+- **Sprint**: Sprint 09 (Fechamento Funcional)
+- **Camada**: Frontend / Componentes React 19 + Tailwind
+- **Alvo Principal**: `frontend/src/features/finance/components/`
+- **Labels**: `frontend`, `react`, `tailwind`, `components`, `sprint-09`
 
 ---
 
 ## 🎯 Objetivo & Descrição
-
-Criar página `CashFlowPage` e registrar rota `/financeiro/fluxo-de-caixa` no React Router.
-
-### Contexto da Fase / Épico
-**Objetivo da User Story**: Painel consolidado com total de entradas do dia por método e projeção de recebimentos futuros.
-
-Esta issue faz parte da entrega da **Release 3** do AlumiGest. Deve seguir rigorosamente as diretrizes arquiteturais da Constituição do Projeto (Clean Architecture / Package-by-Feature no módulo `financeDTOs em Records Java, transações atômicas e commits em PT-BR).
-
----
-
-## 🛠️ Checklist de Implementação
-
-- [ ] Analisar os requisitos específicos no arquivo de especificação (`docs/planejamento/sprint-11/spec.md`)
-- [ ] Verificar os modelos e tipos no modelo de dados (`docs/planejamento/sprint-11/data-model.md`) ou contratos (`docs/planejamento/sprint-11/contracts/api-cash-flow.md`)
-- [ ] Implementar a alteração necessária em `Conforme especificação da tarefa`
-- [ ] Garantir que o código compila e segue as diretrizes do Checkstyle/Oxlint
-- [ ] Executar validação local conforme o cenário relevante do `quickstart.md`
+Construir os blocos visuais especializados do painel financeiro:
+1. **`CashFlowSummaryCards.tsx`**: 3 cartões responsivos no topo exibindo:
+   - 🟢 **Total de Entradas:** com ícone de seta subindo, cor verde esmeralda e valor formatado em BRL (`Intl.NumberFormat`).
+   - 🔴 **Total de Despesas:** com ícone de seta descendo, cor vermelha e valor em BRL.
+   - 🔵 **Saldo Líquido:** com badge indicativo de superávit (verde/azul) ou déficit (vermelho) baseado no valor entregue pelo backend.
+2. **`ExpenseModal.tsx`**: Modal limpo com formulário (descrição, categoria, valor, data e método de pagamento), validação visual Zod/React Hook Form e feedback de carregamento.
+3. **`CashFlowTable.tsx`**: Tabela com ordenação cronológica decrescente, badges de categoria, formatação de moeda, indicador de O.S. (com link navegável para `/pedidos/{orderId}`) e botão de exclusão de despesa.
 
 ---
 
-## ✅ Critérios de Aceitação
-
-1. A funcionalidade descrita em `T014` deve estar completamente implementada no arquivo alvo.
-2. Nenhum erro de compilação ou regressão deve ser introduzido no projeto.
-3. Se for backend, deve compilar com `mvn clean compile` sem warnings bloqueantes.
-4. Se for frontend, deve validar com `npm run build` com tipagem estrita do TypeScript.
-5. **Validação Específica**: Consultar resumo de fluxo de caixa e verificar curva de recebimentos projetada para os próximos 30 dias.
+## 📐 Diretrizes Arquiteturais (SOLID & Clean Code)
+- **Zero Lógica de Negócio na UI:** Os componentes recebem os dados agregados via props; não realizam cálculos matemáticos de somatório ou saldo.
+- **Acessibilidade e Feedback:** Modal fecha ao pressionar `Escape` ou clicar no backdrop (exceto durante requisição ativa).
 
 ---
 
-## 🔗 Referências & Documentos Relacionados
-
-- 📑 **Especificação Funcional**: [spec.md](../spec.md)
-- ⚙️ **Plano de Implementação**: [plan.md](../plan.md)
-- 🗃️ **Modelo de Dados**: [data-model.md](../data-model.md)
-- 🔌 **Contrato de API**: [contracts/api-cash-flow.md](../contracts/api-cash-flow.md)
-- 🚀 **Guia de Validação Rápida**: [quickstart.md](../quickstart.md)
-- 🏛️ **Constituição do Projeto**: [constitution.md](../../constitution.md)
+## 🚦 Critérios de Aceitação
+1. A tabela renderiza perfeitamente tanto linhas de `Entrada` quanto de `Despesa` com diferenciação visual nítida.
+2. O modal de nova despesa valida campos obrigatórios e reseta o formulário após gravação com sucesso.
+3. Testes unitários no Vitest cobrem a renderização dos cartões e submissão do modal.

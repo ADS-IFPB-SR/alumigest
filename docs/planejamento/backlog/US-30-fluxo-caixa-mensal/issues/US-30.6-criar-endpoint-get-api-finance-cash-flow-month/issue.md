@@ -1,55 +1,74 @@
-# [US] Criar endpoint GET /api/finance/cash-flow/summary no `CashFlowController` em `backend/src/main/java/br/edu/ifpb/alumigest/finance/controller/CashFlowController.java`
+# [US-30.6] Integrar Contabilização Automática da O.S. em `OrderServiceImpl`
 
-## 📌 Metadados da Issue
-
-- **ID da Tarefa**: `US`
-- **US Pai**: `US-30: Acompanhar Fluxo de Caixa Diário e Mensal`
-- **Release**: Release 3 (v3.0.0) — Financeiro, Instalações & Gestão
-- **Fase**: `Phase 3: User Story 2 - Painel de Fluxo de Caixa (Priority: P1) 🎯 MVP`
-- **User Story**: [US2]
-- **Sub-área**: `Geral`
-- **Execução Paralela**: ❌ Não (Execução sequencial recomendada)
-- **Arquivo / Alvo Principal**: `CashFlowController`
-- **Labels Sugeridas**: `release-3`, `finance`, `cash-flow`, `backend`, `java`, `mvp`, `user-story-2`
+## 📋 Metadados da Issue
+- **ID da Tarefa**: `US-30.6`
+- **US Pai**: `US-30: Fluxo de Caixa Mensal & Gestão de Despesas (Substituto do Excel)`
+- **Sprint**: Sprint 09 (Fechamento Funcional)
+- **Camada**: Backend / Integração entre Bounded Contexts (`orders` e `finance`)
+- **Alvo Principal**: `backend/src/main/java/br/edu/ifpb/alumigest/orders/service/OrderServiceImpl.java`
+- **Labels**: `backend`, `orders`, `finance`, `transactional`, `sprint-09`
 
 ---
 
 ## 🎯 Objetivo & Descrição
+Conectar o ciclo de vida da Ordem de Serviço ao Módulo Financeiro, garantindo que:
+1. **Ao aprovar/converter um orçamento em Pedido de Venda (`convertBudgetToOrder`):** O `CashFlowService` seja invocado na mesma transação para gerar a entrada financeira no caixa.
+2. **Ao cancelar formalmente um pedido (`cancelOrder` na US-15):** O `CashFlowService` seja invocado para estornar/cancelar o lançamento correspondente no caixa.
 
-Criar endpoint GET /api/finance/cash-flow/summary no `CashFlowController` em `backend/src/main/java/br/edu/ifpb/alumigest/finance/controller/CashFlowController.java`.
-
-### Contexto da Fase / Épico
-**Objetivo da User Story**: Painel consolidado com total de entradas do dia por método e projeção de recebimentos futuros.
-
-Esta issue faz parte da entrega da **Release 3** do AlumiGest. Deve seguir rigorosamente as diretrizes arquiteturais da Constituição do Projeto (Clean Architecture / Package-by-Feature no módulo `financeDTOs em Records Java, transações atômicas e commits em PT-BR).
+Essa integração elimina 100% da necessidade de o operador abrir planilhas externas para redigitar os valores de vendas fechadas.
 
 ---
 
-## 🛠️ Checklist de Implementação
+## 📐 Ponto de Injeção e Atomicidade Transacional
 
-- [ ] Analisar os requisitos específicos no arquivo de especificação (`docs/planejamento/sprint-11/spec.md`)
-- [ ] Verificar os modelos e tipos no modelo de dados (`docs/planejamento/sprint-11/data-model.md`) ou contratos (`docs/planejamento/sprint-11/contracts/api-cash-flow.md`)
-- [ ] Implementar a alteração necessária em `CashFlowController`
-- [ ] Garantir que o código compila e segue as diretrizes do Checkstyle/Oxlint
-- [ ] Executar validação local conforme o cenário relevante do `quickstart.md`
+Em `OrderServiceImpl.java`:
+```java
+@Service
+@Transactional
+public class OrderServiceImpl implements OrderService {
+
+    private final OrderRepository orderRepository;
+    private final BudgetService budgetService;
+    private final CashFlowService cashFlowService; // Injeção do serviço financeiro
+
+    @Override
+    @Transactional
+    public OrderResponse convertBudgetToOrder(UUID budgetId, OrderConvertRequest request) {
+        // ... fluxo existente de criacao e snapshot da O.S. ...
+        Order savedOrder = orderRepository.save(order);
+
+        // Blindagem: Registro automatico de entrada no caixa
+        cashFlowService.registerOrderInflow(
+            savedOrder.getId(),
+            savedOrder.getCodigo(),
+            savedOrder.getClienteNome(),
+            savedOrder.getValorLiquido(),
+            savedOrder.getDataAprovacao().toLocalDate(),
+            savedOrder.getCanalAprovacao().name()
+        );
+
+        return orderMapper.toResponse(savedOrder);
+    }
+
+    @Override
+    @Transactional
+    public OrderResponse cancelOrder(UUID id, OrderCancelRequest request) {
+        // ... fluxo existente de validacao de cancelamento ...
+        order.setStatus(OrderStatus.CANCELLED);
+        Order savedOrder = orderRepository.save(order);
+
+        // Blindagem: Estorno automatico da entrada no fluxo de caixa
+        cashFlowService.cancelOrderInflow(savedOrder.getId());
+
+        return orderMapper.toResponse(savedOrder);
+    }
+}
+```
 
 ---
 
-## ✅ Critérios de Aceitação
-
-1. A funcionalidade descrita em `T012` deve estar completamente implementada no arquivo alvo.
-2. Nenhum erro de compilação ou regressão deve ser introduzido no projeto.
-3. Se for backend, deve compilar com `mvn clean compile` sem warnings bloqueantes.
-4. Se for frontend, deve validar com `npm run build` com tipagem estrita do TypeScript.
-5. **Validação Específica**: Consultar resumo de fluxo de caixa e verificar curva de recebimentos projetada para os próximos 30 dias.
-
----
-
-## 🔗 Referências & Documentos Relacionados
-
-- 📑 **Especificação Funcional**: [spec.md](../spec.md)
-- ⚙️ **Plano de Implementação**: [plan.md](../plan.md)
-- 🗃️ **Modelo de Dados**: [data-model.md](../data-model.md)
-- 🔌 **Contrato de API**: [contracts/api-cash-flow.md](../contracts/api-cash-flow.md)
-- 🚀 **Guia de Validação Rápida**: [quickstart.md](../quickstart.md)
-- 🏛️ **Constituição do Projeto**: [constitution.md](../../constitution.md)
+## 🚦 Critérios de Aceitação
+1. A conversão de um orçamento elegível cria a O.S. e insere a movimentação `INFLOW` na mesma transação atômica.
+2. Se a gravação no caixa falhar por qualquer inconsistência, a conversão da O.S. sofre rollback automático (evitando O.S. sem caixa ou vice-versa).
+3. O cancelamento de um pedido (`cancelOrder`) anula o lançamento no caixa, recalculando o saldo mensal.
+4. Testes de integração em `OrderControllerIntegrationTest` cobrem o fluxo completo de ponta a ponta.

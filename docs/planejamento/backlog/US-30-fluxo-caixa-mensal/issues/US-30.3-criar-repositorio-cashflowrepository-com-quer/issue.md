@@ -1,55 +1,70 @@
-# [US] Criar repositório `CashFlowRepository` com queries de agregação por período em `backend/src/main/java/br/edu/ifpb/alumigest/finance/repository/CashFlowRepository.java`
+# [US-30.3] Criar Repositório `CashFlowRepository` com Agregações Financeiras
 
-## 📌 Metadados da Issue
-
-- **ID da Tarefa**: `US`
-- **US Pai**: `US-30: Realizar Baixa Financeira Manual com Parciais, Juros e Descontos`
-- **Release**: Release 3 (v3.0.0) — Financeiro, Instalações & Gestão
-- **Fase**: `Phase 1: Setup & Foundational`
-- **User Story**: Não aplicável (Infra/Fundação/Polish)
-- **Sub-área**: `Geral`
-- **Execução Paralela**: ✅ Sim (Pode ser executada em paralelo com outras tasks [P])
-- **Arquivo / Alvo Principal**: `backend/src/main/java/br/edu/ifpb/alumigest/finance/repository/CashFlowRepository.java`
-- **Labels Sugeridas**: `release-3`, `finance`, `cash-flow`, `backend`, `java`
+## 📋 Metadados da Issue
+- **ID da Tarefa**: `US-30.3`
+- **US Pai**: `US-30: Fluxo de Caixa Mensal & Gestão de Despesas (Substituto do Excel)`
+- **Sprint**: Sprint 09 (Fechamento Funcional)
+- **Camada**: Backend / Persistência (Spring Data JPA)
+- **Alvo Principal**: `backend/src/main/java/br/edu/ifpb/alumigest/finance/repository/CashFlowRepository.java`
+- **Labels**: `backend`, `repository`, `jpa`, `finance`, `sprint-09`
 
 ---
 
 ## 🎯 Objetivo & Descrição
-
-Criar repositório `CashFlowRepository` com queries de agregação por período em `backend/src/main/java/br/edu/ifpb/alumigest/finance/repository/CashFlowRepository.java`.
-
-### Contexto da Fase / Épico
-**Propósito da Fase**: Migration Flyway V14, Entidade JPA CashFlow e Repository
-
-Esta issue faz parte da entrega da **Release 3** do AlumiGest. Deve seguir rigorosamente as diretrizes arquiteturais da Constituição do Projeto (Clean Architecture / Package-by-Feature no módulo `financeDTOs em Records Java, transações atômicas e commits em PT-BR).
+Implementar o contrato de repositório `CashFlowRepository` estendendo `JpaRepository<CashFlow, UUID>` e `JpaSpecificationExecutor<CashFlow>`, provendo consultas otimizadas para:
+1. Somar total de entradas ativas (`INFLOW`) no mês.
+2. Somar total de saídas ativas (`OUTFLOW`) no mês.
+3. Buscar lançamentos do período com ordenação cronológica decrescente.
+4. Localizar lançamento por `order_id` para controle de estorno.
 
 ---
 
-## 🛠️ Checklist de Implementação
+## 📐 Métodos de Consulta no Repositório
 
-- [ ] Analisar os requisitos específicos no arquivo de especificação (`docs/planejamento/sprint-11/spec.md`)
-- [ ] Verificar os modelos e tipos no modelo de dados (`docs/planejamento/sprint-11/data-model.md`) ou contratos (`docs/planejamento/sprint-11/contracts/api-cash-flow.md`)
-- [ ] Implementar a alteração necessária em `backend/src/main/java/br/edu/ifpb/alumigest/finance/repository/CashFlowRepository.java`
-- [ ] Garantir que o código compila e segue as diretrizes do Checkstyle/Oxlint
-- [ ] Executar validação local conforme o cenário relevante do `quickstart.md`
+```java
+public interface CashFlowRepository extends JpaRepository<CashFlow, UUID>, JpaSpecificationExecutor<CashFlow> {
+
+    @Query("""
+        SELECT COALESCE(SUM(c.amount), 0) FROM CashFlow c
+        WHERE c.movementType = 'INFLOW'
+          AND c.isCancelled = false
+          AND c.flowDate BETWEEN :startDate AND :endDate
+    """)
+    BigDecimal sumTotalInflowsByPeriod(
+        @Param("startDate") LocalDate startDate, 
+        @Param("endDate") LocalDate endDate
+    );
+
+    @Query("""
+        SELECT COALESCE(SUM(c.amount), 0) FROM CashFlow c
+        WHERE c.movementType = 'OUTFLOW'
+          AND c.isCancelled = false
+          AND c.flowDate BETWEEN :startDate AND :endDate
+    """)
+    BigDecimal sumTotalOutflowsByPeriod(
+        @Param("startDate") LocalDate startDate, 
+        @Param("endDate") LocalDate endDate
+    );
+
+    @Query("""
+        SELECT c FROM CashFlow c
+        WHERE c.flowDate BETWEEN :startDate AND :endDate
+          AND c.isCancelled = false
+        ORDER BY c.flowDate DESC, c.createdAt DESC
+    """)
+    List<CashFlow> findAllByPeriod(
+        @Param("startDate") LocalDate startDate, 
+        @Param("endDate") LocalDate endDate
+    );
+
+    Optional<CashFlow> findByOrderIdAndMovementType(UUID orderId, MovementType movementType);
+}
+```
 
 ---
 
-## ✅ Critérios de Aceitação
-
-1. A funcionalidade descrita em `T003` deve estar completamente implementada no arquivo alvo.
-2. Nenhum erro de compilação ou regressão deve ser introduzido no projeto.
-3. Se for backend, deve compilar com `mvn clean compile` sem warnings bloqueantes.
-4. Se for frontend, deve validar com `npm run build` com tipagem estrita do TypeScript.
-
-
----
-
-## 🔗 Referências & Documentos Relacionados
-
-- 📑 **Especificação Funcional**: [spec.md](../spec.md)
-- ⚙️ **Plano de Implementação**: [plan.md](../plan.md)
-- 🗃️ **Modelo de Dados**: [data-model.md](../data-model.md)
-- 🔌 **Contrato de API**: [contracts/api-cash-flow.md](../contracts/api-cash-flow.md)
-- 🚀 **Guia de Validação Rápida**: [quickstart.md](../quickstart.md)
-- 🏛️ **Constituição do Projeto**: [constitution.md](../../constitution.md)
+## 🚦 Critérios de Aceitação
+1. As queries de soma utilizam `COALESCE(SUM(...), 0)` para nunca retornar `null` caso o mês não tenha movimentações.
+2. Apenas movimentações ativas (`isCancelled = false`) são totalizadas.
+3. Método `findByOrderIdAndMovementType` permite buscar a movimentação de uma O.S. para fins de cancelamento/estorno.
+4. Testes de repositório validam somatórios de meses diferentes de forma isolada.
