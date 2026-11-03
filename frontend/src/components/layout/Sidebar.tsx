@@ -2,7 +2,6 @@ import { NavLink, useLocation } from 'react-router-dom';
 
 const navItems = [
   { path: '/dashboard', label: 'Dashboard', icon: 'dashboard' },
-  { path: '/kanban', label: 'Kanban', icon: 'view_kanban' },
   { path: '/orcamentos', label: 'Orçamentos', icon: 'receipt_long' },
   { path: '/ordens-servico', label: 'Ordens de Serviço', icon: 'assignment' },
   { path: '/producao', label: 'Produção (Kanban)', icon: 'precision_manufacturing' },
