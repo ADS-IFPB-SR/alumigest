@@ -20,6 +20,7 @@ function calculateLocalFallback(payload: CalculatePartItemPayload): CalculatePar
   const width = payload.widthMm || 0;
 
   let measure = 0;
+  let minimumAreaApplied = false;
 
   switch (payload.category) {
     case 'PROFILE': {
@@ -31,6 +32,7 @@ function calculateLocalFallback(payload: CalculatePartItemPayload): CalculatePar
     case 'GLASS': {
       // Vidro em m²: Área física com piso mínimo industrial de 0.25 m² por peça
       const physicalArea = (height / 1000) * (width / 1000);
+      minimumAreaApplied = physicalArea > 0 && physicalArea < 0.25;
       const billableArea = Math.max(0.25, physicalArea);
       measure = Number((billableArea * qty).toFixed(4));
       break;
@@ -54,6 +56,7 @@ function calculateLocalFallback(payload: CalculatePartItemPayload): CalculatePar
     calculatedUnitMeasure: measure,
     unitPrice: price,
     totalPrice: total,
+    minimumAreaApplied,
   };
 }
 

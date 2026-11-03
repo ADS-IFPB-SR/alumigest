@@ -39,6 +39,7 @@ class PartSaleItemTest {
           null,
           null,
           3,
+          null,
           new BigDecimal("3.0000"),
           new BigDecimal("25.00"),
           new BigDecimal("75.00")
@@ -49,6 +50,7 @@ class PartSaleItemTest {
       assertThat(item.getDescription()).isEqualTo("Roldana Suprema 112");
       assertThat(item.getMaterialType()).isEqualTo(MaterialCategoryType.HARDWARE);
       assertThat(item.getQuantity()).isEqualTo(3);
+      assertThat(item.getLossFactor()).isNull();
       assertThat(item.getCalculatedUnitMeasure()).isEqualByComparingTo("3.0000");
       assertThat(item.getUnitPrice()).isEqualByComparingTo("25.00");
       assertThat(item.getTotalPrice()).isEqualByComparingTo("75.00");
@@ -61,7 +63,7 @@ class PartSaleItemTest {
     void shouldAllowZeroPricesAtBoundary() {
       Material mat = createMockMaterial(UUID.randomUUID(), "Roldana");
       PartSaleItem item = new PartSaleItem(mat, MaterialCategoryType.HARDWARE, null, null, 1,
-          BigDecimal.ONE, BigDecimal.ZERO, BigDecimal.ZERO);
+          BigDecimal.ZERO, BigDecimal.ONE, BigDecimal.ZERO, BigDecimal.ZERO);
 
       assertThat(item.getUnitPrice()).isEqualByComparingTo(BigDecimal.ZERO);
       assertThat(item.getTotalPrice()).isEqualByComparingTo(BigDecimal.ZERO);
@@ -75,15 +77,15 @@ class PartSaleItemTest {
       BigDecimal price = new BigDecimal("10.0");
 
       assertThatThrownBy(() -> new PartSaleItem(mat, MaterialCategoryType.HARDWARE, null, null, null,
-          measure, price, price))
+          null, measure, price, price))
           .isInstanceOf(IllegalArgumentException.class);
 
       assertThatThrownBy(() -> new PartSaleItem(mat, MaterialCategoryType.HARDWARE, null, null, 0,
-          measure, price, price))
+          null, measure, price, price))
           .isInstanceOf(IllegalArgumentException.class);
 
       assertThatThrownBy(() -> new PartSaleItem(mat, MaterialCategoryType.HARDWARE, null, null, -1,
-          measure, price, price))
+          null, measure, price, price))
           .isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -97,19 +99,19 @@ class PartSaleItemTest {
       BigDecimal negTotalPrice = new BigDecimal("-5.0");
 
       assertThatThrownBy(() -> new PartSaleItem(mat, MaterialCategoryType.HARDWARE, null, null, 1,
-          measure, null, posPrice))
+          null, measure, null, posPrice))
           .isInstanceOf(IllegalArgumentException.class);
 
       assertThatThrownBy(() -> new PartSaleItem(mat, MaterialCategoryType.HARDWARE, null, null, 1,
-          measure, negUnitPrice, posPrice))
+          null, measure, negUnitPrice, posPrice))
           .isInstanceOf(IllegalArgumentException.class);
 
       assertThatThrownBy(() -> new PartSaleItem(mat, MaterialCategoryType.HARDWARE, null, null, 1,
-          measure, posPrice, null))
+          null, measure, posPrice, null))
           .isInstanceOf(IllegalArgumentException.class);
 
       assertThatThrownBy(() -> new PartSaleItem(mat, MaterialCategoryType.HARDWARE, null, null, 1,
-          measure, posPrice, negTotalPrice))
+          null, measure, posPrice, negTotalPrice))
           .isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -121,15 +123,15 @@ class PartSaleItemTest {
       BigDecimal price = new BigDecimal("10.0");
 
       assertThatThrownBy(() -> new PartSaleItem(null, MaterialCategoryType.HARDWARE, null, null, 1,
-          measure, price, price))
+          null, measure, price, price))
           .isInstanceOf(NullPointerException.class);
 
       assertThatThrownBy(() -> new PartSaleItem(mat, null, null, null, 1,
-          measure, price, price))
+          null, measure, price, price))
           .isInstanceOf(NullPointerException.class);
 
       assertThatThrownBy(() -> new PartSaleItem(mat, MaterialCategoryType.HARDWARE, null, null, 1,
-          null, price, price))
+          null, null, price, price))
           .isInstanceOf(NullPointerException.class);
     }
   }
@@ -143,7 +145,7 @@ class PartSaleItemTest {
     void shouldLinkPartSale() {
       Material mat = createMockMaterial(UUID.randomUUID(), "Roldana");
       PartSaleItem item = new PartSaleItem(mat, MaterialCategoryType.HARDWARE, null, null, 1,
-          new BigDecimal("1.0"), new BigDecimal("10.0"), new BigDecimal("10.0"));
+          null, new BigDecimal("1.0"), new BigDecimal("10.0"), new BigDecimal("10.0"));
 
       PartSale sale = mock(PartSale.class);
       item.setPartSale(sale);
@@ -156,9 +158,9 @@ class PartSaleItemTest {
     void shouldFollowEqualsWithIds() throws Exception {
       Material mat = createMockMaterial(UUID.randomUUID(), "Roldana");
       PartSaleItem item1 = new PartSaleItem(mat, MaterialCategoryType.HARDWARE, 100, 200, 1,
-          new BigDecimal("1.0"), new BigDecimal("10.0"), new BigDecimal("10.0"));
+          new BigDecimal("0.05"), new BigDecimal("1.0"), new BigDecimal("10.0"), new BigDecimal("10.0"));
       PartSaleItem item2 = new PartSaleItem(mat, MaterialCategoryType.HARDWARE, 100, 200, 1,
-          new BigDecimal("1.0"), new BigDecimal("10.0"), new BigDecimal("10.0"));
+          new BigDecimal("0.05"), new BigDecimal("1.0"), new BigDecimal("10.0"), new BigDecimal("10.0"));
 
       java.lang.reflect.Field idField = PartSaleItem.class.getDeclaredField("id");
       idField.setAccessible(true);
@@ -189,6 +191,7 @@ class PartSaleItemTest {
 
       assertThat(item1.getWidthMm()).isEqualTo(100);
       assertThat(item1.getHeightMm()).isEqualTo(200);
+      assertThat(item1.getLossFactor()).isEqualByComparingTo("0.05");
     }
 
     @Test
@@ -203,4 +206,3 @@ class PartSaleItemTest {
     }
   }
 }
-

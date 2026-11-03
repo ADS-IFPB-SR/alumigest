@@ -1,5 +1,3 @@
-import { useState, useEffect } from 'react';
-
 interface GlassItemFieldsProps {
   readonly widthMm: number | '';
   readonly heightMm: number | '';
@@ -12,6 +10,7 @@ interface GlassItemFieldsProps {
   readonly onPriceChange: (val: number | '') => void;
   readonly calculatedArea?: number;
   readonly totalPrice?: number;
+  readonly minimumAreaApplied?: boolean;
 }
 
 export function GlassItemFields({
@@ -26,19 +25,8 @@ export function GlassItemFields({
   onPriceChange,
   calculatedArea,
   totalPrice,
+  minimumAreaApplied = false,
 }: GlassItemFieldsProps) {
-  const [showMinimumAreaWarning, setShowMinimumAreaWarning] = useState(false);
-
-  // Avalia se a regra de área mínima está ativa
-  useEffect(() => {
-    if (typeof widthMm === 'number' && typeof heightMm === 'number') {
-      const rawArea = (widthMm / 1000) * (heightMm / 1000);
-      setShowMinimumAreaWarning(rawArea > 0 && rawArea < 0.25);
-    } else {
-      setShowMinimumAreaWarning(false);
-    }
-  }, [widthMm, heightMm]);
-
   return (
     <div className="space-y-4 animate-in fade-in duration-200">
       <div className="flex items-center justify-between border-b border-cyan-100 dark:border-cyan-900/30 pb-2">
@@ -132,7 +120,7 @@ export function GlassItemFields({
         className="bg-slate-50 dark:bg-slate-800/40 p-3 rounded-lg border border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
       >
         <div>
-          {showMinimumAreaWarning ? (
+          {minimumAreaApplied ? (
             <p
               data-testid="warning-minimum-area"
               className="text-xs font-semibold text-cyan-600 dark:text-cyan-400 flex items-center gap-1.5"

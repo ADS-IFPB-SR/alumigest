@@ -20,20 +20,20 @@ public class FilmPartCalculator implements PartItemCalculator {
 
     @Override
     public CalculatePartItemResponse calculate(CalculatePartItemRequest request) {
-        // Cálculo da área líquida em m² (L x A / 1.000.000) * Qtd
+        if (request.widthMm() == null || request.heightMm() == null || request.quantity() == null || request.unitPrice() == null) {
+            throw new IllegalArgumentException("Largura, altura, quantidade e preço unitário são obrigatórios para o cálculo de película.");
+        }
+
         BigDecimal netArea = BigDecimal.valueOf(request.widthMm())
             .multiply(BigDecimal.valueOf(request.heightMm()))
-            .divide(ONE_MILLION, 4, RoundingMode.HALF_UP)
+            .divide(ONE_MILLION, 4, RoundingMode.HALF_EVEN)
             .multiply(BigDecimal.valueOf(request.quantity()));
 
-        // Pega o lossFactor do REQUEST e aplica o acréscimo de perda de bobina
         BigDecimal lossFactor = request.lossFactor() != null ? request.lossFactor() : BigDecimal.ZERO;
-        BigDecimal billableArea = netArea.multiply(BigDecimal.ONE.add(lossFactor));
+        BigDecimal billableArea = netArea.multiply(BigDecimal.ONE.add(lossFactor)).setScale(4, RoundingMode.HALF_EVEN);
         
-        // Valor total usando o preço unitário do request
-        BigDecimal totalPrice = billableArea.multiply(request.unitPrice());
+        BigDecimal totalPrice = billableArea.multiply(request.unitPrice()).setScale(2, RoundingMode.HALF_EVEN);
 
-        // Retorna exatamente a assinatura do DTO de resposta: (área faturável, preço unitário, total)
-        return new CalculatePartItemResponse(billableArea, request.unitPrice(), totalPrice);
+        return new CalculatePartItemResponse(billableArea, request.unitPrice().setScale(2, RoundingMode.HALF_EVEN), totalPrice, false);
     }
 }

@@ -17,6 +17,7 @@ export interface CalculatePartItemResult {
   calculatedUnitMeasure: number;
   unitPrice: number;
   totalPrice: number;
+  minimumAreaApplied: boolean;
 }
 
 export type CalculatePartItemRequest = CalculatePartItemPayload;
@@ -44,6 +45,7 @@ export interface CreatePartSaleItemRequest {
   widthMm?: number | null;
   heightMm?: number | null;
   unitPrice: number;
+  lossFactor?: number | null;
 }
 
 export interface CreatePartSaleRequest {

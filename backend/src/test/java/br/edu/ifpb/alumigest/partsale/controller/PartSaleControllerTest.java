@@ -82,7 +82,8 @@ class PartSaleControllerTest {
       CalculatePartItemResponse response = new CalculatePartItemResponse(
           new BigDecimal("4.0000"),
           new BigDecimal("50.00"),
-          new BigDecimal("200.00")
+          new BigDecimal("200.00"),
+          false
       );
 
       when(partSaleService.calculateItem(any(CalculatePartItemRequest.class))).thenReturn(response);
@@ -112,7 +113,8 @@ class PartSaleControllerTest {
       CalculatePartItemResponse response = new CalculatePartItemResponse(
           new BigDecimal("10.5000"),
           new BigDecimal("45.00"),
-          new BigDecimal("472.50")
+          new BigDecimal("472.50"),
+          false
       );
 
       when(partSaleService.calculateItem(any(CalculatePartItemRequest.class))).thenReturn(response);
@@ -161,7 +163,8 @@ class PartSaleControllerTest {
               2,
               null,
               null,
-              new BigDecimal("25.00")
+              new BigDecimal("25.00"),
+              null
           ))
       );
 

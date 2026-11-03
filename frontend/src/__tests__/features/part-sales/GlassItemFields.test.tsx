@@ -78,6 +78,7 @@ describe('GlassItemFields Component (US-46.3 - Vidros)', () => {
         unitPrice={100}
         calculatedArea={0.25}
         totalPrice={25.0}
+        minimumAreaApplied={true}
         onWidthChange={vi.fn()}
         onHeightChange={vi.fn()}
         onQuantityChange={vi.fn()}

@@ -22,6 +22,7 @@ CREATE TABLE tb_part_sale_items (
     width_mm INT NULL,
     height_mm INT NULL,
     quantity INT NOT NULL CHECK (quantity > 0),
+    loss_factor NUMERIC(6, 4) NULL,
     calculated_unit_measure NUMERIC(10, 4) NOT NULL,
     unit_price NUMERIC(12, 2) NOT NULL,
     total_price NUMERIC(12, 2) NOT NULL

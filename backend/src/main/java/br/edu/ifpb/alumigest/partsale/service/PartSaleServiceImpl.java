@@ -85,7 +85,7 @@ public class PartSaleServiceImpl implements PartSaleService {
           itemReq.heightMm(),
           itemReq.quantity(),
           itemReq.unitPrice(),
-          null
+          itemReq.lossFactor()
       );
       CalculatePartItemResponse calcResp = calculatorFactory
           .getCalculator(itemReq.materialType())
@@ -97,6 +97,7 @@ public class PartSaleServiceImpl implements PartSaleService {
           itemReq.widthMm(),
           itemReq.heightMm(),
           itemReq.quantity(),
+          itemReq.lossFactor(),
           calcResp.calculatedUnitMeasure(),
           calcResp.unitPrice(),
           calcResp.totalPrice()

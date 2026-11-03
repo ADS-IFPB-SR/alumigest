@@ -38,7 +38,8 @@ public class HardwarePartCalculator implements PartItemCalculator {
     return new CalculatePartItemResponse(
         calculatedUnitMeasure,
         unitPrice,
-        totalPrice
+        totalPrice,
+        false
     );
   }
 }

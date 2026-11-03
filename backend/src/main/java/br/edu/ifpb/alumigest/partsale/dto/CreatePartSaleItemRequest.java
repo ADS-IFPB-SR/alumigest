@@ -27,5 +27,8 @@ public record CreatePartSaleItemRequest(
 
     @NotNull(message = "Preço unitário é obrigatório")
     @PositiveOrZero(message = "Preço unitário não pode ser negativo")
-    BigDecimal unitPrice
+    BigDecimal unitPrice,
+
+    @PositiveOrZero(message = "Fator de perda não pode ser negativo")
+    BigDecimal lossFactor
 ) {}
