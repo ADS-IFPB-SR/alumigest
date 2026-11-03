@@ -273,6 +273,16 @@ describe('ProductionKanbanPage Component (US-18.5)', () => {
     expect(screen.getByTestId('kanban-error-state')).toBeInTheDocument();
     expect(screen.getByText('Erro de conexão com o servidor.')).toBeInTheDocument();
 
+    const pageContainer = screen.getByTestId('production-kanban-page');
+    expect(pageContainer).toHaveClass('overflow-y-auto');
+    expect(pageContainer).not.toHaveClass('overflow-hidden');
+    expect(pageContainer).toHaveClass('flex', 'flex-col', 'min-h-0');
+
+    // O wrapper do quadro não cria um nível extra de rolagem (evita scroll duplo página ➔ wrapper ➔ coluna)
+    const boardWrapper = screen.getByTestId('kanban-board-wrapper');
+    expect(boardWrapper).toHaveClass('flex', 'flex-col', 'md:flex-1');
+    expect(boardWrapper).not.toHaveClass('overflow-y-auto');
+
     const retryBtn = screen.getByText('Tentar Novamente');
     fireEvent.click(retryBtn);
 
