@@ -71,8 +71,105 @@ export const CustomerHubPage: React.FC = () => {
 
   const handleViewPdf = (budgetId: string) => {
     toast.success(`Abrindo proposta em PDF (ID: ${budgetId.slice(0, 8)})...`);
-    // Pode integrar diretamente com o endpoint de download PDF existente
     window.open(`/api/orcamentos/${budgetId}/pdf`, '_blank');
+  };
+
+  const renderDetailContent = () => {
+    if (isLoadingDashboard) {
+      return (
+        <div className="flex items-center justify-center p-16 text-slate-500 text-sm">
+          Carregando dados do cliente...
+        </div>
+      );
+    }
+
+    if (isDashboardError || !dashboardData) {
+      return (
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-12 text-center text-slate-500">
+          <Users className="w-12 h-12 mx-auto text-slate-300 dark:text-slate-700 mb-3" />
+          <p className="text-sm font-semibold">Nenhum cliente selecionado</p>
+          <p className="text-xs text-slate-400 mt-1">
+            Selecione um cliente na barra lateral para visualizar seu Hub 360°.
+          </p>
+        </div>
+      );
+    }
+
+    return (
+      <>
+        {/* 1. Hero Card */}
+        <CustomerHeroCard
+          customer={dashboardData}
+          onNewBudget={handleNewBudget}
+        />
+
+        {/* 2. KPI Cards */}
+        <CustomerKpiGrid
+          totalContratado={dashboardData.totalContratado}
+          quantidadeOrdensServico={dashboardData.quantidadeOrdensServico}
+          quantidadeOrcamentos={dashboardData.quantidadeOrcamentos}
+        />
+
+        {/* 3. Navigation Tabs */}
+        <div className="border-b border-slate-200 dark:border-slate-800 flex items-center gap-6">
+          <button
+            type="button"
+            onClick={() => setActiveTab('orders')}
+            className={`pb-3 text-sm font-semibold flex items-center gap-2 border-b-2 transition ${
+              activeTab === 'orders'
+                ? 'border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400'
+                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+            }`}
+          >
+            <ClipboardList className="w-4 h-4" />
+            <span>Ordens de Serviço (O.S.)</span>
+            <span className="px-1.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+              {dashboardData.quantidadeOrdensServico}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('budgets')}
+            className={`pb-3 text-sm font-semibold flex items-center gap-2 border-b-2 transition ${
+              activeTab === 'budgets'
+                ? 'border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400'
+                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+            }`}
+          >
+            <FileText className="w-4 h-4" />
+            <span>Orçamentos</span>
+            <span className="px-1.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300">
+              {dashboardData.quantidadeOrcamentos}
+            </span>
+          </button>
+        </div>
+
+        {/* 4. Tab Content */}
+        {activeTab === 'budgets' ? (
+          <CustomerBudgetsTab
+            budgets={budgets}
+            clientPhone={dashboardData.telefone}
+            clientName={dashboardData.nomeCompleto}
+            isLoading={isLoadingBudgets}
+            page={budgetPage}
+            totalPages={totalBudgetPages}
+            onPageChange={setBudgetPage}
+            onViewPdf={handleViewPdf}
+          />
+        ) : (
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-10 text-center">
+            <ClipboardList className="w-10 h-10 mx-auto text-blue-500/60 mb-3" />
+            <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+              Módulo de Ordens de Serviço (O.S.)
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-md mx-auto">
+              A listagem detalhada de O.S., inspeção de esquadrias em L×A mm e emissão de etiquetas térmicas Elgin L42 serão ativadas na subtask US-47.2.
+            </p>
+          </div>
+        )}
+      </>
+    );
   };
 
   return (
@@ -116,93 +213,7 @@ export const CustomerHubPage: React.FC = () => {
           aria-label="Painel 360 do Cliente"
           className="flex-1 p-4 md:p-6 overflow-y-auto space-y-6"
         >
-          {isLoadingDashboard ? (
-            <div className="flex items-center justify-center p-16 text-slate-500 text-sm">
-              Carregando dados do cliente...
-            </div>
-          ) : isDashboardError || !dashboardData ? (
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-12 text-center text-slate-500">
-              <Users className="w-12 h-12 mx-auto text-slate-300 dark:text-slate-700 mb-3" />
-              <p className="text-sm font-semibold">Nenhum cliente selecionado</p>
-              <p className="text-xs text-slate-400 mt-1">
-                Selecione um cliente na barra lateral para visualizar seu Hub 360°.
-              </p>
-            </div>
-          ) : (
-            <>
-              {/* 1. Hero Card */}
-              <CustomerHeroCard
-                customer={dashboardData}
-                onNewBudget={handleNewBudget}
-              />
-
-              {/* 2. KPI Cards */}
-              <CustomerKpiGrid
-                totalContratado={dashboardData.totalContratado}
-                quantidadeOrdensServico={dashboardData.quantidadeOrdensServico}
-                quantidadeOrcamentos={dashboardData.quantidadeOrcamentos}
-              />
-
-              {/* 3. Navigation Tabs */}
-              <div className="border-b border-slate-200 dark:border-slate-800 flex items-center gap-6">
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('orders')}
-                  className={`pb-3 text-sm font-semibold flex items-center gap-2 border-b-2 transition ${
-                    activeTab === 'orders'
-                      ? 'border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400'
-                      : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
-                  }`}
-                >
-                  <ClipboardList className="w-4 h-4" />
-                  <span>Ordens de Serviço (O.S.)</span>
-                  <span className="px-1.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                    {dashboardData.quantidadeOrdensServico}
-                  </span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('budgets')}
-                  className={`pb-3 text-sm font-semibold flex items-center gap-2 border-b-2 transition ${
-                    activeTab === 'budgets'
-                      ? 'border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400'
-                      : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
-                  }`}
-                >
-                  <FileText className="w-4 h-4" />
-                  <span>Orçamentos</span>
-                  <span className="px-1.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300">
-                    {dashboardData.quantidadeOrcamentos}
-                  </span>
-                </button>
-              </div>
-
-              {/* 4. Tab Content */}
-              {activeTab === 'budgets' ? (
-                <CustomerBudgetsTab
-                  budgets={budgets}
-                  clientPhone={dashboardData.telefone}
-                  clientName={dashboardData.nomeCompleto}
-                  isLoading={isLoadingBudgets}
-                  page={budgetPage}
-                  totalPages={totalBudgetPages}
-                  onPageChange={setBudgetPage}
-                  onViewPdf={handleViewPdf}
-                />
-              ) : (
-                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-10 text-center">
-                  <ClipboardList className="w-10 h-10 mx-auto text-blue-500/60 mb-3" />
-                  <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-                    Módulo de Ordens de Serviço (O.S.)
-                  </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-md mx-auto">
-                    A listagem detalhada de O.S., inspeção de esquadrias em L×A mm e emissão de etiquetas térmicas Elgin L42 serão ativadas na subtask US-47.2.
-                  </p>
-                </div>
-              )}
-            </>
-          )}
+          {renderDetailContent()}
         </main>
       </div>
     </div>

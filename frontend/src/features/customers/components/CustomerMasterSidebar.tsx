@@ -20,6 +20,88 @@ export const CustomerMasterSidebar: React.FC<CustomerMasterSidebarProps> = ({
   onSearchChange,
   isLoading = false,
 }) => {
+  const renderCustomerList = () => {
+    if (isLoading && customers.length === 0) {
+      return (
+        <div className="p-6 text-center text-sm text-slate-500 dark:text-slate-400">
+          Carregando clientes...
+        </div>
+      );
+    }
+
+    if (customers.length === 0) {
+      return (
+        <div className="p-6 text-center text-sm text-slate-500 dark:text-slate-400">
+          Nenhum cliente encontrado.
+        </div>
+      );
+    }
+
+    return customers.map((cust) => {
+      const isSelected = cust.id === selectedCustomerId;
+      const initials = getInitials(cust.nomeCompleto);
+      const locationStr = [cust.bairro, cust.cidade].filter(Boolean).join(' • ');
+
+      return (
+        <button
+          key={cust.id}
+          type="button"
+          onClick={() => onSelectCustomer(cust)}
+          className={`w-full text-left p-3 rounded-lg flex items-start gap-3 transition-colors ${
+            isSelected
+              ? 'bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-slate-900 dark:text-white'
+              : 'hover:bg-slate-100/70 dark:hover:bg-slate-800/60 border border-transparent text-slate-700 dark:text-slate-300'
+          }`}
+        >
+          {/* Initials Avatar */}
+          <div
+            className={`w-10 h-10 rounded-lg flex-shrink-0 flex items-center justify-center font-bold text-xs uppercase ${
+              isSelected
+                ? 'bg-blue-600 text-white shadow-sm'
+                : 'bg-slate-800 text-white dark:bg-slate-700 dark:text-slate-200'
+            }`}
+          >
+            {initials}
+          </div>
+
+          {/* Info Container */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between gap-1">
+              <p className="text-xs font-bold uppercase truncate text-slate-900 dark:text-slate-100">
+                {cust.nomeCompleto}
+              </p>
+              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 flex items-center gap-0.5">
+                {cust.personType === 'JURIDICA' ? (
+                  <>
+                    <Building2 className="w-2.5 h-2.5" /> PJ
+                  </>
+                ) : (
+                  <>
+                    <User className="w-2.5 h-2.5" /> PF
+                  </>
+                )}
+              </span>
+            </div>
+
+            {locationStr && (
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate flex items-center gap-1 mt-0.5">
+                <MapPin className="w-3 h-3 flex-shrink-0 text-slate-400" />
+                <span>{locationStr}</span>
+              </p>
+            )}
+
+            {cust.telefone && (
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate flex items-center gap-1 mt-0.5">
+                <Phone className="w-3 h-3 flex-shrink-0 text-slate-400" />
+                <span>{cust.telefone}</span>
+              </p>
+            )}
+          </div>
+        </button>
+      );
+    });
+  };
+
   return (
     <aside
       aria-label="Lista de Clientes"
@@ -53,79 +135,7 @@ export const CustomerMasterSidebar: React.FC<CustomerMasterSidebarProps> = ({
 
       {/* Customer List */}
       <div className="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/60 p-2 space-y-1">
-        {isLoading && customers.length === 0 ? (
-          <div className="p-6 text-center text-sm text-slate-500 dark:text-slate-400">
-            Carregando clientes...
-          </div>
-        ) : customers.length === 0 ? (
-          <div className="p-6 text-center text-sm text-slate-500 dark:text-slate-400">
-            Nenhum cliente encontrado.
-          </div>
-        ) : (
-          customers.map((cust) => {
-            const isSelected = cust.id === selectedCustomerId;
-            const initials = getInitials(cust.nomeCompleto);
-            const locationStr = [cust.bairro, cust.cidade].filter(Boolean).join(' • ');
-
-            return (
-              <button
-                key={cust.id}
-                type="button"
-                onClick={() => onSelectCustomer(cust)}
-                className={`w-full text-left p-3 rounded-lg flex items-start gap-3 transition-colors ${
-                  isSelected
-                    ? 'bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-slate-900 dark:text-white'
-                    : 'hover:bg-slate-100/70 dark:hover:bg-slate-800/60 border border-transparent text-slate-700 dark:text-slate-300'
-                }`}
-              >
-                {/* Initials Avatar */}
-                <div
-                  className={`w-10 h-10 rounded-lg flex-shrink-0 flex items-center justify-center font-bold text-xs uppercase ${
-                    isSelected
-                      ? 'bg-blue-600 text-white shadow-sm'
-                      : 'bg-slate-800 text-white dark:bg-slate-700 dark:text-slate-200'
-                  }`}
-                >
-                  {initials}
-                </div>
-
-                {/* Info Container */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-1">
-                    <p className="text-xs font-bold uppercase truncate text-slate-900 dark:text-slate-100">
-                      {cust.nomeCompleto}
-                    </p>
-                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 flex items-center gap-0.5">
-                      {cust.personType === 'JURIDICA' ? (
-                        <>
-                          <Building2 className="w-2.5 h-2.5" /> PJ
-                        </>
-                      ) : (
-                        <>
-                          <User className="w-2.5 h-2.5" /> PF
-                        </>
-                      )}
-                    </span>
-                  </div>
-
-                  {locationStr && (
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate flex items-center gap-1 mt-0.5">
-                      <MapPin className="w-3 h-3 flex-shrink-0 text-slate-400" />
-                      <span>{locationStr}</span>
-                    </p>
-                  )}
-
-                  {cust.telefone && (
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate flex items-center gap-1 mt-0.5">
-                      <Phone className="w-3 h-3 flex-shrink-0 text-slate-400" />
-                      <span>{cust.telefone}</span>
-                    </p>
-                  )}
-                </div>
-              </button>
-            );
-          })
-        )}
+        {renderCustomerList()}
       </div>
     </aside>
   );
