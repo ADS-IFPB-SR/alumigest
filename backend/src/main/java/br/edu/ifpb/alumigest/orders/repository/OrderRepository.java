@@ -3,6 +3,7 @@ package br.edu.ifpb.alumigest.orders.repository;
 import br.edu.ifpb.alumigest.orders.domain.ApprovalChannel;
 import br.edu.ifpb.alumigest.orders.domain.Order;
 import br.edu.ifpb.alumigest.orders.domain.OrderStatus;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -31,6 +32,18 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
   Page<Order> findByStatus(OrderStatus status, Pageable pageable);
 
   Page<Order> findAllByOrderByCreatedAtDesc(Pageable pageable);
+
+  long countByClienteIdAndAtivoTrue(UUID clienteId);
+
+  Page<Order> findByClienteIdAndAtivoTrue(UUID clienteId, Pageable pageable);
+
+  @Query("""
+        SELECT COALESCE(SUM(o.valorLiquido), 0) FROM Order o
+        WHERE o.cliente.id = :clientId
+          AND o.ativo = true
+          AND o.status <> br.edu.ifpb.alumigest.orders.domain.OrderStatus.CANCELLED
+      """)
+  BigDecimal sumTotalContractedByClienteId(@Param("clientId") UUID clientId);
 
   /**
    * Busca os códigos recentes por prefixo anual ordenados numericamente

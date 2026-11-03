@@ -15,6 +15,8 @@ import java.util.UUID;
 @Repository
 public interface BudgetRepository extends JpaRepository<Budget, UUID> {
     Page<Budget> findByClientId(UUID clientId, Pageable pageable);
+
+    long countByClientId(UUID clientId);
     Page<Budget> findByStatus(BudgetStatus status, Pageable pageable);
     Optional<Budget> findByCode(String code);
     boolean existsByCode(String code);
