@@ -162,7 +162,7 @@ const server = http.createServer((req, res) => {
             dataPrevisaoEntrega: order.dataPrevisaoEntrega,
             valorTotal: order.valorLiquido,
             valorLiquido: order.valorLiquido,
-            quantidadeItens: order.items.length,
+            quantidadeItens: order.items.reduce((acc, item) => acc + (item.quantidade || 1), 0),
           },
         ],
         page: {

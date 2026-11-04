@@ -373,6 +373,23 @@ describe('ProductionKanbanBoard Component (US-18.4)', () => {
       expect(calculateTotalPieces([])).toBe(0);
     });
 
+    it('deve somar o total real de pecas fisicas de items com multiplas unidades (BUG #500)', () => {
+      const orderSingleItemTenUnits: Order = {
+        ...orderWaiting1,
+        items: [
+          {
+            id: 'item-10',
+            descricao: 'Janela 10x',
+            quantidade: 10,
+            valorUnitario: 300,
+            valorTotal: 3000,
+            ordem: 0,
+          },
+        ],
+      };
+      expect(calculateTotalPieces([orderSingleItemTenUnits])).toBe(10);
+    });
+
     it('deve aplicar classes de rolagem vertical independente e responsiva em cada coluna [Bug #525]', () => {
       render(
         <ProductionKanbanBoard
