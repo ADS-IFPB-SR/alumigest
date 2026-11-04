@@ -50,7 +50,7 @@ public interface OrderMapper {
   )
   @Mapping(
       target = "quantidadeItens",
-      expression = "java(order.getItems() != null ? order.getItems().size() : 0)"
+      expression = "java(order.getItems() != null ? order.getItems().stream().mapToInt(item -> item.getQuantidade() != null ? item.getQuantidade() : 0).sum() : 0)"
   )
   OrderSummaryResponse toSummaryResponse(Order order);
 }

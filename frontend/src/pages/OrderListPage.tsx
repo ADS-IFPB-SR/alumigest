@@ -116,7 +116,7 @@ export function OrderListPage() {
           </Link>
         </td>
         <td className="px-2.5 py-2 font-data-mono text-on-surface-variant text-xs whitespace-nowrap">
-          {order.orcamentoCodigo || order.orcamentoId.split('-')[0].toUpperCase()}
+          {order.orcamentoCodigo || order.orcamentoId?.split('-')[0]?.toUpperCase() || '-'}
         </td>
         <td className="px-2.5 py-2 max-w-[170px] truncate" title={order.clienteNome}>
           <strong className="font-medium text-on-surface text-xs">{order.clienteNome}</strong>
@@ -312,7 +312,7 @@ export function OrderListPage() {
               className="px-2.5 py-1 text-xs border border-outline-variant bg-surface rounded-md disabled:opacity-40 disabled:cursor-not-allowed hover:bg-surface-container transition-colors text-on-surface font-medium"
               aria-label="Página anterior"
             >
-              &larr; Anterior
+              ← Anterior
             </button>
 
             {getVisiblePages(page, totalPages).map((pageItem) => {
@@ -354,7 +354,7 @@ export function OrderListPage() {
               className="px-2.5 py-1 text-xs border border-outline-variant bg-surface rounded-md disabled:opacity-40 disabled:cursor-not-allowed hover:bg-surface-container transition-colors text-on-surface font-medium"
               aria-label="Próxima página"
             >
-              Próximo &rarr;
+              Próximo →
             </button>
           </div>
         </div>
