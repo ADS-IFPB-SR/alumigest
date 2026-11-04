@@ -18,6 +18,22 @@ export const useCustomer = (id: string | undefined) => {
   });
 };
 
+export const useCustomerDashboard = (id: string | undefined) => {
+  return useQuery({
+    queryKey: ['customer-dashboard', id],
+    queryFn: () => customersApi.getCustomerDashboard(id!),
+    enabled: Boolean(id),
+  });
+};
+
+export const useCustomerBudgets = (id: string | undefined, params?: { page?: number; size?: number }) => {
+  return useQuery({
+    queryKey: ['customer-budgets', id, params],
+    queryFn: () => customersApi.getCustomerBudgets(id!, params),
+    enabled: Boolean(id),
+  });
+};
+
 export const useCreateCustomer = () => {
   const queryClient = useQueryClient();
   return useMutation({

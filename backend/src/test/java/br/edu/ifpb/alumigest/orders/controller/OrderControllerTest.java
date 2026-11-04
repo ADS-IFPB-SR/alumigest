@@ -201,7 +201,7 @@ class OrderControllerTest {
 
       mockMvc.perform(post("/api/v1/orders/convert/{budgetId}", budgetId)
               .contentType(MediaType.APPLICATION_JSON)
-              .content("{\"canalAprovacao\":\"PRESENCIAL\",\"dataPrevisaoEntrega\":\"2026-10-30\",\"observacoes\":\"Obs\"}"))
+              .content("{\"canalAprovacao\":\"PRESENCIAL\",\"dataPrevisaoEntrega\":\"" + LocalDate.now().plusDays(10) + "\",\"observacoes\":\"Obs\"}"))
           .andExpect(status().isCreated())
           .andExpect(header().string("Location", org.hamcrest.Matchers.containsString("/api/v1/orders/" + orderId)))
           .andExpect(jsonPath("$.id").value(orderId.toString()))
@@ -247,7 +247,7 @@ class OrderControllerTest {
 
       mockMvc.perform(post("/api/v1/orders/from-budget/{budgetId}", budgetId)
               .contentType(MediaType.APPLICATION_JSON)
-              .content("{\"canalAprovacao\":\"PRESENCIAL\",\"dataPrevisaoEntrega\":\"2026-10-30\",\"observacoes\":\"Obs\"}"))
+              .content("{\"canalAprovacao\":\"PRESENCIAL\",\"dataPrevisaoEntrega\":\"" + LocalDate.now().plusDays(10) + "\",\"observacoes\":\"Obs\"}"))
           .andExpect(status().isCreated())
           .andExpect(header().string("Location", org.hamcrest.Matchers.containsString("/api/v1/orders/" + orderId)));
     }
@@ -291,7 +291,7 @@ class OrderControllerTest {
 
       mockMvc.perform(post("/api/orders/from-budget/{budgetId}", budgetId)
               .contentType(MediaType.APPLICATION_JSON)
-              .content("{\"canalAprovacao\":\"PRESENCIAL\",\"dataPrevisaoEntrega\":\"2026-10-30\",\"observacoes\":\"Obs\"}"))
+              .content("{\"canalAprovacao\":\"PRESENCIAL\",\"dataPrevisaoEntrega\":\"" + LocalDate.now().plusDays(10) + "\",\"observacoes\":\"Obs\"}"))
           .andExpect(status().isCreated());
     }
   }

@@ -8,6 +8,7 @@ import { BudgetNewPage } from './pages/BudgetNewPage';
 import { BudgetDetailPage } from './pages/BudgetDetailPage';
 import { BudgetEditor } from './features/budgets/components/BudgetEditor';
 import { PlaceholderPage } from './pages/PlaceholderPage';
+import { CustomerHubPage } from './pages/CustomerHubPage';
 import { SeparateSalePage } from './pages/SeparateSalePage';
 import { ProductTab as ProductsPage } from './pages/ProductsPage';
 import { ProductBuilderPage } from './pages/ProductBuilderPage';
@@ -101,16 +102,7 @@ export function AppRoutes() {
         <Route path="produtos/novo" element={<ProductBuilderPage />} />
         <Route path="produtos/:id/editar" element={<ProductBuilderPage />} />
 
-        <Route
-          path="clientes"
-          element={
-            <PlaceholderPage
-              title="Gestão de Clientes"
-              icon="group"
-              description="Cadastro de clientes, contatos, histórico de orçamentos e vendas realizadas."
-            />
-          }
-        />
+        <Route path="clientes" element={<CustomerHubPage />} />
         <Route
           path="financeiro"
           element={
