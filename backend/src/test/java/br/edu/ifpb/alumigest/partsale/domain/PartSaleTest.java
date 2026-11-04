@@ -124,8 +124,9 @@ class PartSaleTest {
       when(mat.getId()).thenReturn(UUID.randomUUID());
       when(mat.getName()).thenReturn("Dobradiça");
 
+      // Adicionado o parâmetro 'null' para o lossFactor
       PartSaleItem item = new PartSaleItem(mat, MaterialCategoryType.HARDWARE, null, null, 1,
-          BigDecimal.ONE, BigDecimal.TEN, BigDecimal.TEN);
+          null, BigDecimal.ONE, BigDecimal.TEN, BigDecimal.TEN);
 
       assertThat(item.getPartSale()).isNull();
       sale.addItem(item);
@@ -205,4 +206,3 @@ class PartSaleTest {
     }
   }
 }
-

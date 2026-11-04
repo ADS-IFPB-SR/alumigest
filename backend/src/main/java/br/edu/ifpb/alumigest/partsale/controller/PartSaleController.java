@@ -56,7 +56,9 @@ public class PartSaleController {
   @ApiResponse(responseCode = "201", description = "Venda de partes criada com sucesso")
   public ResponseEntity<PartSaleResponse> create(
       @RequestBody @Valid CreatePartSaleRequest request) {
+    // CORREÇÃO: Chamar o serviço de criação de venda, e não o de cálculo
     PartSaleResponse response = partSaleService.create(request);
+    
     URI location = ServletUriComponentsBuilder.fromCurrentRequest()
         .path("/{id}")
         .buildAndExpand(response.id())

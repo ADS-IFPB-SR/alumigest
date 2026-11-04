@@ -8,5 +8,6 @@ import java.math.BigDecimal;
 public record CalculatePartItemResponse(
     BigDecimal calculatedUnitMeasure,
     BigDecimal unitPrice,
-    BigDecimal totalPrice
+    BigDecimal totalPrice,
+    boolean minimumAreaApplied
 ) {}

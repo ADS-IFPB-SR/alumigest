@@ -13,6 +13,8 @@ import {
 import toast from 'react-hot-toast';
 import type { MaterialCategoryType, PartSaleItem, PartSaleResponse, CreatePartSaleRequest } from '../types/partSaleTypes';
 import { AluminumItemFields } from './AluminumItemFields';
+import { GlassItemFields } from './GlassItemFields';
+import { FilmItemFields } from './FilmItemFields';
 import { usePartCalculation } from '../hooks/usePartCalculation';
 import { customersApi } from '@/features/customers/services/customersApi';
 import { partSaleApi } from '../services/partSaleApi';
@@ -166,7 +168,7 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
   const [heightMm, setHeightMm] = useState<number | ''>(2500);
   const [widthMm, setWidthMm] = useState<number | ''>(800);
   const [unitPrice, setUnitPrice] = useState<number | ''>(45);
-  const [lossFactor] = useState<number>(0.05); // 5% perda padrão de corte para perfis
+  const [lossFactor, setLossFactor] = useState<number>(0.05); // 5% perda padrão de corte
 
   const [items, setItems] = useState<PartSaleItem[]>([]);
   const [discountAmount, setDiscountAmount] = useState<number | ''>(0);
@@ -241,7 +243,7 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
       };
     }
 
-    if (category === 'GLASS' || category === 'FILM') {
+    if (category === 'GLASS') {
       if (typeof heightMm !== 'number' || heightMm <= 0 || typeof widthMm !== 'number' || widthMm <= 0) {
         return null;
       }
@@ -252,6 +254,20 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
         quantity,
         unitPrice,
         lossFactor: 0,
+      };
+    }
+
+    if (category === 'FILM') {
+      if (typeof heightMm !== 'number' || heightMm <= 0 || typeof widthMm !== 'number' || widthMm <= 0) {
+        return null;
+      }
+      return {
+        category,
+        heightMm,
+        widthMm,
+        quantity,
+        unitPrice,
+        lossFactor, // Filme também consome fator de perda
       };
     }
 
@@ -302,7 +318,7 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
       heightMm: height,
       widthMm: resolveItemWidthMm(category, width),
       unitPrice: price,
-      lossFactor: category === 'PROFILE' ? lossFactor : 0,
+      lossFactor: category === 'PROFILE' || category === 'FILM' ? lossFactor : 0,
       calculatedUnitMeasure: calculatedMeasure,
       totalPrice: subtotal,
     };
@@ -352,6 +368,7 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
           widthMm: it.widthMm,
           heightMm: it.heightMm,
           unitPrice: it.unitPrice,
+          lossFactor: it.lossFactor, // Garante envio da perda para backend persistir
         })),
       };
 
@@ -477,11 +494,18 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
                     if (newCat === 'PROFILE') {
                       setUnitPrice(45);
                       setHeightMm(2500);
+                      setLossFactor(0.05);
                     } else if (newCat === 'HARDWARE') {
                       setUnitPrice(25);
                       setHeightMm('');
                       setWidthMm('');
+                    } else if (newCat === 'FILM') {
+                      setUnitPrice(15);
+                      setHeightMm(2000);
+                      setWidthMm(800);
+                      setLossFactor(0.10); // Perda sugerida para Película
                     } else {
+                      // Vidro
                       setUnitPrice(120);
                       setHeightMm(2000);
                       setWidthMm(800);
@@ -523,8 +547,8 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
               </div>
             </div>
 
-            {/* Linha 2: Campos Especialistas conforme Categoria */}
-            {category === 'PROFILE' ? (
+            {/* Linha 2: Campos Especialistas Renderizados por Categoria */}
+            {category === 'PROFILE' && (
               <AluminumItemFields
                 lengthMm={heightMm}
                 quantity={quantity}
@@ -532,12 +556,46 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
                 lossFactor={lossFactor}
                 calculatedMeters={calculation?.calculatedUnitMeasure}
                 totalPrice={calculation?.totalPrice}
-                onLengthChange={(val) => setHeightMm(val)}
-                onQuantityChange={(val) => setQuantity(val)}
-                onPriceChange={(val) => setUnitPrice(val)}
+                onLengthChange={setHeightMm}
+                onQuantityChange={setQuantity}
+                onPriceChange={setUnitPrice}
               />
-            ) : (
-              /* Fallback para Vidro / Película / Ferragem */
+            )}
+
+            {category === 'GLASS' && (
+              <GlassItemFields
+                widthMm={widthMm}
+                heightMm={heightMm}
+                quantity={quantity}
+                unitPrice={unitPrice}
+                calculatedArea={calculation?.calculatedUnitMeasure}
+                totalPrice={calculation?.totalPrice}
+                minimumAreaApplied={calculation?.minimumAreaApplied}
+                onWidthChange={setWidthMm}
+                onHeightChange={setHeightMm}
+                onQuantityChange={setQuantity}
+                onPriceChange={setUnitPrice}
+              />
+            )}
+
+            {category === 'FILM' && (
+              <FilmItemFields
+                widthMm={widthMm}
+                heightMm={heightMm}
+                quantity={quantity}
+                unitPrice={unitPrice}
+                lossFactor={lossFactor}
+                calculatedArea={calculation?.calculatedUnitMeasure}
+                totalPrice={calculation?.totalPrice}
+                onWidthChange={setWidthMm}
+                onHeightChange={setHeightMm}
+                onQuantityChange={setQuantity}
+                onPriceChange={setUnitPrice}
+                onLossFactorChange={setLossFactor}
+              />
+            )}
+
+            {category === 'HARDWARE' && (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
                   <label
@@ -556,42 +614,6 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
                     className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 rounded-lg outline-none font-bold focus:border-primary"
                   />
                 </div>
-                {category !== 'HARDWARE' && (
-                  <>
-                    <div>
-                      <label
-                        htmlFor="part-generic-height"
-                        className="block text-xs font-semibold text-slate-700 dark:text-slate-200 uppercase mb-1"
-                      >
-                        Altura (mm) *
-                      </label>
-                      <input
-                        id="part-generic-height"
-                        type="number"
-                        value={heightMm}
-                        placeholder="2000"
-                        onChange={(e) => setHeightMm(e.target.value === '' ? '' : Number.parseInt(e.target.value, 10))}
-                        className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 rounded-lg outline-none font-mono font-bold focus:border-primary"
-                      />
-                    </div>
-                    <div>
-                      <label
-                        htmlFor="part-generic-width"
-                        className="block text-xs font-semibold text-slate-700 dark:text-slate-200 uppercase mb-1"
-                      >
-                        Largura (mm) *
-                      </label>
-                      <input
-                        id="part-generic-width"
-                        type="number"
-                        value={widthMm}
-                        placeholder="800"
-                        onChange={(e) => setWidthMm(e.target.value === '' ? '' : Number.parseInt(e.target.value, 10))}
-                        className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 rounded-lg outline-none font-mono font-bold focus:border-primary"
-                      />
-                    </div>
-                  </>
-                )}
                 <div>
                   <label
                     htmlFor="part-generic-price"

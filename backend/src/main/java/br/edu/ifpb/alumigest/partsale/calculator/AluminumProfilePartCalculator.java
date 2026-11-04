@@ -64,7 +64,8 @@ public class AluminumProfilePartCalculator implements PartItemCalculator {
         return new CalculatePartItemResponse(
             billableMeters,
             request.unitPrice().setScale(2, RoundingMode.HALF_EVEN),
-            totalPrice
+            totalPrice,
+            false
         );
     }
 }

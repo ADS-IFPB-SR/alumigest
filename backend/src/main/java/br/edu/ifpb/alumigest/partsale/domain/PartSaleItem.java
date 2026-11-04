@@ -49,6 +49,9 @@ public class PartSaleItem {
   @Column(name = "quantity", nullable = false)
   private Integer quantity;
 
+  @Column(name = "loss_factor", precision = 6, scale = 4)
+  private BigDecimal lossFactor;
+
   @Column(name = "calculated_unit_measure", nullable = false, precision = 10, scale = 4)
   private BigDecimal calculatedUnitMeasure;
 
@@ -63,7 +66,7 @@ public class PartSaleItem {
   }
 
   /**
-   * Construtor completo do item da venda de partes.
+   * Construtor completo do item da venda de partes incluindo o fator de perda.
    */
   @SuppressWarnings("java:S107")
   public PartSaleItem(
@@ -72,6 +75,7 @@ public class PartSaleItem {
       Integer widthMm,
       Integer heightMm,
       Integer quantity,
+      BigDecimal lossFactor,
       BigDecimal calculatedUnitMeasure,
       BigDecimal unitPrice,
       BigDecimal totalPrice) {
@@ -89,6 +93,7 @@ public class PartSaleItem {
     this.widthMm = widthMm;
     this.heightMm = heightMm;
     this.quantity = quantity;
+    this.lossFactor = lossFactor;
     this.calculatedUnitMeasure = Objects.requireNonNull(
         calculatedUnitMeasure, "Medida calculada é obrigatória");
     this.unitPrice = unitPrice;
@@ -133,6 +138,10 @@ public class PartSaleItem {
 
   public Integer getQuantity() {
     return quantity;
+  }
+
+  public BigDecimal getLossFactor() {
+    return lossFactor;
   }
 
   public BigDecimal getCalculatedUnitMeasure() {

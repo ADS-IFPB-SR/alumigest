@@ -87,7 +87,8 @@ class PartSaleServiceImplTest {
     CalculatePartItemResponse expectedResponse = new CalculatePartItemResponse(
         new BigDecimal("5.0000"),
         new BigDecimal("15.00"),
-        new BigDecimal("75.00")
+        new BigDecimal("75.00"),
+        false
     );
 
     PartItemCalculator calculator = mock(PartItemCalculator.class);
@@ -133,7 +134,8 @@ class PartSaleServiceImplTest {
     when(calculator.calculate(any())).thenReturn(new CalculatePartItemResponse(
         new BigDecimal("2.0000"),
         new BigDecimal("60.00"),
-        new BigDecimal("120.00")
+        new BigDecimal("120.00"),
+        false
     ));
 
     when(clientRepository.findById(clientId)).thenReturn(Optional.of(client));
@@ -148,7 +150,8 @@ class PartSaleServiceImplTest {
         2,
         null,
         null,
-        new BigDecimal("60.00")
+        new BigDecimal("60.00"),
+        null
     );
 
     CreatePartSaleRequest request = new CreatePartSaleRequest(
@@ -202,7 +205,8 @@ class PartSaleServiceImplTest {
         1,
         null,
         null,
-        new BigDecimal("10.00")
+        new BigDecimal("10.00"),
+        null
     );
     CreatePartSaleRequest request = new CreatePartSaleRequest(
         clientId,
