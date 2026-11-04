@@ -17,6 +17,7 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.BatchSize;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -113,6 +114,7 @@ public class Order {
     @Column(nullable = false)
     private Boolean ativo = true;
 
+    @BatchSize(size = 50)
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderItem> items = new ArrayList<>();
 
@@ -187,7 +189,7 @@ public class Order {
             throw new BusinessException("Não é possível cancelar um pedido no status " + this.status);
         }
         if (justificativa == null || justificativa.trim().length() < 10) {
-            throw new IllegalArgumentException("A justificativa de cancelamento deve ter pelo menos 10 caracteres.");
+            throw new BusinessException("A justificativa de cancelamento deve ter pelo menos 10 caracteres.");
         }
         this.status = OrderStatus.CANCELLED;
         this.justificativaCancelamento = justificativa.trim();

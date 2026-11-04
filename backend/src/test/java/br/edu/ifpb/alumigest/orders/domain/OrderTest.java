@@ -84,7 +84,7 @@ class OrderTest {
 
         // 9 caracteres: "123456789"
         assertThatThrownBy(() -> order.cancelar("123456789"))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("pelo menos 10 caracteres");
     }
 
@@ -110,10 +110,10 @@ class OrderTest {
                 .build();
 
         assertThatThrownBy(() -> order.cancelar(null))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(BusinessException.class);
 
         assertThatThrownBy(() -> order.cancelar("          "))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(BusinessException.class);
     }
 
     @Test

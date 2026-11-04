@@ -63,10 +63,13 @@ export const OrderApprovalModal: React.FC<OrderApprovalModalProps> = ({
   const selectedChannel = watch('canalAprovacao');
   const observacoesValue = watch('observacoes') || '';
 
+  const isPending = isSubmitting || isConverting;
+
   const handleClose = React.useCallback(() => {
+    if (isPending) return;
     reset();
     onClose();
-  }, [reset, onClose]);
+  }, [isPending, reset, onClose]);
 
   // Reinicia os valores do formulário toda vez que o modal é aberto
   useEffect(() => {
@@ -82,7 +85,7 @@ export const OrderApprovalModal: React.FC<OrderApprovalModalProps> = ({
   // Bloqueio de scroll e atalho Escape
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+      if (e.key === 'Escape' && !isPending) {
         handleClose();
       }
     };
@@ -94,7 +97,7 @@ export const OrderApprovalModal: React.FC<OrderApprovalModalProps> = ({
       document.removeEventListener('keydown', handleKey);
       document.body.style.overflow = '';
     };
-  }, [isOpen, handleClose]);
+  }, [isOpen, handleClose, isPending]);
 
   if (!isOpen) return null;
 
@@ -115,8 +118,6 @@ export const OrderApprovalModal: React.FC<OrderApprovalModalProps> = ({
     }
   };
 
-  const isPending = isSubmitting || isConverting;
-
   return createPortal(
     <div
       className="fixed inset-0 z-[9999] flex items-center justify-center p-4 animate-fadeIn"
@@ -127,8 +128,9 @@ export const OrderApprovalModal: React.FC<OrderApprovalModalProps> = ({
       {/* Backdrop escurecido */}
       <button
         type="button"
-        className="fixed inset-0 w-full h-full bg-black/70 backdrop-blur-xs transition-opacity cursor-default border-0"
+        className="fixed inset-0 w-full h-full bg-black/70 backdrop-blur-xs transition-opacity cursor-default border-0 disabled:cursor-not-allowed"
         onClick={handleClose}
+        disabled={isPending}
         tabIndex={-1}
         aria-label="Fechar fundo do modal"
       />
