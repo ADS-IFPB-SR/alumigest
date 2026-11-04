@@ -8,7 +8,7 @@ import {
   useFilms,
 } from '@/features/catalog/hooks/useCatalog';
 import type { HardwareDTO, GlassDTO, ProfileDTO, FilmDTO } from '@/features/catalog/types';
-import type { MaterialCategoryType, PartSaleItemDraft } from '../types';
+import type { MaterialCategoryType, PartSaleItemDraft, CalculatePartItemPayload } from '../types';
 import { GlassItemFields } from './GlassItemFields';
 import { FilmItemFields } from './FilmItemFields';
 import { AluminumItemFields } from './AluminumItemFields';
@@ -16,6 +16,223 @@ import { usePartCalculation } from '../hooks/usePartCalculation';
 
 interface PartSaleMaterialFormProps {
   readonly onAddItem: (item: PartSaleItemDraft) => void;
+}
+
+interface CatalogItemDetail {
+  id: string;
+  name: string;
+  price: number;
+}
+
+interface CatalogCollections {
+  hardwares: HardwareDTO[];
+  glasses: GlassDTO[];
+  profiles: ProfileDTO[];
+  films: FilmDTO[];
+}
+
+interface ParsedMeasures {
+  widthMm: number | null;
+  heightMm: number | null;
+  calculatedArea: number | null;
+  linearMeters: number | null;
+}
+
+function getActiveCatalogList(
+  materialType: MaterialCategoryType,
+  catalogs: CatalogCollections
+): Array<{ id: string; name: string }> {
+  switch (materialType) {
+    case 'HARDWARE':
+      return catalogs.hardwares;
+    case 'GLASS':
+      return catalogs.glasses;
+    case 'PROFILE':
+      return catalogs.profiles;
+    case 'FILM':
+      return catalogs.films;
+    default:
+      return [];
+  }
+}
+
+function findCatalogItem(
+  materialType: MaterialCategoryType,
+  materialId: string,
+  catalogs: CatalogCollections
+): CatalogItemDetail | null {
+  switch (materialType) {
+    case 'HARDWARE': {
+      const hw = catalogs.hardwares.find((h) => h.id === materialId);
+      return hw ? { id: hw.id, name: hw.name, price: hw.salePrice || 0 } : null;
+    }
+    case 'GLASS': {
+      const g = catalogs.glasses.find((item) => item.id === materialId);
+      return g ? { id: g.id, name: g.name, price: g.salePrice ?? g.pricePerSqm ?? 0 } : null;
+    }
+    case 'PROFILE': {
+      const p = catalogs.profiles.find((item) => item.id === materialId);
+      return p ? { id: p.id, name: p.name, price: p.salePrice || 0 } : null;
+    }
+    case 'FILM': {
+      const f = catalogs.films.find((item) => item.id === materialId);
+      return f ? { id: f.id, name: f.name, price: f.salePrice || 0 } : null;
+    }
+    default:
+      return null;
+  }
+}
+
+function getDefaultCategoryDimensions(category: MaterialCategoryType): {
+  heightMm: string;
+  widthMm: string;
+  lossFactor: number;
+} {
+  switch (category) {
+    case 'HARDWARE':
+      return { heightMm: '', widthMm: '', lossFactor: 0 };
+    case 'GLASS':
+      return { heightMm: '2000', widthMm: '1000', lossFactor: 0 };
+    case 'FILM':
+      return { heightMm: '2000', widthMm: '1000', lossFactor: 0.10 };
+    case 'PROFILE':
+      return { heightMm: '2500', widthMm: '', lossFactor: 0.05 };
+    default:
+      return { heightMm: '', widthMm: '', lossFactor: 0 };
+  }
+}
+
+function buildCalculationPayload(
+  materialType: MaterialCategoryType,
+  quantity: number | '',
+  unitPrice: string,
+  heightMm: string,
+  widthMm: string,
+  lossFactor: number
+): CalculatePartItemPayload | null {
+  const q = typeof quantity === 'number' ? quantity : Number.parseInt(String(quantity), 10);
+  const p = Number.parseFloat(String(unitPrice).replace(',', '.'));
+  const h = Number.parseInt(String(heightMm), 10);
+  const w = Number.parseInt(String(widthMm), 10);
+
+  if (!q || q <= 0 || Number.isNaN(p) || p <= 0) {
+    return null;
+  }
+
+  switch (materialType) {
+    case 'HARDWARE':
+      return { category: materialType, quantity: q, unitPrice: p, lossFactor: 0 };
+    case 'PROFILE':
+      return h > 0 ? { category: materialType, heightMm: h, widthMm: null, quantity: q, unitPrice: p, lossFactor } : null;
+    case 'GLASS':
+      return h > 0 && w > 0 ? { category: materialType, heightMm: h, widthMm: w, quantity: q, unitPrice: p, lossFactor: 0 } : null;
+    case 'FILM':
+      return h > 0 && w > 0 ? { category: materialType, heightMm: h, widthMm: w, quantity: q, unitPrice: p, lossFactor } : null;
+    default:
+      return null;
+  }
+}
+
+function resolveMeasures(
+  materialType: MaterialCategoryType,
+  widthMmStr: string,
+  heightMmStr: string,
+  quantity: number,
+  lossFactor: number,
+  apiCalculatedMeasure?: number
+): { measures: ParsedMeasures | null; errorMessage?: string } {
+  if (materialType === 'GLASS' || materialType === 'FILM') {
+    const w = widthMmStr ? Number.parseInt(widthMmStr, 10) : 0;
+    const h = heightMmStr ? Number.parseInt(heightMmStr, 10) : 0;
+
+    if (w <= 0 || h <= 0) {
+      return { measures: null, errorMessage: 'Altura e largura (mm) são obrigatórias para vidros e películas' };
+    }
+    const area = apiCalculatedMeasure ?? Number(((w * h) / 1_000_000 * quantity).toFixed(4));
+    return {
+      measures: { widthMm: w, heightMm: h, calculatedArea: area, linearMeters: null },
+    };
+  }
+
+  if (materialType === 'PROFILE') {
+    const h = heightMmStr ? Number.parseInt(heightMmStr, 10) : 0;
+    if (h <= 0) {
+      return { measures: null, errorMessage: 'Comprimento (mm) é obrigatório para perfis de alumínio' };
+    }
+    const meters = apiCalculatedMeasure ?? Number(((h / 1000) * quantity * (1 + lossFactor)).toFixed(4));
+    return {
+      measures: { widthMm: null, heightMm: h, calculatedArea: null, linearMeters: meters },
+    };
+  }
+
+  return {
+    measures: { widthMm: null, heightMm: null, calculatedArea: null, linearMeters: null },
+  };
+}
+
+function calculateItemSubtotal(
+  materialType: MaterialCategoryType,
+  priceNum: number,
+  quantity: number,
+  measures: ParsedMeasures,
+  apiTotalPrice?: number
+): number {
+  if (apiTotalPrice != null) {
+    return apiTotalPrice;
+  }
+  if (materialType === 'HARDWARE') {
+    return Number((priceNum * quantity).toFixed(2));
+  }
+  if (measures.calculatedArea != null) {
+    return Number((measures.calculatedArea * priceNum).toFixed(2));
+  }
+  if (measures.linearMeters != null) {
+    return Number((measures.linearMeters * priceNum).toFixed(2));
+  }
+  return Number((priceNum * quantity).toFixed(2));
+}
+
+function resolveReferenceId(
+  selectedId: string,
+  description: string,
+  catalogItems: Array<{ id: string; name: string }>
+): string {
+  if (selectedId) {
+    return selectedId;
+  }
+  const trimmed = description.trim().toLowerCase();
+  const match = catalogItems.find((it) => it.name.trim().toLowerCase() === trimmed);
+  if (match) {
+    return match.id;
+  }
+  if (catalogItems.length > 0) {
+    return catalogItems[0].id;
+  }
+  return crypto.randomUUID();
+}
+
+function formatHardwareOption(hw: HardwareDTO): string {
+  const sku = hw.skuCode ? `(${hw.skuCode})` : '';
+  const price = (hw.salePrice ?? 0).toFixed(2);
+  return `${hw.name} ${sku} - R$ ${price}`;
+}
+
+function formatGlassOption(g: GlassDTO): string {
+  const thickness = g.thicknessMm ? `(${g.thicknessMm}mm)` : '';
+  const price = (g.salePrice ?? g.pricePerSqm ?? 0).toFixed(2);
+  return `${g.name} ${thickness} - R$ ${price}/m²`;
+}
+
+function formatProfileOption(p: ProfileDTO): string {
+  const ref = p.commercialReference ? `(${p.commercialReference})` : '';
+  const price = (p.salePrice ?? 0).toFixed(2);
+  return `${p.name} ${ref} - R$ ${price}/m`;
+}
+
+function formatFilmOption(f: FilmDTO): string {
+  const finish = f.colorFinish ? `(${f.colorFinish})` : '';
+  const price = (f.salePrice ?? 0).toFixed(2);
+  return `${f.name} ${finish} - R$ ${price}/m²`;
 }
 
 export function PartSaleMaterialForm({ onAddItem }: PartSaleMaterialFormProps) {
@@ -61,23 +278,10 @@ export function PartSaleMaterialForm({ onAddItem }: PartSaleMaterialFormProps) {
     setDescription('');
     setUnitPrice('');
 
-    if (newType === 'HARDWARE') {
-      setHeightMm('');
-      setWidthMm('');
-      setLossFactor(0);
-    } else if (newType === 'GLASS') {
-      setHeightMm('2000');
-      setWidthMm('1000');
-      setLossFactor(0);
-    } else if (newType === 'FILM') {
-      setHeightMm('2000');
-      setWidthMm('1000');
-      setLossFactor(0.10);
-    } else if (newType === 'PROFILE') {
-      setHeightMm('2500');
-      setWidthMm('');
-      setLossFactor(0.05);
-    }
+    const defaults = getDefaultCategoryDimensions(newType);
+    setHeightMm(defaults.heightMm);
+    setWidthMm(defaults.widthMm);
+    setLossFactor(defaults.lossFactor);
   };
 
   const handleMaterialSelect = (materialId: string) => {
@@ -88,90 +292,28 @@ export function PartSaleMaterialForm({ onAddItem }: PartSaleMaterialFormProps) {
       return;
     }
 
-    if (materialType === 'HARDWARE') {
-      const hw = activeHardwares.find((h) => h.id === materialId);
-      if (hw) {
-        setDescription(hw.name);
-        setUnitPrice(hw.salePrice ? hw.salePrice.toFixed(2) : '0.00');
-      }
-    } else if (materialType === 'GLASS') {
-      const g = activeGlasses.find((item) => item.id === materialId);
-      if (g) {
-        setDescription(g.name);
-        const price = g.salePrice ?? g.pricePerSqm ?? 0;
-        setUnitPrice(price > 0 ? price.toFixed(2) : '0.00');
-      }
-    } else if (materialType === 'PROFILE') {
-      const p = activeProfiles.find((item) => item.id === materialId);
-      if (p) {
-        setDescription(p.name);
-        setUnitPrice(p.salePrice ? p.salePrice.toFixed(2) : '0.00');
-      }
-    } else if (materialType === 'FILM') {
-      const f = activeFilms.find((item) => item.id === materialId);
-      if (f) {
-        setDescription(f.name);
-        setUnitPrice(f.salePrice ? f.salePrice.toFixed(2) : '0.00');
-      }
+    const item = findCatalogItem(materialType, materialId, {
+      hardwares: activeHardwares,
+      glasses: activeGlasses,
+      profiles: activeProfiles,
+      films: activeFilms,
+    });
+
+    if (item) {
+      setDescription(item.name);
+      setUnitPrice(item.price > 0 ? item.price.toFixed(2) : '0.00');
     }
   };
 
   const calculationPayload = useMemo(() => {
-    const q = typeof quantity === 'number' ? quantity : Number.parseInt(String(quantity), 10);
-    const p = Number.parseFloat(String(unitPrice).replace(',', '.'));
-    const h = Number.parseInt(String(heightMm), 10);
-    const w = Number.parseInt(String(widthMm), 10);
-
-    if (!q || q <= 0 || Number.isNaN(p) || p <= 0) {
-      return null;
-    }
-
-    if (materialType === 'HARDWARE') {
-      return {
-        category: materialType,
-        quantity: q,
-        unitPrice: p,
-        lossFactor: 0,
-      };
-    }
-
-    if (materialType === 'PROFILE') {
-      if (!h || h <= 0) return null;
-      return {
-        category: materialType,
-        heightMm: h,
-        widthMm: null,
-        quantity: q,
-        unitPrice: p,
-        lossFactor,
-      };
-    }
-
-    if (materialType === 'GLASS') {
-      if (!h || h <= 0 || !w || w <= 0) return null;
-      return {
-        category: materialType,
-        heightMm: h,
-        widthMm: w,
-        quantity: q,
-        unitPrice: p,
-        lossFactor: 0,
-      };
-    }
-
-    if (materialType === 'FILM') {
-      if (!h || h <= 0 || !w || w <= 0) return null;
-      return {
-        category: materialType,
-        heightMm: h,
-        widthMm: w,
-        quantity: q,
-        unitPrice: p,
-        lossFactor,
-      };
-    }
-
-    return null;
+    return buildCalculationPayload(
+      materialType,
+      quantity,
+      unitPrice,
+      heightMm,
+      widthMm,
+      lossFactor
+    );
   }, [materialType, heightMm, widthMm, quantity, unitPrice, lossFactor]);
 
   const { calculation } = usePartCalculation({
@@ -199,79 +341,52 @@ export function PartSaleMaterialForm({ onAddItem }: PartSaleMaterialFormProps) {
       return;
     }
 
-    let calculatedArea: number | null = null;
-    let wNum: number | null = null;
-    let hNum: number | null = null;
-    let linearMeters: number | null = null;
+    const { measures, errorMessage } = resolveMeasures(
+      materialType,
+      widthMm,
+      heightMm,
+      qNum,
+      lossFactor,
+      calculation?.calculatedUnitMeasure
+    );
 
-    if (materialType === 'GLASS' || materialType === 'FILM') {
-      wNum = widthMm ? Number.parseInt(String(widthMm), 10) : null;
-      hNum = heightMm ? Number.parseInt(String(heightMm), 10) : null;
-
-      if (!wNum || wNum <= 0 || !hNum || hNum <= 0) {
-        toast.error('Altura e largura (mm) são obrigatórias para vidros e películas');
-        return;
-      }
-      calculatedArea = calculation?.calculatedUnitMeasure ?? Number(((wNum * hNum) / 1_000_000 * qNum).toFixed(4));
-    } else if (materialType === 'PROFILE') {
-      hNum = heightMm ? Number.parseInt(String(heightMm), 10) : null;
-      if (!hNum || hNum <= 0) {
-        toast.error('Comprimento (mm) é obrigatório para perfis de alumínio');
-        return;
-      }
-      linearMeters = calculation?.calculatedUnitMeasure ?? Number(((hNum / 1000) * qNum * (1 + lossFactor)).toFixed(4));
+    if (!measures) {
+      toast.error(errorMessage || 'Medidas inválidas');
+      return;
     }
 
-    // Calcula subtotal do item
-    let subtotal = 0;
-    if (calculation?.totalPrice != null) {
-      subtotal = calculation.totalPrice;
-    } else if (materialType === 'HARDWARE') {
-      subtotal = Number((priceNum * qNum).toFixed(2));
-    } else if (calculatedArea != null) {
-      subtotal = Number((calculatedArea * priceNum).toFixed(2));
-    } else if (linearMeters != null) {
-      subtotal = Number((linearMeters * priceNum).toFixed(2));
-    } else {
-      subtotal = Number((priceNum * qNum).toFixed(2));
-    }
+    const subtotal = calculateItemSubtotal(
+      materialType,
+      priceNum,
+      qNum,
+      measures,
+      calculation?.totalPrice
+    );
 
-    // Resolver referenceId do catálogo para evitar 404
-    const currentList =
-      materialType === 'HARDWARE'
-        ? activeHardwares
-        : materialType === 'GLASS'
-          ? activeGlasses
-          : materialType === 'PROFILE'
-            ? activeProfiles
-            : activeFilms;
+    const currentList = getActiveCatalogList(materialType, {
+      hardwares: activeHardwares,
+      glasses: activeGlasses,
+      profiles: activeProfiles,
+      films: activeFilms,
+    });
 
-    let refId = selectedMaterialId;
-    if (!refId && description.trim()) {
-      const match = currentList.find((it) => it.name.trim().toLowerCase() === description.trim().toLowerCase());
-      if (match) {
-        refId = match.id;
-      }
-    }
-
-    if (!refId && currentList.length > 0) {
-      refId = currentList[0].id;
-    }
+    const refId = resolveReferenceId(selectedMaterialId, description, currentList);
+    const isLossFactorCategory = materialType === 'PROFILE' || materialType === 'FILM';
 
     const newItem: PartSaleItemDraft = {
       tempId: crypto.randomUUID(),
       materialType,
-      referenceId: refId || crypto.randomUUID(),
+      referenceId: refId,
       description: description.trim().toUpperCase(),
       quantity: qNum,
-      widthMm: wNum,
-      heightMm: hNum,
-      linearMeters,
+      widthMm: measures.widthMm,
+      heightMm: measures.heightMm,
+      linearMeters: measures.linearMeters,
       unitPrice: priceNum,
       totalPrice: subtotal,
-      calculatedAreaSqm: calculatedArea,
+      calculatedAreaSqm: measures.calculatedArea,
       notes: notes.trim() || null,
-      lossFactor: (materialType === 'PROFILE' || materialType === 'FILM') ? lossFactor : 0,
+      lossFactor: isLossFactorCategory ? lossFactor : 0,
     };
 
     onAddItem(newItem);
@@ -282,16 +397,9 @@ export function PartSaleMaterialForm({ onAddItem }: PartSaleMaterialFormProps) {
     setQuantity(1);
     setUnitPrice('');
     setNotes('');
-    if (materialType === 'HARDWARE') {
-      setHeightMm('');
-      setWidthMm('');
-    } else if (materialType === 'GLASS' || materialType === 'FILM') {
-      setHeightMm('2000');
-      setWidthMm('1000');
-    } else if (materialType === 'PROFILE') {
-      setHeightMm('2500');
-      setWidthMm('');
-    }
+    const defaults = getDefaultCategoryDimensions(materialType);
+    setHeightMm(defaults.heightMm);
+    setWidthMm(defaults.widthMm);
   };
 
   return (
@@ -343,7 +451,7 @@ export function PartSaleMaterialForm({ onAddItem }: PartSaleMaterialFormProps) {
                   <option value="">-- Selecionar Ferragem do Catálogo (Opcional) --</option>
                   {activeHardwares.map((hw) => (
                     <option key={hw.id} value={hw.id}>
-                      {hw.name} {hw.skuCode ? `(${hw.skuCode})` : ''} - R$ {hw.salePrice?.toFixed(2)}
+                      {formatHardwareOption(hw)}
                     </option>
                   ))}
                 </select>
@@ -360,7 +468,7 @@ export function PartSaleMaterialForm({ onAddItem }: PartSaleMaterialFormProps) {
                   <option value="">-- Selecionar Vidro do Catálogo --</option>
                   {activeGlasses.map((g) => (
                     <option key={g.id} value={g.id}>
-                      {g.name} {g.thicknessMm ? `(${g.thicknessMm}mm)` : ''} - R$ {(g.salePrice ?? g.pricePerSqm)?.toFixed(2)}/m²
+                      {formatGlassOption(g)}
                     </option>
                   ))}
                 </select>
@@ -377,7 +485,7 @@ export function PartSaleMaterialForm({ onAddItem }: PartSaleMaterialFormProps) {
                   <option value="">-- Selecionar Perfil do Catálogo --</option>
                   {activeProfiles.map((p) => (
                     <option key={p.id} value={p.id}>
-                      {p.name} {p.commercialReference ? `(${p.commercialReference})` : ''} - R$ {p.salePrice?.toFixed(2)}/m
+                      {formatProfileOption(p)}
                     </option>
                   ))}
                 </select>
@@ -394,7 +502,7 @@ export function PartSaleMaterialForm({ onAddItem }: PartSaleMaterialFormProps) {
                   <option value="">-- Selecionar Película do Catálogo --</option>
                   {activeFilms.map((f) => (
                     <option key={f.id} value={f.id}>
-                      {f.name} {f.colorFinish ? `(${f.colorFinish})` : ''} - R$ {f.salePrice?.toFixed(2)}/m²
+                      {formatFilmOption(f)}
                     </option>
                   ))}
                 </select>
