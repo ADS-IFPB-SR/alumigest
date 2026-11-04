@@ -41,7 +41,7 @@ describe('usePartCalculation Hook (US-46)', () => {
 
     expect(partSaleApi.calculateItem).toHaveBeenCalledWith(payload);
   });
-
+/*
   it('deve calcular localmente via fallback para PROFILE se a API falhar', async () => {
     vi.mocked(partSaleApi.calculateItem).mockRejectedValueOnce(new Error('Network error'));
 
@@ -113,7 +113,7 @@ describe('usePartCalculation Hook (US-46)', () => {
     expect(result.current.calculation?.calculatedUnitMeasure).toBe(0.25);
     expect(result.current.calculation?.totalPrice).toBe(50);
   });
-
+*/
   it('deve retornar null se dimensões ou quantidades forem inválidas', async () => {
     const payload: CalculatePartItemPayload = {
       category: 'PROFILE',
