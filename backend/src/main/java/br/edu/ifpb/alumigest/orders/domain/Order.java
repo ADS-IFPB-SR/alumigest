@@ -191,6 +191,9 @@ public class Order {
         if (justificativa == null || justificativa.trim().length() < 10) {
             throw new BusinessException("A justificativa de cancelamento deve ter pelo menos 10 caracteres.");
         }
+        if (justificativa.trim().length() > 1000) {
+            throw new BusinessException("A justificativa de cancelamento deve ter no máximo 1000 caracteres.");
+        }
         this.status = OrderStatus.CANCELLED;
         this.justificativaCancelamento = justificativa.trim();
     }

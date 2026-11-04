@@ -103,6 +103,17 @@ class OrderTest {
     }
 
     @Test
+    @DisplayName("[Análise de Valor Limite] Deve rejeitar cancelamento quando justificativa exceder 1000 caracteres")
+    void shouldRejectCancellationWhenJustificativaExceeds1000Chars() {
+        Order order = Order.builder().status(OrderStatus.WAITING_PRODUCTION).build();
+        String longa = "a".repeat(1001);
+
+        assertThatThrownBy(() -> order.cancelar(longa))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("no máximo 1000 caracteres");
+    }
+
+    @Test
     @DisplayName("[Partição de Equivalência] Deve rejeitar cancelamento com justificativa nula ou em branco")
     void shouldRejectCancellationWhenJustificationIsNullOrBlank() {
         Order order = Order.builder()

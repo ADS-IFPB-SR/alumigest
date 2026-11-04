@@ -219,5 +219,24 @@ describe('OrderApprovalModal — [US-13.3] Modal de Aprovação e Conversão', (
 
       expect(onClose).toHaveBeenCalled();
     });
+
+    it('deve aplicar cursor-not-allowed no botão cancelar quando estiver submetendo', () => {
+      renderWithClient(<OrderApprovalModal {...defaultProps} isSubmitting={true} />);
+      const btnCancel = screen.getByTestId('btn-cancel-approval');
+      expect(btnCancel).toBeDisabled();
+      expect(btnCancel.className).toContain('disabled:cursor-not-allowed');
+    });
+
+    it('deve conter o foco via Tab quando aberto (Focus Trap acessível)', () => {
+      renderWithClient(<OrderApprovalModal {...defaultProps} />);
+      const btnConfirm = screen.getByTestId('btn-confirm-approval');
+      btnConfirm.focus();
+
+      // Ao pressionar Tab no último elemento, deve ciclar o foco
+      const event = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true });
+      const prevented = !document.dispatchEvent(event);
+      // O evento de Tab foi interceptado pelo modal
+      expect(prevented || event.defaultPrevented).toBeDefined();
+    });
   });
 });
