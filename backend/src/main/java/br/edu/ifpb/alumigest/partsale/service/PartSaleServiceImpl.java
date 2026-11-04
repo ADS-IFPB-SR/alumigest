@@ -34,18 +34,24 @@ public class PartSaleServiceImpl implements PartSaleService {
   private final MaterialRepository materialRepository;
   private final PartCalculatorFactory calculatorFactory;
   private final PartSaleCodeGenerator codeGenerator;
+  private final PartSaleValidationService validationService;
 
+  /**
+   * Construtor com injeção de dependências.
+   */
   public PartSaleServiceImpl(
       PartSaleRepository partSaleRepository,
       ClientRepository clientRepository,
       MaterialRepository materialRepository,
       PartCalculatorFactory calculatorFactory,
-      PartSaleCodeGenerator codeGenerator) {
+      PartSaleCodeGenerator codeGenerator,
+      PartSaleValidationService validationService) {
     this.partSaleRepository = partSaleRepository;
     this.clientRepository = clientRepository;
     this.materialRepository = materialRepository;
     this.calculatorFactory = calculatorFactory;
     this.codeGenerator = codeGenerator;
+    this.validationService = validationService;
   }
 
   @Override
@@ -87,6 +93,9 @@ public class PartSaleServiceImpl implements PartSaleService {
           itemReq.unitPrice(),
           itemReq.lossFactor()
       );
+
+      validationService.validatePhysicalLimits(calcReq, material);
+
       CalculatePartItemResponse calcResp = calculatorFactory
           .getCalculator(itemReq.materialType())
           .calculate(calcReq);

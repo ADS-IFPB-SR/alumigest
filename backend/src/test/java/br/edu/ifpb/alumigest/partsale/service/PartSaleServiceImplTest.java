@@ -55,6 +55,9 @@ class PartSaleServiceImplTest {
   @Mock
   private PartSaleCodeGenerator codeGenerator;
 
+  @Mock
+  private PartSaleValidationService validationService;
+
   @InjectMocks
   private PartSaleServiceImpl partSaleService;
 

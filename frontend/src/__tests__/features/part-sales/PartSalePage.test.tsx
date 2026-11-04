@@ -25,6 +25,18 @@ vi.mock('@/features/catalog/hooks/useCatalog', () => ({
     },
     isLoading: false,
   }),
+  useGlasses: () => ({
+    data: { content: [] },
+    isLoading: false,
+  }),
+  useProfiles: () => ({
+    data: { content: [] },
+    isLoading: false,
+  }),
+  useFilms: () => ({
+    data: { content: [] },
+    isLoading: false,
+  }),
 }));
 
 const createWrapper = () => {
