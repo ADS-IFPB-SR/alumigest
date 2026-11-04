@@ -7,7 +7,10 @@ import {
   useCustomerBudgets,
   useCustomerOrders,
 } from '../hooks/useCustomers';
-import { useOrder } from '../../orders/hooks/useOrders';
+import { useOrder, useDownloadLabelsPdf } from '../../orders/hooks/useOrders';
+import { ordersApi } from '../../orders/services/ordersApi';
+import { ThermalLabelModal } from '../../orders/components/ThermalLabelModal';
+import type { Order } from '../../orders/types';
 import type { CustomerSummaryDTO } from '../services/customersApi';
 import { CustomerMasterSidebar } from './CustomerMasterSidebar';
 import { CustomerHeroCard } from './CustomerHeroCard';
@@ -28,6 +31,14 @@ export const CustomerHubPage: React.FC = () => {
   const [budgetPage, setBudgetPage] = useState(0);
   const [orderPage, setOrderPage] = useState(0);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+
+  // Estado para o Modal de Etiquetas Térmicas (US-47.4)
+  const [selectedOrderForLabels, setSelectedOrderForLabels] = useState<Order | null>(null);
+  const [isThermalModalOpen, setIsThermalModalOpen] = useState(false);
+  const [isLoadingLabelsOrderId, setIsLoadingLabelsOrderId] = useState<string | null>(null);
+
+  // Hook compartilhado de download de PDF de etiquetas (US-17 / US-47.4)
+  const { mutate: downloadLabels, isPending: isDownloadingLabels } = useDownloadLabelsPdf();
 
   // 1. Fetch Customers List for Master Sidebar
   const { data: customersData, isLoading: isLoadingCustomers } = useCustomers({
@@ -103,8 +114,44 @@ export const CustomerHubPage: React.FC = () => {
     window.open(`/api/orcamentos/${budgetId}/pdf`, '_blank');
   };
 
-  const handleOpenLabels = (orderId: string) => {
-    toast.success(`Preparando emissão de etiquetas térmicas da O.S. (ID: ${orderId.slice(0, 8)})...`);
+  /**
+   * Aciona a abertura do ThermalLabelModal para a ordem selecionada (US-47.4).
+   * Segue exatamente o mesmo comportamento homologado do botão de etiquetas da página de O.S.
+   */
+  const handleOpenLabels = async (orderId: string) => {
+    try {
+      if (selectedOrderDetails && selectedOrderDetails.id === orderId) {
+        setSelectedOrderForLabels(selectedOrderDetails);
+        setIsThermalModalOpen(true);
+        return;
+      }
+      setIsLoadingLabelsOrderId(orderId);
+      const fullOrder = await ordersApi.getOrderById(orderId);
+      setSelectedOrderForLabels(fullOrder);
+      setIsThermalModalOpen(true);
+    } catch (error) {
+      console.error('Erro ao buscar dados da O.S. para etiquetas térmicas:', error);
+      toast.error('Não foi possível carregar a Ordem de Serviço para impressão de etiquetas.');
+    } finally {
+      setIsLoadingLabelsOrderId(null);
+    }
+  };
+
+  /**
+   * Dispara o download das etiquetas em PDF a partir do ThermalLabelModal
+   */
+  const handleDownloadLabelsPdf = (
+    itemId?: string,
+    customLeaves?: Record<string, number>
+  ) => {
+    if (!selectedOrderForLabels) return;
+    const sanitizedItemId = typeof itemId === 'string' ? itemId : undefined;
+    downloadLabels({
+      id: selectedOrderForLabels.id,
+      codigo: selectedOrderForLabels.codigo,
+      ...(sanitizedItemId ? { itemId: sanitizedItemId } : {}),
+      customLeaves,
+    });
   };
 
   const handleViewOrderPdf = (orderId: string) => {
@@ -206,6 +253,7 @@ export const CustomerHubPage: React.FC = () => {
             selectedOrderDetails={selectedOrderDetails}
             isLoadingDetails={isLoadingSelectedOrderDetails}
             isLoading={isLoadingOrders}
+            isLoadingLabelsOrderId={isLoadingLabelsOrderId}
             page={orderPage}
             totalPages={totalOrderPages}
             onPageChange={setOrderPage}
@@ -262,6 +310,17 @@ export const CustomerHubPage: React.FC = () => {
           {renderDetailContent()}
         </main>
       </div>
+
+      {/* Modal de Etiquetas Térmicas (100x60mm Elgin L42) - US-47.4 */}
+      {selectedOrderForLabels && (
+        <ThermalLabelModal
+          isOpen={isThermalModalOpen}
+          onClose={() => setIsThermalModalOpen(false)}
+          order={selectedOrderForLabels}
+          onDownloadPdf={handleDownloadLabelsPdf}
+          isDownloadingPdf={isDownloadingLabels}
+        />
+      )}
     </div>
   );
 };

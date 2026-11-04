@@ -3,10 +3,18 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { CustomerHubPage } from '../../../../features/customers/components/CustomerHubPage';
 import * as customerHooks from '../../../../features/customers/hooks/useCustomers';
+import { ordersApi } from '../../../../features/orders/services/ordersApi';
 
 vi.mock('../../../../features/customers/hooks/useCustomers');
+vi.mock('../../../../features/orders/services/ordersApi', () => ({
+  ordersApi: {
+    getOrderById: vi.fn(),
+  },
+}));
+
 vi.mock('../../../../features/orders/hooks/useOrders', () => ({
   useOrder: vi.fn().mockReturnValue({ data: null, isLoading: false }),
+  useDownloadLabelsPdf: vi.fn().mockReturnValue({ mutate: vi.fn(), isPending: false }),
 }));
 
 describe('CustomerHubPage', () => {
@@ -69,6 +77,30 @@ describe('CustomerHubPage', () => {
     },
   ];
 
+  const mockFullOrder = {
+    ...mockOrders[0],
+    clienteNome: 'Antônio Alfredo Figueiredo',
+    valorBruto: 4133.9,
+    valorDesconto: 0,
+    taxaInstalacao: 0,
+    taxaFrete: 0,
+    updatedAt: '2026-11-01T10:00:00Z',
+    ativo: true,
+    items: [
+      {
+        id: 'item-1',
+        orderId: 'ord-1',
+        descricao: 'Porta de Giro 1 Folha',
+        larguraMm: 350,
+        alturaMm: 1470,
+        quantidade: 1,
+        valorUnitario: 100,
+        valorTotal: 100,
+        ordem: 1,
+      },
+    ],
+  };
+
   it('deve renderizar a tela Hub 360 integrada com sidebar, hero, KPIs e aba orçamentos', () => {
     vi.spyOn(customerHooks, 'useCustomers').mockReturnValue({
       data: {
@@ -124,7 +156,9 @@ describe('CustomerHubPage', () => {
     expect(screen.getByText('AORC-1024')).toBeInTheDocument();
   });
 
-  it('deve alternar para aba de Ordens de Serviço ao clicar na aba e exibir botão de etiquetas [US-47.4]', () => {
+  it('deve alternar para aba de Ordens de Serviço ao clicar na aba e abrir o ThermalLabelModal ao clicar em Etiquetas [US-47.4]', async () => {
+    vi.mocked(ordersApi.getOrderById).mockResolvedValue(mockFullOrder as any);
+
     vi.spyOn(customerHooks, 'useCustomers').mockReturnValue({
       data: {
         content: mockCustomersList,
@@ -168,7 +202,18 @@ describe('CustomerHubPage', () => {
     expect(screen.getAllByText('#OS-2026-0001').length).toBeGreaterThan(0);
     expect(screen.getByText('Aguardando Produção')).toBeInTheDocument();
 
-    // Botão de Etiquetas presente
-    expect(screen.getByTestId('btn-open-labels-modal')).toBeInTheDocument();
+    // Clica no botão de Etiquetas
+    const labelButton = screen.getByTestId('btn-open-labels-modal');
+    fireEvent.click(labelButton);
+
+    // Deve abrir o modal de etiquetas térmicas homologado
+    const modal = await screen.findByTestId('thermal-label-modal');
+    expect(modal).toBeInTheDocument();
+
+    // Fecha o modal e confirma que o cliente continua ativo
+    const closeBtn = screen.getByTestId('btn-close-thermal-modal');
+    fireEvent.click(closeBtn);
+    expect(screen.queryByTestId('thermal-label-modal')).not.toBeInTheDocument();
+    expect(screen.getByText('Antônio Alfredo Figueiredo', { selector: 'h1' })).toBeInTheDocument();
   });
 });
