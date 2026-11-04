@@ -4,6 +4,7 @@ import type { Order, OrderSummary } from '../../orders/types';
 import { normalizeProductionStatus, type ProductionStatus } from '../types';
 import { formatDate } from '../../orders/utils/formatDate';
 import { getDeadlineStatus } from '../utils/deadlineUtils';
+import { calculateTotalPieces } from '../utils/kanbanUtils';
 
 /** Mapa de próxima etapa na máquina de estados de produção */
 const NEXT_STATUS_MAP: Partial<Record<ProductionStatus, { status: ProductionStatus; label: string }>> = {
@@ -49,9 +50,7 @@ export const OrderProductionCard: React.FC<OrderProductionCardProps> = ({
   }[deadlineStatus];
 
   // Identifica total de peças lidando tanto com Order quanto com OrderSummary
-  const totalPecas = 'quantidadeItens' in order && typeof order.quantidadeItens === 'number'
-    ? order.quantidadeItens
-    : ('items' in order && order.items?.reduce((acc, item) => acc + (item.quantidade || 1), 0)) || 0;
+  const totalPecas = calculateTotalPieces([order]);
 
   // Extrai iniciais do cliente para avatar fabril
   const clientInitials = (order.clienteNome || 'OS')
