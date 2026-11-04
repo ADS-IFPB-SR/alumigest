@@ -5,12 +5,15 @@ import {
   useCustomers,
   useCustomerDashboard,
   useCustomerBudgets,
+  useCustomerOrders,
 } from '../hooks/useCustomers';
+import { useOrder } from '../../orders/hooks/useOrders';
 import type { CustomerSummaryDTO } from '../services/customersApi';
 import { CustomerMasterSidebar } from './CustomerMasterSidebar';
 import { CustomerHeroCard } from './CustomerHeroCard';
 import { CustomerKpiGrid } from './CustomerKpiGrid';
 import { CustomerBudgetsTab } from './CustomerBudgetsTab';
+import { CustomerOrdersTab } from './CustomerOrdersTab';
 import { Users, FileText, ClipboardList } from 'lucide-react';
 
 export const CustomerHubPage: React.FC = () => {
@@ -23,6 +26,8 @@ export const CustomerHubPage: React.FC = () => {
   );
   const [activeTab, setActiveTab] = useState<'orders' | 'budgets'>('budgets');
   const [budgetPage, setBudgetPage] = useState(0);
+  const [orderPage, setOrderPage] = useState(0);
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
 
   // 1. Fetch Customers List for Master Sidebar
   const { data: customersData, isLoading: isLoadingCustomers } = useCustomers({
@@ -58,10 +63,34 @@ export const CustomerHubPage: React.FC = () => {
   const budgets = useMemo(() => budgetsData?.content || [], [budgetsData]);
   const totalBudgetPages = budgetsData?.page?.totalPages ?? 1;
 
+  // 4. Fetch Selected Customer Orders [US-47.4]
+  const {
+    data: ordersData,
+    isLoading: isLoadingOrders,
+  } = useCustomerOrders(selectedCustomerId, { page: orderPage, size: 10 });
+
+  const orders = useMemo(() => ordersData?.content || [], [ordersData]);
+  const totalOrderPages = ordersData?.page?.totalPages ?? 1;
+
+  // Mantém a primeira ordem selecionada como ativa no drawer
+  useEffect(() => {
+    if (orders.length > 0 && !orders.some((o) => o.id === selectedOrderId)) {
+      setSelectedOrderId(orders[0].id);
+    }
+  }, [orders, selectedOrderId]);
+
+  // 5. Fetch Details of Selected Order for the Esquadrias drawer
+  const {
+    data: selectedOrderDetails,
+    isLoading: isLoadingSelectedOrderDetails,
+  } = useOrder(selectedOrderId || undefined);
+
   // Handlers
   const handleSelectCustomer = (customer: CustomerSummaryDTO) => {
     setSelectedCustomerId(customer.id);
     setBudgetPage(0);
+    setOrderPage(0);
+    setSelectedOrderId(null);
     setSearchParams({ id: customer.id });
   };
 
@@ -72,6 +101,18 @@ export const CustomerHubPage: React.FC = () => {
   const handleViewPdf = (budgetId: string) => {
     toast.success(`Abrindo proposta em PDF (ID: ${budgetId.slice(0, 8)})...`);
     window.open(`/api/orcamentos/${budgetId}/pdf`, '_blank');
+  };
+
+  const handleOpenLabels = (orderId: string) => {
+    toast.success(`Preparando emissão de etiquetas térmicas da O.S. (ID: ${orderId.slice(0, 8)})...`);
+  };
+
+  const handleViewOrderPdf = (orderId: string) => {
+    window.open(`/api/v1/orders/${orderId}/pdf/comprovante`, '_blank');
+  };
+
+  const handleViewKanban = (orderId: string) => {
+    navigate(`/pedidos/kanban?orderId=${orderId}`);
   };
 
   const renderDetailContent = () => {
@@ -158,15 +199,20 @@ export const CustomerHubPage: React.FC = () => {
             onViewPdf={handleViewPdf}
           />
         ) : (
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-10 text-center">
-            <ClipboardList className="w-10 h-10 mx-auto text-blue-500/60 mb-3" />
-            <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-              Módulo de Ordens de Serviço (O.S.)
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-md mx-auto">
-              A listagem detalhada de O.S., inspeção de esquadrias em L×A mm e emissão de etiquetas térmicas Elgin L42 serão ativadas na subtask US-47.2.
-            </p>
-          </div>
+          <CustomerOrdersTab
+            orders={orders}
+            selectedOrderId={selectedOrderId}
+            onSelectOrder={setSelectedOrderId}
+            selectedOrderDetails={selectedOrderDetails}
+            isLoadingDetails={isLoadingSelectedOrderDetails}
+            isLoading={isLoadingOrders}
+            page={orderPage}
+            totalPages={totalOrderPages}
+            onPageChange={setOrderPage}
+            onOpenLabels={handleOpenLabels}
+            onViewPdf={handleViewOrderPdf}
+            onViewKanban={handleViewKanban}
+          />
         )}
       </>
     );

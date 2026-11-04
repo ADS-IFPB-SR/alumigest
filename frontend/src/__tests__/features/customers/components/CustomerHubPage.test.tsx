@@ -5,6 +5,9 @@ import { CustomerHubPage } from '../../../../features/customers/components/Custo
 import * as customerHooks from '../../../../features/customers/hooks/useCustomers';
 
 vi.mock('../../../../features/customers/hooks/useCustomers');
+vi.mock('../../../../features/orders/hooks/useOrders', () => ({
+  useOrder: vi.fn().mockReturnValue({ data: null, isLoading: false }),
+}));
 
 describe('CustomerHubPage', () => {
   const mockCustomersList = [
@@ -48,6 +51,24 @@ describe('CustomerHubPage', () => {
     },
   ];
 
+  const mockOrders = [
+    {
+      id: 'ord-1',
+      codigo: 'OS-2026-0001',
+      orcamentoId: 'b1',
+      status: 'WAITING_PRODUCTION' as const,
+      statusDescricao: 'Aguardando Produção',
+      canalAprovacao: 'WHATSAPP' as const,
+      canalAprovacaoDescricao: 'WhatsApp',
+      dataAprovacao: '2026-11-01',
+      dataPrevisaoEntrega: '2026-11-15',
+      dataConclusao: null,
+      valorLiquido: 4133.9,
+      quantidadeItens: 4,
+      createdAt: '2026-11-01T10:00:00Z',
+    },
+  ];
+
   it('deve renderizar a tela Hub 360 integrada com sidebar, hero, KPIs e aba orçamentos', () => {
     vi.spyOn(customerHooks, 'useCustomers').mockReturnValue({
       data: {
@@ -66,6 +87,14 @@ describe('CustomerHubPage', () => {
     vi.spyOn(customerHooks, 'useCustomerBudgets').mockReturnValue({
       data: {
         content: mockBudgets,
+        page: { size: 10, number: 0, totalElements: 1, totalPages: 1 },
+      },
+      isLoading: false,
+    } as any);
+
+    vi.spyOn(customerHooks, 'useCustomerOrders').mockReturnValue({
+      data: {
+        content: mockOrders,
         page: { size: 10, number: 0, totalElements: 1, totalPages: 1 },
       },
       isLoading: false,
@@ -95,7 +124,7 @@ describe('CustomerHubPage', () => {
     expect(screen.getByText('AORC-1024')).toBeInTheDocument();
   });
 
-  it('deve alternar para aba de Ordens de Serviço ao clicar na aba', () => {
+  it('deve alternar para aba de Ordens de Serviço ao clicar na aba e exibir botão de etiquetas [US-47.4]', () => {
     vi.spyOn(customerHooks, 'useCustomers').mockReturnValue({
       data: {
         content: mockCustomersList,
@@ -118,6 +147,14 @@ describe('CustomerHubPage', () => {
       isLoading: false,
     } as any);
 
+    vi.spyOn(customerHooks, 'useCustomerOrders').mockReturnValue({
+      data: {
+        content: mockOrders,
+        page: { size: 10, number: 0, totalElements: 1, totalPages: 1 },
+      },
+      isLoading: false,
+    } as any);
+
     render(
       <MemoryRouter initialEntries={['/clientes?id=c1']}>
         <CustomerHubPage />
@@ -127,7 +164,11 @@ describe('CustomerHubPage', () => {
     const osTabButton = screen.getByRole('button', { name: /Ordens de Serviço \(O\.S\.\)/i });
     fireEvent.click(osTabButton);
 
-    expect(screen.getByText(/Módulo de Ordens de Serviço \(O\.S\.\)/i)).toBeInTheDocument();
-    expect(screen.getByText(/US-47\.2/i)).toBeInTheDocument();
+    // Tabela de O.S. renderizada
+    expect(screen.getAllByText('#OS-2026-0001').length).toBeGreaterThan(0);
+    expect(screen.getByText('Aguardando Produção')).toBeInTheDocument();
+
+    // Botão de Etiquetas presente
+    expect(screen.getByTestId('btn-open-labels-modal')).toBeInTheDocument();
   });
 });
