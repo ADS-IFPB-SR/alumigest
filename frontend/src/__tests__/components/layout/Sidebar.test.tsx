@@ -106,3 +106,20 @@ describe('Sidebar Component - [US-18.6]', () => {
     expect(producaoLink.className).toContain('text-on-primary');
   });
 });
+
+describe('Sidebar Component - [BUG #524]', () => {
+  it('não deve renderizar atalho genérico para /kanban na barra lateral', () => {
+    render(
+      <MemoryRouter initialEntries={['/dashboard']}>
+        <Sidebar isOpen={true} onClose={vi.fn()} />
+      </MemoryRouter>
+    );
+
+    const genericKanbanLink = screen.queryByRole('link', { name: /^kanban$/i });
+    expect(genericKanbanLink).not.toBeInTheDocument();
+
+    const producaoLink = screen.getByRole('link', { name: /produção \(kanban\)/i });
+    expect(producaoLink).toBeInTheDocument();
+    expect(producaoLink).toHaveAttribute('href', '/producao');
+  });
+});
