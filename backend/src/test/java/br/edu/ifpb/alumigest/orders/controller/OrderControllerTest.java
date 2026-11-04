@@ -158,143 +158,152 @@ class OrderControllerTest {
     }
   }
 
-  @Nested
-  @DisplayName("POST /api/v1/orders/convert/{budgetId} - Converter Orçamento em Pedido (US-13.2)")
-  class ConvertBudgetEndpointTests {
+    @Nested
+    @DisplayName("POST /api/v1/orders/convert/{budgetId} - Converter Orçamento em Pedido (US-13.2)")
+    class ConvertBudgetEndpointTests {
 
-    @Test
-    @DisplayName("Deve converter orçamento na rota canônica /api/v1/orders/convert/{budgetId}")
-    void shouldConvertOnCanonicalRoute() throws Exception {
-      UUID budgetId = UUID.randomUUID();
-      UUID orderId = UUID.randomUUID();
-      OrderResponse response = new OrderResponse(
-          orderId,
-          "OS-2026-0001",
-          budgetId,
-          null,
-          "Cliente Teste",
-          "(83) 98888-7777",
-          "Av. Central, 500",
-          OrderStatus.WAITING_PRODUCTION,
-          "Aguardando Produção",
-          ApprovalChannel.PRESENCIAL,
-          "Presencial",
-          LocalDate.now(),
-          LocalDate.now().plusDays(10),
-          null,
-          new BigDecimal("1500.00"),
-          BigDecimal.ZERO,
-          BigDecimal.ZERO,
-          BigDecimal.ZERO,
-          new BigDecimal("1500.00"),
-          "A vista",
-          null,
-          "Obs",
-          null,
-          OffsetDateTime.now(),
-          OffsetDateTime.now(),
-          true,
-          Collections.emptyList()
-      );
+        @Test
+        @DisplayName("Deve converter orçamento na rota canônica /api/v1/orders/convert/{budgetId}")
+        void shouldConvertOnCanonicalRoute() throws Exception {
+            UUID budgetId = UUID.randomUUID();
+            UUID orderId = UUID.randomUUID();
+            OrderResponse response = new OrderResponse(
+                    orderId,
+                    "OS-2026-0001",
+                    budgetId,
+                    null,
+                    "Cliente Teste",
+                    "(83) 98888-7777",
+                    "Av. Central, 500",
+                    OrderStatus.WAITING_PRODUCTION,
+                    "Aguardando Produção",
+                    ApprovalChannel.PRESENCIAL,
+                    "Presencial",
+                    LocalDate.now(),
+                    LocalDate.now().plusDays(10),
+                    null,
+                    new BigDecimal("1500.00"),
+                    BigDecimal.ZERO,
+                    BigDecimal.ZERO,
+                    BigDecimal.ZERO,
+                    new BigDecimal("1500.00"),
+                    "A vista",
+                    null,
+                    "Obs",
+                    null,
+                    OffsetDateTime.now(),
+                    OffsetDateTime.now(),
+                    true,
+                    Collections.emptyList()
+            );
 
-      when(orderService.convertBudgetToOrder(eq(budgetId), any(OrderConvertRequest.class))).thenReturn(response);
+            when(orderService.convertBudgetToOrder(eq(budgetId), any(OrderConvertRequest.class))).thenReturn(response);
 
-      mockMvc.perform(post("/api/v1/orders/convert/{budgetId}", budgetId)
-              .contentType(MediaType.APPLICATION_JSON)
-              .content("{\"canalAprovacao\":\"PRESENCIAL\",\"dataPrevisaoEntrega\":\"2026-10-30\",\"observacoes\":\"Obs\"}"))
-          .andExpect(status().isCreated())
-          .andExpect(header().string("Location", org.hamcrest.Matchers.containsString("/api/v1/orders/" + orderId)))
-          .andExpect(jsonPath("$.id").value(orderId.toString()))
-          .andExpect(jsonPath("$.codigo").value("OS-2026-0001"));
+            // CORREÇÃO: Cria um JSON com a data de previsão de entrega dinamicamente no futuro
+            String payloadValido = "{\"canalAprovacao\":\"PRESENCIAL\",\"dataPrevisaoEntrega\":\"" + LocalDate.now().plusDays(10).toString() + "\",\"observacoes\":\"Obs\"}";
+
+            mockMvc.perform(post("/api/v1/orders/convert/{budgetId}", budgetId)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(payloadValido))
+                    .andExpect(status().isCreated())
+                    .andExpect(header().string("Location", org.hamcrest.Matchers.containsString("/api/v1/orders/" + orderId)))
+                    .andExpect(jsonPath("$.id").value(orderId.toString()))
+                    .andExpect(jsonPath("$.codigo").value("OS-2026-0001"));
+        }
+
+        @Test
+        @DisplayName("Deve aceitar conversão no alias retrocompatível /api/v1/orders/from-budget/{budgetId}")
+        void shouldConvertOnFromBudgetAlias() throws Exception {
+            UUID budgetId = UUID.randomUUID();
+            UUID orderId = UUID.randomUUID();
+            OrderResponse response = new OrderResponse(
+                    orderId,
+                    "OS-2026-0001",
+                    budgetId,
+                    null,
+                    "Cliente Teste",
+                    "(83) 98888-7777",
+                    "Av. Central, 500",
+                    OrderStatus.WAITING_PRODUCTION,
+                    "Aguardando Produção",
+                    ApprovalChannel.PRESENCIAL,
+                    "Presencial",
+                    LocalDate.now(),
+                    LocalDate.now().plusDays(10),
+                    null,
+                    new BigDecimal("1500.00"),
+                    BigDecimal.ZERO,
+                    BigDecimal.ZERO,
+                    BigDecimal.ZERO,
+                    new BigDecimal("1500.00"),
+                    "A vista",
+                    null,
+                    "Obs",
+                    null,
+                    OffsetDateTime.now(),
+                    OffsetDateTime.now(),
+                    true,
+                    Collections.emptyList()
+            );
+
+            when(orderService.convertBudgetToOrder(eq(budgetId), any(OrderConvertRequest.class))).thenReturn(response);
+
+            // CORREÇÃO: Cria um JSON com a data de previsão de entrega dinamicamente no futuro
+            String payloadValido = "{\"canalAprovacao\":\"PRESENCIAL\",\"dataPrevisaoEntrega\":\"" + LocalDate.now().plusDays(10).toString() + "\",\"observacoes\":\"Obs\"}";
+
+            mockMvc.perform(post("/api/v1/orders/from-budget/{budgetId}", budgetId)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(payloadValido))
+                    .andExpect(status().isCreated())
+                    .andExpect(header().string("Location", org.hamcrest.Matchers.containsString("/api/v1/orders/" + orderId)));
+        }
+
+        @Test
+        @DisplayName("Deve aceitar conversão no alias legado /api/orders/from-budget/{budgetId}")
+        void shouldConvertOnLegacyApiOrdersAlias() throws Exception {
+            UUID budgetId = UUID.randomUUID();
+            UUID orderId = UUID.randomUUID();
+            OrderResponse response = new OrderResponse(
+                    orderId,
+                    "OS-2026-0001",
+                    budgetId,
+                    null,
+                    "Cliente Teste",
+                    "(83) 98888-7777",
+                    "Av. Central, 500",
+                    OrderStatus.WAITING_PRODUCTION,
+                    "Aguardando Produção",
+                    ApprovalChannel.PRESENCIAL,
+                    "Presencial",
+                    LocalDate.now(),
+                    LocalDate.now().plusDays(10),
+                    null,
+                    new BigDecimal("1500.00"),
+                    BigDecimal.ZERO,
+                    BigDecimal.ZERO,
+                    BigDecimal.ZERO,
+                    new BigDecimal("1500.00"),
+                    "A vista",
+                    null,
+                    "Obs",
+                    null,
+                    OffsetDateTime.now(),
+                    OffsetDateTime.now(),
+                    true,
+                    Collections.emptyList()
+            );
+
+            when(orderService.convertBudgetToOrder(eq(budgetId), any(OrderConvertRequest.class))).thenReturn(response);
+
+            // CORREÇÃO: Cria um JSON com a data de previsão de entrega dinamicamente no futuro
+            String payloadValido = "{\"canalAprovacao\":\"PRESENCIAL\",\"dataPrevisaoEntrega\":\"" + LocalDate.now().plusDays(10).toString() + "\",\"observacoes\":\"Obs\"}";
+
+            mockMvc.perform(post("/api/orders/from-budget/{budgetId}", budgetId)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(payloadValido))
+                    .andExpect(status().isCreated());
+        }
     }
-
-    @Test
-    @DisplayName("Deve aceitar conversão no alias retrocompatível /api/v1/orders/from-budget/{budgetId}")
-    void shouldConvertOnFromBudgetAlias() throws Exception {
-      UUID budgetId = UUID.randomUUID();
-      UUID orderId = UUID.randomUUID();
-      OrderResponse response = new OrderResponse(
-          orderId,
-          "OS-2026-0001",
-          budgetId,
-          null,
-          "Cliente Teste",
-          "(83) 98888-7777",
-          "Av. Central, 500",
-          OrderStatus.WAITING_PRODUCTION,
-          "Aguardando Produção",
-          ApprovalChannel.PRESENCIAL,
-          "Presencial",
-          LocalDate.now(),
-          LocalDate.now().plusDays(10),
-          null,
-          new BigDecimal("1500.00"),
-          BigDecimal.ZERO,
-          BigDecimal.ZERO,
-          BigDecimal.ZERO,
-          new BigDecimal("1500.00"),
-          "A vista",
-          null,
-          "Obs",
-          null,
-          OffsetDateTime.now(),
-          OffsetDateTime.now(),
-          true,
-          Collections.emptyList()
-      );
-
-      when(orderService.convertBudgetToOrder(eq(budgetId), any(OrderConvertRequest.class))).thenReturn(response);
-
-      mockMvc.perform(post("/api/v1/orders/from-budget/{budgetId}", budgetId)
-              .contentType(MediaType.APPLICATION_JSON)
-              .content("{\"canalAprovacao\":\"PRESENCIAL\",\"dataPrevisaoEntrega\":\"2026-10-30\",\"observacoes\":\"Obs\"}"))
-          .andExpect(status().isCreated())
-          .andExpect(header().string("Location", org.hamcrest.Matchers.containsString("/api/v1/orders/" + orderId)));
-    }
-
-    @Test
-    @DisplayName("Deve aceitar conversão no alias legado /api/orders/from-budget/{budgetId}")
-    void shouldConvertOnLegacyApiOrdersAlias() throws Exception {
-      UUID budgetId = UUID.randomUUID();
-      UUID orderId = UUID.randomUUID();
-      OrderResponse response = new OrderResponse(
-          orderId,
-          "OS-2026-0001",
-          budgetId,
-          null,
-          "Cliente Teste",
-          "(83) 98888-7777",
-          "Av. Central, 500",
-          OrderStatus.WAITING_PRODUCTION,
-          "Aguardando Produção",
-          ApprovalChannel.PRESENCIAL,
-          "Presencial",
-          LocalDate.now(),
-          LocalDate.now().plusDays(10),
-          null,
-          new BigDecimal("1500.00"),
-          BigDecimal.ZERO,
-          BigDecimal.ZERO,
-          BigDecimal.ZERO,
-          new BigDecimal("1500.00"),
-          "A vista",
-          null,
-          "Obs",
-          null,
-          OffsetDateTime.now(),
-          OffsetDateTime.now(),
-          true,
-          Collections.emptyList()
-      );
-
-      when(orderService.convertBudgetToOrder(eq(budgetId), any(OrderConvertRequest.class))).thenReturn(response);
-
-      mockMvc.perform(post("/api/orders/from-budget/{budgetId}", budgetId)
-              .contentType(MediaType.APPLICATION_JSON)
-              .content("{\"canalAprovacao\":\"PRESENCIAL\",\"dataPrevisaoEntrega\":\"2026-10-30\",\"observacoes\":\"Obs\"}"))
-          .andExpect(status().isCreated());
-    }
-  }
 
   @Nested
   @DisplayName("GET /api/v1/orders/{id} - Detalhe do Pedido")
