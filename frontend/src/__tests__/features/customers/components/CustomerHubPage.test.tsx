@@ -48,6 +48,30 @@ describe('CustomerHubPage', () => {
     },
   ];
 
+  const mockOrders = [
+    {
+      id: 'o1',
+      codigo: 'OS-2026-0042',
+      data: '2026-10-01',
+      status: 'IN_PRODUCTION' as const,
+      statusDescricao: 'Em Produção',
+      valorTotal: 1800.0,
+      totalEsquadrias: 1,
+      items: [
+        {
+          id: 'i1',
+          descricao: 'Janela de Correr 2 Folhas',
+          larguraMm: 1200,
+          alturaMm: 1400,
+          quantidade: 1,
+          corAluminio: 'Natural',
+          tipoVidro: 'Mini Boreal',
+          valorTotal: 1800.0,
+        },
+      ],
+    },
+  ];
+
   it('deve renderizar a tela Hub 360 integrada com sidebar, hero, KPIs e aba orçamentos', () => {
     vi.spyOn(customerHooks, 'useCustomers').mockReturnValue({
       data: {
@@ -68,6 +92,11 @@ describe('CustomerHubPage', () => {
         content: mockBudgets,
         page: { size: 10, number: 0, totalElements: 1, totalPages: 1 },
       },
+      isLoading: false,
+    } as any);
+
+    vi.spyOn(customerHooks, 'useCustomerOrders').mockReturnValue({
+      data: [],
       isLoading: false,
     } as any);
 
@@ -118,6 +147,11 @@ describe('CustomerHubPage', () => {
       isLoading: false,
     } as any);
 
+    vi.spyOn(customerHooks, 'useCustomerOrders').mockReturnValue({
+      data: mockOrders,
+      isLoading: false,
+    } as any);
+
     render(
       <MemoryRouter initialEntries={['/clientes?id=c1']}>
         <CustomerHubPage />
@@ -127,7 +161,7 @@ describe('CustomerHubPage', () => {
     const osTabButton = screen.getByRole('button', { name: /Ordens de Serviço \(O\.S\.\)/i });
     fireEvent.click(osTabButton);
 
-    expect(screen.getByText(/Módulo de Ordens de Serviço \(O\.S\.\)/i)).toBeInTheDocument();
-    expect(screen.getByText(/US-47\.2/i)).toBeInTheDocument();
+    expect(screen.getByText('OS-2026-0042')).toBeInTheDocument();
+    expect(screen.getByText('Em Produção')).toBeInTheDocument();
   });
 });
