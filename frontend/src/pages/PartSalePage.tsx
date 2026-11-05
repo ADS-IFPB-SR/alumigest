@@ -49,6 +49,7 @@ export function PartSalePage() {
       widthMm: it.widthMm,
       heightMm: it.heightMm,
       unitPrice: it.unitPrice,
+      lossFactor: it.lossFactor,
     }));
 
     return {

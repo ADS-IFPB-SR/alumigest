@@ -95,4 +95,5 @@ export interface PartSaleItemDraft {
   totalPrice: number;
   calculatedAreaSqm?: number | null;
   notes?: string | null;
+  lossFactor?: number | null;
 }
