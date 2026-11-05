@@ -1,16 +1,18 @@
-import React, { useState, useEffect, useMemo } from 'react';
+﻿import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
   useCustomers,
   useCustomerDashboard,
   useCustomerBudgets,
+  useCustomerOrders,
 } from '../hooks/useCustomers';
 import type { CustomerSummaryDTO } from '../services/customersApi';
 import { CustomerMasterSidebar } from './CustomerMasterSidebar';
 import { CustomerHeroCard } from './CustomerHeroCard';
 import { CustomerKpiGrid } from './CustomerKpiGrid';
 import { CustomerBudgetsTab } from './CustomerBudgetsTab';
+import { CustomerOrdersTab } from './CustomerOrdersTab';
 import { Users, FileText, ClipboardList } from 'lucide-react';
 
 export const CustomerHubPage: React.FC = () => {
@@ -57,6 +59,13 @@ export const CustomerHubPage: React.FC = () => {
 
   const budgets = useMemo(() => budgetsData?.content || [], [budgetsData]);
   const totalBudgetPages = budgetsData?.page?.totalPages ?? 1;
+
+  const {
+    data: ordersData,
+    isLoading: isLoadingOrders,
+  } = useCustomerOrders(selectedCustomerId);
+
+  const orders = useMemo(() => ordersData || [], [ordersData]);
 
   // Handlers
   const handleSelectCustomer = (customer: CustomerSummaryDTO) => {
@@ -158,15 +167,16 @@ export const CustomerHubPage: React.FC = () => {
             onViewPdf={handleViewPdf}
           />
         ) : (
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-10 text-center">
-            <ClipboardList className="w-10 h-10 mx-auto text-blue-500/60 mb-3" />
-            <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-              Módulo de Ordens de Serviço (O.S.)
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-md mx-auto">
-              A listagem detalhada de O.S., inspeção de esquadrias em L×A mm e emissão de etiquetas térmicas Elgin L42 serão ativadas na subtask US-47.2.
-            </p>
-          </div>
+          <CustomerOrdersTab
+            orders={orders}
+            isLoading={isLoadingOrders}
+            onOpenTechSheet={(orderId) => {
+              window.open(`/api/pedidos/${orderId}/ficha-tecnica`, '_blank');
+            }}
+            onOpenLabels={(orderId) => {
+              window.open(`/api/pedidos/${orderId}/etiquetas`, '_blank');
+            }}
+          />
         )}
       </>
     );

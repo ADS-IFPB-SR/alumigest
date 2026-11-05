@@ -4,6 +4,8 @@ import br.edu.ifpb.alumigest.budgets.domain.BudgetStatus;
 import br.edu.ifpb.alumigest.clients.domain.PersonType;
 import br.edu.ifpb.alumigest.clients.dto.ClientBudgetSummaryDto;
 import br.edu.ifpb.alumigest.clients.dto.ClientDashboardDto;
+import br.edu.ifpb.alumigest.clients.dto.ClientOrderItemDto;
+import br.edu.ifpb.alumigest.clients.dto.ClientOrderSummaryDto;
 import br.edu.ifpb.alumigest.clients.service.ClientHubService;
 import br.edu.ifpb.alumigest.common.dto.PageResponse;
 import br.edu.ifpb.alumigest.common.exception.GlobalExceptionHandler;
@@ -164,5 +166,55 @@ class ClientHubControllerTest {
                 .andExpect(jsonPath("$.content[0].status").value("APPROVED"))
                 .andExpect(jsonPath("$.content[0].statusDescricao").value("Aprovado"))
                 .andExpect(jsonPath("$.totalElements").value(1));
+    }
+
+    @Test
+    @DisplayName("GET /api/clientes/{id}/orders - Deve retornar 200 OK com lista de O.S. e esquadrias")
+    void getOrders_ShouldReturn200_WithOrdersAndItems() throws Exception {
+        ClientOrderItemDto item = new ClientOrderItemDto(
+                UUID.randomUUID(),
+                "Janela de Correr 2 Folhas",
+                1200,
+                1400,
+                2,
+                "Natural",
+                "Mini Boreal",
+                new BigDecimal("1800.00")
+        );
+
+        ClientOrderSummaryDto orderDto = new ClientOrderSummaryDto(
+                UUID.randomUUID(),
+                "OS-2026-0042",
+                java.time.LocalDate.of(2026, 10, 1),
+                br.edu.ifpb.alumigest.orders.domain.OrderStatus.IN_PRODUCTION,
+                "Em Produção",
+                new BigDecimal("1800.00"),
+                1,
+                List.of(item)
+        );
+
+        when(clientHubService.getClientOrders(clientId)).thenReturn(List.of(orderDto));
+
+        mockMvc.perform(get("/api/clientes/{id}/orders", clientId)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].codigo").value("OS-2026-0042"))
+                .andExpect(jsonPath("$[0].status").value("IN_PRODUCTION"))
+                .andExpect(jsonPath("$[0].statusDescricao").value("Em Produção"))
+                .andExpect(jsonPath("$[0].totalEsquadrias").value(1))
+                .andExpect(jsonPath("$[0].items[0].descricao").value("Janela de Correr 2 Folhas"))
+                .andExpect(jsonPath("$[0].items[0].larguraMm").value(1200))
+                .andExpect(jsonPath("$[0].items[0].alturaMm").value(1400));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/clients/{id}/orders - Deve retornar 404 quando cliente não existir")
+    void getOrders_ShouldReturn404_WhenClientNotFound() throws Exception {
+        when(clientHubService.getClientOrders(clientId))
+                .thenThrow(new ResourceNotFoundException("Cliente não encontrado com ID: " + clientId));
+
+        mockMvc.perform(get("/api/clientes/{id}/orders", clientId)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound());
     }
 }
