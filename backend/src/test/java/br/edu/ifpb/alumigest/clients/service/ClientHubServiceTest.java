@@ -7,7 +7,6 @@ import br.edu.ifpb.alumigest.clients.domain.Client;
 import br.edu.ifpb.alumigest.clients.domain.PersonType;
 import br.edu.ifpb.alumigest.clients.dto.ClientBudgetSummaryDto;
 import br.edu.ifpb.alumigest.clients.dto.ClientDashboardDto;
-import br.edu.ifpb.alumigest.clients.dto.ClientOrderItemDto;
 import br.edu.ifpb.alumigest.clients.dto.ClientOrderSummaryDto;
 import br.edu.ifpb.alumigest.clients.repository.ClientRepository;
 import br.edu.ifpb.alumigest.common.dto.PageResponse;

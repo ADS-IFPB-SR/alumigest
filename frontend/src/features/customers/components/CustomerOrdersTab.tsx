@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { FileText, ClipboardList, Printer, Tag } from 'lucide-react';
-import type { ClientOrderSummaryDTO, ClientOrderItemDTO } from '../services/customersApi';
+import type { ClientOrderSummaryDTO, ClientOrderItemDTO, OrderStatus } from '../services/customersApi';
 import { formatDate, formatCurrency } from '../utils/customerHubUtils';
 import { ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from '../../orders/types/order';
-import type { OrderStatus } from '../services/customersApi';
 
 interface CustomerOrdersTabProps {
   orders: ClientOrderSummaryDTO[];
@@ -13,8 +12,8 @@ interface CustomerOrdersTabProps {
 }
 
 function getOrderStatusBadge(status: OrderStatus, label?: string) {
-  const displayLabel = label || ORDER_STATUS_LABELS[status] || status;
-  const colors = ORDER_STATUS_COLORS[status] || ORDER_STATUS_COLORS.CREATED;
+  const displayLabel = label ?? ORDER_STATUS_LABELS[status] ?? status;
+  const colors = ORDER_STATUS_COLORS[status] ?? ORDER_STATUS_COLORS.CREATED;
   return (
     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${colors.bg} ${colors.text} border ${colors.border}`}>
       {displayLabel}

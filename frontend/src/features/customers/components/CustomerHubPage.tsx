@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
@@ -65,7 +65,7 @@ export const CustomerHubPage: React.FC = () => {
     isLoading: isLoadingOrders,
   } = useCustomerOrders(selectedCustomerId);
 
-  const orders = useMemo(() => ordersData || [], [ordersData]);
+  const orders = useMemo(() => ordersData ?? [], [ordersData]);
 
   // Handlers
   const handleSelectCustomer = (customer: CustomerSummaryDTO) => {
