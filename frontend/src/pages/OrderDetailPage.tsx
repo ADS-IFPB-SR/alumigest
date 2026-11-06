@@ -107,11 +107,10 @@ export function OrderDetailPage() {
       const link = document.createElement('a');
       link.href = url;
       link.setAttribute('download', `Ficha_Tecnica_${order.codigo.replace('/', '-')}.pdf`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-
+     document.body.appendChild(link);
+     link.click();
+     link.remove();
+     window.URL.revokeObjectURL(url);
       toast.success('Ficha Técnica baixada com sucesso!');
     } catch (error) {
       console.error('Erro ao baixar Ficha Técnica:', error);
@@ -140,9 +139,9 @@ export function OrderDetailPage() {
           <h2 className="text-lg font-bold text-on-surface">Ordem de Serviço não encontrada</h2>
         </div>
         <div className="flex justify-center gap-3 pt-2">
-          <button onClick={() => refetch()} className="px-4 py-2 text-sm font-semibold text-primary hover:bg-primary/10 rounded-lg transition-colors">
-            Tentar Novamente
-          </button>
+            <button type="button" onClick={() => refetch()} className="px-4 py-2 text-sm font-semibold text-primary hover:bg-primary/10 rounded-lg transition-colors">
+              Tentar Novamente
+            </button>
           <Link to="/ordens-servico" className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-primary hover:bg-primary-dark rounded-lg transition-colors">
             <ArrowLeft className="w-4 h-4" /> Voltar
           </Link>
