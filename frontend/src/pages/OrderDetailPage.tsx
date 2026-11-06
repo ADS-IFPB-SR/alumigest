@@ -3,8 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Loader2, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-// Importe a sua configuração da API (Ajuste o caminho se necessário)
-import { api } from '../services/api'; // ou '@/lib/api'
+import { api } from '../lib/api';
 
 import {
   useOrder,
@@ -94,14 +93,15 @@ export function OrderDetailPage() {
     );
   };
 
-  // LÓGICA DE DOWNLOAD DIRETO (Substitui o Modal)
+  // LÓGICA DE DOWNLOAD DIRETO
   const handlePrintTechnicalPdf = async () => {
     if (!order) return;
     setIsDownloadingTechnicalPdf(true);
 
     try {
-      const response = await api.get(`/api/v1/orders/${order.id}/production-sheet/pdf`, {
-        responseType: 'blob', // Obrigatório para lidar com ficheiros binários (PDF)
+      // CORREÇÃO RISCO 2: Rota limpa, sem duplicar /api/v1
+      const response = await api.get(`/orders/${order.id}/production-sheet/pdf`, {
+        responseType: 'blob',
       });
 
       const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
@@ -160,7 +160,6 @@ export function OrderDetailPage() {
           order={order}
           isUpdatingStatus={isUpdatingStatus}
 
-          // Conectado ao novo estado de loading e à nova função de download direto
           isDownloadingPdf={isDownloadingTechnicalPdf}
           onPrintTechnicalPdf={handlePrintTechnicalPdf}
 

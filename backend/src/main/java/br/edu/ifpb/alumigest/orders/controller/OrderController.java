@@ -61,8 +61,14 @@ public class OrderController {
      *
      * @param orderService serviço de pedidos de venda
      */
-    public OrderController(OrderService orderService, ProductionSheetService productionSheetService,ProductionSheetPdfService productionSheetPdfService) {this.orderService = orderService;this.productionSheetService = productionSheetService;this.productionSheetPdfService = productionSheetPdfService;}
-
+    public OrderController(
+            OrderService orderService,
+            ProductionSheetService productionSheetService,
+            ProductionSheetPdfService productionSheetPdfService) {
+        this.orderService = orderService;
+        this.productionSheetService = productionSheetService;
+        this.productionSheetPdfService = productionSheetPdfService;
+    }
     /**
      * Lista pedidos de venda de forma paginada com suporte a filtros dinâmicos.
      *

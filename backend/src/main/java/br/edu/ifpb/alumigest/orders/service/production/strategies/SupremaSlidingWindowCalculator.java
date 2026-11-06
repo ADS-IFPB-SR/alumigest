@@ -11,16 +11,11 @@ public class SupremaSlidingWindowCalculator implements FrameCalculatorStrategy {
     private static final int FOLGA_ALTURA_FOLHAS_MM = 42;
     private static final int FOLGA_LARGURA_BORRACHA_VIDRO = 12;
 
-//    @Override
-//    public boolean supports(OrderItem item) {
-//        if (item.getProduct() == null || item.getProduct().getName() == null) return false;
-//        String name = item.getProduct().getName().toUpperCase();
-//        return name.contains("JANELA") && name.contains("CORRER") && name.contains("SUPREMA");
-//    }
     @Override
     public boolean supports(OrderItem item) {
-        // Retornando true temporariamente para forçar o cálculo no nosso teste
-        return true;
+        if (item.getProduct() == null || item.getProduct().getName() == null) return false;
+        String name = item.getProduct().getName().toUpperCase();
+        return name.contains("JANELA") && name.contains("CORRER") && name.contains("SUPREMA");
     }
 
     @Override
