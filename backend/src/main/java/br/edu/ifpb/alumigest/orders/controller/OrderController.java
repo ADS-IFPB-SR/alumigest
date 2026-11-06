@@ -10,7 +10,10 @@ import br.edu.ifpb.alumigest.orders.dto.OrderPdfDTO;
 import br.edu.ifpb.alumigest.orders.dto.OrderResponse;
 import br.edu.ifpb.alumigest.orders.dto.OrderStatusUpdateRequest;
 import br.edu.ifpb.alumigest.orders.dto.OrderSummaryResponse;
+import br.edu.ifpb.alumigest.orders.dto.production.ProductionSheetResponse;
 import br.edu.ifpb.alumigest.orders.service.OrderService;
+import br.edu.ifpb.alumigest.orders.service.production.ProductionSheetPdfService;
+import br.edu.ifpb.alumigest.orders.service.production.ProductionSheetService;
 import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -50,15 +53,15 @@ import java.util.UUID;
 public class OrderController {
 
     private final OrderService orderService;
+    private final ProductionSheetService productionSheetService;
+    private final ProductionSheetPdfService productionSheetPdfService;
 
     /**
      * Injeção de dependência via construtor (DIP / testabilidade).
      *
      * @param orderService serviço de pedidos de venda
      */
-    public OrderController(OrderService orderService) {
-        this.orderService = orderService;
-    }
+    public OrderController(OrderService orderService, ProductionSheetService productionSheetService,ProductionSheetPdfService productionSheetPdfService) {this.orderService = orderService;this.productionSheetService = productionSheetService;this.productionSheetPdfService = productionSheetPdfService;}
 
     /**
      * Lista pedidos de venda de forma paginada com suporte a filtros dinâmicos.
@@ -487,4 +490,35 @@ public class OrderController {
         OrderResponse response = orderService.cancelOrder(id, request);
         return ResponseEntity.ok(response);
     }
+
+    @GetMapping("/{id}/production-sheet")
+    @Operation(summary = "Gera os dados paramétricos da ficha técnica de corte para um pedido")
+    public ResponseEntity<ProductionSheetResponse> getProductionSheetData(@PathVariable UUID id) {
+        ProductionSheetResponse response = productionSheetService.generateSheetData(id);
+        return ResponseEntity.ok(response);
+    }
+
+    // ...
+    @GetMapping("/{id}/production-sheet/pdf")
+    @Operation(summary = "Baixar PDF da Ficha Técnica de Produção Fabril")
+    public ResponseEntity<byte[]> getProductionSheetPdf(@PathVariable UUID id) {
+        // 1. Gera os dados paramétricos
+        ProductionSheetResponse data = productionSheetService.generateSheetData(id);
+
+        // 2. Renderiza o PDF A4
+        byte[] pdfBytes = productionSheetPdfService.generatePdf(data);
+
+        String filename = "Ficha_Tecnica_" + data.orderCode().replace("/", "-") + ".pdf";
+
+        ContentDisposition contentDisposition = ContentDisposition.attachment()
+                .filename(filename)
+                .build();
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .headers(headers -> headers.setContentDisposition(contentDisposition))
+                .contentLength(pdfBytes.length)
+                .body(pdfBytes);
+    }
 }
+
