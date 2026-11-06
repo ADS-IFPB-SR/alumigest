@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Loader2, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { useDownloadPdfTecnico } from '../features/budgets/hooks/useBudgets';
+
+import { api } from '../lib/api';
+
 import {
   useOrder,
   useCancelOrder,
@@ -25,81 +27,46 @@ export function OrderDetailPage() {
   const { data: order, isLoading, isError, refetch } = useOrder(id);
   const { mutate: cancelOrder, isPending: isCanceling } = useCancelOrder(id);
   const { mutate: updateOrderStatus, isPending: isUpdatingStatus } = useUpdateOrderStatus(id);
-  const { mutate: downloadPdfTecnico, isPending: isDownloadingPdf } = useDownloadPdfTecnico();
   const { mutate: downloadComprovante, isPending: isDownloadingComprovante } = useDownloadComprovantePdf();
   const { mutate: downloadLabels, isPending: isDownloadingLabels } = useDownloadLabelsPdf();
 
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [isThermalModalOpen, setIsThermalModalOpen] = useState(false);
 
+  // Estado para controlar o loading específico do botão de Ficha Técnica
+  const [isDownloadingTechnicalPdf, setIsDownloadingTechnicalPdf] = useState(false);
+
   const handleAdvanceToWaitingProduction = () => {
     updateOrderStatus('WAITING_PRODUCTION', {
-      onSuccess: () => {
-        toast.success('Ordem de serviço avançada para aguardando produção.');
-      },
-      onError: () => {
-        toast.error('Não foi possível avançar a ordem para aguardando produção.');
-      },
+      onSuccess: () => toast.success('Ordem de serviço avançada para aguardando produção.'),
+      onError: () => toast.error('Não foi possível avançar a ordem para aguardando produção.'),
     });
   };
 
   const handleAdvanceProduction = () => {
     updateOrderStatus('IN_PRODUCTION', {
-      onSuccess: () => {
-        toast.success('Ordem de serviço avançada para produção.');
-      },
-      onError: () => {
-        toast.error('Não foi possível avançar a ordem para produção.');
-      },
+      onSuccess: () => toast.success('Ordem de serviço avançada para produção.'),
+      onError: () => toast.error('Não foi possível avançar a ordem para produção.'),
     });
   };
 
   const handleCompleteProduction = () => {
     updateOrderStatus('COMPLETED', {
-      onSuccess: () => {
-        toast.success('Ordem de serviço concluída com sucesso.');
-      },
-      onError: () => {
-        toast.error('Não foi possível concluir a ordem de serviço.');
-      },
+      onSuccess: () => toast.success('Ordem de serviço concluída com sucesso.'),
+      onError: () => toast.error('Não foi possível concluir a ordem de serviço.'),
     });
   };
 
-  const handlePrintTechnicalPdf = () => {
-    if (!order) return;
-    if (!order.orcamentoId) {
-      toast.error('Ordem de serviço sem orçamento de origem vinculado.');
-      return;
-    }
-    downloadPdfTecnico({ id: order.orcamentoId, code: order.orcamentoCodigo || order.codigo });
-  };
-
-  /**
-   * Inicia o download do Comprovante de Pedido de Venda em PDF (US-16.1 / #364).
-   * Delega ao hook useDownloadComprovantePdf que cuida do Blob, filename e toast.
-   */
   const handleDownloadComprovante = () => {
     if (!order) return;
     downloadComprovante({ id: order.id, codigo: order.codigo });
   };
 
-  /**
-   * Abre a tela de conferência prévia e impressão das Etiquetas Térmicas (US-17 / Bugs #492 e #493).
-   */
   const handleOpenThermalLabelsModal = () => {
     setIsThermalModalOpen(true);
   };
 
-  /**
-   * Inicia o download das Etiquetas Térmicas em PDF caso o usuário solicite o arquivo.
-   * Suporta filtro opcional por itemId específico via modal térmico (BUG #487)
-   * e customização de folhas conferidas (Bugs #492 e #493).
-   * Delega ao hook useDownloadLabelsPdf que cuida do Blob, filename e toast.
-   */
-  const handleDownloadLabelsPdf = (
-    itemId?: string,
-    customLeaves?: Record<string, number>
-  ) => {
+  const handleDownloadLabelsPdf = (itemId?: string, customLeaves?: Record<string, number>) => {
     if (!order) return;
     const sanitizedItemId = typeof itemId === 'string' ? itemId : undefined;
     downloadLabels({
@@ -119,56 +86,64 @@ export function OrderDetailPage() {
           toast.success('Ordem de serviço cancelada com sucesso.');
         },
         onError: (err: any) => {
-          const message =
-            err?.response?.data?.message ||
-            'Não foi possível cancelar a ordem de serviço. Verifique as regras do status atual.';
+          const message = err?.response?.data?.message || 'Não foi possível cancelar a ordem de serviço.';
           toast.error(message);
         },
       }
     );
   };
 
+  // LÓGICA DE DOWNLOAD DIRETO
+  const handlePrintTechnicalPdf = async () => {
+    if (!order) return;
+    setIsDownloadingTechnicalPdf(true);
+
+    try {
+      const response = await api.get(`/orders/${order.id}/production-sheet/pdf`, {
+        responseType: 'blob',
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `Ficha_Tecnica_${order.codigo.replace('/', '-')}.pdf`);
+     document.body.appendChild(link);
+     link.click();
+     link.remove();
+     window.URL.revokeObjectURL(url);
+      toast.success('Ficha Técnica baixada com sucesso!');
+    } catch (error) {
+      console.error('Erro ao baixar Ficha Técnica:', error);
+      toast.error('Não foi possível gerar a Ficha Técnica de Produção.');
+    } finally {
+      setIsDownloadingTechnicalPdf(false);
+    }
+  };
+
   if (isLoading) {
     return (
-      <div
-        className="min-h-[50vh] flex flex-col items-center justify-center gap-3"
-        data-testid="order-detail-loading"
-      >
+      <div data-testid="order-detail-loading" className="min-h-[50vh] flex flex-col items-center justify-center gap-3">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        <p className="text-sm font-medium text-on-surface-variant">Carregando detalhes da ordem de serviço...</p>
+        <p className="text-sm font-medium text-on-surface-variant">Carregando detalhes...</p>
       </div>
     );
   }
 
   if (isError || !order) {
     return (
-      <div
-        className="max-w-xl mx-auto my-12 p-6 bg-surface-container-lowest border border-rose-200 rounded-2xl shadow-xs text-center space-y-4"
-        data-testid="order-detail-error"
-      >
+      <div data-testid="order-detail-error" className="max-w-xl mx-auto my-12 p-6 bg-surface-container-lowest border border-rose-200 rounded-2xl shadow-xs text-center space-y-4">
         <div className="w-12 h-12 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center mx-auto">
           <AlertCircle className="w-6 h-6" />
         </div>
         <div>
           <h2 className="text-lg font-bold text-on-surface">Ordem de Serviço não encontrada</h2>
-          <p className="text-sm text-on-surface-variant mt-1">
-            Não foi possível carregar as informações da ordem de serviço solicitada. Ela pode ter sido removida ou o identificador é inválido.
-          </p>
         </div>
         <div className="flex justify-center gap-3 pt-2">
-          <button
-            type="button"
-            onClick={() => refetch()}
-            className="px-4 py-2 text-sm font-semibold text-primary hover:bg-primary/10 rounded-lg transition-colors"
-          >
-            Tentar Novamente
-          </button>
-          <Link
-            to="/ordens-servico"
-            className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-primary hover:bg-primary-dark rounded-lg transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Voltar para Ordens de Serviço
+            <button type="button" onClick={() => refetch()} className="px-4 py-2 text-sm font-semibold text-primary hover:bg-primary/10 rounded-lg transition-colors">
+              Tentar Novamente
+            </button>
+          <Link to="/ordens-servico" className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-primary hover:bg-primary-dark rounded-lg transition-colors">
+            <ArrowLeft className="w-4 h-4" /> Voltar
           </Link>
         </div>
       </div>
@@ -176,38 +151,35 @@ export function OrderDetailPage() {
   }
 
   return (
-    <div className="flex-1 flex flex-col overflow-y-auto space-y-6 pr-1 pb-8" data-testid="order-detail-page">
+    <div data-testid="order-detail-page" className="flex-1 flex flex-col overflow-y-auto space-y-6 pr-1 pb-8">
       <div className="w-full space-y-6">
-        {/* Cabeçalho de Ações e Status */}
+
         <OrderDetailHeader
           order={order}
           isUpdatingStatus={isUpdatingStatus}
-          isDownloadingPdf={isDownloadingPdf}
+
+          isDownloadingPdf={isDownloadingTechnicalPdf}
+          onPrintTechnicalPdf={handlePrintTechnicalPdf}
+
           isDownloadingComprovante={isDownloadingComprovante}
           isDownloadingLabels={isDownloadingLabels}
           onAdvanceWaitingProduction={handleAdvanceToWaitingProduction}
           onAdvanceProduction={handleAdvanceProduction}
           onCompleteProduction={handleCompleteProduction}
           onOpenCancelModal={() => setIsCancelModalOpen(true)}
-          onPrintTechnicalPdf={handlePrintTechnicalPdf}
           onDownloadComprovante={handleDownloadComprovante}
           onPrintLabels={handleOpenThermalLabelsModal}
           onOpenThermalModal={handleOpenThermalLabelsModal}
         />
 
-        {/* Alerta de Cancelamento com Justificativa */}
         {order.status === 'CANCELLED' && (
           <OrderCancelledAlert justificativa={order.justificativaCancelamento} />
         )}
 
-        {/* Conteúdo Principal em Grade Responsiva */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* Coluna Esquerda: Itens do Pedido */}
           <div className="lg:col-span-8 space-y-6">
             <OrderItemList items={order.items} />
           </div>
-
-          {/* Coluna Direita: Cards Laterais (Financeiro, Cronograma, Origem) */}
           <div className="lg:col-span-4 space-y-6">
             <OrderFinancialSummaryCard order={order} />
             <OrderDeliveryTimelineCard order={order} />
@@ -216,7 +188,6 @@ export function OrderDetailPage() {
         </div>
       </div>
 
-      {/* Modal de Cancelamento de Pedido com Justificativa Obrigatória */}
       <CancelOrderModal
         isOpen={isCancelModalOpen}
         orderCodigo={order.codigo}
@@ -225,7 +196,6 @@ export function OrderDetailPage() {
         onConfirm={handleConfirmCancel}
       />
 
-      {/* Modal de Visualização Prévia Contínua de Etiquetas Térmicas (US-17.5) */}
       <ThermalLabelModal
         isOpen={isThermalModalOpen}
         onClose={() => setIsThermalModalOpen(false)}

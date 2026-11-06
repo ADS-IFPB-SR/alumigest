@@ -30,6 +30,9 @@ import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+
+import br.edu.ifpb.alumigest.orders.service.production.ProductionSheetPdfService;
+import br.edu.ifpb.alumigest.orders.service.production.ProductionSheetService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -54,6 +57,12 @@ class OrderControllerTest {
 
   @MockitoBean
   private OrderService orderService;
+
+  @MockitoBean
+  private ProductionSheetService productionSheetService;
+
+  @MockitoBean
+  private ProductionSheetPdfService productionSheetPdfService;
 
   @Nested
   @DisplayName("GET /api/v1/orders - Listar Pedidos Paginados (US-13.4)")
