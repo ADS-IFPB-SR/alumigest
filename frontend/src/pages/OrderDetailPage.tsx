@@ -99,7 +99,6 @@ export function OrderDetailPage() {
     setIsDownloadingTechnicalPdf(true);
 
     try {
-      // CORREÇÃO RISCO 2: Rota limpa, sem duplicar /api/v1
       const response = await api.get(`/orders/${order.id}/production-sheet/pdf`, {
         responseType: 'blob',
       });
@@ -124,7 +123,7 @@ export function OrderDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-[50vh] flex flex-col items-center justify-center gap-3">
+      <div data-testid="order-detail-loading" className="min-h-[50vh] flex flex-col items-center justify-center gap-3">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
         <p className="text-sm font-medium text-on-surface-variant">Carregando detalhes...</p>
       </div>
@@ -133,7 +132,7 @@ export function OrderDetailPage() {
 
   if (isError || !order) {
     return (
-      <div className="max-w-xl mx-auto my-12 p-6 bg-surface-container-lowest border border-rose-200 rounded-2xl shadow-xs text-center space-y-4">
+      <div data-testid="order-detail-error" className="max-w-xl mx-auto my-12 p-6 bg-surface-container-lowest border border-rose-200 rounded-2xl shadow-xs text-center space-y-4">
         <div className="w-12 h-12 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center mx-auto">
           <AlertCircle className="w-6 h-6" />
         </div>
@@ -153,7 +152,7 @@ export function OrderDetailPage() {
   }
 
   return (
-    <div className="flex-1 flex flex-col overflow-y-auto space-y-6 pr-1 pb-8">
+    <div data-testid="order-detail-page" className="flex-1 flex flex-col overflow-y-auto space-y-6 pr-1 pb-8">
       <div className="w-full space-y-6">
 
         <OrderDetailHeader
