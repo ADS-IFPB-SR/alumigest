@@ -1,12 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { PartSaleForm } from '../../../features/part-sales/components/PartSaleForm';
 import { partSaleApi } from '../../../features/part-sales/services/partSaleApi';
+import type { MaterialOption } from '../../../features/part-sales/types';
 
 vi.mock('../../../features/part-sales/services/partSaleApi', () => ({
   partSaleApi: {
     calculateItem: vi.fn(),
     create: vi.fn(),
+    getMaterialsByCategory: vi.fn(),
   },
 }));
 
@@ -14,13 +17,87 @@ const mockCustomers = [
   { id: 'cli-1', nomeCompleto: 'Vidraçaria Ideal', documento: '12.345.678/0001-90' },
 ];
 
-describe('PartSaleForm Component (US-46.2 & Protótipo Venda Avulsa)', () => {
+const mockCatalogMaterials: MaterialOption[] = [
+  {
+    id: 'mat-profile-1',
+    name: 'Perfil U Linha Suprema Branco',
+    category: 'PROFILE',
+    unitPrice: 45.0,
+    unitOfMeasure: 'METRO',
+    color: 'Branco',
+  },
+  {
+    id: 'mat-profile-2',
+    name: 'Barra Cantoneira 1 Pol',
+    category: 'PROFILE',
+    unitPrice: 35.0,
+    unitOfMeasure: 'METRO',
+  },
+  {
+    id: 'mat-profile-3',
+    name: 'Tubo Retangular 50x25',
+    category: 'PROFILE',
+    unitPrice: 50.0,
+    unitOfMeasure: 'METRO',
+  },
+  {
+    id: 'mat-profile-4',
+    name: 'Perfil Cantoneira',
+    category: 'PROFILE',
+    unitPrice: 40.0,
+    unitOfMeasure: 'METRO',
+  },
+  {
+    id: 'mat-profile-5',
+    name: 'Perfil Linha 25',
+    category: 'PROFILE',
+    unitPrice: 45.0,
+    unitOfMeasure: 'METRO',
+  },
+  {
+    id: 'mat-hardware-1',
+    name: 'Roldana Dupla Suprema 112',
+    category: 'HARDWARE',
+    unitPrice: 25.0,
+    unitOfMeasure: 'UN',
+  },
+  {
+    id: 'mat-glass-1',
+    name: 'Vidro Temperado 8mm Incolor',
+    category: 'GLASS',
+    unitPrice: 180.0,
+    unitOfMeasure: 'M2',
+    thicknessMm: 8,
+    color: 'Incolor',
+  },
+];
+
+function renderForm(ui: React.ReactElement) {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: false,
+      },
+    },
+  });
+  return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
+}
+
+async function selectMaterial(optionTestId: string) {
+  const inputDesc = screen.getByTestId('input-part-description');
+  fireEvent.focus(inputDesc);
+  const option = await screen.findByTestId(optionTestId);
+  fireEvent.click(option);
+}
+
+describe('PartSaleForm Component (US-46.2 & US-46.5)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(partSaleApi.getMaterialsByCategory).mockResolvedValue(mockCatalogMaterials);
   });
 
   it('deve renderizar o cabeçalho, campos de perfil de alumínio e resumo inicial', () => {
-    render(<PartSaleForm initialCustomers={mockCustomers} />);
+    renderForm(<PartSaleForm initialCustomers={mockCustomers} />);
 
     expect(screen.getByText('Venda Avulsa')).toBeInTheDocument();
     expect(screen.getByText(/Lançamento rápido de itens/i)).toBeInTheDocument();
@@ -34,13 +111,13 @@ describe('PartSaleForm Component (US-46.2 & Protótipo Venda Avulsa)', () => {
       calculatedUnitMeasure: 10.5,
       unitPrice: 45.0,
       totalPrice: 472.5,
+      minimumAreaApplied: false,
     });
 
-    render(<PartSaleForm initialCustomers={mockCustomers} />);
+    renderForm(<PartSaleForm initialCustomers={mockCustomers} />);
 
-    // Preenche a descrição do material
-    const inputDesc = screen.getByTestId('input-part-description');
-    fireEvent.change(inputDesc, { target: { value: 'Perfil U Linha Suprema Branco' } });
+    // Seleciona material no autocomplete
+    await selectMaterial('material-option-mat-profile-1');
 
     // Ajusta o comprimento para 2500 mm e quantidade para 4 barras
     const inputLength = screen.getByTestId('input-aluminum-length');
@@ -63,20 +140,21 @@ describe('PartSaleForm Component (US-46.2 & Protótipo Venda Avulsa)', () => {
     expect(screen.getByTestId('badge-total-items-count')).toHaveTextContent('1 item(ns)');
   });
 
-  it('deve impedir inserção caso a descrição não seja informada', () => {
-    render(<PartSaleForm initialCustomers={mockCustomers} />);
+  it('deve impedir inserção caso o material não seja selecionado (Critério 4)', () => {
+    renderForm(<PartSaleForm initialCustomers={mockCustomers} />);
 
     const btnAdd = screen.getByTestId('btn-add-part-item');
     fireEvent.click(btnAdd);
 
-    expect(screen.getByText('Informe a descrição do material.')).toBeInTheDocument();
+    expect(screen.getByTestId('material-autocomplete-error')).toHaveTextContent(
+      'Selecione um material válido do catálogo.'
+    );
   });
 
-  it('deve permitir remover um item inserido e recalcular o resumo', () => {
-    render(<PartSaleForm initialCustomers={mockCustomers} />);
+  it('deve permitir remover um item inserido e recalcular o resumo', async () => {
+    renderForm(<PartSaleForm initialCustomers={mockCustomers} />);
 
-    const inputDesc = screen.getByTestId('input-part-description');
-    fireEvent.change(inputDesc, { target: { value: 'Barra Cantoneira 1 Pol' } });
+    await selectMaterial('material-option-mat-profile-2');
 
     const btnAdd = screen.getByTestId('btn-add-part-item');
     fireEvent.click(btnAdd);
@@ -93,11 +171,10 @@ describe('PartSaleForm Component (US-46.2 & Protótipo Venda Avulsa)', () => {
     expect(screen.getByTestId('summary-total-pieces')).toHaveTextContent('0');
   });
 
-  it('deve abater o desconto informado do valor total da venda', () => {
-    render(<PartSaleForm initialCustomers={mockCustomers} />);
+  it('deve abater o desconto informado do valor total da venda', async () => {
+    renderForm(<PartSaleForm initialCustomers={mockCustomers} />);
 
-    const inputDesc = screen.getByTestId('input-part-description');
-    fireEvent.change(inputDesc, { target: { value: 'Tubo Retangular 50x25' } });
+    await selectMaterial('material-option-mat-profile-3');
 
     const btnAdd = screen.getByTestId('btn-add-part-item');
     fireEvent.click(btnAdd);
@@ -110,14 +187,13 @@ describe('PartSaleForm Component (US-46.2 & Protótipo Venda Avulsa)', () => {
   });
 
   it('deve permitir adicionar item de ferragem por unidade (US-46.1)', async () => {
-    render(<PartSaleForm initialCustomers={mockCustomers} />);
+    renderForm(<PartSaleForm initialCustomers={mockCustomers} />);
 
     // Troca categoria para Ferragem
     const categorySelect = screen.getByTestId('select-part-category');
     fireEvent.change(categorySelect, { target: { value: 'HARDWARE' } });
 
-    const inputDesc = screen.getByTestId('input-part-description');
-    fireEvent.change(inputDesc, { target: { value: 'Roldana Dupla Suprema 112' } });
+    await selectMaterial('material-option-mat-hardware-1');
 
     const btnAdd = screen.getByTestId('btn-add-part-item');
     fireEvent.click(btnAdd);
@@ -128,7 +204,7 @@ describe('PartSaleForm Component (US-46.2 & Protótipo Venda Avulsa)', () => {
     expect(screen.getByTestId('badge-total-items-count')).toHaveTextContent('1 item(ns)');
   });
 
-  it('deve salvar a venda avulsa e exibir o código gerado', async () => {
+  it('deve salvar a venda avulsa e exibir o código gerado enviando o materialId real', async () => {
     vi.mocked(partSaleApi.create).mockResolvedValueOnce({
       id: 'venda-uuid-1',
       code: 'VP-2026-0042',
@@ -143,10 +219,9 @@ describe('PartSaleForm Component (US-46.2 & Protótipo Venda Avulsa)', () => {
       updatedAt: new Date().toISOString(),
     });
 
-    render(<PartSaleForm initialCustomers={mockCustomers} />);
+    renderForm(<PartSaleForm initialCustomers={mockCustomers} />);
 
-    const inputDesc = screen.getByTestId('input-part-description');
-    fireEvent.change(inputDesc, { target: { value: 'Perfil Cantoneira' } });
+    await selectMaterial('material-option-mat-profile-4');
 
     const btnAdd = screen.getByTestId('btn-add-part-item');
     fireEvent.click(btnAdd);
@@ -156,16 +231,39 @@ describe('PartSaleForm Component (US-46.2 & Protótipo Venda Avulsa)', () => {
 
     await waitFor(() => {
       expect(partSaleApi.create).toHaveBeenCalledTimes(1);
+      expect(partSaleApi.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          items: expect.arrayContaining([
+            expect.objectContaining({
+              referenceId: 'mat-profile-4',
+            }),
+          ]),
+        })
+      );
     });
 
     expect(await screen.findByText(/Código Gerado: VP-2026-0042/i)).toBeInTheDocument();
   });
 
-  it('deve abrir e fechar os modais de exportação de PDF e etiquetas térmicas', () => {
-    render(<PartSaleForm initialCustomers={mockCustomers} />);
+  it('[Transição de Estados - Critério 5] deve resetar a seleção do material ao alternar a categoria principal', async () => {
+    renderForm(<PartSaleForm initialCustomers={mockCustomers} />);
 
+    await selectMaterial('material-option-mat-profile-1');
     const inputDesc = screen.getByTestId('input-part-description');
-    fireEvent.change(inputDesc, { target: { value: 'Perfil Linha 25' } });
+    expect(inputDesc).toHaveValue('Perfil U Linha Suprema Branco');
+
+    // Alterna categoria de PROFILE para GLASS
+    const categorySelect = screen.getByTestId('select-part-category');
+    fireEvent.change(categorySelect, { target: { value: 'GLASS' } });
+
+    // O input do material deve ter sido limpo
+    expect(inputDesc).toHaveValue('');
+  });
+
+  it('deve abrir e fechar os modais de exportação de PDF e etiquetas térmicas', async () => {
+    renderForm(<PartSaleForm initialCustomers={mockCustomers} />);
+
+    await selectMaterial('material-option-mat-profile-5');
 
     const btnAdd = screen.getByTestId('btn-add-part-item');
     fireEvent.click(btnAdd);

@@ -2,6 +2,18 @@ import type { MaterialCategoryType } from '@/features/catalog/types/templates';
 
 export type { MaterialCategoryType };
 
+export interface MaterialOption {
+  id: string; // UUID
+  name: string;
+  category: MaterialCategoryType;
+  unitPrice: number;
+  unitOfMeasure?: string;
+  color?: string | null;
+  thicknessMm?: number | null;
+  familyCode?: string | null;
+  skuCode?: string | null;
+}
+
 export type PartSaleStatus = 'DRAFT' | 'APPROVED' | 'CANCELLED';
 
 export interface CalculatePartItemPayload {
@@ -11,6 +23,7 @@ export interface CalculatePartItemPayload {
   quantity: number;
   unitPrice: number;
   lossFactor?: number | null;
+  materialId?: string | null;
 }
 
 export interface CalculatePartItemResult {

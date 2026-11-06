@@ -57,6 +57,12 @@ public class PartSaleServiceImpl implements PartSaleService {
   @Override
   @Transactional(readOnly = true)
   public CalculatePartItemResponse calculateItem(CalculatePartItemRequest request) {
+    if (request.materialId() != null) {
+      Material material = materialRepository.findById(request.materialId())
+          .orElseThrow(() -> new ResourceNotFoundException(
+              "Material não encontrado com ID: " + request.materialId()));
+      validationService.validatePhysicalLimits(request, material);
+    }
     PartItemCalculator calculator = calculatorFactory.getCalculator(request.category());
     return calculator.calculate(request);
   }

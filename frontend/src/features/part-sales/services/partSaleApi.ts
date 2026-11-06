@@ -3,11 +3,18 @@ import type {
   CalculatePartItemPayload,
   CalculatePartItemResult,
   CreatePartSaleRequest,
+  MaterialOption,
   PartSaleResponse,
   PartSaleStatus,
 } from '../types/partSaleTypes';
 
 export const partSaleApi = {
+  async getMaterialsByCategory(category?: string): Promise<MaterialOption[]> {
+    const params = category ? `?category=${encodeURIComponent(category)}` : '';
+    const response = await api.get<MaterialOption[]>(`/materials${params}`);
+    return response.data;
+  },
+
   async calculateItem(payload: CalculatePartItemPayload): Promise<CalculatePartItemResult> {
     const response = await api.post<CalculatePartItemResult>(
       '/part-sales/calculate-item',

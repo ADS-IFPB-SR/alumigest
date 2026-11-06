@@ -15,6 +15,8 @@ import type { MaterialCategoryType, PartSaleItem, PartSaleResponse, CreatePartSa
 import { AluminumItemFields } from './AluminumItemFields';
 import { GlassItemFields } from './GlassItemFields';
 import { FilmItemFields } from './FilmItemFields';
+import { MaterialAutocomplete } from './MaterialAutocomplete';
+import { formatMaterialLabel } from '../utils/materialFormatters';
 import { usePartCalculation } from '../hooks/usePartCalculation';
 import { customersApi } from '@/features/customers/services/customersApi';
 import { partSaleApi } from '../services/partSaleApi';
@@ -117,16 +119,6 @@ function validatePartForm({
   return null;
 }
 
-function resolveMaterialPlaceholder(category: MaterialCategoryType): string {
-  if (category === 'PROFILE') {
-    return 'Ex: PERFIL U LINHA SUPREMA BRANCO';
-  }
-  if (category === 'HARDWARE') {
-    return 'Ex: ROLDANA DUPLA SUPREMA 112';
-  }
-  return 'Ex: VIDRO 8MM INCOLOR TEMPERADO';
-}
-
 interface FallbackMeasureParams {
   category: MaterialCategoryType;
   qty: number;
@@ -163,12 +155,14 @@ export interface PartSaleFormProps {
 
 export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
   const [category, setCategory] = useState<MaterialCategoryType>('PROFILE');
+  const [materialId, setMaterialId] = useState<string>('');
   const [description, setDescription] = useState('');
   const [quantity, setQuantity] = useState<number | ''>(1);
   const [heightMm, setHeightMm] = useState<number | ''>(2500);
   const [widthMm, setWidthMm] = useState<number | ''>(800);
   const [unitPrice, setUnitPrice] = useState<number | ''>(45);
   const [lossFactor, setLossFactor] = useState<number>(0.05); // 5% perda padrão de corte
+  const [materialError, setMaterialError] = useState<string | null>(null);
 
   const [items, setItems] = useState<PartSaleItem[]>([]);
   const [discountAmount, setDiscountAmount] = useState<number | ''>(0);
@@ -231,6 +225,7 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
         quantity,
         unitPrice,
         lossFactor,
+        materialId: materialId || null,
       };
     }
 
@@ -240,6 +235,7 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
         quantity,
         unitPrice,
         lossFactor: 0,
+        materialId: materialId || null,
       };
     }
 
@@ -254,6 +250,7 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
         quantity,
         unitPrice,
         lossFactor: 0,
+        materialId: materialId || null,
       };
     }
 
@@ -268,11 +265,12 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
         quantity,
         unitPrice,
         lossFactor, // Filme também consome fator de perda
+        materialId: materialId || null,
       };
     }
 
     return null;
-  }, [category, heightMm, widthMm, quantity, unitPrice, lossFactor]);
+  }, [category, heightMm, widthMm, quantity, unitPrice, lossFactor, materialId]);
 
   const { calculation } = usePartCalculation({
     payload: calculationPayload,
@@ -282,6 +280,13 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
   const handleAddItem = (e?: React.SyntheticEvent) => {
     if (e) e.preventDefault();
     setFormError(null);
+    setMaterialError(null);
+
+    if (!materialId) {
+      setMaterialError('Selecione um material válido do catálogo.');
+      setFormError('Selecione um material válido do catálogo.');
+      return;
+    }
 
     const validationError = validatePartForm({
       description,
@@ -314,6 +319,7 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
       category,
       categoryLabel: CATEGORY_DISPLAY_LABELS[category] || 'Item',
       description: description.trim().toUpperCase(),
+      materialId,
       quantity: qty,
       heightMm: height,
       widthMm: resolveItemWidthMm(category, width),
@@ -324,7 +330,9 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
     };
 
     setItems((prev) => [...prev, newItem]);
+    setMaterialId('');
     setDescription('');
+    setMaterialError(null);
     setFormError(null);
   };
 
@@ -490,6 +498,9 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
                   onChange={(e) => {
                     const newCat = e.target.value as MaterialCategoryType;
                     setCategory(newCat);
+                    setMaterialId('');
+                    setDescription('');
+                    setMaterialError(null);
                     setFormError(null);
                     if (newCat === 'PROFILE') {
                       setUnitPrice(45);
@@ -529,20 +540,25 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
               </div>
 
               <div className="md:col-span-2">
-                <label
-                  htmlFor="part-description-input"
-                  className="block text-xs font-semibold text-slate-700 dark:text-slate-200 uppercase mb-1"
-                >
-                  Descrição do Material *
-                </label>
-                <input
-                  id="part-description-input"
-                  type="text"
-                  data-testid="input-part-description"
-                  placeholder={resolveMaterialPlaceholder(category)}
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg focus:border-primary dark:focus:border-primary-fixed focus:ring-1 focus:ring-primary outline-none font-bold text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 uppercase"
+                <MaterialAutocomplete
+                  category={category}
+                  value={materialId}
+                  error={materialError}
+                  dataTestId="input-part-description"
+                  onChange={(mat) => {
+                    if (mat) {
+                      setMaterialId(mat.id);
+                      setDescription(formatMaterialLabel(mat));
+                      if (mat.unitPrice != null && mat.unitPrice > 0) {
+                        setUnitPrice(mat.unitPrice);
+                      }
+                      setMaterialError(null);
+                      setFormError(null);
+                    } else {
+                      setMaterialId('');
+                      setDescription('');
+                    }
+                  }}
                 />
               </div>
             </div>
