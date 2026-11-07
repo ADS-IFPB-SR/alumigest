@@ -151,5 +151,14 @@ export const customersApi = {
         totalPages: response.data.totalPages ?? 1,
       }
     };
+  },
+
+  updateCustomer: async (id: string, data: CreateCustomerRequest): Promise<CustomerResponseDTO> => {
+    const response = await api.put<CustomerResponseDTO>(`/api/clientes/${id}`, data, {
+      baseURL: '',
+    });
+    return response.data;
   }
 };
+
+
