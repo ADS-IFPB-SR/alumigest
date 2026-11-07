@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, type SubmitHandler } from 'react-hook-form';
 import { X, Loader2, Save } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -46,7 +46,7 @@ export function EditCustomerModal({ isOpen, customerId, onClose }: Readonly<Edit
 
   if (!isOpen || !customerId) return null;
 
-  const onSubmit = (data: EditCustomerFormValues) => {
+  const onSubmit: SubmitHandler<EditCustomerFormValues> = (data) => {
     updateCustomer(
       { id: customerId, data: data as CreateCustomerRequest },
       {

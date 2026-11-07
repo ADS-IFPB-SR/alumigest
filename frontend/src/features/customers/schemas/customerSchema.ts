@@ -102,7 +102,7 @@ export const editCustomerSchema = z.object({
     .max(150, 'O nome deve ter no máximo 150 caracteres.')
     .regex(/^[\p{L}\p{N}\s'.,&/-]+$/u, 'O nome completo ou razão social contém caracteres inválidos.'),
 
-  personType: z.enum(['FISICA', 'JURIDICA']).default('FISICA'),
+  personType: z.enum(['FISICA', 'JURIDICA']),
 
   documento: z
     .string({ message: 'O CPF ou CNPJ é obrigatório.' })
