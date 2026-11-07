@@ -106,8 +106,8 @@ class ClientHubServiceTest {
         ClientDashboardDto response = clientHubService.getClientDashboard(clientId);
 
         assertThat(response.totalContratado()).isEqualByComparingTo(BigDecimal.ZERO);
-        assertThat(response.quantidadeOrdensServico()).isEqualTo(0L);
-        assertThat(response.quantidadeOrcamentos()).isEqualTo(0L);
+        assertThat(response.quantidadeOrdensServico()).isZero();
+        assertThat(response.quantidadeOrcamentos()).isZero();
     }
 
     @Test

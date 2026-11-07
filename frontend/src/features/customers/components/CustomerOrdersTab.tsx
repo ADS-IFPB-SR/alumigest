@@ -10,8 +10,12 @@ import {
   Maximize2,
 } from 'lucide-react';
 import type { ClientOrderSummaryDTO } from '../services/customersApi';
-import type { Order } from '../../orders/types';
-import { ORDER_STATUS_LABELS, ORDER_STATUS_COLORS, type OrderStatus } from '../../orders/types';
+import {
+  ORDER_STATUS_LABELS,
+  ORDER_STATUS_COLORS,
+  type Order,
+  type OrderStatus,
+} from '../../orders/types';
 import { formatDate, formatCurrency } from '../utils/customerHubUtils';
 
 export interface CustomerOrdersTabProps {
@@ -91,6 +95,58 @@ export const CustomerOrdersTab: React.FC<CustomerOrdersTabProps> = ({
 
   const activeOrderId = activeOrder?.id;
 
+  const renderDrawerContent = () => {
+    if (isLoadingDetails) {
+      return (
+        <div className="p-8 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
+          <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
+          <span>Carregando detalhamento de esquadrias da O.S...</span>
+        </div>
+      );
+    }
+
+    if (selectedOrderDetails?.items && selectedOrderDetails.items.length > 0) {
+      return (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+          {selectedOrderDetails.items.map((item, idx) => (
+            <div
+              key={item.id}
+              className="bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 rounded-lg p-3.5 flex flex-col gap-2 hover:bg-white dark:hover:bg-slate-800 transition-colors shadow-xs"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-semibold text-xs text-slate-800 dark:text-slate-200 line-clamp-1">
+                  Item {String(idx + 1).padStart(2, '0')}: {item.descricao}
+                </span>
+                <span className="text-xs font-extrabold text-blue-600 dark:text-blue-400 shrink-0">
+                  {item.quantidade} un
+                </span>
+              </div>
+
+              {/* Medidas Nominais em Destaque */}
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-mono font-black text-sm text-slate-900 dark:text-slate-100 w-fit shadow-xs">
+                <span className="text-blue-600 dark:text-blue-400">📐</span>
+                <span>{item.larguraMm} x {item.alturaMm} mm</span>
+              </div>
+
+              {/* Sub-especificações Técnicas */}
+              <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-2 flex-wrap">
+                <span>🎨 {item.corAluminio || 'Padrão'}</span>
+                <span>•</span>
+                <span>🪟 {item.tipoVidro || 'Vidro Padrão'}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    return (
+      <div className="p-6 text-center text-xs text-slate-400 bg-slate-50 dark:bg-slate-800/30 rounded-lg border border-dashed border-slate-200 dark:border-slate-800">
+        📐 Esta O.S. possui {activeOrder?.quantidadeItens} {activeOrder?.quantidadeItens === 1 ? 'esquadria registrada' : 'esquadrias registradas'}. Clique no botão acima para inspecionar e emitir etiquetas em lote.
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-5">
       {/* 1. Tabela Principal de Ordens de Serviço */}
@@ -147,7 +203,7 @@ export const CustomerOrdersTab: React.FC<CustomerOrdersTabProps> = ({
                     {/* Resumo de Esquadrias */}
                     <td className="py-3.5 px-4">
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold">
-                        📐 {order.quantidadeItens} {order.quantidadeItens === 1 ? 'esq' : 'esq'}
+                        📐 {order.quantidadeItens} {order.quantidadeItens === 1 ? 'esquadria' : 'esquadrias'}
                       </span>
                     </td>
 
@@ -279,47 +335,7 @@ export const CustomerOrdersTab: React.FC<CustomerOrdersTabProps> = ({
           </div>
 
           {/* Grid de Esquadrias Físicas */}
-          {isLoadingDetails ? (
-            <div className="p-8 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
-              <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
-              <span>Carregando detalhamento de esquadrias da O.S...</span>
-            </div>
-          ) : selectedOrderDetails?.items && selectedOrderDetails.items.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
-              {selectedOrderDetails.items.map((item, idx) => (
-                <div
-                  key={item.id}
-                  className="bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 rounded-lg p-3.5 flex flex-col gap-2 hover:bg-white dark:hover:bg-slate-800 transition-colors shadow-xs"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-semibold text-xs text-slate-800 dark:text-slate-200 line-clamp-1">
-                      Item {String(idx + 1).padStart(2, '0')}: {item.descricao}
-                    </span>
-                    <span className="text-xs font-extrabold text-blue-600 dark:text-blue-400 shrink-0">
-                      {item.quantidade} un
-                    </span>
-                  </div>
-
-                  {/* Medidas Nominais em Destaque */}
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-mono font-black text-sm text-slate-900 dark:text-slate-100 w-fit shadow-xs">
-                    <span className="text-blue-600 dark:text-blue-400">📐</span>
-                    <span>{item.larguraMm} x {item.alturaMm} mm</span>
-                  </div>
-
-                  {/* Sub-especificações Técnicas */}
-                  <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-2 flex-wrap">
-                    <span>🎨 {item.corAluminio || 'Padrão'}</span>
-                    <span>•</span>
-                    <span>🪟 {item.tipoVidro || 'Vidro Padrão'}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="p-6 text-center text-xs text-slate-400 bg-slate-50 dark:bg-slate-800/30 rounded-lg border border-dashed border-slate-200 dark:border-slate-800">
-              📐 Esta O.S. possui {activeOrder.quantidadeItens} {activeOrder.quantidadeItens === 1 ? 'esquadria registrada' : 'esquadrias registradas'}. Clique no botão acima para inspecionar e emitir etiquetas em lote.
-            </div>
-          )}
+          {renderDrawerContent()}
         </section>
       )}
     </div>
