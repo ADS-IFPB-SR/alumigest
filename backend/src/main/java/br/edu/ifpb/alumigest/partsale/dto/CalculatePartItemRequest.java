@@ -4,6 +4,7 @@ import br.edu.ifpb.alumigest.catalog.domain.MaterialCategoryType;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import java.math.BigDecimal;
+import java.util.UUID;
 
 /**
  * DTO para pré-cálculo de item avulso de venda de partes.
@@ -24,5 +25,21 @@ public record CalculatePartItemRequest(
     @Positive(message = "O preço unitário deve ser maior que zero")
     BigDecimal unitPrice,
 
-    BigDecimal lossFactor
-) {}
+    BigDecimal lossFactor,
+
+    UUID materialId
+) {
+    /**
+     * Construtor de conveniência para cálculos sem ID específico de material.
+     */
+    public CalculatePartItemRequest(
+        MaterialCategoryType category,
+        Integer widthMm,
+        Integer heightMm,
+        Integer quantity,
+        BigDecimal unitPrice,
+        BigDecimal lossFactor
+    ) {
+        this(category, widthMm, heightMm, quantity, unitPrice, lossFactor, null);
+    }
+}

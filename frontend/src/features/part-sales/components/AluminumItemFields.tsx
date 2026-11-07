@@ -154,7 +154,7 @@ export const AluminumItemFields: React.FC<AluminumItemFieldsProps> = ({
             </p>
           ) : (
             <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">
-              Máx. 6000 mm (1 barra padrão)
+              1000 mm = 1,00 m • Máx. 6000 mm (1 barra padrão)
             </p>
           )}
         </div>

@@ -3,6 +3,8 @@ export * from './schemas/partSaleSchema';
 export * from './services/partSaleApi';
 export * from './hooks/usePartSales';
 export * from './hooks/usePartCalculation';
+export * from './hooks/useMaterialsByCategory';
+export * from './components/MaterialAutocomplete';
 export * from './components/PartSaleMaterialForm';
 export * from './components/PartSaleItemTable';
 export * from './components/PartSaleSummaryCard';
