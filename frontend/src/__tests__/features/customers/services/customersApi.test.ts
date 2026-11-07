@@ -69,6 +69,7 @@ describe('customersApi Service', () => {
         nomeCompleto: 'Carlos Silva',
         personType: 'FISICA' as const,
         documento: '12345678901',
+        telefone: '83999999999',
       };
       vi.mocked(api.post).mockResolvedValueOnce({
         data: { id: 'cust-1', ...payload, ativo: true },
@@ -90,6 +91,36 @@ describe('customersApi Service', () => {
 
       expect(api.get).toHaveBeenCalledWith('/api/clientes/cust-2', { baseURL: '' });
       expect(result.nomeCompleto).toBe('Ana Paula');
+    });
+
+    it('getCustomerOrders deve disparar GET para /api/clientes/:id/orders [US-47.4]', async () => {
+      vi.mocked(api.get).mockResolvedValueOnce({
+        data: {
+          content: [
+            {
+              id: 'order-1',
+              codigo: 'OS-2026-0001',
+              status: 'WAITING_PRODUCTION',
+              valorLiquido: 3500,
+              quantidadeItens: 4,
+            },
+          ],
+          size: 10,
+          page: 0,
+          totalElements: 1,
+          totalPages: 1,
+        },
+      });
+
+      const result = await customersApi.getCustomerOrders('cust-3', { page: 0, size: 10 });
+
+      expect(api.get).toHaveBeenCalledWith('/api/clientes/cust-3/orders', {
+        baseURL: '',
+        params: { page: 0, size: 10 },
+      });
+      expect(result.content).toHaveLength(1);
+      expect(result.content[0].codigo).toBe('OS-2026-0001');
+      expect(result.page.totalElements).toBe(1);
     });
   });
 });

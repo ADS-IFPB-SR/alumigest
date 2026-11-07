@@ -2,6 +2,7 @@ package br.edu.ifpb.alumigest.clients.controller;
 
 import br.edu.ifpb.alumigest.clients.dto.ClientBudgetSummaryDto;
 import br.edu.ifpb.alumigest.clients.dto.ClientDashboardDto;
+import br.edu.ifpb.alumigest.clients.dto.ClientOrderSummaryDto;
 import br.edu.ifpb.alumigest.clients.service.ClientHubService;
 import br.edu.ifpb.alumigest.common.dto.PageResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -53,5 +54,18 @@ public class ClientHubController {
     ) {
         PageResponse<ClientBudgetSummaryDto> budgets = clientHubService.getClientBudgets(id, pageable);
         return ResponseEntity.ok(budgets);
+    }
+
+    @GetMapping("/{id}/orders")
+    @Operation(summary = "Listar ordens de serviço do cliente", description = "Retorna página com as Ordens de Serviço (O.S.) vinculadas ao cliente para acompanhamento fabril e emissão de etiquetas.")
+    @ApiResponse(responseCode = "200", description = "Lista de ordens de serviço carregada com sucesso")
+    @ApiResponse(responseCode = "404", description = "Cliente não encontrado")
+    public ResponseEntity<PageResponse<ClientOrderSummaryDto>> getOrders(
+            @Parameter(description = "Identificador único (UUID) do cliente", required = true)
+            @PathVariable UUID id,
+            @ParameterObject @PageableDefault(size = 10, sort = "createdAt") Pageable pageable
+    ) {
+        PageResponse<ClientOrderSummaryDto> orders = clientHubService.getClientOrders(id, pageable);
+        return ResponseEntity.ok(orders);
     }
 }

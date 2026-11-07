@@ -3,8 +3,19 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { CustomerHubPage } from '../../../../features/customers/components/CustomerHubPage';
 import * as customerHooks from '../../../../features/customers/hooks/useCustomers';
+import { ordersApi } from '../../../../features/orders/services/ordersApi';
 
 vi.mock('../../../../features/customers/hooks/useCustomers');
+vi.mock('../../../../features/orders/services/ordersApi', () => ({
+  ordersApi: {
+    getOrderById: vi.fn(),
+  },
+}));
+
+vi.mock('../../../../features/orders/hooks/useOrders', () => ({
+  useOrder: vi.fn().mockReturnValue({ data: null, isLoading: false }),
+  useDownloadLabelsPdf: vi.fn().mockReturnValue({ mutate: vi.fn(), isPending: false }),
+}));
 
 describe('CustomerHubPage', () => {
   const mockCustomersList = [
@@ -48,6 +59,48 @@ describe('CustomerHubPage', () => {
     },
   ];
 
+  const mockOrders = [
+    {
+      id: 'ord-1',
+      codigo: 'OS-2026-0001',
+      orcamentoId: 'b1',
+      status: 'WAITING_PRODUCTION' as const,
+      statusDescricao: 'Aguardando Produção',
+      canalAprovacao: 'WHATSAPP' as const,
+      canalAprovacaoDescricao: 'WhatsApp',
+      dataAprovacao: '2026-11-01',
+      dataPrevisaoEntrega: '2026-11-15',
+      dataConclusao: null,
+      valorLiquido: 4133.9,
+      quantidadeItens: 4,
+      createdAt: '2026-11-01T10:00:00Z',
+    },
+  ];
+
+  const mockFullOrder = {
+    ...mockOrders[0],
+    clienteNome: 'Antônio Alfredo Figueiredo',
+    valorBruto: 4133.9,
+    valorDesconto: 0,
+    taxaInstalacao: 0,
+    taxaFrete: 0,
+    updatedAt: '2026-11-01T10:00:00Z',
+    ativo: true,
+    items: [
+      {
+        id: 'item-1',
+        orderId: 'ord-1',
+        descricao: 'Porta de Giro 1 Folha',
+        larguraMm: 350,
+        alturaMm: 1470,
+        quantidade: 1,
+        valorUnitario: 100,
+        valorTotal: 100,
+        ordem: 1,
+      },
+    ],
+  };
+
   it('deve renderizar a tela Hub 360 integrada com sidebar, hero, KPIs e aba orçamentos', () => {
     vi.spyOn(customerHooks, 'useCustomers').mockReturnValue({
       data: {
@@ -66,6 +119,14 @@ describe('CustomerHubPage', () => {
     vi.spyOn(customerHooks, 'useCustomerBudgets').mockReturnValue({
       data: {
         content: mockBudgets,
+        page: { size: 10, number: 0, totalElements: 1, totalPages: 1 },
+      },
+      isLoading: false,
+    } as any);
+
+    vi.spyOn(customerHooks, 'useCustomerOrders').mockReturnValue({
+      data: {
+        content: mockOrders,
         page: { size: 10, number: 0, totalElements: 1, totalPages: 1 },
       },
       isLoading: false,
@@ -95,7 +156,9 @@ describe('CustomerHubPage', () => {
     expect(screen.getByText('AORC-1024')).toBeInTheDocument();
   });
 
-  it('deve alternar para aba de Ordens de Serviço ao clicar na aba', () => {
+  it('deve alternar para aba de Ordens de Serviço ao clicar na aba e abrir o ThermalLabelModal ao clicar em Etiquetas [US-47.4]', async () => {
+    vi.mocked(ordersApi.getOrderById).mockResolvedValue(mockFullOrder as any);
+
     vi.spyOn(customerHooks, 'useCustomers').mockReturnValue({
       data: {
         content: mockCustomersList,
@@ -118,6 +181,14 @@ describe('CustomerHubPage', () => {
       isLoading: false,
     } as any);
 
+    vi.spyOn(customerHooks, 'useCustomerOrders').mockReturnValue({
+      data: {
+        content: mockOrders,
+        page: { size: 10, number: 0, totalElements: 1, totalPages: 1 },
+      },
+      isLoading: false,
+    } as any);
+
     render(
       <MemoryRouter initialEntries={['/clientes?id=c1']}>
         <CustomerHubPage />
@@ -127,7 +198,22 @@ describe('CustomerHubPage', () => {
     const osTabButton = screen.getByRole('button', { name: /Ordens de Serviço \(O\.S\.\)/i });
     fireEvent.click(osTabButton);
 
-    expect(screen.getByText(/Módulo de Ordens de Serviço \(O\.S\.\)/i)).toBeInTheDocument();
-    expect(screen.getByText(/US-47\.2/i)).toBeInTheDocument();
+    // Tabela de O.S. renderizada
+    expect(screen.getAllByText('#OS-2026-0001').length).toBeGreaterThan(0);
+    expect(screen.getByText('Aguardando Produção')).toBeInTheDocument();
+
+    // Clica no botão de Etiquetas
+    const labelButton = screen.getByTestId('btn-open-labels-modal');
+    fireEvent.click(labelButton);
+
+    // Deve abrir o modal de etiquetas térmicas homologado
+    const modal = await screen.findByTestId('thermal-label-modal');
+    expect(modal).toBeInTheDocument();
+
+    // Fecha o modal e confirma que o cliente continua ativo
+    const closeBtn = screen.getByTestId('btn-close-thermal-modal');
+    fireEvent.click(closeBtn);
+    expect(screen.queryByTestId('thermal-label-modal')).not.toBeInTheDocument();
+    expect(screen.getByText('Antônio Alfredo Figueiredo', { selector: 'h1' })).toBeInTheDocument();
   });
 });

@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React, { type ReactNode } from 'react';
-import { useCustomers, useCustomer, useCreateCustomer } from '@/features/customers/hooks/useCustomers';
+import { useCustomers, useCustomer, useCreateCustomer, useCustomerOrders } from '@/features/customers/hooks/useCustomers';
 import { customersApi } from '@/features/customers/services/customersApi';
 import toast from 'react-hot-toast';
 
@@ -11,6 +11,7 @@ vi.mock('@/features/customers/services/customersApi', () => ({
     getCustomers: vi.fn(),
     getCustomerById: vi.fn(),
     createCustomer: vi.fn(),
+    getCustomerOrders: vi.fn(),
   },
 }));
 
@@ -83,11 +84,38 @@ describe('useCustomers Hooks', () => {
     });
   });
 
+  describe('useCustomerOrders Query [US-47.4]', () => {
+    it('deve buscar ordens do cliente com paginação', async () => {
+      const mockOrdersResult = {
+        content: [{ id: 'ord-1', codigo: 'OS-2026-0001', status: 'WAITING_PRODUCTION' }],
+        page: { size: 10, number: 0, totalElements: 1, totalPages: 1 },
+      };
+      vi.mocked(customersApi.getCustomerOrders).mockResolvedValueOnce(mockOrdersResult as any);
+
+      const { result } = renderHook(() => useCustomerOrders('cust-1', { page: 0, size: 10 }), {
+        wrapper: createWrapper(queryClient),
+      });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+      expect(customersApi.getCustomerOrders).toHaveBeenCalledWith('cust-1', { page: 0, size: 10 });
+      expect(result.current.data).toEqual(mockOrdersResult);
+    });
+
+    it('não deve executar a query de ordens se cliente não estiver definido', () => {
+      const { result } = renderHook(() => useCustomerOrders(undefined), {
+        wrapper: createWrapper(queryClient),
+      });
+
+      expect(result.current.fetchStatus).toBe('idle');
+      expect(customersApi.getCustomerOrders).not.toHaveBeenCalled();
+    });
+  });
+
   describe('useCreateCustomer Mutation', () => {
     it('deve criar cliente, disparar toast de sucesso e invalidar query de clientes', async () => {
       const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
-      const payload = { nomeCompleto: 'Novo Cliente', personType: 'FISICA' as const };
-      vi.mocked(customersApi.createCustomer).mockResolvedValueOnce({ id: 'new-id', ...payload, documento: '', ativo: true });
+      const payload = { nomeCompleto: 'Novo Cliente', personType: 'FISICA' as const, documento: '12345678901', telefone: '83999999999' };
+      vi.mocked(customersApi.createCustomer).mockResolvedValueOnce({ id: 'new-id', ...payload, ativo: true });
 
       const { result } = renderHook(() => useCreateCustomer(), {
         wrapper: createWrapper(queryClient),
@@ -112,7 +140,7 @@ describe('useCustomers Hooks', () => {
       });
 
       try {
-        await result.current.mutateAsync({ nomeCompleto: 'Duplicado', personType: 'FISICA' });
+        await result.current.mutateAsync({ nomeCompleto: 'Duplicado', personType: 'FISICA', documento: '123', telefone: '123' });
       } catch {
         // esperado
       }

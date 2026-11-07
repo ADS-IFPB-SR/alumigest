@@ -34,6 +34,14 @@ export const useCustomerBudgets = (id: string | undefined, params?: { page?: num
   });
 };
 
+export const useCustomerOrders = (id: string | undefined, params?: { page?: number; size?: number }) => {
+  return useQuery({
+    queryKey: ['customer-orders', id, params],
+    queryFn: () => customersApi.getCustomerOrders(id!, params),
+    enabled: Boolean(id),
+  });
+};
+
 export const useCreateCustomer = () => {
   const queryClient = useQueryClient();
   return useMutation({

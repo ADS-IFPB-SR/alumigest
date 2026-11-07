@@ -1,4 +1,5 @@
 import { api } from '../../../lib/api';
+import type { OrderStatus, ApprovalChannel } from '../../orders/types';
 
 export type PersonType = 'FISICA' | 'JURIDICA';
 
@@ -57,6 +58,22 @@ export interface ClientBudgetSummaryDTO {
   valorTotal: number;
   status: BudgetStatus;
   statusDescricao?: string;
+}
+
+export interface ClientOrderSummaryDTO {
+  id: string;
+  codigo: string;
+  orcamentoId: string;
+  status: OrderStatus;
+  statusDescricao?: string;
+  canalAprovacao: ApprovalChannel;
+  canalAprovacaoDescricao?: string;
+  dataAprovacao: string;
+  dataPrevisaoEntrega: string;
+  dataConclusao?: string | null;
+  valorLiquido: number;
+  quantidadeItens: number;
+  createdAt: string;
 }
 
 export interface CreateCustomerRequest {
@@ -139,6 +156,26 @@ export const customersApi = {
       size: params?.size ?? 10,
     };
     const response = await api.get<any>(`/api/clientes/${id}/budgets`, {
+      baseURL: '',
+      params: queryParams,
+    });
+    return {
+      content: response.data.content || [],
+      page: {
+        size: response.data.size ?? queryParams.size,
+        number: response.data.page ?? queryParams.page,
+        totalElements: response.data.totalElements ?? 0,
+        totalPages: response.data.totalPages ?? 1,
+      }
+    };
+  },
+
+  getCustomerOrders: async (id: string, params?: { page?: number; size?: number }): Promise<PageResponse<ClientOrderSummaryDTO>> => {
+    const queryParams = {
+      page: params?.page ?? 0,
+      size: params?.size ?? 10,
+    };
+    const response = await api.get<any>(`/api/clientes/${id}/orders`, {
       baseURL: '',
       params: queryParams,
     });
