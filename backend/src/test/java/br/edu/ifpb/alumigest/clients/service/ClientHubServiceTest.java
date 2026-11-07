@@ -13,7 +13,7 @@ import br.edu.ifpb.alumigest.common.dto.PageResponse;
 import br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException;
 import br.edu.ifpb.alumigest.orders.domain.ApprovalChannel;
 import br.edu.ifpb.alumigest.orders.domain.Order;
-import br.edu.ifpb.alumigest.orders.domain.OrderStatus;
+import br.edu.ifpb.alumigest.orders.domain.OrderItem;
 import br.edu.ifpb.alumigest.orders.repository.OrderRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -29,7 +29,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
@@ -84,34 +83,41 @@ class ClientHubServiceTest {
         when(orderRepository.countByClienteIdAndAtivoTrue(clientId)).thenReturn(4L);
         when(budgetRepository.countByClientId(clientId)).thenReturn(2L);
 
-        ClientDashboardDto response = clientHubService.getClientDashboard(clientId);
+        ClientDashboardDto result = clientHubService.getClientDashboard(clientId);
 
-        assertThat(response).isNotNull();
-        assertThat(response.id()).isEqualTo(clientId);
-        assertThat(response.nomeCompleto()).isEqualTo("Antônio Alfredo Figueiredo");
-        assertThat(response.personType()).isEqualTo(PersonType.FISICA);
-        assertThat(response.totalContratado()).isEqualByComparingTo(new BigDecimal("4133.90"));
-        assertThat(response.quantidadeOrdensServico()).isEqualTo(4L);
-        assertThat(response.quantidadeOrcamentos()).isEqualTo(2L);
+        assertThat(result).isNotNull();
+        assertThat(result.id()).isEqualTo(clientId);
+        assertThat(result.nomeCompleto()).isEqualTo("Antônio Alfredo Figueiredo");
+        assertThat(result.personType()).isEqualTo(PersonType.FISICA);
+        assertThat(result.documento()).isEqualTo("042.891.444-09");
+        assertThat(result.telefone()).isEqualTo("(83) 98845-2100");
+        assertThat(result.email()).isEqualTo("antonio@exemplo.com");
+        assertThat(result.bairro()).isEqualTo("Torre");
+        assertThat(result.cidade()).isEqualTo("João Pessoa");
+        assertThat(result.uf()).isEqualTo("PB");
+        assertThat(result.totalContratado()).isEqualByComparingTo(new BigDecimal("4133.90"));
+        assertThat(result.quantidadeOrdensServico()).isEqualTo(4L);
+        assertThat(result.quantidadeOrcamentos()).isEqualTo(2L);
     }
 
     @Test
-    @DisplayName("Deve retornar KPIs zerados quando repositórios retornarem nulos")
-    void getClientDashboard_ShouldHandleZeroAndNullValues() {
+    @DisplayName("Deve retornar KPIs zerados quando cliente não tiver O.S. ou orçamentos")
+    void getClientDashboard_ShouldReturnZeroKpis_WhenNoOrdersOrBudgets() {
         when(clientRepository.findById(clientId)).thenReturn(Optional.of(client));
         when(orderRepository.sumTotalContractedByClienteId(clientId)).thenReturn(null);
         when(orderRepository.countByClienteIdAndAtivoTrue(clientId)).thenReturn(0L);
         when(budgetRepository.countByClientId(clientId)).thenReturn(0L);
 
-        ClientDashboardDto response = clientHubService.getClientDashboard(clientId);
+        ClientDashboardDto result = clientHubService.getClientDashboard(clientId);
 
-        assertThat(response.totalContratado()).isEqualByComparingTo(BigDecimal.ZERO);
-        assertThat(response.quantidadeOrdensServico()).isZero();
-        assertThat(response.quantidadeOrcamentos()).isZero();
+        assertThat(result).isNotNull();
+        assertThat(result.totalContratado()).isEqualTo(BigDecimal.ZERO);
+        assertThat(result.quantidadeOrdensServico()).isZero();
+        assertThat(result.quantidadeOrcamentos()).isZero();
     }
 
     @Test
-    @DisplayName("Deve lançar ResourceNotFoundException quando cliente não for encontrado")
+    @DisplayName("Deve lançar ResourceNotFoundException quando cliente não for encontrado para dashboard")
     void getClientDashboard_ShouldThrowException_WhenClientNotFound() {
         when(clientRepository.findById(clientId)).thenReturn(Optional.empty());
 
@@ -163,51 +169,66 @@ class ClientHubServiceTest {
     }
 
     @Test
-    @DisplayName("Deve retornar lista paginada de Ordens de Serviço do cliente com dados para etiquetas")
-    void getClientOrders_ShouldReturnPageOfOrders() {
+    @DisplayName("Deve retornar lista de O.S. do cliente ordenada por data decrescente")
+    void getClientOrders_ShouldReturnOrdersWithItems() {
         when(clientRepository.findById(clientId)).thenReturn(Optional.of(client));
 
-        UUID orderId = UUID.randomUUID();
-        UUID orcamentoId = UUID.randomUUID();
         Order order = Order.builder()
-                .id(orderId)
-                .codigo("OS-2026-0001")
-                .orcamentoId(orcamentoId)
+                .codigo("OS-2026-0042")
                 .cliente(client)
-                .clienteNome(client.getFullName())
-                .status(OrderStatus.WAITING_PRODUCTION)
+                .status(br.edu.ifpb.alumigest.orders.domain.OrderStatus.IN_PRODUCTION)
+                .dataAprovacao(java.time.LocalDate.of(2026, 10, 1))
+                .valorLiquido(new BigDecimal("1800.00"))
+                .orcamentoId(UUID.randomUUID())
                 .canalAprovacao(ApprovalChannel.WHATSAPP)
-                .valorLiquido(new BigDecimal("3500.00"))
-                .dataAprovacao(LocalDate.now())
-                .dataPrevisaoEntrega(LocalDate.now().plusDays(10))
+                .dataPrevisaoEntrega(java.time.LocalDate.of(2026, 10, 20))
+                .clienteNome("Antônio Alfredo Figueiredo")
                 .build();
 
-        Pageable pageable = PageRequest.of(0, 10);
-        Page<Order> orderPage = new PageImpl<>(List.of(order), pageable, 1);
+        OrderItem item = OrderItem.builder()
+                .descricao("Janela de Correr 2 Folhas")
+                .larguraMm(1200)
+                .alturaMm(1400)
+                .quantidade(2)
+                .corAluminio("Natural")
+                .tipoVidro("Mini Boreal")
+                .valorUnitario(new BigDecimal("900.00"))
+                .valorTotal(new BigDecimal("1800.00"))
+                .build();
+        OrderItem item2 = OrderItem.builder()
+                .descricao("Porta Pivotante")
+                .larguraMm(900)
+                .alturaMm(2100)
+                .quantidade(3)
+                .corAluminio("Preto")
+                .tipoVidro("Laminado")
+                .valorUnitario(new BigDecimal("1200.00"))
+                .valorTotal(new BigDecimal("3600.00"))
+                .build();
+        order.addItem(item);
+        order.addItem(item2);
 
-        when(orderRepository.findByClienteIdAndAtivoTrue(eq(clientId), any(Pageable.class))).thenReturn(orderPage);
+        when(orderRepository.findByClienteIdOrderByCreatedAtDesc(clientId)).thenReturn(List.of(order));
 
-        PageResponse<ClientOrderSummaryDto> response = clientHubService.getClientOrders(clientId, pageable);
+        List<ClientOrderSummaryDto> result = clientHubService.getClientOrders(clientId);
 
-        assertThat(response).isNotNull();
-        assertThat(response.content()).hasSize(1);
-        ClientOrderSummaryDto item = response.content().get(0);
-        assertThat(item.id()).isEqualTo(orderId);
-        assertThat(item.codigo()).isEqualTo("OS-2026-0001");
-        assertThat(item.orcamentoId()).isEqualTo(orcamentoId);
-        assertThat(item.status()).isEqualTo(OrderStatus.WAITING_PRODUCTION);
-        assertThat(item.statusDescricao()).isEqualTo(OrderStatus.WAITING_PRODUCTION.getDescricao());
-        assertThat(item.canalAprovacao()).isEqualTo(ApprovalChannel.WHATSAPP);
-        assertThat(item.valorLiquido()).isEqualByComparingTo(new BigDecimal("3500.00"));
+        assertThat(result).hasSize(1);
+        ClientOrderSummaryDto dto = result.get(0);
+        assertThat(dto.codigo()).isEqualTo("OS-2026-0042");
+        assertThat(dto.status()).isEqualTo(br.edu.ifpb.alumigest.orders.domain.OrderStatus.IN_PRODUCTION);
+        assertThat(dto.totalEsquadrias()).isEqualTo(5);
+        assertThat(dto.items()).hasSize(2);
+        assertThat(dto.items().get(0).larguraMm()).isEqualTo(1200);
+        assertThat(dto.items().get(0).alturaMm()).isEqualTo(1400);
+        assertThat(dto.items().get(0).corAluminio()).isEqualTo("Natural");
     }
 
     @Test
-    @DisplayName("Deve lançar ResourceNotFoundException quando cliente não for encontrado para ordens")
+    @DisplayName("Deve lançar ResourceNotFoundException quando cliente não for encontrado para O.S.")
     void getClientOrders_ShouldThrowException_WhenClientNotFound() {
         when(clientRepository.findById(clientId)).thenReturn(Optional.empty());
 
-        Pageable pageable = PageRequest.of(0, 10);
-        assertThatThrownBy(() -> clientHubService.getClientOrders(clientId, pageable))
+        assertThatThrownBy(() -> clientHubService.getClientOrders(clientId))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Cliente não encontrado com ID: " + clientId);
     }

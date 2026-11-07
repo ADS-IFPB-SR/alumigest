@@ -18,10 +18,11 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping({"/api/clientes", "/api/v1/clients", "/api/v1/customers"})
+@RequestMapping({"/api/v1/clientes", "/api/clientes", "/api/v1/clients", "/api/v1/customers"})
 @Tag(name = "Hub 360° do Cliente", description = "Endpoints para a Central 360° do Cliente, consolidação de KPIs e histórico")
 public class ClientHubController {
 
@@ -57,15 +58,14 @@ public class ClientHubController {
     }
 
     @GetMapping("/{id}/orders")
-    @Operation(summary = "Listar ordens de serviço do cliente", description = "Retorna página com as Ordens de Serviço (O.S.) vinculadas ao cliente para acompanhamento fabril e emissão de etiquetas.")
-    @ApiResponse(responseCode = "200", description = "Lista de ordens de serviço carregada com sucesso")
+    @Operation(summary = "Listar Ordens de Serviço vinculadas ao cliente", description = "Retorna todas as O.S. do cliente ordenadas das mais recentes para as mais antigas, com esquadrias físicas.")
+    @ApiResponse(responseCode = "200", description = "Lista de O.S. carregada com sucesso")
     @ApiResponse(responseCode = "404", description = "Cliente não encontrado")
-    public ResponseEntity<PageResponse<ClientOrderSummaryDto>> getOrders(
+    public ResponseEntity<List<ClientOrderSummaryDto>> getOrders(
             @Parameter(description = "Identificador único (UUID) do cliente", required = true)
-            @PathVariable UUID id,
-            @ParameterObject @PageableDefault(size = 10, sort = "createdAt") Pageable pageable
+            @PathVariable UUID id
     ) {
-        PageResponse<ClientOrderSummaryDto> orders = clientHubService.getClientOrders(id, pageable);
+        List<ClientOrderSummaryDto> orders = clientHubService.getClientOrders(id);
         return ResponseEntity.ok(orders);
     }
 }

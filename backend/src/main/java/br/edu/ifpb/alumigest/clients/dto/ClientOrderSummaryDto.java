@@ -1,52 +1,37 @@
 package br.edu.ifpb.alumigest.clients.dto;
 
-import br.edu.ifpb.alumigest.orders.domain.ApprovalChannel;
 import br.edu.ifpb.alumigest.orders.domain.OrderStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.UUID;
 
-@Schema(description = "Resumo de Ordem de Serviço vinculada ao cliente no Hub 360°")
+@Schema(description = "Resumo de Ordem de Serviço para a aba de O.S. do Hub 360° do Cliente")
 public record ClientOrderSummaryDto(
-        @Schema(description = "ID único da Ordem de Serviço")
+        @Schema(description = "Identificador único da O.S. (UUID)")
         UUID id,
 
-        @Schema(description = "Código legível da O.S. (ex: OS-2026-0001)")
+        @Schema(description = "Código legível da O.S. (ex: OS-2026-0042)")
         String codigo,
 
-        @Schema(description = "ID do orçamento de origem")
-        UUID orcamentoId,
+        @Schema(description = "Data de aprovação/criação da O.S.")
+        LocalDate data,
 
-        @Schema(description = "Status atual de produção/ciclo de vida da O.S.")
+        @Schema(description = "Status fabril da O.S.")
         OrderStatus status,
 
-        @Schema(description = "Descrição amigável do status da O.S.")
+        @Schema(description = "Descrição amigável do status fabril")
         String statusDescricao,
 
-        @Schema(description = "Canal de aprovação comercial da O.S.")
-        ApprovalChannel canalAprovacao,
+        @Schema(description = "Valor líquido total da O.S.")
+        BigDecimal valorTotal,
 
-        @Schema(description = "Descrição amigável do canal de aprovação")
-        String canalAprovacaoDescricao,
+        @Schema(description = "Quantidade total de esquadrias físicas")
+        int totalEsquadrias,
 
-        @Schema(description = "Data de aprovação comercial")
-        LocalDate dataAprovacao,
-
-        @Schema(description = "Data de previsão de entrega")
-        LocalDate dataPrevisaoEntrega,
-
-        @Schema(description = "Data de conclusão da fabricação")
-        LocalDate dataConclusao,
-
-        @Schema(description = "Valor líquido final da ordem")
-        BigDecimal valorLiquido,
-
-        @Schema(description = "Quantidade de itens/esquadrias físicas")
-        int quantidadeItens,
-
-        @Schema(description = "Data de criação do registro da O.S.")
-        OffsetDateTime createdAt
-) {}
+        @Schema(description = "Lista de esquadrias físicas da O.S.")
+        List<ClientOrderItemDto> items
+) {
+}

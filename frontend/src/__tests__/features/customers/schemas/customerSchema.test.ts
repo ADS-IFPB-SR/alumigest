@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { customerSchema } from '@/features/customers/schemas/customerSchema';
+import { customerSchema, editCustomerSchema } from '@/features/customers/schemas/customerSchema';
 
 describe('customerSchema Validation', () => {
   const validBasePayload = {
@@ -164,5 +164,44 @@ describe('customerSchema Validation', () => {
 
       expect(result.success).toBe(true);
     });
+  });
+});
+
+describe('editCustomerSchema Validation', () => {
+  const validEditPayload = {
+    nomeCompleto: 'Carlos Eduardo Oliveira',
+    personType: 'FISICA' as const,
+    documento: '123.456.789-00',
+    telefone: '(83) 98765-4321',
+  };
+
+  it('deve validar com sucesso payload mínimo válido contendo documento e personType', () => {
+    const result = editCustomerSchema.safeParse(validEditPayload);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.personType).toBe('FISICA');
+      expect(result.data.documento).toBe('123.456.789-00');
+    }
+  });
+
+  it('deve falhar se documento for vazio no payload de edição', () => {
+    const result = editCustomerSchema.safeParse({
+      ...validEditPayload,
+      documento: '',
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('deve validar com sucesso payload de edição para Pessoa Jurídica com CNPJ', () => {
+    const result = editCustomerSchema.safeParse({
+      ...validEditPayload,
+      nomeCompleto: 'AlumiGest Engenharia Ltda',
+      personType: 'JURIDICA',
+      documento: '12.345.678/0001-99',
+      cidade: 'Campina Grande',
+      uf: 'PB',
+      observacoes: 'Obra condomínio fechado',
+    });
+    expect(result.success).toBe(true);
   });
 });

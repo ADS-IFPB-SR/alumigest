@@ -85,19 +85,18 @@ describe('useCustomers Hooks', () => {
   });
 
   describe('useCustomerOrders Query [US-47.4]', () => {
-    it('deve buscar ordens do cliente com paginação', async () => {
-      const mockOrdersResult = {
-        content: [{ id: 'ord-1', codigo: 'OS-2026-0001', status: 'WAITING_PRODUCTION' }],
-        page: { size: 10, number: 0, totalElements: 1, totalPages: 1 },
-      };
+    it('deve buscar ordens do cliente pelo ID', async () => {
+      const mockOrdersResult = [
+        { id: 'ord-1', codigo: 'OS-2026-0001', status: 'WAITING_PRODUCTION' },
+      ];
       vi.mocked(customersApi.getCustomerOrders).mockResolvedValueOnce(mockOrdersResult as any);
 
-      const { result } = renderHook(() => useCustomerOrders('cust-1', { page: 0, size: 10 }), {
+      const { result } = renderHook(() => useCustomerOrders('cust-1'), {
         wrapper: createWrapper(queryClient),
       });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
-      expect(customersApi.getCustomerOrders).toHaveBeenCalledWith('cust-1', { page: 0, size: 10 });
+      expect(customersApi.getCustomerOrders).toHaveBeenCalledWith('cust-1');
       expect(result.current.data).toEqual(mockOrdersResult);
     });
 

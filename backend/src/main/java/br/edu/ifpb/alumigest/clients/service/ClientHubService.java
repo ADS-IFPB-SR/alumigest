@@ -5,11 +5,13 @@ import br.edu.ifpb.alumigest.budgets.repository.BudgetRepository;
 import br.edu.ifpb.alumigest.clients.domain.Client;
 import br.edu.ifpb.alumigest.clients.dto.ClientBudgetSummaryDto;
 import br.edu.ifpb.alumigest.clients.dto.ClientDashboardDto;
+import br.edu.ifpb.alumigest.clients.dto.ClientOrderItemDto;
 import br.edu.ifpb.alumigest.clients.dto.ClientOrderSummaryDto;
 import br.edu.ifpb.alumigest.clients.repository.ClientRepository;
 import br.edu.ifpb.alumigest.common.dto.PageResponse;
 import br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException;
 import br.edu.ifpb.alumigest.orders.domain.Order;
+import br.edu.ifpb.alumigest.orders.domain.OrderItem;
 import br.edu.ifpb.alumigest.orders.repository.OrderRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -17,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -69,13 +72,13 @@ public class ClientHubService {
         return PageResponse.of(dtoPage);
     }
 
-    public PageResponse<ClientOrderSummaryDto> getClientOrders(UUID clientId, Pageable pageable) {
+    public List<ClientOrderSummaryDto> getClientOrders(UUID clientId) {
         findClientOrThrow(clientId);
 
-        Page<Order> orderPage = orderRepository.findByClienteIdAndAtivoTrue(clientId, pageable);
-        Page<ClientOrderSummaryDto> dtoPage = orderPage.map(this::toOrderSummaryDto);
-
-        return PageResponse.of(dtoPage);
+        List<Order> orders = orderRepository.findByClienteIdOrderByCreatedAtDesc(clientId);
+        return orders.stream()
+                .map(this::toOrderSummaryDto)
+                .toList();
     }
 
     private ClientBudgetSummaryDto toBudgetSummaryDto(Budget budget) {
@@ -91,20 +94,38 @@ public class ClientHubService {
     }
 
     private ClientOrderSummaryDto toOrderSummaryDto(Order order) {
+        List<ClientOrderItemDto> items = order.getItems() != null
+                ? order.getItems().stream()
+                        .map(this::toOrderItemDto)
+                        .toList()
+                : List.of();
+
+        int totalEsquadrias = items.stream()
+                .mapToInt(ClientOrderItemDto::quantidade)
+                .sum();
+
         return new ClientOrderSummaryDto(
                 order.getId(),
                 order.getCodigo(),
-                order.getOrcamentoId(),
-                order.getStatus(),
-                order.getStatus() != null ? order.getStatus().getDescricao() : "",
-                order.getCanalAprovacao(),
-                order.getCanalAprovacao() != null ? order.getCanalAprovacao().getDescricao() : "",
                 order.getDataAprovacao(),
-                order.getDataPrevisaoEntrega(),
-                order.getDataConclusao(),
+                order.getStatus(),
+                order.getStatus() != null ? order.getStatus().getDescription() : "",
                 order.getValorLiquido(),
-                order.getItems() != null ? order.getItems().size() : 0,
-                order.getCreatedAt()
+                totalEsquadrias,
+                items
+        );
+    }
+
+    private ClientOrderItemDto toOrderItemDto(OrderItem item) {
+        return new ClientOrderItemDto(
+                item.getId(),
+                item.getDescricao(),
+                item.getLarguraMm() != null ? item.getLarguraMm() : 0,
+                item.getAlturaMm() != null ? item.getAlturaMm() : 0,
+                item.getQuantidade() != null ? item.getQuantidade() : 1,
+                item.getCorAluminio(),
+                item.getTipoVidro(),
+                item.getValorTotal()
         );
     }
 

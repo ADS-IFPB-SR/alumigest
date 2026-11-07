@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { api } from '../../../lib/api';
 import {
   useCustomers,
   useCustomerDashboard,
   useCustomerBudgets,
   useCustomerOrders,
 } from '../hooks/useCustomers';
-import { useOrder, useDownloadLabelsPdf } from '../../orders/hooks/useOrders';
+import { useDownloadLabelsPdf } from '../../orders/hooks/useOrders';
 import { ordersApi } from '../../orders/services/ordersApi';
 import { ThermalLabelModal } from '../../orders/components/ThermalLabelModal';
 import type { Order } from '../../orders/types';
@@ -19,6 +20,17 @@ import { CustomerBudgetsTab } from './CustomerBudgetsTab';
 import { CustomerOrdersTab } from './CustomerOrdersTab';
 import { Users, FileText, ClipboardList } from 'lucide-react';
 
+function triggerPdfBlobDownload(data: BlobPart, filename: string): void {
+  const url = window.URL.createObjectURL(new Blob([data], { type: 'application/pdf' }));
+  const link = document.createElement('a');
+  link.href = url;
+  link.setAttribute('download', filename);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
+}
+
 export const CustomerHubPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -29,15 +41,13 @@ export const CustomerHubPage: React.FC = () => {
   );
   const [activeTab, setActiveTab] = useState<'orders' | 'budgets'>('budgets');
   const [budgetPage, setBudgetPage] = useState(0);
-  const [orderPage, setOrderPage] = useState(0);
-  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
 
   // Estado para o Modal de Etiquetas Térmicas (US-47.4)
   const [selectedOrderForLabels, setSelectedOrderForLabels] = useState<Order | null>(null);
   const [isThermalModalOpen, setIsThermalModalOpen] = useState(false);
-  const [isLoadingLabelsOrderId, setIsLoadingLabelsOrderId] = useState<string | null>(null);
+  const [, setIsLoadingLabelsOrderId] = useState<string | null>(null);
 
-  // Hook compartilhado de download de PDF de etiquetas (US-17 / US-47.4)
+  // Hook de download de PDF de etiquetas térmicas (US-47.4)
   const { mutate: downloadLabels, isPending: isDownloadingLabels } = useDownloadLabelsPdf();
 
   // 1. Fetch Customers List for Master Sidebar
@@ -74,34 +84,18 @@ export const CustomerHubPage: React.FC = () => {
   const budgets = useMemo(() => budgetsData?.content || [], [budgetsData]);
   const totalBudgetPages = budgetsData?.page?.totalPages ?? 1;
 
-  // 4. Fetch Selected Customer Orders [US-47.4]
+  // 4. Fetch Selected Customer Orders
   const {
     data: ordersData,
     isLoading: isLoadingOrders,
-  } = useCustomerOrders(selectedCustomerId, { page: orderPage, size: 10 });
+  } = useCustomerOrders(selectedCustomerId);
 
-  const orders = useMemo(() => ordersData?.content || [], [ordersData]);
-  const totalOrderPages = ordersData?.page?.totalPages ?? 1;
-
-  // Mantém a primeira ordem selecionada como ativa no drawer
-  useEffect(() => {
-    if (orders.length > 0 && !orders.some((o) => o.id === selectedOrderId)) {
-      setSelectedOrderId(orders[0].id);
-    }
-  }, [orders, selectedOrderId]);
-
-  // 5. Fetch Details of Selected Order for the Esquadrias drawer
-  const {
-    data: selectedOrderDetails,
-    isLoading: isLoadingSelectedOrderDetails,
-  } = useOrder(selectedOrderId || undefined);
+  const orders = useMemo(() => ordersData ?? [], [ordersData]);
 
   // Handlers
   const handleSelectCustomer = (customer: CustomerSummaryDTO) => {
     setSelectedCustomerId(customer.id);
     setBudgetPage(0);
-    setOrderPage(0);
-    setSelectedOrderId(null);
     setSearchParams({ id: customer.id });
   };
 
@@ -114,17 +108,25 @@ export const CustomerHubPage: React.FC = () => {
     window.open(`/api/orcamentos/${budgetId}/pdf`, '_blank');
   };
 
+  const handleOpenTechSheet = async (orderId: string) => {
+    const order = orders.find((o) => o.id === orderId);
+    const identifier = (order?.codigo ?? orderId).replaceAll('/', '-');
+    try {
+      const response = await api.get(`/orders/${orderId}/production-sheet/pdf`, {
+        responseType: 'blob',
+      });
+      triggerPdfBlobDownload(response.data, `Ficha_Tecnica_${identifier}.pdf`);
+      toast.success('Ficha Técnica baixada com sucesso!');
+    } catch {
+      toast.error('Erro ao transferir a ficha técnica.');
+    }
+  };
+
   /**
    * Aciona a abertura do ThermalLabelModal para a ordem selecionada (US-47.4).
-   * Segue exatamente o mesmo comportamento homologado do botão de etiquetas da página de O.S.
    */
   const handleOpenLabels = async (orderId: string) => {
     try {
-      if (selectedOrderDetails && selectedOrderDetails.id === orderId) {
-        setSelectedOrderForLabels(selectedOrderDetails);
-        setIsThermalModalOpen(true);
-        return;
-      }
       setIsLoadingLabelsOrderId(orderId);
       const fullOrder = await ordersApi.getOrderById(orderId);
       setSelectedOrderForLabels(fullOrder);
@@ -138,7 +140,7 @@ export const CustomerHubPage: React.FC = () => {
   };
 
   /**
-   * Dispara o download das etiquetas em PDF a partir do ThermalLabelModal
+   * Dispara o download das etiquetas em PDF a partir do ThermalLabelModal (US-47.4).
    */
   const handleDownloadLabelsPdf = (
     itemId?: string,
@@ -152,14 +154,6 @@ export const CustomerHubPage: React.FC = () => {
       ...(sanitizedItemId ? { itemId: sanitizedItemId } : {}),
       customLeaves,
     });
-  };
-
-  const handleViewOrderPdf = (orderId: string) => {
-    window.open(`/api/v1/orders/${orderId}/pdf/comprovante`, '_blank');
-  };
-
-  const handleViewKanban = (orderId: string) => {
-    navigate(`/pedidos/kanban?orderId=${orderId}`);
   };
 
   const renderDetailContent = () => {
@@ -202,22 +196,6 @@ export const CustomerHubPage: React.FC = () => {
         <div className="border-b border-slate-200 dark:border-slate-800 flex items-center gap-6">
           <button
             type="button"
-            onClick={() => setActiveTab('orders')}
-            className={`pb-3 text-sm font-semibold flex items-center gap-2 border-b-2 transition ${
-              activeTab === 'orders'
-                ? 'border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400'
-                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
-            }`}
-          >
-            <ClipboardList className="w-4 h-4" />
-            <span>Ordens de Serviço (O.S.)</span>
-            <span className="px-1.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-              {dashboardData.quantidadeOrdensServico}
-            </span>
-          </button>
-
-          <button
-            type="button"
             onClick={() => setActiveTab('budgets')}
             className={`pb-3 text-sm font-semibold flex items-center gap-2 border-b-2 transition ${
               activeTab === 'budgets'
@@ -229,6 +207,22 @@ export const CustomerHubPage: React.FC = () => {
             <span>Orçamentos</span>
             <span className="px-1.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300">
               {dashboardData.quantidadeOrcamentos}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('orders')}
+            className={`pb-3 text-sm font-semibold flex items-center gap-2 border-b-2 transition ${
+              activeTab === 'orders'
+                ? 'border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400'
+                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+            }`}
+          >
+            <ClipboardList className="w-4 h-4" />
+            <span>Ordens de Serviço (O.S.)</span>
+            <span className="px-1.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+              {dashboardData.quantidadeOrdensServico}
             </span>
           </button>
         </div>
@@ -248,18 +242,9 @@ export const CustomerHubPage: React.FC = () => {
         ) : (
           <CustomerOrdersTab
             orders={orders}
-            selectedOrderId={selectedOrderId}
-            onSelectOrder={setSelectedOrderId}
-            selectedOrderDetails={selectedOrderDetails}
-            isLoadingDetails={isLoadingSelectedOrderDetails}
             isLoading={isLoadingOrders}
-            isLoadingLabelsOrderId={isLoadingLabelsOrderId}
-            page={orderPage}
-            totalPages={totalOrderPages}
-            onPageChange={setOrderPage}
+            onOpenTechSheet={handleOpenTechSheet}
             onOpenLabels={handleOpenLabels}
-            onViewPdf={handleViewOrderPdf}
-            onViewKanban={handleViewKanban}
           />
         )}
       </>
