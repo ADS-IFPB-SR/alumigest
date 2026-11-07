@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping({"/api/clientes", "/api/v1/clients", "/api/v1/customers"})
+@RequestMapping({"/api/v1/clientes", "/api/clientes", "/api/v1/clients", "/api/v1/customers"})
 @Tag(name = "Hub 360° do Cliente", description = "Endpoints para a Central 360° do Cliente, consolidação de KPIs e histórico")
 public class ClientHubController {
 

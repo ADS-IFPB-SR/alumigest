@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { api } from '../../../lib/api';
 import {
   useCustomers,
   useCustomerDashboard,
@@ -14,6 +15,17 @@ import { CustomerKpiGrid } from './CustomerKpiGrid';
 import { CustomerBudgetsTab } from './CustomerBudgetsTab';
 import { CustomerOrdersTab } from './CustomerOrdersTab';
 import { Users, FileText, ClipboardList } from 'lucide-react';
+
+function triggerPdfBlobDownload(data: BlobPart, filename: string): void {
+  const url = window.URL.createObjectURL(new Blob([data], { type: 'application/pdf' }));
+  const link = document.createElement('a');
+  link.href = url;
+  link.setAttribute('download', filename);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
+}
 
 export const CustomerHubPage: React.FC = () => {
   const navigate = useNavigate();
@@ -81,6 +93,34 @@ export const CustomerHubPage: React.FC = () => {
   const handleViewPdf = (budgetId: string) => {
     toast.success(`Abrindo proposta em PDF (ID: ${budgetId.slice(0, 8)})...`);
     window.open(`/api/orcamentos/${budgetId}/pdf`, '_blank');
+  };
+
+  const handleOpenTechSheet = async (orderId: string) => {
+    const order = orders.find((o) => o.id === orderId);
+    const identifier = (order?.codigo ?? orderId).replaceAll('/', '-');
+    try {
+      const response = await api.get(`/orders/${orderId}/production-sheet/pdf`, {
+        responseType: 'blob',
+      });
+      triggerPdfBlobDownload(response.data, `Ficha_Tecnica_${identifier}.pdf`);
+      toast.success('Ficha Técnica baixada com sucesso!');
+    } catch {
+      toast.error('Erro ao transferir a ficha técnica.');
+    }
+  };
+
+  const handleOpenLabels = async (orderId: string) => {
+    const order = orders.find((o) => o.id === orderId);
+    const identifier = (order?.codigo ?? orderId).replaceAll('/', '-');
+    try {
+      const response = await api.get(`/orders/${orderId}/labels-pdf`, {
+        responseType: 'blob',
+      });
+      triggerPdfBlobDownload(response.data, `Etiquetas_${identifier}.pdf`);
+      toast.success('Etiquetas baixadas com sucesso!');
+    } catch {
+      toast.error('Erro ao transferir as etiquetas.');
+    }
   };
 
   const renderDetailContent = () => {
@@ -170,12 +210,8 @@ export const CustomerHubPage: React.FC = () => {
           <CustomerOrdersTab
             orders={orders}
             isLoading={isLoadingOrders}
-            onOpenTechSheet={(orderId) => {
-              window.open(`/api/pedidos/${orderId}/ficha-tecnica`, '_blank');
-            }}
-            onOpenLabels={(orderId) => {
-              window.open(`/api/pedidos/${orderId}/etiquetas`, '_blank');
-            }}
+            onOpenTechSheet={handleOpenTechSheet}
+            onOpenLabels={handleOpenLabels}
           />
         )}
       </>

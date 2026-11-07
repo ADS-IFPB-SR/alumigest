@@ -178,9 +178,7 @@ export const customersApi = {
   },
 
   getCustomerOrders: async (id: string): Promise<ClientOrderSummaryDTO[]> => {
-    const response = await api.get<ClientOrderSummaryDTO[]>(`/api/clientes/${id}/orders`, {
-      baseURL: '',
-    });
+    const response = await api.get<ClientOrderSummaryDTO[]>(`/clientes/${id}/orders`);
     return response.data;
   },
 };

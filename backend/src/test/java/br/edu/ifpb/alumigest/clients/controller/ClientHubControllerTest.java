@@ -169,7 +169,7 @@ class ClientHubControllerTest {
     }
 
     @Test
-    @DisplayName("GET /api/clientes/{id}/orders - Deve retornar 200 OK com lista de O.S. e esquadrias")
+    @DisplayName("GET /api/v1/clientes/{id}/orders - Deve retornar 200 OK com lista de O.S. e esquadrias")
     void getOrders_ShouldReturn200_WithOrdersAndItems() throws Exception {
         ClientOrderItemDto item = new ClientOrderItemDto(
                 UUID.randomUUID(),
@@ -195,7 +195,7 @@ class ClientHubControllerTest {
 
         when(clientHubService.getClientOrders(clientId)).thenReturn(List.of(orderDto));
 
-        mockMvc.perform(get("/api/clientes/{id}/orders", clientId)
+        mockMvc.perform(get("/api/v1/clientes/{id}/orders", clientId)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].codigo").value("OS-2026-0042"))
@@ -208,12 +208,12 @@ class ClientHubControllerTest {
     }
 
     @Test
-    @DisplayName("GET /api/v1/clients/{id}/orders - Deve retornar 404 quando cliente não existir")
+    @DisplayName("GET /api/v1/clientes/{id}/orders - Deve retornar 404 quando cliente não existir")
     void getOrders_ShouldReturn404_WhenClientNotFound() throws Exception {
         when(clientHubService.getClientOrders(clientId))
                 .thenThrow(new ResourceNotFoundException("Cliente não encontrado com ID: " + clientId));
 
-        mockMvc.perform(get("/api/clientes/{id}/orders", clientId)
+        mockMvc.perform(get("/api/v1/clientes/{id}/orders", clientId)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
     }
