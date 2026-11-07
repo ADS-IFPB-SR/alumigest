@@ -4,7 +4,7 @@ import { X, Loader2, Save } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useCustomer, useUpdateCustomer } from '../hooks/useCustomers';
-import { customerSchema, type CustomerFormValues } from '../schemas/customerSchema';
+import { editCustomerSchema, type EditCustomerFormValues } from '../schemas/customerSchema';
 import type { CreateCustomerRequest } from '../services/customersApi';
 
 interface EditCustomerModalProps {
@@ -17,11 +17,13 @@ export function EditCustomerModal({ isOpen, customerId, onClose }: Readonly<Edit
   const { data: customer, isLoading: isLoadingCustomer } = useCustomer(isOpen ? customerId : undefined);
   const { mutate: updateCustomer, isPending } = useUpdateCustomer();
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<CustomerFormValues>({
-    resolver: zodResolver(customerSchema),
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<EditCustomerFormValues>({
+    resolver: zodResolver(editCustomerSchema),
+    defaultValues: {
+      personType: 'FISICA',
+    },
   });
 
-  // CORREÇÃO 2: Dependência do isOpen para limpar o formulário se o utilizador cancelar e reabrir
   useEffect(() => {
     if (isOpen && customer) {
       reset({
@@ -44,16 +46,14 @@ export function EditCustomerModal({ isOpen, customerId, onClose }: Readonly<Edit
 
   if (!isOpen || !customerId) return null;
 
-  const onSubmit = (data: CustomerFormValues) => {
+  const onSubmit = (data: EditCustomerFormValues) => {
     updateCustomer(
-      // Fazemos o cast assumindo que as form values mapeiam para a request
       { id: customerId, data: data as CreateCustomerRequest },
       {
         onSuccess: () => {
           toast.success('Cliente atualizado com sucesso!');
           onClose();
         },
-        // CORREÇÃO 5: Tipagem defensiva sem "any"
         onError: (error: unknown) => {
           const err = error as { response?: { data?: { message?: string } } };
           const message = err?.response?.data?.message || 'Erro ao atualizar cliente.';
@@ -69,8 +69,12 @@ export function EditCustomerModal({ isOpen, customerId, onClose }: Readonly<Edit
 
         <div className="flex items-center justify-between p-6 border-b border-outline-variant">
           <h3 className="text-lg font-bold text-on-surface">Editar Cliente</h3>
-          {/* CORREÇÃO 4: type="button" explícito */}
-          <button type="button" onClick={onClose} className="p-1 text-on-surface-variant hover:text-on-surface rounded-lg transition-colors">
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-1 text-on-surface-variant hover:text-on-surface rounded-lg transition-colors"
+            aria-label="Fechar modal"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -84,8 +88,9 @@ export function EditCustomerModal({ isOpen, customerId, onClose }: Readonly<Edit
             <form id="edit-customer" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1 md:col-span-2">
-                  <label htmlFor="nomeCompleto" className="text-xs font-semibold text-on-surface-variant uppercase">Nome / Razão Social *</label>
-                  {/* CORREÇÃO 1 & 6: register sem validação inline (Zod cuida disso) e focus:outline-none */}
+                  <label htmlFor="nomeCompleto" className="text-xs font-semibold text-on-surface-variant uppercase">
+                    Nome / Razão Social *
+                  </label>
                   <input
                     id="nomeCompleto"
                     {...register('nomeCompleto')}
@@ -95,7 +100,9 @@ export function EditCustomerModal({ isOpen, customerId, onClose }: Readonly<Edit
                 </div>
 
                 <div className="space-y-1">
-                  <label htmlFor="documento" className="text-xs font-semibold text-on-surface-variant uppercase">CPF / CNPJ *</label>
+                  <label htmlFor="documento" className="text-xs font-semibold text-on-surface-variant uppercase">
+                    CPF / CNPJ *
+                  </label>
                   <input
                     id="documento"
                     {...register('documento')}
@@ -105,8 +112,14 @@ export function EditCustomerModal({ isOpen, customerId, onClose }: Readonly<Edit
                 </div>
 
                 <div className="space-y-1">
-                  <label htmlFor="personType" className="text-xs font-semibold text-on-surface-variant uppercase">Tipo de Pessoa *</label>
-                  <select id="personType" {...register('personType')} className="w-full px-3 py-2 border rounded-lg bg-surface text-on-surface border-outline focus:outline-none focus:ring-2 focus:ring-primary/20">
+                  <label htmlFor="personType" className="text-xs font-semibold text-on-surface-variant uppercase">
+                    Tipo de Pessoa *
+                  </label>
+                  <select
+                    id="personType"
+                    {...register('personType')}
+                    className="w-full px-3 py-2 border rounded-lg bg-surface text-on-surface border-outline focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  >
                     <option value="FISICA">Física</option>
                     <option value="JURIDICA">Jurídica</option>
                   </select>
@@ -114,7 +127,9 @@ export function EditCustomerModal({ isOpen, customerId, onClose }: Readonly<Edit
                 </div>
 
                 <div className="space-y-1">
-                  <label htmlFor="telefone" className="text-xs font-semibold text-on-surface-variant uppercase">Telefone *</label>
+                  <label htmlFor="telefone" className="text-xs font-semibold text-on-surface-variant uppercase">
+                    Telefone *
+                  </label>
                   <input
                     id="telefone"
                     {...register('telefone')}
@@ -124,7 +139,9 @@ export function EditCustomerModal({ isOpen, customerId, onClose }: Readonly<Edit
                 </div>
 
                 <div className="space-y-1">
-                  <label htmlFor="email" className="text-xs font-semibold text-on-surface-variant uppercase">E-mail</label>
+                  <label htmlFor="email" className="text-xs font-semibold text-on-surface-variant uppercase">
+                    E-mail
+                  </label>
                   <input
                     id="email"
                     type="email"
@@ -139,47 +156,101 @@ export function EditCustomerModal({ isOpen, customerId, onClose }: Readonly<Edit
                 </div>
 
                 <div className="space-y-1">
-                  <label htmlFor="cep" className="text-xs font-semibold text-on-surface-variant uppercase">CEP</label>
-                  <input id="cep" {...register('cep')} className="w-full px-3 py-2 border rounded-lg bg-surface text-on-surface border-outline focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                  <label htmlFor="cep" className="text-xs font-semibold text-on-surface-variant uppercase">
+                    CEP
+                  </label>
+                  <input
+                    id="cep"
+                    {...register('cep')}
+                    className="w-full px-3 py-2 border rounded-lg bg-surface text-on-surface border-outline focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  />
                   {errors.cep && <p className="text-xs text-rose-500">{errors.cep.message}</p>}
                 </div>
 
                 <div className="space-y-1">
-                  <label htmlFor="logradouro" className="text-xs font-semibold text-on-surface-variant uppercase">Logradouro</label>
-                  <input id="logradouro" {...register('logradouro')} className="w-full px-3 py-2 border rounded-lg bg-surface text-on-surface border-outline focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                  <label htmlFor="logradouro" className="text-xs font-semibold text-on-surface-variant uppercase">
+                    Logradouro
+                  </label>
+                  <input
+                    id="logradouro"
+                    {...register('logradouro')}
+                    className="w-full px-3 py-2 border rounded-lg bg-surface text-on-surface border-outline focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  />
                 </div>
 
                 <div className="space-y-1">
-                  <label htmlFor="numero" className="text-xs font-semibold text-on-surface-variant uppercase">Número</label>
-                  <input id="numero" {...register('numero')} className="w-full px-3 py-2 border rounded-lg bg-surface text-on-surface border-outline focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                  <label htmlFor="numero" className="text-xs font-semibold text-on-surface-variant uppercase">
+                    Número
+                  </label>
+                  <input
+                    id="numero"
+                    {...register('numero')}
+                    className="w-full px-3 py-2 border rounded-lg bg-surface text-on-surface border-outline focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  />
                 </div>
 
                 <div className="space-y-1">
-                  <label htmlFor="complemento" className="text-xs font-semibold text-on-surface-variant uppercase">Complemento</label>
-                  <input id="complemento" {...register('complemento')} className="w-full px-3 py-2 border rounded-lg bg-surface text-on-surface border-outline focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                  <label htmlFor="complemento" className="text-xs font-semibold text-on-surface-variant uppercase">
+                    Complemento
+                  </label>
+                  <input
+                    id="complemento"
+                    {...register('complemento')}
+                    className="w-full px-3 py-2 border rounded-lg bg-surface text-on-surface border-outline focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  />
                 </div>
 
                 <div className="space-y-1">
-                  <label htmlFor="bairro" className="text-xs font-semibold text-on-surface-variant uppercase">Bairro</label>
-                  <input id="bairro" {...register('bairro')} className="w-full px-3 py-2 border rounded-lg bg-surface text-on-surface border-outline focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                  <label htmlFor="bairro" className="text-xs font-semibold text-on-surface-variant uppercase">
+                    Bairro
+                  </label>
+                  <input
+                    id="bairro"
+                    {...register('bairro')}
+                    className="w-full px-3 py-2 border rounded-lg bg-surface text-on-surface border-outline focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  />
                 </div>
 
                 <div className="grid grid-cols-[2fr_1fr] gap-4">
                   <div className="space-y-1">
-                    <label htmlFor="cidade" className="text-xs font-semibold text-on-surface-variant uppercase">Cidade</label>
-                    <input id="cidade" {...register('cidade')} className="w-full px-3 py-2 border rounded-lg bg-surface text-on-surface border-outline focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                    <label htmlFor="cidade" className="text-xs font-semibold text-on-surface-variant uppercase">
+                      Cidade
+                    </label>
+                    <input
+                      id="cidade"
+                      {...register('cidade')}
+                      className="w-full px-3 py-2 border rounded-lg bg-surface text-on-surface border-outline focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    />
                   </div>
                   <div className="space-y-1">
-                    <label htmlFor="uf" className="text-xs font-semibold text-on-surface-variant uppercase">UF</label>
-                    <input id="uf" {...register('uf')} maxLength={2} className="w-full px-3 py-2 border rounded-lg bg-surface text-on-surface border-outline focus:outline-none focus:ring-2 focus:ring-primary/20 uppercase" />
+                    <label htmlFor="uf" className="text-xs font-semibold text-on-surface-variant uppercase">
+                      UF
+                    </label>
+                    <input
+                      id="uf"
+                      {...register('uf')}
+                      maxLength={2}
+                      className="w-full px-3 py-2 border rounded-lg bg-surface text-on-surface border-outline focus:outline-none focus:ring-2 focus:ring-primary/20 uppercase"
+                    />
                   </div>
+                </div>
+
+                <div className="space-y-1 md:col-span-2">
+                  <label htmlFor="observacoes" className="text-xs font-semibold text-on-surface-variant uppercase">
+                    Observações
+                  </label>
+                  <textarea
+                    id="observacoes"
+                    {...register('observacoes')}
+                    rows={2}
+                    className="w-full px-3 py-2 border rounded-lg bg-surface text-on-surface border-outline focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  />
                 </div>
               </div>
             </form>
           )}
         </div>
 
-        {/* CORREÇÃO 6: bg-surface-container-low e hover:opacity-90 */}
         <div className="flex justify-end gap-3 p-6 border-t border-outline-variant bg-surface-container-low rounded-b-2xl">
           <button
             type="button"

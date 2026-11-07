@@ -65,3 +65,11 @@ export const useUpdateCustomer = () => {
     }
   });
 };
+
+export const useCustomerOrders = (id: string | undefined) => {
+  return useQuery({
+    queryKey: ['customer-orders', id],
+    queryFn: () => customersApi.getCustomerOrders(id!),
+    enabled: Boolean(id),
+  });
+};

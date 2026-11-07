@@ -6,6 +6,7 @@
       import * as useOrdersModule from '../../features/orders/hooks/useOrders';
       import * as useBudgetsModule from '../../features/budgets/hooks/useBudgets';
       import type { Order } from '../../features/orders/types';
+      import { api } from '../../lib/api';
 
       vi.mock('react-hot-toast', () => ({
         default: {
@@ -187,36 +188,55 @@
           ).toBeInTheDocument();
         });
 
-        it('deve disparar download da Ficha de Fabricação ao clicar no botão quando em produção', () => {
-          const inProductionOrder: Order = {
-            ...mockOrder,
-            status: 'IN_PRODUCTION',
-          };
+ it('deve disparar download da Ficha de Fabricação ao clicar no botão quando em produção', async () => {
+     // Intercepta a chamada da API
+     const apiGetSpy = vi.spyOn(api, 'get').mockResolvedValueOnce({
+       data: new Blob(['pdf-content'], { type: 'application/pdf' }),
+     });
 
-          vi.spyOn(useOrdersModule, 'useOrder').mockReturnValue({
-            data: inProductionOrder,
-            isLoading: false,
-            isError: false,
-          } as any);
+     // Impede erro no teste ao gerar URL temporária do navegador
+     const originalCreateObjURL = window.URL.createObjectURL;
+     const originalRevokeObjURL = window.URL.revokeObjectURL;
+     window.URL.createObjectURL = vi.fn().mockReturnValue('blob:mock-url');
+     window.URL.revokeObjectURL = vi.fn();
 
-          render(
-            <MemoryRouter initialEntries={['/ordens-servico/order-uuid-1']}>
-              <Routes>
-                <Route path="/ordens-servico/:id" element={<OrderDetailPage />} />
-              </Routes>
-            </MemoryRouter>
-          );
+     const inProductionOrder: Order = {
+       ...mockOrder,
+       status: 'IN_PRODUCTION',
+     };
 
-          const fichaBtn = screen.getByRole('button', { name: /ficha de fabricação/i });
-          expect(fichaBtn).toBeInTheDocument();
+     vi.spyOn(useOrdersModule, 'useOrder').mockReturnValue({
+       data: inProductionOrder,
+       isLoading: false,
+       isError: false,
+     } as any);
 
-          fireEvent.click(fichaBtn);
+     render(
+       <MemoryRouter initialEntries={['/ordens-servico/order-uuid-1']}>
+         <Routes>
+           <Route path="/ordens-servico/:id" element={<OrderDetailPage />} />
+         </Routes>
+       </MemoryRouter>
+     );
 
-          expect(mockDownloadPdf).toHaveBeenCalledWith({
-            id: 'budget-uuid-1',
-            code: 'ORC-2026-0001',
-          });
-        });
+     const fichaBtn = screen.getByRole('button', { name: /ficha de fabricação/i });
+     expect(fichaBtn).toBeInTheDocument();
+
+     fireEvent.click(fichaBtn);
+
+     // Aguarda a promessa e valida se a API foi chamada na nova rota com o ID correto da OS
+     await waitFor(() => {
+       expect(apiGetSpy).toHaveBeenCalledWith(
+         `/orders/${inProductionOrder.id}/production-sheet/pdf`,
+         { responseType: 'blob' }
+       );
+     });
+
+     // Restaura as funções do browser para não sujar outros testes
+     window.URL.createObjectURL = originalCreateObjURL;
+     window.URL.revokeObjectURL = originalRevokeObjURL;
+     apiGetSpy.mockRestore();
+   });
 
         it('deve abrir o modal de cancelamento ao clicar no botão "Cancelar Ordem de Serviço"', () => {
           vi.spyOn(useOrdersModule, 'useOrder').mockReturnValue({

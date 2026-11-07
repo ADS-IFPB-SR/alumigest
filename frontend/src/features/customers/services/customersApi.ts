@@ -34,6 +34,30 @@ export interface CustomerResponseDTO {
 
 export type BudgetStatus = 'DRAFT' | 'SENT' | 'APPROVED' | 'REJECTED' | 'CANCELLED' | 'EXPIRED';
 
+export type OrderStatus = 'CREATED' | 'WAITING_PRODUCTION' | 'IN_PRODUCTION' | 'COMPLETED' | 'CANCELLED';
+
+export interface ClientOrderItemDTO {
+  id: string;
+  descricao: string;
+  larguraMm: number;
+  alturaMm: number;
+  quantidade: number;
+  corAluminio?: string | null;
+  tipoVidro?: string | null;
+  valorTotal: number;
+}
+
+export interface ClientOrderSummaryDTO {
+  id: string;
+  codigo: string;
+  data: string;
+  status: OrderStatus;
+  statusDescricao?: string;
+  valorTotal: number;
+  totalEsquadrias: number;
+  items: ClientOrderItemDTO[];
+}
+
 export interface ClientDashboardDTO {
   id: string;
   nomeCompleto: string;
@@ -158,7 +182,12 @@ export const customersApi = {
       baseURL: '',
     });
     return response.data;
-  }
+  },
+
+  getCustomerOrders: async (id: string): Promise<ClientOrderSummaryDTO[]> => {
+    const response = await api.get<ClientOrderSummaryDTO[]>(`/clientes/${id}/orders`);
+    return response.data;
+  },
 };
 
 

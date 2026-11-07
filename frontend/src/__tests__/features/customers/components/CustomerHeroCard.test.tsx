@@ -84,4 +84,18 @@ describe('CustomerHeroCard', () => {
     const whatsappLink = screen.getByLabelText(/Contatar cliente via WhatsApp/i);
     expect(whatsappLink).toHaveClass('cursor-not-allowed');
   });
+
+  it('deve abrir o modal de edição ao clicar no botão Editar', () => {
+    render(
+      <QueryClientProvider client={queryClient}>
+        <CustomerHeroCard customer={mockCustomer} onNewBudget={vi.fn()} />
+      </QueryClientProvider>
+    );
+
+    const editButton = screen.getByRole('button', { name: /Editar/i });
+    expect(editButton).toBeInTheDocument();
+    fireEvent.click(editButton);
+
+    expect(screen.getByText('Editar Cliente')).toBeInTheDocument();
+  });
 });
