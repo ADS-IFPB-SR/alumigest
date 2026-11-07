@@ -1,0 +1,1380 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="h-full bg-slate-100">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AlumiGest — Catálogo de Materiais, Estoque & Kardex Unificados</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Fonts Oficiais do AlumiGest -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@500;600;700;800;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            title: ['"Hanken Grotesk"', 'sans-serif'],
+            sans: ['Inter', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#f0f5ff',
+              100: '#e0ebff',
+              600: '#2563eb',
+              800: '#0b1a30',
+              900: '#041632', // Deep Navy oficial AlumiGest
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Scrollbars elegantes */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    .drawer-backdrop {
+      transition: opacity 0.25s ease-in-out;
+    }
+    .drawer-content {
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+  </style>
+</head>
+
+<body class="h-full text-slate-800 font-sans antialiased flex flex-col md:flex-row min-h-screen bg-slate-100">
+
+  <!-- ============================================================== -->
+  <!-- 1. SIDEBAR LATERAL (100% FIEL AO PRINT DO SISTEMA REAL)        -->
+  <!-- ============================================================== -->
+  <aside class="w-full md:w-60 bg-white border-r border-slate-200 flex-shrink-0 flex flex-col justify-between z-20 min-h-screen shadow-xs">
+    <div>
+      <!-- Header do Menu -->
+      <div class="px-5 py-5 border-b border-slate-100">
+        <h1 class="font-title font-bold text-slate-900 text-sm leading-tight tracking-tight">Gestão de Esquadrias</h1>
+        <p class="text-[11px] text-slate-400 font-medium mt-0.5">Gestão de Vidros e Alumínio</p>
+      </div>
+
+      <!-- Links de Navegação -->
+      <nav class="p-3 space-y-0.5 text-xs">
+        <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition">
+          <i class="fa-solid fa-table-cells-large w-4 text-center text-slate-400"></i>
+          <span>Dashboard</span>
+        </a>
+
+        <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition">
+          <i class="fa-regular fa-square-check w-4 text-center text-slate-400"></i>
+          <span>Kanban</span>
+        </a>
+
+        <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition">
+          <i class="fa-solid fa-file-invoice-dollar w-4 text-center text-slate-400"></i>
+          <span>Orçamentos</span>
+        </a>
+
+        <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition">
+          <i class="fa-solid fa-file-lines w-4 text-center text-slate-400"></i>
+          <span>Ordens de Serviço</span>
+        </a>
+
+        <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition">
+          <i class="fa-solid fa-industry w-4 text-center text-slate-400"></i>
+          <span>Produção (Kanban)</span>
+        </a>
+
+        <!-- ITEM ATIVO: CATÁLOGO DE MATERIAIS & ESTOQUE UNIFICADOS -->
+        <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg font-bold text-white bg-[#0b1a30] shadow-sm">
+          <i class="fa-solid fa-boxes-stacked w-4 text-center text-white"></i>
+          <span>Materiais & Estoque</span>
+          <span class="ml-auto bg-blue-500 text-white font-mono text-[9px] font-extrabold px-1.5 py-0.5 rounded">Unificado</span>
+        </a>
+
+        <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition">
+          <i class="fa-solid fa-layer-group w-4 text-center text-slate-400"></i>
+          <span>Produtos (Templates)</span>
+        </a>
+
+        <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition">
+          <i class="fa-solid fa-users w-4 text-center text-slate-400"></i>
+          <span>Clientes</span>
+        </a>
+
+        <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition">
+          <i class="fa-solid fa-coins w-4 text-center text-slate-400"></i>
+          <span>Financeiro</span>
+        </a>
+
+        <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition">
+          <i class="fa-solid fa-gear w-4 text-center text-slate-400"></i>
+          <span>Configurações</span>
+        </a>
+      </nav>
+    </div>
+
+    <!-- Rodapé Sidebar -->
+    <div class="p-3 border-t border-slate-100 space-y-1 text-xs">
+      <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg font-medium text-slate-500 hover:text-slate-800 transition">
+        <i class="fa-solid fa-circle-question w-4 text-center text-slate-400"></i>
+        <span>Suporte</span>
+      </a>
+      <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg font-medium text-rose-600 hover:bg-rose-50 transition">
+        <i class="fa-solid fa-arrow-right-from-bracket w-4 text-center text-rose-400"></i>
+        <span>Sair</span>
+      </a>
+    </div>
+  </aside>
+
+  <!-- ============================================================== -->
+  <!-- 2. CONTEÚDO PRINCIPAL (TOPBAR + CARD CENTRAL UNIFICADO)        -->
+  <!-- ============================================================== -->
+  <main class="flex-1 flex flex-col min-h-screen overflow-y-auto">
+    
+    <!-- Topbar Superior (Exatamente como na foto: Logo AlumiGest ERP + Perfil Admin) -->
+    <header class="bg-white border-b border-slate-200 px-8 py-3.5 flex items-center justify-between sticky top-0 z-10 shadow-2xs">
+      <div class="flex items-center gap-3">
+        <h2 class="font-title font-bold text-slate-800 text-base tracking-tight">AlumiGest <span class="text-xs font-semibold text-slate-400 font-mono">ERP</span></h2>
+      </div>
+
+      <div class="flex items-center gap-5">
+        <!-- Ícone Dark Mode -->
+        <button class="text-slate-400 hover:text-slate-600 transition" title="Modo Noturno">
+          <i class="fa-regular fa-moon text-sm"></i>
+        </button>
+
+        <!-- Ícone Notificações -->
+        <button class="text-slate-400 hover:text-slate-600 transition relative" title="Notificações">
+          <i class="fa-regular fa-bell text-sm"></i>
+          <span class="absolute -top-1 -right-1 w-2 h-2 bg-rose-500 rounded-full"></span>
+        </button>
+
+        <!-- Divisor vertical -->
+        <div class="h-5 w-px bg-slate-200"></div>
+
+        <!-- Usuário Admin / Gerente -->
+        <div class="flex items-center gap-2.5 cursor-pointer">
+          <div class="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-600 text-xs">
+            <i class="fa-regular fa-user"></i>
+          </div>
+          <div class="text-left leading-none">
+            <p class="font-bold text-xs text-slate-800">Admin</p>
+            <p class="text-[10px] text-slate-400 mt-0.5">Gerente</p>
+          </div>
+          <i class="fa-solid fa-chevron-down text-[10px] text-slate-400 ml-1"></i>
+        </div>
+      </div>
+    </header>
+
+    <!-- Conteúdo da Página -->
+    <div class="p-6 md:p-8 flex-1 max-w-[1600px] w-full mx-auto space-y-4">
+      
+      <!-- CARD PRINCIPAL EM BRANCO (ESTRUTURA FIEL AO PRINT DO USUÁRIO) -->
+      <div class="bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden">
+        
+        <!-- Cabeçalho do Card: Título + Busca + Status + Botões de Ação -->
+        <div class="p-6 border-b border-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <h3 class="font-title font-extrabold text-xl text-slate-900 tracking-tight">Catálogo de Materiais & Almoxarifado</h3>
+              <span class="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                Estoque & Kardex Integrados
+              </span>
+            </div>
+            <p class="text-xs text-slate-500 mt-1">Gerencie especificações técnicas, saldos físicos, demanda de compra e trilha Kardex dos insumos em um só lugar.</p>
+          </div>
+
+          <!-- Filtros e Botões do Topo -->
+          <div class="flex flex-wrap items-center gap-2.5">
+            <!-- Campo de Busca -->
+            <div class="relative w-64">
+              <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+              <input type="text" id="searchInput" oninput="filterTable()" placeholder="Buscar código ou insumo..." class="w-full pl-8 pr-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            </div>
+
+            <!-- Filtro de Status -->
+            <select id="statusFilter" onchange="filterTable()" class="px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="ALL">Todos (Status & Alertas)</option>
+              <option value="IN_STOCK">🟢 Em Dia (Estoque Seguro)</option>
+              <option value="REORDER_POINT">🟡 Ponto de Pedido</option>
+              <option value="PURCHASE_NEEDED">🔴 Necessidade de Compra</option>
+            </select>
+
+            <!-- Botão Secundário: Registrar Entrada de Compra (Loja/NF) -->
+            <button onclick="openModalEntry()" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-800 transition cursor-pointer flex items-center gap-1.5">
+              <i class="fa-solid fa-truck-ramp-box text-blue-600"></i>
+              <span>Dar Entrada</span>
+            </button>
+
+            <!-- Botão Primário: + Novo Material (Fiel ao design escuro do print) -->
+            <button onclick="openModalNewMaterial()" class="px-4 py-2 rounded-xl text-xs font-bold bg-[#0b1a30] hover:bg-[#041632] text-white shadow-sm transition cursor-pointer flex items-center gap-2">
+              <i class="fa-solid fa-plus text-xs"></i>
+              <span>+ Novo Material</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- ABAS DE CATEGORIAS (100% FIÉIS AO PRINT ORIGINAL)            -->
+        <!-- ============================================================ -->
+        <div class="px-6 pt-3 border-b border-slate-200 bg-white flex items-center gap-8">
+          <!-- Aba 1: Vidros -->
+          <button id="tabNavGlass" onclick="switchCategoryTab('GLASS')" class="pb-3 text-xs font-bold text-slate-900 border-b-2 border-slate-900 flex items-center gap-2 transition cursor-pointer">
+            <span>Vidros</span>
+            <span class="bg-slate-100 text-slate-700 font-mono text-[10px] px-1.5 py-0.2 rounded-full">3</span>
+          </button>
+
+          <!-- Aba 2: Perfis de Alumínio -->
+          <button id="tabNavProfile" onclick="switchCategoryTab('PROFILE')" class="pb-3 text-xs font-medium text-slate-500 hover:text-slate-800 border-b-2 border-transparent flex items-center gap-2 transition cursor-pointer">
+            <span>Perfis de Alumínio</span>
+            <span class="bg-slate-100 text-slate-700 font-mono text-[10px] px-1.5 py-0.2 rounded-full">3</span>
+          </button>
+
+          <!-- Aba 3: Películas -->
+          <button id="tabNavFilm" onclick="switchCategoryTab('FILM')" class="pb-3 text-xs font-medium text-slate-500 hover:text-slate-800 border-b-2 border-transparent flex items-center gap-2 transition cursor-pointer">
+            <span>Películas</span>
+            <span class="bg-slate-100 text-slate-700 font-mono text-[10px] px-1.5 py-0.2 rounded-full">2</span>
+          </button>
+
+          <!-- Aba 4: Ferragens -->
+          <button id="tabNavHardware" onclick="switchCategoryTab('HARDWARE')" class="pb-3 text-xs font-medium text-slate-500 hover:text-slate-800 border-b-2 border-transparent flex items-center gap-2 transition cursor-pointer">
+            <span>Ferragens</span>
+            <span class="bg-slate-100 text-slate-700 font-mono text-[10px] px-1.5 py-0.2 rounded-full">3</span>
+          </button>
+        </div>
+
+        <!-- Barra de Ações Rápidas (Exportar + Contador Total) -->
+        <div class="px-6 py-3 bg-slate-50/70 border-b border-slate-100 flex items-center justify-between">
+          <button class="inline-flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-2xs transition">
+            <i class="fa-solid fa-arrow-down-to-bracket text-slate-400"></i>
+            <span>Exportar</span>
+          </button>
+
+          <div class="text-xs text-slate-500 font-medium">
+            Total nesta categoria: <strong id="lblTotalCount" class="font-bold text-slate-800 font-mono">3</strong>
+          </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- TABELA UNIFICADA: ESPECIFICAÇÃO + ESTOQUE + KARDEX           -->
+        <!-- ============================================================ -->
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <!-- O cabeçalho se ajusta de acordo com a aba selecionada -->
+            <thead class="bg-slate-50/90 text-[11px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200" id="tableHeader">
+              <!-- Renderizado dinamicamente -->
+            </thead>
+            
+            <tbody class="divide-y divide-slate-100 text-xs text-slate-700" id="tableBody">
+              <!-- Linhas renderizadas dinamicamente via JavaScript -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Rodapé Didático da Tabela -->
+        <div class="p-4 bg-slate-50/80 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-3">
+          <div class="flex items-center gap-4">
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> <strong>Em Dia:</strong> Disponível seguro</span>
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> <strong>Ponto de Pedido:</strong> Saldo no limite</span>
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span> <strong>Comprar:</strong> Demanda de O.S. (Make-to-Order)</span>
+          </div>
+
+          <div class="text-slate-400">
+            Dica: clique em <strong><i class="fa-solid fa-clock-rotate-left text-blue-600"></i> Kardex</strong> para auditar a trilha cronológica imutável.
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ============================================================== -->
+  <!-- 3. GAVETA LATERAL DO KARDEX (DESLIZA À DIREITA SEM SAIR DA TELA) -->
+  <!-- ============================================================== -->
+  <div id="kardexDrawerBackdrop" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 hidden opacity-0 drawer-backdrop flex justify-end">
+    <div id="kardexDrawer" class="w-full max-w-lg bg-white h-full shadow-2xl flex flex-col transform translate-x-full drawer-content border-l border-slate-200">
+      
+      <!-- Drawer Header -->
+      <div class="p-6 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+        <div>
+          <span class="text-[10px] font-bold font-mono text-blue-600 uppercase tracking-wider" id="kardexSku">#AL-SUP-001</span>
+          <h3 class="font-title font-bold text-base text-slate-900 mt-0.5" id="kardexTitle">Perfil Linha Suprema</h3>
+          <p class="text-xs text-slate-500">Extrato Cronológico de Movimentações (Kardex Imutável)</p>
+        </div>
+        <button onclick="closeKardexDrawer()" class="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200 flex items-center justify-center transition">
+          <i class="fa-solid fa-xmark text-base"></i>
+        </button>
+      </div>
+
+      <!-- Resumo Rápido de Saldos do Insumo -->
+      <div class="grid grid-cols-3 gap-2 p-4 bg-slate-100/70 border-b border-slate-200 text-center">
+        <div class="bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs">
+          <span class="text-[10px] font-bold text-slate-400 block uppercase">Físico</span>
+          <span class="font-mono font-extrabold text-sm text-slate-900" id="kardexPhysical">2 barras</span>
+        </div>
+        <div class="bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs">
+          <span class="text-[10px] font-bold text-slate-400 block uppercase">Reservado</span>
+          <span class="font-mono font-extrabold text-sm text-amber-600" id="kardexReserved">8 barras</span>
+        </div>
+        <div class="bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs">
+          <span class="text-[10px] font-bold text-slate-400 block uppercase">Disponível</span>
+          <span class="font-mono font-extrabold text-sm text-rose-600" id="kardexAvailable">-6 barras</span>
+        </div>
+      </div>
+
+      <!-- Timeline do Kardex (Movimentações Imutáveis) -->
+      <div class="flex-1 overflow-y-auto p-6 space-y-4">
+        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Histórico de Eventos</h4>
+
+        <!-- Evento 1: Reserva O.S. (Make-to-Order) -->
+        <div class="relative pl-6 pb-4 border-l-2 border-rose-300">
+          <span class="absolute -left-1.5 top-0 w-3 h-3 rounded-full bg-rose-500 ring-4 ring-rose-100"></span>
+          <div class="bg-rose-50/60 border border-rose-200 rounded-xl p-3">
+            <div class="flex items-center justify-between text-xs">
+              <span class="font-bold text-rose-800">RESERVA AUTOMÁTICA O.S.</span>
+              <span class="font-mono text-[10px] text-slate-400">Hoje, 09:30</span>
+            </div>
+            <p class="text-xs text-slate-700 mt-1">Vinculado à <strong>O.S. #2026-088</strong> (Cliente: Construtora Alvorada)</p>
+            <div class="mt-2 flex items-center justify-between text-xs font-mono">
+              <span class="text-rose-700 font-bold">-6 barras reservadas</span>
+              <span class="text-slate-500 text-[11px]">Disponível: -6 barras</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Evento 2: Reserva O.S. -->
+        <div class="relative pl-6 pb-4 border-l-2 border-amber-300">
+          <span class="absolute -left-1.5 top-0 w-3 h-3 rounded-full bg-amber-500 ring-4 ring-amber-100"></span>
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-3">
+            <div class="flex items-center justify-between text-xs">
+              <span class="font-bold text-slate-800">RESERVA AUTOMÁTICA O.S.</span>
+              <span class="font-mono text-[10px] text-slate-400">Ontem, 14:15</span>
+            </div>
+            <p class="text-xs text-slate-700 mt-1">Vinculado à <strong>O.S. #2026-085</strong> (Porta 2 Folhas)</p>
+            <div class="mt-2 flex items-center justify-between text-xs font-mono">
+              <span class="text-amber-600 font-bold">-2 barras reservadas</span>
+              <span class="text-slate-500 text-[11px]">Disponível: 0 barras</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Evento 3: Entrada por Compra -->
+        <div class="relative pl-6 border-l-2 border-emerald-300">
+          <span class="absolute -left-1.5 top-0 w-3 h-3 rounded-full bg-emerald-500 ring-4 ring-emerald-100"></span>
+          <div class="bg-emerald-50/60 border border-emerald-200 rounded-xl p-3">
+            <div class="flex items-center justify-between text-xs">
+              <span class="font-bold text-emerald-800">ENTRADA POR COMPRA</span>
+              <span class="font-mono text-[10px] text-slate-400">03/11/2026</span>
+            </div>
+            <p class="text-xs text-slate-700 mt-1">Pedido Loja: <strong>Asa #1024</strong> (Fornecedor: Distribuidora Asa)</p>
+            <div class="mt-2 flex items-center justify-between text-xs font-mono">
+              <span class="text-emerald-700 font-bold">+10 barras recebidas</span>
+              <span class="text-slate-500 text-[11px]">Custo: R$ 138,50/un</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Drawer Footer -->
+      <div class="p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between">
+        <button onclick="closeKardexDrawer()" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-200 transition">
+          Fechar Extrato
+        </button>
+        <button onclick="openModalEntry(document.getElementById('kardexSku').innerText)" class="px-4 py-2 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs transition">
+          + Nova Entrada Física
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- 4. MODAL COMPLETO: NOVO MATERIAL & ENTRADA DE ESTOQUE (2 EM 1) -->
+  <!--    (BASEADO NOS 4 MODAIS OFICIAIS DO CÓDIGO FONTE)             -->
+  <!-- ============================================================== -->
+  <div id="modalNewMaterialBackdrop" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-3xl w-full max-h-[92vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-150">
+      
+      <!-- Modal Header -->
+      <div class="p-5 border-b border-slate-200 bg-white flex items-center justify-between sticky top-0 z-20 shadow-2xs">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-[#0b1a30] text-white flex items-center justify-center font-bold text-lg shadow-sm">
+            <i class="fa-solid fa-boxes-stacked"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h3 class="font-title font-extrabold text-base text-slate-900">Novo Material & Entrada no Estoque</h3>
+              <span class="bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Fluxo 2 em 1</span>
+            </div>
+            <p class="text-xs text-slate-500 mt-0.5">Cadastre a ficha técnica do catálogo e lance a primeira remessa do almoxarifado juntos</p>
+          </div>
+        </div>
+        <button onclick="closeModalNewMaterial()" class="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 flex items-center justify-center transition">
+          <i class="fa-solid fa-xmark text-base"></i>
+        </button>
+      </div>
+
+      <!-- Form Body -->
+      <form onsubmit="submitNewMaterial(event)" class="p-6 space-y-5">
+        
+        <!-- SELETOR DE CATEGORIA (OS 4 TIPOS OFICIAIS) -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-2 uppercase tracking-wider">
+            1. Categoria do Material (Carrega os campos técnicos oficiais)
+          </label>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <button type="button" id="tabBtnModalProfile" onclick="setModalCategory('PROFILE')" class="p-3 rounded-xl border-2 border-blue-600 bg-blue-50/70 text-blue-900 text-left transition flex flex-col justify-between cursor-pointer">
+              <i class="fa-solid fa-bars text-blue-600 text-base"></i>
+              <div class="mt-2">
+                <p class="font-title font-bold text-xs">Perfil de Alumínio</p>
+                <p class="text-[10px] text-blue-700/80">Linhas Suprema/Gold</p>
+              </div>
+            </button>
+
+            <button type="button" id="tabBtnModalGlass" onclick="setModalCategory('GLASS')" class="p-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-700 text-left hover:bg-slate-100 transition flex flex-col justify-between cursor-pointer">
+              <i class="fa-solid fa-window-maximize text-slate-400 text-base"></i>
+              <div class="mt-2">
+                <p class="font-title font-bold text-xs text-slate-800">Chapa de Vidro</p>
+                <p class="text-[10px] text-slate-500">Temperado/Laminado</p>
+              </div>
+            </button>
+
+            <button type="button" id="tabBtnModalHardware" onclick="setModalCategory('HARDWARE')" class="p-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-700 text-left hover:bg-slate-100 transition flex flex-col justify-between cursor-pointer">
+              <i class="fa-solid fa-gear text-slate-400 text-base"></i>
+              <div class="mt-2">
+                <p class="font-title font-bold text-xs text-slate-800">Ferragem / Acessório</p>
+                <p class="text-[10px] text-slate-500">Roldana/Fecho</p>
+              </div>
+            </button>
+
+            <button type="button" id="tabBtnModalFilm" onclick="setModalCategory('FILM')" class="p-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-700 text-left hover:bg-slate-100 transition flex flex-col justify-between cursor-pointer">
+              <i class="fa-solid fa-sheet-plastic text-slate-400 text-base"></i>
+              <div class="mt-2">
+                <p class="font-title font-bold text-xs text-slate-800">Película / Selante</p>
+                <p class="text-[10px] text-slate-500">Jateada/Fumê</p>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <!-- CAMPOS TÉCNICOS: PERFIL (ProfileFormModal) -->
+        <div id="modalFieldsProfile" class="space-y-3.5">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Código SKU *</label>
+              <input type="text" id="mProfSku" value="ALU-SUP-105" placeholder="Ex: ALU-SUP-01" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-mono font-bold uppercase focus:ring-2 focus:ring-blue-500 focus:outline-none" required>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Linha Comercial *</label>
+              <input type="text" id="mProfLine" value="SUPREMA" placeholder="Ex: SUPREMA, GOLD" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-bold uppercase focus:ring-2 focus:ring-blue-500 focus:outline-none" required>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Cor / Acabamento *</label>
+              <input type="text" id="mProfColor" value="BRANCO" placeholder="Ex: BRANCO, PRETO" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-medium uppercase focus:ring-2 focus:ring-blue-500 focus:outline-none" required>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Descrição do Perfil *</label>
+            <input type="text" id="mProfDesc" value="PERFIL GUIA SUPERIOR 2 VIAS 6M BRANCO" placeholder="Descrição completa do perfil" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-medium uppercase focus:ring-2 focus:ring-blue-500 focus:outline-none" required>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Família (Opcional)</label>
+              <input type="text" id="mProfFamily" value="FAM-SUPREMA" placeholder="Ex: FAM-SUPREMA" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs uppercase focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Peso por Metro (Kg/m) *</label>
+              <input type="text" id="mProfWeight" value="0,920" placeholder="0,000" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none" required>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Comprimento (m) *</label>
+              <input type="text" id="mProfLength" value="6" placeholder="6" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-mono font-bold focus:ring-2 focus:ring-blue-500 focus:outline-none" required>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Código NCM</label>
+              <input type="text" id="mProfNcm" value="76042100" placeholder="76042100" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Preço de Custo (Barra) *</label>
+              <input type="text" id="mProfCost" oninput="syncCostPrice(this.value)" value="R$ 145,00" placeholder="R$ 0,00" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-mono font-bold text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none" required>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Preço Metro Linear Venda *</label>
+              <input type="text" id="mProfSale" value="R$ 42,00" placeholder="R$ 0,00" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-mono font-bold text-emerald-700 focus:ring-2 focus:ring-blue-500 focus:outline-none" required>
+            </div>
+          </div>
+        </div>
+
+        <!-- CAMPOS TÉCNICOS: VIDRO (GlassFormModal) -->
+        <div id="modalFieldsGlass" class="space-y-3.5 hidden">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div class="md:col-span-2">
+              <label class="block text-xs font-bold text-slate-700 mb-1">Nome / Descrição do Vidro *</label>
+              <input type="text" id="mGlassName" value="VIDRO LAMINADO 8MM FUMÊ" placeholder="Ex: VIDRO TEMPERADO 8MM INCOLOR" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-medium uppercase focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Espessura (mm) *</label>
+              <select id="mGlassThickness" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                <option value="4">4 mm</option>
+                <option value="6">6 mm</option>
+                <option value="8" selected>8 mm</option>
+                <option value="10">10 mm</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Cor / Acabamento *</label>
+              <input type="text" id="mGlassColor" value="FUMÊ" placeholder="Ex: INCOLOR, FUMÊ" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs uppercase focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Largura Máxima (mm) *</label>
+              <input type="text" id="mGlassMaxWidth" value="2400" placeholder="2400" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Altura Máxima (mm) *</label>
+              <input type="text" id="mGlassMaxHeight" value="3200" placeholder="3200" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Preço de Custo (m²) *</label>
+              <input type="text" id="mGlassCost" oninput="syncCostPrice(this.value)" value="R$ 130,00" placeholder="R$ 0,00" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-mono font-bold text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Preço de Venda (m²) *</label>
+              <input type="text" id="mGlassSale" value="R$ 220,00" placeholder="R$ 0,00" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-mono font-bold text-emerald-700 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            </div>
+          </div>
+        </div>
+
+        <!-- CAMPOS TÉCNICOS: FERRAGEM (HardwareFormModal) -->
+        <div id="modalFieldsHardware" class="space-y-3.5 hidden">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Código (SKU) *</label>
+              <input type="text" id="mHardSku" value="PUX-H-400" placeholder="Ex: ROL-DUP-1125" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-mono font-bold uppercase focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-xs font-bold text-slate-700 mb-1">Nome / Descrição da Ferragem *</label>
+              <input type="text" id="mHardName" value="PUXADOR TUBULAR H INOX 400MM" placeholder="Ex: ROLDANA DUPLA SUPREMA" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-medium uppercase focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Unidade de Medida *</label>
+              <select id="mHardUnit" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                <option value="unidades" selected>UN (Unidade)</option>
+                <option value="pares">PAR (Par)</option>
+                <option value="jogos">CJ (Conjunto)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Família (Opcional)</label>
+              <input type="text" id="mHardFamily" value="FAM-PUXADORES" placeholder="Ex: FAM-PUXADOR" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs uppercase focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Código NCM</label>
+              <input type="text" id="mHardNcm" value="83024100" placeholder="83024100" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Preço de Custo (Unidade) *</label>
+              <input type="text" id="mHardCost" oninput="syncCostPrice(this.value)" value="R$ 48,00" placeholder="R$ 0,00" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-mono font-bold text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Preço de Venda (Unidade) *</label>
+              <input type="text" id="mHardSale" value="R$ 95,00" placeholder="R$ 0,00" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-mono font-bold text-emerald-700 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            </div>
+          </div>
+        </div>
+
+        <!-- CAMPOS TÉCNICOS: PELÍCULA (FilmFormModal) -->
+        <div id="modalFieldsFilm" class="space-y-3.5 hidden">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Código (SKU)</label>
+              <input type="text" id="mFilmSku" value="PEL-ESP-01" placeholder="Ex: PEL-JAT-01" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-mono font-bold uppercase focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-xs font-bold text-slate-700 mb-1">Nome / Descrição da Película *</label>
+              <input type="text" id="mFilmName" value="PELÍCULA ESPELHADA PRATA 0.12MM" placeholder="Ex: PELÍCULA JATEADA FOSCA" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-medium uppercase focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Tipo de Película *</label>
+              <input type="text" id="mFilmType" value="ESPELHADA" placeholder="Ex: JATEADA, FUMÊ" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs uppercase focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Comprimento Bobina (m) *</label>
+              <input type="text" id="mFilmLength" value="30" placeholder="30" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Largura Bobina (mm) *</label>
+              <input type="text" id="mFilmWidth" value="1520" placeholder="1520" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Preço de Custo (m²) *</label>
+              <input type="text" id="mFilmCost" oninput="syncCostPrice(this.value)" value="R$ 35,00" placeholder="R$ 0,00" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-mono font-bold text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Preço de Venda (m²) *</label>
+              <input type="text" id="mFilmSale" value="R$ 65,00" placeholder="R$ 0,00" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-mono font-bold text-emerald-700 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            </div>
+          </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- SEÇÃO 2: ENTRADA FÍSICA NO ESTOQUE (KARDEX)                  -->
+        <!-- ============================================================ -->
+        <div class="bg-blue-50/70 border border-blue-200 rounded-2xl p-4 space-y-3.5">
+          <div class="flex items-center justify-between pb-2 border-b border-blue-200/60">
+            <div class="flex items-center gap-2">
+              <span class="w-6 h-6 rounded-lg bg-blue-600 text-white text-xs font-bold flex items-center justify-center">2</span>
+              <div>
+                <h4 class="text-xs font-bold text-blue-900 uppercase tracking-wider">Entrada Física de Chegada no Almoxarifado</h4>
+                <p class="text-[11px] text-slate-500">Já declare as unidades físicas que chegaram da loja</p>
+              </div>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="mToggleStock" checked class="sr-only peer">
+              <div class="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+              <span class="ml-2 text-xs font-bold text-blue-900">Dar entrada agora</span>
+            </label>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Quantidade Recebida *</label>
+              <div class="relative">
+                <input type="number" id="mStockQty" min="1" step="any" value="10" placeholder="Ex: 10" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-mono font-bold text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none" required>
+                <span id="mUnitBadge" class="absolute right-3 top-2 text-[11px] font-bold text-slate-400">barras</span>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Preço de Compra Unitário</label>
+              <input type="text" id="mStockCost" value="R$ 145,00" placeholder="R$ 0,00" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-mono font-bold text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Ponto de Pedido (Mínimo)</label>
+              <input type="number" id="mStockMin" value="4" placeholder="4" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Fornecedor / Distribuidora</label>
+              <input type="text" id="mStockSupplier" value="Distribuidora Asa" placeholder="Ex: Alumasa / Cebrace" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Nº do Pedido / Recibo da Loja / NF</label>
+              <input type="text" id="mStockDoc" value="Pedido 1088" placeholder="Ex: Recibo 450, Pedido 1024..." class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none">
+              <p class="text-[10px] text-slate-400 mt-0.5">Sem validação de NF; aceita código da loja.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="pt-3 border-t border-slate-200 flex items-center justify-end gap-2 sticky bottom-0 bg-white py-2">
+          <button type="button" onclick="closeModalNewMaterial()" class="px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition">
+            Cancelar
+          </button>
+          <button type="submit" class="px-5 py-2.5 rounded-xl text-xs font-bold bg-[#0b1a30] hover:bg-[#041632] text-white shadow-sm transition cursor-pointer flex items-center gap-2">
+            <i class="fa-solid fa-check"></i>
+            <span>Salvar Material & Inserir no Estoque</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- 5. MODAL SIMPLES: ENTRADA DE COMPRA EM ITEM EXISTENTE          -->
+  <!-- ============================================================== -->
+  <div id="modalEntryBackdrop" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-lg w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+      
+      <div class="p-5 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm">
+            <i class="fa-solid fa-truck-ramp-box"></i>
+          </div>
+          <div>
+            <h3 class="font-title font-bold text-base text-slate-900">Registrar Entrada no Estoque</h3>
+            <p class="text-xs text-slate-500">Alimente o saldo físico com o recibo ou pedido da loja</p>
+          </div>
+        </div>
+        <button onclick="closeModalEntry()" class="w-7 h-7 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200 flex items-center justify-center transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form onsubmit="submitQuickEntry(event)" class="p-5 space-y-4">
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <label class="block text-xs font-bold text-slate-700">Insumo que Chegou</label>
+            <button type="button" onclick="closeModalEntry(); openModalNewMaterial();" class="text-[11px] font-bold text-blue-600 hover:underline">
+              + Não encontrou? Cadastrar Novo
+            </button>
+          </div>
+          <select id="modalInsumoSelect" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none" required>
+            <option value="VID-001">VID-001 — VIDRO 8MM INCOLOR (Disponível: 18 m²)</option>
+            <option value="ALU-SUP-01">ALU-SUP-01 — PERFIL MONTANTE SUPREMA 6M (Faltam 6 barras)</option>
+            <option value="ROL-DUP-1125">ROL-DUP-1125 — ROLDANA DUPLA SUPREMA (Disponível: 4 un)</option>
+            <option value="PEL-JAT-01">PEL-JAT-01 — PELÍCULA JATEADA FOSCA (Faltam 6,5 m²)</option>
+          </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Quantidade Recebida</label>
+            <input type="number" id="quickQtyInput" min="1" step="any" placeholder="Ex: 10" value="10" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-mono font-bold focus:ring-2 focus:ring-blue-500 focus:outline-none" required>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Preço de Compra Unitário</label>
+            <input type="text" placeholder="R$ 138,50" value="R$ 138,50" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Nº do Pedido / Recibo da Loja</label>
+            <input type="text" placeholder="Ex: Recibo 450, Pedido 1024" value="Pedido 1090" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Fornecedor</label>
+            <input type="text" placeholder="Ex: Distribuidora Asa" value="Distribuidora Asa" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none">
+          </div>
+        </div>
+
+        <div class="pt-3 border-t border-slate-200 flex items-center justify-end gap-2">
+          <button type="button" onclick="closeModalEntry()" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition">
+            Cancelar
+          </button>
+          <button type="submit" class="px-4 py-2 rounded-xl text-xs font-bold bg-[#0b1a30] hover:bg-[#041632] text-white transition cursor-pointer">
+            Confirmar Entrada no Kardex
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- 6. JAVASCRIPT DE RENDERIZAÇÃO DAS TABELAS E KARDEX             -->
+  <!-- ============================================================== -->
+  <script>
+    // DADOS MOCKADOS 100% FIÉIS AO ALUMIGEST COM ESTOQUE E KARDEX
+    const materialsData = {
+      GLASS: [
+        {
+          sku: 'VID-001',
+          name: 'VIDRO 8MM',
+          color: 'INCOLOR',
+          spec: '8 mm',
+          salePrice: 'R$ 200,00',
+          costPrice: 'R$ 110,00',
+          unit: 'm²',
+          physical: 25,
+          reserved: 7,
+          available: 18,
+          minStock: 10,
+          status: 'IN_STOCK',
+          active: true
+        },
+        {
+          sku: 'VID-002',
+          name: 'VIDRO TEMPERADO 10MM',
+          color: 'FUMÊ',
+          spec: '10 mm',
+          salePrice: 'R$ 260,00',
+          costPrice: 'R$ 145,00',
+          unit: 'm²',
+          physical: 0,
+          reserved: 12,
+          available: -12,
+          minStock: 8,
+          status: 'PURCHASE_NEEDED', // Make-to-Order: falta insumo!
+          active: true
+        },
+        {
+          sku: 'VID-003',
+          name: 'VIDRO LAMINADO 6MM',
+          color: 'VERDE',
+          spec: '6 mm',
+          salePrice: 'R$ 180,00',
+          costPrice: 'R$ 95,00',
+          unit: 'm²',
+          physical: 6,
+          reserved: 2,
+          available: 4,
+          minStock: 5,
+          status: 'REORDER_POINT',
+          active: true
+        }
+      ],
+      PROFILE: [
+        {
+          sku: 'ALU-SUP-01',
+          name: 'PERFIL MONTANTE PORTA 2F 6M',
+          line: 'SUPREMA',
+          color: 'BRANCO',
+          spec: 'Barra 6m • 0,85 Kg/m',
+          salePrice: 'R$ 38,00/m',
+          costPrice: 'R$ 138,50',
+          unit: 'barras',
+          physical: 2,
+          reserved: 8,
+          available: -6,
+          minStock: 4,
+          status: 'PURCHASE_NEEDED', // Falta comprar 6 barras!
+          active: true
+        },
+        {
+          sku: 'ALU-GLD-02',
+          name: 'PERFIL TRAVESSA INFERIOR GOLD 6M',
+          line: 'GOLD',
+          color: 'PRETO',
+          spec: 'Barra 6m • 1,12 Kg/m',
+          salePrice: 'R$ 55,00/m',
+          costPrice: 'R$ 185,00',
+          unit: 'barras',
+          physical: 14,
+          reserved: 4,
+          available: 10,
+          minStock: 6,
+          status: 'IN_STOCK',
+          active: true
+        },
+        {
+          sku: 'ALU-SUP-03',
+          name: 'PERFIL BAGUETE QUADRADO 6M',
+          line: 'SUPREMA',
+          color: 'FOSCO',
+          spec: 'Barra 6m • 0,22 Kg/m',
+          salePrice: 'R$ 15,00/m',
+          costPrice: 'R$ 45,00',
+          unit: 'barras',
+          physical: 5,
+          reserved: 2,
+          available: 3,
+          minStock: 4,
+          status: 'REORDER_POINT',
+          active: true
+        }
+      ],
+      HARDWARE: [
+        {
+          sku: 'ROL-DUP-1125',
+          name: 'ROLDANA DUPLA SUPREMA COM ROLAMENTO',
+          unitMeasure: 'PAR',
+          salePrice: 'R$ 35,00',
+          costPrice: 'R$ 18,50',
+          unit: 'pares',
+          physical: 4,
+          reserved: 0,
+          available: 4,
+          minStock: 6,
+          status: 'REORDER_POINT',
+          active: true
+        },
+        {
+          sku: 'FCH-CON-SUP',
+          name: 'FECHO CONCHA AUTOMÁTICO LATERAL',
+          unitMeasure: 'UN',
+          salePrice: 'R$ 28,00',
+          costPrice: 'R$ 14,00',
+          unit: 'unidades',
+          physical: 20,
+          reserved: 6,
+          available: 14,
+          minStock: 10,
+          status: 'IN_STOCK',
+          active: true
+        },
+        {
+          sku: 'PUX-TUB-INOX',
+          name: 'PUXADOR TUBULAR H INOX 400MM',
+          unitMeasure: 'UN',
+          salePrice: 'R$ 95,00',
+          costPrice: 'R$ 48,00',
+          unit: 'unidades',
+          physical: 1,
+          reserved: 3,
+          available: -2,
+          minStock: 2,
+          status: 'PURCHASE_NEEDED',
+          active: true
+        }
+      ],
+      FILM: [
+        {
+          sku: 'PEL-JAT-01',
+          name: 'PELÍCULA JATEADA FOSCA 0.10MM',
+          filmType: 'JATEADA',
+          spec: 'Bobina 30m x 1520mm',
+          salePrice: 'R$ 45,00/m²',
+          costPrice: 'R$ 25,00',
+          unit: 'm²',
+          physical: 10,
+          reserved: 16.5,
+          available: -6.5,
+          minStock: 10,
+          status: 'PURCHASE_NEEDED',
+          active: true
+        },
+        {
+          sku: 'PEL-FUM-G20',
+          name: 'PELÍCULA FUMÊ CLÁSSICA G20',
+          filmType: 'FUMÊ',
+          spec: 'Bobina 30m x 1520mm',
+          salePrice: 'R$ 38,00/m²',
+          costPrice: 'R$ 19,00',
+          unit: 'm²',
+          physical: 45,
+          reserved: 10,
+          available: 35,
+          minStock: 15,
+          status: 'IN_STOCK',
+          active: true
+        }
+      ]
+    };
+
+    let currentCategory = 'GLASS';
+    let currentModalCategory = 'PROFILE';
+
+    // Inicialização da Página
+    document.addEventListener('DOMContentLoaded', () => {
+      renderTable();
+    });
+
+    // Troca de Aba Superior (Vidros, Perfis, Películas, Ferragens)
+    function switchCategoryTab(cat) {
+      currentCategory = cat;
+
+      const tabs = [
+        { id: 'tabNavGlass', cat: 'GLASS' },
+        { id: 'tabNavProfile', cat: 'PROFILE' },
+        { id: 'tabNavFilm', cat: 'FILM' },
+        { id: 'tabNavHardware', cat: 'HARDWARE' },
+      ];
+
+      tabs.forEach(t => {
+        const btn = document.getElementById(t.id);
+        if (t.cat === cat) {
+          btn.className = "pb-3 text-xs font-bold text-slate-900 border-b-2 border-slate-900 flex items-center gap-2 transition cursor-pointer";
+        } else {
+          btn.className = "pb-3 text-xs font-medium text-slate-500 hover:text-slate-800 border-b-2 border-transparent flex items-center gap-2 transition cursor-pointer";
+        }
+      });
+
+      renderTable();
+    }
+
+    // Renderiza a Tabela Unificada de Acordo com a Aba
+    function renderTable() {
+      const thead = document.getElementById('tableHeader');
+      const tbody = document.getElementById('tableBody');
+      const data = materialsData[currentCategory] || [];
+      document.getElementById('lblTotalCount').innerText = data.length;
+
+      // Cabeçalho específico por tipo de material
+      if (currentCategory === 'GLASS') {
+        thead.innerHTML = `
+          <tr>
+            <th class="px-6 py-3">Referência</th>
+            <th class="px-6 py-3">Descrição</th>
+            <th class="px-6 py-3">Cor</th>
+            <th class="px-6 py-3">Espessura</th>
+            <th class="px-6 py-3">Preço Venda</th>
+            <th class="px-6 py-3 text-center">Físico</th>
+            <th class="px-6 py-3 text-center">Reservado</th>
+            <th class="px-6 py-3 text-center font-bold text-slate-700">Saldo Disponível</th>
+            <th class="px-6 py-3 text-center">Alerta Estoque</th>
+            <th class="px-6 py-3 text-center">Status</th>
+            <th class="px-6 py-3 text-right">Ações Unificadas</th>
+          </tr>
+        `;
+      } else if (currentCategory === 'PROFILE') {
+        thead.innerHTML = `
+          <tr>
+            <th class="px-6 py-3">Referência (SKU)</th>
+            <th class="px-6 py-3">Descrição do Perfil</th>
+            <th class="px-6 py-3">Linha</th>
+            <th class="px-6 py-3">Cor</th>
+            <th class="px-6 py-3">Medida / Peso</th>
+            <th class="px-6 py-3">Preço Venda</th>
+            <th class="px-6 py-3 text-center">Físico</th>
+            <th class="px-6 py-3 text-center">Reservado</th>
+            <th class="px-6 py-3 text-center font-bold text-slate-700">Saldo Disponível</th>
+            <th class="px-6 py-3 text-center">Alerta Estoque</th>
+            <th class="px-6 py-3 text-center">Status</th>
+            <th class="px-6 py-3 text-right">Ações Unificadas</th>
+          </tr>
+        `;
+      } else if (currentCategory === 'HARDWARE') {
+        thead.innerHTML = `
+          <tr>
+            <th class="px-6 py-3">Referência (SKU)</th>
+            <th class="px-6 py-3">Descrição da Ferragem</th>
+            <th class="px-6 py-3">Unidade</th>
+            <th class="px-6 py-3">Preço Custo</th>
+            <th class="px-6 py-3">Preço Venda</th>
+            <th class="px-6 py-3 text-center">Físico</th>
+            <th class="px-6 py-3 text-center">Reservado</th>
+            <th class="px-6 py-3 text-center font-bold text-slate-700">Saldo Disponível</th>
+            <th class="px-6 py-3 text-center">Alerta Estoque</th>
+            <th class="px-6 py-3 text-center">Status</th>
+            <th class="px-6 py-3 text-right">Ações Unificadas</th>
+          </tr>
+        `;
+      } else {
+        thead.innerHTML = `
+          <tr>
+            <th class="px-6 py-3">Referência</th>
+            <th class="px-6 py-3">Descrição da Película</th>
+            <th class="px-6 py-3">Tipo</th>
+            <th class="px-6 py-3">Medidas Bobina</th>
+            <th class="px-6 py-3">Preço Venda</th>
+            <th class="px-6 py-3 text-center">Físico</th>
+            <th class="px-6 py-3 text-center">Reservado</th>
+            <th class="px-6 py-3 text-center font-bold text-slate-700">Saldo Disponível</th>
+            <th class="px-6 py-3 text-center">Alerta Estoque</th>
+            <th class="px-6 py-3 text-center">Status</th>
+            <th class="px-6 py-3 text-right">Ações Unificadas</th>
+          </tr>
+        `;
+      }
+
+      // Linhas da Tabela
+      tbody.innerHTML = '';
+      data.forEach(item => {
+        // Badge de Alerta (Make-to-Order)
+        let alertBadge = '';
+        let availClass = 'font-bold text-slate-900';
+
+        if (item.available < 0) {
+          alertBadge = `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+            <i class="fa-solid fa-triangle-exclamation"></i> 🔴 Comprar (${Math.abs(item.available)})
+          </span>`;
+          availClass = 'font-bold text-rose-600 bg-rose-50/80 px-2 py-0.5 rounded-md';
+        } else if (item.available <= item.minStock) {
+          alertBadge = `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+            <i class="fa-solid fa-clock"></i> 🟡 Ponto Pedido
+          </span>`;
+          availClass = 'font-bold text-amber-700';
+        } else {
+          alertBadge = `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+            <i class="fa-solid fa-check"></i> 🟢 Em Dia
+          </span>`;
+          availClass = 'font-bold text-emerald-700';
+        }
+
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-50/80 transition';
+        tr.setAttribute('data-status', item.status);
+
+        let colsHtml = '';
+        if (currentCategory === 'GLASS') {
+          colsHtml = `
+            <td class="px-6 py-4 font-mono font-bold text-slate-800 text-xs">${item.sku}</td>
+            <td class="px-6 py-4 font-bold text-slate-900">${item.name}</td>
+            <td class="px-6 py-4 font-medium text-slate-600 uppercase">${item.color}</td>
+            <td class="px-6 py-4 font-mono text-slate-600">${item.spec}</td>
+            <td class="px-6 py-4 font-mono font-medium text-slate-900">${item.salePrice}</td>
+          `;
+        } else if (currentCategory === 'PROFILE') {
+          colsHtml = `
+            <td class="px-6 py-4 font-mono font-bold text-slate-800 text-xs">${item.sku}</td>
+            <td class="px-6 py-4 font-bold text-slate-900">${item.name}</td>
+            <td class="px-6 py-4 font-bold text-blue-700 text-[11px] uppercase">${item.line}</td>
+            <td class="px-6 py-4 font-medium text-slate-600 uppercase">${item.color}</td>
+            <td class="px-6 py-4 font-mono text-slate-500 text-[11px]">${item.spec}</td>
+            <td class="px-6 py-4 font-mono font-medium text-slate-900">${item.salePrice}</td>
+          `;
+        } else if (currentCategory === 'HARDWARE') {
+          colsHtml = `
+            <td class="px-6 py-4 font-mono font-bold text-slate-800 text-xs">${item.sku}</td>
+            <td class="px-6 py-4 font-bold text-slate-900">${item.name}</td>
+            <td class="px-6 py-4 font-bold text-slate-600 uppercase text-[11px]">${item.unitMeasure}</td>
+            <td class="px-6 py-4 font-mono text-slate-500">${item.costPrice}</td>
+            <td class="px-6 py-4 font-mono font-medium text-slate-900">${item.salePrice}</td>
+          `;
+        } else {
+          colsHtml = `
+            <td class="px-6 py-4 font-mono font-bold text-slate-800 text-xs">${item.sku}</td>
+            <td class="px-6 py-4 font-bold text-slate-900">${item.name}</td>
+            <td class="px-6 py-4 font-bold text-purple-700 text-[11px] uppercase">${item.filmType}</td>
+            <td class="px-6 py-4 font-mono text-slate-500 text-[11px]">${item.spec}</td>
+            <td class="px-6 py-4 font-mono font-medium text-slate-900">${item.salePrice}</td>
+          `;
+        }
+
+        // Colunas Comuns de Estoque e Ações Integradas
+        colsHtml += `
+          <td class="px-6 py-4 text-center font-mono font-semibold text-slate-800">${item.physical} ${item.unit}</td>
+          <td class="px-6 py-4 text-center font-mono text-slate-500">${item.reserved} ${item.unit}</td>
+          <td class="px-6 py-4 text-center font-mono ${availClass}">${item.available} ${item.unit}</td>
+          <td class="px-6 py-4 text-center">${alertBadge}</td>
+          <td class="px-6 py-4 text-center">
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+              Ativo
+            </span>
+          </td>
+          <td class="px-6 py-4 text-right">
+            <div class="inline-flex items-center gap-1.5 justify-end">
+              <!-- Botão Kardex Integrado -->
+              <button onclick="openKardexDrawer('${item.sku}', '${item.name}', '${item.unit}', ${item.physical}, ${item.reserved}, ${item.available})" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 transition" title="Consultar Trilha Kardex">
+                <i class="fa-solid fa-clock-rotate-left text-blue-600"></i>
+                <span>Kardex</span>
+              </button>
+
+              <!-- Botão Entrada Rápida de Compra -->
+              <button onclick="openModalEntry('${item.sku}')" class="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-bold bg-blue-50 text-blue-700 hover:bg-blue-100 transition" title="Dar Entrada">
+                <i class="fa-solid fa-plus"></i>
+                <span>Entrada</span>
+              </button>
+
+              <!-- Botão Editar do Print Original -->
+              <button onclick="alert('Abre o formulário de edição de ficha técnica do catálogo.')" class="w-7 h-7 rounded-lg text-slate-400 hover:text-slate-800 hover:bg-slate-100 flex items-center justify-center transition" title="Editar">
+                <i class="fa-solid fa-pencil text-xs"></i>
+              </button>
+            </div>
+          </td>
+        `;
+
+        tr.innerHTML = colsHtml;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // Filtros de Tabela (Busca e Status)
+    function filterTable() {
+      const search = document.getElementById('searchInput').value.toLowerCase();
+      const status = document.getElementById('statusFilter').value;
+      const rows = document.querySelectorAll('#tableBody tr');
+
+      rows.forEach(row => {
+        const text = row.innerText.toLowerCase();
+        const rowStatus = row.getAttribute('data-status');
+
+        const matchesSearch = text.includes(search);
+        const matchesStatus = (status === 'ALL' || rowStatus === status);
+
+        if (matchesSearch && matchesStatus) {
+          row.style.display = '';
+        } else {
+          row.style.display = 'none';
+        }
+      });
+    }
+
+    // Controle da Gaveta Kardex
+    function openKardexDrawer(sku, title, unit, physical, reserved, available) {
+      document.getElementById('kardexSku').innerText = sku;
+      document.getElementById('kardexTitle').innerText = title;
+      document.getElementById('kardexPhysical').innerText = `${physical} ${unit}`;
+      document.getElementById('kardexReserved').innerText = `${reserved} ${unit}`;
+      document.getElementById('kardexAvailable').innerText = `${available} ${unit}`;
+
+      const drawer = document.getElementById('kardexDrawer');
+      const backdrop = document.getElementById('kardexDrawerBackdrop');
+
+      backdrop.classList.remove('hidden');
+      setTimeout(() => backdrop.classList.remove('opacity-0'), 10);
+      drawer.classList.remove('translate-x-full');
+    }
+
+    function closeKardexDrawer() {
+      const drawer = document.getElementById('kardexDrawer');
+      const backdrop = document.getElementById('kardexDrawerBackdrop');
+
+      drawer.classList.add('translate-x-full');
+      backdrop.classList.add('opacity-0');
+      setTimeout(() => backdrop.classList.add('hidden'), 250);
+    }
+
+    // Controle do Modal de Entrada Rápida
+    function openModalEntry(sku) {
+      if (sku) {
+        document.getElementById('modalInsumoSelect').value = sku;
+      }
+      document.getElementById('modalEntryBackdrop').classList.remove('hidden');
+    }
+
+    function closeModalEntry() {
+      document.getElementById('modalEntryBackdrop').classList.add('hidden');
+    }
+
+    function submitQuickEntry(e) {
+      e.preventDefault();
+      const qty = document.getElementById('quickQtyInput').value;
+      closeModalEntry();
+      alert(`✅ Sucesso!\n\nEntrada de ${qty} unidades registrada no Kardex e saldo do material atualizado.`);
+    }
+
+    // Controle do Modal 2 em 1 (+ Novo Material)
+    function openModalNewMaterial() {
+      document.getElementById('modalNewMaterialBackdrop').classList.remove('hidden');
+    }
+
+    function closeModalNewMaterial() {
+      document.getElementById('modalNewMaterialBackdrop').classList.add('hidden');
+    }
+
+    function setModalCategory(cat) {
+      currentModalCategory = cat;
+
+      const tabs = [
+        { id: 'tabBtnModalProfile', fieldsId: 'modalFieldsProfile', cat: 'PROFILE', unit: 'barras', cost: document.getElementById('mProfCost').value },
+        { id: 'tabBtnModalGlass', fieldsId: 'modalFieldsGlass', cat: 'GLASS', unit: 'm²', cost: document.getElementById('mGlassCost').value },
+        { id: 'tabBtnModalHardware', fieldsId: 'modalFieldsHardware', cat: 'HARDWARE', unit: 'unidades', cost: document.getElementById('mHardCost').value },
+        { id: 'tabBtnModalFilm', fieldsId: 'modalFieldsFilm', cat: 'FILM', unit: 'm²', cost: document.getElementById('mFilmCost').value },
+      ];
+
+      tabs.forEach(t => {
+        const btn = document.getElementById(t.id);
+        const fields = document.getElementById(t.fieldsId);
+
+        if (t.cat === cat) {
+          btn.className = "p-3 rounded-xl border-2 border-blue-600 bg-blue-50/70 text-blue-900 text-left transition flex flex-col justify-between cursor-pointer";
+          fields.classList.remove('hidden');
+          document.getElementById('mUnitBadge').innerText = t.unit;
+          document.getElementById('mStockCost').value = t.cost;
+        } else {
+          btn.className = "p-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-700 text-left hover:bg-slate-100 transition flex flex-col justify-between cursor-pointer";
+          fields.classList.add('hidden');
+        }
+      });
+    }
+
+    function syncCostPrice(val) {
+      document.getElementById('mStockCost').value = val;
+    }
+
+    function submitNewMaterial(e) {
+      e.preventDefault();
+
+      let newItem = {};
+      const qty = Number(document.getElementById('mStockQty').value) || 0;
+      const minStock = Number(document.getElementById('mStockMin').value) || 4;
+
+      if (currentModalCategory === 'PROFILE') {
+        newItem = {
+          sku: document.getElementById('mProfSku').value,
+          name: document.getElementById('mProfDesc').value,
+          line: document.getElementById('mProfLine').value,
+          color: document.getElementById('mProfColor').value,
+          spec: `Barra ${document.getElementById('mProfLength').value}m • ${document.getElementById('mProfWeight').value} Kg/m`,
+          salePrice: document.getElementById('mProfSale').value,
+          costPrice: document.getElementById('mProfCost').value,
+          unit: 'barras',
+          physical: qty,
+          reserved: 0,
+          available: qty,
+          minStock: minStock,
+          status: 'IN_STOCK',
+          active: true
+        };
+        materialsData.PROFILE.unshift(newItem);
+        switchCategoryTab('PROFILE');
+      } else if (currentModalCategory === 'GLASS') {
+        newItem = {
+          sku: `VID-00${materialsData.GLASS.length + 1}`,
+          name: document.getElementById('mGlassName').value,
+          color: document.getElementById('mGlassColor').value,
+          spec: `${document.getElementById('mGlassThickness').value} mm`,
+          salePrice: document.getElementById('mGlassSale').value,
+          costPrice: document.getElementById('mGlassCost').value,
+          unit: 'm²',
+          physical: qty,
+          reserved: 0,
+          available: qty,
+          minStock: minStock,
+          status: 'IN_STOCK',
+          active: true
+        };
+        materialsData.GLASS.unshift(newItem);
+        switchCategoryTab('GLASS');
+      } else if (currentModalCategory === 'HARDWARE') {
+        newItem = {
+          sku: document.getElementById('mHardSku').value,
+          name: document.getElementById('mHardName').value,
+          unitMeasure: document.getElementById('mHardUnit').value.toUpperCase(),
+          salePrice: document.getElementById('mHardSale').value,
+          costPrice: document.getElementById('mHardCost').value,
+          unit: document.getElementById('mHardUnit').value,
+          physical: qty,
+          reserved: 0,
+          available: qty,
+          minStock: minStock,
+          status: 'IN_STOCK',
+          active: true
+        };
+        materialsData.HARDWARE.unshift(newItem);
+        switchCategoryTab('HARDWARE');
+      } else {
+        newItem = {
+          sku: document.getElementById('mFilmSku').value,
+          name: document.getElementById('mFilmName').value,
+          filmType: document.getElementById('mFilmType').value,
+          spec: `Bobina ${document.getElementById('mFilmLength').value}m`,
+          salePrice: document.getElementById('mFilmSale').value,
+          costPrice: document.getElementById('mFilmCost').value,
+          unit: 'm²',
+          physical: qty,
+          reserved: 0,
+          available: qty,
+          minStock: minStock,
+          status: 'IN_STOCK',
+          active: true
+        };
+        materialsData.FILM.unshift(newItem);
+        switchCategoryTab('FILM');
+      }
+
+      closeModalNewMaterial();
+      alert(`🎉 SUCESSO!\n\nMaterial cadastrado no catálogo e lote inicial de ${qty} ${newItem.unit} lançado no Estoque com registro automático no Kardex!`);
+    }
+  </script>
+
+</body>
+</html>
