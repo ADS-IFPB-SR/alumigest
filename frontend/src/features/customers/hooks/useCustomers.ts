@@ -50,3 +50,18 @@ export const useCreateCustomer = () => {
     },
   });
 };
+
+export const useUpdateCustomer = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: CreateCustomerRequest }) =>
+      customersApi.updateCustomer(id, data),
+    onSuccess: (_, variables) => {
+      // Atualiza todas as listagens ou páginas únicas onde esse cliente estiver presente
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      queryClient.invalidateQueries({ queryKey: ['customer', variables.id] });
+      queryClient.invalidateQueries({ queryKey: ['customer-dashboard', variables.id] });
+    }
+  });
+};
