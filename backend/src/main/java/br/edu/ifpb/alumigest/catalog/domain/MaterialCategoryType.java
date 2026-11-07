@@ -10,15 +10,20 @@ public enum MaterialCategoryType {
     ROLLERS,
     FILM;
 
+    private static final String GROUP_VIDRO = "VIDRO";
+    private static final String GROUP_ALUMINIO = "ALUMINIO";
+    private static final String GROUP_FERRAGEM = "FERRAGEM";
+    private static final String GROUP_PELICULA = "PELICULA";
+
     /**
      * Retorna o código correspondente do grupo na tabela tb_material_groups.
      */
     public String getGroupCode() {
         return switch (this) {
-            case GLASS -> "VIDRO";
-            case PROFILE -> "ALUMINIO";
-            case HARDWARE, ROLLERS -> "FERRAGEM";
-            case FILM -> "PELICULA";
+            case GLASS -> GROUP_VIDRO;
+            case PROFILE -> GROUP_ALUMINIO;
+            case HARDWARE, ROLLERS -> GROUP_FERRAGEM;
+            case FILM -> GROUP_PELICULA;
         };
     }
 
@@ -30,10 +35,10 @@ public enum MaterialCategoryType {
             return null;
         }
         return switch (groupCode.toUpperCase()) {
-            case "VIDRO" -> GLASS;
-            case "ALUMINIO" -> PROFILE;
-            case "PELICULA" -> FILM;
-            case "FERRAGEM" -> HARDWARE;
+            case GROUP_VIDRO -> GLASS;
+            case GROUP_ALUMINIO -> PROFILE;
+            case GROUP_PELICULA -> FILM;
+            case GROUP_FERRAGEM -> HARDWARE;
             default -> null;
         };
     }
@@ -46,16 +51,16 @@ public enum MaterialCategoryType {
             return null;
         }
         String clean = raw.trim().toUpperCase();
-        if ("ALUMINUM".equals(clean) || "ALUMINIO".equals(clean) || "PROFILE".equals(clean)) {
+        if ("ALUMINUM".equals(clean) || GROUP_ALUMINIO.equals(clean) || "PROFILE".equals(clean)) {
             return PROFILE;
         }
-        if ("GLASS".equals(clean) || "VIDRO".equals(clean)) {
+        if ("GLASS".equals(clean) || GROUP_VIDRO.equals(clean)) {
             return GLASS;
         }
-        if ("FILM".equals(clean) || "PELICULA".equals(clean)) {
+        if ("FILM".equals(clean) || GROUP_PELICULA.equals(clean)) {
             return FILM;
         }
-        if ("HARDWARE".equals(clean) || "FERRAGEM".equals(clean)) {
+        if ("HARDWARE".equals(clean) || GROUP_FERRAGEM.equals(clean)) {
             return HARDWARE;
         }
         if ("ROLLERS".equals(clean) || "RODIZIO".equals(clean) || "RODIZIOS".equals(clean)) {

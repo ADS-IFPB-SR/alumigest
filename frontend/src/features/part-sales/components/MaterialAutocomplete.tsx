@@ -106,6 +106,61 @@ export function MaterialAutocomplete({
     }
   }, [category]);
 
+  const renderDropdownContent = () => {
+    if (isLoading) {
+      return (
+        <div className="p-4 text-center text-xs text-slate-500 dark:text-slate-400">
+          <Loader2 className="w-4 h-4 animate-spin mx-auto mb-1 text-cyan-500" />
+          Carregando materiais cadastrados...
+        </div>
+      );
+    }
+
+    if (filteredMaterials.length === 0) {
+      return (
+        <div className="p-4 text-center text-xs text-slate-500 dark:text-slate-400">
+          Nenhum material encontrado para a categoria selecionada.
+        </div>
+      );
+    }
+
+    return (
+      <ul className="py-1 divide-y divide-slate-100 dark:divide-slate-800/60">
+        {filteredMaterials.map((item) => {
+          const isSelected = item.id === value;
+          return (
+            <li key={item.id}>
+              <button
+                type="button"
+                data-testid={`material-option-${item.id}`}
+                onClick={() => handleSelect(item)}
+                className={`w-full px-3 py-2.5 text-left text-sm flex items-center justify-between gap-3 transition-colors ${
+                  isSelected
+                    ? 'bg-cyan-50 dark:bg-cyan-950/40 text-cyan-900 dark:text-cyan-200'
+                    : 'hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-800 dark:text-slate-200'
+                }`}
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  {isSelected && <Check className="w-4 h-4 text-cyan-600 flex-shrink-0" />}
+                  <div className="truncate">
+                    <span className="font-semibold block truncate">
+                      {formatMaterialLabel(item)}
+                    </span>
+                    {item.familyCode && (
+                      <span className="text-[11px] text-slate-400 dark:text-slate-500 block truncate">
+                        Família: {item.familyCode}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    );
+  };
+
   return (
     <div className={`relative ${className}`} ref={dropdownRef}>
       <label
@@ -189,50 +244,7 @@ export function MaterialAutocomplete({
           data-testid="material-autocomplete-dropdown"
           className="absolute z-50 left-0 right-0 mt-1 max-h-60 overflow-y-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-xl"
         >
-          {isLoading ? (
-            <div className="p-4 text-center text-xs text-slate-500 dark:text-slate-400">
-              <Loader2 className="w-4 h-4 animate-spin mx-auto mb-1 text-cyan-500" />
-              Carregando materiais cadastrados...
-            </div>
-          ) : filteredMaterials.length === 0 ? (
-            <div className="p-4 text-center text-xs text-slate-500 dark:text-slate-400">
-              Nenhum material encontrado para a categoria selecionada.
-            </div>
-          ) : (
-            <ul className="py-1 divide-y divide-slate-100 dark:divide-slate-800/60">
-              {filteredMaterials.map((item) => {
-                const isSelected = item.id === value;
-                return (
-                  <li key={item.id}>
-                    <button
-                      type="button"
-                      data-testid={`material-option-${item.id}`}
-                      onClick={() => handleSelect(item)}
-                      className={`w-full px-3 py-2.5 text-left text-sm flex items-center justify-between gap-3 transition-colors ${
-                        isSelected
-                          ? 'bg-cyan-50 dark:bg-cyan-950/40 text-cyan-900 dark:text-cyan-200'
-                          : 'hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-800 dark:text-slate-200'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        {isSelected && <Check className="w-4 h-4 text-cyan-600 flex-shrink-0" />}
-                        <div className="truncate">
-                          <span className="font-semibold block truncate">
-                            {formatMaterialLabel(item)}
-                          </span>
-                          {item.familyCode && (
-                            <span className="text-[11px] text-slate-400 dark:text-slate-500 block truncate">
-                              Família: {item.familyCode}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
+          {renderDropdownContent()}
         </div>
       )}
     </div>

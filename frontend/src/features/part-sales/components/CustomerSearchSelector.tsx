@@ -20,9 +20,14 @@ export interface CustomerSearchSelectorProps {
   disabled?: boolean;
 }
 
+function formatCityState(city?: string, state?: string): string | undefined {
+  if (!city) return undefined;
+  return state ? `${city}/${state}` : city;
+}
+
 const isWalkInClient = (c: { id?: string; nomeCompleto?: string }) =>
   c.id === DEFAULT_WALK_IN_CLIENT_ID ||
-  (c.nomeCompleto ? c.nomeCompleto.toLowerCase().includes('balcão') : false);
+  Boolean(c.nomeCompleto?.toLowerCase().includes('balcão'));
 
 const sanitizeCustomerList = (list?: CustomerOption[]) =>
   (list || []).filter((c) => !isWalkInClient(c));
@@ -98,14 +103,14 @@ export const CustomerSearchSelector: React.FC<CustomerSearchSelectorProps> = ({
               .filter(
                 (c: CustomerSummaryDTO) =>
                   c.id !== DEFAULT_WALK_IN_CLIENT_ID &&
-                  !(c.nomeCompleto && c.nomeCompleto.toLowerCase().includes('balcão'))
+                  !c.nomeCompleto?.toLowerCase().includes('balcão')
               )
               .map((c: CustomerSummaryDTO) => ({
                 id: c.id,
                 nomeCompleto: c.nomeCompleto,
                 documento: c.documento,
                 telefone: c.telefone,
-                cidade: c.cidade ? `${c.cidade}${c.uf ? `/${c.uf}` : ''}` : undefined,
+                cidade: formatCityState(c.cidade, c.uf),
               }));
             setSearchResults(mapped);
           }

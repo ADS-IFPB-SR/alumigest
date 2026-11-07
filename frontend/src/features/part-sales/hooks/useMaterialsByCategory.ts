@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { partSaleApi } from '../services/partSaleApi';
 import type { MaterialOption, MaterialCategoryType } from '../types';
 
-export function useMaterialsByCategory(category?: MaterialCategoryType | string) {
+export function useMaterialsByCategory(category?: MaterialCategoryType) {
   return useQuery<MaterialOption[]>({
     queryKey: ['materials', category],
     queryFn: () => partSaleApi.getMaterialsByCategory(category),

@@ -148,7 +148,12 @@ function calculateFallbackMeasure({
   return qty;
 }
 
-export interface PartSaleFormProps {
+function formatCityState(city?: string, state?: string): string | undefined {
+  if (!city) return undefined;
+  return state ? `${city}/${state}` : city;
+}
+
+interface PartSaleFormProps {
   initialCustomers?: CustomerOption[];
 }
 
@@ -190,7 +195,7 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
   useEffect(() => {
     const isNotWalkIn = (c: { id?: string; nomeCompleto?: string }) =>
       c.id !== DEFAULT_WALK_IN_CLIENT_ID &&
-      !(c.nomeCompleto && c.nomeCompleto.toLowerCase().includes('balcão'));
+      !c.nomeCompleto?.toLowerCase().includes('balcão');
 
     if (initialCustomers && initialCustomers.length > 0) {
       setCustomers(initialCustomers.filter(isNotWalkIn));
@@ -208,7 +213,7 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
               nomeCompleto: c.nomeCompleto,
               documento: c.documento,
               telefone: c.telefone,
-              cidade: c.cidade ? `${c.cidade}${c.uf ? `/${c.uf}` : ''}` : undefined,
+              cidade: formatCityState(c.cidade, c.uf),
             }));
           setCustomers(mapped);
         }
