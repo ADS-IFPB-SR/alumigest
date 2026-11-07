@@ -58,7 +58,7 @@ describe('CustomerHeroCard', () => {
 
     expect(screen.getByText('Antônio Alfredo Figueiredo')).toBeInTheDocument();
     expect(screen.getByText('PF')).toBeInTheDocument();
-    expect(screen.getByText('Torre • João Pessoa - PB')).toBeInTheDocument();
+    expect(screen.getByText(/Torre, João Pessoa - PB/i)).toBeInTheDocument();
     expect(screen.getByText('(83) 98845-2100')).toBeInTheDocument();
     expect(screen.getByText('042.891.444-09')).toBeInTheDocument();
 
