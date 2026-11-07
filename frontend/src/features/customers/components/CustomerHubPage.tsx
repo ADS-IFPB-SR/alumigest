@@ -8,6 +8,10 @@ import {
   useCustomerBudgets,
   useCustomerOrders,
 } from '../hooks/useCustomers';
+import { useDownloadLabelsPdf } from '../../orders/hooks/useOrders';
+import { ordersApi } from '../../orders/services/ordersApi';
+import { ThermalLabelModal } from '../../orders/components/ThermalLabelModal';
+import type { Order } from '../../orders/types';
 import type { CustomerSummaryDTO } from '../services/customersApi';
 import { CustomerMasterSidebar } from './CustomerMasterSidebar';
 import { CustomerHeroCard } from './CustomerHeroCard';
@@ -37,6 +41,14 @@ export const CustomerHubPage: React.FC = () => {
   );
   const [activeTab, setActiveTab] = useState<'orders' | 'budgets'>('budgets');
   const [budgetPage, setBudgetPage] = useState(0);
+
+  // Estado para o Modal de Etiquetas Térmicas (US-47.4)
+  const [selectedOrderForLabels, setSelectedOrderForLabels] = useState<Order | null>(null);
+  const [isThermalModalOpen, setIsThermalModalOpen] = useState(false);
+  const [, setIsLoadingLabelsOrderId] = useState<string | null>(null);
+
+  // Hook de download de PDF de etiquetas térmicas (US-47.4)
+  const { mutate: downloadLabels, isPending: isDownloadingLabels } = useDownloadLabelsPdf();
 
   // 1. Fetch Customers List for Master Sidebar
   const { data: customersData, isLoading: isLoadingCustomers } = useCustomers({
@@ -72,6 +84,7 @@ export const CustomerHubPage: React.FC = () => {
   const budgets = useMemo(() => budgetsData?.content || [], [budgetsData]);
   const totalBudgetPages = budgetsData?.page?.totalPages ?? 1;
 
+  // 4. Fetch Selected Customer Orders
   const {
     data: ordersData,
     isLoading: isLoadingOrders,
@@ -109,18 +122,38 @@ export const CustomerHubPage: React.FC = () => {
     }
   };
 
+  /**
+   * Aciona a abertura do ThermalLabelModal para a ordem selecionada (US-47.4).
+   */
   const handleOpenLabels = async (orderId: string) => {
-    const order = orders.find((o) => o.id === orderId);
-    const identifier = (order?.codigo ?? orderId).replaceAll('/', '-');
     try {
-      const response = await api.get(`/orders/${orderId}/labels-pdf`, {
-        responseType: 'blob',
-      });
-      triggerPdfBlobDownload(response.data, `Etiquetas_${identifier}.pdf`);
-      toast.success('Etiquetas baixadas com sucesso!');
-    } catch {
-      toast.error('Erro ao transferir as etiquetas.');
+      setIsLoadingLabelsOrderId(orderId);
+      const fullOrder = await ordersApi.getOrderById(orderId);
+      setSelectedOrderForLabels(fullOrder);
+      setIsThermalModalOpen(true);
+    } catch (error) {
+      console.error('Erro ao buscar dados da O.S. para etiquetas térmicas:', error);
+      toast.error('Não foi possível carregar a Ordem de Serviço para impressão de etiquetas.');
+    } finally {
+      setIsLoadingLabelsOrderId(null);
     }
+  };
+
+  /**
+   * Dispara o download das etiquetas em PDF a partir do ThermalLabelModal (US-47.4).
+   */
+  const handleDownloadLabelsPdf = (
+    itemId?: string,
+    customLeaves?: Record<string, number>
+  ) => {
+    if (!selectedOrderForLabels) return;
+    const sanitizedItemId = typeof itemId === 'string' ? itemId : undefined;
+    downloadLabels({
+      id: selectedOrderForLabels.id,
+      codigo: selectedOrderForLabels.codigo,
+      ...(sanitizedItemId ? { itemId: sanitizedItemId } : {}),
+      customLeaves,
+    });
   };
 
   const renderDetailContent = () => {
@@ -163,22 +196,6 @@ export const CustomerHubPage: React.FC = () => {
         <div className="border-b border-slate-200 dark:border-slate-800 flex items-center gap-6">
           <button
             type="button"
-            onClick={() => setActiveTab('orders')}
-            className={`pb-3 text-sm font-semibold flex items-center gap-2 border-b-2 transition ${
-              activeTab === 'orders'
-                ? 'border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400'
-                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
-            }`}
-          >
-            <ClipboardList className="w-4 h-4" />
-            <span>Ordens de Serviço (O.S.)</span>
-            <span className="px-1.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-              {dashboardData.quantidadeOrdensServico}
-            </span>
-          </button>
-
-          <button
-            type="button"
             onClick={() => setActiveTab('budgets')}
             className={`pb-3 text-sm font-semibold flex items-center gap-2 border-b-2 transition ${
               activeTab === 'budgets'
@@ -190,6 +207,22 @@ export const CustomerHubPage: React.FC = () => {
             <span>Orçamentos</span>
             <span className="px-1.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300">
               {dashboardData.quantidadeOrcamentos}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('orders')}
+            className={`pb-3 text-sm font-semibold flex items-center gap-2 border-b-2 transition ${
+              activeTab === 'orders'
+                ? 'border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400'
+                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+            }`}
+          >
+            <ClipboardList className="w-4 h-4" />
+            <span>Ordens de Serviço (O.S.)</span>
+            <span className="px-1.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+              {dashboardData.quantidadeOrdensServico}
             </span>
           </button>
         </div>
@@ -262,6 +295,17 @@ export const CustomerHubPage: React.FC = () => {
           {renderDetailContent()}
         </main>
       </div>
+
+      {/* Modal de Etiquetas Térmicas (100x60mm Elgin L42) - US-47.4 */}
+      {selectedOrderForLabels && (
+        <ThermalLabelModal
+          isOpen={isThermalModalOpen}
+          onClose={() => setIsThermalModalOpen(false)}
+          order={selectedOrderForLabels}
+          onDownloadPdf={handleDownloadLabelsPdf}
+          isDownloadingPdf={isDownloadingLabels}
+        />
+      )}
     </div>
   );
 };
