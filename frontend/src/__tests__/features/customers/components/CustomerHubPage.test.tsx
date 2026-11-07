@@ -124,7 +124,6 @@ describe('CustomerHubPage', () => {
       isLoading: false,
     } as any);
 
-    // Mocks adicionados para o EditCustomerModal não quebrar o render do Hub
     vi.spyOn(customerHooks, 'useCustomer').mockReturnValue({
       data: mockDashboard,
       isLoading: false,

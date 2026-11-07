@@ -1,5 +1,26 @@
 import { z } from 'zod';
 
+const isValidDocument = (doc: string): boolean => {
+  const clean = doc.trim();
+  const digits = clean.replace(/\D/g, '');
+  if (digits.length !== 11 && digits.length !== 14) {
+    return false;
+  }
+  if (!/[.\-/]/.test(clean)) {
+    return true;
+  }
+  return /^\d{3}\.\d{3}\.\d{3}-\d{2}$/.test(clean) || /^\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}$/.test(clean);
+};
+
+const isValidPhone = (phone: string): boolean => {
+  const clean = phone.trim();
+  const digits = clean.replace(/\D/g, '');
+  if (digits.length < 8 || digits.length > 13) {
+    return false;
+  }
+  return /^[\d\s()+ -]+$/.test(clean);
+};
+
 export const customerSchema = z.object({
   nomeCompleto: z
     .string({ message: 'O nome completo é obrigatório.' })
@@ -108,19 +129,13 @@ export const editCustomerSchema = z.object({
     .string({ message: 'O CPF ou CNPJ é obrigatório.' })
     .trim()
     .min(1, 'O CPF ou CNPJ é obrigatório.')
-    .regex(
-      /^(\d{11}|\d{14}|\d{3}\.\d{3}\.\d{3}-\d{2}|\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2})$/,
-      'Documento com formato inválido (deve ser CPF ou CNPJ).'
-    ),
+    .refine(isValidDocument, 'Documento com formato inválido (deve ser CPF ou CNPJ).'),
 
   telefone: z
     .string({ message: 'O telefone é obrigatório.' })
     .trim()
     .min(1, 'O telefone é obrigatório.')
-    .regex(
-      /^(\+?55\s)?\(?\d{2}\)?[\s-]?9?\s?\d{4}[\s-]?\d{4}$|^\d{8,13}$/,
-      'Informe um telefone válido.'
-    ),
+    .refine(isValidPhone, 'Informe um telefone válido.'),
 
   email: z
     .email('E-mail inválido.')
