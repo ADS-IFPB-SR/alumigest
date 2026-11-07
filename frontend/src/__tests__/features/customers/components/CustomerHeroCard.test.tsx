@@ -1,10 +1,16 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { CustomerHeroCard } from '../../../../features/customers/components/CustomerHeroCard';
 import { formatWhatsAppLink } from '../../../../features/customers/utils/customerHubUtils';
-import { ClientDashboardDTO } from '../../../../features/customers/services/customersApi';
+import type { ClientDashboardDTO } from '../../../../features/customers/services/customersApi';
+import * as customerHooks from '../../../../features/customers/hooks/useCustomers';
+
+vi.mock('../../../../features/customers/hooks/useCustomers');
 
 describe('CustomerHeroCard', () => {
+  const queryClient = new QueryClient();
+
   const mockCustomer: ClientDashboardDTO = {
     id: 'c1',
     nomeCompleto: 'Antônio Alfredo Figueiredo',
@@ -20,6 +26,21 @@ describe('CustomerHeroCard', () => {
     quantidadeOrcamentos: 2,
   };
 
+  beforeEach(() => {
+    vi.clearAllMocks();
+
+    vi.spyOn(customerHooks, 'useCustomer').mockReturnValue({
+      data: mockCustomer,
+      isLoading: false,
+      isError: false,
+    } as any);
+
+    vi.spyOn(customerHooks, 'useUpdateCustomer').mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+    } as any);
+  });
+
   it('deve gerar link do WhatsApp sanitizado corretamente', () => {
     const link = formatWhatsAppLink('(83) 98845-2100', 'Antônio');
     expect(link).toContain('https://wa.me/5583988452100');
@@ -29,7 +50,11 @@ describe('CustomerHeroCard', () => {
   it('deve renderizar dados do cliente e botões de ação', () => {
     const handleNewBudget = vi.fn();
 
-    render(<CustomerHeroCard customer={mockCustomer} onNewBudget={handleNewBudget} />);
+    render(
+      <QueryClientProvider client={queryClient}>
+        <CustomerHeroCard customer={mockCustomer} onNewBudget={handleNewBudget} />
+      </QueryClientProvider>
+    );
 
     expect(screen.getByText('Antônio Alfredo Figueiredo')).toBeInTheDocument();
     expect(screen.getByText('PF')).toBeInTheDocument();
@@ -50,7 +75,11 @@ describe('CustomerHeroCard', () => {
       telefone: undefined,
     };
 
-    render(<CustomerHeroCard customer={customerWithoutPhone} onNewBudget={vi.fn()} />);
+    render(
+      <QueryClientProvider client={queryClient}>
+        <CustomerHeroCard customer={customerWithoutPhone} onNewBudget={vi.fn()} />
+      </QueryClientProvider>
+    );
 
     const whatsappLink = screen.getByLabelText(/Contatar cliente via WhatsApp/i);
     expect(whatsappLink).toHaveClass('cursor-not-allowed');
