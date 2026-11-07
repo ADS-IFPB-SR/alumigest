@@ -153,17 +153,17 @@ export const CustomerOrdersTab: React.FC<CustomerOrdersTabProps> = ({
 
                     {/* Ações Diretas */}
                     <td className="py-3.5 px-4 text-right">
-                      <div
-                        className="inline-flex items-center gap-1.5"
-                        onClick={(e) => e.stopPropagation()}
-                      >
+                      <div className="inline-flex items-center gap-1.5">
                         {/* Botão de Destaque: Etiquetas Térmicas (100x60mm) */}
                         <button
                           type="button"
                           data-testid="btn-open-labels-modal"
                           aria-label={`Emitir etiquetas térmicas da ordem ${order.codigo}`}
                           disabled={isLoadingThisOrder}
-                          onClick={() => onOpenLabels(order.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onOpenLabels(order.id);
+                          }}
                           className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-bold bg-amber-50 hover:bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:hover:bg-amber-900/60 dark:text-amber-300 border border-amber-300 dark:border-amber-700 transition disabled:opacity-50 shadow-xs"
                           title="Imprimir Etiquetas Térmicas (100x60mm) na Elgin L42"
                         >
@@ -179,7 +179,10 @@ export const CustomerOrdersTab: React.FC<CustomerOrdersTabProps> = ({
                         {onViewPdf && (
                           <button
                             type="button"
-                            onClick={() => onViewPdf(order.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onViewPdf(order.id);
+                            }}
                             className="inline-flex items-center gap-1 px-2 py-1.5 rounded-md text-xs font-semibold border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition"
                             title="Baixar Comprovante PDF da O.S."
                           >
@@ -192,7 +195,10 @@ export const CustomerOrdersTab: React.FC<CustomerOrdersTabProps> = ({
                         {onViewKanban && (
                           <button
                             type="button"
-                            onClick={() => onViewKanban(order.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onViewKanban(order.id);
+                            }}
                             className="inline-flex items-center gap-1 px-2 py-1.5 rounded-md text-xs font-semibold border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition"
                             title="Ver no Kanban Fabril"
                           >
