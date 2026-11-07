@@ -504,7 +504,6 @@ public class OrderController {
         return ResponseEntity.ok(response);
     }
 
-    // ...
     @GetMapping("/{id}/production-sheet/pdf")
     @Operation(summary = "Baixar PDF da Ficha Técnica de Produção Fabril")
     public ResponseEntity<byte[]> getProductionSheetPdf(@PathVariable UUID id) {
@@ -514,7 +513,8 @@ public class OrderController {
         // 2. Renderiza o PDF A4
         byte[] pdfBytes = productionSheetPdfService.generatePdf(data);
 
-        String filename = "Ficha_Tecnica_" + data.orderCode().replace("/", "-") + ".pdf";
+        String codeSanitized = data.orderCode() != null ? data.orderCode().replace("/", "-") : id.toString();
+        String filename = "Ficha_Tecnica_" + codeSanitized + ".pdf";
 
         ContentDisposition contentDisposition = ContentDisposition.attachment()
                 .filename(filename)

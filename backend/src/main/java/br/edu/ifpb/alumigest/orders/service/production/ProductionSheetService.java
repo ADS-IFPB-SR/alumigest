@@ -29,14 +29,16 @@ public class ProductionSheetService {
 
         ProductionSheetBuilder sheetBuilder = new ProductionSheetBuilder(order);
 
-        for (OrderItem item : order.getItems()) {
-            FrameCalculatorStrategy strategy = calculationStrategies.stream()
-                    .filter(s -> s.supports(item))
-                    .findFirst()
-                    .orElse(null);
+        if (order.getItems() != null) {
+            for (OrderItem item : order.getItems()) {
+                FrameCalculatorStrategy strategy = calculationStrategies.stream()
+                        .filter(s -> s.supports(item))
+                        .findFirst()
+                        .orElse(null);
 
-            if (strategy != null) {
-                strategy.calculateCuts(item, sheetBuilder);
+                if (strategy != null) {
+                    strategy.calculateCuts(item, sheetBuilder);
+                }
             }
         }
 

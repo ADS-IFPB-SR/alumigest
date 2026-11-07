@@ -67,18 +67,32 @@ public class ProductionSheetPdfService {
                 titulo.setSpacingAfter(20f);
                 document.add(titulo);
 
-                if (data.aluminumCuts() != null && !data.aluminumCuts().isEmpty()) {
-                    adicionarTabelaAluminio(document, data.aluminumCuts());
-                    document.add(espacamento(15f));
-                }
+                boolean hasAluminum = data.aluminumCuts() != null && !data.aluminumCuts().isEmpty();
+                boolean hasGlass = data.glassCuts() != null && !data.glassCuts().isEmpty();
+                boolean hasAccessories = data.accessories() != null && !data.accessories().isEmpty();
 
-                if (data.glassCuts() != null && !data.glassCuts().isEmpty()) {
-                    adicionarTabelaVidro(document, data.glassCuts());
-                    document.add(espacamento(15f));
-                }
+                if (!hasAluminum && !hasGlass && !hasAccessories) {
+                    Paragraph aviso = new Paragraph(
+                            "Nenhum plano de corte paramétrico cadastrado para as tipologias desta O.S.",
+                            FONTE_NORMAL
+                    );
+                    aviso.setAlignment(Element.ALIGN_CENTER);
+                    aviso.setSpacingBefore(30f);
+                    document.add(aviso);
+                } else {
+                    if (hasAluminum) {
+                        adicionarTabelaAluminio(document, data.aluminumCuts());
+                        document.add(espacamento(15f));
+                    }
 
-                if (data.accessories() != null && !data.accessories().isEmpty()) {
-                    adicionarTabelaAcessorios(document, data.accessories());
+                    if (hasGlass) {
+                        adicionarTabelaVidro(document, data.glassCuts());
+                        document.add(espacamento(15f));
+                    }
+
+                    if (hasAccessories) {
+                        adicionarTabelaAcessorios(document, data.accessories());
+                    }
                 }
             }
             return outputStream.toByteArray();

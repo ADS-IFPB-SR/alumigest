@@ -106,7 +106,7 @@ export function OrderDetailPage() {
       const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `Ficha_Tecnica_${order.codigo.replace('/', '-')}.pdf`);
+      link.setAttribute('download', `Ficha_Tecnica_${order.codigo.replaceAll('/', '-')}.pdf`);
      document.body.appendChild(link);
      link.click();
      link.remove();
