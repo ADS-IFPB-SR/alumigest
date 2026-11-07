@@ -177,8 +177,17 @@ export const customersApi = {
     };
   },
 
+  updateCustomer: async (id: string, data: CreateCustomerRequest): Promise<CustomerResponseDTO> => {
+    const response = await api.put<CustomerResponseDTO>(`/api/clientes/${id}`, data, {
+      baseURL: '',
+    });
+    return response.data;
+  },
+
   getCustomerOrders: async (id: string): Promise<ClientOrderSummaryDTO[]> => {
     const response = await api.get<ClientOrderSummaryDTO[]>(`/clientes/${id}/orders`);
     return response.data;
   },
 };
+
+

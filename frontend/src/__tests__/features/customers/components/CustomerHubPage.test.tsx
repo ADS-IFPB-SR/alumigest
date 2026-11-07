@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { CustomerHubPage } from '../../../../features/customers/components/CustomerHubPage';
 import * as customerHooks from '../../../../features/customers/hooks/useCustomers';
@@ -20,6 +21,14 @@ vi.mock('react-hot-toast', () => ({
 }));
 
 describe('CustomerHubPage', () => {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: false,
+      },
+    },
+  });
+
   const mockCustomersList = [
     {
       id: 'c1',
@@ -85,59 +94,9 @@ describe('CustomerHubPage', () => {
     },
   ];
 
-  it('deve renderizar a tela Hub 360 integrada com sidebar, hero, KPIs e aba orçamentos', () => {
-    vi.spyOn(customerHooks, 'useCustomers').mockReturnValue({
-      data: {
-        content: mockCustomersList,
-        page: { size: 50, number: 0, totalElements: 1, totalPages: 1 },
-      },
-      isLoading: false,
-    } as any);
+  beforeEach(() => {
+    vi.clearAllMocks();
 
-    vi.spyOn(customerHooks, 'useCustomerDashboard').mockReturnValue({
-      data: mockDashboard,
-      isLoading: false,
-      isError: false,
-    } as any);
-
-    vi.spyOn(customerHooks, 'useCustomerBudgets').mockReturnValue({
-      data: {
-        content: mockBudgets,
-        page: { size: 10, number: 0, totalElements: 1, totalPages: 1 },
-      },
-      isLoading: false,
-    } as any);
-
-    vi.spyOn(customerHooks, 'useCustomerOrders').mockReturnValue({
-      data: [],
-      isLoading: false,
-    } as any);
-
-    render(
-      <MemoryRouter initialEntries={['/clientes?id=c1']}>
-        <CustomerHubPage />
-      </MemoryRouter>
-    );
-
-    // Header do módulo
-    expect(screen.getByText('Central 360° do Cliente')).toBeInTheDocument();
-
-    // Sidebar
-    expect(screen.getByText('Clientes')).toBeInTheDocument();
-
-    // Hero Card
-    expect(screen.getByText('Antônio Alfredo Figueiredo', { selector: 'h1' })).toBeInTheDocument();
-
-    // KPIs
-    expect(screen.getByText('Total Contratado')).toBeInTheDocument();
-    expect(screen.getByText('4 O.S.')).toBeInTheDocument();
-    expect(screen.getByText('2 Propostas')).toBeInTheDocument();
-
-    // Orçamentos
-    expect(screen.getByText('AORC-1024')).toBeInTheDocument();
-  });
-
-  it('deve alternar para aba de Ordens de Serviço ao clicar na aba', () => {
     vi.spyOn(customerHooks, 'useCustomers').mockReturnValue({
       data: {
         content: mockCustomersList,
@@ -165,10 +124,52 @@ describe('CustomerHubPage', () => {
       isLoading: false,
     } as any);
 
+    vi.spyOn(customerHooks, 'useCustomer').mockReturnValue({
+      data: mockDashboard,
+      isLoading: false,
+      isError: false,
+    } as any);
+
+    vi.spyOn(customerHooks, 'useUpdateCustomer').mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+    } as any);
+  });
+
+  it('deve renderizar a tela Hub 360 integrada com sidebar, hero, KPIs e aba orçamentos', () => {
     render(
-      <MemoryRouter initialEntries={['/clientes?id=c1']}>
-        <CustomerHubPage />
-      </MemoryRouter>
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={['/clientes?id=c1']}>
+          <CustomerHubPage />
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+
+    // Header do módulo
+    expect(screen.getByText('Central 360° do Cliente')).toBeInTheDocument();
+
+    // Sidebar
+    expect(screen.getByText('Clientes')).toBeInTheDocument();
+
+    // Hero Card
+    expect(screen.getByText('Antônio Alfredo Figueiredo', { selector: 'h1' })).toBeInTheDocument();
+
+    // KPIs
+    expect(screen.getByText('Total Contratado')).toBeInTheDocument();
+    expect(screen.getByText('4 O.S.')).toBeInTheDocument();
+    expect(screen.getByText('2 Propostas')).toBeInTheDocument();
+
+    // Orçamentos
+    expect(screen.getByText('AORC-1024')).toBeInTheDocument();
+  });
+
+  it('deve alternar para aba de Ordens de Serviço ao clicar na aba', () => {
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={['/clientes?id=c1']}>
+          <CustomerHubPage />
+        </MemoryRouter>
+      </QueryClientProvider>
     );
 
     const osTabButton = screen.getByRole('button', { name: /Ordens de Serviço \(O\.S\.\)/i });
@@ -210,15 +211,28 @@ describe('CustomerHubPage', () => {
         data: mockOrders,
         isLoading: false,
       } as any);
+
+      vi.spyOn(customerHooks, 'useCustomer').mockReturnValue({
+        data: mockDashboard,
+        isLoading: false,
+        isError: false,
+      } as any);
+
+      vi.spyOn(customerHooks, 'useUpdateCustomer').mockReturnValue({
+        mutate: vi.fn(),
+        isPending: false,
+      } as any);
     });
 
     it('deve baixar Ficha Técnica via api.get com responseType blob ao clicar no botão', async () => {
       vi.mocked(api.get).mockResolvedValueOnce({ data: new Blob(['pdf'], { type: 'application/pdf' }) });
 
       render(
-        <MemoryRouter initialEntries={['/clientes?id=c1']}>
-          <CustomerHubPage />
-        </MemoryRouter>
+        <QueryClientProvider client={queryClient}>
+          <MemoryRouter initialEntries={['/clientes?id=c1']}>
+            <CustomerHubPage />
+          </MemoryRouter>
+        </QueryClientProvider>
       );
 
       fireEvent.click(screen.getByRole('button', { name: /Ordens de Serviço \(O\.S\.\)/i }));
@@ -236,9 +250,11 @@ describe('CustomerHubPage', () => {
       vi.mocked(api.get).mockRejectedValueOnce(new Error('Network error'));
 
       render(
-        <MemoryRouter initialEntries={['/clientes?id=c1']}>
-          <CustomerHubPage />
-        </MemoryRouter>
+        <QueryClientProvider client={queryClient}>
+          <MemoryRouter initialEntries={['/clientes?id=c1']}>
+            <CustomerHubPage />
+          </MemoryRouter>
+        </QueryClientProvider>
       );
 
       fireEvent.click(screen.getByRole('button', { name: /Ordens de Serviço \(O\.S\.\)/i }));
@@ -253,9 +269,11 @@ describe('CustomerHubPage', () => {
       vi.mocked(api.get).mockResolvedValueOnce({ data: new Blob(['pdf'], { type: 'application/pdf' }) });
 
       render(
-        <MemoryRouter initialEntries={['/clientes?id=c1']}>
-          <CustomerHubPage />
-        </MemoryRouter>
+        <QueryClientProvider client={queryClient}>
+          <MemoryRouter initialEntries={['/clientes?id=c1']}>
+            <CustomerHubPage />
+          </MemoryRouter>
+        </QueryClientProvider>
       );
 
       fireEvent.click(screen.getByRole('button', { name: /Ordens de Serviço \(O\.S\.\)/i }));
@@ -273,9 +291,11 @@ describe('CustomerHubPage', () => {
       vi.mocked(api.get).mockRejectedValueOnce(new Error('Network error'));
 
       render(
-        <MemoryRouter initialEntries={['/clientes?id=c1']}>
-          <CustomerHubPage />
-        </MemoryRouter>
+        <QueryClientProvider client={queryClient}>
+          <MemoryRouter initialEntries={['/clientes?id=c1']}>
+            <CustomerHubPage />
+          </MemoryRouter>
+        </QueryClientProvider>
       );
 
       fireEvent.click(screen.getByRole('button', { name: /Ordens de Serviço \(O\.S\.\)/i }));
