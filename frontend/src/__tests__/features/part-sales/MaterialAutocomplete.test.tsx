@@ -81,123 +81,123 @@ describe('MaterialAutocomplete Component [US-46.5 - Issue #551]', () => {
     });
   });
 
-  it('[Partição de Equivalência] deve abrir dropdown e exibir variações e preço formatado em BRL', async () => {
-    render(
-      <MaterialAutocomplete
-        category="GLASS"
-        onChange={vi.fn()}
-      />,
-      { wrapper: createTestWrapper() }
-    );
+    it('[Partição de Equivalência] deve abrir dropdown e exibir o nome do material e família sem preço no item da lista', async () => {
+      render(
+        <MaterialAutocomplete
+          category="GLASS"
+          onChange={vi.fn()}
+        />,
+        { wrapper: createTestWrapper() }
+      );
 
-    const input = screen.getByTestId('input-material-autocomplete');
-    fireEvent.focus(input);
+      const input = screen.getByTestId('input-material-autocomplete');
+      fireEvent.focus(input);
 
-    await waitFor(() => {
-      expect(screen.getByText(/Vidro Temperado/i)).toBeInTheDocument();
-      expect(screen.getByText(/R\$\s*180,00\s*\/\s*m²/i)).toBeInTheDocument();
-    });
-  });
-
-  it('[Análise de Valor Limite] deve filtrar opções dinamicamente ao digitar cor ou espessura', async () => {
-    render(
-      <MaterialAutocomplete
-        category="GLASS"
-        onChange={vi.fn()}
-      />,
-      { wrapper: createTestWrapper() }
-    );
-
-    const input = screen.getByTestId('input-material-autocomplete');
-    fireEvent.focus(input);
-
-    // Filtra por espessura "8mm"
-    fireEvent.change(input, { target: { value: '8mm' } });
-
-    await waitFor(() => {
-      expect(screen.getByText(/Vidro Temperado - 8mm - Fumê/i)).toBeInTheDocument();
-      expect(screen.queryByText(/Vidro Laminado/i)).not.toBeInTheDocument();
-      expect(screen.queryByText(/Vidro Float Comum/i)).not.toBeInTheDocument();
-    });
-  });
-
-  it('[Transição de Estados] deve disparar onChange com o objeto do material ao clicar em uma opção', async () => {
-    const handleChange = vi.fn();
-
-    render(
-      <MaterialAutocomplete
-        category="GLASS"
-        onChange={handleChange}
-      />,
-      { wrapper: createTestWrapper() }
-    );
-
-    const input = screen.getByTestId('input-material-autocomplete');
-    fireEvent.focus(input);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('material-option-mat-uuid-1')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText(/Vidro Temperado/i)).toBeInTheDocument();
+        expect(screen.queryByText(/R\$\s*180,00/i)).not.toBeInTheDocument();
+      });
     });
 
-    const optionBtn = screen.getByTestId('material-option-mat-uuid-1');
-    fireEvent.click(optionBtn);
+    it('[Análise de Valor Limite] deve filtrar opções dinamicamente ao digitar cor ou espessura', async () => {
+      render(
+        <MaterialAutocomplete
+          category="GLASS"
+          onChange={vi.fn()}
+        />,
+        { wrapper: createTestWrapper() }
+      );
 
-    expect(handleChange).toHaveBeenCalledTimes(1);
-    expect(handleChange).toHaveBeenCalledWith(mockMaterials[0]);
-    expect(input).toHaveValue('Vidro Temperado - 8mm - Fumê');
-  });
+      const input = screen.getByTestId('input-material-autocomplete');
+      fireEvent.focus(input);
 
-  it('[Transição de Estados] deve permitir limpar o material selecionado ao clicar no botão X', async () => {
-    const handleChange = vi.fn();
+      // Filtra por espessura "8mm"
+      fireEvent.change(input, { target: { value: '8mm' } });
 
-    render(
-      <MaterialAutocomplete
-        category="GLASS"
-        value="mat-uuid-1"
-        onChange={handleChange}
-      />,
-      { wrapper: createTestWrapper() }
-    );
+      await waitFor(() => {
+        expect(screen.getByText(/Vidro Temperado - 8mm - Fumê/i)).toBeInTheDocument();
+        expect(screen.queryByText(/Vidro Laminado/i)).not.toBeInTheDocument();
+        expect(screen.queryByText(/Vidro Float Comum/i)).not.toBeInTheDocument();
+      });
+    });
 
-    const clearBtn = await screen.findByTestId('btn-clear-material');
-    fireEvent.click(clearBtn);
+    it('[Transição de Estados] deve disparar onChange com o objeto do material ao clicar em uma opção', async () => {
+      const handleChange = vi.fn();
 
-    expect(handleChange).toHaveBeenCalledWith(null);
-  });
+      render(
+        <MaterialAutocomplete
+          category="GLASS"
+          onChange={handleChange}
+        />,
+        { wrapper: createTestWrapper() }
+      );
 
-  it('[Tabela de Decisão] deve exibir alerta visual e mensagem de erro quando a prop error for fornecida', () => {
-    render(
-      <MaterialAutocomplete
-        category="GLASS"
-        onChange={vi.fn()}
-        error="Selecione um material válido do catálogo."
-      />,
-      { wrapper: createTestWrapper() }
-    );
+      const input = screen.getByTestId('input-material-autocomplete');
+      fireEvent.focus(input);
 
-    const input = screen.getByTestId('input-material-autocomplete');
-    expect(input).toHaveClass('border-red-500');
-    expect(screen.getByTestId('material-autocomplete-error')).toHaveTextContent(
-      'Selecione um material válido do catálogo.'
-    );
-  });
+      await waitFor(() => {
+        expect(screen.getByTestId('material-option-mat-uuid-1')).toBeInTheDocument();
+      });
 
-  it('[Análise de Valor Limite] deve exibir mensagem de nenhum material quando busca for inexistente', async () => {
-    render(
-      <MaterialAutocomplete
-        category="GLASS"
-        onChange={vi.fn()}
-      />,
-      { wrapper: createTestWrapper() }
-    );
+      const optionBtn = screen.getByTestId('material-option-mat-uuid-1');
+      fireEvent.click(optionBtn);
 
-    const input = screen.getByTestId('input-material-autocomplete');
-    fireEvent.focus(input);
-    fireEvent.change(input, { target: { value: 'InexistenteXYZ123' } });
+      expect(handleChange).toHaveBeenCalledTimes(1);
+      expect(handleChange).toHaveBeenCalledWith(mockMaterials[0]);
+      expect(input).toHaveValue('Vidro Temperado - 8mm - Fumê');
+    });
 
-    await waitFor(() => {
-      expect(screen.getByText(/Nenhum material encontrado/i)).toBeInTheDocument();
+    it('[Transição de Estados] deve permitir limpar o material selecionado ao clicar no botão X', async () => {
+      const handleChange = vi.fn();
+
+      render(
+        <MaterialAutocomplete
+          category="GLASS"
+          value="mat-uuid-1"
+          onChange={handleChange}
+        />,
+        { wrapper: createTestWrapper() }
+      );
+
+      const clearBtn = await screen.findByTestId('btn-clear-material');
+      fireEvent.click(clearBtn);
+
+      expect(handleChange).toHaveBeenCalledWith(null);
+    });
+
+    it('[Tabela de Decisão] deve exibir alerta visual e mensagem de erro quando a prop error for fornecida', () => {
+      render(
+        <MaterialAutocomplete
+          category="GLASS"
+          onChange={vi.fn()}
+          error="Selecione um material válido do catálogo."
+        />,
+        { wrapper: createTestWrapper() }
+      );
+
+      const input = screen.getByTestId('input-material-autocomplete');
+      expect(input).toHaveClass('border-red-500');
+      expect(screen.getByTestId('material-autocomplete-error')).toHaveTextContent(
+        'Selecione um material válido do catálogo.'
+      );
+    });
+
+    it('[Análise de Valor Limite] deve exibir mensagem de nenhum material quando busca for inexistente', async () => {
+      render(
+        <MaterialAutocomplete
+          category="GLASS"
+          onChange={vi.fn()}
+        />,
+        { wrapper: createTestWrapper() }
+      );
+
+      const input = screen.getByTestId('input-material-autocomplete');
+      fireEvent.focus(input);
+      fireEvent.change(input, { target: { value: 'InexistenteXYZ123' } });
+
+      await waitFor(() => {
+        expect(screen.getByText(/Nenhum material encontrado/i)).toBeInTheDocument();
+      });
     });
   });
-});
 

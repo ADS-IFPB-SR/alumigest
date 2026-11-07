@@ -3,6 +3,7 @@ package br.edu.ifpb.alumigest.partsale.service;
 import br.edu.ifpb.alumigest.catalog.domain.Material;
 import br.edu.ifpb.alumigest.catalog.repository.MaterialRepository;
 import br.edu.ifpb.alumigest.clients.domain.Client;
+import br.edu.ifpb.alumigest.clients.domain.PersonType;
 import br.edu.ifpb.alumigest.clients.repository.ClientRepository;
 import br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException;
 import br.edu.ifpb.alumigest.partsale.calculator.PartCalculatorFactory;
@@ -67,12 +68,13 @@ public class PartSaleServiceImpl implements PartSaleService {
     return calculator.calculate(request);
   }
 
+  public static final UUID DEFAULT_WALK_IN_CLIENT_ID =
+      UUID.fromString("00000000-0000-0000-0000-000000000001");
+
   @Override
   @Transactional
   public PartSaleResponse create(CreatePartSaleRequest request) {
-    Client client = clientRepository.findById(request.clientId())
-        .orElseThrow(() -> new ResourceNotFoundException(
-            "Cliente não encontrado com ID: " + request.clientId()));
+    Client client = resolveClient(request.clientId());
 
     String code = codeGenerator.generateNextCode();
     BigDecimal discount = request.discountAmount() != null
@@ -184,5 +186,34 @@ public class PartSaleServiceImpl implements PartSaleService {
         partSale.getCreatedAt(),
         partSale.getUpdatedAt()
     );
+  }
+
+  private Client resolveClient(UUID requestedClientId) {
+    if (requestedClientId == null) {
+      return clientRepository.findById(DEFAULT_WALK_IN_CLIENT_ID)
+          .orElseGet(this::findOrCreateDefaultWalkInClient);
+    }
+    return clientRepository.findById(requestedClientId)
+        .orElseGet(() -> {
+          if (DEFAULT_WALK_IN_CLIENT_ID.equals(requestedClientId)) {
+            return findOrCreateDefaultWalkInClient();
+          }
+          throw new ResourceNotFoundException("Cliente não encontrado com ID: " + requestedClientId);
+        });
+  }
+
+  private Client findOrCreateDefaultWalkInClient() {
+    return clientRepository.findAll().stream()
+        .filter(c -> c.getFullName() != null && c.getFullName().toLowerCase().contains("balcão"))
+        .findFirst()
+        .orElseGet(() -> {
+          Client defaultClient = Client.builder()
+              .id(DEFAULT_WALK_IN_CLIENT_ID)
+              .fullName("Cliente Balcão (Consumidor Final)")
+              .personType(PersonType.FISICA)
+              .notes("Cliente padrão do sistema para vendas avulsas e balcão sem cadastro prévio.")
+              .build();
+          return clientRepository.save(defaultClient);
+        });
   }
 }

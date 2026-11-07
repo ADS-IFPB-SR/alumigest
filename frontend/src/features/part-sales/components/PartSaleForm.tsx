@@ -5,7 +5,6 @@ import {
   FileText,
   Tag,
   ShoppingCart,
-  User,
   CheckCircle2,
   Printer,
   X,
@@ -16,6 +15,12 @@ import { AluminumItemFields } from './AluminumItemFields';
 import { GlassItemFields } from './GlassItemFields';
 import { FilmItemFields } from './FilmItemFields';
 import { MaterialAutocomplete } from './MaterialAutocomplete';
+import {
+  CustomerSearchSelector,
+  DEFAULT_WALK_IN_CLIENT_ID,
+  DEFAULT_WALK_IN_CLIENT_NAME,
+  type CustomerOption,
+} from './CustomerSearchSelector';
 import { formatMaterialLabel } from '../utils/materialFormatters';
 import { usePartCalculation } from '../hooks/usePartCalculation';
 import { customersApi } from '@/features/customers/services/customersApi';
@@ -143,12 +148,6 @@ function calculateFallbackMeasure({
   return qty;
 }
 
-interface CustomerOption {
-  id: string;
-  nomeCompleto: string;
-  documento?: string;
-}
-
 export interface PartSaleFormProps {
   initialCustomers?: CustomerOption[];
 }
@@ -158,10 +157,10 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
   const [materialId, setMaterialId] = useState<string>('');
   const [description, setDescription] = useState('');
   const [quantity, setQuantity] = useState<number | ''>(1);
-  const [heightMm, setHeightMm] = useState<number | ''>(2500);
-  const [widthMm, setWidthMm] = useState<number | ''>(800);
-  const [unitPrice, setUnitPrice] = useState<number | ''>(45);
-  const [lossFactor, setLossFactor] = useState<number>(0.05); // 5% perda padrão de corte
+  const [heightMm, setHeightMm] = useState<number | ''>(1000);
+  const [widthMm, setWidthMm] = useState<number | ''>(1000);
+  const [unitPrice, setUnitPrice] = useState<number | ''>('');
+  const [lossFactor, setLossFactor] = useState<number>(0); // 0% comercial para Alumínio (preço do metro já inclui perda)
   const [materialError, setMaterialError] = useState<string | null>(null);
 
   const [items, setItems] = useState<PartSaleItem[]>([]);
@@ -170,7 +169,12 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
 
   // Cliente e Observações
   const [customers, setCustomers] = useState<CustomerOption[]>(initialCustomers || []);
-  const [selectedClientId, setSelectedClientId] = useState<string>('');
+  const [selectedClientId, setSelectedClientId] = useState<string>(DEFAULT_WALK_IN_CLIENT_ID);
+  const [selectedCustomerData, setSelectedCustomerData] = useState<CustomerOption>({
+    id: DEFAULT_WALK_IN_CLIENT_ID,
+    nomeCompleto: DEFAULT_WALK_IN_CLIENT_NAME,
+    documento: 'Consumidor Final',
+  });
   const [notes, setNotes] = useState<string>('');
 
   // Modais e status de persistência
@@ -184,13 +188,29 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
 
   // Carrega clientes disponíveis para associação
   useEffect(() => {
-    if (initialCustomers && initialCustomers.length > 0) return;
+    const isNotWalkIn = (c: { id?: string; nomeCompleto?: string }) =>
+      c.id !== DEFAULT_WALK_IN_CLIENT_ID &&
+      !(c.nomeCompleto && c.nomeCompleto.toLowerCase().includes('balcão'));
+
+    if (initialCustomers && initialCustomers.length > 0) {
+      setCustomers(initialCustomers.filter(isNotWalkIn));
+      return;
+    }
     let isMounted = true;
     customersApi
       .getCustomers({ ativo: true, size: 100 })
       .then((res) => {
         if (isMounted && res?.content) {
-          setCustomers(res.content);
+          const mapped: CustomerOption[] = res.content
+            .filter(isNotWalkIn)
+            .map((c) => ({
+              id: c.id,
+              nomeCompleto: c.nomeCompleto,
+              documento: c.documento,
+              telefone: c.telefone,
+              cidade: c.cidade ? `${c.cidade}${c.uf ? `/${c.uf}` : ''}` : undefined,
+            }));
+          setCustomers(mapped);
         }
       })
       .catch(() => {
@@ -202,8 +222,15 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
   }, [initialCustomers]);
 
   const selectedCustomer = useMemo(() => {
-    return customers.find((c) => c.id === selectedClientId);
-  }, [customers, selectedClientId]);
+    if (selectedClientId === DEFAULT_WALK_IN_CLIENT_ID) {
+      return {
+        id: DEFAULT_WALK_IN_CLIENT_ID,
+        nomeCompleto: DEFAULT_WALK_IN_CLIENT_NAME,
+        documento: 'Consumidor Final',
+      };
+    }
+    return customers.find((c) => c.id === selectedClientId) || selectedCustomerData;
+  }, [customers, selectedClientId, selectedCustomerData]);
 
   // Hook de cálculo reativo com o backend
   const calculationPayload = useMemo(() => {
@@ -332,6 +359,11 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
     setItems((prev) => [...prev, newItem]);
     setMaterialId('');
     setDescription('');
+    setQuantity(1);
+    setHeightMm(category === 'HARDWARE' ? '' : 1000);
+    setWidthMm(category === 'PROFILE' || category === 'HARDWARE' ? '' : 1000);
+    setUnitPrice('');
+    setLossFactor(category === 'FILM' ? 0.10 : 0);
     setMaterialError(null);
     setFormError(null);
   };
@@ -349,6 +381,25 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
     return items.reduce((acc, curr) => acc + curr.calculatedUnitMeasure, 0);
   }, [items]);
 
+  const formattedTotalMeasure = useMemo(() => {
+    if (items.length === 0) return '0.00';
+    const categories = new Set(items.map((i) => i.category));
+    if (categories.size === 1) {
+      const cat = items[0].category;
+      if (cat === 'PROFILE') return `${totalCalculatedMeasure.toFixed(2)} m`;
+      if (cat === 'HARDWARE') return `${totalCalculatedMeasure.toFixed(0)} un`;
+      return `${totalCalculatedMeasure.toFixed(2)} m²`;
+    }
+    const profileTotal = items.filter((i) => i.category === 'PROFILE').reduce((a, c) => a + c.calculatedUnitMeasure, 0);
+    const areaTotal = items.filter((i) => i.category === 'GLASS' || i.category === 'FILM').reduce((a, c) => a + c.calculatedUnitMeasure, 0);
+    const hwTotal = items.filter((i) => i.category === 'HARDWARE').reduce((a, c) => a + c.calculatedUnitMeasure, 0);
+    const parts: string[] = [];
+    if (areaTotal > 0) parts.push(`${areaTotal.toFixed(2)} m²`);
+    if (profileTotal > 0) parts.push(`${profileTotal.toFixed(2)} m`);
+    if (hwTotal > 0) parts.push(`${hwTotal.toFixed(0)} un`);
+    return parts.join(' + ') || `${totalCalculatedMeasure.toFixed(2)}`;
+  }, [items, totalCalculatedMeasure]);
+
   const subtotalAmount = useMemo(() => {
     return items.reduce((acc, curr) => acc + curr.totalPrice, 0);
   }, [items]);
@@ -358,13 +409,21 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
 
   const handleSaveSale = async () => {
     if (items.length === 0) {
-      setFormError('Adicione pelo menos um item à venda antes de salvar.');
+      if (materialId || description.trim()) {
+        const msg = 'Você configurou o item, mas não clicou em "+ Inserir na Venda". Clique no botão para incluí-lo na venda antes de salvar.';
+        setFormError(msg);
+        toast.error(msg);
+      } else {
+        const msg = 'Adicione pelo menos um item à venda antes de salvar.';
+        setFormError(msg);
+        toast.error(msg);
+      }
       return;
     }
 
     setIsSaving(true);
     try {
-      const targetClientId = selectedClientId || (customers.length > 0 ? customers[0].id : crypto.randomUUID());
+      const targetClientId = selectedClientId || DEFAULT_WALK_IN_CLIENT_ID;
       const payload: CreatePartSaleRequest = {
         clientId: targetClientId,
         status: 'APPROVED',
@@ -421,21 +480,38 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
       <div className="bg-slate-50/70 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 p-4 sm:p-5 rounded-xl">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label
-              htmlFor={clientSelectId}
-              className="block text-xs font-semibold text-slate-700 dark:text-slate-200 uppercase mb-1 flex items-center gap-1.5"
-            >
-              <User className="w-3.5 h-3.5 text-slate-500" />
-              <span>Cliente / Destinatário</span>
-            </label>
+            <CustomerSearchSelector
+              selectedClientId={selectedClientId}
+              initialCustomers={customers}
+              onSelectClient={(client) => {
+                setSelectedClientId(client.id);
+                setSelectedCustomerData(client);
+              }}
+            />
+            {/* Elemento oculto para compatibilidade com seletores e testes legados */}
             <select
               id={clientSelectId}
               data-testid="select-client"
               value={selectedClientId}
-              onChange={(e) => setSelectedClientId(e.target.value)}
-              className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg focus:border-primary dark:focus:border-primary-fixed focus:ring-1 focus:ring-primary outline-none font-medium text-slate-900 dark:text-slate-100"
+              onChange={(e) => {
+                const val = e.target.value;
+                setSelectedClientId(val);
+                const found = customers.find((c) => c.id === val);
+                if (found) {
+                  setSelectedCustomerData(found);
+                } else if (val === DEFAULT_WALK_IN_CLIENT_ID || !val) {
+                  setSelectedCustomerData({
+                    id: DEFAULT_WALK_IN_CLIENT_ID,
+                    nomeCompleto: DEFAULT_WALK_IN_CLIENT_NAME,
+                    documento: 'Consumidor Final',
+                  });
+                }
+              }}
+              className="sr-only"
+              aria-hidden="true"
+              tabIndex={-1}
             >
-              <option value="">Cliente Balcão (Não Identificado)</option>
+              <option value={DEFAULT_WALK_IN_CLIENT_ID}>{DEFAULT_WALK_IN_CLIENT_NAME}</option>
               {customers.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.nomeCompleto} {c.documento ? `(${c.documento})` : ''}
@@ -457,7 +533,7 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
               placeholder="Ex: Entregar com corte bisotado / Pagamento à vista"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg focus:border-primary dark:focus:border-primary-fixed focus:ring-1 focus:ring-primary outline-none text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
+              className="w-full px-3 py-2 text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg focus:border-primary dark:focus:border-primary-fixed focus:ring-1 focus:ring-primary outline-none text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
             />
           </div>
         </div>
@@ -500,27 +576,13 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
                     setCategory(newCat);
                     setMaterialId('');
                     setDescription('');
+                    setQuantity(1);
+                    setHeightMm(newCat === 'HARDWARE' ? '' : 1000);
+                    setWidthMm(newCat === 'PROFILE' || newCat === 'HARDWARE' ? '' : 1000);
+                    setUnitPrice('');
+                    setLossFactor(newCat === 'FILM' ? 0.10 : 0);
                     setMaterialError(null);
                     setFormError(null);
-                    if (newCat === 'PROFILE') {
-                      setUnitPrice(45);
-                      setHeightMm(2500);
-                      setLossFactor(0.05);
-                    } else if (newCat === 'HARDWARE') {
-                      setUnitPrice(25);
-                      setHeightMm('');
-                      setWidthMm('');
-                    } else if (newCat === 'FILM') {
-                      setUnitPrice(15);
-                      setHeightMm(2000);
-                      setWidthMm(800);
-                      setLossFactor(0.10); // Perda sugerida para Película
-                    } else {
-                      // Vidro
-                      setUnitPrice(120);
-                      setHeightMm(2000);
-                      setWidthMm(800);
-                    }
                   }}
                   className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg focus:border-primary dark:focus:border-primary-fixed focus:ring-1 focus:ring-primary outline-none font-semibold text-slate-900 dark:text-slate-100"
                 >
@@ -612,50 +674,83 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
             )}
 
             {category === 'HARDWARE' && (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div>
-                  <label
-                    htmlFor="part-generic-quantity"
-                    className="block text-xs font-semibold text-slate-700 dark:text-slate-200 uppercase mb-1"
-                  >
-                    Qtd *
-                  </label>
-                  <input
-                    id="part-generic-quantity"
-                    type="number"
-                    min="1"
-                    value={quantity}
-                    placeholder="1"
-                    onChange={(e) => setQuantity(e.target.value === '' ? '' : Number.parseInt(e.target.value, 10))}
-                    className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 rounded-lg outline-none font-bold focus:border-primary"
-                  />
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div>
+                    <label
+                      htmlFor="part-generic-quantity"
+                      className="block text-xs font-semibold text-slate-700 dark:text-slate-200 uppercase mb-1"
+                    >
+                      Qtd *
+                    </label>
+                    <input
+                      id="part-generic-quantity"
+                      data-testid="input-hardware-quantity"
+                      type="number"
+                      min="1"
+                      value={quantity}
+                      placeholder="1"
+                      onChange={(e) => setQuantity(e.target.value === '' ? '' : Number.parseInt(e.target.value, 10))}
+                      className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 rounded-lg outline-none font-bold focus:border-purple-500"
+                    />
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="part-generic-price"
+                      className="block text-xs font-semibold text-slate-700 dark:text-slate-200 uppercase mb-1"
+                    >
+                      Preço Venda (R$) *
+                    </label>
+                    <input
+                      id="part-generic-price"
+                      data-testid="input-hardware-price"
+                      type="number"
+                      value={unitPrice}
+                      placeholder="0.00"
+                      onChange={(e) => setUnitPrice(e.target.value === '' ? '' : Number.parseFloat(e.target.value))}
+                      className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 rounded-lg outline-none font-mono font-bold focus:border-purple-500"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label
-                    htmlFor="part-generic-price"
-                    className="block text-xs font-semibold text-slate-700 dark:text-slate-200 uppercase mb-1"
+
+                {typeof quantity === 'number' && typeof unitPrice === 'number' && quantity > 0 && unitPrice > 0 && (
+                  <div
+                    data-testid="panel-calculated-hardware"
+                    className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-3 flex items-center justify-between gap-3 text-xs"
                   >
-                    Preço Venda (R$) *
-                  </label>
-                  <input
-                    id="part-generic-price"
-                    type="number"
-                    value={unitPrice}
-                    placeholder="0.00"
-                    onChange={(e) => setUnitPrice(e.target.value === '' ? '' : Number.parseFloat(e.target.value))}
-                    className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 rounded-lg outline-none font-mono font-bold focus:border-primary"
-                  />
-                </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-slate-800 dark:text-slate-200">Total de Peças:</span>
+                      <span className="font-mono font-bold text-purple-700 dark:text-purple-400 text-sm">{quantity} un</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-slate-800 dark:text-slate-200">Subtotal:</span>
+                      <span className="font-mono font-bold text-slate-900 dark:text-slate-100 text-sm">
+                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(quantity * unitPrice)}
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
-            {/* Botão de Inserção */}
-            <div className="pt-2 flex justify-end">
+            {/* Botão de Inserção e Alerta de Pendência */}
+            <div className="pt-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              {materialId && items.length === 0 ? (
+                <div
+                  data-testid="alert-pending-insertion"
+                  className="p-2.5 bg-amber-500/10 border border-amber-500/30 rounded-lg text-amber-800 dark:text-amber-300 text-xs font-semibold flex items-center gap-2"
+                >
+                  <span>💡 Item pronto! Clique em <strong>"+ Inserir na Venda"</strong> para incluí-lo na lista.</span>
+                </div>
+              ) : (
+                <div />
+              )}
+
               <button
                 type="button"
                 data-testid="btn-add-part-item"
                 onClick={() => handleAddItem()}
-                className="px-5 py-2.5 bg-primary hover:bg-primary-container text-on-primary dark:bg-primary-fixed dark:hover:bg-primary-fixed-dim dark:text-on-primary-fixed rounded-lg text-xs font-bold transition flex items-center gap-2 shadow-xs cursor-pointer active:scale-95"
+                className="px-5 py-2.5 bg-primary hover:bg-primary-container text-on-primary dark:bg-primary-fixed dark:hover:bg-primary-fixed-dim dark:text-on-primary-fixed rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 shadow-xs cursor-pointer active:scale-95 shrink-0"
               >
                 <Plus className="w-4 h-4" />
                 <span>Inserir na Venda</span>
@@ -761,7 +856,7 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
               <div className="flex justify-between items-center">
                 <span className="text-slate-600 dark:text-slate-300 font-medium">Área / Medida Total:</span>
                 <span className="font-bold text-slate-900 dark:text-slate-100 font-mono text-sm" data-testid="summary-total-measure">
-                  {totalCalculatedMeasure.toFixed(2)} m²/m
+                  {formattedTotalMeasure}
                 </span>
               </div>
               <div className="flex justify-between items-center">
@@ -800,6 +895,15 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
                 {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalAmount)}
               </p>
             </div>
+
+            {items.length === 0 && (
+              <div
+                data-testid="info-empty-sale"
+                className="p-3 bg-slate-100 dark:bg-slate-800/80 rounded-lg text-center text-slate-500 dark:text-slate-400 text-[11px] font-medium border border-dashed border-slate-300 dark:border-slate-700"
+              >
+                Nenhum item na venda. Configure o material ao lado e clique em <strong>"+ Inserir na Venda"</strong>.
+              </div>
+            )}
 
             {/* Ações */}
             <div className="pt-2 space-y-2">
@@ -842,7 +946,7 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
 
       {/* MODAL DE PRÉ-VISUALIZAÇÃO / EXPORTAÇÃO PDF */}
       {isPdfModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div data-testid="modal-pdf-part-sale" className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-900 rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 border border-slate-200 dark:border-slate-800">
             <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50">
               <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm flex items-center gap-2">
@@ -851,6 +955,7 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
               </h3>
               <button
                 type="button"
+                data-testid="btn-close-pdf-modal"
                 onClick={() => setIsPdfModalOpen(false)}
                 className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg font-bold p-1 cursor-pointer"
               >
@@ -961,7 +1066,7 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
 
       {/* MODAL DE ETIQUETAS TÉRMICAS */}
       {isLabelModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div data-testid="modal-thermal-labels" className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-900 rounded-xl shadow-2xl max-w-lg w-full p-6 space-y-5 animate-in fade-in zoom-in-95 border border-slate-200 dark:border-slate-800">
             <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-3">
               <h3 className="font-bold text-slate-900 dark:text-slate-100 text-sm flex items-center gap-2">
@@ -970,6 +1075,7 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
               </h3>
               <button
                 type="button"
+                data-testid="btn-close-labels-modal"
                 onClick={() => setIsLabelModalOpen(false)}
                 className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
               >

@@ -2,11 +2,7 @@ import { useState, useEffect, useRef, useId, useMemo } from 'react';
 import { Search, X, Check, Loader2 } from 'lucide-react';
 import { useMaterialsByCategory } from '../hooks/useMaterialsByCategory';
 import type { MaterialCategoryType, MaterialOption } from '../types/partSaleTypes';
-import {
-  formatUnitMeasure,
-  formatCurrency,
-  formatMaterialLabel,
-} from '../utils/materialFormatters';
+import { formatMaterialLabel } from '../utils/materialFormatters';
 
 export interface MaterialAutocompleteProps {
   readonly category: MaterialCategoryType;
@@ -231,10 +227,6 @@ export function MaterialAutocomplete({
                           )}
                         </div>
                       </div>
-
-                      <span className="flex-shrink-0 px-2 py-0.5 rounded text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-                        {formatCurrency(item.unitPrice)} / {formatUnitMeasure(item.unitOfMeasure)}
-                      </span>
                     </button>
                   </li>
                 );

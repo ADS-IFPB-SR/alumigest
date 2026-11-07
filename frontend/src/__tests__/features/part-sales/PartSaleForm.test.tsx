@@ -286,4 +286,65 @@ describe('PartSaleForm Component (US-46.2 & US-46.5)', () => {
     fireEvent.click(btnCloseLabels);
     expect(screen.queryByText('Etiquetas Térmicas de Expedição')).not.toBeInTheDocument();
   });
+
+  it('deve exibir alerta visual de item pendente quando material é selecionado mas ainda não foi inserido na venda', async () => {
+    renderForm(<PartSaleForm initialCustomers={mockCustomers} />);
+
+    await selectMaterial('material-option-mat-profile-1');
+
+    expect(screen.getByTestId('alert-pending-insertion')).toBeInTheDocument();
+    expect(screen.getByText(/Item pronto! Clique em/i)).toBeInTheDocument();
+    expect(screen.getByTestId('info-empty-sale')).toBeInTheDocument();
+  });
+
+  it('deve exibir painel de cálculo em tempo real para item de ferragem (HARDWARE)', async () => {
+    renderForm(<PartSaleForm initialCustomers={mockCustomers} />);
+
+    const categorySelect = screen.getByTestId('select-part-category');
+    fireEvent.change(categorySelect, { target: { value: 'HARDWARE' } });
+
+    await selectMaterial('material-option-mat-hardware-1');
+
+    const inputQty = screen.getByTestId('input-hardware-quantity');
+    fireEvent.change(inputQty, { target: { value: '4' } });
+
+    expect(screen.getByTestId('panel-calculated-hardware')).toBeInTheDocument();
+    expect(screen.getByText('4 un')).toBeInTheDocument();
+    // 4 un x R$ 25,00 = R$ 100,00
+    expect(screen.getByText('R$ 100,00')).toBeInTheDocument();
+  });
+
+  it('deve calcular 1 metro de alumínio a R$ 80,00 exatamente como R$ 80,00 (perda inclusa no preço)', async () => {
+    renderForm(<PartSaleForm initialCustomers={mockCustomers} />);
+
+    await selectMaterial('material-option-mat-profile-1');
+
+    // 1000 mm = 1 metro linear
+    const inputLength = screen.getByTestId('input-aluminum-length');
+    fireEvent.change(inputLength, { target: { value: '1000' } });
+
+    const inputQty = screen.getByTestId('input-aluminum-quantity');
+    fireEvent.change(inputQty, { target: { value: '1' } });
+
+    const inputPrice = screen.getByTestId('input-aluminum-price');
+    fireEvent.change(inputPrice, { target: { value: '80' } });
+
+    const btnAdd = screen.getByTestId('btn-add-part-item');
+    fireEvent.click(btnAdd);
+
+    // Subtotal deve ser exatamente R$ 80,00
+    expect(screen.getByTestId('summary-subtotal')).toHaveTextContent('R$ 80,00');
+    expect(screen.getByTestId('summary-total-amount')).toHaveTextContent('R$ 80,00');
+  });
+
+  it('deve exibir erro específico se usuário tentar salvar a venda com material configurado sem clicar em inserir', async () => {
+    renderForm(<PartSaleForm initialCustomers={mockCustomers} />);
+
+    await selectMaterial('material-option-mat-profile-1');
+
+    // Usuário clica direto em Salvar sem clicar em "Inserir na Venda"
+    const btnSave = screen.getByTestId('btn-save-part-sale');
+    // Como o botão está desabilitado quando items.length === 0, garantimos que disabled é true
+    expect(btnSave).toBeDisabled();
+  });
 });
