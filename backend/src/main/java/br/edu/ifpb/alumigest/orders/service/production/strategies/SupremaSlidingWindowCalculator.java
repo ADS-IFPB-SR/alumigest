@@ -16,10 +16,18 @@ public class SupremaSlidingWindowCalculator implements FrameCalculatorStrategy {
         if (item == null) {
             return false;
         }
-        String name = (item.getProduct() != null && item.getProduct().getName() != null)
-                ? item.getProduct().getName().toUpperCase()
-                : (item.getDescricao() != null ? item.getDescricao().toUpperCase() : "");
+        String name = resolveItemName(item);
         return name.contains("JANELA") && name.contains("CORRER") && name.contains("SUPREMA");
+    }
+
+    private String resolveItemName(OrderItem item) {
+        if (item.getProduct() != null && item.getProduct().getName() != null) {
+            return item.getProduct().getName().toUpperCase();
+        }
+        if (item.getDescricao() != null) {
+            return item.getDescricao().toUpperCase();
+        }
+        return "";
     }
 
     @Override

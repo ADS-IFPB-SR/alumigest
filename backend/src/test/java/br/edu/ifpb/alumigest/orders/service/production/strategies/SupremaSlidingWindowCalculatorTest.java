@@ -13,7 +13,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -87,8 +86,8 @@ class SupremaSlidingWindowCalculatorTest {
     }
 
     @Test
-    @DisplayName("calculateCuts - Deve calcular corretamente corte de alumínio, vidros e acessórios com folgas")
-    void calculateCuts_ShouldCalculateAllComponentsCorrectly() {
+    @DisplayName("calculateCuts - Deve calcular corretamente corte de perfis de alumínio com folgas e ângulos")
+    void calculateCuts_ShouldCalculateAluminumProfilesCorrectly() {
         Order order = Order.builder()
                 .codigo("OS-2026-0042")
                 .clienteNome("Antônio Figueiredo")
@@ -101,7 +100,6 @@ class SupremaSlidingWindowCalculatorTest {
                 .larguraMm(1200)
                 .alturaMm(1000)
                 .quantidade(2)
-                .tipoVidro("Verde 8mm")
                 .valorUnitario(new BigDecimal("1500.00"))
                 .build();
 
@@ -109,7 +107,6 @@ class SupremaSlidingWindowCalculatorTest {
 
         ProductionSheetResponse response = builder.build();
 
-        // 1. Cortes de Alumínio
         assertThat(response.aluminumCuts()).hasSize(4);
 
         // Marco lateral: altura (1000mm), 90°, 2 * 2 = 4 peças
@@ -139,8 +136,32 @@ class SupremaSlidingWindowCalculatorTest {
         assertThat(travessa.lengthMm()).isEqualTo(615);
         assertThat(travessa.cutAngle()).isEqualTo("45°");
         assertThat(travessa.quantity()).isEqualTo(8);
+    }
 
-        // 2. Vidros: largura (615 - 12 = 603mm), altura (958 - 12 = 946mm), 2 * 2 = 4 peças
+    @Test
+    @DisplayName("calculateCuts - Deve calcular corretamente corte de vidros e acessórios com folgas")
+    void calculateCuts_ShouldCalculateGlassAndAccessoriesCorrectly() {
+        Order order = Order.builder()
+                .codigo("OS-2026-0042")
+                .clienteNome("Antônio Figueiredo")
+                .build();
+
+        ProductionSheetBuilder builder = new ProductionSheetBuilder(order);
+
+        OrderItem item = OrderItem.builder()
+                .descricao("Janela de Correr 2 Folhas Suprema")
+                .larguraMm(1200)
+                .alturaMm(1000)
+                .quantidade(2)
+                .tipoVidro("Verde 8mm")
+                .valorUnitario(new BigDecimal("1500.00"))
+                .build();
+
+        calculator.calculateCuts(item, builder);
+
+        ProductionSheetResponse response = builder.build();
+
+        // Vidros: largura (615 - 12 = 603mm), altura (958 - 12 = 946mm), 2 * 2 = 4 peças
         assertThat(response.glassCuts()).hasSize(1);
         GlassCutDto vidro = response.glassCuts().get(0);
         assertThat(vidro.glassType()).isEqualTo("Verde 8mm");
@@ -148,7 +169,7 @@ class SupremaSlidingWindowCalculatorTest {
         assertThat(vidro.heightMm()).isEqualTo(946);
         assertThat(vidro.quantity()).isEqualTo(4);
 
-        // 3. Acessórios
+        // Acessórios
         assertThat(response.accessories()).hasSize(2);
         AccessoryDto roldana = response.accessories().get(0);
         assertThat(roldana.code()).isEqualTo("ROL-112");
@@ -159,3 +180,4 @@ class SupremaSlidingWindowCalculatorTest {
         assertThat(borracha.quantity()).isGreaterThan(0);
     }
 }
+
