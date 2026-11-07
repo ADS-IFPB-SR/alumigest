@@ -242,7 +242,7 @@ public class OrderServiceImpl implements OrderService {
      * APPROVED é aceito para tolerar reprocessamento idempotente.
      */
     private static final Set<BudgetStatus> STATUS_ELEGIVEIS =
-            EnumSet.of(BudgetStatus.DRAFT, BudgetStatus.SENT);
+            EnumSet.of(BudgetStatus.DRAFT, BudgetStatus.SENT, BudgetStatus.APPROVED);
 
     /**
      * Valida se o status e a validade do orçamento permitem conversão.
@@ -258,7 +258,7 @@ public class OrderServiceImpl implements OrderService {
                     : "Indefinido";
             throw new BusinessException(
                     "Orçamento com status '" + statusDesc + "' não pode ser convertido em pedido de venda."
-                            + " São aceitos: Rascunho ou Enviado.");
+                            + " São aceitos: Rascunho, Enviado ou Aprovado.");
         }
     }
 
@@ -450,7 +450,7 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional
     public OrderResponse updateStatus(UUID id, OrderStatus targetStatus) {
-        Order order = orderRepository.findById(id)
+        Order order = orderRepository.findByIdWithDetails(id)
                 .orElseThrow(() -> new ResourceNotFoundException(RESOURCE_PEDIDO, id));
 
         if (targetStatus == null) {

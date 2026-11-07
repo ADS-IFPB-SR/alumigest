@@ -63,14 +63,16 @@ export const KANBAN_COLUMNS: ProductionColumnConfig[] = [
 
 /**
  * Auxiliar para somar o número total de esquadrias físicas a partir de uma lista mista de pedidos.
+ * Prioriza items detalhados (Order) somando item.quantidade; usa quantidadeItens (OrderSummary) como fallback.
+ * Corrige o BUG #500: anteriormente usava quantidadeItens (nº de linhas) em vez da soma real de peças físicas.
  */
 export const calculateTotalPieces = (orderList: (Order | OrderSummary)[]): number => {
   return orderList.reduce((acc, order) => {
+    if ('items' in order && Array.isArray(order.items) && order.items.length > 0) {
+      return acc + order.items.reduce((sum, item) => sum + (item.quantidade || 1), 0);
+    }
     if ('quantidadeItens' in order && typeof order.quantidadeItens === 'number') {
       return acc + order.quantidadeItens;
-    }
-    if ('items' in order && Array.isArray(order.items)) {
-      return acc + order.items.reduce((sum, item) => sum + (item.quantidade || 1), 0);
     }
     return acc;
   }, 0);

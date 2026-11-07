@@ -63,10 +63,14 @@ export const OrderApprovalModal: React.FC<OrderApprovalModalProps> = ({
   const selectedChannel = watch('canalAprovacao');
   const observacoesValue = watch('observacoes') || '';
 
+  const isPending = isSubmitting || isConverting;
+  const modalRef = React.useRef<HTMLDivElement>(null);
+
   const handleClose = React.useCallback(() => {
+    if (isPending) return;
     reset();
     onClose();
-  }, [reset, onClose]);
+  }, [isPending, reset, onClose]);
 
   // Reinicia os valores do formulário toda vez que o modal é aberto
   useEffect(() => {
@@ -79,11 +83,30 @@ export const OrderApprovalModal: React.FC<OrderApprovalModalProps> = ({
     }
   }, [isOpen, reset]);
 
-  // Bloqueio de scroll e atalho Escape
+  // Bloqueio de scroll, atalho Escape e contenção de foco (Focus Trap acessível)
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+      if (e.key === 'Escape' && !isPending) {
         handleClose();
+        return;
+      }
+
+      if (e.key === 'Tab' && modalRef.current) {
+        const focusableElements = modalRef.current.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusableElements.length === 0) return;
+
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+
+        if (e.shiftKey && document.activeElement === firstElement) {
+          e.preventDefault();
+          lastElement.focus();
+        } else if (!e.shiftKey && document.activeElement === lastElement) {
+          e.preventDefault();
+          firstElement.focus();
+        }
       }
     };
     if (isOpen) {
@@ -94,7 +117,7 @@ export const OrderApprovalModal: React.FC<OrderApprovalModalProps> = ({
       document.removeEventListener('keydown', handleKey);
       document.body.style.overflow = '';
     };
-  }, [isOpen, handleClose]);
+  }, [isOpen, handleClose, isPending]);
 
   if (!isOpen) return null;
 
@@ -115,8 +138,6 @@ export const OrderApprovalModal: React.FC<OrderApprovalModalProps> = ({
     }
   };
 
-  const isPending = isSubmitting || isConverting;
-
   return createPortal(
     <div
       className="fixed inset-0 z-[9999] flex items-center justify-center p-4 animate-fadeIn"
@@ -127,13 +148,14 @@ export const OrderApprovalModal: React.FC<OrderApprovalModalProps> = ({
       {/* Backdrop escurecido */}
       <button
         type="button"
-        className="fixed inset-0 w-full h-full bg-black/70 backdrop-blur-xs transition-opacity cursor-default border-0"
+        className="fixed inset-0 w-full h-full bg-black/70 backdrop-blur-xs transition-opacity cursor-default border-0 disabled:cursor-not-allowed"
         onClick={handleClose}
+        disabled={isPending}
         tabIndex={-1}
         aria-label="Fechar fundo do modal"
       />
 
-      <div className="relative bg-surface-container-lowest border border-outline-variant rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden z-10 animate-in fade-in zoom-in-95 duration-200">
+      <div ref={modalRef} className="relative bg-surface-container-lowest border border-outline-variant rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden z-10 animate-in fade-in zoom-in-95 duration-200">
         {/* Cabeçalho */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-outline-variant bg-surface-container-high/30">
           <div className="flex items-center gap-2.5 text-emerald-600 font-semibold text-lg">
@@ -299,7 +321,7 @@ export const OrderApprovalModal: React.FC<OrderApprovalModalProps> = ({
               data-testid="btn-cancel-approval"
               onClick={handleClose}
               disabled={isPending}
-              className="px-4 py-2 text-xs font-medium text-on-surface-variant hover:text-on-surface rounded-lg hover:bg-surface-container transition-colors disabled:opacity-50 cursor-pointer"
+              className="px-4 py-2 text-xs font-medium text-on-surface-variant hover:text-on-surface rounded-lg hover:bg-surface-container transition-colors disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
             >
               Cancelar
             </button>

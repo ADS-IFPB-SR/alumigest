@@ -107,6 +107,23 @@ describe('Sidebar Component - [US-18.6]', () => {
   });
 });
 
+describe('Sidebar Component - [BUG #524]', () => {
+  it('não deve renderizar atalho genérico para /kanban na barra lateral', () => {
+    render(
+      <MemoryRouter initialEntries={['/dashboard']}>
+        <Sidebar isOpen={true} onClose={vi.fn()} />
+      </MemoryRouter>
+    );
+
+    const genericKanbanLink = screen.queryByRole('link', { name: /^kanban$/i });
+    expect(genericKanbanLink).not.toBeInTheDocument();
+
+    const producaoLink = screen.getByRole('link', { name: /produção \(kanban\)/i });
+    expect(producaoLink).toBeInTheDocument();
+    expect(producaoLink).toHaveAttribute('href', '/producao');
+  });
+});
+
 describe('Sidebar Component - [US-46.1]', () => {
   it('deve renderizar o atalho Venda Avulsa apontando para /vendas/avulsa', () => {
     render(

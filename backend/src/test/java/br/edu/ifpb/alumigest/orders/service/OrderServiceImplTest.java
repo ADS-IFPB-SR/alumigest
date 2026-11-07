@@ -234,20 +234,6 @@ class OrderServiceImplTest {
     }
 
     @Test
-    @DisplayName("Deve lançar BusinessException (422) ao tentar converter orçamento já APPROVED")
-    void shouldThrowBusinessExceptionWhenBudgetIsAlreadyApproved() {
-        budget.setStatus(BudgetStatus.APPROVED);
-        given(budgetRepository.findByIdWithDetails(budgetId)).willReturn(Optional.of(budget));
-
-        BusinessException exception = assertThrows(BusinessException.class, () ->
-                orderService.convertBudgetToOrder(budgetId, request)
-        );
-
-        assertThat(exception.getMessage()).contains("Rascunho ou Enviado");
-        verify(orderRepository, never()).saveAndFlush(any());
-    }
-
-    @Test
     @DisplayName("Deve lançar BusinessException (422) ao tentar converter orçamento REJECTED")
     void shouldThrowBusinessExceptionWhenBudgetIsRejected() {
         budget.setStatus(BudgetStatus.REJECTED);
@@ -267,6 +253,34 @@ class OrderServiceImplTest {
         assertThrows(BusinessException.class, () ->
                 orderService.convertBudgetToOrder(budgetId, request)
         );
+    }
+
+    @Test
+    @DisplayName("[US-13.3 / BUG #515] Deve converter orçamento com sucesso quando status já for APPROVED")
+    void shouldConvertBudgetSuccessfullyWhenStatusIsAlreadyApproved() {
+        budget.setStatus(BudgetStatus.APPROVED);
+        given(budgetRepository.findByIdWithDetails(budgetId)).willReturn(Optional.of(budget));
+        given(orderRepository.existsByOrcamentoIdAndStatusNot(budgetId, OrderStatus.CANCELLED)).willReturn(false);
+        given(orderCodeGenerator.generateNextCode()).willReturn("OS-2026-0001");
+        given(orderRepository.saveAndFlush(any(Order.class))).willAnswer(invocation -> invocation.getArgument(0));
+        given(orderMapper.toResponse(any(Order.class))).willReturn(buildOrderResponse());
+
+        OrderResponse response = orderService.convertBudgetToOrder(budgetId, request);
+
+        assertThat(response).isNotNull();
+        verify(budgetRepository, never()).save(any());
+        verify(orderRepository).saveAndFlush(any(Order.class));
+    }
+
+    @Test
+    @DisplayName("[BUG #515] Deve conter mensagem mencionando Aprovado quando status for inelegível")
+    void shouldMentionApprovedInErrorMessageWhenBudgetStatusIsIneligible() {
+        budget.setStatus(BudgetStatus.REJECTED);
+        given(budgetRepository.findByIdWithDetails(budgetId)).willReturn(Optional.of(budget));
+
+        assertThatThrownBy(() -> orderService.convertBudgetToOrder(budgetId, request))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("São aceitos: Rascunho, Enviado ou Aprovado.");
     }
 
     @Test
@@ -463,7 +477,7 @@ class OrderServiceImplTest {
         Order order = buildSavedOrder();
         OrderResponse expectedResponse = buildOrderResponse();
 
-        given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+        given(orderRepository.findByIdWithDetails(orderId)).willReturn(Optional.of(order));
         given(orderRepository.save(order)).willReturn(order);
         given(orderMapper.toResponse(order)).willReturn(expectedResponse);
 
@@ -490,7 +504,7 @@ class OrderServiceImplTest {
 
         OrderResponse expectedResponse = buildOrderResponse();
 
-        given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+        given(orderRepository.findByIdWithDetails(orderId)).willReturn(Optional.of(order));
         given(orderRepository.save(order)).willReturn(order);
         given(orderMapper.toResponse(order)).willReturn(expectedResponse);
 
@@ -513,7 +527,7 @@ class OrderServiceImplTest {
     @DisplayName("[US-15.1] Deve lançar ResourceNotFoundException quando pedido não existe")
     void shouldThrowResourceNotFoundWhenUpdatingStatusOfNonexistentOrder() {
         // Arrange
-        given(orderRepository.findById(orderId)).willReturn(Optional.empty());
+        given(orderRepository.findByIdWithDetails(orderId)).willReturn(Optional.empty());
 
         // Act & Assert
         assertThatThrownBy(() ->
@@ -542,7 +556,7 @@ class OrderServiceImplTest {
                 .build();
         OrderResponse expectedResponse = buildOrderResponse();
 
-        given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+        given(orderRepository.findByIdWithDetails(orderId)).willReturn(Optional.of(order));
         given(orderRepository.save(order)).willReturn(order);
         given(orderMapper.toResponse(order)).willReturn(expectedResponse);
 
@@ -566,7 +580,7 @@ class OrderServiceImplTest {
                 .status(OrderStatus.CREATED)
                 .build();
 
-        given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+        given(orderRepository.findByIdWithDetails(orderId)).willReturn(Optional.of(order));
 
         // Act & Assert
         assertThatThrownBy(() ->
@@ -584,7 +598,7 @@ class OrderServiceImplTest {
         // Arrange
         Order order = buildSavedOrder();
 
-        given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+        given(orderRepository.findByIdWithDetails(orderId)).willReturn(Optional.of(order));
 
         // Act & Assert
         assertThatThrownBy(() ->
@@ -646,7 +660,7 @@ class OrderServiceImplTest {
         // Arrange
         Order order = buildSavedOrder();
 
-        given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+        given(orderRepository.findByIdWithDetails(orderId)).willReturn(Optional.of(order));
 
         // Act & Assert
         assertThatThrownBy(() ->
@@ -666,7 +680,7 @@ class OrderServiceImplTest {
         LocalDate dataConclusao = LocalDate.now(ZoneOffset.UTC);
         order.concluir(dataConclusao);
 
-        given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+        given(orderRepository.findByIdWithDetails(orderId)).willReturn(Optional.of(order));
 
         // Act & Assert
         assertThatThrownBy(() ->
@@ -681,7 +695,7 @@ class OrderServiceImplTest {
     @DisplayName("[US-15.1] Deve rejeitar status nulo")
     void shouldRejectNullTargetStatus() {
         // Arrange
-        given(orderRepository.findById(orderId)).willReturn(Optional.of(buildSavedOrder()));
+        given(orderRepository.findByIdWithDetails(orderId)).willReturn(Optional.of(buildSavedOrder()));
 
         // Act & Assert
         assertThatThrownBy(() ->
@@ -800,15 +814,15 @@ class OrderServiceImplTest {
     }
 
     @Test
-    @DisplayName("Deve lançar IllegalArgumentException ao tentar cancelar com justificativa menor que 10 caracteres")
-    void shouldThrowIllegalArgumentExceptionWhenJustificativaIsTooShort() {
+    @DisplayName("[BUG #519] Deve lançar BusinessException ao tentar cancelar com justificativa menor que 10 caracteres")
+    void shouldThrowBusinessExceptionWhenJustificativaIsTooShort() {
         Order savedOrder = buildSavedOrder();
         OrderCancelRequest cancelRequest = new OrderCancelRequest("Curto");
 
         given(orderRepository.findByIdWithDetails(orderId)).willReturn(Optional.of(savedOrder));
 
         assertThatThrownBy(() -> orderService.cancelOrder(orderId, cancelRequest))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("pelo menos 10 caracteres");
 
         verify(orderRepository, never()).save(any());
