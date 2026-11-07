@@ -15,10 +15,11 @@ Como gestor financeiro, almoxarife ou responsável por compras da Alumiportas, d
 
 ## 🧪 Critérios de Aceitação (Dado que / Quando / Então)
 
-- [ ] **Cenário 1: Listagem Paginada de Saldos com Badges de Reposição e Necessidade de Compra**
-  - **Dado que** o usuário acessa o menu lateral "Estoque" (rota `/estoque`),
-  - **Quando** a página `StockPage` for carregada,
-  - **Então** o sistema exibe tabela paginada com código, descrição do material, unidade de medida, saldo físico (`physicalQuantity`), saldo reservado (`reservedQuantity`) e saldo disponível (`availableQuantity`),
+- [ ] **Cenário 1: Listagem Paginada de Saldos com Badges de Reposição e Necessidade de Compra na Tela Unificada de Materiais**
+  - **Dado que** o usuário acessa o menu lateral "Materiais & Estoque" (rota `/catalogo`),
+  - **Quando** a página for carregada,
+  - **Então** o sistema exibe as abas por categoria (`Vidros`, `Perfis de Alumínio`, `Películas`, `Ferragens`) conforme o protótipo homologado `catalogo-materiais-estoque-kardex.html`,
+  - **E** cada tabela unifica código/referência, descrição técnica, acabamento, preço, saldo físico (`physicalQuantity`), saldo reservado (`reservedQuantity`) e saldo disponível (`availableQuantity`),
   - **E** insumos cujo saldo disponível for menor ou igual ao estoque mínimo (`minStock`) exibem badge de alerta em tom âmbar ("Ponto de Pedido"),
   - **E** insumos com saldo disponível negativo ($\text{availableQuantity} < 0$) exibem badge em tom vermelho `🔴 Necessidade de Compra (Falta X un/m)`, indicando com exatidão que há O.S. contratadas aguardando a compra daquele material.
 
@@ -67,11 +68,12 @@ Como gestor financeiro, almoxarife ou responsável por compras da Alumiportas, d
 - **Service:** `StockQueryService.java` com métodos `@Transactional(readOnly = true)`
 
 ### Frontend (React 19 / Vite / TanStack Query / Tailwind)
-- **Páginas & Componentes:**
-  - `StockPage.tsx` na rota `/estoque`
-  - `StockTable.tsx` com formatação monetária e de unidades ($m$, $m^2$, un)
-  - `KardexDrawer.tsx` com timeline interativa de movimentações
-  - `StockMovementModal.tsx` com validação de formulário via `react-hook-form` e `zod`
+- **Páginas & Componentes Unificados (Homologado conforme `catalogo-materiais-estoque-kardex.html`):**
+  - `CatalogView.tsx` na rota `/catalogo` (ou link "Materiais & Estoque")
+  - `GlassTab.tsx`, `ProfileTab.tsx`, `HardwareTab.tsx`, `FilmTab.tsx` atualizados para exibir as colunas de saldo físico, reservado e disponível com os badges de alerta
+  - `KardexDrawer.tsx` com timeline interativa de movimentações deslizante à direita sem sair da tela
+  - `StockMovementModal.tsx` para entrada rápida em materiais existentes
+  - Modais de criação atualizados com fluxo 2 em 1 (dados técnicos do catálogo + lote inicial no estoque)
 - **Hook:** `useStock()` e `useKardex(materialId)`
 
 ---
