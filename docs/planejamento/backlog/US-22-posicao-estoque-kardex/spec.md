@@ -28,9 +28,9 @@ Como gestor financeiro, almoxarife ou responsável por compras da Alumiportas, d
   - **Então** a gaveta lateral (`KardexDrawer`) é aberta exibindo todas as movimentações ordenadas cronologicamente da mais recente para a mais antiga,
   - **E** cada linha exibe timestamp formatado, tipo de movimentação (`PURCHASE_ENTRY`, `PRODUCTION_RESERVATION`, `PRODUCTION_OUTFLOW`, `RESERVATION_CANCELLATION`), quantidade movimentada, saldo resultante e código da O.S. ou documento vinculado.
 
-- [ ] **Cenário 3: Registro de Entrada Manual de Compras via Modal**
-  - **Dado que** novos perfis ou ferragens chegaram à oficina com nota fiscal,
-  - **Quando** o operador clica em "Nova Entrada / Ajuste" e submete o formulário `StockMovementModal`,
+- [ ] **Cenário 3: Registro de Entrada Manual de Compras via Modal (Documento Livre e Preço de Compra)**
+  - **Dado que** novos perfis, vidros ou ferragens chegaram à oficina com nota fiscal, recibo ou pedido da distribuidora,
+  - **Quando** o operador clica em "Registrar Entrada" e submete o formulário `StockMovementModal` informando o documento (sem validação fiscal SEFAZ) e o preço de compra unitário pago ao fornecedor (`unitCost`),
   - **Então** o sistema envia requisição `POST /api/v1/stock/movements`,
   - **E** a tabela de saldos e o Kardex são atualizados instantaneamente via revalidação do TanStack Query com notificação Toast,
   - **E** ao abastecer materiais que estavam em falta, as O.S. pendentes são atualizadas para `🟢 Insumos Disponíveis`.
@@ -49,6 +49,10 @@ Como gestor financeiro, almoxarife ou responsável por compras da Alumiportas, d
 - **RN-03 (Diretriz de Idioma em Variáveis):** Entidades, DTOs e colunas em inglês técnico (`physicalQuantity`, `reservedQuantity`, `availableQuantity`, `minStock`).
 - **RN-04 (Interpretação de Saldo Disponível Negativo como Demanda de Compra):**
   - Em conformidade com o modelo sob encomenda da Alumiportas, o saldo disponível negativo ($\text{availableQuantity} < 0$) não representa inconsistência ou erro de sistema; representa o volume líquido de matéria-prima que o setor de compras precisa encomendar aos fornecedores para atender os pedidos fechados.
+- **RN-05 (Flexibilidade de Documento na Entrada de Materiais - Sem Validação SEFAZ):**
+  - O registro de entrada de materiais aceita qualquer identificador em texto livre no campo `documentNumber` (número do pedido na loja distribuidora, recibo, romaneio ou número de NF em papel), sem exigir chave de acesso de 44 dígitos nem integração/validação fiscal na SEFAZ. O campo pode ser opcional em ajustes internos.
+- **RN-06 (Custo Unitário como Custo de Aquisição/Compra):**
+  - O campo `unitCost` (custo unitário) em movimentações de entrada refere-se estritamente ao valor de aquisição pago ao fornecedor por unidade de medida (barra, m², un), e NÃO ao preço de venda cobrado do cliente final. Este valor serve de base patrimonial para o Preço Médio Ponderado (PMP) e futura apuração do lucro real da obra (módulo financeiro US-30).
 
 ---
 

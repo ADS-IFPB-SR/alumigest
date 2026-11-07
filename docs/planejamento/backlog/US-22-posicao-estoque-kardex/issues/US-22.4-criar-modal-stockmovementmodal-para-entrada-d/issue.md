@@ -16,32 +16,38 @@
 
 ## 🎯 Objetivo & Descrição
 
-Criar modal `StockMovementModal` para entrada de materiais em `frontend/src/features/stock/components/StockMovementModal.tsx`.
+Criar modal `StockMovementModal` para entrada de materiais e compras em `frontend/src/features/stock/components/StockMovementModal.tsx`.
 
-### Contexto da Fase / Épico
-**Objetivo da User Story**: Tela com tabela de saldos, alertas visuais, modal de entrada de mercadoria e modal de perda.
-
-Esta issue faz parte da entrega da **Sprint 8 (Fechamento da Release 2)** do AlumiGest. Deve seguir rigorosamente as diretrizes arquiteturais da Constituição do Projeto (Clean Architecture / Package-by-Feature no módulo `stockDTOs em Records Java, Bean Validation e commits em PT-BR).
+### Contexto da Regra de Negócio Alumiportas
+- **Documento Livre de Loja:** O campo de documento/NF (`documentNumber`) aceita qualquer texto livre (pedido de compra da loja, número de recibo, romaneio ou canhoto de entrega), **sem exigir integração ou validação de chave de NF da SEFAZ**.
+- **Preço de Compra (Custo de Aquisição):** O campo de custo monetário (`unitCost`) deve possuir label e hint claros: *"Preço de Compra Unitário (Custo Pago)"*, especificando que é o valor que a serralheria pagou ao fornecedor na barra/peça, e **não** o preço de venda final cobrado do cliente.
+- Seguir fielmente o protótipo homologado em `docs/planejamento/prototipos/painel-estoque-kardex.html`.
 
 ---
 
 ## 🛠️ Checklist de Implementação
 
-- [ ] Analisar os requisitos específicos no arquivo de especificação (`docs/planejamento/sprint-08/spec.md`)
-- [ ] Verificar os modelos e tipos no modelo de dados (`docs/planejamento/sprint-08/data-model.md`) ou contratos (`docs/planejamento/sprint-08/contracts/api-stock.md`)
-- [ ] Implementar a alteração necessária em `frontend/src/features/stock/components/StockMovementModal.tsx`
-- [ ] Garantir que o código compila e segue as diretrizes do Checkstyle/Oxlint
-- [ ] Executar validação local conforme o cenário relevante do `quickstart.md`
+- [ ] Analisar a especificação funcional atualizada em `docs/planejamento/backlog/US-22-posicao-estoque-kardex/spec.md` (RN-04, RN-05 e RN-06)
+- [ ] Implementar `StockMovementModal.tsx` com `react-hook-form` e validação Zod
+- [ ] Incluir campos:
+  - Seleção do Insumo (`materialId`)
+  - Tipo de Movimentação (`movementType`: `PURCHASE_ENTRY` / `MANUAL_ADJUSTMENT`)
+  - Documento / Recibo / Pedido da Loja (`documentNumber`, texto livre opcional/sem SEFAZ)
+  - Quantidade Recebida (`quantity`, numérica positiva)
+  - Preço de Compra Unitário (`unitCost`, monetário com dica explicativa)
+  - Observações / Fornecedor (`notes`)
+- [ ] Integrar mutação TanStack Query com `POST /api/v1/stock/movements` invalidando queries de `stock` e `orders`
+- [ ] Exibir Toast de sucesso e fechar modal automaticamente
+- [ ] Garantir acessibilidade (ESC para fechar, foco no primeiro campo) e 100% de conformidade com Oxlint
 
 ---
 
 ## ✅ Critérios de Aceitação
 
-1. A funcionalidade descrita em `T026` deve estar completamente implementada no arquivo alvo.
-2. Nenhum erro de compilação ou regressão deve ser introduzido no projeto.
-3. Se for backend, deve compilar com `mvn clean compile` sem warnings bloqueantes.
-4. Se for frontend, deve validar com `npm run build` com tipagem estrita do TypeScript.
-5. **Validação Específica**: Visualizar alertas de estoque mínimo e abrir gaveta de extrato Kardex.
+1. O modal abre a partir do botão superior "Registrar Entrada" e dos botões de linha da tabela de estoque.
+2. Não exige nem valida chaves fiscais de NF-e; aceita códigos livres de recibo de loja ou distribuidor.
+3. Deixa explícito visualmente que o valor unitário é o custo pago ao fornecedor (preço de compra).
+4. Submissão atualiza a tabela de saldos, zera alertas de falta de insumos quando a quantidade supre as O.S. e adiciona a linha correspondente no Kardex.
 
 ---
 
