@@ -4,10 +4,10 @@
 |---|---|
 | **Projeto** | AlumiGest — Sistema de Gestão para Vidraçaria e Esquadrias |
 | **Documento** | Registro Unificado de Bugs, Defeitos e Hotfixes (RBD) |
-| **Versão** | 2.8.0 (Catálogo consolidado até BUG-040, incluindo as correções da US-14.1 / Sprint 06) |
-| **Data de Atualização** | 13/10/2026 |
+| **Versão** | 2.9.0 (Catálogo consolidado até BUG-044, incluindo as correções da US-46 / US-46.5) |
+| **Data de Atualização** | 07/11/2026 |
 | **Responsável QA / SM** | Herbert Carvalho dos Santos / Júlio Kennedy dos Santos Silva / Equipe de Engenharia AlumiGest |
-| **Branch** | `feat/us-14.1-snapshot-imutavel-lock-precos-deep-copy-360` |
+| **Branch** | `feat/us-46.5-adicionar-listagem-tipo-material-551` |
 | **Padrão de Template** | Baseado em [`.github/ISSUE_TEMPLATE/bug_report.md`](../../../.github/ISSUE_TEMPLATE/bug_report.md) |
 | **Auditoria Técnica** | Análise estática SonarQube, Pipeline CI/CD GitHub Actions e Histórico Git |
 
@@ -68,6 +68,10 @@ Seguindo a governança do **Plano de Gerência de Configuração (PGC)** e do **
 | **[BUG-038](#bug-038)** | Extrator de Puxador Falha por Divergência de Chaves (`model` vs `handleType`) | Backend / Orders | 🔴 Alta | Sprint 06 | ✅ Resolvido | Issue #422 / Commit `ccc44e5` |
 | **[BUG-039](#bug-039)** | Inversão de Precedência no Snapshot e Omissão de `slidingMode` | Full-Stack / Orders | 🔴 Alta | Sprint 06 | ✅ Resolvido | Issue #433 / Commit `4e4788c` |
 | **[BUG-040](#bug-040)** | Duplicação do Índice Ordinal na `OrderItemList` | Frontend / UI | 🟡 Média | Sprint 06 | ✅ Resolvido | Issue #421 / Commit `c3b47e0` |
+| **[BUG-041](#bug-041)** | Falha na Persistência de Venda com Cliente Balcão não Cadastrado (HTTP 404/500) | Backend / PartSale | 🔴 Alta | US-46 | ✅ Resolvido | Issue #548 / Migration `V24` |
+| **[BUG-042](#bug-042)** | Markup Surpresa de Perda de Corte no Alumínio (+5% no Checkout de Venda Avulsa) | Frontend / PartSale | 🟡 Média | US-46.5 | ✅ Resolvido | Issue #551 / `AluminumItemFields.tsx` |
+| **[BUG-043](#bug-043)** | Poluição Visual e Redundância de Preço no Seletor de Materiais do Catálogo | Frontend / UI | 🟢 Baixa | US-46.5 | ✅ Resolvido | Issue #551 / `MaterialAutocomplete.tsx` |
+| **[BUG-044](#bug-044)** | Falha de Isolamento em Testes E2E com Resíduos de Vendas Avulsas no PostgreSQL | Backend / Testes | 🟡 Média | US-46.5 | ✅ Resolvido | `TestCleanupController.java` |
 
 ---
 
@@ -1288,6 +1292,104 @@ A numeração deve ser sequencial e iniciar em 1.
 **Causa Raiz Técnica & Solução:**
 * **Causa Raiz:** A expressão baseada em `||` tratava o índice zero como valor falso.
 * **Solução:** A numeração passou a testar explicitamente o tipo do campo `ordem` antes de somar 1, com cobertura de regressão no frontend.
+
+---
+
+### BUG-041
+#### [BUG] Falha na Persistência de Venda com Cliente Balcão não Cadastrado (HTTP 404/500)
+
+**Descrição do Problema:**
+Ao salvar uma proposta de venda avulsa utilizando a opção "Cliente Balcão (Não Identificado)" com a base sem clientes cadastrados, o backend rejeitava a persistência com `ResourceNotFoundException` (HTTP 404) ou violação de integridade referencial.
+
+**Passos para Reproduzir:**
+1. Acessar `/venda-avulsa` em um ambiente com base de clientes vazia.
+2. Manter a seleção em "Cliente Balcão".
+3. Adicionar itens e clicar em "Salvar e Concluir Venda".
+
+**Comportamento Esperado:**
+O sistema deve associar automaticamente a venda ao cliente padrão balcão (Consumidor Final) de forma determinística e persistir com sucesso.
+
+**Contexto / Ambiente:**
+- **Módulos Afetados:** `PartSaleServiceImpl.java`, `V24__seed_default_walk_in_client.sql` e `PartSaleForm.tsx`.
+- **Severidade:** 🔴 Alta | **Sprint:** US-46 | **Status:** ✅ Resolvido.
+- **Detecção / Correção:** Issue #548 / PR #549.
+
+**Causa Raiz Técnica & Solução:**
+* **Causa Raiz:** O frontend enviava um UUID randômico quando `clientId` estava vazio, resultando em inexistência da chave estrangeira em `tb_clients`.
+* **Solução:** Criada migration Flyway `V24` definindo o cliente fixo `00000000-0000-0000-0000-000000000001` ("Cliente Balcão - Consumidor Final") e implementado método `resolveClient` defensivo no `PartSaleServiceImpl`.
+
+---
+
+### BUG-042
+#### [BUG] Markup Surpresa de Perda de Corte no Alumínio (+5% no Checkout de Venda Avulsa)
+
+**Descrição do Problema:**
+Ao cotar 1 metro de perfil de alumínio com preço anunciado de R$ 78,00/m, o subtotal cobrado passava para R$ 81,90 no checkout por adicionar +5% de perda sobre o valor que já deveria ser o preço de venda final.
+
+**Passos para Reproduzir:**
+1. Acessar `/venda-avulsa` e selecionar categoria Alumínio.
+2. Informar comprimento de 1000 mm (1 metro).
+3. Observar o subtotal calculado.
+
+**Comportamento Esperado:**
+O preço unitário informado no catálogo deve ser o valor final, de modo que $1,0000\text{ m} \times \text{R\$ } 80,00 = \text{R\$ } 80,00$.
+
+**Contexto / Ambiente:**
+- **Módulos Afetados:** `AluminumItemFields.tsx` e `PartSaleForm.tsx`.
+- **Severidade:** 🟡 Média | **Sprint:** US-46.5 | **Status:** ✅ Resolvido.
+- **Detecção / Correção:** Issue #551.
+
+**Causa Raiz Técnica & Solução:**
+* **Causa Raiz:** O formulário inicializava `lossFactor: 0.05` por padrão, inflando a metragem faturável de 1m para 1,05m.
+* **Solução:** `lossFactor` padronizado como 0 no formulário comercial e componentes adaptados para embutir a perda no preço proporcional sem surpresas no total faturado.
+
+---
+
+### BUG-043
+#### [BUG] Poluição Visual e Redundância de Preço no Seletor de Materiais do Catálogo
+
+**Descrição do Problema:**
+O dropdown de materiais exibia badges de preço por metro ao lado do nome do material, gerando poluição visual e conflito cognitivo com o campo editável de preço unitário.
+
+**Passos para Reproduzir:**
+1. Clicar no input de busca de materiais em qualquer categoria.
+2. Observar a lista de opções suspensas.
+
+**Comportamento Esperado:**
+O dropdown deve ser limpo e focado, exibindo apenas o Nome do Material e o Código da Família. O preço deve alimentar apenas o campo do formulário.
+
+**Contexto / Ambiente:**
+- **Módulos Afetados:** `MaterialAutocomplete.tsx`.
+- **Severidade:** 🟢 Baixa | **Sprint:** US-46.5 | **Status:** ✅ Resolvido.
+- **Detecção / Correção:** Issue #551.
+
+**Causa Raiz Técnica & Solução:**
+* **Causa Raiz:** Renderização direta de badge com formatação de moeda dentro dos itens do seletor.
+* **Solução:** Remoção da badge de preço no dropdown, mantendo a listagem limpa e delegando o preço unicamente para o preenchimento automático no formulário.
+
+---
+
+### BUG-044
+#### [BUG] Falha de Isolamento em Testes E2E com Resíduos de Vendas Avulsas no PostgreSQL
+
+**Descrição do Problema:**
+A execução da suíte E2E Cypress contra o ambiente de desenvolvimento gerava propostas de venda avulsa que permaneciam gravadas no banco PostgreSQL, poluindo a base e gerando potenciais colisões de código de venda.
+
+**Passos para Reproduzir:**
+1. Executar a suíte de testes E2E Cypress.
+2. Consultar `SELECT count(*) FROM tb_part_sales`.
+
+**Comportamento Esperado:**
+Os dados gerados exclusivamente pelos testes automatizados devem ser removidos ao final da execução (princípio de isolamento e idempotência).
+
+**Contexto / Ambiente:**
+- **Módulos Afetados:** `TestCleanupController.java` e `us46_venda_avulsa_visual.cy.ts`.
+- **Severidade:** 🟡 Média | **Sprint:** US-46.5 | **Status:** ✅ Resolvido.
+- **Detecção / Correção:** US-46.5 / Test Isolation.
+
+**Causa Raiz Técnica & Solução:**
+* **Causa Raiz:** O `TestCleanupController` possuía suporte apenas para limpeza de entidades legadas, sem manipular `tb_part_sales` e `tb_part_sale_items`.
+* **Solução:** Expandido o endpoint `DELETE /api/v1/test-support/cleanup` para aceitar `partSaleId` e `partSaleCode` com exclusão em cascata controlada, acionado automaticamente no hook `after()` do Cypress.
 
 ---
 
