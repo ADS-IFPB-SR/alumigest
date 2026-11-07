@@ -195,7 +195,18 @@ class ClientHubServiceTest {
                 .valorUnitario(new BigDecimal("900.00"))
                 .valorTotal(new BigDecimal("1800.00"))
                 .build();
+        OrderItem item2 = OrderItem.builder()
+                .descricao("Porta Pivotante")
+                .larguraMm(900)
+                .alturaMm(2100)
+                .quantidade(3)
+                .corAluminio("Preto")
+                .tipoVidro("Laminado")
+                .valorUnitario(new BigDecimal("1200.00"))
+                .valorTotal(new BigDecimal("3600.00"))
+                .build();
         order.addItem(item);
+        order.addItem(item2);
 
         when(orderRepository.findByClienteIdOrderByCreatedAtDesc(clientId)).thenReturn(List.of(order));
 
@@ -205,8 +216,8 @@ class ClientHubServiceTest {
         ClientOrderSummaryDto dto = result.get(0);
         assertThat(dto.codigo()).isEqualTo("OS-2026-0042");
         assertThat(dto.status()).isEqualTo(br.edu.ifpb.alumigest.orders.domain.OrderStatus.IN_PRODUCTION);
-        assertThat(dto.totalEsquadrias()).isEqualTo(1);
-        assertThat(dto.items()).hasSize(1);
+        assertThat(dto.totalEsquadrias()).isEqualTo(5);
+        assertThat(dto.items()).hasSize(2);
         assertThat(dto.items().get(0).larguraMm()).isEqualTo(1200);
         assertThat(dto.items().get(0).alturaMm()).isEqualTo(1400);
         assertThat(dto.items().get(0).corAluminio()).isEqualTo("Natural");

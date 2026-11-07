@@ -94,9 +94,15 @@ public class ClientHubService {
     }
 
     private ClientOrderSummaryDto toOrderSummaryDto(Order order) {
-        List<ClientOrderItemDto> items = order.getItems().stream()
-                .map(this::toOrderItemDto)
-                .toList();
+        List<ClientOrderItemDto> items = order.getItems() != null
+                ? order.getItems().stream()
+                        .map(this::toOrderItemDto)
+                        .toList()
+                : List.of();
+
+        int totalEsquadrias = items.stream()
+                .mapToInt(ClientOrderItemDto::quantidade)
+                .sum();
 
         return new ClientOrderSummaryDto(
                 order.getId(),
@@ -105,7 +111,7 @@ public class ClientHubService {
                 order.getStatus(),
                 order.getStatus() != null ? order.getStatus().getDescription() : "",
                 order.getValorLiquido(),
-                items.size(),
+                totalEsquadrias,
                 items
         );
     }

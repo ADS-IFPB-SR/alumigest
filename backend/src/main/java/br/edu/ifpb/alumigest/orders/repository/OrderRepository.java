@@ -37,7 +37,13 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
 
   Page<Order> findByClienteIdAndAtivoTrue(UUID clienteId, Pageable pageable);
 
-  List<Order> findByClienteIdOrderByCreatedAtDesc(UUID clienteId);
+  @Query("""
+        SELECT DISTINCT o FROM Order o
+        LEFT JOIN FETCH o.items
+        WHERE o.cliente.id = :clienteId
+        ORDER BY o.createdAt DESC
+      """)
+  List<Order> findByClienteIdOrderByCreatedAtDesc(@Param("clienteId") UUID clienteId);
 
   @Query("""
         SELECT COALESCE(SUM(o.valorLiquido), 0) FROM Order o

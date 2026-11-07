@@ -189,7 +189,7 @@ class ClientHubControllerTest {
                 br.edu.ifpb.alumigest.orders.domain.OrderStatus.IN_PRODUCTION,
                 "Em Produção",
                 new BigDecimal("1800.00"),
-                1,
+                2,
                 List.of(item)
         );
 
@@ -201,7 +201,7 @@ class ClientHubControllerTest {
                 .andExpect(jsonPath("$[0].codigo").value("OS-2026-0042"))
                 .andExpect(jsonPath("$[0].status").value("IN_PRODUCTION"))
                 .andExpect(jsonPath("$[0].statusDescricao").value("Em Produção"))
-                .andExpect(jsonPath("$[0].totalEsquadrias").value(1))
+                .andExpect(jsonPath("$[0].totalEsquadrias").value(2))
                 .andExpect(jsonPath("$[0].items[0].descricao").value("Janela de Correr 2 Folhas"))
                 .andExpect(jsonPath("$[0].items[0].larguraMm").value(1200))
                 .andExpect(jsonPath("$[0].items[0].alturaMm").value(1400));
