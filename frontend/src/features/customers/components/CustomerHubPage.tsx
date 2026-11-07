@@ -1,17 +1,31 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { api } from '../../../lib/api';
 import {
   useCustomers,
   useCustomerDashboard,
   useCustomerBudgets,
+  useCustomerOrders,
 } from '../hooks/useCustomers';
 import type { CustomerSummaryDTO } from '../services/customersApi';
 import { CustomerMasterSidebar } from './CustomerMasterSidebar';
 import { CustomerHeroCard } from './CustomerHeroCard';
 import { CustomerKpiGrid } from './CustomerKpiGrid';
 import { CustomerBudgetsTab } from './CustomerBudgetsTab';
+import { CustomerOrdersTab } from './CustomerOrdersTab';
 import { Users, FileText, ClipboardList } from 'lucide-react';
+
+function triggerPdfBlobDownload(data: BlobPart, filename: string): void {
+  const url = window.URL.createObjectURL(new Blob([data], { type: 'application/pdf' }));
+  const link = document.createElement('a');
+  link.href = url;
+  link.setAttribute('download', filename);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
+}
 
 export const CustomerHubPage: React.FC = () => {
   const navigate = useNavigate();
@@ -58,6 +72,13 @@ export const CustomerHubPage: React.FC = () => {
   const budgets = useMemo(() => budgetsData?.content || [], [budgetsData]);
   const totalBudgetPages = budgetsData?.page?.totalPages ?? 1;
 
+  const {
+    data: ordersData,
+    isLoading: isLoadingOrders,
+  } = useCustomerOrders(selectedCustomerId);
+
+  const orders = useMemo(() => ordersData ?? [], [ordersData]);
+
   // Handlers
   const handleSelectCustomer = (customer: CustomerSummaryDTO) => {
     setSelectedCustomerId(customer.id);
@@ -72,6 +93,34 @@ export const CustomerHubPage: React.FC = () => {
   const handleViewPdf = (budgetId: string) => {
     toast.success(`Abrindo proposta em PDF (ID: ${budgetId.slice(0, 8)})...`);
     window.open(`/api/orcamentos/${budgetId}/pdf`, '_blank');
+  };
+
+  const handleOpenTechSheet = async (orderId: string) => {
+    const order = orders.find((o) => o.id === orderId);
+    const identifier = (order?.codigo ?? orderId).replaceAll('/', '-');
+    try {
+      const response = await api.get(`/orders/${orderId}/production-sheet/pdf`, {
+        responseType: 'blob',
+      });
+      triggerPdfBlobDownload(response.data, `Ficha_Tecnica_${identifier}.pdf`);
+      toast.success('Ficha Técnica baixada com sucesso!');
+    } catch {
+      toast.error('Erro ao transferir a ficha técnica.');
+    }
+  };
+
+  const handleOpenLabels = async (orderId: string) => {
+    const order = orders.find((o) => o.id === orderId);
+    const identifier = (order?.codigo ?? orderId).replaceAll('/', '-');
+    try {
+      const response = await api.get(`/orders/${orderId}/labels-pdf`, {
+        responseType: 'blob',
+      });
+      triggerPdfBlobDownload(response.data, `Etiquetas_${identifier}.pdf`);
+      toast.success('Etiquetas baixadas com sucesso!');
+    } catch {
+      toast.error('Erro ao transferir as etiquetas.');
+    }
   };
 
   const renderDetailContent = () => {
@@ -158,15 +207,12 @@ export const CustomerHubPage: React.FC = () => {
             onViewPdf={handleViewPdf}
           />
         ) : (
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-10 text-center">
-            <ClipboardList className="w-10 h-10 mx-auto text-blue-500/60 mb-3" />
-            <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-              Módulo de Ordens de Serviço (O.S.)
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-md mx-auto">
-              A listagem detalhada de O.S., inspeção de esquadrias em L×A mm e emissão de etiquetas térmicas Elgin L42 serão ativadas na subtask US-47.2.
-            </p>
-          </div>
+          <CustomerOrdersTab
+            orders={orders}
+            isLoading={isLoadingOrders}
+            onOpenTechSheet={handleOpenTechSheet}
+            onOpenLabels={handleOpenLabels}
+          />
         )}
       </>
     );
