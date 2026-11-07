@@ -165,7 +165,7 @@
       <div class="flex items-center gap-2">
         <button onclick="openModalEntry()" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-600/20 transition cursor-pointer">
           <i class="fa-solid fa-plus-circle"></i>
-          <span>Registrar Entrada (NF de Compra)</span>
+          <span>Registrar Entrada (Compra / Recibo da Loja)</span>
         </button>
       </div>
     </header>
@@ -744,7 +744,7 @@
           </div>
           <div>
             <h3 class="font-title font-bold text-base text-slate-900">Registrar Entrada de Materiais</h3>
-            <p class="text-xs text-slate-500">Alimente o estoque com a nota fiscal do fornecedor</p>
+            <p class="text-xs text-slate-500">Alimente o estoque com o pedido de compra, recibo ou documento da loja</p>
           </div>
         </div>
         <button onclick="closeModalEntry()" class="w-7 h-7 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200 flex items-center justify-center transition">
@@ -766,7 +766,7 @@
           </select>
         </div>
 
-        <!-- Tipo de Movimentação -->
+        <!-- Tipo de Movimentação e Documento -->
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="block text-xs font-bold text-slate-700 mb-1">Tipo de Movimento</label>
@@ -776,20 +776,22 @@
             </select>
           </div>
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">Nota Fiscal / Documento</label>
-            <input type="text" placeholder="Ex: NF-e 88120 - Asa" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Nº do Documento / Recibo / Loja</label>
+            <input type="text" placeholder="Ex: Recibo 450, Pedido 1024, Romaneio..." class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <p class="text-[10px] text-slate-400 mt-1">Sem validação de NF; digite o código de controle da loja.</p>
           </div>
         </div>
 
-        <!-- Quantidade e Custo -->
+        <!-- Quantidade e Preço de Compra (Custo) -->
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="block text-xs font-bold text-slate-700 mb-1">Quantidade Recebida</label>
             <input type="number" id="modalQtyInput" min="1" step="any" placeholder="Ex: 10" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-mono font-bold focus:outline-none focus:ring-2 focus:ring-blue-500" required>
           </div>
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">Custo Unitário (R$)</label>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Preço de Compra Unitário (Custo Pago)</label>
             <input type="text" placeholder="R$ 145,00" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-mono focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <p class="text-[10px] text-slate-400 mt-1">Quanto você pagou na barra/peça (não é o preço de venda).</p>
           </div>
         </div>
 
@@ -907,3 +909,4 @@
 
 </body>
 </html>
+
