@@ -16,12 +16,17 @@
 
 ## 🎯 Objetivo & Descrição
 
-Criar componente `StockTable` com badges de alerta amarelo em `frontend/src/features/stock/components/StockTable.tsx`.
+Criar componente `StockTable` com badges de alerta visual em `frontend/src/features/stock/components/StockTable.tsx`.
 
 ### Contexto da Fase / Épico
-**Objetivo da User Story**: Tela com tabela de saldos, alertas visuais, modal de entrada de mercadoria e modal de perda.
+**Objetivo da User Story**: Tela com tabela de saldos (físico, reservado, disponível), alertas visuais de reposição e gaveta de extrato Kardex.
 
-Esta issue faz parte da entrega da **Sprint 8 (Fechamento da Release 2)** do AlumiGest. Deve seguir rigorosamente as diretrizes arquiteturais da Constituição do Projeto (Clean Architecture / Package-by-Feature no módulo `stockDTOs em Records Java, Bean Validation e commits em PT-BR).
+> 💡 **Badges de Alerta Conforme Regras de Negócio (Make-to-Order)**:
+> - **Verde (`🟢 Em Dia`)**: Quando o saldo disponível está acima do estoque mínimo (`availableQuantity > minStock`).
+> - **Âmbar (`🟡 Ponto de Pedido`)**: Quando o saldo disponível está entre 0 e o estoque mínimo (`0 <= availableQuantity <= minStock`).
+> - **Vermelho (`🔴 Necessidade de Compra`)**: Quando o saldo disponível é negativo (`availableQuantity < 0`), indicando que existem O.S. aprovadas aguardando a compra do insumo, exibindo a quantidade faltante (ex.: `Falta 4 un` ou `Falta 12 m`).
+
+Esta issue faz parte da entrega do AlumiGest. Deve seguir rigorosamente as diretrizes arquiteturais da Constituição do Projeto (Clean Architecture / Package-by-Feature no módulo `stock`, design system AlumiGest, Tailwind e commits em PT-BR).
 
 ---
 

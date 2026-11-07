@@ -16,12 +16,17 @@
 
 ## 🎯 Objetivo & Descrição
 
-Implementar método `reservarMateriais(Long orderId)` no `StockService` em `backend/src/main/java/br/edu/ifpb/alumigest/stock/service/StockService.java`.
+Implementar método `reserveMaterials(UUID orderId)` no `StockService` em `backend/src/main/java/br/edu/ifpb/alumigest/stock/service/StockService.java`.
 
 ### Contexto da Fase / Épico
-**Objetivo da User Story**: Reservar materiais na liberação da produção e baixar fisicamente no corte da esquadria.
+**Objetivo da User Story**: Reservar materiais na aprovação da O.S. (`US-13`) ou Venda Avulsa (`US-46`) e baixar fisicamente no corte da esquadria (`COMPLETED`).
 
-Esta issue faz parte da entrega da **Sprint 8 (Fechamento da Release 2)** do AlumiGest. Deve seguir rigorosamente as diretrizes arquiteturais da Constituição do Projeto (Clean Architecture / Package-by-Feature no módulo `stockDTOs em Records Java, Bean Validation e commits em PT-BR).
+> ⚠️ **Regra de Negócio Crucial (RN-05 - Modelo Make-to-Order Não-Bloqueante)**:
+> O método de reserva **NUNCA DEVE LANÇAR EXCEÇÃO POR FALTA DE ESTOQUE** (`BusinessException` / HTTP 422). 
+> A Alumiportas opera sob encomenda: a O.S. é fechada com o cliente sem o material em estoque, para que a compra seja feita sob medida.
+> Quando a quantidade necessária for maior que o saldo físico, a reserva é processada normalmente, o saldo disponível passa a indicar a necessidade líquida de compra (`availableQuantity < 0`) e a ordem é sinalizada com status de suprimento `PENDING_PURCHASE` (alerta `🔴 Falta Insumo / Comprar`).
+
+Esta issue faz parte da entrega do AlumiGest. Deve seguir rigorosamente as diretrizes arquiteturais da Constituição do Projeto (Clean Architecture / Package-by-Feature no módulo `stock`, DTOs em Records Java, Bean Validation e commits em PT-BR).
 
 ---
 

@@ -15,27 +15,29 @@ Como gestor financeiro, almoxarife ou responsável por compras da Alumiportas, d
 
 ## 🧪 Critérios de Aceitação (Dado que / Quando / Então)
 
-- [ ] **Cenário 1: Listagem Paginada de Saldos com Badges de Reposição**
+- [ ] **Cenário 1: Listagem Paginada de Saldos com Badges de Reposição e Necessidade de Compra**
   - **Dado que** o usuário acessa o menu lateral "Estoque" (rota `/estoque`),
   - **Quando** a página `StockPage` for carregada,
   - **Então** o sistema exibe tabela paginada com código, descrição do material, unidade de medida, saldo físico (`physicalQuantity`), saldo reservado (`reservedQuantity`) e saldo disponível (`availableQuantity`),
-  - **E** insumos cujo saldo disponível for menor ou igual ao estoque mínimo (`minStock`) exibem badge de alerta em tom âmbar/vermelho ("Ponto de Pedido").
+  - **E** insumos cujo saldo disponível for menor ou igual ao estoque mínimo (`minStock`) exibem badge de alerta em tom âmbar ("Ponto de Pedido"),
+  - **E** insumos com saldo disponível negativo ($\text{availableQuantity} < 0$) exibem badge em tom vermelho `🔴 Necessidade de Compra (Falta X un/m)`, indicando com exatidão que há O.S. contratadas aguardando a compra daquele material.
 
 - [ ] **Cenário 2: Consulta à Trilha Cronológica (Kardex) do Material**
   - **Dado que** o usuário seleciona um item da tabela de estoque,
   - **Quando** aciona a opção "Ver Kardex" / histórico,
   - **Então** a gaveta lateral (`KardexDrawer`) é aberta exibindo todas as movimentações ordenadas cronologicamente da mais recente para a mais antiga,
-  - **E** cada linha exibe timestamp formatado, tipo de movimentação (`ENTRADA_COMPRA`, `RESERVA_PRODUCAO`, `BAIXA_PRODUCAO`, `CANCELAMENTO_RESERVA`), quantidade movimentada, saldo resultante e código da O.S. ou documento vinculado.
+  - **E** cada linha exibe timestamp formatado, tipo de movimentação (`PURCHASE_ENTRY`, `PRODUCTION_RESERVATION`, `PRODUCTION_OUTFLOW`, `RESERVATION_CANCELLATION`), quantidade movimentada, saldo resultante e código da O.S. ou documento vinculado.
 
 - [ ] **Cenário 3: Registro de Entrada Manual de Compras via Modal**
   - **Dado que** novos perfis ou ferragens chegaram à oficina com nota fiscal,
   - **Quando** o operador clica em "Nova Entrada / Ajuste" e submete o formulário `StockMovementModal`,
   - **Então** o sistema envia requisição `POST /api/v1/stock/movements`,
-  - **E** a tabela de saldos e o Kardex são atualizados instantaneamente via revalidação do TanStack Query com notificação Toast.
+  - **E** a tabela de saldos e o Kardex são atualizados instantaneamente via revalidação do TanStack Query com notificação Toast,
+  - **E** ao abastecer materiais que estavam em falta, as O.S. pendentes são atualizadas para `🟢 Insumos Disponíveis`.
 
 - [ ] **Cenário 4: Filtros Rápidos por Grupo de Material e Alerta de Ruptura**
   - **Dado que** o estoque possui centenas de itens cadastrados,
-  - **Quando** o usuário filtra por grupo (ex: `Perfis de Alumínio`, `Vidros`, `Ferragens`) ou marca o seletor "Apenas Abaixo do Mínimo",
+  - **Quando** o usuário filtra por grupo (ex: `Perfis de Alumínio`, `Vidros`, `Ferragens`) ou marca o seletor "Apenas com Necessidade de Compra",
   - **Então** a tabela é filtrada reativamente sem atraso perceptível.
 
 ---
@@ -43,8 +45,10 @@ Como gestor financeiro, almoxarife ou responsável por compras da Alumiportas, d
 ## 📋 Regras de Negócio e Restrições
 
 - **RN-01 (Imutabilidade do Kardex):** Registros em `tb_stock_movements` são estritamente *append-only* (somente inclusão); edições ou deleções físicas são terminantemente proibidas para garantir conformidade de auditoria.
-- **RN-02 (Rastreabilidade de Documento de Origem):** Toda movimentação automática deve guardar a referência da Ordem de Serviço vinculada (`order_id` / `order_code`).
+- **RN-02 (Rastreabilidade de Documento de Origem):** Toda movimentação automática deve guardar a referência da Ordem de Serviço vinculada (`order_id` / `order_code`) ou Venda Avulsa (`part_sale_id`).
 - **RN-03 (Diretriz de Idioma em Variáveis):** Entidades, DTOs e colunas em inglês técnico (`physicalQuantity`, `reservedQuantity`, `availableQuantity`, `minStock`).
+- **RN-04 (Interpretação de Saldo Disponível Negativo como Demanda de Compra):**
+  - Em conformidade com o modelo sob encomenda da Alumiportas, o saldo disponível negativo ($\text{availableQuantity} < 0$) não representa inconsistência ou erro de sistema; representa o volume líquido de matéria-prima que o setor de compras precisa encomendar aos fornecedores para atender os pedidos fechados.
 
 ---
 

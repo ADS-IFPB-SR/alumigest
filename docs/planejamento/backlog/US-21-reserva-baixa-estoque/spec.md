@@ -9,20 +9,21 @@
 
 ## 🎯 Objetivo de Negócio
 
-Como gestor de suprimentos e encarregado de almoxarifado da Alumiportas, desejo que o sistema reserve automaticamente os insumos de matéria-prima (perfis, vidros, acessórios) no momento da aprovação da Ordem de Serviço (`OS-YYYY-NNNN`) e efetue a baixa física definitiva do estoque quando a fabricação for concluída (`COMPLETED`), com estorno automático em caso de cancelamento da O.S., para manter a acurácia de saldos em tempo real e evitar rupturas no fornecimento.
+Como gestor de suprimentos e encarregado de almoxarifado da Alumiportas, desejo que o sistema reserve automaticamente os insumos de matéria-prima (perfis, vidros, acessórios) no momento da aprovação da Ordem de Serviço (`OS-YYYY-NNNN`) ou emissão de Venda Avulsa (`US-46`), apurando a **Necessidade de Compra** sem jamais bloquear a emissão de pedidos de clientes, e efetue a baixa física definitiva do estoque quando a fabricação for concluída (`COMPLETED`), com estorno automático em caso de cancelamento da O.S., para manter a acurácia de saldos em tempo real e municiar a equipe de compras com a demanda exata a ser adquirida.
 
 ---
 
 ## 🧪 Critérios de Aceitação (Dado que / Quando / Então)
 
-- [ ] **Cenário 1: Reserva Automática de Materiais na Aprovação da O.S.**
-  - **Dado que** um orçamento de venda é aprovado e convertido em Ordem de Serviço (`US-13`),
+- [ ] **Cenário 1: Reserva Automática de Materiais na Aprovação da O.S. (Sem Bloqueio de Venda)**
+  - **Dado que** um orçamento de venda é aprovado e convertido em Ordem de Serviço (`US-13`) ou uma Venda Avulsa de Partes é confirmada (`US-46`),
   - **Quando** a O.S. atinge o status `CREATED` / `WAITING_PRODUCTION`,
   - **Então** o sistema cria registros de movimentação com tipo `PRODUCTION_RESERVATION` em `tb_stock_movements`,
-  - **E** incrementa o saldo reservado (`reserved_quantity`) e decrementa o saldo disponível (`available_quantity`) de cada insumo correspondente em `tb_stock_items`.
+  - **E** incrementa o saldo reservado (`reserved_quantity`) e decrementa o saldo disponível (`available_quantity`) de cada insumo correspondente em `tb_stock_items`,
+  - **E** a operação é concluída com sucesso independentemente de haver saldo físico suficiente no momento da aprovação (modelo *Make-to-Order*).
 
 - [ ] **Cenário 2: Baixa Física Definitiva na Conclusão da Produção (`COMPLETED`)**
-  - **Dado que** uma O.S. está em fabricação com matérias-primas devidamente reservadas,
+  - **Dado que** uma O.S. está em fabricação com matérias-primas devidamente reservadas e materiais comprados recebidos,
   - **Quando** o encarregado move o status para `COMPLETED` no Kanban (`US-18`),
   - **Então** o sistema converte a reserva em baixa física definitiva gerando movimentações do tipo `PRODUCTION_OUTFLOW`,
   - **E** decrementa simultaneamente o saldo físico (`physical_quantity`) e o saldo reservado (`reserved_quantity`), mantendo o saldo disponível inalterado.
@@ -33,16 +34,18 @@ Como gestor de suprimentos e encarregado de almoxarifado da Alumiportas, desejo 
   - **Então** o sistema gera registros de movimentação do tipo `RESERVATION_CANCELLATION`,
   - **E** zera as reservas daquela ordem, devolvendo os insumos ao saldo disponível (`available_quantity`).
 
-- [ ] **Cenário 4: Alerta Preventivo de Ruptura de Estoque na Ordem de Serviço**
-  - **Dado que** a quantidade necessária de um perfil ou chapa excede o saldo disponível em estoque no momento da reserva,
+- [ ] **Cenário 4: Apuração de Demanda de Compra e Alerta Preventivo de Insumos**
+  - **Dado que** a quantidade necessária de um perfil ou chapa excede o saldo físico em estoque no momento da reserva,
   - **Quando** a reserva for processada,
-  - **Então** a operação de reserva é registrada com flag de pendência (`PENDING`),
-  - **E** o card do Kanban exibe a tag visual de alerta `🔴 Falta Insumo` (conforme `prototipo_kambam.html`), alertando a equipe de compras.
+  - **Então** a operação é aprovada sem erro, e o saldo disponível passa a indicar a necessidade líquida de compra ($\text{available\_quantity} < 0$),
+  - **E** a O.S. recebe status de suprimento `PENDING_PURCHASE`,
+  - **E** o card do Kanban e o Hub exibem a tag visual de alerta `🔴 Falta Insumo / Comprar` (conforme `prototipo_kambam.html`), alertando a equipe de compras sobre os insumos a encomendar.
 
 - [ ] **Cenário 5: Movimentação Manual de Ajuste e Entrada de Compras**
   - **Dado que** o almoxarife recebe nota de novos perfis ou realiza ajuste de inventário,
   - **Quando** registra a movimentação via `POST /api/v1/stock/movements`,
-  - **Então** o saldo físico e disponível é atualizado atomicamente com registro de usuário e justificativa.
+  - **Então** o saldo físico e disponível é atualizado atomicamente com registro de usuário e justificativa,
+  - **E** se o saldo passar a atender as O.S. pendentes, o alerta muda automaticamente para `🟢 Insumos Disponíveis`.
 
 ---
 
@@ -51,8 +54,12 @@ Como gestor de suprimentos e encarregado de almoxarifado da Alumiportas, desejo 
 - **RN-01 (Invariante Fundamental de Saldos):** Para qualquer item de estoque, deve valer rigorosamente a equação:
   $$\text{available\_quantity} = \text{physical\_quantity} - \text{reserved\_quantity}$$
 - **RN-02 (Atomicidade Transacional):** Todas as reservas e baixas de estoque devem ser executadas com `@Transactional` atômico; caso ocorra falha em qualquer material, toda a transação é revertida (*rollback*).
-- **RN-03 (Impedimento de Saldo Físico Negativo):** Baixas físicas manuais ou extraordinárias que resultem em `physical_quantity < 0` devem ser bloqueadas com `BusinessException` (HTTP 422).
+- **RN-03 (Impedimento de Saldo Físico Negativo em Baixas Manuais):** Baixas físicas manuais extraordinárias sem vínculo que tentem subtrair material não existente (`physical_quantity < 0`) devem ser bloqueadas com `BusinessException` (HTTP 422).
 - **RN-04 (Diretriz de Idioma em Variáveis):** Enums de movimentação em inglês técnico: `PURCHASE_ENTRY`, `PRODUCTION_RESERVATION`, `PRODUCTION_OUTFLOW`, `SCRAP_LOSS`, `MANUAL_ADJUSTMENT`, `RESERVATION_CANCELLATION`.
+- **RN-05 (Reserva Não Bloqueante / Modelo Make-to-Order da Serralheria):**
+  - A criação de orçamentos, a aprovação de Ordens de Serviço (O.S.) e a realização de Vendas Avulsas de Partes (`US-46`) **JAMAIS devem ser bloqueadas ou rejeitadas por falta de estoque** (seja físico ou disponível).
+  - A Alumiportas opera sob encomenda (*Make-to-Order*): o orçamento é fechado para que o material seja comprado sob medida do fornecedor.
+  - É expressamente proibido lançar exceção bloqueante (`BusinessException` / HTTP 422) ao aprovar O.S. com estoque insuficiente. O sistema deve registrar a reserva, permitir que o saldo disponível fique negativo ($\text{available\_quantity} < 0$) e gerar o alerta `🔴 Falta Insumo / Comprar` para orientar as ordens de compra.
 
 ---
 
