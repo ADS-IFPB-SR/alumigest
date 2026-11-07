@@ -57,6 +57,7 @@ Como gestor de suprimentos e encarregado de almoxarifado da Alumiportas, desejo 
 - **RN-03 (Impedimento de Saldo Físico Negativo em Baixas Manuais):** Baixas físicas manuais extraordinárias sem vínculo que tentem subtrair material não existente (`physical_quantity < 0`) devem ser bloqueadas com `BusinessException` (HTTP 422).
 - **RN-04 (Diretriz de Idioma em Variáveis):** Enums de movimentação em inglês técnico: `PURCHASE_ENTRY`, `PRODUCTION_RESERVATION`, `PRODUCTION_OUTFLOW`, `SCRAP_LOSS`, `MANUAL_ADJUSTMENT`, `RESERVATION_CANCELLATION`.
 - **RN-05 (Reserva Não Bloqueante / Modelo Make-to-Order da Serralheria):**
+  - *Premissa Central:* Por operarmos no modelo sob encomenda (*Make-to-Order*), a reserva de estoque não restringe o fechamento comercial, atuando como ferramenta de planejamento para dimensionar a necessidade de compras e sinalizar a prontidão de corte na fábrica.
   - A criação de orçamentos, a aprovação de Ordens de Serviço (O.S.) e a realização de Vendas Avulsas de Partes (`US-46`) **JAMAIS devem ser bloqueadas ou rejeitadas por falta de estoque** (seja físico ou disponível).
   - A Alumiportas opera sob encomenda (*Make-to-Order*): o orçamento é fechado para que o material seja comprado sob medida do fornecedor.
   - É expressamente proibido lançar exceção bloqueante (`BusinessException` / HTTP 422) ao aprovar O.S. com estoque insuficiente. O sistema deve registrar a reserva, permitir que o saldo disponível fique negativo ($\text{available\_quantity} < 0$) e gerar o alerta `🔴 Falta Insumo / Comprar` para orientar as ordens de compra.

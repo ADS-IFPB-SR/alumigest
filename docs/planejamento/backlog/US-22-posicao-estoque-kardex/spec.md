@@ -48,6 +48,7 @@ Como gestor financeiro, almoxarife ou responsável por compras da Alumiportas, d
 - **RN-02 (Rastreabilidade de Documento de Origem):** Toda movimentação automática deve guardar a referência da Ordem de Serviço vinculada (`order_id` / `order_code`) ou Venda Avulsa (`part_sale_id`).
 - **RN-03 (Diretriz de Idioma em Variáveis):** Entidades, DTOs e colunas em inglês técnico (`physicalQuantity`, `reservedQuantity`, `availableQuantity`, `minStock`).
 - **RN-04 (Interpretação de Saldo Disponível Negativo como Demanda de Compra):**
+  - *Premissa Central:* A reserva de estoque não atua como barreira comercial, mas como termômetro de compras e controle de prioridade fabril.
   - Em conformidade com o modelo sob encomenda da Alumiportas, o saldo disponível negativo ($\text{availableQuantity} < 0$) não representa inconsistência ou erro de sistema; representa o volume líquido de matéria-prima que o setor de compras precisa encomendar aos fornecedores para atender os pedidos fechados.
 - **RN-05 (Flexibilidade de Documento na Entrada de Materiais - Sem Validação SEFAZ):**
   - O registro de entrada de materiais aceita qualquer identificador em texto livre no campo `documentNumber` (número do pedido na loja distribuidora, recibo, romaneio ou número de NF em papel), sem exigir chave de acesso de 44 dígitos nem integração/validação fiscal na SEFAZ. O campo pode ser opcional em ajustes internos.
