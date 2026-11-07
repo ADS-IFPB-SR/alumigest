@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="h-full bg-slate-50">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AlumiGest — Controle de Estoque, Kardex & Suprimentos (US-21 / US-22)</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Fonts Oficiais do AlumiGest -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@500;600;700;800;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            title: ['"Hanken Grotesk"', 'sans-serif'],
+            sans: ['Inter', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#f0f5ff',
+              100: '#e0ebff',
+              500: '#2563eb',
+              600: '#1d4ed8',
+              800: '#1b2b48',
+              900: '#041632', // Deep Navy AlumiGest
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    /* Animação suave para gaveta Kardex */
+    .drawer-backdrop {
+      transition: opacity 0.25s ease-in-out;
+    }
+    .drawer-content {
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+  </style>
+</head>
+
+<body class="h-full text-slate-800 font-sans antialiased flex flex-col md:flex-row min-h-screen">
+
+  <!-- ============================================================== -->
+  <!-- 1. SIDEBAR GLOBAL ALUMIGEST (PADRÃO DO SISTEMA)                -->
+  <!-- ============================================================== -->
+  <aside class="w-full md:w-64 bg-brand-900 text-slate-300 flex-shrink-0 flex flex-col justify-between z-20 shadow-xl">
+    <div>
+      <!-- Header do App / Empresa Parceira -->
+      <div class="p-5 border-b border-slate-800/80 flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center font-title font-black text-xl shadow-lg shadow-blue-900/50">
+          A
+        </div>
+        <div>
+          <h1 class="font-title font-bold text-white text-base leading-tight tracking-tight">AlumiGest ERP</h1>
+          <p class="text-xs text-blue-300 font-medium">Alumiportas Serralheria</p>
+        </div>
+      </div>
+
+      <!-- Navegação Principal -->
+      <nav class="p-3 space-y-1">
+        <a href="../prototipos/painel-clientes-360.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 transition">
+          <i class="fa-solid fa-users w-5 text-center text-slate-400"></i>
+          <span>Central de Clientes 360°</span>
+        </a>
+
+        <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 transition">
+          <i class="fa-solid fa-file-invoice-dollar w-5 text-center text-slate-400"></i>
+          <span>Orçamentos de Venda</span>
+        </a>
+
+        <a href="../prototipos/prototipo_kambam.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 transition">
+          <i class="fa-solid fa-layer-group w-5 text-center text-slate-400"></i>
+          <span>Kanban de Produção</span>
+        </a>
+
+        <!-- ITEM ATIVO: ESTOQUE & KARDEX -->
+        <a href="#estoque" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-bold text-white bg-blue-600 shadow-md shadow-blue-900/40">
+          <i class="fa-solid fa-boxes-stacked w-5 text-center text-white"></i>
+          <span>Estoque & Kardex</span>
+          <span class="ml-auto bg-amber-400 text-brand-900 font-mono text-[10px] font-extrabold px-1.5 py-0.5 rounded">R2</span>
+        </a>
+
+        <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 transition">
+          <i class="fa-solid fa-coins w-5 text-center text-slate-400"></i>
+          <span>Fluxo de Caixa (US-30)</span>
+        </a>
+
+        <a href="../prototipos/prototipo_etiquetas.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 transition">
+          <i class="fa-solid fa-tags w-5 text-center text-slate-400"></i>
+          <span>Etiquetas Térmicas</span>
+        </a>
+      </nav>
+    </div>
+
+    <!-- Rodapé Usuário / Filial -->
+    <div class="p-4 border-t border-slate-800/80 bg-brand-900/60 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center font-bold text-xs text-white">
+          JG
+        </div>
+        <div class="text-xs">
+          <p class="font-bold text-white leading-none">José Guylherme</p>
+          <p class="text-slate-400 text-[11px] mt-0.5">Encarregado / PO</p>
+        </div>
+      </div>
+      <span class="inline-flex w-2 h-2 rounded-full bg-emerald-400 ring-4 ring-emerald-400/20" title="Online"></span>
+    </div>
+  </aside>
+
+  <!-- ============================================================== -->
+  <!-- 2. CONTEÚDO PRINCIPAL (DASHBOARD & MÓDULO DE ESTOQUE)          -->
+  <!-- ============================================================== -->
+  <main class="flex-1 flex flex-col overflow-y-auto bg-slate-50 min-h-screen">
+    
+    <!-- Topbar Header com Seletor de Visão -->
+    <header class="bg-white border-b border-slate-200 px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4 sticky top-0 z-10 shadow-xs">
+      <div>
+        <div class="flex items-center gap-2 text-xs font-semibold text-slate-400">
+          <span>ALMOXARIFADO & SUPRIMENTOS</span>
+          <span>/</span>
+          <span class="text-blue-600">POSIÇÃO GERAL & RASTREABILIDADE</span>
+        </div>
+        <h2 class="font-title font-extrabold text-2xl text-slate-900 tracking-tight">Estoque & Trilha Kardex</h2>
+      </div>
+
+      <!-- Abas de Demonstração (Permite ao PO alternar entre a Tela de Estoque e os Avisos no Resto do Sistema) -->
+      <div class="flex items-center gap-2 bg-slate-100 p-1.5 rounded-xl border border-slate-200">
+        <button id="tabBtnStock" onclick="switchView('stock')" class="px-4 py-2 rounded-lg text-xs font-bold transition bg-white text-brand-900 shadow-xs">
+          <i class="fa-solid fa-boxes-stacked mr-1.5 text-blue-600"></i> Posição de Estoque & Kardex (US-22)
+        </button>
+        <button id="tabBtnAlerts" onclick="switchView('alerts')" class="px-4 py-2 rounded-lg text-xs font-medium text-slate-600 hover:text-slate-900 transition">
+          <i class="fa-solid fa-bell mr-1.5 text-amber-500"></i> Onde os Avisos Ficam nas Outras Telas? (Hub & Kanban)
+        </button>
+      </div>
+
+      <!-- Botão Primário: Registrar Chegada de Mercadoria -->
+      <div class="flex items-center gap-2">
+        <button onclick="openModalEntry()" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-600/20 transition cursor-pointer">
+          <i class="fa-solid fa-plus-circle"></i>
+          <span>Registrar Entrada (NF de Compra)</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- ============================================================== -->
+    <!-- VISÃO 1: TELA COMPLETA DE ESTOQUE & KARDEX                     -->
+    <!-- ============================================================== -->
+    <div id="viewStock" class="p-6 space-y-6 flex-1">
+      
+      <!-- Banner Didático da Regra de Ouro (Make-to-Order) -->
+      <div class="bg-gradient-to-r from-blue-900 via-slate-900 to-brand-900 rounded-2xl p-4 text-white shadow-md border border-slate-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div class="flex items-center gap-3.5">
+          <div class="w-10 h-10 rounded-xl bg-blue-500/20 border border-blue-400/30 flex items-center justify-center text-blue-300 text-lg shrink-0">
+            <i class="fa-solid fa-shield-halved"></i>
+          </div>
+          <div>
+            <h4 class="font-title font-bold text-sm text-white">Regra de Ouro da Alumiportas: Modelo Sob Encomenda (Make-to-Order)</h4>
+            <p class="text-xs text-slate-300 mt-0.5">
+              O estoque <strong>NÃO impede a aprovação de O.S., orçamentos ou vendas avulsas</strong>. Quando o saldo físico é insuficiente, o saldo disponível fica negativo e vira automaticamente uma <strong>Necessidade de Compra</strong> para abastecer a fábrica.
+            </p>
+          </div>
+        </div>
+        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-xs font-bold whitespace-nowrap">
+          <i class="fa-solid fa-check"></i> Zero Bloqueios em Vendas
+        </span>
+      </div>
+
+      <!-- 4 CARDS DE KPIS DE SUPRIMENTOS -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- KPI 1: Total Cadastrado -->
+        <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Total de Insumos</span>
+            <span class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600 text-sm">
+              <i class="fa-solid fa-cubes"></i>
+            </span>
+          </div>
+          <p class="font-title font-extrabold text-2xl text-slate-900 mt-2">184 <span class="text-xs font-medium text-slate-400">itens</span></p>
+          <p class="text-[11px] text-slate-500 mt-1">Perfis, vidros, ferragens e películas</p>
+        </div>
+
+        <!-- KPI 2: Em Dia -->
+        <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Insumos em Dia</span>
+            <span class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-sm">
+              <i class="fa-solid fa-circle-check"></i>
+            </span>
+          </div>
+          <p class="font-title font-extrabold text-2xl text-emerald-700 mt-2">142 <span class="text-xs font-medium text-emerald-600">itens</span></p>
+          <p class="text-[11px] text-emerald-600 font-medium mt-1">Saldo disponível cobre a demanda</p>
+        </div>
+
+        <!-- KPI 3: Ponto de Pedido (Margem de Segurança) -->
+        <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Ponto de Pedido</span>
+            <span class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center text-sm">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+            </span>
+          </div>
+          <p class="font-title font-extrabold text-2xl text-amber-600 mt-2">18 <span class="text-xs font-medium text-amber-500">itens</span></p>
+          <p class="text-[11px] text-amber-700 font-medium mt-1">Atingiram estoque de segurança</p>
+        </div>
+
+        <!-- KPI 4: Necessidade de Compra (Make-to-Order) -->
+        <div class="bg-white border-2 border-red-200 bg-red-50/30 rounded-2xl p-4 shadow-xs">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold uppercase tracking-wider text-red-600">Necessidade de Compra</span>
+            <span class="w-8 h-8 rounded-lg bg-red-100 text-red-600 flex items-center justify-center text-sm">
+              <i class="fa-solid fa-cart-shopping"></i>
+            </span>
+          </div>
+          <p class="font-title font-extrabold text-2xl text-red-600 mt-2">24 <span class="text-xs font-medium text-red-500">pedidos de compra</span></p>
+          <p class="text-[11px] text-red-600 font-bold mt-1">O.S. fechadas aguardando compra</p>
+        </div>
+      </div>
+
+      <!-- PAINEL PRINCIPAL: FILTROS E TABELA DE ESTOQUE -->
+      <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col">
+        
+        <!-- Barra de Filtros e Busca -->
+        <div class="p-4 border-b border-slate-200 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 bg-slate-50/60">
+          
+          <!-- Busca Textual -->
+          <div class="relative flex-1 max-w-md">
+            <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+            <input 
+              type="text" 
+              id="searchInput" 
+              oninput="filterTable()" 
+              placeholder="Buscar por código SKU, nome do insumo, cor..." 
+              class="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+          </div>
+
+          <!-- Filtros de Grupo e Alerta -->
+          <div class="flex items-center gap-2 flex-wrap">
+            <!-- Categoria -->
+            <select id="categoryFilter" onchange="filterTable()" class="px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="ALL">Todas as Categorias</option>
+              <option value="ALUMINIO">Perfis de Alumínio</option>
+              <option value="VIDRO">Chapas de Vidro</option>
+              <option value="FERRAGEM">Ferragens & Acessórios</option>
+              <option value="PELICULA">Películas</option>
+            </select>
+
+            <!-- Status / Alerta -->
+            <select id="statusFilter" onchange="filterTable()" class="px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="ALL">Todos os Saldos</option>
+              <option value="PURCHASE_NEEDED">🔴 Apenas Necessidade de Compra</option>
+              <option value="REORDER_POINT">🟡 Apenas Ponto de Pedido</option>
+              <option value="OK">🟢 Apenas em Dia</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- TABELA DE ESTOQUE (StockTable.tsx - US-22.3) -->
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs" id="stockTable">
+            <thead class="bg-slate-100/80 border-b border-slate-200 uppercase tracking-wider text-[11px] text-slate-500 font-bold font-title">
+              <tr>
+                <th class="py-3 px-4">Código Insumo</th>
+                <th class="py-3 px-4">Descrição do Material</th>
+                <th class="py-3 px-4 text-center">Unidade</th>
+                <th class="py-3 px-4 text-right">Saldo Físico</th>
+                <th class="py-3 px-4 text-right text-blue-700">Reservado (O.S.)</th>
+                <th class="py-3 px-4 text-right font-black">Disponível / Demanda</th>
+                <th class="py-3 px-4">Status & Alerta Visual</th>
+                <th class="py-3 px-4 text-right">Ações</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 text-slate-700" id="stockTableBody">
+              
+              <!-- Item 1: Perfil com NECESSIDADE DE COMPRA (Make-to-Order) -->
+              <tr class="hover:bg-slate-50/80 transition" data-category="ALUMINIO" data-status="PURCHASE_NEEDED">
+                <td class="py-3.5 px-4 font-mono font-bold text-slate-900">
+                  <span class="inline-block px-2 py-0.5 rounded bg-blue-50 text-blue-800 border border-blue-200 text-xs">
+                    #AL-SUP-001
+                  </span>
+                </td>
+                <td class="py-3.5 px-4">
+                  <div class="font-bold text-slate-900 text-xs">Perfil Linha Suprema — Montante Porta 6m</div>
+                  <div class="text-[11px] text-slate-400 mt-0.5">Acabamento: Pintura Eletrostática Branca • Barra 6.000 mm</div>
+                </td>
+                <td class="py-3.5 px-4 text-center">
+                  <span class="px-2 py-0.5 bg-slate-100 rounded text-slate-600 font-mono font-bold">barras</span>
+                </td>
+                <td class="py-3.5 px-4 text-right font-mono font-bold text-slate-900">2 barras</td>
+                <td class="py-3.5 px-4 text-right font-mono font-bold text-blue-600">8 barras</td>
+                
+                <!-- SALDO DISPONÍVEL NEGATIVO = DEMANDA DE COMPRA -->
+                <td class="py-3.5 px-4 text-right font-mono font-extrabold text-red-600 text-sm">
+                  -6 barras
+                </td>
+                <td class="py-3.5 px-4">
+                  <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-extrabold bg-red-100 text-red-800 border border-red-300">
+                    <span class="w-1.5 h-1.5 rounded-full bg-red-600 animate-pulse"></span>
+                    🔴 Necessidade de Compra (Falta 6 barras)
+                  </span>
+                </td>
+                <td class="py-3.5 px-4 text-right">
+                  <div class="inline-flex items-center gap-1.5">
+                    <button onclick="openKardexDrawer('#AL-SUP-001', 'Perfil Linha Suprema — Montante Porta 6m', 'barras', 2, 8, -6)" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 transition" title="Consultar Extrato Kardex">
+                      <i class="fa-solid fa-clock-rotate-left text-blue-600"></i>
+                      <span>Kardex</span>
+                    </button>
+                    <button onclick="openModalEntry('#AL-SUP-001', 'Perfil Linha Suprema — Montante Porta 6m')" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition" title="Dar Entrada de NF de Compra">
+                      <i class="fa-solid fa-plus"></i>
+                      <span>Entrada</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- Item 2: Vidro Temperado 8mm com Ponto de Pedido -->
+              <tr class="hover:bg-slate-50/80 transition" data-category="VIDRO" data-status="REORDER_POINT">
+                <td class="py-3.5 px-4 font-mono font-bold text-slate-900">
+                  <span class="inline-block px-2 py-0.5 rounded bg-blue-50 text-blue-800 border border-blue-200 text-xs">
+                    #VD-TMP-8IN
+                  </span>
+                </td>
+                <td class="py-3.5 px-4">
+                  <div class="font-bold text-slate-900 text-xs">Chapa de Vidro Temperado 8mm Incolor</div>
+                  <div class="text-[11px] text-slate-400 mt-0.5">Espessura: 8mm • Fração Mínima: 0,25 m² • Parceiro: Têmpera PB</div>
+                </td>
+                <td class="py-3.5 px-4 text-center">
+                  <span class="px-2 py-0.5 bg-slate-100 rounded text-slate-600 font-mono font-bold">m²</span>
+                </td>
+                <td class="py-3.5 px-4 text-right font-mono font-bold text-slate-900">18,50 m²</td>
+                <td class="py-3.5 px-4 text-right font-mono font-bold text-blue-600">14,20 m²</td>
+                
+                <!-- SALDO DISPONÍVEL PERTO DO MÍNIMO -->
+                <td class="py-3.5 px-4 text-right font-mono font-extrabold text-amber-700 text-sm">
+                  4,30 m²
+                </td>
+                <td class="py-3.5 px-4">
+                  <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-amber-50 text-amber-800 border border-amber-300">
+                    🟡 Ponto de Pedido (Mínimo: 5,00 m²)
+                  </span>
+                </td>
+                <td class="py-3.5 px-4 text-right">
+                  <div class="inline-flex items-center gap-1.5">
+                    <button onclick="openKardexDrawer('#VD-TMP-8IN', 'Vidro Temperado 8mm Incolor', 'm²', 18.5, 14.2, 4.3)" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 transition">
+                      <i class="fa-solid fa-clock-rotate-left text-blue-600"></i>
+                      <span>Kardex</span>
+                    </button>
+                    <button onclick="openModalEntry('#VD-TMP-8IN', 'Vidro Temperado 8mm Incolor')" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition">
+                      <i class="fa-solid fa-plus"></i>
+                      <span>Entrada</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- Item 3: Roldana Dupla com Saldo em Dia -->
+              <tr class="hover:bg-slate-50/80 transition" data-category="FERRAGEM" data-status="OK">
+                <td class="py-3.5 px-4 font-mono font-bold text-slate-900">
+                  <span class="inline-block px-2 py-0.5 rounded bg-blue-50 text-blue-800 border border-blue-200 text-xs">
+                    #FR-ROL-DUP
+                  </span>
+                </td>
+                <td class="py-3.5 px-4">
+                  <div class="font-bold text-slate-900 text-xs">Roldana Dupla com Rolamento Côncavo 1125</div>
+                  <div class="text-[11px] text-slate-400 mt-0.5">Ferragem para Janela/Porta de Correr Suprema • Aço Inox</div>
+                </td>
+                <td class="py-3.5 px-4 text-center">
+                  <span class="px-2 py-0.5 bg-slate-100 rounded text-slate-600 font-mono font-bold">un</span>
+                </td>
+                <td class="py-3.5 px-4 text-right font-mono font-bold text-slate-900">48 un</td>
+                <td class="py-3.5 px-4 text-right font-mono font-bold text-blue-600">12 un</td>
+                
+                <!-- SALDO DISPONÍVEL POSITIVO -->
+                <td class="py-3.5 px-4 text-right font-mono font-extrabold text-emerald-700 text-sm">
+                  36 un
+                </td>
+                <td class="py-3.5 px-4">
+                  <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-300">
+                    🟢 Em Dia (Estoque Suficiente)
+                  </span>
+                </td>
+                <td class="py-3.5 px-4 text-right">
+                  <div class="inline-flex items-center gap-1.5">
+                    <button onclick="openKardexDrawer('#FR-ROL-DUP', 'Roldana Dupla com Rolamento', 'un', 48, 12, 36)" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 transition">
+                      <i class="fa-solid fa-clock-rotate-left text-blue-600"></i>
+                      <span>Kardex</span>
+                    </button>
+                    <button onclick="openModalEntry('#FR-ROL-DUP', 'Roldana Dupla com Rolamento')" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition">
+                      <i class="fa-solid fa-plus"></i>
+                      <span>Entrada</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- Item 4: Película Jateada com Demanda de Venda Avulsa (US-46) -->
+              <tr class="hover:bg-slate-50/80 transition" data-category="PELICULA" data-status="PURCHASE_NEEDED">
+                <td class="py-3.5 px-4 font-mono font-bold text-slate-900">
+                  <span class="inline-block px-2 py-0.5 rounded bg-blue-50 text-blue-800 border border-blue-200 text-xs">
+                    #PL-JAT-FUM
+                  </span>
+                </td>
+                <td class="py-3.5 px-4">
+                  <div class="font-bold text-slate-900 text-xs">Película Arquitetônica Jateada Fosca</div>
+                  <div class="text-[11px] text-slate-400 mt-0.5">Demanda: Venda Avulsa de Partes #VDA-2026-0042 • Bobina 1,52m</div>
+                </td>
+                <td class="py-3.5 px-4 text-center">
+                  <span class="px-2 py-0.5 bg-slate-100 rounded text-slate-600 font-mono font-bold">m²</span>
+                </td>
+                <td class="py-3.5 px-4 text-right font-mono font-bold text-slate-900">0,00 m²</td>
+                <td class="py-3.5 px-4 text-right font-mono font-bold text-blue-600">6,50 m²</td>
+                
+                <!-- SALDO DISPONÍVEL NEGATIVO -->
+                <td class="py-3.5 px-4 text-right font-mono font-extrabold text-red-600 text-sm">
+                  -6,50 m²
+                </td>
+                <td class="py-3.5 px-4">
+                  <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-extrabold bg-red-100 text-red-800 border border-red-300">
+                    <span class="w-1.5 h-1.5 rounded-full bg-red-600 animate-pulse"></span>
+                    🔴 Necessidade de Compra (Falta 6,5 m²)
+                  </span>
+                </td>
+                <td class="py-3.5 px-4 text-right">
+                  <div class="inline-flex items-center gap-1.5">
+                    <button onclick="openKardexDrawer('#PL-JAT-FUM', 'Película Arquitetônica Jateada', 'm²', 0, 6.5, -6.5)" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 transition">
+                      <i class="fa-solid fa-clock-rotate-left text-blue-600"></i>
+                      <span>Kardex</span>
+                    </button>
+                    <button onclick="openModalEntry('#PL-JAT-FUM', 'Película Arquitetônica Jateada')" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition">
+                      <i class="fa-solid fa-plus"></i>
+                      <span>Entrada</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================== -->
+    <!-- VISÃO 2: ONDE CADA AVISO VAI FICAR NAS OUTRAS TELAS DO SISTEMA  -->
+    <!-- ============================================================== -->
+    <div id="viewAlerts" class="p-6 space-y-6 hidden">
+      <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-amber-900">
+        <h3 class="font-title font-bold text-base flex items-center gap-2">
+          <i class="fa-solid fa-map-location-dot text-amber-600"></i>
+          Mapeamento Visual: Onde os Avisos de Falta e Compra de Insumos Aparecem no Sistema?
+        </h3>
+        <p class="text-xs text-amber-800 mt-1">
+          Como o sistema não bloqueia o fechamento da O.S., a comunicação visual precisa ser clara para o vendedor no Hub, para o operador de compras e para o serralheiro no chão de fábrica. Veja abaixo a posição exata de cada aviso:
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        <!-- PONTO 1: NA CENTRAL 360° DO CLIENTE (CustomerOrdersTab.tsx - US-47) -->
+        <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div class="flex items-center gap-2">
+              <span class="w-7 h-7 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs">1</span>
+              <h4 class="font-title font-bold text-sm text-slate-900">Na Central 360° do Cliente (Aba O.S.)</h4>
+            </div>
+            <span class="text-[11px] font-mono text-slate-400">Rota /clientes</span>
+          </div>
+
+          <p class="text-xs text-slate-600">
+            Na tabela de O.S. e na gaveta de esquadrias, uma nova coluna/badge indica a situação de compras de matéria-prima para aquele pedido:
+          </p>
+
+          <!-- Mockup Visual da Linha do Hub -->
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2">
+            <div class="flex items-center justify-between text-xs font-mono">
+              <span class="font-bold text-blue-800">#OS-2026-0001 (Porta de Giro)</span>
+              <span class="font-bold text-slate-900">R$ 4.133,90</span>
+            </div>
+            <!-- AQUI FICA O AVISO DO ESTOQUE -->
+            <div class="flex items-center gap-2 pt-1 border-t border-slate-200">
+              <span class="text-[11px] text-slate-500 font-medium">Status de Matéria-Prima:</span>
+              <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-red-100 text-red-800 border border-red-300">
+                <i class="fa-solid fa-cart-shopping text-[10px]"></i>
+                🔴 Aguardando Compra de Material (Falta Perfil Suprema)
+              </span>
+            </div>
+          </div>
+          <p class="text-[11px] text-slate-400">
+            * O vendedor sabe na hora que o pedido foi fechado com sucesso, mas a produção aguarda a chegada da barra encomendada.
+          </p>
+        </div>
+
+        <!-- PONTO 2: NO KANBAN DE PRODUÇÃO FABRIL (OrderProductionCard.tsx - US-18) -->
+        <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div class="flex items-center gap-2">
+              <span class="w-7 h-7 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs">2</span>
+              <h4 class="font-title font-bold text-sm text-slate-900">No Cartão do Kanban Fabril</h4>
+            </div>
+            <span class="text-[11px] font-mono text-slate-400">Rota /pedidos/kanban</span>
+          </div>
+
+          <p class="text-xs text-slate-600">
+            No cartão do pedido na coluna <code>WAITING_PRODUCTION</code>, uma tag de aviso alerta o operador para não liberar o corte até que o material chegue:
+          </p>
+
+          <!-- Mockup Visual do Cartão do Kanban -->
+          <div class="bg-white border-2 border-amber-300 rounded-xl p-3 shadow-sm space-y-2 max-w-sm">
+            <div class="flex items-center justify-between text-xs">
+              <span class="font-bold font-mono text-blue-700">#OS-2026-0001</span>
+              <span class="text-[11px] text-slate-400">Entrega: 18/11</span>
+            </div>
+            <p class="text-xs font-semibold text-slate-800">Antônio Alfredo Figueiredo</p>
+            <div class="flex items-center gap-1.5 pt-1">
+              <!-- AQUI FICA O BADGE NO KANBAN -->
+              <span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-red-500 text-white shadow-xs">
+                🔴 FALTA INSUMO
+              </span>
+              <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-700">
+                2 itens
+              </span>
+            </div>
+          </div>
+          <p class="text-[11px] text-slate-400">
+            * Quando o almoxarife registrar a NF no Kardex, esse badge se transforma automaticamente em <code>🟢 INSUMOS OK</code>!
+          </p>
+        </div>
+
+        <!-- PONTO 3: NA EMISSÃO DA FICHA TÉCNICA E ETIQUETAS (US-17 / US-47.3) -->
+        <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div class="flex items-center gap-2">
+              <span class="w-7 h-7 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs">3</span>
+              <h4 class="font-title font-bold text-sm text-slate-900">Na Ficha Técnica e Impressão de Etiquetas</h4>
+            </div>
+            <span class="text-[11px] font-mono text-slate-400">Modal de Etiquetas</span>
+          </div>
+
+          <p class="text-xs text-slate-600">
+            Mesmo com material a comprar, o operador pode pré-imprimir as etiquetas térmicas adesivas para deixar prontas para a bancada:
+          </p>
+
+          <div class="bg-amber-50/60 border border-amber-200 rounded-xl p-3 text-xs text-amber-900 flex items-center gap-3">
+            <i class="fa-solid fa-tags text-amber-600 text-lg"></i>
+            <div>
+              <p class="font-bold">Emissão de Etiquetas Desimpedida</p>
+              <p class="text-[11px] text-amber-700 mt-0.5">As etiquetas de 100x60mm podem ser impressas a qualquer momento para aguardar a chegada física dos perfis.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- PONTO 4: NO CABEÇALHO DO COMPROVANTE DO PEDIDO (US-16) -->
+        <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div class="flex items-center gap-2">
+              <span class="w-7 h-7 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs">4</span>
+              <h4 class="font-title font-bold text-sm text-slate-900">Na Tela de Detalhes da O.S. (/pedidos/:id)</h4>
+            </div>
+            <span class="text-[11px] font-mono text-slate-400">OrderDetailPage.tsx</span>
+          </div>
+
+          <p class="text-xs text-slate-600">
+            Card informativo em destaque na lateral da tela exibindo o checklist dos insumos reservados vs faltantes:
+          </p>
+
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-1.5 text-xs">
+            <div class="flex items-center justify-between">
+              <span class="font-semibold text-slate-700">Checklist de Suprimentos:</span>
+              <span class="text-[11px] font-mono font-bold text-amber-600">1/3 Insumos Físicos</span>
+            </div>
+            <div class="w-full bg-slate-200 rounded-full h-1.5">
+              <div class="bg-amber-500 h-1.5 rounded-full" style="width: 33%"></div>
+            </div>
+            <div class="flex items-center justify-between text-[11px] text-slate-500 pt-1">
+              <span>Perfis: <strong class="text-red-600">A comprar</strong></span>
+              <span>Vidros: <strong class="text-emerald-600">Em estoque</strong></span>
+              <span>Ferragens: <strong class="text-emerald-600">Em estoque</strong></span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- ============================================================== -->
+  <!-- 3. GAVETA LATERAL DO EXTRATO KARDEX (KardexDrawer - US-22.5)   -->
+  <!-- ============================================================== -->
+  <div id="kardexDrawerBackdrop" onclick="closeKardexDrawer()" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-40 hidden drawer-backdrop opacity-0"></div>
+
+  <aside id="kardexDrawer" class="fixed top-0 right-0 h-full w-full max-w-xl bg-white shadow-2xl z-50 transform translate-x-full drawer-content flex flex-col">
+    
+    <!-- Header da Gaveta -->
+    <div class="p-5 border-b border-slate-200 bg-brand-900 text-white flex items-center justify-between">
+      <div>
+        <div class="flex items-center gap-2 text-xs font-mono text-blue-300">
+          <i class="fa-solid fa-clock-rotate-left"></i>
+          <span id="kardexSku">#AL-SUP-001</span>
+        </div>
+        <h3 id="kardexTitle" class="font-title font-bold text-lg text-white mt-0.5">Perfil Linha Suprema — Montante Porta 6m</h3>
+        <p class="text-xs text-slate-300 mt-1">Trilha cronológica imutável de movimentações (Append-Only)</p>
+      </div>
+      <button onclick="closeKardexDrawer()" class="w-8 h-8 rounded-lg bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center transition">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <!-- Cards de Saldos Atuais no Topo da Gaveta -->
+    <div class="p-4 bg-slate-50 border-b border-slate-200 grid grid-cols-3 gap-2 text-center">
+      <div class="bg-white p-2.5 rounded-xl border border-slate-200">
+        <span class="text-[10px] font-bold uppercase text-slate-400">Saldo Físico</span>
+        <p id="kardexPhysical" class="font-mono font-extrabold text-base text-slate-900">2 barras</p>
+      </div>
+      <div class="bg-white p-2.5 rounded-xl border border-slate-200">
+        <span class="text-[10px] font-bold uppercase text-blue-600">Reservado (O.S.)</span>
+        <p id="kardexReserved" class="font-mono font-extrabold text-base text-blue-600">8 barras</p>
+      </div>
+      <div class="bg-white p-2.5 rounded-xl border border-slate-200">
+        <span class="text-[10px] font-bold uppercase text-red-600">Demanda / Falta</span>
+        <p id="kardexAvailable" class="font-mono font-extrabold text-base text-red-600">-6 barras</p>
+      </div>
+    </div>
+
+    <!-- Lista Cronológica de Movimentações (Kardex Real) -->
+    <div class="flex-1 overflow-y-auto p-5 space-y-4">
+      <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+        <i class="fa-solid fa-timeline text-blue-600"></i> Histórico de Entradas, Reservas e Baixas
+      </h4>
+
+      <!-- Timeline Items -->
+      <div class="relative pl-6 space-y-6 before:content-[''] before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
+        
+        <!-- Movimento 1: Reserva Automática O.S. #2026-0001 (Gerou Necessidade de Compra) -->
+        <div class="relative">
+          <span class="absolute -left-6 top-1 w-4 h-4 rounded-full bg-blue-600 ring-4 ring-blue-100 flex items-center justify-center text-[8px] text-white">
+            <i class="fa-solid fa-lock"></i>
+          </span>
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-1">
+            <div class="flex items-center justify-between text-xs">
+              <span class="font-bold text-blue-900">Reserva de Produção (O.S. Criada)</span>
+              <span class="font-mono text-slate-400 text-[11px]">Hoje, 10:15</span>
+            </div>
+            <p class="text-xs text-slate-600">
+              Vínculo: <a href="#" class="font-mono font-bold text-blue-600 hover:underline">#OS-2026-0001</a> (Cliente: Antônio Figueiredo)
+            </p>
+            <div class="flex items-center justify-between pt-1 border-t border-slate-200 text-xs font-mono">
+              <span class="text-blue-600 font-bold">Qtd Reservada: +4 barras</span>
+              <span class="text-red-600 font-extrabold">Disponível: -6 barras</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Movimento 2: Outra Reserva de Venda Avulsa -->
+        <div class="relative">
+          <span class="absolute -left-6 top-1 w-4 h-4 rounded-full bg-blue-600 ring-4 ring-blue-100 flex items-center justify-center text-[8px] text-white">
+            <i class="fa-solid fa-lock"></i>
+          </span>
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-1">
+            <div class="flex items-center justify-between text-xs">
+              <span class="font-bold text-blue-900">Reserva de Produção (O.S. Criada)</span>
+              <span class="font-mono text-slate-400 text-[11px]">Ontem, 16:40</span>
+            </div>
+            <p class="text-xs text-slate-600">
+              Vínculo: <a href="#" class="font-mono font-bold text-blue-600 hover:underline">#OS-2026-0000</a> (Cliente: Vidraçaria Central)
+            </p>
+            <div class="flex items-center justify-between pt-1 border-t border-slate-200 text-xs font-mono">
+              <span class="text-blue-600 font-bold">Qtd Reservada: +4 barras</span>
+              <span class="text-red-600 font-extrabold">Disponível: -2 barras</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Movimento 3: Entrada de Compra com Nota Fiscal -->
+        <div class="relative">
+          <span class="absolute -left-6 top-1 w-4 h-4 rounded-full bg-emerald-600 ring-4 ring-emerald-100 flex items-center justify-center text-[8px] text-white">
+            <i class="fa-solid fa-arrow-down"></i>
+          </span>
+          <div class="bg-emerald-50/50 border border-emerald-200 rounded-xl p-3 space-y-1">
+            <div class="flex items-center justify-between text-xs">
+              <span class="font-bold text-emerald-900">Entrada de Compra (NF-e Fornecedor)</span>
+              <span class="font-mono text-slate-400 text-[11px]">01/11/2026, 09:20</span>
+            </div>
+            <p class="text-xs text-slate-600">
+              Documento: <strong class="font-mono">NF-e 45290 — Asa Alumínio do Brasil</strong>
+            </p>
+            <div class="flex items-center justify-between pt-1 border-t border-emerald-200 text-xs font-mono">
+              <span class="text-emerald-700 font-bold">Entrada Física: +10 barras</span>
+              <span class="text-slate-700">Saldo Físico Resultante: 10 barras</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Botão Rápido de Rodapé -->
+    <div class="p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between">
+      <span class="text-xs text-slate-500 font-medium">Auditoria em tempo real</span>
+      <button onclick="closeKardexDrawer()" class="px-4 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-100 transition">
+        Fechar Extrato
+      </button>
+    </div>
+  </aside>
+
+  <!-- ============================================================== -->
+  <!-- 4. MODAL: REGISTRAR ENTRADA DE COMPRA (StockMovementModal.tsx) -->
+  <!-- ============================================================== -->
+  <div id="modalEntryBackdrop" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-lg w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+      
+      <!-- Modal Header -->
+      <div class="p-5 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm">
+            <i class="fa-solid fa-truck-ramp-box"></i>
+          </div>
+          <div>
+            <h3 class="font-title font-bold text-base text-slate-900">Registrar Entrada de Materiais</h3>
+            <p class="text-xs text-slate-500">Alimente o estoque com a nota fiscal do fornecedor</p>
+          </div>
+        </div>
+        <button onclick="closeModalEntry()" class="w-7 h-7 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200 flex items-center justify-center transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Form Body -->
+      <form onsubmit="submitEntry(event)" class="p-5 space-y-4">
+        
+        <!-- Seleção de Insumo -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Insumo que Chegou à Fábrica</label>
+          <select id="modalInsumoSelect" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+            <option value="#AL-SUP-001">#AL-SUP-001 — Perfil Linha Suprema — Montante Porta 6m (Falta 6 barras)</option>
+            <option value="#VD-TMP-8IN">#VD-TMP-8IN — Chapa de Vidro Temperado 8mm Incolor</option>
+            <option value="#FR-ROL-DUP">#FR-ROL-DUP — Roldana Dupla Suprema 1125</option>
+            <option value="#PL-JAT-FUM">#PL-JAT-FUM — Película Arquitetônica Jateada (Falta 6,5 m²)</option>
+          </select>
+        </div>
+
+        <!-- Tipo de Movimentação -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Tipo de Movimento</label>
+            <select class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="PURCHASE_ENTRY">Entrada por Compra (Fornecedor)</option>
+              <option value="MANUAL_ADJUSTMENT">Ajuste de Inventário / Sobra</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Nota Fiscal / Documento</label>
+            <input type="text" placeholder="Ex: NF-e 88120 - Asa" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+          </div>
+        </div>
+
+        <!-- Quantidade e Custo -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Quantidade Recebida</label>
+            <input type="number" id="modalQtyInput" min="1" step="any" placeholder="Ex: 10" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-mono font-bold focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Custo Unitário (R$)</label>
+            <input type="text" placeholder="R$ 145,00" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-mono focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+        </div>
+
+        <!-- Banner Explicativo -->
+        <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-xs text-emerald-900 flex items-center gap-2.5">
+          <i class="fa-solid fa-sparkles text-emerald-600 text-sm"></i>
+          <p>Ao salvar a entrada, o saldo disponível é recalculado e os alertas de <strong>Falta Insumo</strong> nas O.S. pendentes são automaticamente resolvidos!</p>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="pt-3 border-t border-slate-200 flex items-center justify-end gap-2">
+          <button type="button" onclick="closeModalEntry()" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition">
+            Cancelar
+          </button>
+          <button type="submit" class="px-4 py-2 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-600/20 transition cursor-pointer">
+            Confirmar Entrada no Estoque
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- 5. JAVASCRIPT INTERATIVO PARA VALIDAÇÃO EM TELA                -->
+  <!-- ============================================================== -->
+  <script>
+    // Alternar entre a tela de estoque e o mapeamento dos avisos nas outras telas
+    function switchView(view) {
+      const stockView = document.getElementById('viewStock');
+      const alertsView = document.getElementById('viewAlerts');
+      const tabBtnStock = document.getElementById('tabBtnStock');
+      const tabBtnAlerts = document.getElementById('tabBtnAlerts');
+
+      if (view === 'stock') {
+        stockView.classList.remove('hidden');
+        alertsView.classList.add('hidden');
+        tabBtnStock.className = "px-4 py-2 rounded-lg text-xs font-bold transition bg-white text-brand-900 shadow-xs";
+        tabBtnAlerts.className = "px-4 py-2 rounded-lg text-xs font-medium text-slate-600 hover:text-slate-900 transition";
+      } else {
+        stockView.classList.add('hidden');
+        alertsView.classList.remove('hidden');
+        tabBtnAlerts.className = "px-4 py-2 rounded-lg text-xs font-bold transition bg-white text-brand-900 shadow-xs";
+        tabBtnStock.className = "px-4 py-2 rounded-lg text-xs font-medium text-slate-600 hover:text-slate-900 transition";
+      }
+    }
+
+    // Filtros da Tabela de Estoque
+    function filterTable() {
+      const search = document.getElementById('searchInput').value.toLowerCase();
+      const cat = document.getElementById('categoryFilter').value;
+      const status = document.getElementById('statusFilter').value;
+      const rows = document.querySelectorAll('#stockTableBody tr');
+
+      rows.forEach(row => {
+        const text = row.innerText.toLowerCase();
+        const rowCat = row.getAttribute('data-category');
+        const rowStatus = row.getAttribute('data-status');
+
+        const matchesSearch = text.includes(search);
+        const matchesCat = (cat === 'ALL' || rowCat === cat);
+        const matchesStatus = (status === 'ALL' || rowStatus === status);
+
+        if (matchesSearch && matchesCat && matchesStatus) {
+          row.style.display = '';
+        } else {
+          row.style.display = 'none';
+        }
+      });
+    }
+
+    // Controle da Gaveta Kardex
+    function openKardexDrawer(sku, title, unit, physical, reserved, available) {
+      document.getElementById('kardexSku').innerText = sku;
+      document.getElementById('kardexTitle').innerText = title;
+      document.getElementById('kardexPhysical').innerText = `${physical} ${unit}`;
+      document.getElementById('kardexReserved').innerText = `${reserved} ${unit}`;
+      document.getElementById('kardexAvailable').innerText = `${available} ${unit}`;
+
+      const drawer = document.getElementById('kardexDrawer');
+      const backdrop = document.getElementById('kardexDrawerBackdrop');
+
+      backdrop.classList.remove('hidden');
+      setTimeout(() => backdrop.classList.remove('opacity-0'), 10);
+      drawer.classList.remove('translate-x-full');
+    }
+
+    function closeKardexDrawer() {
+      const drawer = document.getElementById('kardexDrawer');
+      const backdrop = document.getElementById('kardexDrawerBackdrop');
+
+      drawer.classList.add('translate-x-full');
+      backdrop.classList.add('opacity-0');
+      setTimeout(() => backdrop.classList.add('hidden'), 250);
+    }
+
+    // Controle do Modal de Entrada de NF
+    function openModalEntry(sku, title) {
+      if (sku) {
+        document.getElementById('modalInsumoSelect').value = sku;
+      }
+      document.getElementById('modalEntryBackdrop').classList.remove('hidden');
+    }
+
+    function closeModalEntry() {
+      document.getElementById('modalEntryBackdrop').classList.add('hidden');
+    }
+
+    function submitEntry(e) {
+      e.preventDefault();
+      const qty = document.getElementById('modalQtyInput').value;
+      closeModalEntry();
+      alert(`✅ Entrada de ${qty} unidades registrada com sucesso no Kardex!\n\nO saldo físico foi atualizado e as O.S. vinculadas foram liberadas para corte!`);
+    }
+  </script>
+
+</body>
+</html>
