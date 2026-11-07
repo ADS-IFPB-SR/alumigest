@@ -7,9 +7,13 @@ import br.edu.ifpb.alumigest.clients.domain.Client;
 import br.edu.ifpb.alumigest.clients.domain.PersonType;
 import br.edu.ifpb.alumigest.clients.dto.ClientBudgetSummaryDto;
 import br.edu.ifpb.alumigest.clients.dto.ClientDashboardDto;
+import br.edu.ifpb.alumigest.clients.dto.ClientOrderSummaryDto;
 import br.edu.ifpb.alumigest.clients.repository.ClientRepository;
 import br.edu.ifpb.alumigest.common.dto.PageResponse;
 import br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException;
+import br.edu.ifpb.alumigest.orders.domain.ApprovalChannel;
+import br.edu.ifpb.alumigest.orders.domain.Order;
+import br.edu.ifpb.alumigest.orders.domain.OrderItem;
 import br.edu.ifpb.alumigest.orders.repository.OrderRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -160,6 +164,60 @@ class ClientHubServiceTest {
 
         Pageable pageable = PageRequest.of(0, 10);
         assertThatThrownBy(() -> clientHubService.getClientBudgets(clientId, pageable))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Cliente não encontrado com ID: " + clientId);
+    }
+
+    @Test
+    @DisplayName("Deve retornar lista de O.S. do cliente ordenada por data decrescente")
+    void getClientOrders_ShouldReturnOrdersWithItems() {
+        when(clientRepository.findById(clientId)).thenReturn(Optional.of(client));
+
+        Order order = Order.builder()
+                .codigo("OS-2026-0042")
+                .cliente(client)
+                .status(br.edu.ifpb.alumigest.orders.domain.OrderStatus.IN_PRODUCTION)
+                .dataAprovacao(java.time.LocalDate.of(2026, 10, 1))
+                .valorLiquido(new BigDecimal("1800.00"))
+                .orcamentoId(UUID.randomUUID())
+                .canalAprovacao(ApprovalChannel.WHATSAPP)
+                .dataPrevisaoEntrega(java.time.LocalDate.of(2026, 10, 20))
+                .clienteNome("Antônio Alfredo Figueiredo")
+                .build();
+
+        OrderItem item = OrderItem.builder()
+                .descricao("Janela de Correr 2 Folhas")
+                .larguraMm(1200)
+                .alturaMm(1400)
+                .quantidade(2)
+                .corAluminio("Natural")
+                .tipoVidro("Mini Boreal")
+                .valorUnitario(new BigDecimal("900.00"))
+                .valorTotal(new BigDecimal("1800.00"))
+                .build();
+        order.addItem(item);
+
+        when(orderRepository.findByClienteIdOrderByCreatedAtDesc(clientId)).thenReturn(List.of(order));
+
+        List<ClientOrderSummaryDto> result = clientHubService.getClientOrders(clientId);
+
+        assertThat(result).hasSize(1);
+        ClientOrderSummaryDto dto = result.get(0);
+        assertThat(dto.codigo()).isEqualTo("OS-2026-0042");
+        assertThat(dto.status()).isEqualTo(br.edu.ifpb.alumigest.orders.domain.OrderStatus.IN_PRODUCTION);
+        assertThat(dto.totalEsquadrias()).isEqualTo(1);
+        assertThat(dto.items()).hasSize(1);
+        assertThat(dto.items().get(0).larguraMm()).isEqualTo(1200);
+        assertThat(dto.items().get(0).alturaMm()).isEqualTo(1400);
+        assertThat(dto.items().get(0).corAluminio()).isEqualTo("Natural");
+    }
+
+    @Test
+    @DisplayName("Deve lançar ResourceNotFoundException quando cliente não for encontrado para O.S.")
+    void getClientOrders_ShouldThrowException_WhenClientNotFound() {
+        when(clientRepository.findById(clientId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> clientHubService.getClientOrders(clientId))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Cliente não encontrado com ID: " + clientId);
     }

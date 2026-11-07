@@ -2,6 +2,7 @@ package br.edu.ifpb.alumigest.clients.controller;
 
 import br.edu.ifpb.alumigest.clients.dto.ClientBudgetSummaryDto;
 import br.edu.ifpb.alumigest.clients.dto.ClientDashboardDto;
+import br.edu.ifpb.alumigest.clients.dto.ClientOrderSummaryDto;
 import br.edu.ifpb.alumigest.clients.service.ClientHubService;
 import br.edu.ifpb.alumigest.common.dto.PageResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -17,10 +18,11 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping({"/api/clientes", "/api/v1/clients", "/api/v1/customers"})
+@RequestMapping({"/api/v1/clientes", "/api/clientes", "/api/v1/clients", "/api/v1/customers"})
 @Tag(name = "Hub 360° do Cliente", description = "Endpoints para a Central 360° do Cliente, consolidação de KPIs e histórico")
 public class ClientHubController {
 
@@ -53,5 +55,17 @@ public class ClientHubController {
     ) {
         PageResponse<ClientBudgetSummaryDto> budgets = clientHubService.getClientBudgets(id, pageable);
         return ResponseEntity.ok(budgets);
+    }
+
+    @GetMapping("/{id}/orders")
+    @Operation(summary = "Listar Ordens de Serviço vinculadas ao cliente", description = "Retorna todas as O.S. do cliente ordenadas das mais recentes para as mais antigas, com esquadrias físicas.")
+    @ApiResponse(responseCode = "200", description = "Lista de O.S. carregada com sucesso")
+    @ApiResponse(responseCode = "404", description = "Cliente não encontrado")
+    public ResponseEntity<List<ClientOrderSummaryDto>> getOrders(
+            @Parameter(description = "Identificador único (UUID) do cliente", required = true)
+            @PathVariable UUID id
+    ) {
+        List<ClientOrderSummaryDto> orders = clientHubService.getClientOrders(id);
+        return ResponseEntity.ok(orders);
     }
 }
