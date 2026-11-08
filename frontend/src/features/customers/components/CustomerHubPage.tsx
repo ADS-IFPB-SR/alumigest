@@ -252,7 +252,7 @@ export const CustomerHubPage: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-full w-full bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 min-h-[calc(100vh-4rem)]">
+    <div className="flex flex-col h-full w-full bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 min-h-0 overflow-hidden rounded-xl">
       {/* Top Bar / Breadcrumb */}
       <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -276,7 +276,7 @@ export const CustomerHubPage: React.FC = () => {
       </div>
 
       {/* Main Content: Master-Detail Layout */}
-      <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+      <div className="flex-1 flex flex-col md:flex-row min-h-0 overflow-hidden">
         {/* Left: Master Sidebar */}
         <CustomerMasterSidebar
           customers={customers}
@@ -290,7 +290,7 @@ export const CustomerHubPage: React.FC = () => {
         {/* Right: 360 Detail Work Area */}
         <main
           aria-label="Painel 360 do Cliente"
-          className="flex-1 p-4 md:p-6 overflow-y-auto space-y-6"
+          className="flex-1 p-4 md:p-6 min-h-0 overflow-y-auto space-y-6"
         >
           {renderDetailContent()}
         </main>

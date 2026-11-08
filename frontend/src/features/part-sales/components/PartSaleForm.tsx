@@ -1,4 +1,5 @@
-import React, { useState, useMemo, useEffect, useId } from 'react';
+import React, { useState, useMemo, useEffect, useId, useRef } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import {
   Plus,
   Trash2,
@@ -8,6 +9,7 @@ import {
   CheckCircle2,
   Printer,
   X,
+  ArrowLeft,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { MaterialCategoryType, PartSaleItem, PartSaleResponse, CreatePartSaleRequest } from '../types/partSaleTypes';
@@ -158,6 +160,7 @@ interface PartSaleFormProps {
 }
 
 export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
+  const navigate = useNavigate();
   const [category, setCategory] = useState<MaterialCategoryType>('PROFILE');
   const [materialId, setMaterialId] = useState<string>('');
   const [description, setDescription] = useState('');
@@ -186,6 +189,7 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
   const [isLabelModalOpen, setIsLabelModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const savingRef = useRef(false);
   const [savedSale, setSavedSale] = useState<PartSaleResponse | null>(null);
 
   const clientSelectId = useId();
@@ -413,6 +417,10 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
   const totalAmount = Math.max(0, subtotalAmount - discountVal);
 
   const handleSaveSale = async () => {
+    if (savingRef.current || isSaving) {
+      return;
+    }
+
     if (items.length === 0) {
       if (materialId || description.trim()) {
         const msg = 'Você configurou o item, mas não clicou em "+ Inserir na Venda". Clique no botão para incluí-lo na venda antes de salvar.';
@@ -426,6 +434,7 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
       return;
     }
 
+    savingRef.current = true;
     setIsSaving(true);
     try {
       const targetClientId = selectedClientId || DEFAULT_WALK_IN_CLIENT_ID;
@@ -447,10 +456,12 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
       const response = await partSaleApi.create(payload);
       setSavedSale(response);
       toast.success(`Venda avulsa ${response.code} salva com sucesso!`);
+      navigate(`/vendas/avulsa?recentId=${response.id}`);
     } catch (err) {
       console.error('Erro ao salvar venda avulsa:', err);
       toast.error('Não foi possível salvar a venda avulsa. Verifique a conexão com o servidor.');
     } finally {
+      savingRef.current = false;
       setIsSaving(false);
     }
   };
@@ -460,6 +471,14 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
       {/* Cabeçalho da Página */}
       <div className="border-b border-outline-variant/60 dark:border-outline/30 pb-4 mb-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
+          <nav className="flex items-center gap-1.5 text-xs font-body text-on-surface-variant mb-1.5" aria-label="Breadcrumb">
+            <Link to="/vendas/avulsa" className="hover:underline flex items-center gap-1 text-primary">
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Vendas Avulsas</span>
+            </Link>
+            <span className="material-symbols-outlined text-[14px]" aria-hidden="true">chevron_right</span>
+            <span className="text-on-surface-variant font-medium">Nova Venda</span>
+          </nav>
           <div className="flex items-center gap-2.5">
             <span className="p-2 bg-primary text-on-primary rounded-lg shadow-xs">
               <ShoppingCart className="w-5 h-5" />
@@ -474,9 +493,18 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
         </div>
 
         {savedSale && (
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-700 rounded-lg text-emerald-800 dark:text-emerald-300 text-xs font-bold animate-in fade-in">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-            <span>Código Gerado: {savedSale.code}</span>
+          <div className="flex items-center gap-3 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-700 rounded-lg text-emerald-800 dark:text-emerald-300 text-xs font-bold animate-in fade-in">
+            <div className="flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <span>Código Gerado: {savedSale.code}</span>
+            </div>
+            <Link
+              to={`/vendas/avulsa?recentId=${savedSale.id}`}
+              className="px-2.5 py-1 bg-emerald-700 hover:bg-emerald-800 text-white rounded text-[11px] font-semibold transition-colors flex items-center gap-1 cursor-pointer shadow-xs"
+            >
+              <span>Ver na Lista de Vendas</span>
+              <span>&rarr;</span>
+            </Link>
           </div>
         )}
       </div>

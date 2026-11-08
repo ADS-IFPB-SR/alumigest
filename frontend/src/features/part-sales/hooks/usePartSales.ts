@@ -1,10 +1,11 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import type { AxiosError } from 'axios';
 import toast from 'react-hot-toast';
 import { partSalesApi } from '../services/partSalesApi';
 import type {
   CalculatePartItemRequest,
   CreatePartSaleRequest,
+  PartSaleFilterParams,
   PartSaleStatus,
 } from '../types';
 
@@ -21,10 +22,11 @@ function extractErrorMessage(error: unknown, fallback: string): string {
   return fallback;
 }
 
-export const usePartSalesList = () => {
+export const usePartSalesList = (params?: PartSaleFilterParams) => {
   return useQuery({
-    queryKey: ['part-sales'],
-    queryFn: partSalesApi.list,
+    queryKey: ['part-sales', params],
+    queryFn: () => partSalesApi.list(params),
+    placeholderData: keepPreviousData,
   });
 };
 

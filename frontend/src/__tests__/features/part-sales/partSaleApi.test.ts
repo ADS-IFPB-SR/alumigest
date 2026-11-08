@@ -87,14 +87,25 @@ describe('partSaleApi [US-46.1] - API Service Tests', () => {
     expect(result).toEqual(mockResponse);
   });
 
-  it('list deve chamar GET /part-sales', async () => {
-    const mockList = [{ id: 'sale-1' }] as PartSaleResponse[];
+  it('list deve chamar GET /part-sales sem query params quando nenhum param for passado', async () => {
+    const mockList = { content: [{ id: 'sale-1' }], totalElements: 1, totalPages: 1 };
     vi.mocked(api.get).mockResolvedValueOnce({ data: mockList });
 
     const result = await partSaleApi.list();
 
     expect(api.get).toHaveBeenCalledWith('/part-sales');
     expect(result).toEqual(mockList);
+  });
+
+  it('list deve formatar query parameters de paginação, busca e status corretamente', async () => {
+    const mockPage = { content: [], totalElements: 0, totalPages: 0 };
+    vi.mocked(api.get).mockResolvedValueOnce({ data: mockPage });
+
+    await partSaleApi.list({ page: 1, size: 20, search: 'Cristal', status: 'APPROVED' });
+
+    expect(api.get).toHaveBeenCalledWith(
+      '/part-sales?page=1&size=20&search=Cristal&status=APPROVED'
+    );
   });
 
   it('updateStatus deve chamar PATCH /part-sales/{id}/status com o novo status', async () => {

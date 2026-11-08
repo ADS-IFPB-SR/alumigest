@@ -67,3 +67,8 @@ target/
 scratch/
 /*.pdf
 /*.zip
+
+# Seeds Locais de Demonstração / Testes (não sobem para produção)
+database/seeds/
+*.seed.sql
+backend/src/main/resources/db/dev-seeds/

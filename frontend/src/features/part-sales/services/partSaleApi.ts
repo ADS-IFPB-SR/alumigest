@@ -4,6 +4,8 @@ import type {
   CalculatePartItemResult,
   CreatePartSaleRequest,
   MaterialOption,
+  PartSaleFilterParams,
+  PartSalePageResponse,
   PartSaleResponse,
   PartSaleStatus,
 } from '../types/partSaleTypes';
@@ -33,8 +35,16 @@ export const partSaleApi = {
     return response.data;
   },
 
-  async list(): Promise<PartSaleResponse[]> {
-    const response = await api.get<PartSaleResponse[]>('/part-sales');
+  async list(params?: PartSaleFilterParams): Promise<PartSalePageResponse> {
+    const searchParams = new URLSearchParams();
+    if (params?.page !== undefined) searchParams.append('page', String(params.page));
+    if (params?.size !== undefined) searchParams.append('size', String(params.size));
+    if (params?.search) searchParams.append('search', params.search);
+    if (params?.status) searchParams.append('status', params.status);
+    if (params?.sort) searchParams.append('sort', params.sort);
+
+    const query = searchParams.toString() ? `?${searchParams.toString()}` : '';
+    const response = await api.get<PartSalePageResponse>(`/part-sales${query}`);
     return response.data;
   },
 
