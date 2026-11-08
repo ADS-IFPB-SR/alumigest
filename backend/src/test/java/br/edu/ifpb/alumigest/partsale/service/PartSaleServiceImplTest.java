@@ -338,8 +338,6 @@ class PartSaleServiceImplTest {
   @Test
   @DisplayName("Deve listar vendas avulsas de forma paginada e resolver nomes dos clientes em lote")
   void shouldFindAllWithPaginationAndBatchResolvedClientNames() {
-    UUID saleId1 = UUID.randomUUID();
-    UUID saleId2 = UUID.randomUUID();
     PartSale sale1 = new PartSale("VP-2026-0001", clientId, PartSaleStatus.APPROVED, new BigDecimal("100.00"));
     PartSale sale2 = new PartSale("VP-2026-0002", clientId, PartSaleStatus.DRAFT, new BigDecimal("200.00"));
 

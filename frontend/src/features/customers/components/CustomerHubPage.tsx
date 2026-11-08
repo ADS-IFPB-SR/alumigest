@@ -45,7 +45,6 @@ export const CustomerHubPage: React.FC = () => {
   // Estado para o Modal de Etiquetas Térmicas (US-47.4)
   const [selectedOrderForLabels, setSelectedOrderForLabels] = useState<Order | null>(null);
   const [isThermalModalOpen, setIsThermalModalOpen] = useState(false);
-  const [, setIsLoadingLabelsOrderId] = useState<string | null>(null);
 
   // Hook de download de PDF de etiquetas térmicas (US-47.4)
   const { mutate: downloadLabels, isPending: isDownloadingLabels } = useDownloadLabelsPdf();
@@ -127,15 +126,12 @@ export const CustomerHubPage: React.FC = () => {
    */
   const handleOpenLabels = async (orderId: string) => {
     try {
-      setIsLoadingLabelsOrderId(orderId);
       const fullOrder = await ordersApi.getOrderById(orderId);
       setSelectedOrderForLabels(fullOrder);
       setIsThermalModalOpen(true);
     } catch (error) {
       console.error('Erro ao buscar dados da O.S. para etiquetas térmicas:', error);
       toast.error('Não foi possível carregar a Ordem de Serviço para impressão de etiquetas.');
-    } finally {
-      setIsLoadingLabelsOrderId(null);
     }
   };
 
