@@ -1,5 +1,7 @@
 package br.edu.ifpb.alumigest.partsale.controller;
 
+import br.edu.ifpb.alumigest.common.dto.PageResponse;
+import br.edu.ifpb.alumigest.partsale.domain.PartSaleStatus;
 import br.edu.ifpb.alumigest.partsale.dto.CalculatePartItemRequest;
 import br.edu.ifpb.alumigest.partsale.dto.CalculatePartItemResponse;
 import br.edu.ifpb.alumigest.partsale.dto.CreatePartSaleRequest;
@@ -7,11 +9,16 @@ import br.edu.ifpb.alumigest.partsale.dto.PartSaleResponse;
 import br.edu.ifpb.alumigest.partsale.dto.PartSaleStatusUpdateRequest;
 import br.edu.ifpb.alumigest.partsale.service.PartSaleService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.net.URI;
 import java.util.UUID;
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -19,6 +26,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
@@ -64,6 +72,25 @@ public class PartSaleController {
         .buildAndExpand(response.id())
         .toUri();
     return ResponseEntity.created(location).body(response);
+  }
+
+  @GetMapping
+  @Operation(
+      summary = "Listar vendas e propostas avulsas",
+      description = "Lista vendas avulsas de partes com paginação, ordenação decrescente por data e filtros por texto (código ou cliente) e status."
+  )
+  @ApiResponse(responseCode = "200", description = "Lista paginada de vendas avulsas recuperada com sucesso")
+  public ResponseEntity<PageResponse<PartSaleResponse>> findAll(
+      @Parameter(description = "Filtro por status comercial da venda (DRAFT, APPROVED, CANCELLED)")
+      @RequestParam(required = false) PartSaleStatus status,
+      @Parameter(description = "Termo de busca textual por código ou nome do cliente", example = "VP-2026")
+      @RequestParam(name = "search", required = false) String search,
+      @Parameter(hidden = true)
+      @RequestParam(name = "busca", required = false) String busca,
+      @ParameterObject @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+    String searchTerm = (search != null && !search.isBlank()) ? search : busca;
+    PageResponse<PartSaleResponse> response = partSaleService.findAll(searchTerm, status, pageable);
+    return ResponseEntity.ok(response);
   }
 
   @GetMapping("/{id}")

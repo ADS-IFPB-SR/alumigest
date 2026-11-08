@@ -11,6 +11,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import br.edu.ifpb.alumigest.catalog.domain.MaterialCategoryType;
+import br.edu.ifpb.alumigest.common.dto.PageResponse;
 import br.edu.ifpb.alumigest.common.exception.GlobalExceptionHandler;
 import br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException;
 import br.edu.ifpb.alumigest.partsale.domain.PartSaleStatus;
@@ -37,6 +38,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableHandlerMethodArgumentResolver;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -57,6 +60,7 @@ class PartSaleControllerTest {
   @BeforeEach
   void setUp() {
     mockMvc = MockMvcBuilders.standaloneSetup(partSaleController)
+        .setCustomArgumentResolvers(new PageableHandlerMethodArgumentResolver())
         .setControllerAdvice(new GlobalExceptionHandler())
         .build();
     objectMapper = new ObjectMapper();
@@ -317,6 +321,91 @@ class PartSaleControllerTest {
               .content(objectMapper.writeValueAsString(request)))
           .andExpect(status().isNotFound())
           .andExpect(jsonPath("$.message").value("Venda de partes não encontrada com ID: " + saleId));
+    }
+  }
+
+  @Nested
+  @DisplayName("GET /api/v1/part-sales - Listar Vendas Avulsas Paginadas")
+  class FindAllEndpoint {
+
+    @Test
+    @DisplayName("Deve retornar 200 OK com página de vendas avulsas sem filtros")
+    void shouldReturnPageOfPartSalesWithoutFilters() throws Exception {
+      UUID saleId = UUID.randomUUID();
+      PartSaleResponse sale = new PartSaleResponse(
+          saleId,
+          "VP-2026-0001",
+          UUID.randomUUID(),
+          "Cliente Balcão - João Silva",
+          PartSaleStatus.APPROVED,
+          new BigDecimal("350.00"),
+          BigDecimal.ZERO,
+          new BigDecimal("350.00"),
+          List.of(),
+          OffsetDateTime.now(),
+          OffsetDateTime.now()
+      );
+
+      PageResponse<PartSaleResponse> pageResponse = new PageResponse<>(
+          List.of(sale),
+          0,
+          10,
+          1L,
+          1,
+          true,
+          true
+      );
+
+      when(partSaleService.findAll(any(), any(), any(Pageable.class))).thenReturn(pageResponse);
+
+      mockMvc.perform(get("/api/v1/part-sales")
+              .param("page", "0")
+              .param("size", "10"))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.content[0].id").value(saleId.toString()))
+          .andExpect(jsonPath("$.content[0].code").value("VP-2026-0001"))
+          .andExpect(jsonPath("$.content[0].clientName").value("Cliente Balcão - João Silva"))
+          .andExpect(jsonPath("$.content[0].totalAmount").value(350.00))
+          .andExpect(jsonPath("$.totalElements").value(1))
+          .andExpect(jsonPath("$.totalPages").value(1));
+    }
+
+    @Test
+    @DisplayName("Deve retornar 200 OK com filtros de status e busca textual")
+    void shouldReturnPageWithSearchAndStatusFilters() throws Exception {
+      UUID saleId = UUID.randomUUID();
+      PartSaleResponse sale = new PartSaleResponse(
+          saleId,
+          "VP-2026-0005",
+          UUID.randomUUID(),
+          "Vidraçaria Cristal",
+          PartSaleStatus.APPROVED,
+          new BigDecimal("500.00"),
+          BigDecimal.ZERO,
+          new BigDecimal("500.00"),
+          List.of(),
+          OffsetDateTime.now(),
+          OffsetDateTime.now()
+      );
+
+      PageResponse<PartSaleResponse> pageResponse = new PageResponse<>(
+          List.of(sale),
+          0,
+          10,
+          1L,
+          1,
+          true,
+          true
+      );
+
+      when(partSaleService.findAll(any(), any(), any(Pageable.class))).thenReturn(pageResponse);
+
+      mockMvc.perform(get("/api/v1/part-sales")
+              .param("search", "Cristal")
+              .param("status", "APPROVED"))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.content[0].code").value("VP-2026-0005"))
+          .andExpect(jsonPath("$.content[0].status").value("APPROVED"));
     }
   }
 }

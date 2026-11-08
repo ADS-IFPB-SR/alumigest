@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { PartSaleForm } from '../../../features/part-sales/components/PartSaleForm';
 import { partSaleApi } from '../../../features/part-sales/services/partSaleApi';
@@ -80,7 +81,11 @@ function renderForm(ui: React.ReactElement) {
       },
     },
   });
-  return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
+  return render(
+    <MemoryRouter>
+      <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>
+    </MemoryRouter>
+  );
 }
 
 async function selectMaterial(optionTestId: string) {

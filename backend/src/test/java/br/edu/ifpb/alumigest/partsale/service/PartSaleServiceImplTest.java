@@ -13,6 +13,7 @@ import br.edu.ifpb.alumigest.catalog.repository.MaterialRepository;
 import br.edu.ifpb.alumigest.clients.domain.Client;
 import br.edu.ifpb.alumigest.clients.domain.PersonType;
 import br.edu.ifpb.alumigest.clients.repository.ClientRepository;
+import br.edu.ifpb.alumigest.common.dto.PageResponse;
 import br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException;
 import br.edu.ifpb.alumigest.partsale.calculator.PartCalculatorFactory;
 import br.edu.ifpb.alumigest.partsale.calculator.PartItemCalculator;
@@ -27,6 +28,7 @@ import br.edu.ifpb.alumigest.partsale.repository.PartSaleRepository;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -35,6 +37,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("PartSaleServiceImpl [US-46.1] - Service Layer Tests")
@@ -327,5 +333,42 @@ class PartSaleServiceImplTest {
 
     assertThat(response.status()).isEqualTo(PartSaleStatus.CANCELLED);
     assertThat(response.clientName()).isNull();
+  }
+
+  @Test
+  @DisplayName("Deve listar vendas avulsas de forma paginada e resolver nomes dos clientes em lote")
+  void shouldFindAllWithPaginationAndBatchResolvedClientNames() {
+    PartSale sale1 = new PartSale("VP-2026-0001", clientId, PartSaleStatus.APPROVED, new BigDecimal("100.00"));
+    PartSale sale2 = new PartSale("VP-2026-0002", clientId, PartSaleStatus.DRAFT, new BigDecimal("200.00"));
+
+    Pageable pageable = PageRequest.of(0, 10);
+    Page<PartSale> page = new PageImpl<>(List.of(sale1, sale2), pageable, 2);
+
+    when(partSaleRepository.findAllWithFilters("Esperança", PartSaleStatus.APPROVED, pageable)).thenReturn(page);
+    when(clientRepository.findAllById(Set.of(clientId))).thenReturn(List.of(client));
+
+    PageResponse<PartSaleResponse> result = partSaleService.findAll("Esperança", PartSaleStatus.APPROVED, pageable);
+
+    assertThat(result.content()).hasSize(2);
+    assertThat(result.totalElements()).isEqualTo(2);
+    assertThat(result.content().get(0).code()).isEqualTo("VP-2026-0001");
+    assertThat(result.content().get(0).clientName()).isEqualTo("Vidraçaria Esperança Ltda");
+    assertThat(result.content().get(1).code()).isEqualTo("VP-2026-0002");
+    assertThat(result.content().get(1).clientName()).isEqualTo("Vidraçaria Esperança Ltda");
+  }
+
+  @Test
+  @DisplayName("Deve converter termo de busca em branco para null ao consultar repository")
+  void shouldConvertBlankSearchTermToNullInRepository() {
+    Pageable pageable = PageRequest.of(0, 10);
+    Page<PartSale> page = new PageImpl<>(List.of(), pageable, 0);
+
+    when(partSaleRepository.findAllWithFilters(null, null, pageable)).thenReturn(page);
+
+    PageResponse<PartSaleResponse> result = partSaleService.findAll("   ", null, pageable);
+
+    assertThat(result.content()).isEmpty();
+    assertThat(result.totalElements()).isZero();
+    verify(partSaleRepository).findAllWithFilters(null, null, pageable);
   }
 }

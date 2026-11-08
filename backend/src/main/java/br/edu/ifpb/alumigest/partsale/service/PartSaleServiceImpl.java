@@ -5,6 +5,7 @@ import br.edu.ifpb.alumigest.catalog.repository.MaterialRepository;
 import br.edu.ifpb.alumigest.clients.domain.Client;
 import br.edu.ifpb.alumigest.clients.domain.PersonType;
 import br.edu.ifpb.alumigest.clients.repository.ClientRepository;
+import br.edu.ifpb.alumigest.common.dto.PageResponse;
 import br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException;
 import br.edu.ifpb.alumigest.partsale.calculator.PartCalculatorFactory;
 import br.edu.ifpb.alumigest.partsale.calculator.PartItemCalculator;
@@ -20,7 +21,13 @@ import br.edu.ifpb.alumigest.partsale.dto.PartSaleResponse;
 import br.edu.ifpb.alumigest.partsale.repository.PartSaleRepository;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -138,6 +145,36 @@ public class PartSaleServiceImpl implements PartSaleService {
         .orElse(null);
 
     return toResponse(partSale, clientName);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public PageResponse<PartSaleResponse> findAll(String search, PartSaleStatus status, Pageable pageable) {
+    String searchTerm = (search != null && !search.isBlank()) ? search.trim() : null;
+    Page<PartSale> page = partSaleRepository.findAllWithFilters(searchTerm, status, pageable);
+
+    // Resolução em lote dos nomes dos clientes para mitigar o problema N+1
+    Set<UUID> clientIds = page.getContent().stream()
+        .map(PartSale::getClientId)
+        .filter(Objects::nonNull)
+        .collect(Collectors.toSet());
+
+    Map<UUID, String> clientNames = clientRepository.findAllById(clientIds).stream()
+        .collect(Collectors.toMap(Client::getId, Client::getFullName, (existing, replacement) -> existing));
+
+    List<PartSaleResponse> responses = page.getContent().stream()
+        .map(partSale -> toResponse(partSale, clientNames.get(partSale.getClientId())))
+        .toList();
+
+    return new PageResponse<>(
+        responses,
+        page.getNumber(),
+        page.getSize(),
+        page.getTotalElements(),
+        page.getTotalPages(),
+        page.isFirst(),
+        page.isLast()
+    );
   }
 
   @Override

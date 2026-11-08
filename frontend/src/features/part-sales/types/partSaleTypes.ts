@@ -95,6 +95,24 @@ export interface PartSaleResponse {
   updatedAt: string;
 }
 
+export interface PartSaleFilterParams {
+  page?: number;
+  size?: number;
+  search?: string;
+  status?: PartSaleStatus;
+  sort?: string;
+}
+
+export interface PartSalePageResponse {
+  content: PartSaleResponse[];
+  pageNumber: number;
+  pageSize: number;
+  totalElements: number;
+  totalPages: number;
+  first: boolean;
+  last: boolean;
+}
+
 export interface PartSaleItemDraft {
   tempId: string;
   materialType: MaterialCategoryType;

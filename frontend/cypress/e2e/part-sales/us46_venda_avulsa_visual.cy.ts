@@ -28,7 +28,7 @@ describe('US-46: Demonstração Visual E2E - Módulo de Venda Avulsa (Part Sales
   // ───────────────────────────────────────────────────────────────────────────
   it('Cenário 1 e 2: Seleção de perfil no catálogo (sem preço na lista) e cálculo transparente de 1 metro linear', () => {
     cy.log('👉 PASSO 1: Acessando a tela de Venda Avulsa');
-    cy.visit('/vendas/avulsa');
+    cy.visit('/vendas/avulsa/nova');
     cy.contains('Venda Avulsa').should('be.visible').highlight(1200);
     cy.wait(800);
 
@@ -48,7 +48,7 @@ describe('US-46: Demonstração Visual E2E - Módulo de Venda Avulsa (Part Sales
     cy.wait(1000);
 
     cy.log('👉 PASSO 4: Selecionando o perfil e conferindo auto-preenchimento do preço unitário');
-    cy.get('[data-testid^="material-option-"]').first().click();
+    cy.contains('[data-testid^="material-option-"]', /Perfil Linha Suprema.*Branco/).click();
     cy.get('[data-testid="input-aluminum-price"]')
       .should('have.value', '78')
       .highlight(1200);
@@ -83,7 +83,7 @@ describe('US-46: Demonstração Visual E2E - Módulo de Venda Avulsa (Part Sales
   // ───────────────────────────────────────────────────────────────────────────
   it('Cenário 3: Seleção e busca de cliente com proteção contra duplicidade de Cliente Balcão', () => {
     cy.log('👉 PASSO 1: Acessando a tela de Venda Avulsa');
-    cy.visit('/vendas/avulsa');
+    cy.visit('/vendas/avulsa/nova');
     cy.wait(800);
 
     cy.log('👉 PASSO 2: Clicando no campo de busca de cliente');
@@ -122,7 +122,7 @@ describe('US-46: Demonstração Visual E2E - Módulo de Venda Avulsa (Part Sales
   // CENÁRIO 4 & 5: Vidro com piso mínimo de 0,25 m² e resumo consolidado dinâmico
   // ───────────────────────────────────────────────────────────────────────────
   it('Cenário 4 e 5: Cálculo de vidro com piso mínimo de 0,25 m² e consolidação no resumo', () => {
-    cy.visit('/vendas/avulsa');
+    cy.visit('/vendas/avulsa/nova');
     cy.wait(800);
 
     cy.log('👉 PASSO 1: Alternando para Categoria Vidro');
@@ -163,7 +163,7 @@ describe('US-46: Demonstração Visual E2E - Módulo de Venda Avulsa (Part Sales
   // CENÁRIO 6 & 7: Fluxo Completo de Persistência, PDF e Etiquetas Térmicas
   // ───────────────────────────────────────────────────────────────────────────
   it('Cenário 6 e 7: Fluxo de ponta a ponta - Salvamento no banco de dados, visualização de PDF e etiquetas', () => {
-    cy.visit('/vendas/avulsa');
+    cy.visit('/vendas/avulsa/nova');
     cy.wait(800);
 
     cy.log('👉 PASSO 1: Adicionando barra de alumínio de 1 metro');
