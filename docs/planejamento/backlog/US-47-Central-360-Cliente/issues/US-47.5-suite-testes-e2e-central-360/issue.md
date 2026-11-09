@@ -10,7 +10,7 @@
 - **User Story**: Como Engenheiro de QA/Desenvolvedor, desejo automatizar os testes End-to-End (E2E) e de integração para garantir a estabilidade do Hub 360°, assegurando que as projeções de dados e a interface mestre-detalhe não sofram regressões.
 - **Sub-área**: `Qualidade (QA) / Backend / Frontend (Cypress)`
 - **Execução Paralela**: ✅ Sim
-- **Arquivo / Alvo Principal**: `us47_hub_360_cliente.cy.ts`, `CustomerDashboardControllerIntegrationTest.java`
+- **Arquivo / Alvo Principal**: `us47_hub_360_cliente.cy.ts, ClientHubControllerIntegrationTest.java`
 - **Labels Sugeridas**: `qa`, `testing`, `e2e`, `cypress`, `integration`
 
 ---

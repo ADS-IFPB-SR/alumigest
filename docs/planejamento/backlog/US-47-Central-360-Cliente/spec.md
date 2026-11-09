@@ -11,16 +11,16 @@ Como vendedor, operador comercial ou encarregado de produção da Alumiportas, d
 
 ---
 
-## 📋 Sub-Tarefas / Issues Vinculadas (5 issues)
+## 📋 Sub-Tarefas / Issues Vinculadas (6 issues)
 
 | Sub-Task | Tarefa / Descrição | Status |
 |---|---|:---:|
-| [US-47.1](issues/US-47.1-hub-base-kpis-orcamentos/README.md) | Hub 360° Base, KPIs e Gestão de Orçamentos (#531) | 🟢 Closed |
-| [US-47.2](issues/US-47.2-gestao-ordens-servico/README.md) | Gestão de Ordens de Serviço (O.S.) e Detalhamento de Esquadrias (#532) | 🟢 Closed |
-| [US-47.4](issues/US-47.4-impressao-etiquetas-termicas/README.md) | Impressão de Etiquetas Térmicas (100x60mm) da O.S. no Hub (#534) | 🟢 Closed |
-| [US-47.5](issues/US-47.5-suite-testes-e2e-central-360/README.md) | Suíte de Testes E2E (Cypress), Integração e Matriz de Casos da Central 360° (#556) | 🟢 Closed |
-| US-47.6 | Edição de Dados Cadastrais do Cliente no Hub 360° (#558) | 🟢 Closed |
-
+| [US-47.1](issues/US-47.1-hub-base-kpis-gestao-orcamentos/issue.md) | Hub 360° Base, KPIs e Gestão de Orçamentos (#531) | 🟢 Closed |
+| [US-47.2](issues/US-47.2-gestao-ordens-servico-esquadrias/issue.md) | Gestão de Ordens de Serviço (O.S.) e Detalhamento de Esquadrias (#532) | 🟢 Closed |
+| [US-47.3](issues/US-47.3-emissao-ficha-tecnica-a4/issue.md) | Emissão da Ficha Técnica A4 de Produção com Lista de Corte (#533) | 🟢 Closed |
+| [US-47.4](issues/US-47.4-impressao-etiquetas-termicas-hub/issue.md) | Impressão de Etiquetas Térmicas (100x60mm) da O.S. no Hub (#534) | 🟢 Closed |
+| [US-47.5](issues/US-47.5-suite-testes-e2e-central-360/issue.md) | Suíte de Testes E2E (Cypress), Integração e Matriz de Casos da Central 360° (#556) | 🟢 Closed |
+| [US-47.6](issues/US-47.6-edicao-dados-cadastrais/issue.md) | Edição de Dados Cadastrais do Cliente no Hub 360° (#558) | 🟢 Closed |
 ---
 
 ## 🧪 Critérios de Aceitação (Dado que / Quando / Então)

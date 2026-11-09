@@ -3,6 +3,7 @@
 ## 📌 Metadados da Issue
 
 - **ID da Tarefa**: `US-47.3`
+- **Issue GitHub**: #533
 - **US Pai**: `US-47: Central 360° do Cliente com Gestão Unificada de Orçamentos, O.S., Ficha Técnica e Etiquetas`
 - **Release**: Sprint 08
 - **Fase**: `Desenvolvimento Fabril / Produção`

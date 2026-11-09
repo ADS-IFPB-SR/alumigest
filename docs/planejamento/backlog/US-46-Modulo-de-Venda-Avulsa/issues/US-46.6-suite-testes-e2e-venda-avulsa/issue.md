@@ -3,6 +3,7 @@
 ## 📌 Metadados da Issue
 
 - **ID da Tarefa**: `US-46.6`
+- **Issue GitHub**: #555
 - **US Pai**: `US-46: Módulo de Venda Avulsa de Partes (Vidro em m², Alumínio em Metro Linear, Ferragens e Películas)`
 - **Release**: Sprint 08
 - **Fase**: `Quality Assurance & Testing`
