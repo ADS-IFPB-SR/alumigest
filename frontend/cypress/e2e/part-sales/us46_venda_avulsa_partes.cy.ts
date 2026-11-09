@@ -99,31 +99,27 @@ describe('US-46: Suíte de Testes E2E (Critérios de Aceitação) - Venda Avulsa
     cy.contains('button', 'Salvar e Concluir Venda').click();
 
     cy.wait('@createSale').then((interception) => {
-      const saleId = interception.response?.body?.id;
+      // CORREÇÃO AQUI: Variável saleId apagada para agradar o Linter
       const saleCode = interception.response?.body?.code;
       if (saleCode) {
         createdSaleCodes.push(saleCode);
       }
 
-      // Volta para a lista principal onde estão as vendas e os ícones de PDF
       cy.visit('/vendas/avulsa');
 
       cy.window().then((win) => {
         cy.stub(win, 'print').as('printStub');
       });
 
-      // Encontra a linha da venda criada e clica no ícone do PDF (com aria-label)
       cy.contains('tbody tr', saleCode).within(() => {
         cy.get('button[aria-label^="Imprimir PDF"]').click({ force: true });
       });
 
-      // Valida abertura do Modal (agora com o título atualizado pelas imagens)
       cy.contains('Espelho de Venda Avulsa / Impressão PDF').should('be.visible');
       cy.contains('AlumiGest ERP').should('be.visible');
 
       cy.contains('Imprimir Documento').closest('button').should('be.visible').click();
 
-      // Verifica se a tela de impressão nativa foi chamada
       cy.get('@printStub').should('have.been.calledOnce');
 
       cy.contains('Fechar').closest('button').click();
