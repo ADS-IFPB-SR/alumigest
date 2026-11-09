@@ -64,6 +64,9 @@ class PartSaleServiceImplTest {
   @Mock
   private PartSaleValidationService validationService;
 
+  @Mock
+  private PartSalePdfService partSalePdfService;
+
   @InjectMocks
   private PartSaleServiceImpl partSaleService;
 
@@ -370,5 +373,55 @@ class PartSaleServiceImplTest {
     assertThat(result.content()).isEmpty();
     assertThat(result.totalElements()).isZero();
     verify(partSaleRepository).findAllWithFilters(null, null, pageable);
+  }
+
+  @Test
+  @DisplayName("Deve gerar PDF de venda de partes persistida delegando ao PartSalePdfService")
+  void shouldGeneratePdfForPersistedSale() {
+    UUID saleId = UUID.randomUUID();
+    PartSale sale = new PartSale("VP-2026-0001", clientId, PartSaleStatus.APPROVED, BigDecimal.ZERO);
+    byte[] expectedPdf = new byte[]{1, 2, 3};
+
+    when(partSaleRepository.findById(saleId)).thenReturn(Optional.of(sale));
+    when(clientRepository.findById(clientId)).thenReturn(Optional.of(client));
+    when(partSalePdfService.generatePdf(sale, client)).thenReturn(expectedPdf);
+
+    byte[] actualPdf = partSaleService.generatePdf(saleId);
+
+    assertThat(actualPdf).isEqualTo(expectedPdf);
+    verify(partSalePdfService).generatePdf(sale, client);
+  }
+
+  @Test
+  @DisplayName("Deve gerar PDF prévio a partir de CreatePartSaleRequest sem persistir no banco")
+  void shouldGeneratePdfPreviewFromRequest() {
+    UUID matId = UUID.randomUUID();
+    Material mat = new Material();
+    mat.setId(matId);
+    mat.setName("Vidro Incolor 8mm");
+    CreatePartSaleItemRequest itemReq = new CreatePartSaleItemRequest(
+        MaterialCategoryType.GLASS, matId, 2, 1000, 1000, new BigDecimal("100.00"), null
+    );
+    CreatePartSaleRequest request = new CreatePartSaleRequest(
+        clientId, PartSaleStatus.DRAFT, BigDecimal.ZERO, List.of(itemReq)
+    );
+
+    CalculatePartItemResponse calcResp = new CalculatePartItemResponse(
+        new BigDecimal("2.0000"), new BigDecimal("100.00"), new BigDecimal("200.00"), false
+    );
+    PartItemCalculator calculator = mock(PartItemCalculator.class);
+    when(calculator.calculate(any())).thenReturn(calcResp);
+
+    when(clientRepository.findById(clientId)).thenReturn(Optional.of(client));
+    when(materialRepository.findById(matId)).thenReturn(Optional.of(mat));
+    when(calculatorFactory.getCalculator(MaterialCategoryType.GLASS)).thenReturn(calculator);
+
+    byte[] expectedPdf = new byte[]{4, 5, 6};
+    when(partSalePdfService.generatePdf(any(PartSale.class), any(Client.class))).thenReturn(expectedPdf);
+
+    byte[] actualPdf = partSaleService.generatePdfPreview(request);
+
+    assertThat(actualPdf).isEqualTo(expectedPdf);
+    verify(partSalePdfService).generatePdf(any(PartSale.class), any(Client.class));
   }
 }

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterAll } from 'vitest';
 import { partSaleApi } from '@/features/part-sales/services/partSaleApi';
 import { api } from '@/lib/api';
 import type {
@@ -116,6 +116,61 @@ describe('partSaleApi [US-46.1] - API Service Tests', () => {
 
     expect(api.patch).toHaveBeenCalledWith('/part-sales/sale-1/status', { status: 'APPROVED' });
     expect(result).toEqual(mockResponse);
+  });
+
+  describe('downloadPdf e downloadPdfPreview [US-46.4]', () => {
+    const originalCreateObjectURL = window.URL.createObjectURL;
+    const originalRevokeObjectURL = window.URL.revokeObjectURL;
+
+    beforeEach(() => {
+      window.URL.createObjectURL = vi.fn(() => 'blob:mock-url');
+      window.URL.revokeObjectURL = vi.fn();
+    });
+
+    afterAll(() => {
+      window.URL.createObjectURL = originalCreateObjectURL;
+      window.URL.revokeObjectURL = originalRevokeObjectURL;
+    });
+
+    it('downloadPdf deve chamar GET /part-sales/{id}/pdf com responseType blob e disparar download', async () => {
+      const mockBlob = new Blob(['pdf-binary-mock'], { type: 'application/pdf' });
+      vi.mocked(api.get).mockResolvedValueOnce({
+        data: mockBlob,
+        headers: {
+          'content-disposition': 'attachment; filename="orcamento-partes-VP-2026-0001.pdf"',
+        },
+      });
+
+      await partSaleApi.downloadPdf('sale-1', 'VP-2026-0001');
+
+      expect(api.get).toHaveBeenCalledWith('/part-sales/sale-1/pdf', { responseType: 'blob' });
+      expect(window.URL.createObjectURL).toHaveBeenCalled();
+      expect(window.URL.revokeObjectURL).toHaveBeenCalledWith('blob:mock-url');
+    });
+
+    it('downloadPdfPreview deve chamar POST /part-sales/export-pdf com responseType blob e disparar download', async () => {
+      const mockRequest: CreatePartSaleRequest = {
+        clientId: 'c123',
+        status: 'DRAFT',
+        discountAmount: 0,
+        items: [],
+      };
+      const mockBlob = new Blob(['pdf-binary-preview'], { type: 'application/pdf' });
+      vi.mocked(api.post).mockResolvedValueOnce({
+        data: mockBlob,
+        headers: {
+          'content-disposition': 'attachment; filename="orcamento-partes-rascunho.pdf"',
+        },
+      });
+
+      await partSaleApi.downloadPdfPreview(mockRequest);
+
+      expect(api.post).toHaveBeenCalledWith('/part-sales/export-pdf', mockRequest, {
+        responseType: 'blob',
+      });
+      expect(window.URL.createObjectURL).toHaveBeenCalled();
+      expect(window.URL.revokeObjectURL).toHaveBeenCalledWith('blob:mock-url');
+    });
   });
 });
 

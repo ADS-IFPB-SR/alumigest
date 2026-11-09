@@ -408,4 +408,69 @@ class PartSaleControllerTest {
           .andExpect(jsonPath("$.content[0].status").value("APPROVED"));
     }
   }
+
+  @Nested
+  @DisplayName("Exportação em PDF A4 - US-46.4")
+  class ExportPdfEndpoints {
+
+    @Test
+    @DisplayName("GET /api/v1/part-sales/{id}/pdf - Deve retornar 200 OK com PDF binário e cabeçalhos de download")
+    void shouldExportPdfSuccessfully() throws Exception {
+      UUID saleId = UUID.randomUUID();
+      PartSaleResponse sale = new PartSaleResponse(
+          saleId,
+          "VP-2026-0010",
+          UUID.randomUUID(),
+          "Cliente Teste",
+          PartSaleStatus.APPROVED,
+          new BigDecimal("100.00"),
+          BigDecimal.ZERO,
+          new BigDecimal("100.00"),
+          List.of(),
+          OffsetDateTime.now(),
+          OffsetDateTime.now()
+      );
+
+      byte[] pdfBytes = "%PDF-1.4 dummy content".getBytes();
+      when(partSaleService.findById(saleId)).thenReturn(sale);
+      when(partSaleService.generatePdf(saleId)).thenReturn(pdfBytes);
+
+      mockMvc.perform(get("/api/v1/part-sales/{id}/pdf", saleId))
+          .andExpect(status().isOk())
+          .andExpect(header().string("Content-Type", "application/pdf"))
+          .andExpect(header().string("Content-Disposition", "attachment; filename=\"orcamento-partes-VP-2026-0010.pdf\""));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/part-sales/export-pdf - Deve retornar 200 OK com PDF prévio gerado em tempo real")
+    void shouldExportPdfPreviewSuccessfully() throws Exception {
+      UUID clientId = UUID.randomUUID();
+      UUID materialId = UUID.randomUUID();
+      CreatePartSaleItemRequest item = new CreatePartSaleItemRequest(
+          MaterialCategoryType.GLASS,
+          materialId,
+          1,
+          1000,
+          1000,
+          new BigDecimal("100.00"),
+          null
+      );
+      CreatePartSaleRequest request = new CreatePartSaleRequest(
+          clientId,
+          PartSaleStatus.DRAFT,
+          BigDecimal.ZERO,
+          List.of(item)
+      );
+
+      byte[] pdfBytes = "%PDF-1.4 preview content".getBytes();
+      when(partSaleService.generatePdfPreview(any(CreatePartSaleRequest.class))).thenReturn(pdfBytes);
+
+      mockMvc.perform(post("/api/v1/part-sales/export-pdf")
+              .contentType(MediaType.APPLICATION_JSON)
+              .content(objectMapper.writeValueAsString(request)))
+          .andExpect(status().isOk())
+          .andExpect(header().string("Content-Type", "application/pdf"))
+          .andExpect(header().string("Content-Disposition", "attachment; filename=\"orcamento-partes-rascunho.pdf\""));
+    }
+  }
 }

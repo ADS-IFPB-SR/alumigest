@@ -11,6 +11,8 @@ vi.mock('../../../features/part-sales/services/partSaleApi', () => ({
     calculateItem: vi.fn(),
     create: vi.fn(),
     getMaterialsByCategory: vi.fn(),
+    downloadPdf: vi.fn(),
+    downloadPdfPreview: vi.fn().mockResolvedValue(undefined),
   },
 }));
 
@@ -276,7 +278,11 @@ describe('PartSaleForm Component (US-46.2 & US-46.5)', () => {
     // Modal PDF
     const btnPdf = screen.getByTestId('btn-export-pdf');
     fireEvent.click(btnPdf);
+    await waitFor(() => {
+      expect(partSaleApi.downloadPdfPreview).toHaveBeenCalled();
+    });
     expect(screen.getByText('Visualização para Exportação / PDF')).toBeInTheDocument();
+    expect(screen.getByTestId('btn-download-pdf-official')).toBeInTheDocument();
 
     const btnClosePdf = screen.getByRole('button', { name: /fechar/i });
     fireEvent.click(btnClosePdf);

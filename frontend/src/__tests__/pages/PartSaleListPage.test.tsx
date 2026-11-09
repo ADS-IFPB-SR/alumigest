@@ -261,6 +261,7 @@ describe('PartSaleListPage — [US-46] Listagem Canônica de Vendas Avulsas de P
 
     expect(screen.getByTestId('modal-pdf-part-sale')).toBeInTheDocument();
     expect(screen.getByText('Espelho de Venda Avulsa / Impressão PDF')).toBeInTheDocument();
+    expect(screen.getByTestId('btn-download-pdf-official')).toBeInTheDocument();
 
     fireEvent.click(screen.getByTestId('btn-close-pdf-modal'));
     await waitFor(() => {

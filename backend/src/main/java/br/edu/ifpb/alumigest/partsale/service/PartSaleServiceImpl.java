@@ -6,6 +6,7 @@ import br.edu.ifpb.alumigest.clients.domain.Client;
 import br.edu.ifpb.alumigest.clients.domain.PersonType;
 import br.edu.ifpb.alumigest.clients.repository.ClientRepository;
 import br.edu.ifpb.alumigest.common.dto.PageResponse;
+import br.edu.ifpb.alumigest.common.exception.BusinessException;
 import br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException;
 import br.edu.ifpb.alumigest.partsale.calculator.PartCalculatorFactory;
 import br.edu.ifpb.alumigest.partsale.calculator.PartItemCalculator;
@@ -43,6 +44,7 @@ public class PartSaleServiceImpl implements PartSaleService {
   private final PartCalculatorFactory calculatorFactory;
   private final PartSaleCodeGenerator codeGenerator;
   private final PartSaleValidationService validationService;
+  private final PartSalePdfService partSalePdfService;
 
   /**
    * Construtor com injeção de dependências.
@@ -53,13 +55,15 @@ public class PartSaleServiceImpl implements PartSaleService {
       MaterialRepository materialRepository,
       PartCalculatorFactory calculatorFactory,
       PartSaleCodeGenerator codeGenerator,
-      PartSaleValidationService validationService) {
+      PartSaleValidationService validationService,
+      PartSalePdfService partSalePdfService) {
     this.partSaleRepository = partSaleRepository;
     this.clientRepository = clientRepository;
     this.materialRepository = materialRepository;
     this.calculatorFactory = calculatorFactory;
     this.codeGenerator = codeGenerator;
     this.validationService = validationService;
+    this.partSalePdfService = partSalePdfService;
   }
 
   @Override
@@ -192,6 +196,71 @@ public class PartSaleServiceImpl implements PartSaleService {
         .orElse(null);
 
     return toResponse(updated, clientName);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public byte[] generatePdf(UUID id) {
+    PartSale partSale = partSaleRepository.findById(id)
+        .orElseThrow(() -> new ResourceNotFoundException("Venda de partes não encontrada com ID: " + id));
+
+    Client client = clientRepository.findById(partSale.getClientId()).orElse(null);
+    return partSalePdfService.generatePdf(partSale, client);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public byte[] generatePdfPreview(CreatePartSaleRequest request) {
+    if (request.items() == null || request.items().isEmpty()) {
+      throw new BusinessException("A proposta deve conter pelo menos um item para exportação de PDF.");
+    }
+
+    Client client = resolveClient(request.clientId());
+    String code = "ORC-PREVIA";
+    BigDecimal discount = request.discountAmount() != null
+        ? request.discountAmount()
+        : BigDecimal.ZERO;
+
+    PartSale transientSale = new PartSale(
+        code,
+        client.getId(),
+        request.status() != null ? request.status() : PartSaleStatus.DRAFT,
+        discount
+    );
+
+    for (CreatePartSaleItemRequest itemReq : request.items()) {
+      Material material = materialRepository.findById(itemReq.referenceId())
+          .orElseThrow(() -> new ResourceNotFoundException(
+              "Material não encontrado com ID: " + itemReq.referenceId()));
+
+      CalculatePartItemRequest calcReq = new CalculatePartItemRequest(
+          itemReq.materialType(),
+          itemReq.widthMm(),
+          itemReq.heightMm(),
+          itemReq.quantity(),
+          itemReq.unitPrice(),
+          itemReq.lossFactor()
+      );
+
+      CalculatePartItemResponse calcResp = calculatorFactory
+          .getCalculator(itemReq.materialType())
+          .calculate(calcReq);
+
+      PartSaleItem item = new PartSaleItem(
+          material,
+          itemReq.materialType(),
+          itemReq.widthMm(),
+          itemReq.heightMm(),
+          itemReq.quantity(),
+          itemReq.lossFactor(),
+          calcResp.calculatedUnitMeasure(),
+          calcResp.unitPrice(),
+          calcResp.totalPrice()
+      );
+      transientSale.addItem(item);
+    }
+
+    return partSalePdfService.generatePdf(transientSale, client);
   }
 
   private PartSaleResponse toResponse(PartSale partSale, String clientName) {

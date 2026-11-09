@@ -19,6 +19,8 @@ import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -111,5 +113,38 @@ public class PartSaleController {
       @RequestBody @Valid PartSaleStatusUpdateRequest request) {
     PartSaleResponse response = partSaleService.updateStatus(id, request.status());
     return ResponseEntity.ok(response);
+  }
+
+  @GetMapping("/{id}/pdf")
+  @Operation(summary = "Exporta o orçamento / pedido de venda avulsa em PDF A4 oficial",
+      description = "Gera o documento PDF A4 diagramado com agrupamento temático de seções e dados da oficina.")
+  @ApiResponse(responseCode = "200", description = "PDF gerado e retornado com sucesso")
+  @ApiResponse(responseCode = "404", description = "Venda de partes não encontrada")
+  public ResponseEntity<byte[]> exportPdf(@PathVariable UUID id) {
+    PartSaleResponse sale = partSaleService.findById(id);
+    byte[] pdfBytes = partSaleService.generatePdf(id);
+    String filename = "orcamento-partes-" + sale.code().replace("/", "-") + ".pdf";
+
+    return ResponseEntity.ok()
+        .contentType(MediaType.APPLICATION_PDF)
+        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+        .contentLength(pdfBytes.length)
+        .body(pdfBytes);
+  }
+
+  @PostMapping("/export-pdf")
+  @Operation(summary = "Gera o PDF A4 da venda avulsa a partir do rascunho sem necessidade de persistência",
+      description = "Gera o documento PDF A4 em tempo real (< 1.5s) com os itens informados na tela.")
+  @ApiResponse(responseCode = "200", description = "PDF prévio gerado e retornado com sucesso")
+  @ApiResponse(responseCode = "400", description = "Dados da proposta inválidos")
+  public ResponseEntity<byte[]> exportPdfPreview(@RequestBody @Valid CreatePartSaleRequest request) {
+    byte[] pdfBytes = partSaleService.generatePdfPreview(request);
+    String filename = "orcamento-partes-rascunho.pdf";
+
+    return ResponseEntity.ok()
+        .contentType(MediaType.APPLICATION_PDF)
+        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+        .contentLength(pdfBytes.length)
+        .body(pdfBytes);
   }
 }

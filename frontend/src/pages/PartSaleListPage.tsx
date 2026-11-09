@@ -13,10 +13,14 @@ import {
   Clock,
   AlertTriangle,
   X,
+  Download,
+  Loader2,
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import {
   usePartSalesList,
   useUpdatePartSaleStatus,
+  partSaleApi,
   type PartSaleResponse,
   type PartSaleStatus,
 } from '@/features/part-sales';
@@ -76,6 +80,20 @@ export function PartSaleListPage() {
   const [selectedSaleForPdf, setSelectedSaleForPdf] = useState<PartSaleResponse | null>(null);
   const [selectedSaleForLabels, setSelectedSaleForLabels] = useState<PartSaleResponse | null>(null);
   const [saleToCancel, setSaleToCancel] = useState<PartSaleResponse | null>(null);
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+
+  const handleDownloadPdf = async (sale: PartSaleResponse) => {
+    try {
+      setIsDownloadingPdf(true);
+      await partSaleApi.downloadPdf(sale.id, sale.code);
+      toast.success('Download do PDF A4 iniciado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao baixar PDF da venda avulsa:', error);
+      toast.error('Erro ao gerar/baixar PDF da venda avulsa.');
+    } finally {
+      setIsDownloadingPdf(false);
+    }
+  };
 
   const updateStatusMutation = useUpdatePartSaleStatus();
 
@@ -786,10 +804,29 @@ export function PartSaleListPage() {
               <button
                 type="button"
                 onClick={() => window.print()}
-                className="px-4 py-2 text-xs font-bold text-white bg-slate-900 dark:bg-slate-100 dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-200 rounded-lg flex items-center gap-1.5 shadow-sm cursor-pointer"
+                className="px-4 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 rounded-lg flex items-center gap-1.5 shadow-sm cursor-pointer"
               >
                 <Printer className="w-3.5 h-3.5" />
                 <span>Imprimir Documento</span>
+              </button>
+              <button
+                type="button"
+                data-testid="btn-download-pdf-official"
+                disabled={isDownloadingPdf}
+                onClick={() => handleDownloadPdf(selectedSaleForPdf)}
+                className="px-4 py-2 text-xs font-bold text-white bg-slate-900 dark:bg-slate-100 dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-200 rounded-lg flex items-center gap-1.5 shadow-sm cursor-pointer disabled:opacity-50"
+              >
+                {isDownloadingPdf ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Gerando PDF A4...</span>
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Baixar PDF A4 Oficial</span>
+                  </>
+                )}
               </button>
             </div>
           </div>

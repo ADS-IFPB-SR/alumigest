@@ -38,4 +38,20 @@ public interface PartSaleService {
    * Atualiza o status da venda de partes conforme a máquina de estados.
    */
   PartSaleResponse updateStatus(UUID id, PartSaleStatus newStatus);
+
+  /**
+   * Gera o arquivo PDF A4 diagramado para uma venda avulsa de partes persistida.
+   *
+   * @param id identificador da venda avulsa
+   * @return array de bytes contendo o documento PDF oficial
+   */
+  byte[] generatePdf(UUID id);
+
+  /**
+   * Gera o arquivo PDF A4 diagramado em tempo real a partir de uma proposta em rascunho.
+   *
+   * @param request dados da proposta contendo itens e cliente
+   * @return array de bytes contendo o documento PDF
+   */
+  byte[] generatePdfPreview(CreatePartSaleRequest request);
 }
