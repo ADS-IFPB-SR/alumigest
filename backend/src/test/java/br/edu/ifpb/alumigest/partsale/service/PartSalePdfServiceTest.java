@@ -41,8 +41,7 @@ class PartSalePdfServiceTest {
   }
 
   private PdfExtractionResult extrairTextoPdf(byte[] pdfBytes) throws IOException {
-    PdfReader reader = new PdfReader(pdfBytes);
-    try {
+    try (PdfReader reader = new PdfReader(pdfBytes)) {
       int totalPages = reader.getNumberOfPages();
       PdfTextExtractor extractor = new PdfTextExtractor(reader);
       StringBuilder fullText = new StringBuilder();
@@ -55,8 +54,6 @@ class PartSalePdfServiceTest {
         }
       }
       return new PdfExtractionResult(totalPages, fullText.toString(), secondPageText);
-    } finally {
-      reader.close();
     }
   }
 

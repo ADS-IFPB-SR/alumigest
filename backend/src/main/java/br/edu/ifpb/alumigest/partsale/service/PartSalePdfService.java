@@ -552,13 +552,12 @@ public class PartSalePdfService {
     titulo.setSpacingAfter(4f);
     cardCell.addElement(titulo);
 
-    Paragraph condicoes = new Paragraph(
-        "• Validade da proposta: 15 dias a contar da data de emissão.\n"
-            + "• Condições de corte: medidas executadas conforme projeto "
-            + "com tolerâncias industriais normatizadas.\n"
-            + "• A retirada das peças cortadas deve ser acompanhada para conferência visual.",
-        FONTE_PEQUENA
-    );
+    String textoCondicoes = """
+        • Validade da proposta: 15 dias a contar da data de emissão.
+        • Condições de corte: medidas executadas conforme projeto \
+        com tolerâncias industriais normatizadas.
+        • A retirada das peças cortadas deve ser acompanhada para conferência visual.""";
+    Paragraph condicoes = new Paragraph(textoCondicoes, FONTE_PEQUENA);
     cardCell.addElement(condicoes);
 
     cardTable.addCell(cardCell);
