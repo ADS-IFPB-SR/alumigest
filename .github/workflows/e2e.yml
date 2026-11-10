@@ -6,6 +6,8 @@
 name: E2E Tests
 
 on:
+  pull_request:
+    types: [opened, synchronize, reopened]
   merge_group:
   workflow_dispatch:
 
@@ -240,11 +242,16 @@ jobs:
             markdown += `*Relatório E2E gerado automaticamente pelo GitHub Actions em ${new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}*\n`;
             markdown += `<!-- alumigest-e2e-report -->\n`;
 
-            const headRef = context.payload?.merge_group?.head_ref || '';
-            const prMatch = headRef.match(/pr-(\d+)/);
+            let prNumber = context.payload?.pull_request?.number || context.issue?.number;
+            if (!prNumber) {
+              const headRef = context.payload?.merge_group?.head_ref || '';
+              const prMatch = headRef.match(/pr-(\d+)/);
+              if (prMatch) {
+                prNumber = parseInt(prMatch[1], 10);
+              }
+            }
 
-            if (prMatch) {
-              const prNumber = parseInt(prMatch[1], 10);
+            if (prNumber) {
               try {
                 const { data: comments } = await github.rest.issues.listComments({
                   ...context.repo,
@@ -272,7 +279,7 @@ jobs:
                 console.error(`Erro ao postar no PR #${prNumber}:`, err.message);
               }
             } else {
-              console.log('merge_group head_ref não contém PR number. Relatório exibido no log:');
+              console.log('Nenhum PR associado detectado. Relatório exibido no log:');
               console.log(markdown);
             }
 
