@@ -6,6 +6,7 @@ import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -18,6 +19,9 @@ import org.springframework.stereotype.Repository;
 public interface PartSaleRepository extends JpaRepository<PartSale, UUID> {
 
   Optional<PartSale> findByCode(String code);
+
+  @EntityGraph(attributePaths = {"items", "items.material"})
+  Optional<PartSale> findWithDetailsById(UUID id);
 
   @Query("SELECT p.code FROM PartSale p WHERE p.code LIKE :prefix% ORDER BY p.code DESC LIMIT 1")
   Optional<String> findLatestCodeForPrefix(@Param("prefix") String prefix);

@@ -2,10 +2,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { PartSaleListPage } from '../../pages/PartSaleListPage';
 import * as usePartSalesModule from '../../features/part-sales/hooks/usePartSales';
-import type { PartSaleResponse } from '../../features/part-sales/types';
+import { partSaleApi, type PartSaleResponse } from '../../features/part-sales';
 
+vi.mock('react-hot-toast', () => ({
+  default: {
+    success: vi.fn(),
+    error: vi.fn(),
+  },
+}));
 vi.mock('../../features/part-sales/hooks/usePartSales');
 
 const mockPartSales: PartSaleResponse[] = [
@@ -261,6 +268,7 @@ describe('PartSaleListPage — [US-46] Listagem Canônica de Vendas Avulsas de P
 
     expect(screen.getByTestId('modal-pdf-part-sale')).toBeInTheDocument();
     expect(screen.getByText('Espelho de Venda Avulsa / Impressão PDF')).toBeInTheDocument();
+    expect(screen.getByTestId('btn-download-pdf-official')).toBeInTheDocument();
 
     fireEvent.click(screen.getByTestId('btn-close-pdf-modal'));
     await waitFor(() => {
@@ -385,5 +393,68 @@ describe('PartSaleListPage — [US-46] Listagem Canônica de Vendas Avulsas de P
       },
       { timeout: 1000 }
     );
+  });
+
+  it('deve baixar o PDF A4 oficial pelo modal da listagem e exibir feedback de sucesso', async () => {
+    vi.spyOn(usePartSalesModule, 'usePartSalesList').mockReturnValue({
+      data: {
+        content: mockPartSales,
+        totalElements: 2,
+        totalPages: 1,
+      },
+      isLoading: false,
+      isError: false,
+      isFetching: false,
+    } as any);
+    const downloadSpy = vi.spyOn(partSaleApi, 'downloadPdf').mockResolvedValueOnce(undefined);
+
+    render(
+      <MemoryRouter>
+        <PartSaleListPage />
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /imprimir pdf da venda vp-2026-0001/i }));
+    fireEvent.click(screen.getByTestId('btn-download-pdf-official'));
+
+    await waitFor(() => {
+      expect(downloadSpy).toHaveBeenCalledWith('sale-uuid-1', 'VP-2026-0001');
+      expect(toast.success).toHaveBeenCalledWith('Download do PDF A4 iniciado com sucesso!');
+    });
+
+    downloadSpy.mockRestore();
+  });
+
+  it('deve exibir toast de erro quando o download do PDF oficial falhar', async () => {
+    vi.spyOn(usePartSalesModule, 'usePartSalesList').mockReturnValue({
+      data: {
+        content: mockPartSales,
+        totalElements: 2,
+        totalPages: 1,
+      },
+      isLoading: false,
+      isError: false,
+      isFetching: false,
+    } as any);
+    const downloadSpy = vi
+      .spyOn(partSaleApi, 'downloadPdf')
+      .mockRejectedValueOnce(new Error('Erro 500'));
+
+    render(
+      <MemoryRouter>
+        <PartSaleListPage />
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /imprimir pdf da venda vp-2026-0001/i }));
+    fireEvent.click(screen.getByTestId('btn-download-pdf-official'));
+
+    await waitFor(() => {
+      expect(downloadSpy).toHaveBeenCalledWith('sale-uuid-1', 'VP-2026-0001');
+      expect(toast.error).toHaveBeenCalledWith('Erro ao gerar/baixar PDF da venda avulsa.');
+    });
+
+    expect(screen.getByTestId('btn-download-pdf-official')).not.toBeDisabled();
+    downloadSpy.mockRestore();
   });
 });

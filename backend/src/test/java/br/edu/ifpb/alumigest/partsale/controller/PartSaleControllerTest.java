@@ -2,6 +2,8 @@ package br.edu.ifpb.alumigest.partsale.controller;
 
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -12,6 +14,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import br.edu.ifpb.alumigest.catalog.domain.MaterialCategoryType;
 import br.edu.ifpb.alumigest.common.dto.PageResponse;
+import br.edu.ifpb.alumigest.common.exception.BusinessException;
 import br.edu.ifpb.alumigest.common.exception.GlobalExceptionHandler;
 import br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException;
 import br.edu.ifpb.alumigest.partsale.domain.PartSaleStatus;
@@ -19,6 +22,7 @@ import br.edu.ifpb.alumigest.partsale.dto.CalculatePartItemRequest;
 import br.edu.ifpb.alumigest.partsale.dto.CalculatePartItemResponse;
 import br.edu.ifpb.alumigest.partsale.dto.CreatePartSaleItemRequest;
 import br.edu.ifpb.alumigest.partsale.dto.CreatePartSaleRequest;
+import br.edu.ifpb.alumigest.partsale.dto.PartSalePdfDTO;
 import br.edu.ifpb.alumigest.partsale.dto.PartSaleResponse;
 import br.edu.ifpb.alumigest.partsale.dto.PartSaleStatusUpdateRequest;
 import br.edu.ifpb.alumigest.partsale.service.PartSaleService;
@@ -406,6 +410,122 @@ class PartSaleControllerTest {
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.content[0].code").value("VP-2026-0005"))
           .andExpect(jsonPath("$.content[0].status").value("APPROVED"));
+    }
+  }
+
+  @Nested
+  @DisplayName("Exportação em PDF A4 - US-46.4")
+  class ExportPdfEndpoints {
+
+    @Test
+    @DisplayName("GET /api/v1/part-sales/{id}/pdf - Deve retornar 200 OK com PDF e headers")
+    void shouldExportPdfSuccessfully() throws Exception {
+      UUID saleId = UUID.randomUUID();
+      byte[] pdfBytes = "%PDF-1.4 dummy content".getBytes();
+      when(partSaleService.generatePdf(saleId))
+          .thenReturn(new PartSalePdfDTO(pdfBytes, "orcamento-partes-VP-2026-0010.pdf"));
+
+      mockMvc.perform(get("/api/v1/part-sales/{id}/pdf", saleId))
+          .andExpect(status().isOk())
+          .andExpect(header().string("Content-Type", "application/pdf"))
+          .andExpect(header().string(
+              "Content-Disposition",
+              "attachment; filename=\"orcamento-partes-VP-2026-0010.pdf\""));
+
+      verify(partSaleService, never()).findById(any());
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/part-sales/{id}/pdf - Deve retornar 404 quando venda inexistente")
+    void shouldReturn404WhenExportingPdfForNonexistentSale() throws Exception {
+      UUID saleId = UUID.randomUUID();
+      when(partSaleService.generatePdf(saleId))
+          .thenThrow(new ResourceNotFoundException("Venda de partes não encontrada com ID: " + saleId));
+
+      mockMvc.perform(get("/api/v1/part-sales/{id}/pdf", saleId))
+          .andExpect(status().isNotFound())
+          .andExpect(jsonPath("$.message")
+              .value("Venda de partes não encontrada com ID: " + saleId));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/part-sales/export-pdf - Deve retornar 200 OK com PDF prévio")
+    void shouldExportPdfPreviewSuccessfully() throws Exception {
+      UUID clientId = UUID.randomUUID();
+      UUID materialId = UUID.randomUUID();
+      CreatePartSaleItemRequest item = new CreatePartSaleItemRequest(
+          MaterialCategoryType.GLASS,
+          materialId,
+          1,
+          1000,
+          1000,
+          new BigDecimal("100.00"),
+          null
+      );
+      CreatePartSaleRequest request = new CreatePartSaleRequest(
+          clientId,
+          PartSaleStatus.DRAFT,
+          BigDecimal.ZERO,
+          List.of(item)
+      );
+
+      byte[] pdfBytes = "%PDF-1.4 preview content".getBytes();
+      when(partSaleService.generatePdfPreview(any(CreatePartSaleRequest.class)))
+          .thenReturn(pdfBytes);
+
+      mockMvc.perform(post("/api/v1/part-sales/export-pdf")
+              .contentType(MediaType.APPLICATION_JSON)
+              .content(objectMapper.writeValueAsString(request)))
+          .andExpect(status().isOk())
+          .andExpect(header().string("Content-Type", "application/pdf"))
+          .andExpect(header().string(
+              "Content-Disposition",
+              "attachment; filename=\"orcamento-partes-rascunho.pdf\""));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/part-sales/export-pdf - Deve retornar 400 se itens vazios")
+    void shouldReturn400WhenExportPdfPreviewHasEmptyItems() throws Exception {
+      CreatePartSaleRequest request = new CreatePartSaleRequest(
+          UUID.randomUUID(),
+          PartSaleStatus.DRAFT,
+          BigDecimal.ZERO,
+          List.of()
+      );
+
+      mockMvc.perform(post("/api/v1/part-sales/export-pdf")
+              .contentType(MediaType.APPLICATION_JSON)
+              .content(objectMapper.writeValueAsString(request)))
+          .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/part-sales/export-pdf - Deve retornar 422 em regra de negócio")
+    void shouldReturn422WhenExportPdfPreviewViolatesBusinessRule() throws Exception {
+      CreatePartSaleItemRequest item = new CreatePartSaleItemRequest(
+          MaterialCategoryType.FILM,
+          UUID.randomUUID(),
+          1,
+          2500,
+          1000,
+          new BigDecimal("100.00"),
+          null
+      );
+      CreatePartSaleRequest request = new CreatePartSaleRequest(
+          UUID.randomUUID(),
+          PartSaleStatus.DRAFT,
+          BigDecimal.ZERO,
+          List.of(item)
+      );
+
+      when(partSaleService.generatePdfPreview(any(CreatePartSaleRequest.class)))
+          .thenThrow(new BusinessException("Largura excede o limite da bobina."));
+
+      mockMvc.perform(post("/api/v1/part-sales/export-pdf")
+              .contentType(MediaType.APPLICATION_JSON)
+              .content(objectMapper.writeValueAsString(request)))
+          .andExpect(status().isUnprocessableEntity())
+          .andExpect(jsonPath("$.message").value("Largura excede o limite da bobina."));
     }
   }
 }

@@ -10,6 +10,8 @@ import {
   Printer,
   X,
   ArrowLeft,
+  Download,
+  Loader2,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { MaterialCategoryType, PartSaleItem, PartSaleResponse, CreatePartSaleRequest } from '../types/partSaleTypes';
@@ -187,6 +189,8 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
 
   // Modais e status de persistência
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+  const downloadingPdfRef = useRef(false);
   const [isLabelModalOpen, setIsLabelModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const savingRef = useRef(false);
@@ -416,6 +420,17 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
   const discountVal = typeof discountAmount === 'number' && discountAmount >= 0 ? discountAmount : 0;
   const totalAmount = Math.max(0, subtotalAmount - discountVal);
 
+  const mapItemsToRequest = (saleItems: PartSaleItem[]) =>
+    saleItems.map((it) => ({
+      materialType: it.category,
+      referenceId: it.materialId || it.id,
+      quantity: it.quantity,
+      widthMm: it.widthMm,
+      heightMm: it.heightMm,
+      unitPrice: it.unitPrice,
+      lossFactor: it.lossFactor, // Garante envio da perda para backend persistir
+    }));
+
   const handleSaveSale = async () => {
     if (savingRef.current || isSaving) {
       return;
@@ -442,15 +457,7 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
         clientId: targetClientId,
         status: 'APPROVED',
         discountAmount: discountVal,
-        items: items.map((it) => ({
-          materialType: it.category,
-          referenceId: it.materialId || it.id,
-          quantity: it.quantity,
-          widthMm: it.widthMm,
-          heightMm: it.heightMm,
-          unitPrice: it.unitPrice,
-          lossFactor: it.lossFactor, // Garante envio da perda para backend persistir
-        })),
+        items: mapItemsToRequest(items),
       };
 
       const response = await partSaleApi.create(payload);
@@ -463,6 +470,43 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
     } finally {
       savingRef.current = false;
       setIsSaving(false);
+    }
+  };
+
+  const handleDownloadPdf = async () => {
+    if (downloadingPdfRef.current || isDownloadingPdf) {
+      return;
+    }
+    if (items.length === 0) {
+      toast.error('Adicione pelo menos um item à venda antes de exportar o PDF.');
+      return;
+    }
+    if (!savedSale?.id && items.some((it) => !it.materialId)) {
+      toast.error('Todos os itens devem possuir um material do catálogo selecionado para gerar o PDF.');
+      return;
+    }
+    downloadingPdfRef.current = true;
+    setIsDownloadingPdf(true);
+    try {
+      if (savedSale?.id) {
+        await partSaleApi.downloadPdf(savedSale.id, savedSale.code);
+      } else {
+        const targetClientId = selectedClientId || DEFAULT_WALK_IN_CLIENT_ID;
+        const payload: CreatePartSaleRequest = {
+          clientId: targetClientId,
+          status: 'DRAFT',
+          discountAmount: discountVal,
+          items: mapItemsToRequest(items),
+        };
+        await partSaleApi.downloadPdfPreview(payload);
+      }
+      toast.success('PDF do orçamento gerado e baixado com sucesso!');
+    } catch (err) {
+      console.error('Erro ao gerar/baixar PDF da venda avulsa:', err);
+      toast.error('Não foi possível gerar o PDF da venda avulsa.');
+    } finally {
+      downloadingPdfRef.current = false;
+      setIsDownloadingPdf(false);
     }
   };
 
@@ -954,12 +998,19 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
               <button
                 type="button"
                 data-testid="btn-export-pdf"
-                disabled={items.length === 0}
-                onClick={() => setIsPdfModalOpen(true)}
+                disabled={items.length === 0 || isDownloadingPdf}
+                onClick={async () => {
+                  setIsPdfModalOpen(true);
+                  await handleDownloadPdf();
+                }}
                 className="w-full py-2.5 px-4 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 text-xs font-bold rounded-lg transition flex items-center justify-center gap-2 shadow-2xs disabled:opacity-50 cursor-pointer"
               >
-                <FileText className="w-4 h-4 text-rose-500 dark:text-rose-400" />
-                <span>Exportar PDF</span>
+                {isDownloadingPdf ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-rose-500" />
+                ) : (
+                  <FileText className="w-4 h-4 text-rose-500 dark:text-rose-400" />
+                )}
+                <span>{isDownloadingPdf ? 'Gerando PDF A4...' : 'Exportar PDF'}</span>
               </button>
 
               <button
@@ -1086,8 +1137,22 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
               </button>
               <button
                 type="button"
+                data-testid="btn-download-pdf-official"
+                disabled={isDownloadingPdf}
+                onClick={handleDownloadPdf}
+                className="px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 disabled:opacity-50 rounded-lg flex items-center gap-1.5 shadow-sm cursor-pointer"
+              >
+                {isDownloadingPdf ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Download className="w-3.5 h-3.5" />
+                )}
+                <span>{isDownloadingPdf ? 'Baixando...' : 'Baixar PDF A4 Oficial'}</span>
+              </button>
+              <button
+                type="button"
                 onClick={() => window.print()}
-                className="px-4 py-2 text-xs font-bold text-white bg-slate-900 dark:bg-slate-100 dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-200 rounded-lg flex items-center gap-1.5 shadow-sm cursor-pointer"
+                className="px-4 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 rounded-lg flex items-center gap-1.5 shadow-sm cursor-pointer"
               >
                 <Printer className="w-3.5 h-3.5" />
                 <span>Imprimir Documento</span>

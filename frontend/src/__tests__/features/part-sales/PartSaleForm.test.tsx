@@ -2,15 +2,25 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
 import { PartSaleForm } from '../../../features/part-sales/components/PartSaleForm';
 import { partSaleApi } from '../../../features/part-sales/services/partSaleApi';
 import type { MaterialOption } from '../../../features/part-sales/types';
+
+vi.mock('react-hot-toast', () => ({
+  default: {
+    success: vi.fn(),
+    error: vi.fn(),
+  },
+}));
 
 vi.mock('../../../features/part-sales/services/partSaleApi', () => ({
   partSaleApi: {
     calculateItem: vi.fn(),
     create: vi.fn(),
     getMaterialsByCategory: vi.fn(),
+    downloadPdf: vi.fn(),
+    downloadPdfPreview: vi.fn().mockResolvedValue(undefined),
   },
 }));
 
@@ -276,7 +286,11 @@ describe('PartSaleForm Component (US-46.2 & US-46.5)', () => {
     // Modal PDF
     const btnPdf = screen.getByTestId('btn-export-pdf');
     fireEvent.click(btnPdf);
+    await waitFor(() => {
+      expect(partSaleApi.downloadPdfPreview).toHaveBeenCalled();
+    });
     expect(screen.getByText('Visualização para Exportação / PDF')).toBeInTheDocument();
+    expect(screen.getByTestId('btn-download-pdf-official')).toBeInTheDocument();
 
     const btnClosePdf = screen.getByRole('button', { name: /fechar/i });
     fireEvent.click(btnClosePdf);
@@ -351,5 +365,56 @@ describe('PartSaleForm Component (US-46.2 & US-46.5)', () => {
     const btnSave = screen.getByTestId('btn-save-part-sale');
     // Como o botão está desabilitado quando items.length === 0, garantimos que disabled é true
     expect(btnSave).toBeDisabled();
+  });
+
+  it('deve exibir toast de erro ao falhar no download de PDF prévio e reabilitar o botão', async () => {
+    vi.mocked(partSaleApi.downloadPdfPreview).mockRejectedValueOnce(new Error('Falha de rede'));
+
+    renderForm(<PartSaleForm initialCustomers={mockCustomers} />);
+
+    await selectMaterial('material-option-mat-profile-5');
+    fireEvent.click(screen.getByTestId('btn-add-part-item'));
+
+    fireEvent.click(screen.getByTestId('btn-export-pdf'));
+
+    await waitFor(() => {
+      expect(partSaleApi.downloadPdfPreview).toHaveBeenCalledTimes(1);
+      expect(toast.error).toHaveBeenCalledWith('Não foi possível gerar o PDF da venda avulsa.');
+    });
+
+    expect(screen.getByTestId('btn-download-pdf-official')).not.toBeDisabled();
+  });
+
+  it('deve chamar partSaleApi.downloadPdf com id e código quando a venda já tiver sido salva', async () => {
+    vi.mocked(partSaleApi.create).mockResolvedValueOnce({
+      id: 'venda-salva-99',
+      code: 'VP-2026-0099',
+      clientId: 'cli-1',
+      clientName: 'Vidraçaria Ideal',
+      status: 'APPROVED',
+      subtotalAmount: 45,
+      discountAmount: 0,
+      totalAmount: 45,
+      items: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+    vi.mocked(partSaleApi.downloadPdf).mockResolvedValueOnce(undefined);
+
+    renderForm(<PartSaleForm initialCustomers={mockCustomers} />);
+
+    await selectMaterial('material-option-mat-profile-4');
+    fireEvent.click(screen.getByTestId('btn-add-part-item'));
+    fireEvent.click(screen.getByTestId('btn-save-part-sale'));
+
+    await screen.findByText(/Código Gerado: VP-2026-0099/i);
+
+    fireEvent.click(screen.getByTestId('btn-export-pdf'));
+
+    await waitFor(() => {
+      expect(partSaleApi.downloadPdf).toHaveBeenCalledWith('venda-salva-99', 'VP-2026-0099');
+      expect(partSaleApi.downloadPdfPreview).not.toHaveBeenCalled();
+      expect(toast.success).toHaveBeenCalledWith('PDF do orçamento gerado e baixado com sucesso!');
+    });
   });
 });
