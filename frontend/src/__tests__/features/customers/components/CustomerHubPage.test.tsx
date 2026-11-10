@@ -199,8 +199,8 @@ describe('CustomerHubPage', () => {
     // Header do módulo
     expect(screen.getByText('Central 360° do Cliente')).toBeInTheDocument();
 
-    // Sidebar
-    expect(screen.getByText('Clientes')).toBeInTheDocument();
+    // Sidebar - Correção: Como "Clientes" aparece no breadcrumb e no sidebar, usamos getAllByText
+    expect(screen.getAllByText('Clientes')[0]).toBeInTheDocument();
 
     // Hero Card
     expect(screen.getByText('Antônio Alfredo Figueiredo', { selector: 'h1' })).toBeInTheDocument();

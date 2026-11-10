@@ -203,7 +203,7 @@ describe('OrderProductionCard Component', () => {
 
       const badge = screen.getByText('Prazo Crítico');
       expect(badge).toBeInTheDocument();
-      expect(badge.closest('span')).toHaveClass('bg-amber-100');
+      expect(badge.closest('span')).toHaveClass('bg-tertiary-container');
     });
   });
 
@@ -223,10 +223,10 @@ describe('OrderProductionCard Component', () => {
 
       const badge = screen.getByText('Atrasado');
       expect(badge).toBeInTheDocument();
-      expect(badge.closest('span')).toHaveClass('bg-rose-100');
+      expect(badge.closest('span')).toHaveClass('bg-error-container');
     });
 
-      it('não deve exibir badge "Atrasado" para pedidos concluídos (COMPLETED), mesmo com data vencida', () => {
+    it('não deve exibir badge "Atrasado" para pedidos concluídos (COMPLETED), mesmo com data vencida', () => {
       const completedLateOrder: Order = {
         ...baseOrder,
         status: 'COMPLETED',

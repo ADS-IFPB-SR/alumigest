@@ -17,7 +17,7 @@ export const CustomerHeroCard: React.FC<CustomerHeroCardProps> = ({ customer, on
 
   const locationParts = [
     customer.bairro,
-    customer.cidade && customer.uf ? `${customer.cidade} -${customer.uf}` : customer.cidade || customer.uf,
+    customer.cidade && customer.uf ? `${customer.cidade} - ${customer.uf}` : customer.cidade || customer.uf,
   ].filter(Boolean);
   const locationStr = locationParts.join(', ');
 
@@ -94,7 +94,13 @@ export const CustomerHeroCard: React.FC<CustomerHeroCardProps> = ({ customer, on
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Contatar cliente via WhatsApp"
-            className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold border transition ${ hasPhone ? 'border-outline-variant bg-surface-container-lowest text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high shadow-2xs' : 'border-outline-variant bg-surface-container text-on-surface-variant opacity-50 cursor-not-allowed pointer-events-none' }`} > <WhatsAppIcon className={`w-4 h-4 ${hasPhone ? 'text-[#25D366]' : 'opacity-50'}`} />
+            className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold border transition ${
+              hasPhone
+                ? 'border-outline-variant bg-surface-container-lowest text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high shadow-2xs'
+                : 'border-outline-variant bg-surface-container text-on-surface-variant opacity-50 cursor-not-allowed pointer-events-none'
+            }`}
+          >
+            <WhatsAppIcon className={`w-4 h-4 ${hasPhone ? 'text-[#25D366]' : 'opacity-50'}`} />
             <span>WhatsApp</span>
           </a>
 
