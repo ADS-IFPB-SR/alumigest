@@ -247,7 +247,10 @@ describe('CustomerHubPage', () => {
 
     expect(screen.getByText('OS-2026-0042')).toBeInTheDocument();
 
-    // Clica no botão de Etiquetas da O.S.
+    // Abre o drawer de esquadrias
+    fireEvent.click(screen.getByRole('button', { name: /Ver peças da O\.S\. OS-2026-0042/i }));
+
+    // Clica no botão de Etiquetas no cartão da O.S.
     const labelButton = screen.getByRole('button', { name: /Etiquetas da O\.S\. OS-2026-0042/i });
     fireEvent.click(labelButton);
 
@@ -294,6 +297,7 @@ describe('CustomerHubPage', () => {
       );
 
       fireEvent.click(screen.getByRole('button', { name: /Ordens de Serviço \(O\.S\.\)/i }));
+      fireEvent.click(screen.getByRole('button', { name: /Ver peças da O\.S\. OS-2026-0042/i }));
       fireEvent.click(screen.getByRole('button', { name: /Ficha técnica da O\.S\. OS-2026-0042/i }));
 
       await waitFor(() => {
@@ -316,6 +320,7 @@ describe('CustomerHubPage', () => {
       );
 
       fireEvent.click(screen.getByRole('button', { name: /Ordens de Serviço \(O\.S\.\)/i }));
+      fireEvent.click(screen.getByRole('button', { name: /Ver peças da O\.S\. OS-2026-0042/i }));
       fireEvent.click(screen.getByRole('button', { name: /Ficha técnica da O\.S\. OS-2026-0042/i }));
 
       await waitFor(() => {

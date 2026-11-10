@@ -80,5 +80,39 @@ class ProductionSheetServiceTest {
         assertThatThrownBy(() -> productionSheetService.generateSheetData(orderId))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
+
+    @Test
+    @DisplayName("generateSheetData - Deve utilizar DefaultFrameCalculator como fallback quando nenhuma strategy customizada suportar o item")
+    void generateSheetData_ShouldFallbackToDefaultCalculator_WhenNoStrategySupports() {
+        UUID orderId = UUID.randomUUID();
+
+        Order order = Order.builder()
+                .codigo("OS-2026-0017")
+                .clienteNome("Academia Iron Fitness Sousa")
+                .build();
+
+        OrderItem item = OrderItem.builder()
+                .descricao("Espelho de Parede Musculação")
+                .larguraMm(2500)
+                .alturaMm(2000)
+                .quantidade(2)
+                .corAluminio("Prata")
+                .tipoVidro("Espelho Cebrace 4mm Bisotado")
+                .valorUnitario(new BigDecimal("1800.00"))
+                .build();
+        order.addItem(item);
+
+        when(orderRepository.findByIdWithDetails(orderId)).thenReturn(Optional.of(order));
+        when(calculatorStrategy.supports(item)).thenReturn(false);
+
+        ProductionSheetResponse response = productionSheetService.generateSheetData(orderId);
+
+        assertThat(response).isNotNull();
+        assertThat(response.orderCode()).isEqualTo("OS-2026-0017");
+        assertThat(response.clientName()).isEqualTo("Academia Iron Fitness Sousa");
+        assertThat(response.glassCuts()).isNotEmpty();
+        assertThat(response.aluminumCuts()).isNotEmpty();
+        assertThat(response.accessories()).isNotEmpty();
+    }
 }
 

@@ -64,8 +64,27 @@ public class ProductionSheetPdfService {
 
                 Paragraph titulo = new Paragraph("FICHA TÉCNICA DE PRODUÇÃO", FONTE_TITULO);
                 titulo.setAlignment(Element.ALIGN_CENTER);
-                titulo.setSpacingAfter(20f);
+                titulo.setSpacingAfter(15f);
                 document.add(titulo);
+
+                // Card de Informações da O.S. e Cliente
+                PdfPTable infoTable = new PdfPTable(2);
+                infoTable.setWidthPercentage(100);
+                infoTable.setSpacingAfter(15f);
+
+                PdfPCell celulaOS = new PdfPCell(new Phrase("Ordem de Serviço: " + (data.orderCode() != null ? data.orderCode() : "N/A"), FONTE_NEGRITO));
+                celulaOS.setBackgroundColor(COR_FUNDO_CLARO);
+                celulaOS.setBorderColor(COR_BORDA_CLARA);
+                celulaOS.setPadding(8f);
+
+                PdfPCell celulaCliente = new PdfPCell(new Phrase("Cliente: " + (data.clientName() != null ? data.clientName() : "Consumidor"), FONTE_NEGRITO));
+                celulaCliente.setBackgroundColor(COR_FUNDO_CLARO);
+                celulaCliente.setBorderColor(COR_BORDA_CLARA);
+                celulaCliente.setPadding(8f);
+
+                infoTable.addCell(celulaOS);
+                infoTable.addCell(celulaCliente);
+                document.add(infoTable);
 
                 boolean hasAluminum = data.aluminumCuts() != null && !data.aluminumCuts().isEmpty();
                 boolean hasGlass = data.glassCuts() != null && !data.glassCuts().isEmpty();
