@@ -247,16 +247,39 @@ jobs:
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
 
+      - name: Install Frontend Dependencies
+        run: |
+          cd frontend
+          npm ci
+
+      - name: Start Frontend (Vite)
+        run: |
+          cd frontend
+          nohup npm run dev -- --host 127.0.0.1 --port 5173 > ../vite.log 2>&1 &
+
+      - name: Wait for Frontend to be Healthy
+        run: |
+          echo "⏳ Aguardando Frontend responder em http://127.0.0.1:5173..."
+          for i in $(seq 1 30); do
+            if curl -sf http://127.0.0.1:5173 > /dev/null 2>&1; then
+              echo "✅ Frontend online com sucesso na tentativa $i!"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "❌ Frontend falhou ao inicializar dentro do tempo limite!"
+          echo "=== Conteúdo de vite.log ==="
+          cat vite.log || true
+          exit 1
+
       - name: Run Cypress E2E — ${{ matrix.module_name }}
         uses: cypress-io/github-action@v6
         with:
           working-directory: frontend
-          start: npm run dev -- --port 5173
-          wait-on: 'http://localhost:5173'
-          wait-on-timeout: 60
+          install: false
           spec: ${{ matrix.spec_pattern }}
         env:
-          CYPRESS_BASE_URL: http://localhost:5173
+          CYPRESS_BASE_URL: http://127.0.0.1:5173
           CYPRESS_API_URL: http://localhost:8081/api/v1
           CYPRESS_VIDEO: true
           CYPRESS_SCREENSHOT_ON_RUN_FAILURE: true
@@ -271,16 +294,19 @@ jobs:
             frontend/cypress/videos/
           retention-days: 5
 
-      - name: Dump Backend logs on failure
+      - name: Dump Service logs on failure
         if: failure()
         run: |
           echo "=== Backend Log (últimas 200 linhas) ==="
           cat backend.log | tail -n 200 || true
+          echo "=== Vite Log (últimas 100 linhas) ==="
+          cat vite.log | tail -n 100 || true
 
-      - name: Stop Backend
+      - name: Stop Background Services
         if: always()
         run: |
           pkill -f "java.*alumigest" || true
+          pkill -f "vite" || true
 
   # ==========================================
   # PULL REQUEST REPORT (STICKY COMMENT UNIFICADO)
