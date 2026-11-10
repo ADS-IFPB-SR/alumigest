@@ -287,6 +287,11 @@ module.exports = async function ({ github, context, core }) {
   const repoUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}`;
   const runUrl = `${repoUrl}/actions/runs/${runId}`;
 
+  // E2E status (preenchido apenas quando chamado do workflow e2e.yml)
+  const e2eStatus = process.env.E2E_STATUS || '';
+  const e2eModules = process.env.E2E_MODULES || '';
+  const e2eRunUrl = process.env.E2E_RUN_URL || '';
+
   const baseDir = process.env.GITHUB_WORKSPACE || process.cwd();
   const backendSearchDirs = [
     path.join(baseDir, 'artifacts-backend'),
@@ -476,6 +481,47 @@ module.exports = async function ({ github, context, core }) {
       if (backendIssues && backendIssues.length > 0) {
         markdown += renderIssueTable(backendIssues, 'Backend', 'alumigest-backend');
       }
+    }
+  }
+
+  // ==========================================
+  // SEÇÃO E2E (quando disponível via merge_group)
+  // ==========================================
+  if (e2eStatus) {
+    markdown += `\n### 🧪 Testes End-to-End (Cypress)\n\n`;
+
+    const e2eIcon = e2eStatus === 'success' ? '✅' : (e2eStatus === 'failure' ? '❌' : '⚠️');
+    const e2eLabel = e2eStatus === 'success' ? 'Todos os módulos passaram' : (e2eStatus === 'failure' ? 'Falhas detectadas' : 'Pendente');
+
+    markdown += `| Módulo | Status |\n`;
+    markdown += `| :--- | :---: |\n`;
+
+    if (e2eModules) {
+      // Formato esperado: "budgets:success,catalog:success,orders:failure,customers:success,part-sales:success"
+      const moduleNames = {
+        'budgets': 'Orçamentos',
+        'catalog': 'Catálogo',
+        'orders': 'Pedidos & Produção',
+        'customers': 'Clientes (Hub 360°)',
+        'part-sales': 'Venda Avulsa'
+      };
+      const modules = e2eModules.split(',').map(m => m.trim());
+      for (const mod of modules) {
+        const [key, status] = mod.split(':');
+        const name = moduleNames[key] || key;
+        const icon = status === 'success' ? '✅ Passou' : (status === 'failure' ? '❌ Falhou' : '⚠️ ' + (status || 'N/A'));
+        markdown += `| ${name} | ${icon} |\n`;
+      }
+    } else {
+      markdown += `| **Resultado Geral** | ${e2eIcon} ${e2eLabel} |\n`;
+    }
+
+    if (e2eRunUrl) {
+      markdown += `\n> 🔗 [Ver execução E2E no GitHub Actions](${e2eRunUrl})\n`;
+    }
+
+    if (e2eStatus === 'failure') {
+      markdown += `\n> ⚠️ **Screenshots e vídeos** de testes que falharam estão disponíveis como artifacts na execução do workflow E2E.\n`;
     }
   }
 
