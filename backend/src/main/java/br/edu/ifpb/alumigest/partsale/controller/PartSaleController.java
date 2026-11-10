@@ -5,6 +5,7 @@ import br.edu.ifpb.alumigest.partsale.domain.PartSaleStatus;
 import br.edu.ifpb.alumigest.partsale.dto.CalculatePartItemRequest;
 import br.edu.ifpb.alumigest.partsale.dto.CalculatePartItemResponse;
 import br.edu.ifpb.alumigest.partsale.dto.CreatePartSaleRequest;
+import br.edu.ifpb.alumigest.partsale.dto.PartSalePdfDTO;
 import br.edu.ifpb.alumigest.partsale.dto.PartSaleResponse;
 import br.edu.ifpb.alumigest.partsale.dto.PartSaleStatusUpdateRequest;
 import br.edu.ifpb.alumigest.partsale.service.PartSaleService;
@@ -19,7 +20,7 @@ import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
-import org.springframework.http.HttpHeaders;
+import org.springframework.http.ContentDisposition;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -48,10 +49,14 @@ public class PartSaleController {
     this.partSaleService = partSaleService;
   }
 
+  /**
+   * Calcula a metragem faturável e o valor total do insumo sem persistência.
+   */
   @PostMapping("/calculate-item")
   @Operation(
       summary = "Pré-cálculo de item avulso",
-      description = "Calcula a metragem faturável e o valor total do insumo em tempo real sem persistência."
+      description = "Calcula a metragem faturável e o valor total do insumo em tempo real "
+          + "sem persistência."
   )
   @ApiResponse(responseCode = "200", description = "Item calculado com sucesso")
   public ResponseEntity<CalculatePartItemResponse> calculateItem(
@@ -60,6 +65,9 @@ public class PartSaleController {
     return ResponseEntity.ok(response);
   }
 
+  /**
+   * Cria uma nova venda avulsa de partes (DRAFT ou APPROVED).
+   */
   @PostMapping
   @Operation(summary = "Cria uma nova proposta de venda avulsa de partes",
       description = "Persiste a venda avulsa com status DRAFT ou APPROVED")
@@ -68,7 +76,7 @@ public class PartSaleController {
       @RequestBody @Valid CreatePartSaleRequest request) {
     // CORREÇÃO: Chamar o serviço de criação de venda, e não o de cálculo
     PartSaleResponse response = partSaleService.create(request);
-    
+
     URI location = ServletUriComponentsBuilder.fromCurrentRequest()
         .path("/{id}")
         .buildAndExpand(response.id())
@@ -76,25 +84,37 @@ public class PartSaleController {
     return ResponseEntity.created(location).body(response);
   }
 
+  /**
+   * Lista vendas avulsas de forma paginada com filtros de texto e status.
+   */
   @GetMapping
   @Operation(
       summary = "Listar vendas e propostas avulsas",
-      description = "Lista vendas avulsas de partes com paginação, ordenação decrescente por data e filtros por texto (código ou cliente) e status."
+      description = "Lista vendas avulsas de partes com paginação, ordenação decrescente por data "
+          + "e filtros por texto (código ou cliente) e status."
   )
-  @ApiResponse(responseCode = "200", description = "Lista paginada de vendas avulsas recuperada com sucesso")
+  @ApiResponse(
+      responseCode = "200",
+      description = "Lista paginada de vendas avulsas recuperada com sucesso")
   public ResponseEntity<PageResponse<PartSaleResponse>> findAll(
       @Parameter(description = "Filtro por status comercial da venda (DRAFT, APPROVED, CANCELLED)")
       @RequestParam(required = false) PartSaleStatus status,
-      @Parameter(description = "Termo de busca textual por código ou nome do cliente", example = "VP-2026")
+      @Parameter(description = "Termo de busca textual por código ou nome do cliente",
+          example = "VP-2026")
       @RequestParam(name = "search", required = false) String search,
       @Parameter(hidden = true)
       @RequestParam(name = "busca", required = false) String busca,
-      @ParameterObject @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+      @ParameterObject
+      @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC)
+      Pageable pageable) {
     String searchTerm = (search != null && !search.isBlank()) ? search : busca;
     PageResponse<PartSaleResponse> response = partSaleService.findAll(searchTerm, status, pageable);
     return ResponseEntity.ok(response);
   }
 
+  /**
+   * Busca os detalhes completos de uma venda avulsa por ID.
+   */
   @GetMapping("/{id}")
   @Operation(summary = "Busca detalhes de uma venda avulsa por ID")
   @ApiResponse(responseCode = "200", description = "Venda localizada com sucesso")
@@ -104,6 +124,9 @@ public class PartSaleController {
     return ResponseEntity.ok(response);
   }
 
+  /**
+   * Atualiza o status comercial de uma venda avulsa.
+   */
   @PatchMapping("/{id}/status")
   @Operation(summary = "Atualiza o status comercial de uma venda avulsa")
   @ApiResponse(responseCode = "200", description = "Status atualizado com sucesso")
@@ -115,35 +138,50 @@ public class PartSaleController {
     return ResponseEntity.ok(response);
   }
 
+  /**
+   * Exporta o orçamento ou pedido de venda avulsa em PDF A4 oficial.
+   */
   @GetMapping("/{id}/pdf")
-  @Operation(summary = "Exporta o orçamento / pedido de venda avulsa em PDF A4 oficial",
-      description = "Gera o documento PDF A4 diagramado com agrupamento temático de seções e dados da oficina.")
+  @Operation(
+      summary = "Exporta o orçamento / pedido de venda avulsa em PDF A4 oficial",
+      description = "Gera o documento PDF A4 diagramado com agrupamento temático de seções "
+          + "e dados da oficina.")
   @ApiResponse(responseCode = "200", description = "PDF gerado e retornado com sucesso")
   @ApiResponse(responseCode = "404", description = "Venda de partes não encontrada")
   public ResponseEntity<byte[]> exportPdf(@PathVariable UUID id) {
-    PartSaleResponse sale = partSaleService.findById(id);
-    byte[] pdfBytes = partSaleService.generatePdf(id);
-    String filename = "orcamento-partes-" + sale.code().replace("/", "-") + ".pdf";
+    PartSalePdfDTO pdfDto = partSaleService.generatePdf(id);
+    ContentDisposition contentDisposition = ContentDisposition.attachment()
+        .filename(pdfDto.filename())
+        .build();
 
     return ResponseEntity.ok()
         .contentType(MediaType.APPLICATION_PDF)
-        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
-        .contentLength(pdfBytes.length)
-        .body(pdfBytes);
+        .headers(headers -> headers.setContentDisposition(contentDisposition))
+        .contentLength(pdfDto.bytes().length)
+        .body(pdfDto.bytes());
   }
 
+  /**
+   * Gera o PDF A4 da venda avulsa em tempo real a partir de uma proposta em rascunho.
+   */
   @PostMapping("/export-pdf")
-  @Operation(summary = "Gera o PDF A4 da venda avulsa a partir do rascunho sem necessidade de persistência",
-      description = "Gera o documento PDF A4 em tempo real (< 1.5s) com os itens informados na tela.")
+  @Operation(
+      summary = "Gera o PDF A4 da venda avulsa a partir do rascunho sem persistência",
+      description = "Gera o documento PDF A4 em tempo real (< 1.5s) com os itens informados.")
   @ApiResponse(responseCode = "200", description = "PDF prévio gerado e retornado com sucesso")
   @ApiResponse(responseCode = "400", description = "Dados da proposta inválidos")
-  public ResponseEntity<byte[]> exportPdfPreview(@RequestBody @Valid CreatePartSaleRequest request) {
+  @ApiResponse(responseCode = "404", description = "Cliente ou material não encontrado")
+  @ApiResponse(responseCode = "422", description = "Regra de negócio ou limite físico violado")
+  public ResponseEntity<byte[]> exportPdfPreview(
+      @RequestBody @Valid CreatePartSaleRequest request) {
     byte[] pdfBytes = partSaleService.generatePdfPreview(request);
-    String filename = "orcamento-partes-rascunho.pdf";
+    ContentDisposition contentDisposition = ContentDisposition.attachment()
+        .filename("orcamento-partes-rascunho.pdf")
+        .build();
 
     return ResponseEntity.ok()
         .contentType(MediaType.APPLICATION_PDF)
-        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+        .headers(headers -> headers.setContentDisposition(contentDisposition))
         .contentLength(pdfBytes.length)
         .body(pdfBytes);
   }

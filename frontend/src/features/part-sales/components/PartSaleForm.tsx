@@ -190,6 +190,7 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
   // Modais e status de persistência
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+  const downloadingPdfRef = useRef(false);
   const [isLabelModalOpen, setIsLabelModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const savingRef = useRef(false);
@@ -419,6 +420,17 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
   const discountVal = typeof discountAmount === 'number' && discountAmount >= 0 ? discountAmount : 0;
   const totalAmount = Math.max(0, subtotalAmount - discountVal);
 
+  const mapItemsToRequest = (saleItems: PartSaleItem[]) =>
+    saleItems.map((it) => ({
+      materialType: it.category,
+      referenceId: it.materialId || it.id,
+      quantity: it.quantity,
+      widthMm: it.widthMm,
+      heightMm: it.heightMm,
+      unitPrice: it.unitPrice,
+      lossFactor: it.lossFactor, // Garante envio da perda para backend persistir
+    }));
+
   const handleSaveSale = async () => {
     if (savingRef.current || isSaving) {
       return;
@@ -445,15 +457,7 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
         clientId: targetClientId,
         status: 'APPROVED',
         discountAmount: discountVal,
-        items: items.map((it) => ({
-          materialType: it.category,
-          referenceId: it.materialId || it.id,
-          quantity: it.quantity,
-          widthMm: it.widthMm,
-          heightMm: it.heightMm,
-          unitPrice: it.unitPrice,
-          lossFactor: it.lossFactor, // Garante envio da perda para backend persistir
-        })),
+        items: mapItemsToRequest(items),
       };
 
       const response = await partSaleApi.create(payload);
@@ -470,10 +474,18 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
   };
 
   const handleDownloadPdf = async () => {
+    if (downloadingPdfRef.current || isDownloadingPdf) {
+      return;
+    }
     if (items.length === 0) {
       toast.error('Adicione pelo menos um item à venda antes de exportar o PDF.');
       return;
     }
+    if (!savedSale?.id && items.some((it) => !it.materialId)) {
+      toast.error('Todos os itens devem possuir um material do catálogo selecionado para gerar o PDF.');
+      return;
+    }
+    downloadingPdfRef.current = true;
     setIsDownloadingPdf(true);
     try {
       if (savedSale?.id) {
@@ -484,15 +496,7 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
           clientId: targetClientId,
           status: 'DRAFT',
           discountAmount: discountVal,
-          items: items.map((it) => ({
-            materialType: it.category,
-            referenceId: it.materialId || it.id,
-            quantity: it.quantity,
-            widthMm: it.widthMm,
-            heightMm: it.heightMm,
-            unitPrice: it.unitPrice,
-            lossFactor: it.lossFactor,
-          })),
+          items: mapItemsToRequest(items),
         };
         await partSaleApi.downloadPdfPreview(payload);
       }
@@ -501,6 +505,7 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
       console.error('Erro ao gerar/baixar PDF da venda avulsa:', err);
       toast.error('Não foi possível gerar o PDF da venda avulsa.');
     } finally {
+      downloadingPdfRef.current = false;
       setIsDownloadingPdf(false);
     }
   };

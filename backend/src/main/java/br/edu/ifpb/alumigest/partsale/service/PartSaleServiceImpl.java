@@ -18,6 +18,7 @@ import br.edu.ifpb.alumigest.partsale.dto.CalculatePartItemResponse;
 import br.edu.ifpb.alumigest.partsale.dto.CreatePartSaleItemRequest;
 import br.edu.ifpb.alumigest.partsale.dto.CreatePartSaleRequest;
 import br.edu.ifpb.alumigest.partsale.dto.PartSaleItemResponse;
+import br.edu.ifpb.alumigest.partsale.dto.PartSalePdfDTO;
 import br.edu.ifpb.alumigest.partsale.dto.PartSaleResponse;
 import br.edu.ifpb.alumigest.partsale.repository.PartSaleRepository;
 import java.math.BigDecimal;
@@ -37,6 +38,14 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 public class PartSaleServiceImpl implements PartSaleService {
+
+  public static final UUID DEFAULT_WALK_IN_CLIENT_ID =
+      UUID.fromString("00000000-0000-0000-0000-000000000001");
+
+  private static final String MSG_MATERIAL_NOT_FOUND = "Material não encontrado com ID: ";
+  private static final String MSG_SALE_NOT_FOUND = "Venda de partes não encontrada com ID: ";
+  private static final String MSG_CLIENT_NOT_FOUND = "Cliente não encontrado com ID: ";
+  private static final String DEFAULT_WALK_IN_NAME = "Cliente Balcão (Consumidor Final)";
 
   private final PartSaleRepository partSaleRepository;
   private final ClientRepository clientRepository;
@@ -72,15 +81,12 @@ public class PartSaleServiceImpl implements PartSaleService {
     if (request.materialId() != null) {
       Material material = materialRepository.findById(request.materialId())
           .orElseThrow(() -> new ResourceNotFoundException(
-              "Material não encontrado com ID: " + request.materialId()));
+              MSG_MATERIAL_NOT_FOUND + request.materialId()));
       validationService.validatePhysicalLimits(request, material);
     }
     PartItemCalculator calculator = calculatorFactory.getCalculator(request.category());
     return calculator.calculate(request);
   }
-
-  public static final UUID DEFAULT_WALK_IN_CLIENT_ID =
-      UUID.fromString("00000000-0000-0000-0000-000000000001");
 
   @Override
   @Transactional
@@ -100,37 +106,7 @@ public class PartSaleServiceImpl implements PartSaleService {
     );
 
     for (CreatePartSaleItemRequest itemReq : request.items()) {
-      Material material = materialRepository.findById(itemReq.referenceId())
-          .orElseThrow(() -> new ResourceNotFoundException(
-              "Material não encontrado com ID: " + itemReq.referenceId()));
-
-      CalculatePartItemRequest calcReq = new CalculatePartItemRequest(
-          itemReq.materialType(),
-          itemReq.widthMm(),
-          itemReq.heightMm(),
-          itemReq.quantity(),
-          itemReq.unitPrice(),
-          itemReq.lossFactor()
-      );
-
-      validationService.validatePhysicalLimits(calcReq, material);
-
-      CalculatePartItemResponse calcResp = calculatorFactory
-          .getCalculator(itemReq.materialType())
-          .calculate(calcReq);
-
-      PartSaleItem item = new PartSaleItem(
-          material,
-          itemReq.materialType(),
-          itemReq.widthMm(),
-          itemReq.heightMm(),
-          itemReq.quantity(),
-          itemReq.lossFactor(),
-          calcResp.calculatedUnitMeasure(),
-          calcResp.unitPrice(),
-          calcResp.totalPrice()
-      );
-      partSale.addItem(item);
+      partSale.addItem(buildPartSaleItem(itemReq));
     }
 
     PartSale saved = partSaleRepository.save(partSale);
@@ -141,8 +117,7 @@ public class PartSaleServiceImpl implements PartSaleService {
   @Transactional(readOnly = true)
   public PartSaleResponse findById(UUID id) {
     PartSale partSale = partSaleRepository.findById(id)
-        .orElseThrow(() -> new ResourceNotFoundException(
-            "Venda de partes não encontrada com ID: " + id));
+        .orElseThrow(() -> new ResourceNotFoundException(MSG_SALE_NOT_FOUND + id));
 
     String clientName = clientRepository.findById(partSale.getClientId())
         .map(Client::getFullName)
@@ -153,7 +128,8 @@ public class PartSaleServiceImpl implements PartSaleService {
 
   @Override
   @Transactional(readOnly = true)
-  public PageResponse<PartSaleResponse> findAll(String search, PartSaleStatus status, Pageable pageable) {
+  public PageResponse<PartSaleResponse> findAll(
+      String search, PartSaleStatus status, Pageable pageable) {
     String searchTerm = (search != null && !search.isBlank()) ? search.trim() : null;
     Page<PartSale> page = partSaleRepository.findAllWithFilters(searchTerm, status, pageable);
 
@@ -164,7 +140,8 @@ public class PartSaleServiceImpl implements PartSaleService {
         .collect(Collectors.toSet());
 
     Map<UUID, String> clientNames = clientRepository.findAllById(clientIds).stream()
-        .collect(Collectors.toMap(Client::getId, Client::getFullName, (existing, replacement) -> existing));
+        .collect(Collectors.toMap(
+            Client::getId, Client::getFullName, (existing, replacement) -> existing));
 
     List<PartSaleResponse> responses = page.getContent().stream()
         .map(partSale -> toResponse(partSale, clientNames.get(partSale.getClientId())))
@@ -185,8 +162,7 @@ public class PartSaleServiceImpl implements PartSaleService {
   @Transactional
   public PartSaleResponse updateStatus(UUID id, PartSaleStatus newStatus) {
     PartSale partSale = partSaleRepository.findById(id)
-        .orElseThrow(() -> new ResourceNotFoundException(
-            "Venda de partes não encontrada com ID: " + id));
+        .orElseThrow(() -> new ResourceNotFoundException(MSG_SALE_NOT_FOUND + id));
 
     partSale.updateStatus(newStatus);
     PartSale updated = partSaleRepository.save(partSale);
@@ -200,22 +176,31 @@ public class PartSaleServiceImpl implements PartSaleService {
 
   @Override
   @Transactional(readOnly = true)
-  public byte[] generatePdf(UUID id) {
-    PartSale partSale = partSaleRepository.findById(id)
-        .orElseThrow(() -> new ResourceNotFoundException("Venda de partes não encontrada com ID: " + id));
+  public PartSalePdfDTO generatePdf(UUID id) {
+    PartSale partSale = partSaleRepository.findWithDetailsById(id)
+        .orElseThrow(() -> new ResourceNotFoundException(MSG_SALE_NOT_FOUND + id));
 
-    Client client = clientRepository.findById(partSale.getClientId()).orElse(null);
-    return partSalePdfService.generatePdf(partSale, client);
+    Client client = partSale.getClientId() != null
+        ? clientRepository.findById(partSale.getClientId()).orElse(null)
+        : null;
+    byte[] pdfBytes = partSalePdfService.generatePdf(partSale, client);
+
+    String codigoBase = partSale.getCode() != null && !partSale.getCode().isBlank()
+        ? partSale.getCode().trim()
+        : id.toString();
+    String filename = "orcamento-partes-" + codigoBase.replace("/", "-") + ".pdf";
+    return new PartSalePdfDTO(pdfBytes, filename);
   }
 
   @Override
   @Transactional(readOnly = true)
   public byte[] generatePdfPreview(CreatePartSaleRequest request) {
     if (request.items() == null || request.items().isEmpty()) {
-      throw new BusinessException("A proposta deve conter pelo menos um item para exportação de PDF.");
+      throw new BusinessException(
+          "A proposta deve conter pelo menos um item para exportação de PDF.");
     }
 
-    Client client = resolveClient(request.clientId());
+    Client client = resolveClientReadOnly(request.clientId());
     String code = "ORC-PREVIA";
     BigDecimal discount = request.discountAmount() != null
         ? request.discountAmount()
@@ -229,38 +214,43 @@ public class PartSaleServiceImpl implements PartSaleService {
     );
 
     for (CreatePartSaleItemRequest itemReq : request.items()) {
-      Material material = materialRepository.findById(itemReq.referenceId())
-          .orElseThrow(() -> new ResourceNotFoundException(
-              "Material não encontrado com ID: " + itemReq.referenceId()));
-
-      CalculatePartItemRequest calcReq = new CalculatePartItemRequest(
-          itemReq.materialType(),
-          itemReq.widthMm(),
-          itemReq.heightMm(),
-          itemReq.quantity(),
-          itemReq.unitPrice(),
-          itemReq.lossFactor()
-      );
-
-      CalculatePartItemResponse calcResp = calculatorFactory
-          .getCalculator(itemReq.materialType())
-          .calculate(calcReq);
-
-      PartSaleItem item = new PartSaleItem(
-          material,
-          itemReq.materialType(),
-          itemReq.widthMm(),
-          itemReq.heightMm(),
-          itemReq.quantity(),
-          itemReq.lossFactor(),
-          calcResp.calculatedUnitMeasure(),
-          calcResp.unitPrice(),
-          calcResp.totalPrice()
-      );
-      transientSale.addItem(item);
+      transientSale.addItem(buildPartSaleItem(itemReq));
     }
 
     return partSalePdfService.generatePdf(transientSale, client);
+  }
+
+  private PartSaleItem buildPartSaleItem(CreatePartSaleItemRequest itemReq) {
+    Material material = materialRepository.findById(itemReq.referenceId())
+        .orElseThrow(() -> new ResourceNotFoundException(
+            MSG_MATERIAL_NOT_FOUND + itemReq.referenceId()));
+
+    CalculatePartItemRequest calcReq = new CalculatePartItemRequest(
+        itemReq.materialType(),
+        itemReq.widthMm(),
+        itemReq.heightMm(),
+        itemReq.quantity(),
+        itemReq.unitPrice(),
+        itemReq.lossFactor()
+    );
+
+    validationService.validatePhysicalLimits(calcReq, material);
+
+    CalculatePartItemResponse calcResp = calculatorFactory
+        .getCalculator(itemReq.materialType())
+        .calculate(calcReq);
+
+    return new PartSaleItem(
+        material,
+        itemReq.materialType(),
+        itemReq.widthMm(),
+        itemReq.heightMm(),
+        itemReq.quantity(),
+        itemReq.lossFactor(),
+        calcResp.calculatedUnitMeasure(),
+        calcResp.unitPrice(),
+        calcResp.totalPrice()
+    );
   }
 
   private PartSaleResponse toResponse(PartSale partSale, String clientName) {
@@ -304,22 +294,33 @@ public class PartSaleServiceImpl implements PartSaleService {
           if (DEFAULT_WALK_IN_CLIENT_ID.equals(requestedClientId)) {
             return findOrCreateDefaultWalkInClient();
           }
-          throw new ResourceNotFoundException("Cliente não encontrado com ID: " + requestedClientId);
+          throw new ResourceNotFoundException(MSG_CLIENT_NOT_FOUND + requestedClientId);
         });
+  }
+
+  private Client resolveClientReadOnly(UUID requestedClientId) {
+    if (requestedClientId == null || DEFAULT_WALK_IN_CLIENT_ID.equals(requestedClientId)) {
+      return clientRepository.findById(DEFAULT_WALK_IN_CLIENT_ID)
+          .orElseGet(this::buildTransientWalkInClient);
+    }
+    return clientRepository.findById(requestedClientId)
+        .orElseThrow(() -> new ResourceNotFoundException(
+            MSG_CLIENT_NOT_FOUND + requestedClientId));
   }
 
   private Client findOrCreateDefaultWalkInClient() {
     return clientRepository.findAll().stream()
         .filter(c -> c.getFullName() != null && c.getFullName().toLowerCase().contains("balcão"))
         .findFirst()
-        .orElseGet(() -> {
-          Client defaultClient = Client.builder()
-              .id(DEFAULT_WALK_IN_CLIENT_ID)
-              .fullName("Cliente Balcão (Consumidor Final)")
-              .personType(PersonType.FISICA)
-              .notes("Cliente padrão do sistema para vendas avulsas e balcão sem cadastro prévio.")
-              .build();
-          return clientRepository.save(defaultClient);
-        });
+        .orElseGet(() -> clientRepository.save(buildTransientWalkInClient()));
+  }
+
+  private Client buildTransientWalkInClient() {
+    return Client.builder()
+        .id(DEFAULT_WALK_IN_CLIENT_ID)
+        .fullName(DEFAULT_WALK_IN_NAME)
+        .personType(PersonType.FISICA)
+        .notes("Cliente padrão do sistema para vendas avulsas e balcão sem cadastro prévio.")
+        .build();
   }
 }

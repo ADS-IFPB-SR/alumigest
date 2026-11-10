@@ -15,15 +15,19 @@ import java.awt.Color;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Objects;
 
 /**
  * Evento de ciclo de vida de página OpenPDF para Orçamento de Venda Avulsa de Partes (US-46.4).
- * Responsável por:
- * 1. Cabeçalho repetido em páginas subsequentes (página > 1);
- * 2. Rodapé padronizado em todas as páginas com numeração dinâmica ("Página X de Y"),
- *    código da venda, data de geração e identificação da empresa.
+ *
+ * <p>Responsável pelo cabeçalho repetido a partir da segunda página e pelo rodapé padronizado
+ * com data de geração, identificação do documento e numeração dinâmica ("Página X de Y").
  */
 public class PartSalePdfPageEvent extends PdfPageEventHelper {
+
+  private static final ZoneId ZONE_SAO_PAULO = ZoneId.of("America/Sao_Paulo");
+  private static final DateTimeFormatter FORMATTER_RODAPE =
+      DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
   private static final Font FONTE_RODAPE =
       FontFactory.getFont(FontFactory.HELVETICA, 8, new Color(105, 110, 120));
@@ -45,14 +49,14 @@ public class PartSalePdfPageEvent extends PdfPageEventHelper {
    * @param razaoSocialEmpresa razão social institucional da empresa
    */
   public PartSalePdfPageEvent(String codigoVenda, String nomeCliente, String razaoSocialEmpresa) {
-    this.codigoVenda = codigoVenda != null ? codigoVenda : "";
-    this.nomeCliente = nomeCliente != null ? nomeCliente : "";
-    this.razaoSocialEmpresa = razaoSocialEmpresa != null ? razaoSocialEmpresa : "";
+    this.codigoVenda = Objects.requireNonNullElse(codigoVenda, "").trim();
+    this.nomeCliente = Objects.requireNonNullElse(nomeCliente, "").trim();
+    this.razaoSocialEmpresa = Objects.requireNonNullElse(razaoSocialEmpresa, "").trim();
   }
 
   @Override
   public void onOpenDocument(PdfWriter writer, Document document) {
-    templateTotalPaginas = writer.getDirectContent().createTemplate(30, 16);
+    templateTotalPaginas = writer.getDirectContent().createTemplate(35, 16);
   }
 
   @Override
@@ -93,17 +97,18 @@ public class PartSalePdfPageEvent extends PdfPageEventHelper {
     float cabecalhoY = paginaRect.getHeight() - 25f;
     float larguraPagina = paginaRect.getWidth() - margemEsq - margemDir;
 
-    Phrase fraseCabecalho = new Phrase(
-        "Venda Avulsa #" + codigoVenda + "  |  Cliente: " + nomeCliente,
-        FONTE_CABECALHO
-    );
+    String textoCodigo = codigoVenda.isBlank() ? "Venda Avulsa" : "Venda Avulsa #" + codigoVenda;
+    String textoCliente = nomeCliente.isBlank()
+        ? ""
+        : "  |  Cliente: " + truncarTexto(nomeCliente, 36);
+    Phrase fraseCabecalho = new Phrase(textoCodigo + textoCliente, FONTE_CABECALHO);
 
     ColumnText.showTextAligned(
         canvas, Element.ALIGN_LEFT, fraseCabecalho,
         margemEsq, cabecalhoY, 0
     );
 
-    Phrase fraseEmpresa = new Phrase(razaoSocialEmpresa, FONTE_CABECALHO);
+    Phrase fraseEmpresa = new Phrase(truncarTexto(razaoSocialEmpresa, 40), FONTE_CABECALHO);
 
     ColumnText.showTextAligned(
         canvas, Element.ALIGN_RIGHT, fraseEmpresa,
@@ -135,32 +140,50 @@ public class PartSalePdfPageEvent extends PdfPageEventHelper {
     canvas.stroke();
     canvas.restoreState();
 
-    String dataHoraGeracao = ZonedDateTime.now(ZoneId.of("America/Sao_Paulo"))
-        .format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
-
-    String textoVenda = "Venda Avulsa " + codigoVenda + "  |  Gerado em: " + dataHoraGeracao;
+    String dataHoraGeracao = ZonedDateTime.now(ZONE_SAO_PAULO).format(FORMATTER_RODAPE);
     ColumnText.showTextAligned(
         canvas, Element.ALIGN_LEFT,
-        new Phrase(textoVenda, FONTE_RODAPE),
+        new Phrase("Gerado em: " + dataHoraGeracao, FONTE_RODAPE),
         margemEsq, rodapeY, 0
     );
 
-    String textoEmpresa = razaoSocialEmpresa + " — Orçamento de Venda Avulsa de Partes";
+    String textoCentro = formatarTextoCentroRodape();
     ColumnText.showTextAligned(
         canvas, Element.ALIGN_CENTER,
-        new Phrase(textoEmpresa, FONTE_RODAPE),
+        new Phrase(textoCentro, FONTE_RODAPE),
         margemEsq + (larguraPagina / 2f), rodapeY, 0
     );
 
     Phrase fraseNumero = new Phrase("Página " + writer.getPageNumber() + " de ", FONTE_RODAPE);
     float pontoDireita = margemEsq + larguraPagina;
-    float inicioTextoX = pontoDireita - 60f;
+    float inicioTextoX = pontoDireita - 72f;
 
     ColumnText.showTextAligned(
         canvas, Element.ALIGN_LEFT,
         fraseNumero, inicioTextoX, rodapeY, 0
     );
 
-    canvas.addTemplate(templateTotalPaginas, inicioTextoX + 48f, rodapeY);
+    canvas.addTemplate(templateTotalPaginas, inicioTextoX + 54f, rodapeY);
+  }
+
+  private String formatarTextoCentroRodape() {
+    String empresa = truncarTexto(razaoSocialEmpresa, 38);
+    if (!empresa.isBlank() && !codigoVenda.isBlank()) {
+      return empresa + " — #" + codigoVenda;
+    }
+    if (!empresa.isBlank()) {
+      return empresa;
+    }
+    if (!codigoVenda.isBlank()) {
+      return "Venda Avulsa #" + codigoVenda;
+    }
+    return "Orçamento de Venda Avulsa";
+  }
+
+  private String truncarTexto(String texto, int limiteMaximo) {
+    if (texto == null || texto.length() <= limiteMaximo) {
+      return texto != null ? texto : "";
+    }
+    return texto.substring(0, limiteMaximo - 3) + "...";
   }
 }

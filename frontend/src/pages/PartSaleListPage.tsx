@@ -1,5 +1,5 @@
 // frontend/src/pages/PartSaleListPage.tsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
   ShoppingCart,
@@ -81,8 +81,13 @@ export function PartSaleListPage() {
   const [selectedSaleForLabels, setSelectedSaleForLabels] = useState<PartSaleResponse | null>(null);
   const [saleToCancel, setSaleToCancel] = useState<PartSaleResponse | null>(null);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+  const downloadingPdfRef = useRef(false);
 
   const handleDownloadPdf = async (sale: PartSaleResponse) => {
+    if (downloadingPdfRef.current || isDownloadingPdf) {
+      return;
+    }
+    downloadingPdfRef.current = true;
     try {
       setIsDownloadingPdf(true);
       await partSaleApi.downloadPdf(sale.id, sale.code);
@@ -91,6 +96,7 @@ export function PartSaleListPage() {
       console.error('Erro ao baixar PDF da venda avulsa:', error);
       toast.error('Erro ao gerar/baixar PDF da venda avulsa.');
     } finally {
+      downloadingPdfRef.current = false;
       setIsDownloadingPdf(false);
     }
   };

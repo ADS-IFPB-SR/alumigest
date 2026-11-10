@@ -1,3 +1,4 @@
+import type { AxiosResponse } from 'axios';
 import { api } from '@/lib/api';
 import { extractFilenameFromContentDisposition } from '@/features/budgets/services/budgetsApi';
 import type {
@@ -10,6 +11,42 @@ import type {
   PartSaleResponse,
   PartSaleStatus,
 } from '../types/partSaleTypes';
+
+type PdfResponseHeaders = AxiosResponse['headers'] | Record<string, unknown>;
+
+function readDispositionHeader(headers: PdfResponseHeaders | undefined): string | undefined {
+  if (!headers) {
+    return undefined;
+  }
+  const fromAxiosGet =
+    typeof (headers as { get?: unknown }).get === 'function'
+      ? (headers as { get: (name: string) => unknown }).get('content-disposition')
+      : undefined;
+  const rawDisposition =
+    fromAxiosGet ??
+    (headers as Record<string, unknown>)['content-disposition'] ??
+    (headers as Record<string, unknown>)['Content-Disposition'];
+  return typeof rawDisposition === 'string' ? rawDisposition : undefined;
+}
+
+function triggerPdfBlobDownload(
+  data: BlobPart,
+  headers: PdfResponseHeaders | undefined,
+  fallbackFilename: string
+): void {
+  const disposition = readDispositionHeader(headers);
+  const filename = extractFilenameFromContentDisposition(disposition, fallbackFilename);
+
+  const blob = new Blob([data], { type: 'application/pdf' });
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.setAttribute('download', filename);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
+}
 
 export const partSaleApi = {
   async getMaterialsByCategory(category?: string): Promise<MaterialOption[]> {
@@ -58,52 +95,21 @@ export const partSaleApi = {
    * Baixa o documento oficial em PDF A4 de uma venda de partes persistida (US-46.4).
    */
   async downloadPdf(id: string, code?: string): Promise<void> {
-    const response = await api.get(`/part-sales/${id}/pdf`, {
+    const response = await api.get<Blob>(`/part-sales/${id}/pdf`, {
       responseType: 'blob',
     });
-
-    const fallback = `orcamento-partes-${(code || id).replace(/\//g, '-')}.pdf`;
-    const disposition = (
-      response.headers?.['content-disposition'] ||
-      response.headers?.['Content-Disposition']
-    ) as string | undefined;
-    const filename = extractFilenameFromContentDisposition(disposition, fallback);
-
-    const blob = new Blob([response.data], { type: 'application/pdf' });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', filename);
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    window.URL.revokeObjectURL(url);
+    const fallback = `orcamento-partes-${(code || id).replaceAll('/', '-')}.pdf`;
+    triggerPdfBlobDownload(response.data, response.headers, fallback);
   },
 
   /**
    * Gera e baixa em tempo real (< 1.5s) o documento PDF A4 a partir de uma proposta em rascunho (US-46.4).
    */
   async downloadPdfPreview(request: CreatePartSaleRequest): Promise<void> {
-    const response = await api.post('/part-sales/export-pdf', request, {
+    const response = await api.post<Blob>('/part-sales/export-pdf', request, {
       responseType: 'blob',
     });
-
-    const fallback = 'orcamento-partes-rascunho.pdf';
-    const disposition = (
-      response.headers?.['content-disposition'] ||
-      response.headers?.['Content-Disposition']
-    ) as string | undefined;
-    const filename = extractFilenameFromContentDisposition(disposition, fallback);
-
-    const blob = new Blob([response.data], { type: 'application/pdf' });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', filename);
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    window.URL.revokeObjectURL(url);
+    triggerPdfBlobDownload(response.data, response.headers, 'orcamento-partes-rascunho.pdf');
   },
 };
 

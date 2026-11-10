@@ -37,6 +37,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -51,6 +53,7 @@ public class PartSalePdfService {
   private static final Logger log = LoggerFactory.getLogger(PartSalePdfService.class);
 
   private static final Locale PT_BR = Locale.of("pt", "BR");
+  private static final ZoneId ZONE_SAO_PAULO = ZoneId.of("America/Sao_Paulo");
   private static final DateTimeFormatter FORMATTER_DATA = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
   private static final Font FONTE_TITULO = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 14);
@@ -76,6 +79,22 @@ public class PartSalePdfService {
   private static final Color COR_TOTAL_BG = new Color(15, 25, 45);
 
   private static final String NAO_INFORMADO = "Não informado";
+  private static final String CLIENTE_BALCAO_PADRAO = "Cliente Balcão (Consumidor Final)";
+  private static final String LABEL_TOTAL_LIQUIDO = "TOTAL LÍQUIDO";
+
+  private static final String COLUNA_INDICE = "#";
+  private static final String COLUNA_LARGURA = "LARGURA";
+  private static final String COLUNA_ALTURA = "ALTURA";
+  private static final String COLUNA_AREA_FAT = "ÁREA FAT.";
+  private static final String COLUNA_QTD = "QTD";
+  private static final String COLUNA_V_UNIT = "V. UNIT";
+  private static final String COLUNA_TOTAL = "TOTAL";
+  private static final String SUFIXO_M2 = " m²";
+
+  private static final String SECAO_VIDROS = "VIDROS (COBRANÇA EM M²)";
+  private static final String SECAO_PERFIS = "PERFIS DE ALUMÍNIO (METRO LINEAR)";
+  private static final String SECAO_FERRAGENS = "FERRAGENS E ACESSÓRIOS (POR UNIDADE)";
+  private static final String SECAO_PELICULAS = "PELÍCULAS (COBRANÇA EM M²)";
 
   private final CompanyProperties companyProps;
 
@@ -100,12 +119,11 @@ public class PartSalePdfService {
       try (Document document = new Document(PageSize.A4, 36, 36, 54, 54)) {
         PdfWriter writer = PdfWriter.getInstance(document, outputStream);
 
-        String nomeCliente = client != null && client.getFullName() != null
-            ? client.getFullName()
-            : "Cliente Balcão (Consumidor Final)";
+        String nomeCliente = resolverNomeCliente(client);
+        String razaoSocial = obterDadoSeguro(companyProps.getRazaoSocial());
 
         PartSalePdfPageEvent pageEvent = new PartSalePdfPageEvent(
-            partSale.getCode(), nomeCliente, companyProps.getRazaoSocial());
+            partSale.getCode(), nomeCliente, razaoSocial);
         writer.setPageEvent(pageEvent);
 
         document.open();
@@ -128,7 +146,8 @@ public class PartSalePdfService {
       return outputStream.toByteArray();
     } catch (DocumentException | IOException e) {
       log.error("Erro ao gerar PDF da venda avulsa {}: {}", partSale.getCode(), e.getMessage(), e);
-      throw new BusinessException("Erro ao gerar documento PDF da venda avulsa: " + e.getMessage(), e);
+      throw new BusinessException(
+          "Erro ao gerar documento PDF da venda avulsa: " + e.getMessage(), e);
     }
   }
 
@@ -142,22 +161,7 @@ public class PartSalePdfService {
     table.setWidths(new float[]{60f, 40f});
 
     // Célula logotipo / razão social (esquerda)
-    PdfPCell cellLogo = new PdfPCell();
-    cellLogo.setBorder(Rectangle.NO_BORDER);
-
-    URL logoUrl = getClass().getResource("/static/images/logo.png");
-    if (logoUrl != null) {
-      try {
-        Image logo = Image.getInstance(logoUrl);
-        logo.scaleToFit(140f, 45f);
-        cellLogo.addElement(logo);
-      } catch (Exception e) {
-        log.warn("Erro ao carregar logotipo para o PDF da venda de partes: {}", e.getMessage());
-        cellLogo.addElement(new Paragraph(companyProps.getRazaoSocial(), FONTE_TITULO));
-      }
-    } else {
-      cellLogo.addElement(new Paragraph(companyProps.getRazaoSocial(), FONTE_TITULO));
-    }
+    PdfPCell cellLogo = criarCelulaLogo();
     table.addCell(cellLogo);
 
     // Célula título do documento (direita)
@@ -182,14 +186,18 @@ public class PartSalePdfService {
     cellDadosEmpresa.setBorder(Rectangle.NO_BORDER);
     cellDadosEmpresa.setPaddingTop(respiroSuperior);
 
-    String cnpjIe = "CNPJ: " + companyProps.getCnpj();
-    if (companyProps.getInscricaoEstadual() != null && !companyProps.getInscricaoEstadual().isBlank()) {
-      cnpjIe += " - IE: " + companyProps.getInscricaoEstadual();
+    String cnpjIe = "CNPJ: " + obterDadoSeguro(companyProps.getCnpj());
+    if (textoNaoVazio(companyProps.getInscricaoEstadual())) {
+      cnpjIe += " - IE: " + companyProps.getInscricaoEstadual().trim();
     }
     cellDadosEmpresa.addElement(new Phrase(cnpjIe + "\n", FONTE_DADOS_EMPRESA));
-    cellDadosEmpresa.addElement(new Phrase(companyProps.getEndereco() + "\n", FONTE_DADOS_EMPRESA));
-    cellDadosEmpresa.addElement(new Phrase(companyProps.getCidadeUf() + "\n", FONTE_DADOS_EMPRESA));
-    cellDadosEmpresa.addElement(new Phrase("Fone: " + companyProps.getTelefone() + "\n", FONTE_DADOS_EMPRESA));
+    cellDadosEmpresa.addElement(
+        new Phrase(obterDadoSeguro(companyProps.getEndereco()) + "\n", FONTE_DADOS_EMPRESA));
+    cellDadosEmpresa.addElement(
+        new Phrase(obterDadoSeguro(companyProps.getCidadeUf()) + "\n", FONTE_DADOS_EMPRESA));
+    cellDadosEmpresa.addElement(
+        new Phrase("Fone: " + obterDadoSeguro(companyProps.getTelefone()) + "\n",
+            FONTE_DADOS_EMPRESA));
     table.addCell(cellDadosEmpresa);
 
     PdfPCell cellMetadados = new PdfPCell();
@@ -197,7 +205,7 @@ public class PartSalePdfService {
     cellMetadados.setPaddingTop(respiroSuperior);
     cellMetadados.setHorizontalAlignment(Element.ALIGN_RIGHT);
 
-    String dataEmissao = formatarDataHora(partSale.getCreatedAt());
+    String dataEmissao = formatarData(partSale.getCreatedAt());
     Paragraph emissao = new Paragraph("Data de Emissão: " + dataEmissao, FONTE_NORMAL);
     emissao.setAlignment(Element.ALIGN_RIGHT);
     cellMetadados.addElement(emissao);
@@ -215,6 +223,26 @@ public class PartSalePdfService {
     divisoria.setSpacingAfter(12f);
     divisoria.add(new Chunk(new LineSeparator(0.8f, 100f, Color.GRAY, Element.ALIGN_CENTER, 0f)));
     document.add(divisoria);
+  }
+
+  private PdfPCell criarCelulaLogo() {
+    PdfPCell cellLogo = new PdfPCell();
+    cellLogo.setBorder(Rectangle.NO_BORDER);
+
+    String razaoSocial = obterDadoSeguro(companyProps.getRazaoSocial());
+    URL logoUrl = getClass().getResource("/static/images/logo.png");
+    if (logoUrl != null) {
+      try {
+        Image logo = Image.getInstance(logoUrl);
+        logo.scaleToFit(140f, 45f);
+        cellLogo.addElement(logo);
+        return cellLogo;
+      } catch (DocumentException | IOException e) {
+        log.warn("Erro ao carregar logotipo para o PDF da venda de partes: {}", e.getMessage());
+      }
+    }
+    cellLogo.addElement(new Paragraph(razaoSocial, FONTE_TITULO));
+    return cellLogo;
   }
 
   // =========================================================================
@@ -238,9 +266,7 @@ public class PartSalePdfService {
     PdfPCell cellEsq = new PdfPCell();
     cellEsq.setBorder(Rectangle.NO_BORDER);
 
-    String nome = client != null && client.getFullName() != null
-        ? client.getFullName()
-        : "Cliente Balcão (Consumidor Final)";
+    String nome = resolverNomeCliente(client);
     cellEsq.addElement(new Phrase("NOME / RAZÃO SOCIAL\n", FONTE_LABEL_CARD));
     cellEsq.addElement(new Phrase(nome + "\n\n", FONTE_NEGRITO));
 
@@ -254,15 +280,11 @@ public class PartSalePdfService {
     PdfPCell cellDir = new PdfPCell();
     cellDir.setBorder(Rectangle.NO_BORDER);
 
-    String doc = client != null && client.getDocumentNumber() != null && !client.getDocumentNumber().isBlank()
-        ? client.getDocumentNumber()
-        : "Não informado";
+    String doc = obterCampoClienteSeguro(client != null ? client.getDocumentNumber() : null);
     cellDir.addElement(new Phrase("CPF / CNPJ\n", FONTE_LABEL_CARD));
     cellDir.addElement(new Phrase(doc + "\n\n", FONTE_NEGRITO));
 
-    String fone = client != null && client.getPhone() != null && !client.getPhone().isBlank()
-        ? client.getPhone()
-        : "Não informado";
+    String fone = obterCampoClienteSeguro(client != null ? client.getPhone() : null);
     cellDir.addElement(new Phrase("TELEFONE\n", FONTE_LABEL_CARD));
     cellDir.addElement(new Phrase(fone, FONTE_NORMAL));
     innerTable.addCell(cellDir);
@@ -276,48 +298,50 @@ public class PartSalePdfService {
   // Tabelas Modulares por Categoria
   // =========================================================================
 
-  private void adicionarTabelasModularesItens(Document document, List<PartSaleItem> items) throws DocumentException {
-    List<PartSaleItem> vidros = items.stream()
-        .filter(it -> it.getMaterialType() == MaterialCategoryType.GLASS)
-        .toList();
-
-    List<PartSaleItem> perfis = items.stream()
-        .filter(it -> it.getMaterialType() == MaterialCategoryType.PROFILE)
-        .toList();
-
-    List<PartSaleItem> ferragens = items.stream()
-        .filter(it -> it.getMaterialType() == MaterialCategoryType.HARDWARE
-            || it.getMaterialType() == MaterialCategoryType.ROLLERS)
-        .toList();
-
-    List<PartSaleItem> peliculas = items.stream()
-        .filter(it -> it.getMaterialType() == MaterialCategoryType.FILM)
-        .toList();
-
+  private void adicionarTabelasModularesItens(Document document, List<PartSaleItem> items)
+      throws DocumentException {
+    List<PartSaleItem> vidros = filtrarPorCategoria(items, MaterialCategoryType.GLASS);
     if (!vidros.isEmpty()) {
-      adicionarTabelaVidros(document, vidros);
+      adicionarTabelaPorArea(document, vidros, SECAO_VIDROS, "DESCRIÇÃO DO VIDRO");
       document.add(espacamento(8f));
     }
 
+    List<PartSaleItem> perfis = filtrarPorCategoria(items, MaterialCategoryType.PROFILE);
     if (!perfis.isEmpty()) {
       adicionarTabelaPerfis(document, perfis);
       document.add(espacamento(8f));
     }
 
+    List<PartSaleItem> ferragens = items.stream()
+        .filter(it -> it.getMaterialType() == MaterialCategoryType.HARDWARE
+            || it.getMaterialType() == MaterialCategoryType.ROLLERS)
+        .toList();
     if (!ferragens.isEmpty()) {
       adicionarTabelaFerragens(document, ferragens);
       document.add(espacamento(8f));
     }
 
+    List<PartSaleItem> peliculas = filtrarPorCategoria(items, MaterialCategoryType.FILM);
     if (!peliculas.isEmpty()) {
-      adicionarTabelaPeliculas(document, peliculas);
+      adicionarTabelaPorArea(document, peliculas, SECAO_PELICULAS, "DESCRIÇÃO DA PELÍCULA");
       document.add(espacamento(8f));
     }
   }
 
-  private void adicionarTabelaVidros(Document document, List<PartSaleItem> vidros)
-      throws DocumentException {
-    Paragraph titulo = new Paragraph("VIDROS (COBRANÇA EM M²)", FONTE_TITULO_CARD);
+  private List<PartSaleItem> filtrarPorCategoria(
+      List<PartSaleItem> items, MaterialCategoryType category) {
+    return items.stream()
+        .filter(it -> it.getMaterialType() == category)
+        .toList();
+  }
+
+  private void adicionarTabelaPorArea(
+      Document document,
+      List<PartSaleItem> itens,
+      String tituloSecao,
+      String colunaDescricao
+  ) throws DocumentException {
+    Paragraph titulo = new Paragraph(tituloSecao, FONTE_TITULO_CARD);
     titulo.setSpacingAfter(6f);
     document.add(titulo);
 
@@ -327,23 +351,37 @@ public class PartSalePdfService {
     table.setHeaderRows(1);
 
     String[] headers = {
-        "#", "DESCRIÇÃO DO VIDRO", "LARGURA", "ALTURA", "ÁREA FAT.", "QTD", "V. UNIT", "TOTAL"
+        COLUNA_INDICE,
+        colunaDescricao,
+        COLUNA_LARGURA,
+        COLUNA_ALTURA,
+        COLUNA_AREA_FAT,
+        COLUNA_QTD,
+        COLUNA_V_UNIT,
+        COLUNA_TOTAL
     };
     adicionarCabecalhoTabela(table, headers);
 
-    for (int i = 0; i < vidros.size(); i++) {
-      PartSaleItem it = vidros.get(i);
+    for (int i = 0; i < itens.size(); i++) {
+      PartSaleItem it = itens.get(i);
       Color bg = (i % 2 == 0) ? Color.WHITE : COR_FUNDO_CLARO;
 
       adicionarCelula(table, String.valueOf(i + 1), FONTE_NORMAL, bg, Element.ALIGN_CENTER);
-      adicionarCelula(table, obterDadoSeguro(it.getDescription()), FONTE_NEGRITO, bg, Element.ALIGN_LEFT);
-      adicionarCelula(table, formatarMilimetros(it.getWidthMm()), FONTE_NORMAL, bg, Element.ALIGN_RIGHT);
-      adicionarCelula(table, formatarMilimetros(it.getHeightMm()), FONTE_NORMAL, bg, Element.ALIGN_RIGHT);
-      adicionarCelula(table, formatarMetragem(it.getCalculatedUnitMeasure(), " m²"),
+      adicionarCelula(
+          table, obterDadoSeguro(it.getDescription()), FONTE_NEGRITO, bg, Element.ALIGN_LEFT);
+      adicionarCelula(
+          table, formatarMilimetros(it.getWidthMm()), FONTE_NORMAL, bg, Element.ALIGN_RIGHT);
+      adicionarCelula(
+          table, formatarMilimetros(it.getHeightMm()), FONTE_NORMAL, bg, Element.ALIGN_RIGHT);
+      adicionarCelula(
+          table, formatarMetragem(it.getCalculatedUnitMeasure(), SUFIXO_M2),
           FONTE_NORMAL, bg, Element.ALIGN_RIGHT);
-      adicionarCelula(table, String.valueOf(it.getQuantity()), FONTE_NORMAL, bg, Element.ALIGN_CENTER);
-      adicionarCelula(table, formatarMoeda(it.getUnitPrice()), FONTE_NORMAL, bg, Element.ALIGN_RIGHT);
-      adicionarCelula(table, formatarMoeda(it.getTotalPrice()), FONTE_NEGRITO, bg, Element.ALIGN_RIGHT);
+      adicionarCelula(
+          table, String.valueOf(it.getQuantity()), FONTE_NORMAL, bg, Element.ALIGN_CENTER);
+      adicionarCelula(
+          table, formatarMoeda(it.getUnitPrice()), FONTE_NORMAL, bg, Element.ALIGN_RIGHT);
+      adicionarCelula(
+          table, formatarMoeda(it.getTotalPrice()), FONTE_NEGRITO, bg, Element.ALIGN_RIGHT);
     }
 
     document.add(table);
@@ -351,7 +389,7 @@ public class PartSalePdfService {
 
   private void adicionarTabelaPerfis(Document document, List<PartSaleItem> perfis)
       throws DocumentException {
-    Paragraph titulo = new Paragraph("PERFIS DE ALUMÍNIO (METRO LINEAR)", FONTE_TITULO_CARD);
+    Paragraph titulo = new Paragraph(SECAO_PERFIS, FONTE_TITULO_CARD);
     titulo.setSpacingAfter(6f);
     document.add(titulo);
 
@@ -361,7 +399,13 @@ public class PartSalePdfService {
     table.setHeaderRows(1);
 
     String[] headers = {
-        "#", "DESCRIÇÃO DO PERFIL", "COMPRIMENTO", "METROS FAT.", "QTD", "V. UNIT/M", "TOTAL"
+        COLUNA_INDICE,
+        "DESCRIÇÃO DO PERFIL",
+        "COMPRIMENTO",
+        "METROS FAT.",
+        COLUNA_QTD,
+        "V. UNIT/M",
+        COLUNA_TOTAL
     };
     adicionarCabecalhoTabela(table, headers);
 
@@ -370,13 +414,19 @@ public class PartSalePdfService {
       Color bg = (i % 2 == 0) ? Color.WHITE : COR_FUNDO_CLARO;
 
       adicionarCelula(table, String.valueOf(i + 1), FONTE_NORMAL, bg, Element.ALIGN_CENTER);
-      adicionarCelula(table, obterDadoSeguro(it.getDescription()), FONTE_NEGRITO, bg, Element.ALIGN_LEFT);
-      adicionarCelula(table, formatarMilimetros(it.getHeightMm()), FONTE_NORMAL, bg, Element.ALIGN_RIGHT);
-      adicionarCelula(table, formatarMetragem(it.getCalculatedUnitMeasure(), " m"),
+      adicionarCelula(
+          table, obterDadoSeguro(it.getDescription()), FONTE_NEGRITO, bg, Element.ALIGN_LEFT);
+      adicionarCelula(
+          table, formatarMilimetros(it.getHeightMm()), FONTE_NORMAL, bg, Element.ALIGN_RIGHT);
+      adicionarCelula(
+          table, formatarMetragem(it.getCalculatedUnitMeasure(), " m"),
           FONTE_NORMAL, bg, Element.ALIGN_RIGHT);
-      adicionarCelula(table, String.valueOf(it.getQuantity()), FONTE_NORMAL, bg, Element.ALIGN_CENTER);
-      adicionarCelula(table, formatarMoeda(it.getUnitPrice()), FONTE_NORMAL, bg, Element.ALIGN_RIGHT);
-      adicionarCelula(table, formatarMoeda(it.getTotalPrice()), FONTE_NEGRITO, bg, Element.ALIGN_RIGHT);
+      adicionarCelula(
+          table, String.valueOf(it.getQuantity()), FONTE_NORMAL, bg, Element.ALIGN_CENTER);
+      adicionarCelula(
+          table, formatarMoeda(it.getUnitPrice()), FONTE_NORMAL, bg, Element.ALIGN_RIGHT);
+      adicionarCelula(
+          table, formatarMoeda(it.getTotalPrice()), FONTE_NEGRITO, bg, Element.ALIGN_RIGHT);
     }
 
     document.add(table);
@@ -384,7 +434,7 @@ public class PartSalePdfService {
 
   private void adicionarTabelaFerragens(Document document, List<PartSaleItem> ferragens)
       throws DocumentException {
-    Paragraph titulo = new Paragraph("FERRAGENS E ACESSÓRIOS (POR UNIDADE)", FONTE_TITULO_CARD);
+    Paragraph titulo = new Paragraph(SECAO_FERRAGENS, FONTE_TITULO_CARD);
     titulo.setSpacingAfter(6f);
     document.add(titulo);
 
@@ -394,7 +444,9 @@ public class PartSalePdfService {
     table.setWidths(new float[]{0.8f, 5.2f, 1.4f, 1.8f, 1.8f});
     table.setHeaderRows(1);
 
-    String[] headers = {"#", "DESCRIÇÃO DO COMPONENTE", "QUANTIDADE", "V. UNIT (R$)", "TOTAL (R$)"};
+    String[] headers = {
+        COLUNA_INDICE, "DESCRIÇÃO DO COMPONENTE", "QUANTIDADE", "V. UNIT (R$)", "TOTAL (R$)"
+    };
     adicionarCabecalhoTabela(table, headers);
 
     for (int i = 0; i < ferragens.size(); i++) {
@@ -402,44 +454,13 @@ public class PartSalePdfService {
       Color bg = (i % 2 == 0) ? Color.WHITE : COR_FUNDO_CLARO;
 
       adicionarCelula(table, String.valueOf(i + 1), FONTE_NORMAL, bg, Element.ALIGN_CENTER);
-      adicionarCelula(table, obterDadoSeguro(it.getDescription()), FONTE_NEGRITO, bg, Element.ALIGN_LEFT);
+      adicionarCelula(
+          table, obterDadoSeguro(it.getDescription()), FONTE_NEGRITO, bg, Element.ALIGN_LEFT);
       adicionarCelula(table, it.getQuantity() + " UN", FONTE_NORMAL, bg, Element.ALIGN_CENTER);
-      adicionarCelula(table, formatarMoeda(it.getUnitPrice()), FONTE_NORMAL, bg, Element.ALIGN_RIGHT);
-      adicionarCelula(table, formatarMoeda(it.getTotalPrice()), FONTE_NEGRITO, bg, Element.ALIGN_RIGHT);
-    }
-
-    document.add(table);
-  }
-
-  private void adicionarTabelaPeliculas(Document document, List<PartSaleItem> peliculas)
-      throws DocumentException {
-    Paragraph titulo = new Paragraph("PELÍCULAS (COBRANÇA EM M²)", FONTE_TITULO_CARD);
-    titulo.setSpacingAfter(6f);
-    document.add(titulo);
-
-    PdfPTable table = new PdfPTable(8);
-    table.setWidthPercentage(100);
-    table.setWidths(new float[]{0.6f, 3.4f, 1.2f, 1.2f, 1.3f, 0.7f, 1.4f, 1.6f});
-    table.setHeaderRows(1);
-
-    String[] headers = {
-        "#", "DESCRIÇÃO DA PELÍCULA", "LARGURA", "ALTURA", "ÁREA FAT.", "QTD", "V. UNIT", "TOTAL"
-    };
-    adicionarCabecalhoTabela(table, headers);
-
-    for (int i = 0; i < peliculas.size(); i++) {
-      PartSaleItem it = peliculas.get(i);
-      Color bg = (i % 2 == 0) ? Color.WHITE : COR_FUNDO_CLARO;
-
-      adicionarCelula(table, String.valueOf(i + 1), FONTE_NORMAL, bg, Element.ALIGN_CENTER);
-      adicionarCelula(table, obterDadoSeguro(it.getDescription()), FONTE_NEGRITO, bg, Element.ALIGN_LEFT);
-      adicionarCelula(table, formatarMilimetros(it.getWidthMm()), FONTE_NORMAL, bg, Element.ALIGN_RIGHT);
-      adicionarCelula(table, formatarMilimetros(it.getHeightMm()), FONTE_NORMAL, bg, Element.ALIGN_RIGHT);
-      adicionarCelula(table, formatarMetragem(it.getCalculatedUnitMeasure(), " m²"),
-          FONTE_NORMAL, bg, Element.ALIGN_RIGHT);
-      adicionarCelula(table, String.valueOf(it.getQuantity()), FONTE_NORMAL, bg, Element.ALIGN_CENTER);
-      adicionarCelula(table, formatarMoeda(it.getUnitPrice()), FONTE_NORMAL, bg, Element.ALIGN_RIGHT);
-      adicionarCelula(table, formatarMoeda(it.getTotalPrice()), FONTE_NEGRITO, bg, Element.ALIGN_RIGHT);
+      adicionarCelula(
+          table, formatarMoeda(it.getUnitPrice()), FONTE_NORMAL, bg, Element.ALIGN_RIGHT);
+      adicionarCelula(
+          table, formatarMoeda(it.getTotalPrice()), FONTE_NEGRITO, bg, Element.ALIGN_RIGHT);
     }
 
     document.add(table);
@@ -449,7 +470,8 @@ public class PartSalePdfService {
   // Resumo Financeiro
   // =========================================================================
 
-  private void adicionarResumoFinanceiro(Document document, PartSale partSale) throws DocumentException {
+  private void adicionarResumoFinanceiro(Document document, PartSale partSale)
+      throws DocumentException {
     PdfPTable outerTable = new PdfPTable(2);
     outerTable.setWidthPercentage(100);
     outerTable.setWidths(new float[]{45f, 55f});
@@ -462,15 +484,19 @@ public class PartSalePdfService {
     totaisTable.setWidthPercentage(100);
     totaisTable.setWidths(new float[]{55f, 45f});
 
-    adicionarLinhaTotais(totaisTable, "Subtotal Bruto", formatarMoeda(partSale.getSubtotalAmount()), false);
+    adicionarLinhaTotais(
+        totaisTable, "Subtotal Bruto", formatarMoeda(partSale.getSubtotalAmount()));
 
     if (partSale.getDiscountAmount() != null
         && partSale.getDiscountAmount().compareTo(BigDecimal.ZERO) > 0) {
-      adicionarLinhaTotais(totaisTable, "Desconto Concedido",
-          "- " + formatarMoeda(partSale.getDiscountAmount()), false);
+      adicionarLinhaTotais(
+          totaisTable,
+          "Desconto Concedido",
+          "- " + formatarMoeda(partSale.getDiscountAmount())
+      );
     }
 
-    PdfPCell labelTotal = new PdfPCell(new Phrase("TOTAL LÍQUIDO", FONTE_TOTAL_LABEL));
+    PdfPCell labelTotal = new PdfPCell(new Phrase(LABEL_TOTAL_LIQUIDO, FONTE_TOTAL_LABEL));
     labelTotal.setBackgroundColor(COR_TOTAL_BG);
     labelTotal.setBorder(Rectangle.NO_BORDER);
     labelTotal.setPaddingLeft(10f);
@@ -495,22 +521,15 @@ public class PartSalePdfService {
     document.add(outerTable);
   }
 
-  private void adicionarLinhaTotais(
-      PdfPTable table,
-      String label,
-      String valor,
-      boolean destaque
-  ) {
-    Font fontLabel = destaque ? FONTE_TOTAL_LABEL : FONTE_NORMAL;
-    PdfPCell labelCell = new PdfPCell(new Phrase(label, fontLabel));
+  private void adicionarLinhaTotais(PdfPTable table, String label, String valor) {
+    PdfPCell labelCell = new PdfPCell(new Phrase(label, FONTE_NORMAL));
     labelCell.setBorder(Rectangle.BOTTOM);
     labelCell.setBorderColor(COR_BORDA_CLARA);
     labelCell.setPadding(5f);
     labelCell.setPaddingLeft(10f);
     table.addCell(labelCell);
 
-    Font fontValor = destaque ? FONTE_TOTAL_VALOR : FONTE_NORMAL;
-    PdfPCell valorCell = new PdfPCell(new Phrase(valor, fontValor));
+    PdfPCell valorCell = new PdfPCell(new Phrase(valor, FONTE_NORMAL));
     valorCell.setBorder(Rectangle.BOTTOM);
     valorCell.setBorderColor(COR_BORDA_CLARA);
     valorCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
@@ -535,7 +554,8 @@ public class PartSalePdfService {
 
     Paragraph condicoes = new Paragraph(
         "• Validade da proposta: 15 dias a contar da data de emissão.\n"
-            + "• Condições de corte: medidas executadas conforme projeto com tolerâncias industriais normatizadas.\n"
+            + "• Condições de corte: medidas executadas conforme projeto "
+            + "com tolerâncias industriais normatizadas.\n"
             + "• A retirada das peças cortadas deve ser acompanhada para conferência visual.",
         FONTE_PEQUENA
     );
@@ -585,7 +605,8 @@ public class PartSalePdfService {
     cellEmpresa.setPaddingTop(6f);
     cellEmpresa.setHorizontalAlignment(Element.ALIGN_CENTER);
 
-    Paragraph nomeEmpresaPara = new Paragraph(companyProps.getRazaoSocial(), FONTE_NEGRITO);
+    Paragraph nomeEmpresaPara = new Paragraph(
+        obterDadoSeguro(companyProps.getRazaoSocial()), FONTE_NEGRITO);
     nomeEmpresaPara.setAlignment(Element.ALIGN_CENTER);
     cellEmpresa.addElement(nomeEmpresaPara);
 
@@ -612,7 +633,8 @@ public class PartSalePdfService {
     }
   }
 
-  private void adicionarCelula(PdfPTable table, String texto, Font fonte, Color bgColor, int alinhamento) {
+  private void adicionarCelula(
+      PdfPTable table, String texto, Font fonte, Color bgColor, int alinhamento) {
     PdfPCell cell = new PdfPCell(new Phrase(texto != null ? texto : "", fonte));
     cell.setBackgroundColor(bgColor);
     cell.setBorder(Rectangle.BOTTOM);
@@ -638,6 +660,17 @@ public class PartSalePdfService {
     return p;
   }
 
+  private String resolverNomeCliente(Client client) {
+    if (client != null && textoNaoVazio(client.getFullName())) {
+      return client.getFullName().trim();
+    }
+    return CLIENTE_BALCAO_PADRAO;
+  }
+
+  private String obterCampoClienteSeguro(String valor) {
+    return textoNaoVazio(valor) ? valor.trim() : NAO_INFORMADO;
+  }
+
   private String formatarStatus(PartSaleStatus status) {
     if (status == null) {
       return "Em Cotação / Rascunho";
@@ -649,40 +682,38 @@ public class PartSalePdfService {
     };
   }
 
-  private String formatarDataHora(OffsetDateTime dateTime) {
-    if (dateTime == null) {
-      dateTime = OffsetDateTime.now(ZoneId.of("America/Sao_Paulo"));
-    }
-    return dateTime.atZoneSameInstant(ZoneId.of("America/Sao_Paulo")).format(FORMATTER_DATA);
+  private String formatarData(OffsetDateTime dateTime) {
+    OffsetDateTime referencia = dateTime != null
+        ? dateTime
+        : OffsetDateTime.now(ZONE_SAO_PAULO);
+    return referencia.atZoneSameInstant(ZONE_SAO_PAULO).format(FORMATTER_DATA);
   }
 
   private String formatarEnderecoCliente(Client client) {
     if (client == null) {
       return "";
     }
-    StringBuilder sb = new StringBuilder();
-    if (client.getStreet() != null && !client.getStreet().isBlank()) {
-      sb.append(client.getStreet());
-      if (client.getNumber() != null && !client.getNumber().isBlank()) {
-        sb.append(", ").append(client.getNumber());
-      }
+    String logradouro = formatarParteComSeparador(client.getStreet(), client.getNumber(), ", ");
+    String cidadeUf = formatarParteComSeparador(client.getCity(), client.getState(), "/");
+    return Stream.of(logradouro, client.getNeighborhood(), cidadeUf)
+        .filter(this::textoNaoVazio)
+        .map(String::trim)
+        .collect(Collectors.joining(" - "));
+  }
+
+  private String formatarParteComSeparador(
+      String partePrincipal, String parteSecundaria, String separador) {
+    if (!textoNaoVazio(partePrincipal)) {
+      return "";
     }
-    if (client.getNeighborhood() != null && !client.getNeighborhood().isBlank()) {
-      if (!sb.isEmpty()) {
-        sb.append(" - ");
-      }
-      sb.append(client.getNeighborhood());
+    if (!textoNaoVazio(parteSecundaria)) {
+      return partePrincipal.trim();
     }
-    if (client.getCity() != null && !client.getCity().isBlank()) {
-      if (!sb.isEmpty()) {
-        sb.append(" - ");
-      }
-      sb.append(client.getCity());
-      if (client.getState() != null && !client.getState().isBlank()) {
-        sb.append("/").append(client.getState());
-      }
-    }
-    return sb.toString();
+    return partePrincipal.trim() + separador + parteSecundaria.trim();
+  }
+
+  private boolean textoNaoVazio(String valor) {
+    return valor != null && !valor.isBlank();
   }
 
   private String formatarMilimetros(Integer mm) {
@@ -710,7 +741,7 @@ public class PartSalePdfService {
   }
 
   private String obterDadoSeguro(String valor) {
-    if (valor == null || valor.isBlank()) {
+    if (!textoNaoVazio(valor)) {
       return NAO_INFORMADO;
     }
     return valor.trim();

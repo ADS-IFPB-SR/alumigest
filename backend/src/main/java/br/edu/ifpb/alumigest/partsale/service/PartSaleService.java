@@ -5,6 +5,7 @@ import br.edu.ifpb.alumigest.partsale.domain.PartSaleStatus;
 import br.edu.ifpb.alumigest.partsale.dto.CalculatePartItemRequest;
 import br.edu.ifpb.alumigest.partsale.dto.CalculatePartItemResponse;
 import br.edu.ifpb.alumigest.partsale.dto.CreatePartSaleRequest;
+import br.edu.ifpb.alumigest.partsale.dto.PartSalePdfDTO;
 import br.edu.ifpb.alumigest.partsale.dto.PartSaleResponse;
 import java.util.UUID;
 import org.springframework.data.domain.Pageable;
@@ -40,12 +41,12 @@ public interface PartSaleService {
   PartSaleResponse updateStatus(UUID id, PartSaleStatus newStatus);
 
   /**
-   * Gera o arquivo PDF A4 diagramado para uma venda avulsa de partes persistida.
+   * Gera o arquivo PDF A4 diagramado e o nome sugerido para uma venda avulsa de partes persistida.
    *
    * @param id identificador da venda avulsa
-   * @return array de bytes contendo o documento PDF oficial
+   * @return DTO contendo os bytes do documento PDF oficial e o nome sugerido do arquivo
    */
-  byte[] generatePdf(UUID id);
+  PartSalePdfDTO generatePdf(UUID id);
 
   /**
    * Gera o arquivo PDF A4 diagramado em tempo real a partir de uma proposta em rascunho.

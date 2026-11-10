@@ -132,7 +132,7 @@ describe('partSaleApi [US-46.1] - API Service Tests', () => {
       window.URL.revokeObjectURL = originalRevokeObjectURL;
     });
 
-    it('downloadPdf deve chamar GET /part-sales/{id}/pdf com responseType blob e disparar download', async () => {
+    it('downloadPdf deve chamar GET /part-sales/{id}/pdf com responseType blob e disparar download com filename do header', async () => {
       const mockBlob = new Blob(['pdf-binary-mock'], { type: 'application/pdf' });
       vi.mocked(api.get).mockResolvedValueOnce({
         data: mockBlob,
@@ -141,11 +141,93 @@ describe('partSaleApi [US-46.1] - API Service Tests', () => {
         },
       });
 
-      await partSaleApi.downloadPdf('sale-1', 'VP-2026-0001');
+      const originalCreateElement = document.createElement.bind(document);
+      let capturedLink: HTMLAnchorElement | null = null;
+      const createElementSpy = vi
+        .spyOn(document, 'createElement')
+        .mockImplementation((tagName: string) => {
+          const el = originalCreateElement(tagName);
+          if (tagName.toLowerCase() === 'a') {
+            capturedLink = el as HTMLAnchorElement;
+            vi.spyOn(capturedLink, 'click').mockImplementation(() => {});
+          }
+          return el;
+        });
 
-      expect(api.get).toHaveBeenCalledWith('/part-sales/sale-1/pdf', { responseType: 'blob' });
-      expect(window.URL.createObjectURL).toHaveBeenCalled();
-      expect(window.URL.revokeObjectURL).toHaveBeenCalledWith('blob:mock-url');
+      try {
+        await partSaleApi.downloadPdf('sale-1', 'VP-2026-0001');
+
+        expect(api.get).toHaveBeenCalledWith('/part-sales/sale-1/pdf', { responseType: 'blob' });
+        expect(capturedLink?.getAttribute('download')).toBe('orcamento-partes-VP-2026-0001.pdf');
+        expect(capturedLink?.click).toHaveBeenCalledTimes(1);
+        expect(window.URL.createObjectURL).toHaveBeenCalled();
+        expect(window.URL.revokeObjectURL).toHaveBeenCalledWith('blob:mock-url');
+      } finally {
+        createElementSpy.mockRestore();
+      }
+    });
+
+    it('downloadPdf deve ler Content-Disposition via headers.get (AxiosHeaders) e sem code', async () => {
+      const mockBlob = new Blob(['pdf-binary-axios-headers'], { type: 'application/pdf' });
+      vi.mocked(api.get).mockResolvedValueOnce({
+        data: mockBlob,
+        headers: {
+          get: (name: string) =>
+            name.toLowerCase() === 'content-disposition'
+              ? 'attachment; filename="orcamento-partes-VP-2026-0042.pdf"'
+              : undefined,
+        },
+      });
+
+      const originalCreateElement = document.createElement.bind(document);
+      let capturedLink: HTMLAnchorElement | null = null;
+      const createElementSpy = vi
+        .spyOn(document, 'createElement')
+        .mockImplementation((tagName: string) => {
+          const el = originalCreateElement(tagName);
+          if (tagName.toLowerCase() === 'a') {
+            capturedLink = el as HTMLAnchorElement;
+            vi.spyOn(capturedLink, 'click').mockImplementation(() => {});
+          }
+          return el;
+        });
+
+      try {
+        await partSaleApi.downloadPdf('sale-42');
+
+        expect(capturedLink?.getAttribute('download')).toBe('orcamento-partes-VP-2026-0042.pdf');
+      } finally {
+        createElementSpy.mockRestore();
+      }
+    });
+
+    it('downloadPdf deve usar fallback sanitizado quando header Content-Disposition estiver ausente', async () => {
+      const mockBlob = new Blob(['pdf-binary-fallback'], { type: 'application/pdf' });
+      vi.mocked(api.get).mockResolvedValueOnce({
+        data: mockBlob,
+        headers: {},
+      });
+
+      const originalCreateElement = document.createElement.bind(document);
+      let capturedLink: HTMLAnchorElement | null = null;
+      const createElementSpy = vi
+        .spyOn(document, 'createElement')
+        .mockImplementation((tagName: string) => {
+          const el = originalCreateElement(tagName);
+          if (tagName.toLowerCase() === 'a') {
+            capturedLink = el as HTMLAnchorElement;
+            vi.spyOn(capturedLink, 'click').mockImplementation(() => {});
+          }
+          return el;
+        });
+
+      try {
+        await partSaleApi.downloadPdf('sale-1', 'VP/2026/0099');
+
+        expect(capturedLink?.getAttribute('download')).toBe('orcamento-partes-VP-2026-0099.pdf');
+      } finally {
+        createElementSpy.mockRestore();
+      }
     });
 
     it('downloadPdfPreview deve chamar POST /part-sales/export-pdf com responseType blob e disparar download', async () => {
@@ -159,17 +241,35 @@ describe('partSaleApi [US-46.1] - API Service Tests', () => {
       vi.mocked(api.post).mockResolvedValueOnce({
         data: mockBlob,
         headers: {
-          'content-disposition': 'attachment; filename="orcamento-partes-rascunho.pdf"',
+          'Content-Disposition': 'attachment; filename="orcamento-partes-rascunho.pdf"',
         },
       });
 
-      await partSaleApi.downloadPdfPreview(mockRequest);
+      const originalCreateElement = document.createElement.bind(document);
+      let capturedLink: HTMLAnchorElement | null = null;
+      const createElementSpy = vi
+        .spyOn(document, 'createElement')
+        .mockImplementation((tagName: string) => {
+          const el = originalCreateElement(tagName);
+          if (tagName.toLowerCase() === 'a') {
+            capturedLink = el as HTMLAnchorElement;
+            vi.spyOn(capturedLink, 'click').mockImplementation(() => {});
+          }
+          return el;
+        });
 
-      expect(api.post).toHaveBeenCalledWith('/part-sales/export-pdf', mockRequest, {
-        responseType: 'blob',
-      });
-      expect(window.URL.createObjectURL).toHaveBeenCalled();
-      expect(window.URL.revokeObjectURL).toHaveBeenCalledWith('blob:mock-url');
+      try {
+        await partSaleApi.downloadPdfPreview(mockRequest);
+
+        expect(api.post).toHaveBeenCalledWith('/part-sales/export-pdf', mockRequest, {
+          responseType: 'blob',
+        });
+        expect(capturedLink?.getAttribute('download')).toBe('orcamento-partes-rascunho.pdf');
+        expect(window.URL.createObjectURL).toHaveBeenCalled();
+        expect(window.URL.revokeObjectURL).toHaveBeenCalledWith('blob:mock-url');
+      } finally {
+        createElementSpy.mockRestore();
+      }
     });
   });
 });
