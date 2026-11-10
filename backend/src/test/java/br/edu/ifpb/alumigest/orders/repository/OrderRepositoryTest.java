@@ -247,4 +247,22 @@ class OrderRepositoryTest {
         assertThat(orders.get(0).getItems()).hasSize(1);
         assertThat(orders.get(0).getItems().get(0).getDescricao()).isEqualTo("Janela de Correr 2 Folhas");
     }
+
+    @Test
+    @DisplayName("[Issue #517] Deve recuperar de forma determinística a OS mais recente vinculada ao orçamento")
+    void shouldFindLatestOrderByOrcamentoIdDeterministically() {
+        UUID orcamentoId = UUID.randomUUID();
+        orderRepository.saveAndFlush(buildOrder("OS-2026-0001", orcamentoId, OrderStatus.CANCELLED));
+        orderRepository.saveAndFlush(buildOrder("OS-2026-0002", orcamentoId, OrderStatus.WAITING_PRODUCTION));
+
+        entityManager.flush();
+        entityManager.clear();
+
+        Optional<Order> latest = orderRepository.findLatestByOrcamentoId(orcamentoId);
+
+        assertThat(latest).isPresent();
+        assertThat(latest.get().getCodigo()).isEqualTo("OS-2026-0002");
+        assertThat(latest.get().getStatus()).isEqualTo(OrderStatus.WAITING_PRODUCTION);
+    }
 }
+
