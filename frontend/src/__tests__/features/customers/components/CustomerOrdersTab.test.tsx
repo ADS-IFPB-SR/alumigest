@@ -118,22 +118,48 @@ describe('CustomerOrdersTab', () => {
     expect(screen.queryByText(/Esquadrias da O\.S\./)).not.toBeInTheDocument();
   });
 
-  it('deve chamar onOpenTechSheet ao clicar no botão Ficha Técnica', () => {
+  it('deve expandir e ocultar o drawer ao clicar no botão Ver Peças', () => {
+    render(<CustomerOrdersTab orders={mockOrders} />);
+
+    expect(screen.queryByText(/Esquadrias da O\.S\./)).not.toBeInTheDocument();
+
+    const viewPartsButton = screen.getByRole('button', { name: /ver peças da o\.s\. OS-2026-0042/i });
+    expect(viewPartsButton).toBeInTheDocument();
+
+    // Clica para abrir
+    fireEvent.click(viewPartsButton);
+    expect(screen.getByText(/Esquadrias da O\.S\./)).toBeInTheDocument();
+    expect(screen.getByText('Ocultar Peças')).toBeInTheDocument();
+
+    // Clica para fechar
+    fireEvent.click(screen.getByRole('button', { name: /ver peças da o\.s\. OS-2026-0042/i }));
+    expect(screen.queryByText(/Esquadrias da O\.S\./)).not.toBeInTheDocument();
+  });
+
+  it('deve chamar onOpenTechSheet ao clicar no botão Ficha Técnica no cartão de esquadrias', () => {
     const handleTechSheet = vi.fn();
     render(<CustomerOrdersTab orders={mockOrders} onOpenTechSheet={handleTechSheet} />);
 
-    const techSheetButtons = screen.getAllByRole('button', { name: /ficha técnica/i });
-    fireEvent.click(techSheetButtons[0]);
+    // Abre o drawer pelo botão Ver Peças
+    const viewPartsButton = screen.getByRole('button', { name: /ver peças da o\.s\. OS-2026-0042/i });
+    fireEvent.click(viewPartsButton);
+
+    const techSheetButton = screen.getByRole('button', { name: /ficha técnica da o\.s\. OS-2026-0042/i });
+    fireEvent.click(techSheetButton);
 
     expect(handleTechSheet).toHaveBeenCalledWith('order-1');
   });
 
-  it('deve chamar onOpenLabels ao clicar no botão Etiquetas', () => {
+  it('deve chamar onOpenLabels ao clicar no botão Etiquetas no cartão de esquadrias', () => {
     const handleLabels = vi.fn();
     render(<CustomerOrdersTab orders={mockOrders} onOpenLabels={handleLabels} />);
 
-    const labelButtons = screen.getAllByRole('button', { name: /etiquetas da o\.s\./i });
-    fireEvent.click(labelButtons[0]);
+    // Abre o drawer pelo botão Ver Peças
+    const viewPartsButton = screen.getByRole('button', { name: /ver peças da o\.s\. OS-2026-0042/i });
+    fireEvent.click(viewPartsButton);
+
+    const labelButton = screen.getByRole('button', { name: /etiquetas da o\.s\. OS-2026-0042/i });
+    fireEvent.click(labelButton);
 
     expect(handleLabels).toHaveBeenCalledWith('order-1');
   });

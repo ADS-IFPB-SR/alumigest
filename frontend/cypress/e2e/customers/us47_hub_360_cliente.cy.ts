@@ -379,7 +379,10 @@ describe('US-47: Central 360° do Cliente com Gestão Unificada de Orçamentos, 
 
     cy.contains('button', 'Ordens de Serviço (O.S.)').click();
 
-    // Dispara o botão Ficha Técnica na tabela
+    // Clica em "Ver Peças" para abrir o cartão de esquadrias
+    cy.get('button[aria-label="Ver peças da O.S. OS-2026-0001"]').click();
+
+    // Dispara o botão Ficha Técnica no cabeçalho do cartão de esquadrias
     cy.get(`button[aria-label="Ficha técnica da O.S. OS-2026-0001"]`).click();
     cy.wait('@downloadTechSheetPdf');
 
@@ -393,7 +396,10 @@ describe('US-47: Central 360° do Cliente com Gestão Unificada de Orçamentos, 
 
     cy.contains('button', 'Ordens de Serviço (O.S.)').click();
 
-    // Dispara o botão Etiquetas na tabela
+    // Clica em "Ver Peças" para abrir o cartão de esquadrias
+    cy.get('button[aria-label="Ver peças da O.S. OS-2026-0001"]').click();
+
+    // Dispara o botão Etiquetas no cabeçalho do cartão de esquadrias
     cy.get(`button[aria-label="Etiquetas da O.S. OS-2026-0001"]`).click();
     cy.wait('@getOrderById');
 

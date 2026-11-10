@@ -25,6 +25,32 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
 
   Optional<Order> findTopByOrcamentoIdOrderByCreatedAtDesc(UUID orcamentoId);
 
+  /**
+   * Busca os pedidos vinculados a um orçamento em ordem determinística (mais recente primeiro),
+   * utilizando o tamanho e valor lexicográfico do código e o UUID como critérios de desempate.
+   *
+   * @param orcamentoId identificador único do orçamento
+   * @param pageable    limite da paginação (esperado {@code PageRequest.of(0, 1)})
+   * @return lista ordenada de pedidos vinculados
+   */
+  @Query("""
+        SELECT o FROM Order o
+        WHERE o.orcamentoId = :orcamentoId
+        ORDER BY o.createdAt DESC, LENGTH(o.codigo) DESC, o.codigo DESC, o.id DESC
+      """)
+  List<Order> findLatestOrdersByOrcamentoId(
+      @Param("orcamentoId") UUID orcamentoId, Pageable pageable);
+
+  /**
+   * Recupera o pedido mais recente vinculado a um orçamento de origem.
+   *
+   * @param orcamentoId identificador único do orçamento
+   * @return pedido mais recente, caso exista
+   */
+  default Optional<Order> findLatestByOrcamentoId(UUID orcamentoId) {
+    return findLatestOrdersByOrcamentoId(orcamentoId, PageRequest.of(0, 1)).stream().findFirst();
+  }
+
   boolean existsByOrcamentoIdAndStatusNot(UUID orcamentoId, OrderStatus status);
 
   boolean existsByCodigo(String codigo);

@@ -5,6 +5,7 @@ import br.edu.ifpb.alumigest.orders.domain.Order;
 import br.edu.ifpb.alumigest.orders.domain.OrderItem;
 import br.edu.ifpb.alumigest.orders.dto.production.ProductionSheetResponse;
 import br.edu.ifpb.alumigest.orders.repository.OrderRepository;
+import br.edu.ifpb.alumigest.orders.service.production.strategies.DefaultFrameCalculator;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,10 +17,12 @@ public class ProductionSheetService {
 
     private final OrderRepository orderRepository;
     private final List<FrameCalculatorStrategy> calculationStrategies;
+    private final FrameCalculatorStrategy defaultCalculator;
 
     public ProductionSheetService(OrderRepository orderRepository, List<FrameCalculatorStrategy> calculationStrategies) {
         this.orderRepository = orderRepository;
-        this.calculationStrategies = calculationStrategies;
+        this.calculationStrategies = calculationStrategies != null ? calculationStrategies : List.of();
+        this.defaultCalculator = new DefaultFrameCalculator();
     }
 
     @Transactional(readOnly = true)
@@ -34,11 +37,9 @@ public class ProductionSheetService {
                 FrameCalculatorStrategy strategy = calculationStrategies.stream()
                         .filter(s -> s.supports(item))
                         .findFirst()
-                        .orElse(null);
+                        .orElse(defaultCalculator);
 
-                if (strategy != null) {
-                    strategy.calculateCuts(item, sheetBuilder);
-                }
+                strategy.calculateCuts(item, sheetBuilder);
             }
         }
 
