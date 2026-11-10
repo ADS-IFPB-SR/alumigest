@@ -22,6 +22,7 @@ import br.edu.ifpb.alumigest.orders.dto.OrderResponse;
 import br.edu.ifpb.alumigest.orders.dto.OrderSummaryResponse;
 import br.edu.ifpb.alumigest.orders.mapper.OrderMapper;
 import br.edu.ifpb.alumigest.orders.repository.OrderRepository;
+import br.edu.ifpb.alumigest.orders.domain.OrderCancelledEvent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -747,13 +748,13 @@ class OrderServiceImplTest {
         verify(orderRepository).save(captor.capture());
         assertThat(captor.getValue().getStatus()).isEqualTo(OrderStatus.CANCELLED);
         assertThat(captor.getValue().getJustificativaCancelamento()).isEqualTo("Cliente desistiu por motivo de mudança de obra.");
+        verify(eventPublisher).publishEvent(any(OrderCancelledEvent.class));
     }
 
     @Test
-    @DisplayName("[US-15.2] Deve cancelar pedido e manter orçamento vinculado como APPROVED sem alteração automática")
-    void shouldCancelOrderAndKeepLinkedBudgetApproved() {
+    @DisplayName("[Issue #517] Deve cancelar pedido e publicar OrderCancelledEvent quando houver orçamento vinculado")
+    void shouldCancelOrderAndPublishOrderCancelledEvent() {
         Order savedOrder = buildSavedOrder();
-        budget.setStatus(BudgetStatus.APPROVED);
         OrderCancelRequest cancelRequest = new OrderCancelRequest("Cliente desistiu da obra.");
 
         given(orderRepository.findByIdWithDetails(orderId)).willReturn(Optional.of(savedOrder));
@@ -776,8 +777,49 @@ class OrderServiceImplTest {
 
         assertThat(result).isNotNull();
         assertThat(result.status()).isEqualTo(OrderStatus.CANCELLED);
-        assertThat(budget.getStatus()).isEqualTo(BudgetStatus.APPROVED);
+
+        ArgumentCaptor<OrderCancelledEvent> eventCaptor = ArgumentCaptor.forClass(OrderCancelledEvent.class);
+        verify(eventPublisher).publishEvent(eventCaptor.capture());
+        assertThat(eventCaptor.getValue().orcamentoId()).isEqualTo(budgetId);
         verify(budgetRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("[Issue #517] Deve cancelar pedido sem orçamento vinculado e não publicar OrderCancelledEvent")
+    void shouldCancelOrderWithoutPublishingEventWhenOrcamentoIdIsNull() {
+        Order orderWithoutBudget = Order.builder()
+                .id(orderId)
+                .codigo("OS-2026-0001")
+                .orcamentoId(null)
+                .clienteNome("Empresa XPTO Ltda")
+                .status(OrderStatus.WAITING_PRODUCTION)
+                .canalAprovacao(ApprovalChannel.WHATSAPP)
+                .build();
+
+        OrderCancelRequest cancelRequest = new OrderCancelRequest("Cancelamento de pedido sem orçamento vinculado.");
+
+        given(orderRepository.findByIdWithDetails(orderId)).willReturn(Optional.of(orderWithoutBudget));
+        given(orderRepository.save(any(Order.class))).willAnswer(inv -> inv.getArgument(0));
+
+        OrderResponse expectedResponse = new OrderResponse(
+                orderId, "OS-2026-0001", null, null,
+                "Empresa XPTO Ltda", null, null,
+                OrderStatus.CANCELLED, "Cancelado",
+                ApprovalChannel.WHATSAPP, "WhatsApp",
+                LocalDate.now(ZoneOffset.UTC), request.dataPrevisaoEntrega(), null,
+                budget.getSubtotal(), budget.getDiscountValue(), BigDecimal.ZERO, BigDecimal.ZERO,
+                budget.getTotal(), null, null, null, "Cancelamento de pedido sem orçamento vinculado.",
+                OffsetDateTime.now(ZoneOffset.UTC), OffsetDateTime.now(ZoneOffset.UTC), true,
+                Collections.emptyList()
+        );
+        given(orderMapper.toResponse(any(Order.class))).willReturn(expectedResponse);
+
+        OrderResponse result = orderService.cancelOrder(orderId, cancelRequest);
+
+        assertThat(result).isNotNull();
+        assertThat(result.status()).isEqualTo(OrderStatus.CANCELLED);
+        verify(orderRepository).save(any(Order.class));
+        verify(eventPublisher, never()).publishEvent(any(OrderCancelledEvent.class));
     }
 
     @Test
@@ -793,6 +835,7 @@ class OrderServiceImplTest {
                 .hasMessageContaining(nonExistentId.toString());
 
         verify(orderRepository, never()).save(any());
+        verify(eventPublisher, never()).publishEvent(any(OrderCancelledEvent.class));
     }
 
     @Test
@@ -815,6 +858,7 @@ class OrderServiceImplTest {
                 .hasMessageContaining("Não é possível cancelar um pedido no status IN_PRODUCTION");
 
         verify(orderRepository, never()).save(any());
+        verify(eventPublisher, never()).publishEvent(any(OrderCancelledEvent.class));
     }
 
     @Test
@@ -830,8 +874,9 @@ class OrderServiceImplTest {
                 .hasMessageContaining("pelo menos 10 caracteres");
 
         verify(orderRepository, never()).save(any());
+        verify(eventPublisher, never()).publishEvent(any(OrderCancelledEvent.class));
     }
-
+    
     @Nested
     @DisplayName("Cenários de Geração de Etiquetas Térmicas (gerarEtiquetasById) [US-17.2]")
     class GerarEtiquetasByIdTests {
