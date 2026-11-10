@@ -1,7 +1,7 @@
 package br.edu.ifpb.alumigest.budgets.service;
 
-import br.edu.ifpb.alumigest.common.exception.BusinessException;
 import br.edu.ifpb.alumigest.orders.domain.OrderCancelledEvent;
+import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -9,11 +9,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.UUID;
-
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doThrow;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -21,46 +19,54 @@ import static org.mockito.Mockito.verifyNoInteractions;
 @ExtendWith(MockitoExtension.class)
 class BudgetOrderEventListenerTest {
 
-    @Mock
-    private BudgetService budgetService;
+  @Mock
+  private BudgetService budgetService;
 
-    @InjectMocks
-    private BudgetOrderEventListener listener;
+  @InjectMocks
+  private BudgetOrderEventListener listener;
 
-    @Test
-    @DisplayName("Deve reabrir o orçamento para DRAFT quando orcamentoId não for nulo")
-    void shouldReopenBudgetWhenOrcamentoIdIsNotNull() {
-        UUID orcamentoId = UUID.randomUUID();
-        OrderCancelledEvent event = new OrderCancelledEvent(orcamentoId);
+  @Test
+  @DisplayName("Deve reabrir o orçamento para DRAFT quando orcamentoId for elegível")
+  void shouldReopenBudgetWhenOrcamentoIdIsNotNullAndEligible() {
+    UUID orcamentoId = UUID.randomUUID();
+    OrderCancelledEvent event = new OrderCancelledEvent(orcamentoId);
+    given(budgetService.reabrirOrcamentoSeElegivel(orcamentoId)).willReturn(true);
 
-        listener.onOrderCancelled(event);
+    assertThatCode(() -> listener.onOrderCancelled(event))
+        .doesNotThrowAnyException();
 
-        verify(budgetService).reabrirOrcamento(orcamentoId);
-    }
+    verify(budgetService).reabrirOrcamentoSeElegivel(orcamentoId);
+  }
 
-    @Test
-    @DisplayName("Não deve acionar BudgetService quando orcamentoId for nulo")
-    void shouldNotReopenBudgetWhenOrcamentoIdIsNull() {
-        OrderCancelledEvent event = new OrderCancelledEvent(null);
+  @Test
+  @DisplayName("Deve concluir normalmente sem erro quando orçamento não estiver elegível para reabertura")
+  void shouldCompleteGracefullyWhenBudgetIsNotEligible() {
+    UUID orcamentoId = UUID.randomUUID();
+    OrderCancelledEvent event = new OrderCancelledEvent(orcamentoId);
+    given(budgetService.reabrirOrcamentoSeElegivel(orcamentoId)).willReturn(false);
 
-        listener.onOrderCancelled(event);
+    assertThatCode(() -> listener.onOrderCancelled(event))
+        .doesNotThrowAnyException();
 
-        verifyNoInteractions(budgetService);
-        verify(budgetService, never()).reabrirOrcamento(any());
-    }
+    verify(budgetService).reabrirOrcamentoSeElegivel(orcamentoId);
+  }
 
-    @Test
-    @DisplayName("Deve capturar BusinessException e não propagar erro caso o orçamento já não esteja em APPROVED")
-    void shouldCatchBusinessExceptionWhenBudgetIsNotApproved() {
-        UUID orcamentoId = UUID.randomUUID();
-        OrderCancelledEvent event = new OrderCancelledEvent(orcamentoId);
+  @Test
+  @DisplayName("Não deve acionar BudgetService quando orcamentoId for nulo")
+  void shouldNotReopenBudgetWhenOrcamentoIdIsNull() {
+    OrderCancelledEvent event = new OrderCancelledEvent(null);
 
-        doThrow(new BusinessException("Orçamento não está com status APPROVED"))
-                .when(budgetService).reabrirOrcamento(orcamentoId);
+    listener.onOrderCancelled(event);
 
-        assertThatCode(() -> listener.onOrderCancelled(event))
-                .doesNotThrowAnyException();
+    verifyNoInteractions(budgetService);
+    verify(budgetService, never()).reabrirOrcamentoSeElegivel(any());
+  }
 
-        verify(budgetService).reabrirOrcamento(orcamentoId);
-    }
+  @Test
+  @DisplayName("Não deve acionar BudgetService quando evento for nulo")
+  void shouldNotReopenBudgetWhenEventIsNull() {
+    listener.onOrderCancelled(null);
+
+    verifyNoInteractions(budgetService);
+  }
 }

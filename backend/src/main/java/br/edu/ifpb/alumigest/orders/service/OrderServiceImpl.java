@@ -11,6 +11,7 @@ import br.edu.ifpb.alumigest.common.exception.ConflictException;
 import br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException;
 import br.edu.ifpb.alumigest.orders.domain.ApprovalChannel;
 import br.edu.ifpb.alumigest.orders.domain.Order;
+import br.edu.ifpb.alumigest.orders.domain.OrderCancelledEvent;
 import br.edu.ifpb.alumigest.orders.domain.OrderItem;
 import br.edu.ifpb.alumigest.orders.domain.OrderItemOption;
 import br.edu.ifpb.alumigest.orders.domain.OrderStatus;
@@ -21,7 +22,14 @@ import br.edu.ifpb.alumigest.orders.dto.OrderResponse;
 import br.edu.ifpb.alumigest.orders.dto.OrderSummaryResponse;
 import br.edu.ifpb.alumigest.orders.mapper.OrderMapper;
 import br.edu.ifpb.alumigest.orders.repository.OrderRepository;
-import br.edu.ifpb.alumigest.orders.domain.OrderCancelledEvent;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -30,15 +38,6 @@ import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.TransactionSystemException;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.context.ApplicationEventPublisher;
-
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
 
 /**
  * Implementação do serviço de gestão e ciclo de vida de Pedidos de Venda.
@@ -56,29 +55,34 @@ public class OrderServiceImpl implements OrderService {
     private final OrderCodeGenerator orderCodeGenerator;
     private final OrderMapper orderMapper;
     private final OrderPdfService orderPdfService;
-    private final LabelPdfService labelPdfService;
-    private final br.edu.ifpb.alumigest.orders.service.pdf.ThermalLabelDataResolver thermalLabelDataResolver;
-    private final br.edu.ifpb.alumigest.orders.service.thermal.ThermalLabelBplbRenderer thermalLabelBplbRenderer;
+    private final OrderLabelService orderLabelService;
     private final ApplicationEventPublisher eventPublisher;
 
+    /**
+     * Inicializa o serviço de pedidos com suas dependências principais de domínio e integração.
+     *
+     * @param orderRepository    repositório de pedidos
+     * @param budgetRepository   repositório de orçamentos
+     * @param orderCodeGenerator gerador sequencial de códigos OS-YYYY-NNNN
+     * @param orderMapper        mapeador MapStruct de entidade para DTOs
+     * @param orderPdfService    serviço de geração de comprovante em PDF
+     * @param orderLabelService  serviço orquestrador de etiquetas térmicas PDF/BPLB
+     * @param eventPublisher     publicador de eventos internos do Spring
+     */
     public OrderServiceImpl(
             OrderRepository orderRepository,
             BudgetRepository budgetRepository,
             OrderCodeGenerator orderCodeGenerator,
             OrderMapper orderMapper,
             OrderPdfService orderPdfService,
-            LabelPdfService labelPdfService,
-            br.edu.ifpb.alumigest.orders.service.pdf.ThermalLabelDataResolver thermalLabelDataResolver,
-            br.edu.ifpb.alumigest.orders.service.thermal.ThermalLabelBplbRenderer thermalLabelBplbRenderer,
+            OrderLabelService orderLabelService,
             ApplicationEventPublisher eventPublisher) {
         this.orderRepository = orderRepository;
         this.budgetRepository = budgetRepository;
         this.orderCodeGenerator = orderCodeGenerator;
         this.orderMapper = orderMapper;
         this.orderPdfService = orderPdfService;
-        this.labelPdfService = labelPdfService;
-        this.thermalLabelDataResolver = thermalLabelDataResolver;
-        this.thermalLabelBplbRenderer = thermalLabelBplbRenderer;
+        this.orderLabelService = orderLabelService;
         this.eventPublisher = eventPublisher;
     }
 
@@ -172,75 +176,64 @@ public class OrderServiceImpl implements OrderService {
     /**
      * {@inheritDoc}
      */
-    private OrderPdfDTO buildEtiquetasPdf(UUID id, UUID itemId, Map<UUID, Integer> customLeavesPerItem) {
-        Order order = orderRepository.findByIdWithDetails(id)
-                .orElseThrow(() -> new ResourceNotFoundException(RESOURCE_PEDIDO, id.toString()));
-
-        if (order.getStatus() == OrderStatus.CANCELLED) {
-            throw new BusinessException("Não é permitido emitir etiquetas de identificação para uma ordem de serviço cancelada.");
-        }
-
-        byte[] bytes = (customLeavesPerItem != null && !customLeavesPerItem.isEmpty())
-                ? labelPdfService.gerarEtiquetas(order, itemId, customLeavesPerItem)
-                : labelPdfService.gerarEtiquetas(order, itemId);
-        String codigo = order.getCodigo() != null ? order.getCodigo().replace("/", "-") : id.toString();
-        String filename = "etiquetas-" + codigo + ".pdf";
-
-        return new OrderPdfDTO(bytes, filename);
-    }
-
-    private byte[] buildBplbEtiquetas(UUID id, UUID itemId, Map<UUID, Integer> customLeavesPerItem) {
-        Order order = orderRepository.findByIdWithDetails(id)
-                .orElseThrow(() -> new ResourceNotFoundException(RESOURCE_PEDIDO, id.toString()));
-        if (order.getStatus() == OrderStatus.CANCELLED) {
-            throw new BusinessException("Não é permitido emitir etiquetas de identificação para uma ordem de serviço cancelada.");
-        }
-        List<br.edu.ifpb.alumigest.orders.service.pdf.ThermalLabelData> etiquetas =
-                (customLeavesPerItem != null && !customLeavesPerItem.isEmpty())
-                        ? thermalLabelDataResolver.resolveLabels(order, itemId, customLeavesPerItem)
-                        : thermalLabelDataResolver.resolveLabels(order, itemId);
-        return thermalLabelBplbRenderer.renderBplbBytes(etiquetas);
-    }
-
     @Override
     @Transactional(readOnly = true)
     public OrderPdfDTO gerarEtiquetasById(UUID id, UUID itemId) {
-        return buildEtiquetasPdf(id, itemId, null);
+        return orderLabelService.gerarEtiquetasPdf(findOrderOrThrow(id), itemId, null);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Transactional(readOnly = true)
-    public OrderPdfDTO gerarEtiquetasById(UUID id, UUID itemId, Map<UUID, Integer> customLeavesPerItem) {
-        return buildEtiquetasPdf(id, itemId, customLeavesPerItem);
+    public OrderPdfDTO gerarEtiquetasById(
+            UUID id, UUID itemId, Map<UUID, Integer> customLeavesPerItem) {
+        return orderLabelService.gerarEtiquetasPdf(
+                findOrderOrThrow(id), itemId, customLeavesPerItem);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Transactional(readOnly = true)
     public byte[] gerarBplbEtiquetasById(UUID id, UUID itemId) {
-        return buildBplbEtiquetas(id, itemId, null);
+        return orderLabelService.gerarEtiquetasBplb(findOrderOrThrow(id), itemId, null);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Transactional(readOnly = true)
-    public byte[] gerarBplbEtiquetasById(UUID id, UUID itemId, Map<UUID, Integer> customLeavesPerItem) {
-        return buildBplbEtiquetas(id, itemId, customLeavesPerItem);
+    public byte[] gerarBplbEtiquetasById(
+            UUID id, UUID itemId, Map<UUID, Integer> customLeavesPerItem) {
+        return orderLabelService.gerarEtiquetasBplb(
+                findOrderOrThrow(id), itemId, customLeavesPerItem);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Transactional
     public OrderResponse cancelOrder(UUID id, OrderCancelRequest request) {
-        Order order = orderRepository.findByIdWithDetails(id)
-                .orElseThrow(() -> new ResourceNotFoundException(RESOURCE_PEDIDO, id.toString()));
+        Order order = findOrderOrThrow(id);
 
         order.cancelar(request.justificativa());
-        order = orderRepository.save(order);
+        order = orderRepository.saveAndFlush(order);
 
-        // Dispara o evento para o contexto de Budgets escutar e reabrir o orçamento
         if (order.getOrcamentoId() != null) {
             eventPublisher.publishEvent(new OrderCancelledEvent(order.getOrcamentoId()));
         }
 
         return orderMapper.toResponse(order);
+    }
+
+    private Order findOrderOrThrow(UUID id) {
+        return orderRepository.findByIdWithDetails(id)
+                .orElseThrow(() -> new ResourceNotFoundException(RESOURCE_PEDIDO, id.toString()));
     }
 
     // =========================================================================
