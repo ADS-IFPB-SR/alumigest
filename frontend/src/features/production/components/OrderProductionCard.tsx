@@ -34,16 +34,16 @@ export const OrderProductionCard: React.FC<OrderProductionCardProps> = ({
     ? 'NORMAL' 
     : getDeadlineStatus(order.dataPrevisaoEntrega);
 
-  // 3. Mapeamento de prioridade/urgência baseado no prazo real
+  // 3. Mapeamento de prioridade/urgência baseado no prazo real (Adaptado para M3)
   const alertConfig = {
     LATE: {
       label: 'Atrasado',
-      color: 'bg-rose-100 text-rose-700 border-rose-300',
+      color: 'bg-error-container text-on-error-container border-error/30',
       icon: <AlertCircle className="w-3 h-3 mr-1" />,
     },
     CRITICAL: {
       label: 'Prazo Crítico',
-      color: 'bg-amber-100 text-amber-800 border-amber-300',
+      color: 'bg-tertiary-container text-on-tertiary-container border-tertiary/30',
       icon: <Clock className="w-3 h-3 mr-1" />,
     },
     NORMAL: null,
@@ -64,7 +64,7 @@ export const OrderProductionCard: React.FC<OrderProductionCardProps> = ({
     <div
       data-testid="order-production-card"
       aria-label={`Ordem de serviço ${order.codigo}`}
-      className="bg-white rounded-xl border border-slate-300 p-3.5 shadow-xs hover:shadow-md hover:border-slate-400 transition cursor-grab active:cursor-grabbing relative group flex flex-col gap-2"
+      className="bg-surface-container-lowest rounded-xl border border-outline-variant p-3.5 shadow-xs hover:shadow-md hover:border-outline transition cursor-grab active:cursor-grabbing relative group flex flex-col gap-2"
       draggable
       onDragStart={(e) => {
         if (e.dataTransfer) {
@@ -84,9 +84,9 @@ export const OrderProductionCard: React.FC<OrderProductionCardProps> = ({
       {/* 1. Header: Código da OS, Orçamento Origem e Alerta de Prazo */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="font-bold text-slate-950 text-sm tracking-tight">{order.codigo}</span>
+          <span className="font-bold text-on-surface text-sm tracking-tight">{order.codigo}</span>
           {order.orcamentoCodigo && (
-            <span className="text-[10px] font-bold text-slate-800 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-300">
+            <span className="text-[10px] font-bold text-on-surface bg-surface-container-high px-1.5 py-0.5 rounded border border-outline-variant">
               {order.orcamentoCodigo}
             </span>
           )}
@@ -104,28 +104,28 @@ export const OrderProductionCard: React.FC<OrderProductionCardProps> = ({
 
       {/* 2. Cliente e Esquadrias com Container Destacado */}
       <div className="space-y-0.5">
-        <p className="text-xs sm:text-sm font-bold text-slate-950 leading-snug truncate">
+        <p className="text-xs sm:text-sm font-bold text-on-surface leading-snug truncate">
           {order.clienteNome}
         </p>
 
-        <div className="bg-slate-50/90 border border-slate-200 rounded-lg p-2 space-y-0.5 mt-0.5">
+        <div className="bg-surface-container border border-outline-variant rounded-lg p-2 space-y-0.5 mt-0.5">
           {'items' in order && order.items && order.items.length > 0 ? (
             <>
               {order.items.slice(0, 2).map((item) => (
-                <p key={item.id} className="text-xs text-slate-800 truncate flex gap-1.5">
-                  <span className="font-bold text-slate-950">{item.quantidade}x</span>
+                <p key={item.id} className="text-xs text-on-surface-variant truncate flex gap-1.5">
+                  <span className="font-bold text-on-surface">{item.quantidade}x</span>
                   <span>{item.descricao}</span>
                 </p>
               ))}
               {order.items.length > 2 && (
-                <p className="text-[10px] text-slate-600 font-medium italic">
+                <p className="text-[10px] text-on-surface-variant opacity-80 font-medium italic">
                   + {order.items.length - 2} outro(s) item(ns)
                 </p>
               )}
             </>
           ) : (
-            <p className="text-xs text-slate-800 font-medium flex items-center gap-1.5">
-              <Package className="w-3.5 h-3.5 text-slate-700 shrink-0" />
+            <p className="text-xs text-on-surface-variant font-medium flex items-center gap-1.5">
+              <Package className="w-3.5 h-3.5 shrink-0" />
               <span>Contém {totalPecas} {totalPecas === 1 ? 'esquadria' : 'esquadrias'}</span>
             </p>
           )}
@@ -133,15 +133,15 @@ export const OrderProductionCard: React.FC<OrderProductionCardProps> = ({
       </div>
 
       {/* 3. Rodapé do Card: Data de Aprovação, Badges e Botão Detalhes */}
-      <div className="flex items-center justify-between flex-wrap gap-y-2 pt-2 border-t border-slate-200 text-xs">
-        <div className="flex items-center gap-1.5 font-bold text-slate-900" title="Data de Aprovação do Pedido">
-          <Calendar className="w-3.5 h-3.5 text-slate-700 shrink-0" />
-          <span className="font-semibold text-slate-900">{formatDate(order.dataAprovacao)}</span>
+      <div className="flex items-center justify-between flex-wrap gap-y-2 pt-2 border-t border-outline-variant text-xs">
+        <div className="flex items-center gap-1.5 font-bold text-on-surface" title="Data de Aprovação do Pedido">
+          <Calendar className="w-3.5 h-3.5 text-on-surface-variant shrink-0" />
+          <span className="font-semibold">{formatDate(order.dataAprovacao)}</span>
         </div>
 
         <div className="flex items-center gap-2">
           <span
-            className="px-2 py-0.5 rounded bg-slate-100 text-slate-900 font-bold text-[10px] border border-slate-300 shadow-2xs"
+            className="px-2 py-0.5 rounded bg-surface-container text-on-surface font-bold text-[10px] border border-outline-variant shadow-2xs"
             title="Total de esquadrias físicas nesta O.S."
           >
             {totalPecas} {totalPecas === 1 ? 'PEÇA' : 'PEÇAS'}
@@ -151,21 +151,21 @@ export const OrderProductionCard: React.FC<OrderProductionCardProps> = ({
             type="button"
             onClick={() => onClickDetails(order.id)}
             aria-label={`Visualizar detalhes da ordem de serviço ${order.codigo}`}
-            className="p-1 hover:text-slate-950 text-slate-600 rounded transition hover:bg-slate-100"
+            className="p-1 hover:text-on-surface text-on-surface-variant rounded transition hover:bg-surface-container-high"
             title="Ver Ficha Técnica / Detalhes da O.S."
           >
-            <Eye className="w-4 h-4 text-slate-700 hover:text-slate-950" />
+            <Eye className="w-4 h-4" />
           </button>
 
           <span
-            className="w-6 h-6 rounded-full bg-slate-200 text-slate-900 font-bold border border-slate-400 flex items-center justify-center text-[10px] shrink-0"
+            className="w-6 h-6 rounded-full bg-surface-container-highest text-on-surface font-bold border border-outline flex items-center justify-center text-[10px] shrink-0"
             title={`Cliente: ${order.clienteNome}`}
           >
             {clientInitials}
           </span>
         </div>
 
-        {/* Botão de avanço rápido de etapa — fallback para dispositivos touch/móveis (BUG-504) */}
+        {/* Botão de avanço rápido de etapa (M3 Primary Button) */}
         {nextStep && onMoveOrder && (
           <button
             type="button"
@@ -177,7 +177,7 @@ export const OrderProductionCard: React.FC<OrderProductionCardProps> = ({
             }}
             aria-label={`${nextStep.label}: mover ordem de serviço ${order.codigo} para a próxima etapa`}
             title={nextStep.label}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-800 text-white hover:bg-slate-950 active:scale-95 transition-all duration-150 shrink-0 touch-manipulation select-none"
+            className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-primary text-on-primary hover:opacity-90 active:scale-95 transition-all duration-150 shrink-0 touch-manipulation select-none"
           >
             {nextStep.label}
             <ChevronRight className="w-3.5 h-3.5" />

@@ -27,7 +27,7 @@ export interface ProductionKanbanFiltersProps {
 
 /**
  * Barra de Filtros e Busca em Tempo Real do Kanban de Produção (US-18.5).
- * Alinhada ao estilo visual do protótipo com busca ampla e seletores refinados.
+ * Alinhada ao estilo visual do protótipo com busca ampla e seletores refinados (M3).
  */
 export const ProductionKanbanFilters: React.FC<ProductionKanbanFiltersProps> = ({
     searchTerm,
@@ -53,14 +53,14 @@ export const ProductionKanbanFilters: React.FC<ProductionKanbanFiltersProps> = (
         >
             {/* 1. Campo de Busca Ampla (Código OS, Cliente, Orçamento ou Esquadria) */}
             <div className="relative flex-1">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <Search className="w-4 h-4 text-on-surface-variant absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
                     data-testid="input-search-kanban"
                     type="text"
                     value={searchTerm}
                     onChange={(e) => onSearchChange(e.target.value)}
                     placeholder="Buscar por código de OS, cliente ou esquadria..."
-                    className="w-full pl-10 pr-9 py-2 bg-slate-50 border-2 border-slate-300 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:bg-white transition shadow-2xs"
+                    className="w-full pl-10 pr-9 py-2 bg-surface-container-lowest border border-outline-variant rounded-xl text-sm text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:ring-2 focus:ring-primary focus:bg-surface transition shadow-2xs"
                     aria-label="Buscar por código de OS, cliente ou esquadria"
                 />
                 {searchTerm.length > 0 && (
@@ -69,7 +69,7 @@ export const ProductionKanbanFilters: React.FC<ProductionKanbanFiltersProps> = (
                         data-testid="btn-clear-search-text"
                         onClick={() => onSearchChange('')}
                         aria-label="Limpar campo de busca"
-                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 rounded-full hover:bg-slate-200/60 transition"
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-on-surface p-1 rounded-full hover:bg-surface-container-high transition"
                     >
                         <X className="w-3.5 h-3.5" />
                     </button>
@@ -80,12 +80,12 @@ export const ProductionKanbanFilters: React.FC<ProductionKanbanFiltersProps> = (
             <div className="flex flex-wrap items-center gap-2">
                 {/* Filtro por Prazo / Urgência */}
                 <div className="relative inline-flex items-center">
-                    <Calendar className="w-3.5 h-3.5 text-slate-400 absolute left-3 pointer-events-none" />
+                    <Calendar className="w-3.5 h-3.5 text-on-surface-variant absolute left-3 pointer-events-none" />
                     <select
                         data-testid="select-filter-deadline"
                         value={deadlineFilter}
                         onChange={(e) => onDeadlineFilterChange(e.target.value as DeadlineFilterOption)}
-                        className="pl-8 pr-7 py-2 bg-slate-50 border-2 border-slate-300 rounded-xl text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:bg-white transition cursor-pointer shadow-2xs"
+                        className="pl-8 pr-7 py-2 bg-surface-container-lowest border border-outline-variant rounded-xl text-sm font-medium text-on-surface focus:outline-none focus:ring-2 focus:ring-primary focus:bg-surface transition cursor-pointer shadow-2xs"
                         aria-label="Filtrar por prazo de entrega"
                     >
                         <option value="ALL">Prioridade / Prazo</option>
@@ -97,12 +97,12 @@ export const ProductionKanbanFilters: React.FC<ProductionKanbanFiltersProps> = (
 
                 {/* Filtro por Etapa de Fabricação */}
                 <div className="relative inline-flex items-center">
-                    <Filter className="w-3.5 h-3.5 text-slate-400 absolute left-3 pointer-events-none" />
+                    <Filter className="w-3.5 h-3.5 text-on-surface-variant absolute left-3 pointer-events-none" />
                     <select
                         data-testid="select-filter-status"
                         value={statusFilter}
                         onChange={(e) => onStatusFilterChange(e.target.value as 'ALL' | ProductionStatus)}
-                        className="pl-8 pr-7 py-2 bg-slate-50 border-2 border-slate-300 rounded-xl text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:bg-white transition cursor-pointer shadow-2xs"
+                        className="pl-8 pr-7 py-2 bg-surface-container-lowest border border-outline-variant rounded-xl text-sm font-medium text-on-surface focus:outline-none focus:ring-2 focus:ring-primary focus:bg-surface transition cursor-pointer shadow-2xs"
                         aria-label="Filtrar por etapa de produção"
                     >
                         <option value="ALL">Todas as Etapas</option>
@@ -118,7 +118,7 @@ export const ProductionKanbanFilters: React.FC<ProductionKanbanFiltersProps> = (
                         type="button"
                         data-testid="btn-clear-all-filters"
                         onClick={onClearFilters}
-                        className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-semibold text-rose-600 bg-rose-50 border border-rose-300 rounded-xl hover:bg-rose-100 transition shadow-2xs"
+                        className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-semibold text-on-error-container bg-error-container border border-error-container rounded-xl hover:opacity-90 transition shadow-2xs"
                         title="Limpar todos os filtros ativos"
                     >
                         <RotateCcw className="w-4 h-4" />
@@ -128,9 +128,9 @@ export const ProductionKanbanFilters: React.FC<ProductionKanbanFiltersProps> = (
 
                 <span
                     data-testid="filter-counter-badge"
-                    className="text-sm font-medium text-slate-700 whitespace-nowrap ml-1 px-3 py-1.5 bg-slate-100 border border-slate-300 rounded-lg shadow-2xs"
+                    className="text-sm font-medium text-on-surface-variant whitespace-nowrap ml-1 px-3 py-1.5 bg-surface-container border border-outline-variant rounded-lg shadow-2xs"
                 >
-                    <strong className="text-slate-900">{filteredOrdersCount}</strong> de {totalOrders}
+                    <strong className="text-on-surface">{filteredOrdersCount}</strong> de {totalOrders}
                 </span>
             </div>
         </div>

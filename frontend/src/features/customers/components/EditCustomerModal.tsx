@@ -63,6 +63,9 @@ export function EditCustomerModal({ isOpen, customerId, onClose }: Readonly<Edit
     );
   };
 
+  // Extração das classes repetitivas de input para manter o JSX limpo e padronizado no M3
+  const inputClassName = "w-full px-3 py-2 rounded-lg border border-outline-variant bg-surface text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:ring-2 focus:ring-primary transition";
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
       <div className="w-full max-w-2xl max-h-[90vh] flex flex-col bg-surface-container-lowest rounded-2xl shadow-xl border border-outline-variant">
@@ -72,7 +75,7 @@ export function EditCustomerModal({ isOpen, customerId, onClose }: Readonly<Edit
           <button
             type="button"
             onClick={onClose}
-            className="p-1 text-on-surface-variant hover:text-on-surface rounded-lg transition-colors"
+            className="p-1 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high rounded-lg transition-colors"
             aria-label="Fechar modal"
           >
             <X className="w-5 h-5" />
@@ -94,9 +97,9 @@ export function EditCustomerModal({ isOpen, customerId, onClose }: Readonly<Edit
                   <input
                     id="nomeCompleto"
                     {...register('nomeCompleto')}
-                    className="w-full px-3 py-2 border rounded-lg bg-surface text-on-surface border-outline focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    className={inputClassName}
                   />
-                  {errors.nomeCompleto && <p className="text-xs text-rose-500">{errors.nomeCompleto.message}</p>}
+                  {errors.nomeCompleto && <p className="text-xs text-error">{errors.nomeCompleto.message}</p>}
                 </div>
 
                 <div className="space-y-1">
@@ -106,9 +109,9 @@ export function EditCustomerModal({ isOpen, customerId, onClose }: Readonly<Edit
                   <input
                     id="documento"
                     {...register('documento')}
-                    className="w-full px-3 py-2 border rounded-lg bg-surface text-on-surface border-outline focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    className={inputClassName}
                   />
-                  {errors.documento && <p className="text-xs text-rose-500">{errors.documento.message}</p>}
+                  {errors.documento && <p className="text-xs text-error">{errors.documento.message}</p>}
                 </div>
 
                 <div className="space-y-1">
@@ -118,12 +121,12 @@ export function EditCustomerModal({ isOpen, customerId, onClose }: Readonly<Edit
                   <select
                     id="personType"
                     {...register('personType')}
-                    className="w-full px-3 py-2 border rounded-lg bg-surface text-on-surface border-outline focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    className={inputClassName}
                   >
                     <option value="FISICA">Física</option>
                     <option value="JURIDICA">Jurídica</option>
                   </select>
-                  {errors.personType && <p className="text-xs text-rose-500">{errors.personType.message}</p>}
+                  {errors.personType && <p className="text-xs text-error">{errors.personType.message}</p>}
                 </div>
 
                 <div className="space-y-1">
@@ -133,9 +136,9 @@ export function EditCustomerModal({ isOpen, customerId, onClose }: Readonly<Edit
                   <input
                     id="telefone"
                     {...register('telefone')}
-                    className="w-full px-3 py-2 border rounded-lg bg-surface text-on-surface border-outline focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    className={inputClassName}
                   />
-                  {errors.telefone && <p className="text-xs text-rose-500">{errors.telefone.message}</p>}
+                  {errors.telefone && <p className="text-xs text-error">{errors.telefone.message}</p>}
                 </div>
 
                 <div className="space-y-1">
@@ -146,9 +149,9 @@ export function EditCustomerModal({ isOpen, customerId, onClose }: Readonly<Edit
                     id="email"
                     type="email"
                     {...register('email')}
-                    className="w-full px-3 py-2 border rounded-lg bg-surface text-on-surface border-outline focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    className={inputClassName}
                   />
-                  {errors.email && <p className="text-xs text-rose-500">{errors.email.message}</p>}
+                  {errors.email && <p className="text-xs text-error">{errors.email.message}</p>}
                 </div>
 
                 <div className="space-y-1 md:col-span-2 border-t border-outline-variant pt-4 mt-2">
@@ -162,9 +165,9 @@ export function EditCustomerModal({ isOpen, customerId, onClose }: Readonly<Edit
                   <input
                     id="cep"
                     {...register('cep')}
-                    className="w-full px-3 py-2 border rounded-lg bg-surface text-on-surface border-outline focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    className={inputClassName}
                   />
-                  {errors.cep && <p className="text-xs text-rose-500">{errors.cep.message}</p>}
+                  {errors.cep && <p className="text-xs text-error">{errors.cep.message}</p>}
                 </div>
 
                 <div className="space-y-1">
@@ -174,7 +177,7 @@ export function EditCustomerModal({ isOpen, customerId, onClose }: Readonly<Edit
                   <input
                     id="logradouro"
                     {...register('logradouro')}
-                    className="w-full px-3 py-2 border rounded-lg bg-surface text-on-surface border-outline focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    className={inputClassName}
                   />
                 </div>
 
@@ -185,7 +188,7 @@ export function EditCustomerModal({ isOpen, customerId, onClose }: Readonly<Edit
                   <input
                     id="numero"
                     {...register('numero')}
-                    className="w-full px-3 py-2 border rounded-lg bg-surface text-on-surface border-outline focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    className={inputClassName}
                   />
                 </div>
 
@@ -196,7 +199,7 @@ export function EditCustomerModal({ isOpen, customerId, onClose }: Readonly<Edit
                   <input
                     id="complemento"
                     {...register('complemento')}
-                    className="w-full px-3 py-2 border rounded-lg bg-surface text-on-surface border-outline focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    className={inputClassName}
                   />
                 </div>
 
@@ -207,7 +210,7 @@ export function EditCustomerModal({ isOpen, customerId, onClose }: Readonly<Edit
                   <input
                     id="bairro"
                     {...register('bairro')}
-                    className="w-full px-3 py-2 border rounded-lg bg-surface text-on-surface border-outline focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    className={inputClassName}
                   />
                 </div>
 
@@ -219,7 +222,7 @@ export function EditCustomerModal({ isOpen, customerId, onClose }: Readonly<Edit
                     <input
                       id="cidade"
                       {...register('cidade')}
-                      className="w-full px-3 py-2 border rounded-lg bg-surface text-on-surface border-outline focus:outline-none focus:ring-2 focus:ring-primary/20"
+                      className={inputClassName}
                     />
                   </div>
                   <div className="space-y-1">
@@ -230,7 +233,7 @@ export function EditCustomerModal({ isOpen, customerId, onClose }: Readonly<Edit
                       id="uf"
                       {...register('uf')}
                       maxLength={2}
-                      className="w-full px-3 py-2 border rounded-lg bg-surface text-on-surface border-outline focus:outline-none focus:ring-2 focus:ring-primary/20 uppercase"
+                      className={`${inputClassName} uppercase`}
                     />
                   </div>
                 </div>
@@ -243,7 +246,7 @@ export function EditCustomerModal({ isOpen, customerId, onClose }: Readonly<Edit
                     id="observacoes"
                     {...register('observacoes')}
                     rows={2}
-                    className="w-full px-3 py-2 border rounded-lg bg-surface text-on-surface border-outline focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    className={inputClassName}
                   />
                 </div>
               </div>
@@ -251,11 +254,11 @@ export function EditCustomerModal({ isOpen, customerId, onClose }: Readonly<Edit
           )}
         </div>
 
-        <div className="flex justify-end gap-3 p-6 border-t border-outline-variant bg-surface-container-low rounded-b-2xl">
+        <div className="flex justify-end gap-3 p-6 border-t border-outline-variant bg-surface-container rounded-b-2xl">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-sm font-semibold text-on-surface-variant hover:bg-surface-container rounded-lg transition-colors"
+            className="px-4 py-2 text-sm font-semibold text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high rounded-lg transition-colors"
           >
             Cancelar
           </button>
@@ -263,7 +266,7 @@ export function EditCustomerModal({ isOpen, customerId, onClose }: Readonly<Edit
             type="submit"
             form="edit-customer"
             disabled={isPending || isLoadingCustomer}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-primary hover:opacity-90 rounded-lg transition-opacity disabled:opacity-50"
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-on-primary bg-primary hover:opacity-90 rounded-lg transition-opacity disabled:opacity-50"
           >
             {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Salvar Alterações

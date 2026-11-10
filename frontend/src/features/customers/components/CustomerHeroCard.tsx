@@ -17,7 +17,7 @@ export const CustomerHeroCard: React.FC<CustomerHeroCardProps> = ({ customer, on
 
   const locationParts = [
     customer.bairro,
-    customer.cidade && customer.uf ? `${customer.cidade} - ${customer.uf}` : customer.cidade || customer.uf,
+    customer.cidade && customer.uf ? `${customer.cidade} -${customer.uf}` : customer.cidade || customer.uf,
   ].filter(Boolean);
   const locationStr = locationParts.join(', ');
 
@@ -26,49 +26,49 @@ export const CustomerHeroCard: React.FC<CustomerHeroCardProps> = ({ customer, on
 
   return (
     <>
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-5 transition">
+      <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-5 transition">
         {/* Client Identity & Details */}
         <div className="flex items-center gap-4 min-w-0">
           {/* Large Initials Avatar */}
-          <div className="w-14 h-14 rounded-xl bg-slate-900 text-white dark:bg-slate-800 dark:text-blue-400 flex items-center justify-center font-bold text-xl uppercase flex-shrink-0 shadow-sm">
+          <div className="w-14 h-14 rounded-xl bg-primary text-on-primary flex items-center justify-center font-bold text-xl uppercase flex-shrink-0 shadow-xs">
             {initials}
           </div>
 
           {/* Text Details */}
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-lg md:text-xl font-bold uppercase tracking-wide text-slate-900 dark:text-slate-100 truncate">
+              <h1 className="text-lg md:text-xl font-bold uppercase tracking-wide text-on-surface truncate">
                 {customer.nomeCompleto}
               </h1>
-              <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+              <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded bg-surface-container text-on-surface-variant">
                 {customer.personType === 'JURIDICA' ? (
                   <>
-                    <Building2 className="w-3 h-3 text-slate-500" /> PJ
+                    <Building2 className="w-3 h-3 opacity-70" /> PJ
                   </>
                 ) : (
                   <>
-                    <User className="w-3 h-3 text-slate-500" /> PF
+                    <User className="w-3 h-3 opacity-70" /> PF
                   </>
                 )}
               </span>
             </div>
 
-            <div className="flex items-center flex-wrap gap-y-1 gap-x-4 mt-1.5 text-xs text-slate-600 dark:text-slate-400 font-medium">
+            <div className="flex items-center flex-wrap gap-y-1 gap-x-4 mt-1.5 text-xs text-on-surface-variant font-medium">
               {locationStr && (
                 <span className="flex items-center gap-1">
-                  <MapPin className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                  <MapPin className="w-3.5 h-3.5 opacity-70 flex-shrink-0" />
                   <span>{locationStr}</span>
                 </span>
               )}
               {customer.telefone && (
                 <span className="flex items-center gap-1">
-                  <Phone className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                  <Phone className="w-3.5 h-3.5 opacity-70 flex-shrink-0" />
                   <span>{customer.telefone}</span>
                 </span>
               )}
               {customer.documento && (
                 <span className="flex items-center gap-1">
-                  <CreditCard className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                  <CreditCard className="w-3.5 h-3.5 opacity-70 flex-shrink-0" />
                   <span>{customer.documento}</span>
                 </span>
               )}
@@ -78,34 +78,31 @@ export const CustomerHeroCard: React.FC<CustomerHeroCardProps> = ({ customer, on
 
         {/* Quick Action Buttons */}
         <div className="flex items-center gap-3 flex-shrink-0 flex-wrap md:flex-nowrap">
+          {/* Botão Secundário M3 */}
           <button
             type="button"
             onClick={() => setIsEditModalOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60 shadow-sm transition"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold border border-outline-variant bg-surface-container-lowest text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high shadow-2xs transition"
           >
-            <Edit className="w-4 h-4 text-slate-500" />
+            <Edit className="w-4 h-4 opacity-70" />
             <span>Editar</span>
           </button>
 
+          {/* Botão Secundário M3 (Dinâmico para WhatsApp) */}
           <a
             href={whatsappHref}
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Contatar cliente via WhatsApp"
-            className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold border transition ${
-              hasPhone
-                ? 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60 shadow-sm'
-                : 'border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-800/50 text-slate-400 cursor-not-allowed pointer-events-none'
-            }`}
-          >
-            <WhatsAppIcon className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold border transition ${ hasPhone ? 'border-outline-variant bg-surface-container-lowest text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high shadow-2xs' : 'border-outline-variant bg-surface-container text-on-surface-variant opacity-50 cursor-not-allowed pointer-events-none' }`} > <WhatsAppIcon className={`w-4 h-4 ${hasPhone ? 'text-[#25D366]' : 'opacity-50'}`} />
             <span>WhatsApp</span>
           </a>
 
+          {/* Botão Primário M3 */}
           <button
             type="button"
             onClick={() => onNewBudget(customer.id)}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white shadow-sm transition"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold bg-primary text-on-primary hover:opacity-90 active:scale-95 shadow-2xs transition"
           >
             <Plus className="w-4 h-4" />
             <span>Novo Orçamento</span>
