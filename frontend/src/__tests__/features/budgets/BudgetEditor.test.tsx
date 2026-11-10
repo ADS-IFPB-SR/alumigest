@@ -67,6 +67,10 @@ vi.mock('../../../features/customers/hooks/useCustomers', () => ({
     data: { content: mockCustomers, totalElements: 2 },
     isLoading: false,
   }),
+  useCustomer: () => ({
+    data: undefined,
+    isLoading: false,
+  }),
   useCreateCustomer: () => ({
     mutate: vi.fn(),
     isPending: false,

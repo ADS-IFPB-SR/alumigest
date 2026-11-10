@@ -91,5 +91,17 @@ describe('customersApi Service', () => {
       expect(api.get).toHaveBeenCalledWith('/api/clientes/cust-2', { baseURL: '' });
       expect(result.nomeCompleto).toBe('Ana Paula');
     });
+
+    it('getCustomerOrders deve disparar GET para /clientes/:id/orders usando baseURL padrão da API', async () => {
+      const mockOrders = [{ id: 'ord-1', codigo: 'OS-2026-0042', status: 'IN_PRODUCTION', valorTotal: 1800, totalEsquadrias: 1, items: [] }];
+      vi.mocked(api.get).mockResolvedValueOnce({
+        data: mockOrders,
+      });
+
+      const result = await customersApi.getCustomerOrders('cust-2');
+
+      expect(api.get).toHaveBeenCalledWith('/clientes/cust-2/orders');
+      expect(result).toEqual(mockOrders);
+    });
   });
 });

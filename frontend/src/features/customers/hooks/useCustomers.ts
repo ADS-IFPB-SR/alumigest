@@ -18,6 +18,22 @@ export const useCustomer = (id: string | undefined) => {
   });
 };
 
+export const useCustomerDashboard = (id: string | undefined) => {
+  return useQuery({
+    queryKey: ['customer-dashboard', id],
+    queryFn: () => customersApi.getCustomerDashboard(id!),
+    enabled: Boolean(id),
+  });
+};
+
+export const useCustomerBudgets = (id: string | undefined, params?: { page?: number; size?: number }) => {
+  return useQuery({
+    queryKey: ['customer-budgets', id, params],
+    queryFn: () => customersApi.getCustomerBudgets(id!, params),
+    enabled: Boolean(id),
+  });
+};
+
 export const useCreateCustomer = () => {
   const queryClient = useQueryClient();
   return useMutation({
@@ -32,5 +48,28 @@ export const useCreateCustomer = () => {
       const message = err?.response?.data?.message || 'Erro ao cadastrar cliente. Verifique os dados.';
       toast.error(message);
     },
+  });
+};
+
+export const useUpdateCustomer = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: CreateCustomerRequest }) =>
+      customersApi.updateCustomer(id, data),
+    onSuccess: (_, variables) => {
+      // Atualiza todas as listagens ou páginas únicas onde esse cliente estiver presente
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      queryClient.invalidateQueries({ queryKey: ['customer', variables.id] });
+      queryClient.invalidateQueries({ queryKey: ['customer-dashboard', variables.id] });
+    }
+  });
+};
+
+export const useCustomerOrders = (id: string | undefined) => {
+  return useQuery({
+    queryKey: ['customer-orders', id],
+    queryFn: () => customersApi.getCustomerOrders(id!),
+    enabled: Boolean(id),
   });
 };

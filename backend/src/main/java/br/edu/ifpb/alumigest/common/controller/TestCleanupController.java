@@ -47,7 +47,9 @@ public class TestCleanupController {
             UUID clientId,
             UUID budgetId,
             UUID orderId,
-            String clientName
+            String clientName,
+            UUID partSaleId,
+            String partSaleCode
     ) {}
 
     /**
@@ -63,8 +65,8 @@ public class TestCleanupController {
             return ResponseEntity.noContent().build();
         }
 
-        log.info("Executando Hard Delete de teste: clientId={}, budgetId={}, orderId={}, clientName={}",
-                request.clientId(), request.budgetId(), request.orderId(), request.clientName());
+        log.info("Executando Hard Delete de teste: clientId={}, budgetId={}, orderId={}, clientName={}, partSaleId={}, partSaleCode={}",
+                request.clientId(), request.budgetId(), request.orderId(), request.clientName(), request.partSaleId(), request.partSaleCode());
 
         // 1. Exclui ordens de serviço (tabelas tb_order_item_options e tb_order_items são excluídas via CASCADE)
         if (request.orderId() != null) {
@@ -101,6 +103,17 @@ public class TestCleanupController {
             """, "%" + request.clientName() + "%");
 
             jdbcTemplate.update("DELETE FROM tb_clients WHERE name LIKE ?", "%" + request.clientName() + "%");
+        }
+
+        // 5. Exclui venda avulsa e itens associados (tb_part_sales e tb_part_sale_items)
+        if (request.partSaleId() != null) {
+            jdbcTemplate.update("DELETE FROM tb_part_sale_items WHERE part_sale_id = ?", request.partSaleId());
+            jdbcTemplate.update("DELETE FROM tb_part_sales WHERE id = ?", request.partSaleId());
+        }
+
+        if (request.partSaleCode() != null && !request.partSaleCode().isBlank()) {
+            jdbcTemplate.update("DELETE FROM tb_part_sale_items WHERE part_sale_id IN (SELECT id FROM tb_part_sales WHERE code = ?)", request.partSaleCode());
+            jdbcTemplate.update("DELETE FROM tb_part_sales WHERE code = ?", request.partSaleCode());
         }
 
         return ResponseEntity.noContent().build();

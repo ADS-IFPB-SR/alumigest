@@ -1,6 +1,7 @@
 package br.edu.ifpb.alumigest.catalog.controller;
 
 import br.edu.ifpb.alumigest.catalog.domain.Material;
+import br.edu.ifpb.alumigest.catalog.domain.MaterialCategoryType;
 import br.edu.ifpb.alumigest.catalog.dto.MaterialSummaryDTO;
 import br.edu.ifpb.alumigest.catalog.repository.MaterialRepository;
 import br.edu.ifpb.alumigest.common.dto.ApiResponse;
@@ -15,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/v1/catalog/materials")
+@RequestMapping({"/api/v1/materials", "/api/v1/catalog/materials"})
 @Tag(name = "Materiais (Busca Unificada)", description = "Busca genérica de materiais ativos")
 public class MaterialController {
 
@@ -26,20 +27,27 @@ public class MaterialController {
     }
 
     @GetMapping
-    @Operation(summary = "Listar todos os materiais ativos para a Ficha Técnica", description = "Retorna uma lista unificada de todos os materiais ativos de todas as categorias para popular Combobox.")
-    public ResponseEntity<ApiResponse<List<MaterialSummaryDTO>>> findAllActive() {
-        List<MaterialSummaryDTO> materials = repository.findAll().stream()
-                .filter(Material::isActive)
-                .map(m -> new MaterialSummaryDTO(
-                        m.getId(), 
-                        m.getName(), 
-                        m.getSkuCode(), 
-                        m.getCommercialReference(), 
-                        m.getSalePrice(), 
-                        m.getCostPrice(),
-                        m.getUnitMeasure() != null ? m.getUnitMeasure().name() : "",
-                        m.isHandle()))
+    @Operation(
+        summary = "Listar materiais ativos",
+        description = "Retorna lista de materiais ativos, opcionalmente filtrados por categoria (GLASS, PROFILE, ALUMINUM, FILM, HARDWARE)."
+    )
+    public ResponseEntity<ApiResponse<List<MaterialSummaryDTO>>> findAllActive(
+            @RequestParam(required = false) String category) {
+
+        List<Material> entities;
+        if (category != null && !category.isBlank()) {
+            MaterialCategoryType categoryType = MaterialCategoryType.fromString(category);
+            entities = repository.findActiveByGroupCodeOrderByNameAsc(categoryType.getGroupCode());
+        } else {
+            entities = repository.findAll().stream()
+                    .filter(Material::isActive)
+                    .toList();
+        }
+
+        List<MaterialSummaryDTO> materials = entities.stream()
+                .map(MaterialSummaryDTO::fromEntity)
                 .toList();
+
         return ResponseEntity.ok(ApiResponse.ok("Materiais listados com sucesso", materials));
     }
 

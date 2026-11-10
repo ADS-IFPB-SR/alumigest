@@ -38,28 +38,30 @@ Fornecer um roteiro determinístico, auditável e automatizável para validar a 
 | **TC-46-SP03** | Largura de Película Superior à Bobina | Caminho Triste | Película com bobina de 1520 mm cadastrada | 1. Selecionar película<br>2. Informar largura de `1800` mm | Largura: `1800` mm | - Alerta impeditivo: "Dimensão informada (1800mm) excede a largura máxima da bobina (1520mm)".<br>- Bloqueio de inclusão do item. |
 | **TC-46-EC01** | Aplicação Obrigatória do Piso Mínimo de Vidro ($0,25\text{ m}^2$) | Caso de Borda (RN-02) | Vidro de R$ 200,00/m² selecionado | 1. Informar peça de $300 \times 400\text{ mm}$ (Área física real: $0,12\text{ m}^2$)<br>2. Verificar subtotal | $L=300\text{ mm}$, $A=400\text{ mm}$ (Área real: $0,12\text{ m}^2$) | - Sistema aplica compulsoriamente $0,25\text{ m}^2$.<br>- Subtotal faturado: R$ 50,00 ($0,25 \times 200$).<br>- Exibição do badge: "Piso Mínimo Aplicado ($0,25\text{ m}^2$)". |
 | **TC-46-EC02** | Imutabilidade e Blindagem contra Reajuste de Tabela | Caso de Borda (RN-03) | Proposta aprovada com item de R$ 100,00 | 1. Aprovar proposta no sistema<br>2. Ir ao Catálogo de Materiais e reajustar o preço para R$ 150,00<br>3. Reabrir a proposta aprovada | Preço reajustado no catálogo | - A proposta aprovada mantém os itens congelados a R$ 100,00.<br>- O reajuste do catálogo não altera vendas históricas. |
+| **TC-46-HP06** | Autocomplete e Listagem Dinâmica de Materiais por Categoria (US-46.5) | Caminho Feliz (CA 1 & CA 2) | Materiais ativos cadastrados no catálogo | 1. Acessar `/venda-avulsa`<br>2. Selecionar categoria (Vidro, Alumínio, Película ou Ferragem)<br>3. Digitar termo de busca no campo de material<br>4. Clicar no material desejado | Termo de busca: ex. "Suprema" | - A API `GET /api/v1/materials?category={category}` é invocada.<br>- A lista suspensa exibe apenas Nome e Código da Família (sem poluição de preço).<br>- O preço unitário padrão é preenchido automaticamente no campo editável. |
+| **TC-46-HP07** | Cálculo Transparente de Perfil com Perda Embutida | Caminho Feliz | Perfil com valor de R$ 80,00/m selecionado | 1. Categoria Alumínio<br>2. Comprimento: 1000 mm (1 metro)<br>3. Inserir na venda | Comprimento: `1000` mm, Preço: `R$ 80,00` | - O cálculo exibe: $1,0000\text{ m} \times \text{R\$ } 80,00 = \text{R\$ } 80,00$.<br>- A perda industrial de 5% já está embutida proporcionalmente sem acréscimo surpresa no checkout. |
+| **TC-46-SP04** | Bloqueio de Inclusão sem Seleção de Material do Catálogo (US-46.5) | Caminho Triste (CA 4) | Categoria selecionada, mas nenhum material do catálogo vinculado | 1. Tentar clicar em "+ Inserir na Venda" sem escolher material no autocomplete | `materialId` não selecionado | - Botão desabilitado ou validação impeditiva disparada.<br>- Exibe alerta visual orientando a seleção de um material cadastrado. |
+| **TC-46-EC03** | Reset de Estado ao Alternar entre Abas de Categorias (US-46.5) | Caso de Borda (CA 5) | Item de Vidro preenchido com dimensões | 1. Preencher item na aba Vidro<br>2. Clicar na aba Alumínio | Troca de aba para `PROFILE` | - O formulário de item é resetado via `resetItemForm()`.<br>- Seleção do material anterior e cálculos residuais são zerados, prevenindo contaminação de dados. |
 
 ---
 
 ## 4. 🤖 Roteiro de Automação no Cypress
 
-A suíte automatizada deve residir em:
-`frontend/cypress/e2e/part-sales/us46_venda_avulsa_partes.cy.ts`
+A suíte automatizada reside em:
+`frontend/cypress/e2e/part-sales/us46_venda_avulsa_visual.cy.ts`
+
+### Execução Visual e Isolamento:
+- Comando interativo: `npm run test:e2e:us46:headed`
+- Comando headless: `npm run test:e2e:us46`
+- **Garantia de Isolamento de Banco de Dados**: A suíte captura os códigos de vendas geradas (`VP-2026-XXXX`) e, no hook `after()`, dispara chamada atômica para `DELETE /api/v1/test-support/cleanup?partSaleCode=...`, realizando a exclusão em cascata de itens e vendas do PostgreSQL, impedindo qualquer poluição ou colisão de dados.
 
 ### Estrutura dos Testes:
 ```typescript
-describe('US-46: Módulo de Venda Avulsa de Partes (Suíte E2E)', () => {
-  beforeEach(() => {
-    cy.viewport(1366, 768);
-    // Intercepts de catálogo de materiais e clientes
-  });
-
-  it('TC-46-HP01: Deve cotar ferragens avulsas por unidade inteira', () => { ... });
-  it('TC-46-HP02: Deve cotar perfis de alumínio em metro linear com taxa de perda', () => { ... });
-  it('TC-46-EC01: Deve aplicar compulsoriamente piso mínimo de 0.25 m² para peças pequenas de vidro', () => { ... });
-  it('TC-46-HP04 & SP03: Deve calcular películas solares e validar largura da bobina', () => { ... });
-  it('TC-46-HP05: Deve exportar proposta em PDF A4 com seções agrupadas', () => { ... });
-  it('TC-46-SP01 & SP02: Deve barrar submissão com quantidades ou medidas inválidas', () => { ... });
+describe('US-46: Módulo de Venda Avulsa de Partes (Suíte E2E com Isolamento)', () => {
+  it('Cenário 1: Carregamento Inicial da Tela de Venda Avulsa e Layout Limpo', () => { ... });
+  it('Cenário 2: Adição de Perfil de Alumínio (1 metro linear) com Cálculo Transparente', () => { ... });
+  it('Cenário 3: Adição de Vidro Pequeno com Aplicação Obrigatória de Piso Mínimo (0.25 m²)', () => { ... });
+  it('Cenário 4: Venda Completa Multimaterial, Salvamento no Banco e Modais de Exportação', () => { ... });
 });
 ```
 
