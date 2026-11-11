@@ -32,14 +32,21 @@ beforeEach(() => {
 
 Cypress.Commands.add('selectRequiredMaterialsStep2', () => {
   cy.get('select[data-testid^="select-material-"]').should('have.length.at.least', 1);
-  cy.get('select[data-testid^="select-material-"]').each(($select) => {
-    const firstOptionText = $select.find('option').eq(0).text();
-    if (!$select.val() && firstOptionText.includes('Selecione')) {
-      cy.wrap($select).find('option').should('have.length.greaterThan', 1);
-      cy.wrap($select).then(($loadedSelect) => {
-        const firstRealValue = String($loadedSelect.find('option').eq(1).val() || '');
-        if (firstRealValue) {
-          cy.wrap($loadedSelect).scrollIntoView().select(firstRealValue, { force: true });
+  cy.get('select[data-testid^="select-material-"]').then(($selects) => {
+    const total = $selects.length;
+    for (let i = 0; i < total; i++) {
+      cy.get('select[data-testid^="select-material-"]').eq(i).then(($select) => {
+        const val = $select.val();
+        const firstText = $select.find('option').eq(0).text();
+        const needsSelection = !val && (firstText.includes('Selecione') || firstText.includes('Sem') || firstText.includes('Nenhuma'));
+        if (needsSelection) {
+          cy.wrap($select).find('option').should('have.length.greaterThan', 1);
+          cy.get('select[data-testid^="select-material-"]').eq(i).then(($fresh) => {
+            const firstRealVal = String($fresh.find('option').eq(1).val() || '');
+            if (firstRealVal) {
+              cy.wrap($fresh).scrollIntoView().select(firstRealVal, { force: true });
+            }
+          });
         }
       });
     }

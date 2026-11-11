@@ -155,8 +155,8 @@ describe('Testes E2E - Ciclo de Orçamentos e Conversão para Pedido (Deep Copy)
     const dynamicGlassQty = Math.floor(Math.random() * 4) + 1;
     const dynamicProfileQty = Math.floor(Math.random() * 8) + 2;
     const dynamicHardwareQty = Math.floor(Math.random() * 3) + 1;
-    const dynamicWidth = Math.floor(Math.random() * 500) + 50;
-    const dynamicHeight = Math.floor(Math.random() * 500) + 50;
+    const dynamicWidth = Math.floor(Math.random() * 600) + 800;
+    const dynamicHeight = Math.floor(Math.random() * 600) + 1000;
     const dynamicQuantity = Math.floor(Math.random() * 10) + 1;
 
     windowDimensionsData = {
@@ -470,9 +470,16 @@ describe('Testes E2E - Ciclo de Orçamentos e Conversão para Pedido (Deep Copy)
     cy.url().should('match', /\/ordens-servico\/[a-f0-9-]+$/i);
     
     // Ciclo de status US-15.1: CREATED -> WAITING_PRODUCTION -> IN_PRODUCTION -> COMPLETED
+    cy.intercept('PATCH', '**/orders/*/status*').as('updateOrderStatus');
+
     cy.get('[data-testid="btn-advance-waiting-production"]').should('be.visible').click();
+    cy.wait('@updateOrderStatus').its('response.statusCode').should('be.oneOf', [200, 204]);
+
     cy.get('[data-testid="btn-advance-production"]').should('be.visible').click();
+    cy.wait('@updateOrderStatus').its('response.statusCode').should('be.oneOf', [200, 204]);
+
     cy.get('[data-testid="btn-complete-production"]').should('be.visible').click();
+    cy.wait('@updateOrderStatus').its('response.statusCode').should('be.oneOf', [200, 204]);
 
     // ---------------------------------------------------------
     // K. VALIDAÇÃO FINAL DA ORDEM DE SERVIÇO (OrderItemList)

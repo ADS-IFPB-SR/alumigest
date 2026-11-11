@@ -125,20 +125,6 @@ describe('US-13: Demonstração Visual e Interativa dos 5 Critérios de Aceitaç
     cy.viewport(1366, 768);
   });
 
-  after(() => {
-    // Limpeza física (Hard Delete)
-    cy.request({
-      method: 'DELETE',
-      url: `${Cypress.env('apiUrl') || 'http://localhost:8081/api/v1'}/test-support/cleanup`,
-      body: {
-        orderId: 'ord-1301',
-        budgetId: 'orc-1301',
-        clientName: 'Vidraçaria Alvorada',
-      },
-      failOnStatusCode: false,
-    });
-  });
-
   // ───────────────────────────────────────────────────────────────────────────
   // CENÁRIO 1
   // ───────────────────────────────────────────────────────────────────────────
