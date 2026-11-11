@@ -6,6 +6,15 @@ describe('QA-04: Teste End-to-End da Via Técnica de Oficina (Ficha de Usinagem 
     id: mockBudgetId,
     code: mockBudgetCode,
     status: 'APPROVED',
+    clientId: 'cust-1',
+    clientName: 'Serralheria Esquadrias do Sertão',
+    clientPhone: '(83) 98765-4321',
+    clientEmail: 'contato@esquadriasdosertao.com.br',
+    clientAddress: 'Rua da Produção, 100 - Distrito Fabril, Sousa - PB',
+    subtotal: 1850.0,
+    discountPercent: 0,
+    discountValue: 0,
+    total: 1850.0,
     customer: {
       id: 'cust-1',
       fullName: 'Serralheria Esquadrias do Sertão',
@@ -23,10 +32,12 @@ describe('QA-04: Teste End-to-End da Via Técnica de Oficina (Ficha de Usinagem 
       {
         id: 'item-1',
         name: 'Porta de Giro 1 Folha',
+        productName: 'Porta de Giro 1 Folha',
         templateType: 'SWING_DOOR_1F',
         widthMm: 900,
         heightMm: 2100,
         quantity: 2,
+        subtotal: 1850.0,
         notes: 'Usinagem de dobradiças nas distâncias 250, 1050, 1850 mm',
         templateConfig: JSON.stringify({
           width: 900,
@@ -71,6 +82,7 @@ describe('QA-04: Teste End-to-End da Via Técnica de Oficina (Ficha de Usinagem 
   };
 
   beforeEach(() => {
+    cy.viewport(1280, 800);
     // Intercepta rota de busca de orçamento por padrão
     cy.intercept('GET', '**/api/orcamentos/' + mockBudgetId, {
       statusCode: 200,
@@ -107,7 +119,10 @@ describe('QA-04: Teste End-to-End da Via Técnica de Oficina (Ficha de Usinagem 
 
     // Garante que o orçamento carregou
     cy.contains(mockBudgetCode).should('be.visible');
-    cy.contains('Serralheria Esquadrias do Sertão').should('be.visible');
+    cy.contains('p.font-label', 'Serralheria Esquadrias do Sertão')
+      .should('exist')
+      .closest('.bg-surface-container-lowest')
+      .should('be.visible');
 
     // Botão de Via Técnica deve estar visível e habilitado
     const btnViaTecnica = cy.get('[data-testid="btn-download-pdf-tecnico"]');
@@ -203,7 +218,7 @@ describe('QA-04: Teste End-to-End da Via Técnica de Oficina (Ficha de Usinagem 
     // Valida painéis de fábrica
     cy.contains('Romaneio Técnico & Gabarito de Fabricação').should('be.visible');
     cy.contains('Lista de Corte & Gabarito Técnico').should('be.visible');
-    cy.contains('Controle de Qualidade & Fábrica').should('be.visible');
+    cy.contains('Controle de Qualidade & Fábrica').scrollIntoView().should('be.visible');
 
     // O botão de Via Técnica continua presente na barra de ações superior
     cy.get('[data-testid="btn-download-pdf-tecnico"]').should('be.visible');

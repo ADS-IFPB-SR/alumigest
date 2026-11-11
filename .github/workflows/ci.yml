@@ -240,6 +240,16 @@ jobs:
           cat backend.log || true
           exit 1
 
+      - name: Load E2E CI Database Seeds
+        env:
+          POSTGRES_PORT: ${{ job.services.postgres.ports['5432'] }}
+        run: |
+          if ! command -v psql > /dev/null 2>&1; then
+            sudo apt-get update && sudo apt-get install -y postgresql-client
+          fi
+          echo "🌱 Carregando massa de dados mínima e idempotente para E2E..."
+          PGPASSWORD=postgres psql -h localhost -p "$POSTGRES_PORT" -U postgres -d alumigest_e2e -v ON_ERROR_STOP=1 -f database/seeds/e2e_ci_seeds.sql
+
       - name: Setup Node.js 20
         uses: actions/setup-node@v4
         with:

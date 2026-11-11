@@ -46,6 +46,8 @@ describe('US-13: Demonstração Visual e Interativa dos 5 Critérios de Aceitaç
         templateType: 'SLIDING_WINDOW_2F',
         width: 1500,
         height: 1200,
+        widthMm: 1500,
+        heightMm: 1200,
         quantity: 1,
         laborCost: 250,
         subtotal: 1850.0,
@@ -58,13 +60,15 @@ describe('US-13: Demonstração Visual e Interativa dos 5 Critérios de Aceitaç
         templateType: 'SLIDING_DOOR_4F',
         width: 2400,
         height: 2100,
+        widthMm: 2400,
+        heightMm: 2100,
         quantity: 1,
         laborCost: 400,
         subtotal: 2000.0,
         options: [],
       },
     ],
-  };
+  } as unknown as BudgetDetail;
 
   const mockCreatedOrder: Order = {
     id: 'ord-1301',
@@ -125,7 +129,7 @@ describe('US-13: Demonstração Visual e Interativa dos 5 Critérios de Aceitaç
     // Limpeza física (Hard Delete)
     cy.request({
       method: 'DELETE',
-      url: '/api/v1/test-support/cleanup',
+      url: `${Cypress.env('apiUrl') || 'http://localhost:8081/api/v1'}/test-support/cleanup`,
       body: {
         orderId: 'ord-1301',
         budgetId: 'orc-1301',

@@ -68,7 +68,9 @@ scratch/
 /*.pdf
 /*.zip
 
-# Seeds Locais de Demonstração / Testes (não sobem para produção)
-database/seeds/
+# Seeds Locais de Demonstração / Testes (não sobem para produção, exceto seed determinístico de CI E2E)
+!database/seeds/
+database/seeds/*
+!database/seeds/e2e_ci_seeds.sql
 *.seed.sql
 backend/src/main/resources/db/dev-seeds/
