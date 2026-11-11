@@ -217,33 +217,181 @@ async function fetchSonarQualityGate(projectKey, sonarHostUrl, sonarToken) {
   }
 }
 
-async function fetchSonarIssues(projectKey, sonarHostUrl, sonarToken, limit = 30) {
+async function fetchSonarIssuesPage(baseUrl, authHeader, projectKey, page, pageSize, inNewCodePeriod) {
+  const periodParam = inNewCodePeriod ? '&inNewCodePeriod=true' : '';
+  const url = `${baseUrl}/api/issues/search?componentKeys=${encodeURIComponent(projectKey)}${periodParam}&resolved=false&p=${page}&ps=${pageSize}&s=SEVERITY&asc=false`;
+  return fetch(url, { headers: { 'Authorization': authHeader } });
+}
+
+async function fetchSonarIssues(projectKey, sonarHostUrl, sonarToken, maxIssues = 500) {
   if (!sonarHostUrl || !sonarToken) return [];
   try {
     const authHeader = 'Basic ' + Buffer.from(sonarToken + ':').toString('base64');
     const baseUrl = sonarHostUrl.replace(/\/+$/, '');
+    const pageSize = 100;
+    const collected = [];
+    let useNewCodePeriod = true;
 
-    // 1. Tenta buscar issues do New Code Period
-    let url = `${baseUrl}/api/issues/search?componentKeys=${encodeURIComponent(projectKey)}&inNewCodePeriod=true&resolved=false&ps=${limit}&s=SEVERITY&asc=false`;
-    let res = await fetch(url, { headers: { 'Authorization': authHeader } });
+    for (let page = 1; collected.length < maxIssues; page += 1) {
+      let res = await fetchSonarIssuesPage(baseUrl, authHeader, projectKey, page, pageSize, useNewCodePeriod);
+      if (!res.ok && page === 1 && useNewCodePeriod) {
+        useNewCodePeriod = false;
+        res = await fetchSonarIssuesPage(baseUrl, authHeader, projectKey, page, pageSize, false);
+      }
 
-    if (!res.ok) {
-      // 2. Fallback para issues gerais em aberto
-      url = `${baseUrl}/api/issues/search?componentKeys=${encodeURIComponent(projectKey)}&resolved=false&ps=${limit}&s=SEVERITY&asc=false`;
-      res = await fetch(url, { headers: { 'Authorization': authHeader } });
+      if (!res.ok) {
+        console.warn(`SonarQube API issues respondeu com status ${res.status} para ${projectKey} (página ${page})`);
+        break;
+      }
+
+      const data = await res.json();
+      const pageIssues = Array.isArray(data.issues) ? data.issues : [];
+      collected.push(...pageIssues);
+
+      const total = typeof data.paging?.total === 'number' ? data.paging.total : pageIssues.length;
+      if (pageIssues.length < pageSize || collected.length >= total) {
+        break;
+      }
     }
 
-    if (!res.ok) {
-      console.warn(`SonarQube API issues respondeu com status ${res.status} para ${projectKey}`);
-      return [];
-    }
-
-    const data = await res.json();
-    return data.issues || [];
+    return collected.slice(0, maxIssues);
   } catch (err) {
     console.error(`Erro ao buscar issues do SonarQube para ${projectKey}:`, err.message);
     return [];
   }
+}
+
+function normalizeRepoPath(filePath) {
+  return (filePath || '').replaceAll('\\', '/').replace(/^\.\//, '');
+}
+
+function parsePatchChangedLines(patch) {
+  if (!patch || typeof patch !== 'string') return null;
+  const changedLines = new Set();
+  let currentNewLine = 0;
+  let inHunk = false;
+
+  for (const line of patch.split('\n')) {
+    const hunkMatch = line.match(/^@@\s+-\d+(?:,\d+)?\s+\+(\d+)(?:,\d+)?\s+@@/);
+    if (hunkMatch) {
+      currentNewLine = parseInt(hunkMatch[1], 10);
+      inHunk = true;
+      continue;
+    }
+    if (!inHunk) continue;
+
+    if (line.startsWith('+')) {
+      changedLines.add(currentNewLine);
+      currentNewLine += 1;
+    } else if (line.startsWith('-')) {
+      if (currentNewLine > 0) {
+        changedLines.add(currentNewLine);
+      }
+    } else if (!line.startsWith('\\')) {
+      currentNewLine += 1;
+    }
+  }
+
+  return changedLines;
+}
+
+async function fetchPullRequestDiffScope(github, context) {
+  const prNumber = context.payload?.pull_request?.number;
+  if (!prNumber || !github?.rest?.pulls?.listFiles) {
+    return null;
+  }
+
+  try {
+    const files = await github.paginate(github.rest.pulls.listFiles, {
+      ...context.repo,
+      pull_number: prNumber,
+      per_page: 100
+    });
+
+    const scopeMap = new Map();
+    for (const file of files) {
+      if (file.status === 'removed') continue;
+      const filename = normalizeRepoPath(file.filename);
+      scopeMap.set(filename, {
+        added: file.status === 'added',
+        changedLines: file.status === 'added' ? null : parsePatchChangedLines(file.patch)
+      });
+    }
+    return scopeMap;
+  } catch (err) {
+    console.warn(`Não foi possível listar arquivos do PR #${prNumber} via API:`, err.message);
+    return null;
+  }
+}
+
+function rangeIntersectsLines(startLine, endLine, changedLines) {
+  if (!changedLines || changedLines.size === 0) return false;
+  const from = Math.max(1, Number(startLine) || 1);
+  const to = Math.max(from, Number(endLine) || from);
+  for (let line = from; line <= to; line += 1) {
+    if (changedLines.has(line)) return true;
+  }
+  return false;
+}
+
+function collectIssueLocations(issue, defaultComponent, projKey) {
+  const locations = [];
+  const primaryPath = normalizeRepoPath(cleanComponentPath(defaultComponent, projKey));
+
+  if (issue.textRange && typeof issue.textRange.startLine === 'number') {
+    locations.push({
+      path: primaryPath,
+      startLine: issue.textRange.startLine,
+      endLine: issue.textRange.endLine ?? issue.textRange.startLine
+    });
+  } else if (typeof issue.line === 'number') {
+    locations.push({ path: primaryPath, startLine: issue.line, endLine: issue.line });
+  }
+
+  if (Array.isArray(issue.flows)) {
+    for (const flow of issue.flows) {
+      for (const loc of flow.locations || []) {
+        if (!loc.textRange || typeof loc.textRange.startLine !== 'number') continue;
+        const locPath = loc.component
+          ? normalizeRepoPath(cleanComponentPath(loc.component, projKey))
+          : primaryPath;
+        locations.push({
+          path: locPath,
+          startLine: loc.textRange.startLine,
+          endLine: loc.textRange.endLine ?? loc.textRange.startLine
+        });
+      }
+    }
+  }
+
+  return locations;
+}
+
+function filterIssuesByPullRequestDiff(issues, projKey, prScope) {
+  if (!Array.isArray(issues)) return [];
+  return issues.filter(issue => {
+    const primaryPath = normalizeRepoPath(cleanComponentPath(issue.component, projKey));
+    const primaryScope = prScope.get(primaryPath);
+    if (!primaryScope) {
+      return false;
+    }
+
+    if (primaryScope.added || primaryScope.changedLines === null) {
+      return true;
+    }
+
+    const locations = collectIssueLocations(issue, issue.component, projKey);
+    if (locations.length === 0) {
+      return true;
+    }
+
+    return locations.some(loc => {
+      const targetScope = prScope.get(loc.path);
+      if (!targetScope) return false;
+      if (targetScope.added || targetScope.changedLines === null) return true;
+      return rangeIntersectsLines(loc.startLine, loc.endLine, targetScope.changedLines);
+    });
+  });
 }
 
 function formatSeverityBadge(severity) {
@@ -282,7 +430,9 @@ module.exports = async function ({ github, context, core }) {
   const frontendStatus = process.env.FRONTEND_STATUS || 'unknown';
   const sonarHostUrl = process.env.SONAR_HOST_URL || '';
   const sonarToken = process.env.SONAR_TOKEN || '';
-  const commitSha = context.sha ? context.sha.substring(0, 7) : 'N/A';
+  const prHeadSha = context.payload?.pull_request?.head?.sha;
+  const fullSha = prHeadSha || context.sha || '';
+  const commitSha = fullSha ? fullSha.substring(0, 7) : 'N/A';
   const runId = context.runId;
   const repoUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}`;
   const runUrl = `${repoUrl}/actions/runs/${runId}`;
@@ -307,15 +457,18 @@ module.exports = async function ({ github, context, core }) {
   const frontendTests = parseVitestReport(frontendSearchDirs);
   const frontendCov = parseVitestCoverage(frontendSearchDirs);
 
-  let [backendQG, frontendQG, backendIssues, frontendIssues] = await Promise.all([
+  let [backendQG, frontendQG, backendIssues, frontendIssues, prDiffScope] = await Promise.all([
     fetchSonarQualityGate('alumigest-backend', sonarHostUrl, sonarToken),
     fetchSonarQualityGate('alumigest-frontend', sonarHostUrl, sonarToken),
-    fetchSonarIssues('alumigest-backend', sonarHostUrl, sonarToken, 30),
-    fetchSonarIssues('alumigest-frontend', sonarHostUrl, sonarToken, 30)
+    fetchSonarIssues('alumigest-backend', sonarHostUrl, sonarToken, 500),
+    fetchSonarIssues('alumigest-frontend', sonarHostUrl, sonarToken, 500),
+    fetchPullRequestDiffScope(github, context)
   ]);
 
-  // Filtra issues para considerar estritamente os arquivos existentes no workspace deste PR
-  // Evita falsos positivos de análises concorrentes de outras branches no mesmo projeto SonarQube
+  const isPrDiffScoped = prDiffScope !== null;
+
+  // Em Pull Requests, filtra estritamente pelos arquivos e linhas alteradas no diff deste PR
+  // para impedir vazamento de apontamentos de outros PRs no mesmo projeto SonarQube.
   const filterIssuesByExistingFiles = (issues, projKey) => {
     if (!issues || !Array.isArray(issues)) return [];
     return issues.filter(issue => {
@@ -324,15 +477,22 @@ module.exports = async function ({ github, context, core }) {
     });
   };
 
-  backendIssues = filterIssuesByExistingFiles(backendIssues, 'alumigest-backend');
-  frontendIssues = filterIssuesByExistingFiles(frontendIssues, 'alumigest-frontend');
+  if (isPrDiffScoped) {
+    backendIssues = filterIssuesByPullRequestDiff(backendIssues, 'alumigest-backend', prDiffScope);
+    frontendIssues = filterIssuesByPullRequestDiff(frontendIssues, 'alumigest-frontend', prDiffScope);
+  } else {
+    backendIssues = filterIssuesByExistingFiles(backendIssues, 'alumigest-backend');
+    frontendIssues = filterIssuesByExistingFiles(frontendIssues, 'alumigest-frontend');
+  }
 
   const backendQGFailed = backendQG && backendQG.status === 'ERROR';
   const frontendQGFailed = frontendQG && frontendQG.status === 'ERROR';
+  const e2eFailed = e2eStatus === 'failure' || e2eStatus === 'cancelled';
 
   const allFailures = [...backendTests.failedTests, ...frontendTests.failedTests];
   const overallSuccess = backendStatus === 'success' && 
                          frontendStatus === 'success' && 
+                         !e2eFailed &&
                          allFailures.length === 0 &&
                          !backendQGFailed &&
                          !frontendQGFailed;
@@ -448,7 +608,10 @@ module.exports = async function ({ github, context, core }) {
     }
 
     if (hasSonarIssues) {
-      markdown += `> 💡 **Guia Rápido de Correção:** Os apontamentos abaixo foram detectados no código novo deste PR. Clique no arquivo para abrir a linha diretamente no GitHub.\n\n`;
+      const scopeHint = isPrDiffScoped
+        ? 'Os apontamentos abaixo foram filtrados estritamente pelos arquivos e linhas alteradas no diff deste PR.'
+        : 'Os apontamentos abaixo foram detectados no código novo analisado.';
+      markdown += `> 💡 **Guia Rápido de Correção:** ${scopeHint} Clique no arquivo para abrir a linha diretamente no GitHub.\n\n`;
 
       const renderIssueTable = (issues, compName, projKey) => {
         if (!issues || issues.length === 0) return '';
@@ -464,8 +627,8 @@ module.exports = async function ({ github, context, core }) {
           const lineNum = issue.line || (issue.textRange ? issue.textRange.startLine : 1);
 
           let fileLink = `\`${fileName}:${lineNum}\``;
-          if (repoUrl && commitSha && commitSha !== 'N/A') {
-            fileLink = `[\`${fileName}:${lineNum}\`](${repoUrl}/blob/${commitSha}/${fullPath}#L${lineNum})`;
+          if (repoUrl && fullSha) {
+            fileLink = `[\`${fileName}:${lineNum}\`](${repoUrl}/blob/${fullSha}/${fullPath}#L${lineNum})`;
           }
 
           const escapedMsg = (issue.message || '').replace(/\|/g, '\\|').replace(/\r?\n/g, ' ');
