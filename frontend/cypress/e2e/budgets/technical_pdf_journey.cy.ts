@@ -119,10 +119,7 @@ describe('QA-04: Teste End-to-End da Via Técnica de Oficina (Ficha de Usinagem 
 
     // Garante que o orçamento carregou
     cy.contains(mockBudgetCode).should('be.visible');
-    cy.contains('p.font-label', 'Serralheria Esquadrias do Sertão')
-      .should('exist')
-      .closest('.bg-surface-container-lowest')
-      .should('be.visible');
+    cy.contains('p.font-label', 'Serralheria Esquadrias do Sertão').should('be.visible');
 
     // Botão de Via Técnica deve estar visível e habilitado
     const btnViaTecnica = cy.get('[data-testid="btn-download-pdf-tecnico"]');

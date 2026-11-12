@@ -71,10 +71,7 @@ describe('Budget Integration E2E', () => {
 
     // Verifica que fomos para a página de detalhes
     cy.url().should('match', /\/orcamentos\/[a-f0-9-]+$/i);
-    cy.contains('p.font-label', 'Cliente Seed 1')
-      .should('exist')
-      .closest('.bg-surface-container-lowest')
-      .should('be.visible');
+    cy.contains('p.font-label', 'Cliente Seed 1').should('be.visible');
 
     // Verifica listagem novamente e abre os detalhes pela tabela
     cy.visit('/orcamentos');

@@ -135,10 +135,7 @@ describe('QA-03: Teste de Integração End-to-End (Produto -> Orçamento -> PDF)
 
     // 5. Verificar na tela de detalhes a proposta comercial formatada com dados e valores
     cy.url().should('match', /\/orcamentos\/[a-f0-9-]+$/i);
-    cy.contains('p.font-label', clientName)
-      .should('exist')
-      .closest('.bg-surface-container-lowest')
-      .should('be.visible');
+    cy.contains('p.font-label', clientName).should('be.visible');
     cy.contains('1400 × 1900 mm').scrollIntoView().should('be.visible');
     cy.contains('2 unidades').scrollIntoView().should('be.visible');
     cy.contains('Esquadrias & Itens do Orçamento').scrollIntoView().should('be.visible');

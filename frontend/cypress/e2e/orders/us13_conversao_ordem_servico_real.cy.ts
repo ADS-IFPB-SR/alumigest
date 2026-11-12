@@ -93,10 +93,7 @@ describe('US-13: Jornada E2E Integrada — Criação de Orçamento e Conversão 
 
     // 5. Verifica detalhes do orçamento e aciona Aprovação (US-13)
     cy.url().should('match', /\/orcamentos\/[a-f0-9-]+$/i);
-    cy.contains('p.font-label', clienteNome)
-      .should('exist')
-      .closest('.bg-surface-container-lowest')
-      .should('be.visible');
+    cy.contains('p.font-label', clienteNome).should('be.visible');
 
     // Clica no botão de aprovação
     cy.get('[data-testid="btn-approve-budget"]').should('be.visible').click();
