@@ -15,10 +15,12 @@ export const StockAlertBadge: React.FC<StockAlertBadgeProps> = ({
   className = '',
 }) => {
   if (status === 'NEED_PURCHASE') {
-    const hasDeficit = availableQuantity !== undefined && availableQuantity < 0;
-    const deficitLabel = hasDeficit
-      ? ` (${Math.abs(availableQuantity)}${unitMeasure ? ` ${unitMeasure}` : ''})`
-      : '';
+    let deficitLabel = '';
+    if (availableQuantity !== undefined && availableQuantity < 0) {
+      const absQty = Math.abs(availableQuantity);
+      const unit = unitMeasure ? ` ${unitMeasure}` : '';
+      deficitLabel = ` (${absQty}${unit})`;
+    }
 
     return (
       <span

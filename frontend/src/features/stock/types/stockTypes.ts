@@ -14,12 +14,14 @@ export type StockAlertStatus = 'IN_STOCK' | 'ORDER_POINT' | 'NEED_PURCHASE';
 
 export type StockAlertLevel = 'SAFE' | 'ORDER_POINT' | 'PURCHASE_DEMAND';
 
+export type StockCategoryType = 'GLASS' | 'PROFILE' | 'HARDWARE' | 'FILM';
+
 export interface StockItem {
   id: string;
   materialId: string;
   materialSku: string;
   materialName: string;
-  category: 'GLASS' | 'PROFILE' | 'HARDWARE' | 'FILM' | string;
+  category: StockCategoryType;
   unitMeasure: string;
   physicalQuantity: number;
   reservedQuantity: number;
