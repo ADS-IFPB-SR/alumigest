@@ -5,8 +5,9 @@
 declare namespace Cypress {
   interface Chainable {
     highlight(durationMs?: number): Chainable<JQuery<HTMLElement>>;
+    selectRequiredMaterialsStep2(): Chainable<void>;
     createClientAPI(clientOverrides?: any): Chainable<Response<any>>;
-    createProductAPI(productOverrides?: any): Chainable<Response<any>>;
+    createProductAPI(body?: any): Chainable<Response<any>>;
     createGlassAPI(glassOverrides?: any): Chainable<Response<any>>;
     createAluminumProfileAPI(profileOverrides?: any): Chainable<Response<any>>;
     createHardwareAPI(hardwareOverrides?: any): Chainable<Response<any>>;
@@ -14,6 +15,43 @@ declare namespace Cypress {
     deleteEntityAPI(endpoint: string, id: string | number): Chainable<Response<any>>;
   }
 }
+
+beforeEach(() => {
+  // Evita que fontes externas bloqueiem o evento window.load em Electron headless
+  cy.intercept('GET', 'https://fonts.googleapis.com/**', {
+    statusCode: 200,
+    headers: { 'content-type': 'text/css; charset=utf-8' },
+    body: '',
+  });
+  cy.intercept('GET', 'https://fonts.gstatic.com/**', {
+    statusCode: 200,
+    headers: { 'content-type': 'font/woff2' },
+    body: '',
+  });
+});
+
+Cypress.Commands.add('selectRequiredMaterialsStep2', () => {
+  cy.get('select[data-testid^="select-material-"]').should('have.length.at.least', 1);
+  cy.get('select[data-testid^="select-material-"]').then(($selects) => {
+    const total = $selects.length;
+    for (let i = 0; i < total; i++) {
+      cy.get('select[data-testid^="select-material-"]').eq(i).then(($select) => {
+        const val = $select.val();
+        const firstText = $select.find('option').eq(0).text();
+        const needsSelection = !val && (firstText.includes('Selecione') || firstText.includes('Sem') || firstText.includes('Nenhuma'));
+        if (needsSelection) {
+          cy.wrap($select).find('option').should('have.length.greaterThan', 1);
+          cy.get('select[data-testid^="select-material-"]').eq(i).then(($fresh) => {
+            const firstRealVal = String($fresh.find('option').eq(1).val() || '');
+            if (firstRealVal) {
+              cy.wrap($fresh).scrollIntoView().select(firstRealVal, { force: true });
+            }
+          });
+        }
+      });
+    }
+  });
+});
 
 // ==========================================
 // 1. COMANDO HIGHLIGHT
@@ -40,11 +78,20 @@ Cypress.Commands.add('highlight', { prevSubject: 'element' }, (subject, duration
 // ==========================================
 // 2. FUNÇÕES AUXILIARES PARA DADOS DINÂMICOS
 // ==========================================
-const generateUniqueString = (prefix: string) => `${prefix} ${Date.now()}`;
+let uniqueCounter = 0;
+const nextUniqueToken = () => {
+  uniqueCounter += 1;
+  const rand = Math.random().toString(36).slice(2, 6);
+  return `${Date.now()}-${uniqueCounter}-${rand}`;
+};
+
+const generateUniqueString = (prefix: string) => `${prefix} ${nextUniqueToken()}`;
 const getRandomEnum = (enumArray: any[]) => enumArray[Math.floor(Math.random() * enumArray.length)];
 const generateRandomCPF = () => {
-  const n = () => Math.floor(Math.random() * 9);
-  return `${n()}${n()}${n()}.${n()}${n()}${n()}.${n()}${n()}${n()}-00`; 
+  uniqueCounter += 1;
+  const counterDigits = String(uniqueCounter % 100).padStart(2, '0');
+  const d = () => Math.floor(Math.random() * 10);
+  return `${d()}${d()}${d()}.${d()}${d()}${d()}.${d()}${d()}${d()}-${counterDigits}`;
 };
 const generateRandomNCM = () => {
   return String(Math.floor(10000000 + Math.random() * 90000000));
@@ -81,7 +128,7 @@ Cypress.Commands.add('createClientAPI', (clientOverrides = {}) => {
     personType: getRandomEnum(personTypes),
     documento: generateRandomCPF(), 
     telefone: `(83) 9${Math.floor(1000 + Math.random() * 9000)}-${Math.floor(1000 + Math.random() * 9000)}`,
-    email: `teste.e2e.${Date.now()}@alumigest.com`,
+    email: `teste.e2e.${nextUniqueToken()}@alumigest.com`,
     cep: "58300-000",
     logradouro: "Rua Cypress",
     numero: String(Math.floor(Math.random() * 1000)),
@@ -157,7 +204,7 @@ Cypress.Commands.add('createGlassAPI', (glassOverrides = {}) => {
 Cypress.Commands.add('createAluminumProfileAPI', (profileOverrides = {}) => {
   const dynamicProfile = {
     name: generateUniqueString("Perfil E2E"),
-    commercialReference: `REF-${Math.floor(Math.random() * 1000)}`,
+    commercialReference: `REF-${nextUniqueToken()}`,
     commercialLine: "Suprema",
     ncmCode: generateRandomNCM(),
     colorFinish: "Branco",
@@ -182,7 +229,7 @@ Cypress.Commands.add('createAluminumProfileAPI', (profileOverrides = {}) => {
 
 Cypress.Commands.add('createHardwareAPI', (hardwareOverrides = {}) => {
   const dynamicHardware = {
-    skuCode: `SKU-${Date.now().toString().slice(-6)}`,
+    skuCode: `SKU-${nextUniqueToken()}`,
     name: generateUniqueString("Ferragem E2E"),
     unitMeasure: "UN", 
     calculationType: "UNIT", 

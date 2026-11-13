@@ -129,6 +129,7 @@ describe('Status do Perfil de Alumínio - Happy Path', () => {
     // 11. Valida StatusToggle inicialmente Ativo
     // =========================================================
     cy.get('button[aria-label="Alternar status"]')
+      .scrollIntoView()
       .should('be.visible')
       .and('have.class', 'bg-green-600');
 
@@ -136,6 +137,7 @@ describe('Status do Perfil de Alumínio - Happy Path', () => {
     // 12. Altera para Inativo
     // =========================================================
     cy.get('button[aria-label="Alternar status"]')
+      .scrollIntoView()
       .click();
 
     cy.get('button[aria-label="Alternar status"]')
@@ -183,6 +185,7 @@ describe('Status do Perfil de Alumínio - Happy Path', () => {
     // 17. Valida StatusToggle como Inativo
     // =========================================================
     cy.get('button[aria-label="Alternar status"]')
+      .scrollIntoView()
       .should('be.visible')
       .and('have.class', 'bg-surface-variant');
 
@@ -190,6 +193,7 @@ describe('Status do Perfil de Alumínio - Happy Path', () => {
     // 18. Altera novamente para Ativo
     // =========================================================
     cy.get('button[aria-label="Alternar status"]')
+      .scrollIntoView()
       .click();
 
     cy.get('button[aria-label="Alternar status"]')

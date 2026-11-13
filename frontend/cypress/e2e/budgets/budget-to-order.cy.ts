@@ -17,10 +17,12 @@ describe('Testes E2E - Ciclo de Orçamentos e Conversão para Pedido (Deep Copy)
   let productData: any;
   let windowDimensionsData: any;
   
-  // Variáveis para guardar os nomes gerados dos materiais
+  // Variáveis para guardar os nomes gerados dos materiais e IDs criados
   let glassData: any;
   let profileData: any;
   let hardwareData: any;
+  let createdBudgetId: string | null = null;
+  let createdOrderId: string | null = null;
 
   before(() => {
     // 1. Setup de Massa de Dados Dinâmica via API
@@ -75,18 +77,26 @@ describe('Testes E2E - Ciclo de Orçamentos e Conversão para Pedido (Deep Copy)
 
   after(() => {
     cy.log('Limpando massa de dados gerada no teste...');
-    
-    // Atenção à ordem: se houver dependência (Foreign Key), delete
-    // as tabelas filhas primeiro.
-    
+    const apiUrl = Cypress.env('apiUrl') || 'http://localhost:8081/api/v1';
+
+    if (createdOrderId || createdBudgetId || clientData?.id) {
+      cy.request({
+        method: 'DELETE',
+        url: `${apiUrl}/test-support/cleanup`,
+        body: {
+          clientId: clientData?.id ?? null,
+          budgetId: createdBudgetId,
+          orderId: createdOrderId,
+          clientName: clientData?.nomeCompleto ?? null,
+        },
+        failOnStatusCode: false,
+      });
+    }
+
     if (productData?.id) cy.deleteEntityAPI('catalog/products', productData.id);
     if (glassData?.id) cy.deleteEntityAPI('catalog/glasses', glassData.id);
     if (profileData?.id) cy.deleteEntityAPI('catalog/aluminum-profiles', profileData.id);
     if (hardwareData?.id) cy.deleteEntityAPI('catalog/hardware', hardwareData.id);
-    
-    // Opcional: deletar o cliente gerado 
-    // (Pode falhar se o backend bloquear deleção de cliente que possui Ordem de Serviço vinculada)
-    
   });
 
   it('deve realizar o ciclo completo de orçamentos: listar, criar e converter (Deep Copy)', () => {
@@ -145,8 +155,8 @@ describe('Testes E2E - Ciclo de Orçamentos e Conversão para Pedido (Deep Copy)
     const dynamicGlassQty = Math.floor(Math.random() * 4) + 1;
     const dynamicProfileQty = Math.floor(Math.random() * 8) + 2;
     const dynamicHardwareQty = Math.floor(Math.random() * 3) + 1;
-    const dynamicWidth = Math.floor(Math.random() * 500) + 50;
-    const dynamicHeight = Math.floor(Math.random() * 500) + 50;
+    const dynamicWidth = Math.floor(Math.random() * 600) + 800;
+    const dynamicHeight = Math.floor(Math.random() * 600) + 1000;
     const dynamicQuantity = Math.floor(Math.random() * 10) + 1;
 
     windowDimensionsData = {
@@ -167,17 +177,35 @@ describe('Testes E2E - Ciclo de Orçamentos e Conversão para Pedido (Deep Copy)
     // ---------------------------------------------------------
     // E. PREENCHIMENTO DE MATERIAIS (Step 2)
     // ---------------------------------------------------------
-    cy.contains('button', '+ Vidro').should('exist').click();
-    cy.get('div[aria-modal="true"]').find('select').eq(0).should('exist').select(glassData.id, { force: true }); 
-    cy.get('div[aria-modal="true"]').find('input[type="number"]').eq(0).should('not.be.disabled').clear({ force: true }).type(String(dynamicGlassQty), { force: true });
+    cy.get('[data-testid="select-material-glass"]')
+      .first()
+      .should('exist')
+      .select(glassData.id, { force: true })
+      .closest('.rounded-md')
+      .find('input[type="number"]')
+      .should('not.be.disabled')
+      .clear({ force: true })
+      .type(String(dynamicGlassQty), { force: true });
 
-    cy.contains('button', '+ Perfil').should('exist').click();
-    cy.get('div[aria-modal="true"]').find('select').eq(1).should('exist').select(profileData.id, { force: true });
-    cy.get('div[aria-modal="true"]').find('input[type="number"]').eq(1).should('not.be.disabled').clear({ force: true }).type(String(dynamicProfileQty), { force: true });
+    cy.get('[data-testid="select-material-profile"]')
+      .first()
+      .should('exist')
+      .select(profileData.id, { force: true })
+      .closest('.rounded-md')
+      .find('input[type="number"]')
+      .should('not.be.disabled')
+      .clear({ force: true })
+      .type(String(dynamicProfileQty), { force: true });
 
-    cy.contains('button', '+ Ferragem').should('exist').click();
-    cy.get('div[aria-modal="true"]').find('select').eq(2).should('exist').select(hardwareData.id, { force: true });
-    cy.get('div[aria-modal="true"]').find('input[type="number"]').eq(2).should('not.be.disabled').clear({ force: true }).type(String(dynamicHardwareQty), { force: true });
+    cy.get('[data-testid="select-material-hardware"]')
+      .first()
+      .should('exist')
+      .select(hardwareData.id, { force: true })
+      .closest('.rounded-md')
+      .find('input[type="number"]')
+      .should('not.be.disabled')
+      .clear({ force: true })
+      .type(String(dynamicHardwareQty), { force: true });
 
     cy.contains('button', 'Próximo').should('be.visible').click();
 
@@ -221,30 +249,31 @@ describe('Testes E2E - Ciclo de Orçamentos e Conversão para Pedido (Deep Copy)
 
     if (randomHoleCount === 0) {
       cy.log('Cenário Dinâmico: SEM Furação (0 furos)');
-      cy.contains('button', 'Sem furos').click();
-      cy.get('#hole-count-input').should('have.value', ''); 
-      cy.get('#hole-division-select').should('be.disabled');
+      cy.contains('button', 'Sem furos').scrollIntoView().click();
+      cy.get('#hole-count-input').scrollIntoView().should('have.value', ''); 
+      cy.get('#hole-division-select').scrollIntoView().should('be.disabled');
     } else {
       cy.log(`Cenário Dinâmico: COM Furação (${randomHoleCount} furos)`);
-      cy.get('#hole-count-input').clear({ force: true }).type(String(randomHoleCount), { force: true });
+      cy.get('#hole-count-input').scrollIntoView().clear({ force: true }).type(String(randomHoleCount), { force: true });
       
       const isCustomDistance = Math.random() > 0.5;
       
       if (isCustomDistance) {
         cy.log('Cenário Dinâmico: Furação com Distâncias Manuais (CUSTOM_DISTANCE)');
-        cy.get('#hole-division-select').should('not.be.disabled').select('CUSTOM_DISTANCE', { force: true });
+        cy.get('#hole-division-select').scrollIntoView().should('not.be.disabled').select('CUSTOM_DISTANCE', { force: true });
         
         for (let i = 1; i <= randomHoleCount; i++) {
           const distanceValue = i * 50; 
           cy.get(`#hole-distance-input-${i}`)
+            .scrollIntoView()
             .should('be.visible')
             .clear({ force: true })
             .type(String(distanceValue), { force: true });
         }
       } else {
         cy.log('Cenário Dinâmico: Furação Distribuída Automaticamente (EQUAL)');
-        cy.get('#hole-division-select').should('not.be.disabled').select('EQUAL', { force: true });
-        cy.contains('Espaçamento médio calculado:').should('be.visible');
+        cy.get('#hole-division-select').scrollIntoView().should('not.be.disabled').select('EQUAL', { force: true });
+        cy.contains('Espaçamento médio calculado:').scrollIntoView().should('be.visible');
         cy.get('input[id^="hole-distance-input-"]').should('not.exist');
       }
     }
@@ -258,12 +287,13 @@ describe('Testes E2E - Ciclo de Orçamentos e Conversão para Pedido (Deep Copy)
     if (hasNotes) {
       cy.log('Cenário Dinâmico: COM Observações');
       cy.get('#modal-notes-input')
+        .scrollIntoView()
         .should('be.visible')
         .clear({ force: true })
         .type(windowDimensionsData.notes, { force: true });
     } else {
       cy.log('Cenário Dinâmico: SEM Observações');
-      cy.get('#modal-notes-input').should('have.value', '');
+      cy.get('#modal-notes-input').scrollIntoView().should('have.value', '');
     }
 
     cy.contains('button', 'Próximo').should('be.visible').click();
@@ -309,9 +339,9 @@ describe('Testes E2E - Ciclo de Orçamentos e Conversão para Pedido (Deep Copy)
       const isPercentage = Math.random() > 0.5;
       
       windowDimensionsData.financial.discountType = isPercentage ? 'PERCENTUAL' : 'VALOR_FIXO';
-      windowDimensionsData.financial.discountValue = isPercentage 
-        ? Math.floor(Math.random() * 15) + 1 
-        : Math.floor(Math.random() * 90) + 10; 
+      windowDimensionsData.financial.discountValue = isPercentage
+        ? Math.floor(Math.random() * 15) + 1
+        : Math.floor(Math.random() * 40) + 5;
       
       cy.contains('button', isPercentage ? '%' : 'R$').should('be.visible').click();
       
@@ -371,7 +401,13 @@ describe('Testes E2E - Ciclo de Orçamentos e Conversão para Pedido (Deep Copy)
         .type(windowDimensionsData.notes, { force: true });
     }
 
+    cy.intercept('POST', '**/api/orcamentos*').as('createBudget');
     cy.get('#btn-salvar-proposta').should('be.visible').click();
+    cy.wait('@createBudget').then((interception) => {
+      expect(interception.response?.statusCode).to.be.oneOf([200, 201]);
+      createdBudgetId = interception.response?.body?.id ?? null;
+    });
+    cy.url().should('match', /\/orcamentos\/[a-f0-9-]+$/i);
 
     cy.get('[data-testid="btn-approve-budget"]')
       .should('be.visible')
@@ -420,17 +456,30 @@ describe('Testes E2E - Ciclo de Orçamentos e Conversão para Pedido (Deep Copy)
       cy.get('[data-testid="input-observacoes"]').should('have.value', '');
     }
 
+    cy.intercept('POST', '**/orders/convert/*').as('convertOrder');
     cy.get('[data-testid="btn-confirm-approval"]')
       .should('be.visible')
       .should('not.be.disabled')
       .click({ force: true });
+    cy.wait('@convertOrder').then((interception) => {
+      expect(interception.response?.statusCode).to.be.oneOf([200, 201]);
+      createdOrderId = interception.response?.body?.id ?? null;
+    });
 
     cy.get('[data-testid="order-approval-modal"]').should('not.exist');
+    cy.url().should('match', /\/ordens-servico\/[a-f0-9-]+$/i);
     
     // Ciclo de status US-15.1: CREATED -> WAITING_PRODUCTION -> IN_PRODUCTION -> COMPLETED
+    cy.intercept('PATCH', '**/orders/*/status*').as('updateOrderStatus');
+
     cy.get('[data-testid="btn-advance-waiting-production"]').should('be.visible').click();
+    cy.wait('@updateOrderStatus').its('response.statusCode').should('be.oneOf', [200, 204]);
+
     cy.get('[data-testid="btn-advance-production"]').should('be.visible').click();
+    cy.wait('@updateOrderStatus').its('response.statusCode').should('be.oneOf', [200, 204]);
+
     cy.get('[data-testid="btn-complete-production"]').should('be.visible').click();
+    cy.wait('@updateOrderStatus').its('response.statusCode').should('be.oneOf', [200, 204]);
 
     // ---------------------------------------------------------
     // K. VALIDAÇÃO FINAL DA ORDEM DE SERVIÇO (OrderItemList)
