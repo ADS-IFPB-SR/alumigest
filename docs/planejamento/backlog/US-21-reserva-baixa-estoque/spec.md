@@ -89,14 +89,18 @@ Como gestor de suprimentos e encarregado de almoxarifado da Alumiportas, desejo 
 
 ---
 
-## 📋 Sub-Tarefas / Fatias Verticais Vinculadas (Sprint 09 — 4 Fatias Fullstack)
+## 📋 Sub-Tarefas Vinculadas (Sprint 09 — 8 Tarefas Atômicas)
 
-| Sub-Task | Issue GitHub | Título da Fatia Vertical | Tipo / Escopo | Estimativa | Status |
+| Sub-Task | Issue GitHub | Título da Tarefa Atômica | Tipo / Escopo | Estimativa | Status |
 |:---:|:---:|---|---|:---:|:---:|
-| **US-21.1** | [#571](https://github.com/ADS-IFPB-SR/alumigest/issues/571) | **Fundação de Dados & Reserva Automática Make-to-Order na Aprovação da O.S.** (Fullstack) | Fullstack (BD + Backend + UI + Testes) | 4 pts (14h) | 📋 Sprint Task (To Do) |
-| **US-21.2** | [#572](https://github.com/ADS-IFPB-SR/alumigest/issues/572) | **Baixa Física Definitiva na Conclusão da Produção & Estorno em Cancelamento** (Fullstack) | Fullstack (Backend + Kanban + Testes) | 3 pts (10h) | 📋 Sprint Task (To Do) |
-| **US-21.3** | [#573](https://github.com/ADS-IFPB-SR/alumigest/issues/573) | **Movimentações Manuais de Almoxarifado, Ajustes de Inventário e Registro de Sucata/Perdas** (Fullstack) | Fullstack (API + Modal UI + Testes) | 3 pts (12h) | 📋 Sprint Task (To Do) |
-| **US-21.4** | [#574](https://github.com/ADS-IFPB-SR/alumigest/issues/574) | **Blindagem de Concorrência Multi-Thread, Teste de Carga e Rastreabilidade End-to-End** (Fullstack / QA) | Fullstack / QA (Concorrência + E2E + OpenAPI) | 3 pts (10h) | 📋 Sprint Task (To Do) |
+| **US-21.1** | [#571](https://github.com/ADS-IFPB-SR/alumigest/issues/571) | **Setup & Estrutura Base do Módulo de Estoque** | Backend & Frontend (Pacotes, DTOs, API e Badges) | 1 pt (2.5h) | 🟢 PR [#592](https://github.com/ADS-IFPB-SR/alumigest/pull/592) |
+| **US-21.2** | [#572](https://github.com/ADS-IFPB-SR/alumigest/issues/572) | **Migração Flyway `V21` e Entidades JPA com Lock Pessimista** | Banco de Dados & Backend Core | 1 pt (3.0h) | 📋 Sprint Task (To Do) |
+| **US-21.3** | [#573](https://github.com/ADS-IFPB-SR/alumigest/issues/573) | **Motor de Reserva Automática Make-to-Order (`reserveMaterials`)** | Backend Core & Regras de Negócio (RN-05) | 2 pts (3.5h) | 📋 Sprint Task (To Do) |
+| **US-21.4** | [#574](https://github.com/ADS-IFPB-SR/alumigest/issues/574) | **Indicador Visual Make-to-Order no Card do Kanban Fabril** | Frontend UI & Componentes (`OrderProductionCard`) | 1 pt (2.5h) | 📋 Sprint Task (To Do) |
+| **US-21.5** | [#575](https://github.com/ADS-IFPB-SR/alumigest/issues/575) | **Baixa Física Definitiva na Conclusão da Produção (`COMPLETED`)** | Backend Transacional & Kanban Drag-and-Drop | 1 pt (3.0h) | 📋 Sprint Task (To Do) |
+| **US-21.6** | [#576](https://github.com/ADS-IFPB-SR/alumigest/issues/576) | **Estorno Automático de Reservas em Cancelamento de Pedidos** | Backend Transacional & Modal de Cancelamento | 1 pt (2.5h) | 📋 Sprint Task (To Do) |
+| **US-21.7** | [#577](https://github.com/ADS-IFPB-SR/alumigest/issues/577) | **Endpoint de Movimentações Manuais & Modal de Perdas/Sucata** | Backend API & Modal Frontend (`ScrapLossModal`) | 1 pt (3.5h) | 📋 Sprint Task (To Do) |
+| **US-21.8** | [#578](https://github.com/ADS-IFPB-SR/alumigest/issues/578) | **Testes de Concorrência Multi-Thread, E2E e OpenAPI** | QA & Concorrência (10 threads + E2E + Swagger) | 1 pt (3.5h) | 📋 Sprint Task (To Do) |
 
 ---
 

@@ -7,9 +7,9 @@
 **Equipe de Desenvolvimento**: Guilherme Kauã, Italo Jefferson, Joseph Nichollas, Júlio Kennedy, Herbert Carvalho, Gabriel de Souza (6 desenvolvedores)  
 **Escopo Oficial Aprovado**: **US-21** e **US-22**  
 
-Esta pasta contém o pacote de engenharia da **Sprint 09** do projeto **AlumiGest**, decomposto estritamente em **Fatias Verticais (*Thin Vertical Slices*)** funcionais e testáveis de ponta a ponta (Banco de Dados, Backend, Frontend e QA em cada sub-tarefa), blindadas com padrões de **baixo acoplamento** para eliminar bloqueios e conflitos de merge (*git merge conflicts*) entre desenvolvedores em paralelo:
-- **US-21**: Reservar e Baixar Matéria-Prima no Estoque Automaticamente (Issue [#146](https://github.com/ADS-IFPB-SR/alumigest/issues/146)).
-- **US-22**: Consultar Posição de Estoque e Kardex de Movimentações (Issue [#147](https://github.com/ADS-IFPB-SR/alumigest/issues/147)).
+Esta pasta contém o pacote de engenharia da **Sprint 09** do projeto **AlumiGest**, decomposto estritamente em **Fatias Atômicas (*Atomic Slices*) de até 3.5 horas** em conformidade com o [`guia-estimativa-horas.md`](../guia-estimativa-horas.md) e com o dimensionamento oficial de **13 Story Points** aprovado no [`estimativa-backlog-geral.md`](../estimativa-backlog-geral.md):
+- **US-21**: Reservar e Baixar Matéria-Prima no Estoque Automaticamente (Issue [#146](https://github.com/ADS-IFPB-SR/alumigest/issues/146)) — **8 Story Points** (~24.0h).
+- **US-22**: Consultar Posição de Estoque e Kardex de Movimentações (Issue [#147](https://github.com/ADS-IFPB-SR/alumigest/issues/147)) — **5 Story Points** (~18.5h).
 
 ---
 
@@ -39,19 +39,23 @@ Apresentação visual fiel ao protótipo canônico homologado (`catalogo-materia
 
 ---
 
-## 🗺️ Mapa de Histórias e Fatiamento Vertical (Sprint Backlog)
+## 🗺️ Mapa de Histórias e Fatiamento Atômico (Sprint Backlog)
 
 ### 📦 US-21: Reservar e Baixar Matéria-Prima no Estoque Automaticamente
 **Issue GitHub**: [#146](https://github.com/ADS-IFPB-SR/alumigest/issues/146) | **Prioridade**: P1 (Chave de Produção Fabril)  
 **Branch Base**: `develop` | **Branch de Feature**: `feat/us-21-reserva-baixa-estoque`
 
-| Sub-Task | Issue GitHub | Título da Fatia Vertical | Estratégia de Desacoplamento & Escopo Fullstack | Story Points | Horas Estimadas |
+| Sub-Task | Issue GitHub | Título da Tarefa Atômica | Estratégia de Desacoplamento & Escopo Delimitado | Story Points | Horas Estimadas |
 |:---:|:---:|---|---|:---:|:---:|
-| **US-21.1** | [#571](https://github.com/ADS-IFPB-SR/alumigest/issues/571) | **Fundação de Dados & Reserva Automática Make-to-Order na Aprovação da O.S.** | Migration Flyway `V21`, entidades JPA `StockItem`/`StockMovement`, lock pessimista, método `reserveMaterials` e badge Make-to-Order no card do Kanban fabril (`OrderProductionCard.tsx`). | 4 pts | 14h |
-| **US-21.2** | [#572](https://github.com/ADS-IFPB-SR/alumigest/issues/572) | **Baixa Física Definitiva na Conclusão da Produção & Estorno em Cancelamento** | Método `consumeReservedMaterials` (decremento simultâneo físico e reserva na coluna `COMPLETED`) e método `cancelReservations` no cancelamento de pedidos. | 3 pts | 10h |
-| **US-21.3** | [#573](https://github.com/ADS-IFPB-SR/alumigest/issues/573) | **Movimentações Manuais de Almoxarifado, Ajustes de Inventário e Registro de Sucata/Perdas** | Endpoint `POST /api/v1/stock/movements`, bloqueio de saída manual sem saldo físico (RN-03 / HTTP 422), DTOs com Bean Validation e modal `ScrapLossModal.tsx`. | 3 pts | 12h |
-| **US-21.4** | [#574](https://github.com/ADS-IFPB-SR/alumigest/issues/574) | **Blindagem de Concorrência Multi-Thread, Teste de Carga e Rastreabilidade End-to-End** | Teste de carga com 10 threads concorrentes (`StockConcurrencyTest`), jornada completa de integração Orçamento ➔ Baixa Física e OpenAPI Swagger. | 3 pts | 10h |
-| **Subtotal US-21** | — | — | **4 Fatias Verticais Autônomas** | **13 pts** | **46h** |
+| **US-21.1** | [#571](https://github.com/ADS-IFPB-SR/alumigest/issues/571) | **Setup & Estrutura Base do Módulo de Estoque** | Pacote `stock`, enums canônicos, records DTOs, types TS, client API e componente `StockAlertBadge.tsx`. | 1 pt | 2.5h |
+| **US-21.2** | [#572](https://github.com/ADS-IFPB-SR/alumigest/issues/572) | **Migração Flyway `V21` e Entidades JPA com Lock Pessimista** | Script Flyway `V21__create_stock_schema.sql`, entidades `StockItem`/`StockMovement` e `StockItemRepository` com `@Lock(PESSIMISTIC_WRITE)`. | 1 pt | 3.0h |
+| **US-21.3** | [#573](https://github.com/ADS-IFPB-SR/alumigest/issues/573) | **Motor de Reserva Automática Make-to-Order (`reserveMaterials`)** | Método `reserveMaterials(UUID orderId)` no `StockService` sem bloqueio por estoque físico (RN-05), acionado na aprovação da O.S. (`US-13`). | 2 pts | 3.5h |
+| **US-21.4** | [#574](https://github.com/ADS-IFPB-SR/alumigest/issues/574) | **Indicador Visual Make-to-Order no Card do Kanban Fabril** | Conectar `OrderProductionCard.tsx` aos saldos para exibir badges `🔴 Falta Insumo / Comprar` ou `🟢 Insumos OK`. | 1 pt | 2.5h |
+| **US-21.5** | [#575](https://github.com/ADS-IFPB-SR/alumigest/issues/575) | **Baixa Física Definitiva na Conclusão da Produção (`COMPLETED`)** | Método transacional `consumeReservedMaterials` decrementando físico e reserva simultaneamente ao arrastar card para `COMPLETED` no Kanban (`US-18`). | 1 pt | 3.0h |
+| **US-21.6** | [#576](https://github.com/ADS-IFPB-SR/alumigest/issues/576) | **Estorno Automático de Reservas em Cancelamento de Pedidos** | Método transacional `cancelReservations` liberando insumos reservados caso a O.S. seja cancelada (`US-15`). | 1 pt | 2.5h |
+| **US-21.7** | [#577](https://github.com/ADS-IFPB-SR/alumigest/issues/577) | **Endpoint de Movimentações Manuais & Modal de Perdas/Sucata** | Endpoint `POST /api/v1/stock/movements`, validação HTTP 422 para saldo físico negativo (RN-03) e modal `ScrapLossModal.tsx`. | 1 pt | 3.5h |
+| **US-21.8** | [#578](https://github.com/ADS-IFPB-SR/alumigest/issues/578) | **Testes de Concorrência Multi-Thread, E2E e OpenAPI** | Teste de carga com 10 threads simultâneas (`StockConcurrencyTest`), fluxo E2E Orçamento ➔ Baixa e Swagger. | 1 pt | 3.5h |
+| **Subtotal US-21** | — | — | **8 Tarefas Atômicas ($\le$ 3.5h cada)** | **8 pts** | **24.0h** |
 
 ---
 
@@ -59,13 +63,15 @@ Apresentação visual fiel ao protótipo canônico homologado (`catalogo-materia
 **Issue GitHub**: [#147](https://github.com/ADS-IFPB-SR/alumigest/issues/147) | **Prioridade**: P1 (Visibilidade & Gestão de Suprimentos)  
 **Branch Base**: `develop` | **Branch de Feature**: `feat/us-22-posicao-estoque-kardex`
 
-| Sub-Task | Issue GitHub | Título da Fatia Vertical | Estratégia de Desacoplamento & Escopo Fullstack | Story Points | Horas Estimadas |
+| Sub-Task | Issue GitHub | Título da Tarefa Atômica | Estratégia de Desacoplamento & Escopo Delimitado | Story Points | Horas Estimadas |
 |:---:|:---:|---|---|:---:|:---:|
-| **US-22.1** | [#586](https://github.com/ADS-IFPB-SR/alumigest/issues/586) | **Catálogo Unificado com Posição de Estoque e Badges Make-to-Order nas 4 Abas** | Endpoint `GET /api/v1/stock`, DTO `StockItemResponseDTO`, atualização das 4 abas do catálogo com colunas Físico/Reservado/Disponível, badges de alerta e filtro de compra. | 4 pts | 14h |
-| **US-22.2** | [#587](https://github.com/ADS-IFPB-SR/alumigest/issues/587) | **Gaveta Lateral de Extrato Kardex com Timeline Interativa e Auditoria** | Endpoint `GET /api/v1/stock/{id}/kardex` paginado decrescente, componente deslizante `KardexDrawer.tsx` com timeline, badges semânticos e hook `useKardex`. | 3 pts | 12h |
-| **US-22.3** | [#588](https://github.com/ADS-IFPB-SR/alumigest/issues/588) | **Modal de Registro de Entrada de Compras com Documento Livre e Fluxo 2 em 1** | Endpoint de compras (RN-05 documento livre sem SEFAZ, RN-06 custo unitário), modal `StockMovementModal.tsx` e fluxo 2 em 1 nos modais de novo material. | 3 pts | 12h |
-| **US-22.4** | [#589](https://github.com/ADS-IFPB-SR/alumigest/issues/589) | **Roteamento Unificado, Navegação 'Catálogo & Almoxarifado' e Alertas Fabris no Kanban** | Atualização do menu lateral (`DashboardLayout.tsx`), rota `/catalogo` com guia visual superior, e filtros de suprimentos na barra do Kanban (`KanbanFilterBar.tsx`). | 3 pts | 10h |
-| **Subtotal US-22** | — | — | **4 Fatias Verticais Autônomas** | **13 pts** | **48h** |
+| **US-22.1** | [#586](https://github.com/ADS-IFPB-SR/alumigest/issues/586) | **Endpoint de Consulta de Saldos com Filtros de Compras** | Endpoint `GET /api/v1/stock` paginado com filtros `needsPurchase` ($available < 0$) e `belowMinStock`. | 1 pt | 3.0h |
+| **US-22.2** | [#587](https://github.com/ADS-IFPB-SR/alumigest/issues/587) | **Colunas de Saldos e Badges nas 4 Abas do Catálogo** | Integrar colunas Físico/Reservado/Disponível em `GlassTab`, `ProfileTab`, `HardwareTab` e `FilmTab` (protótipo `catalogo-materiais-estoque-kardex.html`). | 1 pt | 3.5h |
+| **US-22.3** | [#588](https://github.com/ADS-IFPB-SR/alumigest/issues/588) | **Endpoint e Repositório de Extrato Kardex com Auditoria** | Endpoint `GET /api/v1/stock/{id}/kardex` paginado decrescente e busca cronológica em `StockMovementRepository`. | 1 pt | 3.0h |
+| **US-22.4** | [#589](https://github.com/ADS-IFPB-SR/alumigest/issues/589) | **Gaveta Lateral Deslizante de Extrato Kardex (`KardexDrawer.tsx`)** | Componente drawer deslizante com timeline interativa de movimentações, ícones semânticos e hook `useKardex`. | 1 pt | 3.5h |
+| **US-22.5** | [#590](https://github.com/ADS-IFPB-SR/alumigest/issues/590) | **Modal de Entrada de Compras com Documento Livre & Fluxo "2 em 1"** | `StockMovementModal.tsx` com documento livre, preço de compra e opção de entrada no cadastro de materiais. | 1 pt | 3.5h |
+| **US-22.6** | [#591](https://github.com/ADS-IFPB-SR/alumigest/issues/591) | **Rota `/catalogo`, Menu Lateral e Guia Visual de Avisos no Kanban** | Rota unificada no frontend, atalho na `Sidebar.tsx` e faixa superior de avisos fabris no Kanban de produção. | 1 pt | 2.5h |
+| **Subtotal US-22** | — | — | **6 Tarefas Atômicas ($\le$ 3.5h cada)** | **5 pts** | **18.5h** |
 
 ---
 
@@ -74,10 +80,10 @@ Apresentação visual fiel ao protótipo canônico homologado (`catalogo-materia
 | Indicador | Total Planejado |
 |---|:---:|
 | **Histórias de Usuário Contempladas** | **2 Histórias** (US-21 e US-22) |
-| **Total de Fatias Verticais (Fullstack)** | **8 Fatias Autônomas** |
-| **Total de Story Points** | **26 pts** (13 pts por US) |
-| **Total de Horas de Engenharia** | **94 horas** |
-| **Capacidade Média por Desenvolvedor** | ~15 a 16 horas (6 desenvolvedores) |
+| **Total de Tarefas Atômicas** | **14 Tarefas ($\le$ 3.5h cada)** |
+| **Total de Story Points** | **13 pts** (8 pts na US-21 + 5 pts na US-22) |
+| **Total de Horas de Engenharia** | **42.5 horas** |
+| **Carga Média por Desenvolvedor** | ~7.0 horas (2 a 3 tarefas leves por desenvolvedor) |
 
 ---
 

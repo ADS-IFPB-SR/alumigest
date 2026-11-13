@@ -87,14 +87,16 @@ Como gestor financeiro, almoxarife ou responsável por compras da Alumiportas, d
 
 ---
 
-## 📋 Sub-Tarefas / Fatias Verticais Vinculadas (Sprint 09 — 4 Fatias Fullstack)
+## 📋 Sub-Tarefas Vinculadas (Sprint 09 — 6 Tarefas Atômicas)
 
-| Sub-Task | Issue GitHub | Título da Fatia Vertical | Tipo / Escopo | Estimativa | Status |
+| Sub-Task | Issue GitHub | Título da Tarefa Atômica | Tipo / Escopo | Estimativa | Status |
 |:---:|:---:|---|---|:---:|:---:|
-| **US-22.1** | [#586](https://github.com/ADS-IFPB-SR/alumigest/issues/586) | **Catálogo Unificado com Posição de Estoque e Badges Make-to-Order nas 4 Abas** (Fullstack) | Fullstack (GET REST + Abas UI + Testes) | 4 pts (14h) | 📋 Sprint Task (To Do) |
-| **US-22.2** | [#587](https://github.com/ADS-IFPB-SR/alumigest/issues/587) | **Gaveta Lateral de Extrato Kardex com Timeline Interativa e Auditoria** (Fullstack) | Fullstack (API Kardex + Drawer UI + Testes) | 3 pts (12h) | 📋 Sprint Task (To Do) |
-| **US-22.3** | [#588](https://github.com/ADS-IFPB-SR/alumigest/issues/588) | **Modal de Registro de Entrada de Compras com Documento Livre e Fluxo 2 em 1** (Fullstack) | Fullstack (POST Compras + Modal UI + Testes) | 3 pts (12h) | 📋 Sprint Task (To Do) |
-| **US-22.4** | [#589](https://github.com/ADS-IFPB-SR/alumigest/issues/589) | **Roteamento Unificado, Navegação 'Catálogo & Almoxarifado' e Alertas Fabris no Kanban** (Fullstack / UI) | Fullstack / UI (Sidebar + Kanban Filter + Testes) | 3 pts (10h) | 📋 Sprint Task (To Do) |
+| **US-22.1** | [#586](https://github.com/ADS-IFPB-SR/alumigest/issues/586) | **Endpoint de Consulta de Saldos com Filtros de Compras** | Backend REST & Paginação (`GET /api/v1/stock`) | 1 pt (3.0h) | 📋 Sprint Task (To Do) |
+| **US-22.2** | [#587](https://github.com/ADS-IFPB-SR/alumigest/issues/587) | **Colunas de Saldos e Badges nas 4 Abas do Catálogo** | Frontend UI & Abas do Catálogo de Materiais | 1 pt (3.5h) | 📋 Sprint Task (To Do) |
+| **US-22.3** | [#588](https://github.com/ADS-IFPB-SR/alumigest/issues/588) | **Endpoint e Repositório de Extrato Kardex com Auditoria** | Backend REST & Repositório Cronológico | 1 pt (3.0h) | 📋 Sprint Task (To Do) |
+| **US-22.4** | [#589](https://github.com/ADS-IFPB-SR/alumigest/issues/589) | **Gaveta Lateral Deslizante de Extrato Kardex (`KardexDrawer.tsx`)** | Frontend UI & Componente Deslizante (Drawer) | 1 pt (3.5h) | 📋 Sprint Task (To Do) |
+| **US-22.5** | [#590](https://github.com/ADS-IFPB-SR/alumigest/issues/590) | **Modal de Entrada de Compras com Documento Livre & Fluxo "2 em 1"** | Backend REST & Modal Frontend (`StockMovementModal`) | 1 pt (3.5h) | 📋 Sprint Task (To Do) |
+| **US-22.6** | [#591](https://github.com/ADS-IFPB-SR/alumigest/issues/591) | **Rota `/catalogo`, Menu Lateral e Guia Visual de Avisos no Kanban** | Frontend Routing, Sidebar & Kanban Alerts | 1 pt (2.5h) | 📋 Sprint Task (To Do) |
 
 ---
 
