@@ -12,8 +12,6 @@ export type StockMovementType =
 
 export type StockAlertStatus = 'IN_STOCK' | 'ORDER_POINT' | 'NEED_PURCHASE';
 
-export type StockAlertLevel = 'SAFE' | 'ORDER_POINT' | 'PURCHASE_DEMAND';
-
 export type StockCategoryType = 'GLASS' | 'PROFILE' | 'HARDWARE' | 'FILM';
 
 export interface StockItem {
