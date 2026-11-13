@@ -87,16 +87,14 @@ Como gestor financeiro, almoxarife ou responsável por compras da Alumiportas, d
 
 ---
 
-## 📋 Sub-Tarefas / Issues Vinculadas (6 issues)
+## 📋 Sub-Tarefas / Fatias Verticais Vinculadas (Sprint 09 — 4 Fatias Fullstack)
 
-| Sub-Task | Tarefa / Descrição | Status |
-|---|---|:---:|
-| [US-22.1](issues/US-22.1-criar-interfaces-typescript-e-schemas-zod-em-/issue.md) | Criar interfaces TypeScript e schemas Zod em `frontend/src/features/stock/types/stock.ts` | 🔲 No Backlog |
-| [US-22.2](issues/US-22.2-criar-servico-de-api-axios-stockapi-ts-e-hook/issue.md) | Criar serviço de API Axios (`stockApi.ts`) e hooks React Query (`useStock.ts`) | 🔲 No Backlog |
-| [US-22.3](issues/US-22.3-criar-componente-stocktable-com-badges-de-ale/issue.md) | Criar componente `StockTable` com badges de alerta amarelo em `frontend/src/features/stock/components/StockTable.tsx` | 🔲 No Backlog |
-| [US-22.4](issues/US-22.4-criar-modal-stockmovementmodal-para-entrada-d/issue.md) | Criar modal `StockMovementModal` para entrada de materiais em `frontend/src/features/stock/components/StockMovementModal.tsx` | 🔲 No Backlog |
-| [US-22.5](issues/US-22.5-criar-componente-kardexdrawer-com-historico-d/issue.md) | Criar componente `KardexDrawer` com histórico de movimentações em `frontend/src/features/stock/components/KardexDrawer.tsx` | 🔲 No Backlog |
-| [US-22.6](issues/US-22.6-criar-pagina-stockpage-e-registrar-rota-estoq/issue.md) | Criar página `StockPage` e registrar rota `/estoque` no React Router | 🔲 No Backlog |
+| Sub-Task | Issue GitHub | Título da Fatia Vertical | Tipo / Escopo | Estimativa | Status |
+|:---:|:---:|---|---|:---:|:---:|
+| **US-22.1** | [#586](https://github.com/ADS-IFPB-SR/alumigest/issues/586) | **Catálogo Unificado com Posição de Estoque e Badges Make-to-Order nas 4 Abas** (Fullstack) | Fullstack (GET REST + Abas UI + Testes) | 4 pts (14h) | 📋 Sprint Task (To Do) |
+| **US-22.2** | [#587](https://github.com/ADS-IFPB-SR/alumigest/issues/587) | **Gaveta Lateral de Extrato Kardex com Timeline Interativa e Auditoria** (Fullstack) | Fullstack (API Kardex + Drawer UI + Testes) | 3 pts (12h) | 📋 Sprint Task (To Do) |
+| **US-22.3** | [#588](https://github.com/ADS-IFPB-SR/alumigest/issues/588) | **Modal de Registro de Entrada de Compras com Documento Livre e Fluxo 2 em 1** (Fullstack) | Fullstack (POST Compras + Modal UI + Testes) | 3 pts (12h) | 📋 Sprint Task (To Do) |
+| **US-22.4** | [#589](https://github.com/ADS-IFPB-SR/alumigest/issues/589) | **Roteamento Unificado, Navegação 'Catálogo & Almoxarifado' e Alertas Fabris no Kanban** (Fullstack / UI) | Fullstack / UI (Sidebar + Kanban Filter + Testes) | 3 pts (10h) | 📋 Sprint Task (To Do) |
 
 ---
 

@@ -89,25 +89,14 @@ Como gestor de suprimentos e encarregado de almoxarifado da Alumiportas, desejo 
 
 ---
 
-## 📋 Sub-Tarefas / Issues Vinculadas (15 issues)
+## 📋 Sub-Tarefas / Fatias Verticais Vinculadas (Sprint 09 — 4 Fatias Fullstack)
 
-| Sub-Task | Tarefa / Descrição | Status |
-|---|---|:---:|
-| [US-21.1](issues/US-21.1-criar-package-br-edu-ifpb-alumigest-stock-e-d/issue.md) | Criar package `br.edu.ifpb.alumigest.stock` e diretório `frontend/src/features/stock` | 🔲 No Backlog |
-| [US-21.2](issues/US-21.2-criar-migration-flyway-backend-src-main-resou/issue.md) | Criar migration Flyway `V21__create_stock_schema.sql` com tabelas `tb_stock_items` e `tb_stock_movements` | 🔲 No Backlog |
-| [US-21.3](issues/US-21.3-criar-enum-stockmovementtype-entrada-compra-r/issue.md) | Criar enum `StockMovementType` (`PURCHASE_ENTRY`, `PRODUCTION_RESERVATION`, etc.) | 🔲 No Backlog |
-| [US-21.4](issues/US-21.4-criar-entidade-jpa-stockitem-em-backend-src-m/issue.md) | Criar entidade JPA `StockItem` mapeando colunas em inglês técnico | 🔲 No Backlog |
-| [US-21.5](issues/US-21.5-criar-entidade-jpa-stockmovement-em-backend-s/issue.md) | Criar entidade JPA `StockMovement` com trilha de auditoria | 🔲 No Backlog |
-| [US-21.6](issues/US-21.6-criar-repositorio-stockitemrepository-em-back/issue.md) | Criar repositório `StockItemRepository` com locks pessimistas defensivos | 🔲 No Backlog |
-| [US-21.7](issues/US-21.7-criar-repositorio-stockmovementrepository-em-/issue.md) | Criar repositório `StockMovementRepository` para consulta ordenada | 🔲 No Backlog |
-| [US-21.8](issues/US-21.8-criar-record-stockitemresponse-saldos-fisico-/issue.md) | Criar record `StockItemResponseDTO` (saldos físico, reservado, disponível e alerta) | 🔲 No Backlog |
-| [US-21.9](issues/US-21.9-criar-record-stockmovementrequest-e-stockmove/issue.md) | Criar records `StockMovementRequestDTO` e `StockMovementResponseDTO` | 🔲 No Backlog |
-| [US-21.10](issues/US-21.10-criar-mapper-mapstruct-stockmapper-em-backend/issue.md) | Criar mapper MapStruct `StockMapper` | 🔲 No Backlog |
-| [US-21.11](issues/US-21.11-implementar-metodo-reservarmateriais-long-ord/issue.md) | Implementar método `reserveMaterials(UUID orderId)` no `StockService` | 🔲 No Backlog |
-| [US-21.12](issues/US-21.12-implementar-metodo-baixarmateriais-long-produ/issue.md) | Implementar método `consumeReservedMaterials(UUID orderId)` no `StockService` | 🔲 No Backlog |
-| [US-21.13](issues/US-21.13-implementar-metodo-registrarmovimentacaomanua/issue.md) | Implementar método `registerManualMovement(...)` e `listStockBalances()` no `StockService` | 🔲 No Backlog |
-| [US-21.14](issues/US-21.14-criar-stockcontroller-com-endpoints-get-api-s/issue.md) | Criar `StockController` com endpoints `GET /api/v1/stock`, `POST /api/v1/stock/movements` | 🔲 No Backlog |
-| [US-21.15](issues/US-21.15-criar-testes-unitarios-de-reserva-baixa-e-con/issue.md) | Criar testes unitários de reserva, baixa e concorrência no `StockServiceTest` | 🔲 No Backlog |
+| Sub-Task | Issue GitHub | Título da Fatia Vertical | Tipo / Escopo | Estimativa | Status |
+|:---:|:---:|---|---|:---:|:---:|
+| **US-21.1** | [#571](https://github.com/ADS-IFPB-SR/alumigest/issues/571) | **Fundação de Dados & Reserva Automática Make-to-Order na Aprovação da O.S.** (Fullstack) | Fullstack (BD + Backend + UI + Testes) | 4 pts (14h) | 📋 Sprint Task (To Do) |
+| **US-21.2** | [#572](https://github.com/ADS-IFPB-SR/alumigest/issues/572) | **Baixa Física Definitiva na Conclusão da Produção & Estorno em Cancelamento** (Fullstack) | Fullstack (Backend + Kanban + Testes) | 3 pts (10h) | 📋 Sprint Task (To Do) |
+| **US-21.3** | [#573](https://github.com/ADS-IFPB-SR/alumigest/issues/573) | **Movimentações Manuais de Almoxarifado, Ajustes de Inventário e Registro de Sucata/Perdas** (Fullstack) | Fullstack (API + Modal UI + Testes) | 3 pts (12h) | 📋 Sprint Task (To Do) |
+| **US-21.4** | [#574](https://github.com/ADS-IFPB-SR/alumigest/issues/574) | **Blindagem de Concorrência Multi-Thread, Teste de Carga e Rastreabilidade End-to-End** (Fullstack / QA) | Fullstack / QA (Concorrência + E2E + OpenAPI) | 3 pts (10h) | 📋 Sprint Task (To Do) |
 
 ---
 
