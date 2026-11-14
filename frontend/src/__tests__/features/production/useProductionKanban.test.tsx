@@ -636,5 +636,38 @@ describe('useProductionKanban Hook — [US-18.2 / #502]', () => {
         expect(result.current.isUpdating).toBe(false);
       });
     });
+
+    it('ST-08: deve exibir toast específico e invalidar queries de estoque ao concluir O.S. (COMPLETED)', async () => {
+      vi.mocked(productionApi.getProductionOrders).mockResolvedValue([
+        createMockOrder('ord-complete', 'IN_PRODUCTION'),
+      ]);
+      vi.mocked(productionApi.updateProductionStatus).mockResolvedValueOnce({
+        id: 'ord-complete',
+        status: 'COMPLETED',
+      } as Order);
+
+      const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
+
+      const { result } = renderHook(() => useProductionKanban(), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      act(() => {
+        result.current.onMoveOrder('ord-complete', 'COMPLETED');
+      });
+
+      await waitFor(() => {
+        expect(toast.success).toHaveBeenCalledWith(
+          'Produção concluída e baixa de estoque realizada com sucesso!'
+        );
+      });
+
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['stock-balances'] });
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['stock-item'] });
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['stock-movements'] });
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: PRODUCTION_KANBAN_QUERY_KEY });
+    });
   });
 });

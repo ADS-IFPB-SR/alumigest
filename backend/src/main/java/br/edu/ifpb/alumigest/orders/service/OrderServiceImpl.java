@@ -12,9 +12,11 @@ import br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException;
 import br.edu.ifpb.alumigest.orders.domain.ApprovalChannel;
 import br.edu.ifpb.alumigest.orders.domain.Order;
 import br.edu.ifpb.alumigest.orders.domain.OrderCancelledEvent;
+import br.edu.ifpb.alumigest.orders.domain.OrderCompletedEvent;
 import br.edu.ifpb.alumigest.orders.domain.OrderItem;
 import br.edu.ifpb.alumigest.orders.domain.OrderItemOption;
 import br.edu.ifpb.alumigest.orders.domain.OrderStatus;
+import br.edu.ifpb.alumigest.orders.domain.OrderStockCancelledEvent;
 import br.edu.ifpb.alumigest.orders.dto.OrderCancelRequest;
 import br.edu.ifpb.alumigest.orders.dto.OrderConvertRequest;
 import br.edu.ifpb.alumigest.orders.dto.OrderPdfDTO;
@@ -224,6 +226,7 @@ public class OrderServiceImpl implements OrderService {
         order.cancelar(request.justificativa());
         order = orderRepository.saveAndFlush(order);
 
+        eventPublisher.publishEvent(new OrderStockCancelledEvent(order.getId()));
         if (order.getOrcamentoId() != null) {
             eventPublisher.publishEvent(new OrderCancelledEvent(order.getOrcamentoId()));
         }
@@ -468,6 +471,9 @@ public class OrderServiceImpl implements OrderService {
             );
         }
         Order savedOrder = orderRepository.save(order);
+        if (targetStatus == OrderStatus.COMPLETED) {
+            eventPublisher.publishEvent(new OrderCompletedEvent(savedOrder.getId()));
+        }
         return orderMapper.toResponse(savedOrder);
     }
 

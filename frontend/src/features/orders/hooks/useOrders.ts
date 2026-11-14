@@ -47,6 +47,9 @@ export const useCancelOrder = (id?: string) => {
       if (id) {
         queryClient.invalidateQueries({ queryKey: ['order', id] });
       }
+      queryClient.invalidateQueries({ queryKey: ['stock-balances'] });
+      queryClient.invalidateQueries({ queryKey: ['stock-item'] });
+      queryClient.invalidateQueries({ queryKey: ['stock-movements'] });
     },
   });
 };
@@ -108,11 +111,17 @@ export const useUpdateOrderStatus = (id?: string) => {
     mutationFn: (status: OrderStatus) =>
       ordersApi.updateStatus(id!, status),
 
-    onSuccess: () => {
+    onSuccess: (_data, status) => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
 
       if (id) {
         queryClient.invalidateQueries({ queryKey: ['order', id] });
+      }
+
+      if (status === 'COMPLETED' || status === 'CANCELLED') {
+        queryClient.invalidateQueries({ queryKey: ['stock-balances'] });
+        queryClient.invalidateQueries({ queryKey: ['stock-item'] });
+        queryClient.invalidateQueries({ queryKey: ['stock-movements'] });
       }
     },
   });
