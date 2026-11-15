@@ -4,6 +4,8 @@ import br.edu.ifpb.alumigest.budgets.config.CompanyProperties;
 import br.edu.ifpb.alumigest.catalog.domain.MaterialCategoryType;
 import br.edu.ifpb.alumigest.clients.domain.Client;
 import br.edu.ifpb.alumigest.common.exception.BusinessException;
+import br.edu.ifpb.alumigest.orders.service.LabelPdfService;
+import br.edu.ifpb.alumigest.orders.service.pdf.ThermalLabelData;
 import br.edu.ifpb.alumigest.partsale.domain.PartSale;
 import br.edu.ifpb.alumigest.partsale.domain.PartSaleItem;
 import br.edu.ifpb.alumigest.partsale.domain.PartSaleStatus;
@@ -31,9 +33,11 @@ import java.net.URL;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
@@ -97,9 +101,88 @@ public class PartSalePdfService {
   private static final String SECAO_PELICULAS = "PELÍCULAS (COBRANÇA EM M²)";
 
   private final CompanyProperties companyProps;
+  private final LabelPdfService labelPdfService;
 
   public PartSalePdfService(CompanyProperties companyProps) {
+    this(companyProps, new LabelPdfService(companyProps));
+  }
+
+  public PartSalePdfService(CompanyProperties companyProps, LabelPdfService labelPdfService) {
     this.companyProps = companyProps;
+    this.labelPdfService = labelPdfService;
+  }
+
+  /**
+   * Gera o arquivo PDF de etiquetas térmicas industriais (100x60mm) para os itens da venda avulsa.
+   *
+   * @param partSale venda de partes persistida
+   * @param client cliente associado à venda
+   * @return array de bytes contendo o documento PDF térmico
+   */
+  public byte[] generateLabelsPdf(PartSale partSale, Client client) {
+    Objects.requireNonNull(partSale, "A venda de partes não pode ser nula para geração das etiquetas.");
+    if (partSale.getItems() == null || partSale.getItems().isEmpty()) {
+      throw new BusinessException("A venda não possui itens para geração de etiquetas térmicas.");
+    }
+
+    String customerName = client != null && client.getFullName() != null && !client.getFullName().isBlank()
+        ? client.getFullName()
+        : CLIENTE_BALCAO_PADRAO;
+
+    String companyName = companyProps != null && companyProps.getRazaoSocial() != null && !companyProps.getRazaoSocial().isBlank()
+        ? companyProps.getRazaoSocial()
+        : "Alumiportas";
+
+    LocalDate issueDate = partSale.getCreatedAt() != null
+        ? partSale.getCreatedAt().toLocalDate()
+        : LocalDate.now();
+
+    List<ThermalLabelData> etiquetas = new ArrayList<>();
+    List<PartSaleItem> items = partSale.getItems();
+
+    for (int itemIdx = 0; itemIdx < items.size(); itemIdx++) {
+      PartSaleItem item = items.get(itemIdx);
+      int itemNumber = itemIdx + 1;
+      int quantity = item.getQuantity() != null && item.getQuantity() > 0 ? item.getQuantity() : 1;
+
+      String description = item.getDescription() != null && !item.getDescription().isBlank()
+          ? item.getDescription()
+          : (item.getMaterial() != null ? item.getMaterial().getName() : "Material Avulso");
+
+      String lineOrGroup = item.getMaterialType() != null ? item.getMaterialType().name() : "AVULSO";
+      int widthMm = item.getWidthMm() != null ? item.getWidthMm() : 0;
+      int heightMm = item.getHeightMm() != null ? item.getHeightMm() : 0;
+      String color = "Padrão";
+      String glassType = item.getMaterialType() != null ? item.getMaterialType().name() : "N/A";
+      String location = "Venda Avulsa de Balcão";
+      String skuCode = item.getMaterial() != null ? item.getMaterial().getSkuCode() : null;
+
+      for (int pieceNumber = 1; pieceNumber <= quantity; pieceNumber++) {
+        String badge = String.format(Locale.ROOT, "Item %02d | Peça %02d/%02d", itemNumber, pieceNumber, quantity);
+
+        ThermalLabelData data = new ThermalLabelData(
+            companyName,
+            customerName,
+            partSale.getCode(),
+            itemNumber,
+            pieceNumber,
+            quantity,
+            description,
+            lineOrGroup,
+            widthMm,
+            heightMm,
+            color,
+            glassType,
+            location,
+            skuCode,
+            issueDate,
+            badge
+        );
+        etiquetas.add(data);
+      }
+    }
+
+    return labelPdfService.gerarEtiquetasDeDados(etiquetas);
   }
 
   /**

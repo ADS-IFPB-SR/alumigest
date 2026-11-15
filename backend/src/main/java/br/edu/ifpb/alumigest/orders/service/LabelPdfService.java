@@ -94,6 +94,20 @@ public class LabelPdfService {
      */
     public byte[] gerarEtiquetas(Order order, UUID itemId, Map<UUID, Integer> customLeavesPerItem) {
         List<ThermalLabelData> etiquetas = dataResolver.resolveLabels(order, itemId, customLeavesPerItem);
+        return gerarEtiquetasDeDados(etiquetas);
+    }
+
+    /**
+     * Gera o documento PDF com etiquetas adesivas térmicas (100mm x 60mm) a partir de uma lista
+     * de snapshots de dados de etiquetas térmicas.
+     *
+     * @param etiquetas lista de dados das etiquetas a serem impressas
+     * @return array de bytes contendo o PDF gerado
+     */
+    public byte[] gerarEtiquetasDeDados(List<ThermalLabelData> etiquetas) {
+        if (etiquetas == null || etiquetas.isEmpty()) {
+            throw new BusinessException("Nenhuma etiqueta disponível para geração.");
+        }
 
         Rectangle pageSize = new Rectangle(LARGURA_ETIQUETA_PT, ALTURA_ETIQUETA_PT);
         Document document = new Document(pageSize, MARGEM_ESQUERDA, MARGEM_DIREITA,
@@ -114,8 +128,7 @@ public class LabelPdfService {
             }
 
             document.close();
-            log.info("PDF de etiquetas térmicas gerado com sucesso: {} páginas para a ordem ID {}",
-                    etiquetas.size(), order.getId());
+            log.info("PDF de etiquetas térmicas gerado com sucesso: {} páginas", etiquetas.size());
             return out.toByteArray();
         } catch (DocumentException e) {
             log.error("Erro ao estruturar documento PDF de etiquetas térmicas: {}", e.getMessage(), e);
