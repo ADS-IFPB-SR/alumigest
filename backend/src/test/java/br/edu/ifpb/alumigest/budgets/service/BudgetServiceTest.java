@@ -17,6 +17,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.Mock;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -546,6 +548,90 @@ class BudgetServiceTest {
                 .hasMessageContaining("Apenas orçamentos aprovados podem ser reabertos");
 
         verify(budgetRepository, never()).save(budget);
+    }
+
+    @Test
+    @DisplayName("Issue #517: reabrirOrcamentoSeElegivel deve retornar false quando id for nulo")
+    void reabrirOrcamentoSeElegivel_ShouldReturnFalse_WhenIdIsNull() {
+        boolean result = budgetService.reabrirOrcamentoSeElegivel(null);
+
+        assertThat(result).isFalse();
+        verifyNoInteractions(budgetRepository, orderQueryPort);
+    }
+
+    @Test
+    @DisplayName("Issue #517: reabrirOrcamentoSeElegivel deve retornar false quando orçamento não existir")
+    void reabrirOrcamentoSeElegivel_ShouldReturnFalse_WhenBudgetDoesNotExist() {
+        UUID budgetId = UUID.randomUUID();
+        when(budgetRepository.findById(budgetId)).thenReturn(Optional.empty());
+
+        boolean result = budgetService.reabrirOrcamentoSeElegivel(budgetId);
+
+        assertThat(result).isFalse();
+        verify(budgetRepository, never()).save(any());
+        verifyNoInteractions(orderQueryPort);
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = BudgetStatus.class, names = "APPROVED", mode = EnumSource.Mode.EXCLUDE)
+    @DisplayName("Issue #517: reabrirOrcamentoSeElegivel deve retornar false quando status não for APPROVED")
+    void reabrirOrcamentoSeElegivel_ShouldReturnFalse_WhenBudgetIsNotApproved(BudgetStatus status) {
+        UUID budgetId = budget.getId();
+        budget.setStatus(status);
+        when(budgetRepository.findById(budgetId)).thenReturn(Optional.of(budget));
+
+        boolean result = budgetService.reabrirOrcamentoSeElegivel(budgetId);
+
+        assertThat(result).isFalse();
+        verify(budgetRepository, never()).save(any());
+        verifyNoInteractions(orderQueryPort);
+    }
+
+    @Test
+    @DisplayName("Issue #517: reabrirOrcamentoSeElegivel deve retornar false quando não houver OS vinculada")
+    void reabrirOrcamentoSeElegivel_ShouldReturnFalse_WhenNoLinkedOrderExists() {
+        UUID budgetId = budget.getId();
+        budget.setStatus(BudgetStatus.APPROVED);
+        when(budgetRepository.findById(budgetId)).thenReturn(Optional.of(budget));
+        when(orderQueryPort.findLatestByBudgetId(budgetId)).thenReturn(Optional.empty());
+
+        boolean result = budgetService.reabrirOrcamentoSeElegivel(budgetId);
+
+        assertThat(result).isFalse();
+        assertThat(budget.getStatus()).isEqualTo(BudgetStatus.APPROVED);
+        verify(budgetRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Issue #517: reabrirOrcamentoSeElegivel deve retornar false quando OS vinculada mais recente não estiver cancelada")
+    void reabrirOrcamentoSeElegivel_ShouldReturnFalse_WhenLinkedOrderIsNotCancelled() {
+        UUID budgetId = budget.getId();
+        budget.setStatus(BudgetStatus.APPROVED);
+        when(budgetRepository.findById(budgetId)).thenReturn(Optional.of(budget));
+        when(orderQueryPort.findLatestByBudgetId(budgetId))
+                .thenReturn(Optional.of(new OrderQueryPort.LinkedOrder("OS-2026-0002", false)));
+
+        boolean result = budgetService.reabrirOrcamentoSeElegivel(budgetId);
+
+        assertThat(result).isFalse();
+        assertThat(budget.getStatus()).isEqualTo(BudgetStatus.APPROVED);
+        verify(budgetRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Issue #517: reabrirOrcamentoSeElegivel deve reabrir orçamento para DRAFT quando OS vinculada estiver cancelada")
+    void reabrirOrcamentoSeElegivel_ShouldReopenToDraftAndReturnTrue_WhenOrderIsCancelled() {
+        UUID budgetId = budget.getId();
+        budget.setStatus(BudgetStatus.APPROVED);
+        when(budgetRepository.findById(budgetId)).thenReturn(Optional.of(budget));
+        when(orderQueryPort.findLatestByBudgetId(budgetId))
+                .thenReturn(Optional.of(new OrderQueryPort.LinkedOrder("OS-2026-0001", true)));
+
+        boolean result = budgetService.reabrirOrcamentoSeElegivel(budgetId);
+
+        assertThat(result).isTrue();
+        assertThat(budget.getStatus()).isEqualTo(BudgetStatus.DRAFT);
+        verify(budgetRepository).save(budget);
     }
 
     @Test

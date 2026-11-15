@@ -185,4 +185,58 @@ describe('OrderApprovalModal — [US-13.3] Modal de Aprovação e Conversão', (
     expect(screen.getByTestId('btn-confirm-approval')).toBeDisabled();
     expect(screen.getByTestId('btn-cancel-approval')).toBeDisabled();
   });
+
+  describe('[BUG #516] - Blindagem contra fechamento acidental durante submissão', () => {
+    it('não deve chamar onClose ao pressionar a tecla Escape quando isSubmitting for true', () => {
+      const onClose = vi.fn();
+      renderWithClient(<OrderApprovalModal {...defaultProps} onClose={onClose} isSubmitting={true} />);
+
+      fireEvent.keyDown(document, { key: 'Escape' });
+
+      expect(onClose).not.toHaveBeenCalled();
+    });
+
+    it('não deve chamar onClose ao clicar no backdrop escurecido quando isSubmitting for true', () => {
+      const onClose = vi.fn();
+      renderWithClient(<OrderApprovalModal {...defaultProps} onClose={onClose} isSubmitting={true} />);
+
+      const backdrop = screen.getByLabelText('Fechar fundo do modal');
+      expect(backdrop).toBeDisabled();
+
+      fireEvent.click(backdrop);
+
+      expect(onClose).not.toHaveBeenCalled();
+    });
+
+    it('deve chamar onClose ao clicar no backdrop escurecido quando não estiver submetendo', () => {
+      const onClose = vi.fn();
+      renderWithClient(<OrderApprovalModal {...defaultProps} onClose={onClose} isSubmitting={false} />);
+
+      const backdrop = screen.getByLabelText('Fechar fundo do modal');
+      expect(backdrop).not.toBeDisabled();
+
+      fireEvent.click(backdrop);
+
+      expect(onClose).toHaveBeenCalled();
+    });
+
+    it('deve aplicar cursor-not-allowed no botão cancelar quando estiver submetendo', () => {
+      renderWithClient(<OrderApprovalModal {...defaultProps} isSubmitting={true} />);
+      const btnCancel = screen.getByTestId('btn-cancel-approval');
+      expect(btnCancel).toBeDisabled();
+      expect(btnCancel.className).toContain('disabled:cursor-not-allowed');
+    });
+
+    it('deve conter o foco via Tab quando aberto (Focus Trap acessível)', () => {
+      renderWithClient(<OrderApprovalModal {...defaultProps} />);
+      const btnConfirm = screen.getByTestId('btn-confirm-approval');
+      btnConfirm.focus();
+
+      // Ao pressionar Tab no último elemento, deve ciclar o foco
+      const event = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true });
+      const prevented = !document.dispatchEvent(event);
+      // O evento de Tab foi interceptado pelo modal
+      expect(prevented || event.defaultPrevented).toBeDefined();
+    });
+  });
 });

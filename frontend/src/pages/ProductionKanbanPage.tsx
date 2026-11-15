@@ -88,7 +88,7 @@ export function ProductionKanbanPage() {
     return (
         <div
             data-testid="production-kanban-page"
-            className="flex-1 flex flex-col h-full min-h-0 w-full space-y-4"
+            className="flex-1 flex flex-col h-full min-h-0 w-full space-y-4 overflow-y-auto"
         >
             {/* 1. Breadcrumbs, Título e Ações do Topo */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 flex-none">
@@ -200,8 +200,8 @@ export function ProductionKanbanPage() {
                 </div>
             )}
 
-            {/* 5. Quadro Kanban Interativo (3 Colunas + Drag and Drop) */}
-            <div className="flex-1 min-h-0">
+            {/* 5. Quadro Kanban Interativo (3 Colunas + Drag and Drop) — ocupa o espaço restante via flexbox; rolagem concentrada nas colunas (min-h é só salvaguarda p/ janelas baixas, quando a página assume a rolagem) */}
+            <div data-testid="kanban-board-wrapper" className="flex flex-col md:flex-1 md:min-h-[320px]">
                 <ProductionKanbanBoard
                     orders={filteredOrders}
                     isLoading={isLoading}

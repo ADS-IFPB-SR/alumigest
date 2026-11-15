@@ -113,4 +113,31 @@ class OrderMapperTest {
         assertThat(summary.canalAprovacaoDescricao()).isEqualTo("Presencial");
         assertThat(summary.quantidadeItens()).isEqualTo(2);
     }
+
+    @Test
+    @DisplayName("[BUG #500] Deve somar a quantidade real de peças físicas e não apenas o número de linhas de itens")
+    void shouldMapTotalPhysicalPiecesInOrderSummary() {
+        Order order = Order.builder()
+                .id(UUID.randomUUID())
+                .codigo("OS-2026-0012")
+                .orcamentoId(UUID.randomUUID())
+                .clienteNome("Construtora Delta")
+                .status(OrderStatus.WAITING_PRODUCTION)
+                .canalAprovacao(ApprovalChannel.WHATSAPP)
+                .valorLiquido(new BigDecimal("10000.00"))
+                .build();
+
+        // 1 linha contendo 10 unidades físicas idênticas
+        order.addItem(OrderItem.builder()
+                .descricao("Janela 4F")
+                .larguraMm(1200)
+                .alturaMm(1200)
+                .quantidade(10)
+                .build());
+
+        OrderSummaryResponse summary = orderMapper.toSummaryResponse(order);
+
+        assertThat(summary).isNotNull();
+        assertThat(summary.quantidadeItens()).isEqualTo(10);
+    }
 }

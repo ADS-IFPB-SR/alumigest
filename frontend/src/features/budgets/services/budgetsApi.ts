@@ -42,6 +42,22 @@ function stringifyConfig(config: unknown): string | undefined {
   return typeof config === 'string' ? config : undefined;
 }
 
+async function ensureErrorDataDeserialized(error: any): Promise<void> {
+  const data = error?.response?.data;
+  if (data instanceof Blob || (data && typeof data.text === 'function')) {
+    try {
+      const text = await data.text();
+      const json = JSON.parse(text);
+      error.response.data = json;
+      if (json.message && !error.message) {
+        error.message = json.message;
+      }
+    } catch {
+      // Fallback: mantém o Blob intacto se não for possível converter em JSON
+    }
+  }
+}
+
 function toBackendBudgetPayload(data: CreateBudgetPayload): any {
   return {
     clientId: data.customerId,
@@ -428,25 +444,30 @@ export const budgetsApi = {
   },
 
   downloadPdfTecnico: async (id: string, code?: string): Promise<void> => {
-    const response = await api.get(`/api/budgets/${id}/pdf/tecnico`, {
-      responseType: 'blob',
-      baseURL: '',
-    });
+    try {
+      const response = await api.get(`/api/budgets/${id}/pdf/tecnico`, {
+        responseType: 'blob',
+        baseURL: '',
+      });
 
-    // Extrai o nome do arquivo do header Content-Disposition se fornecido pelo backend
-    const fallbackFilename = `${code || id}-tecnico.pdf`;
-    const disposition = (response.headers?.['content-disposition'] || response.headers?.['Content-Disposition']) as string | undefined;
-    const filename = extractFilenameFromContentDisposition(disposition, fallbackFilename);
+      // Extrai o nome do arquivo do header Content-Disposition se fornecido pelo backend
+      const fallbackFilename = `${code || id}-tecnico.pdf`;
+      const disposition = (response.headers?.['content-disposition'] || response.headers?.['Content-Disposition']) as string | undefined;
+      const filename = extractFilenameFromContentDisposition(disposition, fallbackFilename);
 
-    const blob = new Blob([response.data], { type: 'application/pdf' });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', filename);
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    window.URL.revokeObjectURL(url);
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      await ensureErrorDataDeserialized(error);
+      throw error;
+    }
   },
 
   // ============================================================
@@ -454,11 +475,16 @@ export const budgetsApi = {
   // ============================================================
 
   getCommercialPdfBlob: async (id: string): Promise<Blob> => {
-    const response = await api.get<Blob>(`/api/orcamentos/${id}/pdf/comercial`, {
-      baseURL: '',
-      responseType: 'blob',
-    });
-    return new Blob([response.data], { type: 'application/pdf' });
+    try {
+      const response = await api.get<Blob>(`/api/orcamentos/${id}/pdf/comercial`, {
+        baseURL: '',
+        responseType: 'blob',
+      });
+      return new Blob([response.data], { type: 'application/pdf' });
+    } catch (error) {
+      await ensureErrorDataDeserialized(error);
+      throw error;
+    }
   },
 
   downloadCommercialPdf: async (id: string, code: string): Promise<void> => {

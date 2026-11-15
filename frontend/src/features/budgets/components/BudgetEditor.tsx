@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useCustomer } from '../../customers/hooks/useCustomers';
 import type {
   BudgetFormState,
   BudgetItem,
@@ -47,6 +48,9 @@ export const BudgetEditor: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const isEditing = Boolean(id);
+  const [searchParams] = useSearchParams();
+  const preselectedCustomerId = searchParams.get('clienteId') || searchParams.get('customerId');
+  const { data: preselectedCustomer } = useCustomer(preselectedCustomerId || undefined);
 
   const { data: existingBudget, isLoading: isLoadingBudget } = useBudget(id);
   const [form, setForm] = useState<BudgetFormState>(createInitialFormState);
@@ -105,6 +109,27 @@ export const BudgetEditor: React.FC = () => {
       });
     }
   }, [existingBudget, isEditing]);
+
+  useEffect(() => {
+    if (preselectedCustomer && !form.customerId && !isEditing) {
+      const addressParts = [
+        preselectedCustomer.logradouro,
+        preselectedCustomer.numero,
+        preselectedCustomer.bairro,
+        preselectedCustomer.cidade,
+        preselectedCustomer.uf,
+      ].filter(Boolean);
+
+      setForm((prev) => ({
+        ...prev,
+        customerId: preselectedCustomer.id,
+        customerName: preselectedCustomer.nomeCompleto,
+        customerDocument: preselectedCustomer.documento ?? '',
+        customerPhone: preselectedCustomer.telefone ?? '',
+        customerAddress: addressParts.join(', '),
+      }));
+    }
+  }, [preselectedCustomer, form.customerId, isEditing]);
 
   // ─── Cálculos financeiros — derivados do estado, sem fonte alternativa ──
   const itemsSubtotal = useMemo(

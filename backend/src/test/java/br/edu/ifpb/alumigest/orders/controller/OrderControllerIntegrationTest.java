@@ -13,6 +13,7 @@ import br.edu.ifpb.alumigest.orders.domain.ApprovalChannel;
 import br.edu.ifpb.alumigest.orders.domain.Order;
 import br.edu.ifpb.alumigest.orders.domain.OrderItem;
 import br.edu.ifpb.alumigest.orders.domain.OrderStatus;
+import br.edu.ifpb.alumigest.orders.dto.OrderCancelRequest;
 import br.edu.ifpb.alumigest.orders.dto.OrderConvertRequest;
 import br.edu.ifpb.alumigest.orders.repository.OrderRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -509,6 +510,129 @@ class OrderControllerIntegrationTest {
                             .content("{\"status\":\"STATUS_TOTALMENTE_INVALIDO\"}"))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.status").value(400));
+        }
+    }
+
+    @Nested
+    @DisplayName("PATCH /api/v1/orders/{id}/cancel — Cancelamento de OS e Reabertura de Orçamento [Issue #517]")
+    class CancelOrderTests {
+
+        private static final String CANCEL_ENDPOINT = "/api/v1/orders/{id}/cancel";
+        private static final String CONVERT_ENDPOINT = "/api/v1/orders/convert/{budgetId}";
+        private static final String STATUS_CANCELLED = "CANCELLED";
+
+        @Test
+        @DisplayName("Sucesso (200): Deve cancelar OS e reabrir automaticamente o orçamento vinculado para DRAFT")
+        void shouldCancelWaitingOrderAndReopenLinkedBudgetToDraft() throws Exception {
+            String justificativa = "Cliente solicitou alteração nas dimensões das esquadrias.";
+            OrderCancelRequest cancelRequest = new OrderCancelRequest(justificativa);
+
+            mockMvc.perform(patch(CANCEL_ENDPOINT, existingOrder.getId())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(cancelRequest)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value(STATUS_CANCELLED))
+                    .andExpect(jsonPath("$.justificativaCancelamento").value(justificativa));
+
+            Order updatedOrder = orderRepository.findById(existingOrder.getId()).orElseThrow();
+            assertThat(updatedOrder.getStatus()).isEqualTo(OrderStatus.CANCELLED);
+
+            Budget reopenedBudget = budgetRepository.findById(existingOrder.getOrcamentoId()).orElseThrow();
+            assertThat(reopenedBudget.getStatus()).isEqualTo(BudgetStatus.DRAFT);
+        }
+
+        @Test
+        @DisplayName("Ciclo completo (201 -> 200 -> 201 -> 200): Deve permitir reconverter orçamento reaberto e reabri-lo novamente no segundo cancelamento")
+        void shouldAllowReconvertingReopenedBudgetAndReopenAgainOnSecondCancellation() throws Exception {
+            OrderConvertRequest convertRequest = new OrderConvertRequest(
+                    ApprovalChannel.WHATSAPP,
+                    LocalDate.now(ZoneOffset.UTC).plusDays(12),
+                    "Conversão inicial"
+            );
+
+            MvcResult firstConversion = mockMvc.perform(post(CONVERT_ENDPOINT, draftBudget.getId())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(convertRequest)))
+                    .andExpect(status().isCreated())
+                    .andReturn();
+
+            String firstOrderId = objectMapper.readTree(firstConversion.getResponse().getContentAsString())
+                    .get("id").asText();
+            assertThat(budgetRepository.findById(draftBudget.getId()).orElseThrow().getStatus())
+                    .isEqualTo(BudgetStatus.APPROVED);
+
+            OrderCancelRequest cancelRequest = new OrderCancelRequest("Necessário ajustar medida de vidro.");
+            mockMvc.perform(patch(CANCEL_ENDPOINT, UUID.fromString(firstOrderId))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(cancelRequest)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value(STATUS_CANCELLED));
+
+            assertThat(budgetRepository.findById(draftBudget.getId()).orElseThrow().getStatus())
+                    .isEqualTo(BudgetStatus.DRAFT);
+
+            MvcResult secondConversion = mockMvc.perform(post(CONVERT_ENDPOINT, draftBudget.getId())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(convertRequest)))
+                    .andExpect(status().isCreated())
+                    .andReturn();
+
+            String secondOrderId = objectMapper.readTree(secondConversion.getResponse().getContentAsString())
+                    .get("id").asText();
+            assertThat(secondOrderId).isNotEqualTo(firstOrderId);
+            assertThat(budgetRepository.findById(draftBudget.getId()).orElseThrow().getStatus())
+                    .isEqualTo(BudgetStatus.APPROVED);
+
+            mockMvc.perform(patch(CANCEL_ENDPOINT, UUID.fromString(secondOrderId))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(cancelRequest)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value(STATUS_CANCELLED));
+
+            assertThat(budgetRepository.findById(draftBudget.getId()).orElseThrow().getStatus())
+                    .isEqualTo(BudgetStatus.DRAFT);
+        }
+
+        @Test
+        @DisplayName("Erro (422): Deve bloquear cancelamento de OS em produção e manter orçamento como APPROVED")
+        void shouldReturn422AndKeepBudgetApprovedWhenOrderIsInProduction() throws Exception {
+            existingOrder.iniciarProducao();
+            orderRepository.saveAndFlush(existingOrder);
+
+            OrderCancelRequest cancelRequest = new OrderCancelRequest("Tentativa após corte de perfis iniciado.");
+
+            mockMvc.perform(patch(CANCEL_ENDPOINT, existingOrder.getId())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(cancelRequest)))
+                    .andExpect(status().isUnprocessableEntity())
+                    .andExpect(jsonPath("$.status").value(422));
+
+            Budget budgetAfterAttempt = budgetRepository.findById(existingOrder.getOrcamentoId()).orElseThrow();
+            assertThat(budgetAfterAttempt.getStatus()).isEqualTo(BudgetStatus.APPROVED);
+        }
+
+        @Test
+        @DisplayName("Erro (400): Deve rejeitar justificativa abaixo do mínimo de 10 caracteres")
+        void shouldReturn400WhenJustificationIsTooShort() throws Exception {
+            OrderCancelRequest invalidRequest = new OrderCancelRequest("Curto");
+
+            mockMvc.perform(patch(CANCEL_ENDPOINT, existingOrder.getId())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(invalidRequest)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.status").value(400));
+        }
+
+        @Test
+        @DisplayName("Erro (404): Deve retornar 404 ao tentar cancelar OS inexistente")
+        void shouldReturn404WhenOrderDoesNotExist() throws Exception {
+            OrderCancelRequest cancelRequest = new OrderCancelRequest("Justificativa válida para cancelamento.");
+
+            mockMvc.perform(patch(CANCEL_ENDPOINT, UUID.randomUUID())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(cancelRequest)))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.status").value(404));
         }
     }
 }

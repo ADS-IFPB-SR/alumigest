@@ -1,5 +1,5 @@
 -- ============================================================================
--- AlumiGest Database Migration - V22__set_default_order_status_created.sql
+-- AlumiGest Database Migration - V25__set_default_order_status_created.sql
 -- Módulo: 📦 Pedidos de Venda / Ciclo de Vida (US-15.1)
 -- Novas ordens de serviço devem iniciar com status padrão CREATED (Criado)
 -- ============================================================================

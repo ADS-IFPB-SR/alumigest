@@ -8,6 +8,7 @@ export interface CustomerSummaryDTO {
   personType: PersonType;
   documento: string;
   telefone?: string;
+  bairro?: string;
   cidade?: string;
   uf?: string;
   ativo: boolean;
@@ -29,6 +30,57 @@ export interface CustomerResponseDTO {
   uf?: string;
   observacoes?: string;
   ativo: boolean;
+}
+
+export type BudgetStatus = 'DRAFT' | 'SENT' | 'APPROVED' | 'REJECTED' | 'CANCELLED' | 'EXPIRED';
+
+export type OrderStatus = 'CREATED' | 'WAITING_PRODUCTION' | 'IN_PRODUCTION' | 'COMPLETED' | 'CANCELLED';
+
+export interface ClientOrderItemDTO {
+  id: string;
+  descricao: string;
+  larguraMm: number;
+  alturaMm: number;
+  quantidade: number;
+  corAluminio?: string | null;
+  tipoVidro?: string | null;
+  valorTotal: number;
+}
+
+export interface ClientOrderSummaryDTO {
+  id: string;
+  codigo: string;
+  data: string;
+  status: OrderStatus;
+  statusDescricao?: string;
+  valorTotal: number;
+  totalEsquadrias: number;
+  items: ClientOrderItemDTO[];
+}
+
+export interface ClientDashboardDTO {
+  id: string;
+  nomeCompleto: string;
+  personType: PersonType;
+  documento?: string;
+  telefone?: string;
+  email?: string;
+  bairro?: string;
+  cidade?: string;
+  uf?: string;
+  totalContratado: number;
+  quantidadeOrdensServico: number;
+  quantidadeOrcamentos: number;
+}
+
+export interface ClientBudgetSummaryDTO {
+  id: string;
+  codigo: string;
+  dataCriacao: string;
+  dataValidade?: string;
+  valorTotal: number;
+  status: BudgetStatus;
+  statusDescricao?: string;
 }
 
 export interface CreateCustomerRequest {
@@ -96,5 +148,46 @@ export const customersApi = {
       baseURL: '',
     });
     return response.data;
-  }
+  },
+
+  getCustomerDashboard: async (id: string): Promise<ClientDashboardDTO> => {
+    const response = await api.get<ClientDashboardDTO>(`/api/clientes/${id}/dashboard`, {
+      baseURL: '',
+    });
+    return response.data;
+  },
+
+  getCustomerBudgets: async (id: string, params?: { page?: number; size?: number }): Promise<PageResponse<ClientBudgetSummaryDTO>> => {
+    const queryParams = {
+      page: params?.page ?? 0,
+      size: params?.size ?? 10,
+    };
+    const response = await api.get<any>(`/api/clientes/${id}/budgets`, {
+      baseURL: '',
+      params: queryParams,
+    });
+    return {
+      content: response.data.content || [],
+      page: {
+        size: response.data.size ?? queryParams.size,
+        number: response.data.page ?? queryParams.page,
+        totalElements: response.data.totalElements ?? 0,
+        totalPages: response.data.totalPages ?? 1,
+      }
+    };
+  },
+
+  updateCustomer: async (id: string, data: CreateCustomerRequest): Promise<CustomerResponseDTO> => {
+    const response = await api.put<CustomerResponseDTO>(`/api/clientes/${id}`, data, {
+      baseURL: '',
+    });
+    return response.data;
+  },
+
+  getCustomerOrders: async (id: string): Promise<ClientOrderSummaryDTO[]> => {
+    const response = await api.get<ClientOrderSummaryDTO[]>(`/clientes/${id}/orders`);
+    return response.data;
+  },
 };
+
+
