@@ -18,11 +18,11 @@ import java.util.UUID;
  * Controller de suporte para limpeza determinística de dados gerados em testes automatizados (E2E/Cypress).
  * <p>
  * <strong>Segurança Arquitetural:</strong>
- * Anotado com {@code @Profile({"dev", "test"})}, garantindo que este endpoint NUNCA seja registrado
- * ou carregado no contexto de produção.
+ * Anotado com {@code @Profile({"test", "e2e"})}, garantindo que este endpoint NUNCA seja registrado
+ * ou carregado no contexto padrão de desenvolvimento (dev) ou de produção.
  */
 @Hidden
-@Profile({"dev", "test"})
+@Profile({"test", "e2e"})
 @RestController
 @RequestMapping({"/api/v1/test-support", "/api/test-support"})
 public class TestCleanupController {

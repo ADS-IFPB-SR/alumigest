@@ -288,7 +288,7 @@ export function BudgetDetailActions({
   const isApprovalDisabled = isApproved || isCancelledOrRejected || isExpired;
 
   const { data: linkedOrders } = useOrders(
-    isApproved ? { search: budgetCode, size: 1 } : undefined
+    isApproved ? { search: budgetCode, size: 1, sort: 'createdAt,desc' } : undefined
   );
   const linkedOrder = linkedOrderProp ?? (isApproved ? linkedOrders?.content?.[0] : undefined);
   const effectiveIsOrderCancelled = Boolean(
