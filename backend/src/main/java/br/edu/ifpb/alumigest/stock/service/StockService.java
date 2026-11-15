@@ -85,15 +85,14 @@ public class StockService implements StockPort {
 
             recordMovement(
                 stockItem,
-                order.getId(),
                 StockMovementType.PRODUCTION_RESERVATION,
                 entry.getValue(),
-                null,
                 prevPhysical,
                 prevReserved,
-                order.getCodigo(),
-                "Reserva automática para Ordem de Serviço " + order.getCodigo(),
-                SYSTEM_USER
+                MovementAuditContext.forOrder(
+                    order,
+                    "Reserva automática para Ordem de Serviço " + order.getCodigo()
+                )
             );
         }
     }
@@ -151,15 +150,11 @@ public class StockService implements StockPort {
 
             recordMovement(
                 stockItem,
-                order.getId(),
                 movementType,
                 effectiveQty,
-                null,
                 prevPhysical,
                 prevReserved,
-                order.getCodigo(),
-                reasonPrefix + order.getCodigo(),
-                SYSTEM_USER
+                MovementAuditContext.forOrder(order, reasonPrefix + order.getCodigo())
             );
         }
     }
@@ -183,15 +178,11 @@ public class StockService implements StockPort {
 
         StockMovement movement = recordMovement(
             stockItem,
-            null,
             request.type(),
             request.quantity(),
-            request.unitCost(),
             prevPhysical,
             prevReserved,
-            request.referenceDocument(),
-            request.reason(),
-            request.registeredBy()
+            MovementAuditContext.forManual(request)
         );
         return stockMapper.toMovementResponseDTO(movement);
     }
@@ -302,30 +293,59 @@ public class StockService implements StockPort {
 
     private StockMovement recordMovement(
             StockItem stockItem,
-            UUID orderId,
             StockMovementType type,
             BigDecimal quantity,
-            BigDecimal unitCost,
             BigDecimal previousPhysical,
             BigDecimal previousReserved,
-            String referenceDocument,
-            String reason,
-            String registeredBy) {
+            MovementAuditContext context) {
         StockMovement movement = StockMovement.builder()
             .stockItem(stockItem)
             .material(stockItem.getMaterial())
-            .orderId(orderId)
+            .orderId(context.orderId())
             .type(type)
             .quantity(quantity)
-            .unitCost(unitCost)
+            .unitCost(context.unitCost())
             .previousPhysicalQuantity(previousPhysical)
             .newPhysicalQuantity(stockItem.getPhysicalQuantity())
             .previousReservedQuantity(previousReserved)
             .newReservedQuantity(stockItem.getReservedQuantity())
-            .referenceDocument(referenceDocument)
-            .reason(reason)
-            .registeredBy(registeredBy)
+            .referenceDocument(context.referenceDocument())
+            .reason(context.reason())
+            .registeredBy(context.registeredBy())
             .build();
         return stockMovementRepository.saveAndFlush(movement);
+    }
+
+    /**
+     * Metadados de contexto e auditoria para registro imutável no Kardex (S107 refactor).
+     */
+    private record MovementAuditContext(
+            UUID orderId,
+            String referenceDocument,
+            String reason,
+            String registeredBy,
+            BigDecimal unitCost) {
+
+        static MovementAuditContext forOrder(Order order, String reason) {
+            return new MovementAuditContext(
+                order.getId(),
+                order.getCodigo(),
+                reason,
+                SYSTEM_USER,
+                null
+            );
+        }
+
+        static MovementAuditContext forManual(StockMovementRequestDTO request) {
+            return new MovementAuditContext(
+                null,
+                request.referenceDocument(),
+                request.reason(),
+                request.registeredBy() != null && !request.registeredBy().isBlank()
+                    ? request.registeredBy()
+                    : SYSTEM_USER,
+                request.unitCost()
+            );
+        }
     }
 }
