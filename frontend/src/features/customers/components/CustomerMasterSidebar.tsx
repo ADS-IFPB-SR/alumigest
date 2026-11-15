@@ -110,7 +110,7 @@ export const CustomerMasterSidebar: React.FC<CustomerMasterSidebarProps> = ({
   return (
     <aside
       aria-label="Lista de Clientes"
-      className="w-full md:w-80 lg:w-88 flex-shrink-0 border-r border-outline-variant bg-surface flex flex-col h-full min-h-[500px]"
+      className="w-full md:w-80 lg:w-88 flex-shrink-0 border-r border-outline-variant bg-surface dark:bg-slate-900 flex flex-col h-full min-h-[500px]"
     >
       {/* Top Header */}
       <div className="p-4 border-b border-outline-variant flex items-center justify-between">
