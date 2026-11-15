@@ -82,43 +82,34 @@ A Sprint 09 é estruturada em **Fatias Atômicas (*Atomic Slices*) de até 3.5 h
 
 ---
 
-### 📦 US-22 — Consultar Posição de Estoque e Kardex (6 Sub-tarefas / 5 Story Points)
+### 📦 US-22 — Consultar Posição de Estoque e Kardex (4 Sub-tarefas Verticais / 5 Story Points)
 
-#### US-22.1: Endpoint de Consulta de Saldos com Filtros de Compras [1 pt / 3.0h]
-- **Issue**: [#586](https://github.com/ADS-IFPB-SR/alumigest/issues/586)
-- [ ] Endpoint `GET /api/v1/stock` com suporte a paginação, busca textual e filtros (`category`, `needsPurchase`, `belowMinStock`).
-- [ ] Flags calculadas no DTO: `needsPurchase` ($available < 0$) e `belowMinStock` ($available \le minStock$).
-- [ ] Testes MockMvc cobrindo cenários com e sem filtros aplicados.
-
-#### US-22.2: Colunas de Saldos e Badges nas 4 Abas do Catálogo [1 pt / 3.5h]
-- **Issue**: [#587](https://github.com/ADS-IFPB-SR/alumigest/issues/587)
+#### US-22.1: Visualização de Saldos e Badges de Estoque nas 4 Abas do Catálogo (Fullstack) [2 pts / 6.0h]
+- **Issue**: [#587](https://github.com/ADS-IFPB-SR/alumigest/issues/587) *(Unifica as antigas #586 e #587)*
 - [ ] Atualização unificada das 4 abas do catálogo (`GlassTab.tsx`, `ProfileTab.tsx`, `HardwareTab.tsx`, `FilmTab.tsx`).
 - [ ] Adição das colunas Saldo Físico, Reservado e Disponível conforme protótipo `catalogo-materiais-estoque-kardex.html`.
-- [ ] Badges visuais inteligentes (`🔴 Falta X un/m` e `🟡 Ponto de Pedido`) e checkbox de filtro rápido no topo.
-- [ ] Testes Vitest de renderização das tabelas no tema claro e escuro.
+- [ ] Badges visuais inteligentes (`🔴 Falta X un/m` em vermelho quando $available < 0$ e `🟡 Ponto de Pedido` em âmbar) e checkbox de filtro rápido "Apenas com Necessidade de Compra" no topo.
+- [ ] Refinamento do endpoint `GET /api/v1/stock` com suporte a filtros (`needsPurchase`, `belowMinStock`) e ordenação.
+- [ ] Testes automatizados: MockMvc no backend e Vitest com React Testing Library nos temas claro e escuro.
 
-#### US-22.3: Endpoint e Repositório de Extrato Kardex com Auditoria [1 pt / 3.0h]
-- **Issue**: [#588](https://github.com/ADS-IFPB-SR/alumigest/issues/588)
-- [ ] Endpoint `GET /api/v1/stock/{materialId}/kardex` paginado decrescente por data/hora (`created_at DESC`).
-- [ ] Consulta otimizada em `StockMovementRepository` trazendo histórico imutável com tipo, usuário e documento de referência.
-- [ ] Testes de integração validando a integridade cronológica do extrato.
-
-#### US-22.4: Gaveta Lateral Deslizante de Extrato Kardex (`KardexDrawer.tsx`) [1 pt / 3.5h]
-- **Issue**: [#589](https://github.com/ADS-IFPB-SR/alumigest/issues/589)
+#### US-22.2: Gaveta Lateral de Extrato Kardex (`KardexDrawer.tsx`) e Linha do Tempo (Fullstack) [1 pt / 4.5h]
+- **Issue**: [#589](https://github.com/ADS-IFPB-SR/alumigest/issues/589) *(Unifica as antigas #588 e #589)*
 - [ ] Componente `KardexDrawer.tsx` (gaveta lateral deslizante à direita / Sheet) conforme protótipo homologado.
 - [ ] Cabeçalho com os 3 saldos consolidados e timeline interativa com ícones semânticos (`🟢 Entrada`, `🔵 Reserva`, `🟠 Baixa`, `⚪ Estorno`, `🔴 Perda`).
-- [ ] Botão de ação "📜 Ver Kardex" na tabela principal e atalho de fechamento via teclado (Esc).
-- [ ] Hook `useKardex` com TanStack Query e testes Vitest.
+- [ ] Botão de ação "📜 Extrato Kardex" diretamente na linha de cada insumo e atalho de fechamento via teclado (Esc).
+- [ ] Integração com o endpoint `GET /api/v1/stock/movements` (ordenado por `created_at DESC` e indexado com `JOIN FETCH`).
+- [ ] Hook `useKardex` com TanStack Query e testes Vitest/MockMvc.
 
-#### US-22.5: Modal de Entrada de Compras com Documento Livre & Fluxo "2 em 1" [1 pt / 3.5h]
-- **Issue**: [#590](https://github.com/ADS-IFPB-SR/alumigest/issues/590)
-- [ ] Modal `StockMovementModal.tsx` com tipo `PURCHASE_ENTRY` incrementando saldos físico e disponível.
+#### US-22.3: Modal de Entrada de Compras com Documento Livre e Auto-Provisionamento (Fullstack) [1 pt / 4.5h]
+- **Issue**: [#590](https://github.com/ADS-IFPB-SR/alumigest/issues/590) *(Consolida escopo da #590 e fecha duplicata #595)*
+- [ ] Modal visual de compras (`StockMovementModal.tsx` / `PurchaseEntryModal.tsx`) para registro de entradas `PURCHASE_ENTRY` incrementando saldos físico e disponível.
 - [ ] **Regra de Documento Livre (RN-05)**: Campo `documentNumber` em texto livre sem obrigatoriedade de chave SEFAZ de 44 dígitos.
-- [ ] **Regra de Custo Unitário (RN-06)**: Campo `unitCost` para registro patrimonial do custo real de compra.
-- [ ] Integração do fluxo "2 em 1" nos modais de criação de materiais (`CreateMaterialModal`).
+- [ ] **Regra de Custo Unitário (RN-06)**: Campo `unitCost` obrigatório para formação de custo patrimonial.
+- [ ] Integração do fluxo "2 em 1" nos modais de criação de materiais (`CreateMaterialModal.tsx`) para lançamento opcional de lote inicial.
+- [ ] Auto-provisionamento garantindo que todo material ativo possua registro em `tb_stock_items`.
 - [ ] Testes MockMvc e testes Vitest do formulário com validação Zod.
 
-#### US-22.6: Rota `/catalogo`, Menu Lateral e Guia Visual de Avisos no Kanban [1 pt / 2.5h]
+#### US-22.4: Rota `/catalogo`, Menu Lateral e Guia Visual de Avisos no Kanban [1 pt / 3.5h]
 - **Issue**: [#591](https://github.com/ADS-IFPB-SR/alumigest/issues/591)
 - [ ] Rota `/catalogo` com menu lateral unificado "📦 Catálogo & Almoxarifado" (`DashboardLayout.tsx` e `Sidebar.tsx`).
 - [ ] Guia visual superior no catálogo conforme homologado em `catalogo-materiais-estoque-kardex.html`.
@@ -139,7 +130,7 @@ A Sprint 09 é estruturada em **Fatias Atômicas (*Atomic Slices*) de até 3.5 h
 
 ## 4. 🛡️ Definition of Done (DoD) da Sprint 09
 
-- [ ] Todas as 14 sub-tarefas aprovadas com PRs revisados e mergeados em `develop`.
+- [ ] Todas as 12 sub-tarefas aprovadas com PRs revisados e mergeados em `develop`.
 - [ ] Migrations Flyway `V21` executadas com sucesso sem regressão no banco de dados.
 - [ ] Testes de backend (`mvn test`) com 100% de sucesso e cobertura $\ge 80\%$.
 - [ ] Testes de frontend (`npm run test`) com 100% de sucesso no Vitest.

@@ -65,13 +65,11 @@ Apresentação visual fiel ao protótipo canônico homologado (`catalogo-materia
 
 | Sub-Task | Issue GitHub | Título da Tarefa Atômica | Estratégia de Desacoplamento & Escopo Delimitado | Story Points | Horas Estimadas |
 |:---:|:---:|---|---|:---:|:---:|
-| **US-22.1** | [#586](https://github.com/ADS-IFPB-SR/alumigest/issues/586) | **Endpoint de Consulta de Saldos com Filtros de Compras** | Endpoint `GET /api/v1/stock` paginado com filtros `needsPurchase` ($available < 0$) e `belowMinStock`. | 1 pt | 3.0h |
-| **US-22.2** | [#587](https://github.com/ADS-IFPB-SR/alumigest/issues/587) | **Colunas de Saldos e Badges nas 4 Abas do Catálogo** | Integrar colunas Físico/Reservado/Disponível em `GlassTab`, `ProfileTab`, `HardwareTab` e `FilmTab` (protótipo `catalogo-materiais-estoque-kardex.html`). | 1 pt | 3.5h |
-| **US-22.3** | [#588](https://github.com/ADS-IFPB-SR/alumigest/issues/588) | **Endpoint e Repositório de Extrato Kardex com Auditoria** | Endpoint `GET /api/v1/stock/{id}/kardex` paginado decrescente e busca cronológica em `StockMovementRepository`. | 1 pt | 3.0h |
-| **US-22.4** | [#589](https://github.com/ADS-IFPB-SR/alumigest/issues/589) | **Gaveta Lateral Deslizante de Extrato Kardex (`KardexDrawer.tsx`)** | Componente drawer deslizante com timeline interativa de movimentações, ícones semânticos e hook `useKardex`. | 1 pt | 3.5h |
-| **US-22.5** | [#590](https://github.com/ADS-IFPB-SR/alumigest/issues/590) | **Modal de Entrada de Compras com Documento Livre & Fluxo "2 em 1"** | `StockMovementModal.tsx` com documento livre, preço de compra e opção de entrada no cadastro de materiais. | 1 pt | 3.5h |
-| **US-22.6** | [#591](https://github.com/ADS-IFPB-SR/alumigest/issues/591) | **Rota `/catalogo`, Menu Lateral e Guia Visual de Avisos no Kanban** | Rota unificada no frontend, atalho na `Sidebar.tsx` e faixa superior de avisos fabris no Kanban de produção. | 1 pt | 2.5h |
-| **Subtotal US-22** | — | — | **6 Tarefas Atômicas ($\le$ 3.5h cada)** | **5 pts** | **18.5h** |
+| **US-22.1** | [#587](https://github.com/ADS-IFPB-SR/alumigest/issues/587) | **Visualização de Saldos e Badges de Estoque nas 4 Abas do Catálogo (Fullstack)** | Colunas Físico/Reservado/Disponível em `GlassTab`, `ProfileTab`, `HardwareTab` e `FilmTab`, badges Make-to-Order e filtros no endpoint `GET /api/v1/stock`. *(Unifica antiga #586 e #587)* | 2 pts | 6.0h |
+| **US-22.2** | [#589](https://github.com/ADS-IFPB-SR/alumigest/issues/589) | **Gaveta Lateral de Extrato Kardex (`KardexDrawer.tsx`) e Linha do Tempo (Fullstack)** | Componente drawer deslizante (Sheet) com timeline interativa, ícones semânticos e conexão ao endpoint de extrato ordenado. *(Unifica antiga #588 e #589)* | 1 pt | 4.5h |
+| **US-22.3** | [#590](https://github.com/ADS-IFPB-SR/alumigest/issues/590) | **Modal de Entrada de Compras com Documento Livre e Auto-Provisionamento (Fullstack)** | `StockMovementModal.tsx` com documento livre, preço de compra, fluxo "2 em 1" no cadastro e carga inicial de insumos. *(Consolida escopo da #590 e fecha duplicata #595)* | 1 pt | 4.5h |
+| **US-22.4** | [#591](https://github.com/ADS-IFPB-SR/alumigest/issues/591) | **Rota `/catalogo`, Menu Lateral e Guia Visual de Avisos no Kanban** | Rota unificada no frontend, atalho na `Sidebar.tsx` e faixa superior de avisos fabris no Kanban de produção. | 1 pt | 3.5h |
+| **Subtotal US-22** | — | — | **4 Tarefas Verticais Fullstack** | **5 pts** | **18.5h** |
 
 ---
 
@@ -80,7 +78,7 @@ Apresentação visual fiel ao protótipo canônico homologado (`catalogo-materia
 | Indicador | Total Planejado |
 |---|:---:|
 | **Histórias de Usuário Contempladas** | **2 Histórias** (US-21 e US-22) |
-| **Total de Tarefas Atômicas** | **14 Tarefas ($\le$ 3.5h cada)** |
+| **Total de Tarefas da Sprint** | **12 Tarefas** (8 na US-21 + 4 na US-22) |
 | **Total de Story Points** | **13 pts** (8 pts na US-21 + 5 pts na US-22) |
 | **Total de Horas de Engenharia** | **42.5 horas** |
 | **Carga Média por Desenvolvedor** | ~7.0 horas (2 a 3 tarefas leves por desenvolvedor) |
