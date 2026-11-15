@@ -10,6 +10,7 @@ import {
   useReserveStockForOrder,
   useConsumeStockForOrder,
   useCancelStockReservationsForOrder,
+  useStockAlertForOrder,
 } from '@/features/stock/hooks/useStock';
 import { stockApi } from '@/features/stock/api/stockApi';
 import toast from 'react-hot-toast';
@@ -23,6 +24,7 @@ vi.mock('@/features/stock/api/stockApi', () => ({
     reserveForOrder: vi.fn(),
     consumeForOrder: vi.fn(),
     cancelReservationsForOrder: vi.fn(),
+    getOrderStockAlert: vi.fn(),
   },
 }));
 
@@ -210,5 +212,50 @@ describe('useStock Hooks — Testes de Integração com TanStack Query', () => {
 
     expect(stockApi.cancelReservationsForOrder).toHaveBeenCalledWith('order-cancel-1');
     expect(toast.success).toHaveBeenCalledWith('Reservas de estoque estornadas com sucesso!');
+  });
+
+  describe('useStockAlertForOrder (US-21.4)', () => {
+    it('deve buscar e retornar o status Make-to-Order da O.S.', async () => {
+      const mockAlert = {
+        alertStatus: 'NEED_PURCHASE' as const,
+        missingMaterials: [
+          {
+            materialName: 'Perfil U 50x50',
+            materialSku: 'ALU-001',
+            availableQuantity: -2,
+            reservedQuantity: 5,
+            unitMeasure: 'barras',
+          },
+        ],
+      };
+
+      vi.mocked(stockApi.getOrderStockAlert).mockResolvedValueOnce(mockAlert);
+
+      const { result } = renderHook(() => useStockAlertForOrder('order-uuid-alert'), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.data).toBeDefined());
+
+      expect(stockApi.getOrderStockAlert).toHaveBeenCalledWith('order-uuid-alert');
+      expect(result.current.data).toEqual(mockAlert);
+    });
+
+    it('não deve disparar a query quando orderId for indefinido', () => {
+      const { result } = renderHook(() => useStockAlertForOrder(undefined), {
+        wrapper: createWrapper(),
+      });
+
+      expect(stockApi.getOrderStockAlert).not.toHaveBeenCalled();
+      expect(result.current.data).toBeUndefined();
+    });
+
+    it('deve retornar undefined com segurança sem lançar erro quando renderizado fora de um QueryClientProvider', () => {
+      // Sem wrapper QueryClientProvider
+      const { result } = renderHook(() => useStockAlertForOrder('order-without-provider'));
+
+      expect(result.current.data).toBeUndefined();
+      expect(result.current.isLoading).toBe(false);
+    });
   });
 });

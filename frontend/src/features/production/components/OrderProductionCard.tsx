@@ -5,6 +5,9 @@ import { normalizeProductionStatus, type ProductionStatus } from '../types';
 import { formatDate } from '../../orders/utils/formatDate';
 import { getDeadlineStatus } from '../utils/deadlineUtils';
 import { calculateTotalPieces } from '../utils/kanbanUtils';
+import { StockAlertBadge } from '../../stock/components/StockAlertBadge';
+import { useStockAlertForOrder } from '../../stock/hooks/useStock';
+import type { OrderStockAlert } from '../../stock/types';
 
 /** Mapa de próxima etapa na máquina de estados de produção */
 const NEXT_STATUS_MAP: Partial<Record<ProductionStatus, { status: ProductionStatus; label: string }>> = {
@@ -17,13 +20,35 @@ interface OrderProductionCardProps {
   onClickDetails: (orderId: string) => void;
   /** Callback opcional para mover o card para a próxima etapa via botão (fallback touch/mobile) */
   onMoveOrder?: (orderId: string, newStatus: ProductionStatus) => void;
+  /** Status Make-to-Order opcional (injetável para testes ou fallback síncrono) */
+  stockAlert?: OrderStockAlert | null;
 }
 
 export const OrderProductionCard: React.FC<OrderProductionCardProps> = ({
   order,
   onClickDetails,
   onMoveOrder,
+  stockAlert: propStockAlert,
 }) => {
+  // Consulta o status Make-to-Order agregado de estoque (US-21.4)
+  const stockAlertQuery = useStockAlertForOrder(order.id);
+  const activeStockAlert = propStockAlert !== undefined ? propStockAlert : stockAlertQuery.data;
+
+  // Monta texto descritivo do tooltip para os insumos faltantes
+  let stockTooltip = '';
+  if (activeStockAlert) {
+    if (activeStockAlert.missingMaterials && activeStockAlert.missingMaterials.length > 0) {
+      const itemsList = activeStockAlert.missingMaterials
+        .map((m) => `• ${m.materialName} (déficit: ${Math.abs(m.availableQuantity)} ${m.unitMeasure})`)
+        .join('\n');
+      stockTooltip = `Insumos faltantes para esta O.S.:\n${itemsList}`;
+    } else if (activeStockAlert.alertStatus === 'IN_STOCK') {
+      stockTooltip = 'Todos os insumos estão fisicamente disponíveis para produção.';
+    } else if (activeStockAlert.alertStatus === 'ORDER_POINT') {
+      stockTooltip = 'Insumos disponíveis, mas no ponto de pedido.';
+    }
+  }
+
   // 1. Descobre o status atual normalizado primeiro
   const currentNormalized = normalizeProductionStatus(order.status);
   const nextStep = currentNormalized ? NEXT_STATUS_MAP[currentNormalized] ?? null : null;
@@ -81,7 +106,7 @@ export const OrderProductionCard: React.FC<OrderProductionCardProps> = ({
         e.currentTarget.classList.remove('opacity-50', 'scale-[0.98]');
       }}
     >
-      {/* 1. Header: Código da OS, Orçamento Origem e Alerta de Prazo */}
+      {/* 1. Header: Código da OS, Orçamento Origem, Alerta de Estoque e Alerta de Prazo */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5 flex-wrap">
           <span className="font-bold text-slate-950 text-sm tracking-tight">{order.codigo}</span>
@@ -92,14 +117,24 @@ export const OrderProductionCard: React.FC<OrderProductionCardProps> = ({
           )}
         </div>
 
-        {alertConfig && (
-          <span
-            className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border ${alertConfig.color}`}
-          >
-            {alertConfig.icon}
-            {alertConfig.label}
-          </span>
-        )}
+        <div className="flex items-center gap-1.5 flex-wrap justify-end">
+          {activeStockAlert && (
+            <StockAlertBadge
+              status={activeStockAlert.alertStatus}
+              variant="kanban"
+              tooltip={stockTooltip}
+            />
+          )}
+
+          {alertConfig && (
+            <span
+              className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border ${alertConfig.color}`}
+            >
+              {alertConfig.icon}
+              {alertConfig.label}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* 2. Cliente e Esquadrias com Container Destacado */}

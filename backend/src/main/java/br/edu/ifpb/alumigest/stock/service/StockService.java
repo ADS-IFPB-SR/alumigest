@@ -8,9 +8,12 @@ import br.edu.ifpb.alumigest.orders.domain.Order;
 import br.edu.ifpb.alumigest.orders.domain.OrderItem;
 import br.edu.ifpb.alumigest.orders.domain.OrderItemOption;
 import br.edu.ifpb.alumigest.orders.repository.OrderRepository;
+import br.edu.ifpb.alumigest.stock.domain.StockAlertStatus;
 import br.edu.ifpb.alumigest.stock.domain.StockItem;
 import br.edu.ifpb.alumigest.stock.domain.StockMovement;
 import br.edu.ifpb.alumigest.stock.domain.StockMovementType;
+import br.edu.ifpb.alumigest.stock.dto.OrderStockAlertResponseDTO;
+import br.edu.ifpb.alumigest.stock.dto.OrderStockAlertResponseDTO.MissingMaterialDTO;
 import br.edu.ifpb.alumigest.stock.dto.StockItemResponseDTO;
 import br.edu.ifpb.alumigest.stock.dto.StockMovementRequestDTO;
 import br.edu.ifpb.alumigest.stock.dto.StockMovementResponseDTO;
@@ -18,6 +21,7 @@ import br.edu.ifpb.alumigest.stock.mapper.StockMapper;
 import br.edu.ifpb.alumigest.stock.repository.StockItemRepository;
 import br.edu.ifpb.alumigest.stock.repository.StockMovementRepository;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -205,6 +209,53 @@ public class StockService implements StockPort {
         return stockItemRepository.findAllWithMaterial().stream()
             .map(stockMapper::toItemResponseDTO)
             .toList();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public OrderStockAlertResponseDTO getOrderStockAlert(UUID orderId) {
+        Map<UUID, BigDecimal> pendingReservations = computeNetPendingReservations(orderId);
+
+        if (pendingReservations.isEmpty()) {
+            return new OrderStockAlertResponseDTO(StockAlertStatus.IN_STOCK, List.of());
+        }
+
+        List<MissingMaterialDTO> missingMaterials = new ArrayList<>();
+        StockAlertStatus worstStatus = StockAlertStatus.IN_STOCK;
+
+        for (Map.Entry<UUID, BigDecimal> entry : pendingReservations.entrySet()) {
+            UUID materialId = entry.getKey();
+            BigDecimal reserved = entry.getValue();
+
+            java.util.Optional<StockItem> optItem = stockItemRepository.findByMaterialId(materialId);
+            if (optItem.isEmpty()) {
+                worstStatus = StockAlertStatus.NEED_PURCHASE;
+                continue;
+            }
+
+            StockItem item = optItem.get();
+            StockAlertStatus itemStatus = item.resolveAlertStatus();
+            if (itemStatus.ordinal() > worstStatus.ordinal()) {
+                worstStatus = itemStatus;
+            }
+
+            if (itemStatus == StockAlertStatus.NEED_PURCHASE) {
+                String unitMeasure = item.getMaterial().getUnitMeasure() != null
+                    ? item.getMaterial().getUnitMeasure().name()
+                    : "";
+                missingMaterials.add(new MissingMaterialDTO(
+                    item.getMaterial().getName(),
+                    item.getMaterial().getSkuCode(),
+                    item.getAvailableQuantity(),
+                    reserved,
+                    unitMeasure
+                ));
+            }
+        }
+
+        return new OrderStockAlertResponseDTO(worstStatus, missingMaterials);
     }
 
     /**

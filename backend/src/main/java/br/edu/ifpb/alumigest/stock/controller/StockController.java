@@ -1,5 +1,6 @@
 package br.edu.ifpb.alumigest.stock.controller;
 
+import br.edu.ifpb.alumigest.stock.dto.OrderStockAlertResponseDTO;
 import br.edu.ifpb.alumigest.stock.dto.StockItemResponseDTO;
 import br.edu.ifpb.alumigest.stock.dto.StockMovementRequestDTO;
 import br.edu.ifpb.alumigest.stock.dto.StockMovementResponseDTO;
@@ -79,6 +80,12 @@ public class StockController {
     public ResponseEntity<Void> cancelReservationsForOrder(@PathVariable UUID orderId) {
         stockService.cancelReservationsForOrder(orderId);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/orders/{orderId}/alert")
+    @Operation(summary = "Consultar status Make-to-Order agregado dos materiais reservados de uma O.S.")
+    public ResponseEntity<OrderStockAlertResponseDTO> getOrderStockAlert(@PathVariable UUID orderId) {
+        return ResponseEntity.ok(stockService.getOrderStockAlert(orderId));
     }
 }
 

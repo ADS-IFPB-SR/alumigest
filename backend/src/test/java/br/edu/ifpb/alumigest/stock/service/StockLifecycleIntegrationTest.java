@@ -1,6 +1,7 @@
 package br.edu.ifpb.alumigest.stock.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -251,5 +252,21 @@ class StockLifecycleIntegrationTest {
         assertThat(movements.get(1).getType()).isEqualTo(StockMovementType.RESERVATION_CANCELLATION);
         assertThat(movements.get(1).getQuantity()).isEqualByComparingTo("14.00");
         assertThat(movements.get(1).getNewReservedQuantity()).isEqualByComparingTo("0.00");
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/stock/orders/{id}/alert deve retornar o status Make-to-Order e insumos faltantes")
+    void shouldReturnStockAlertForOrderViaEndpoint() throws Exception {
+        Material material = persistMaterial("VID-INT-ALERT", new BigDecimal("5.00"));
+        Order order = persistOrder(OrderStatus.WAITING_PRODUCTION, material, new BigDecimal("12.00"));
+
+        stockPort.reserveMaterialsForOrder(order.getId());
+
+        mockMvc.perform(get("/api/v1/stock/orders/{id}/alert", order.getId()))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.alertStatus").value("NEED_PURCHASE"))
+            .andExpect(jsonPath("$.missingMaterials").isArray())
+            .andExpect(jsonPath("$.missingMaterials[0].materialSku").value("VID-INT-ALERT"))
+            .andExpect(jsonPath("$.missingMaterials[0].availableQuantity").value(-7.0));
     }
 }
