@@ -128,70 +128,91 @@ public class PartSalePdfService {
       throw new BusinessException("A venda não possui itens para geração de etiquetas térmicas.");
     }
 
-    String customerName = client != null
-        && client.getFullName() != null
-        && !client.getFullName().isBlank()
-        ? client.getFullName()
-        : CLIENTE_BALCAO_PADRAO;
-
-    String companyName = companyProps != null
-        && companyProps.getRazaoSocial() != null
-        && !companyProps.getRazaoSocial().isBlank()
-        ? companyProps.getRazaoSocial()
-        : "Alumiportas";
-
+    String customerName = resolverNomeClienteParaEtiqueta(client);
+    String companyName = resolverNomeEmpresaParaEtiqueta();
     LocalDate issueDate = partSale.getCreatedAt() != null
         ? partSale.getCreatedAt().toLocalDate()
-        : LocalDate.now();
+        : LocalDate.now(ZONE_SAO_PAULO);
 
     List<ThermalLabelData> etiquetas = new ArrayList<>();
     List<PartSaleItem> items = partSale.getItems();
 
     for (int itemIdx = 0; itemIdx < items.size(); itemIdx++) {
-      PartSaleItem item = items.get(itemIdx);
-      int itemNumber = itemIdx + 1;
-      int quantity = item.getQuantity() != null && item.getQuantity() > 0 ? item.getQuantity() : 1;
-
-      String description = item.getDescription() != null && !item.getDescription().isBlank()
-          ? item.getDescription()
-          : (item.getMaterial() != null ? item.getMaterial().getName() : "Material Avulso");
-
-      String lineOrGroup = item.getMaterialType() != null
-          ? item.getMaterialType().name() : "AVULSO";
-      int widthMm = item.getWidthMm() != null ? item.getWidthMm() : 0;
-      int heightMm = item.getHeightMm() != null ? item.getHeightMm() : 0;
-      String color = "Padrão";
-      String glassType = item.getMaterialType() != null ? item.getMaterialType().name() : "N/A";
-      String location = "Venda Avulsa de Balcão";
-      String skuCode = item.getMaterial() != null ? item.getMaterial().getSkuCode() : null;
-
-      for (int pieceNumber = 1; pieceNumber <= quantity; pieceNumber++) {
-        String badge = String.format(
-            Locale.ROOT, "Item %02d | Peça %02d/%02d", itemNumber, pieceNumber, quantity);
-
-        ThermalLabelData data = new ThermalLabelData(
-            companyName,
-            customerName,
-            partSale.getCode(),
-            itemNumber,
-            pieceNumber,
-            quantity,
-            description,
-            lineOrGroup,
-            widthMm,
-            heightMm,
-            color,
-            glassType,
-            location,
-            skuCode,
-            issueDate,
-            badge
-        );
-        etiquetas.add(data);
-      }
+      adicionarEtiquetasDoItem(
+          etiquetas, items.get(itemIdx), itemIdx + 1, companyName, customerName,
+          partSale.getCode(), issueDate);
     }
 
     return labelPdfService.gerarEtiquetasDeDados(etiquetas);
+  }
+
+  private String resolverNomeClienteParaEtiqueta(Client client) {
+    if (client != null && client.getFullName() != null && !client.getFullName().isBlank()) {
+      return client.getFullName();
+    }
+    return CLIENTE_BALCAO_PADRAO;
+  }
+
+  private String resolverNomeEmpresaParaEtiqueta() {
+    if (companyProps != null && companyProps.getRazaoSocial() != null
+        && !companyProps.getRazaoSocial().isBlank()) {
+      return companyProps.getRazaoSocial();
+    }
+    return "Alumiportas";
+  }
+
+  private String resolverDescricaoItem(PartSaleItem item) {
+    if (item.getDescription() != null && !item.getDescription().isBlank()) {
+      return item.getDescription();
+    }
+    if (item.getMaterial() != null && item.getMaterial().getName() != null) {
+      return item.getMaterial().getName();
+    }
+    return "Material Avulso";
+  }
+
+  private void adicionarEtiquetasDoItem(
+      List<ThermalLabelData> etiquetas,
+      PartSaleItem item,
+      int itemNumber,
+      String companyName,
+      String customerName,
+      String saleCode,
+      LocalDate issueDate) {
+    int quantity = item.getQuantity() != null && item.getQuantity() > 0 ? item.getQuantity() : 1;
+    String description = resolverDescricaoItem(item);
+    String lineOrGroup = item.getMaterialType() != null ? item.getMaterialType().name() : "AVULSO";
+    int widthMm = item.getWidthMm() != null ? item.getWidthMm() : 0;
+    int heightMm = item.getHeightMm() != null ? item.getHeightMm() : 0;
+    String color = "Padrão";
+    String glassType = item.getMaterialType() != null ? item.getMaterialType().name() : "N/A";
+    String location = "Venda Avulsa de Balcão";
+    String skuCode = item.getMaterial() != null ? item.getMaterial().getSkuCode() : null;
+
+    for (int pieceNumber = 1; pieceNumber <= quantity; pieceNumber++) {
+      String badge = String.format(
+          Locale.ROOT, "Item %02d | Peça %02d/%02d", itemNumber, pieceNumber, quantity);
+
+      ThermalLabelData data = new ThermalLabelData(
+          companyName,
+          customerName,
+          saleCode,
+          itemNumber,
+          pieceNumber,
+          quantity,
+          description,
+          lineOrGroup,
+          widthMm,
+          heightMm,
+          color,
+          glassType,
+          location,
+          skuCode,
+          issueDate,
+          badge
+      );
+      etiquetas.add(data);
+    }
   }
 
   /**

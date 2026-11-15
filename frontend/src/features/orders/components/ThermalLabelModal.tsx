@@ -233,7 +233,7 @@ export const ThermalLabelModal: React.FC<ThermalLabelModalProps> = ({
       });
     }
 
-    if (partSale && partSale.items) {
+    if (partSale?.items) {
       return partSale.items.map((it, idx) => ({
         id: it.id,
         label: `Item ${idx + 1} (${it.quantity} ${it.quantity === 1 ? 'Peça' : 'Peças'})`,
@@ -275,6 +275,13 @@ export const ThermalLabelModal: React.FC<ThermalLabelModalProps> = ({
   const isPartSaleMode = Boolean(partSale);
   const codeDisplay = order?.codigo || partSale?.code || '---';
   const clientDisplay = order?.clienteNome || partSale?.clientName || 'Cliente Balcão';
+
+  let printActionText = printButtonLabel;
+  if (isDownloadingPdf) {
+    printActionText = 'Abrindo Impressão...';
+  } else if (isPartSaleMode) {
+    printActionText = 'Imprimir Etiquetas';
+  }
 
   return (
     <div
@@ -548,7 +555,7 @@ export const ThermalLabelModal: React.FC<ThermalLabelModalProps> = ({
               ) : (
                 <Printer className="w-4 h-4" />
               )}
-              {isDownloadingPdf ? 'Abrindo Impressão...' : (isPartSaleMode ? 'Imprimir Etiquetas' : printButtonLabel)}
+              {printActionText}
             </button>
           </div>
         </div>

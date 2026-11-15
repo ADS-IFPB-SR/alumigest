@@ -14,6 +14,23 @@ import {
   type CreatePartSaleItemRequest,
 } from '@/features/part-sales';
 
+function resolveProfileLengthMm(
+  materialType: string,
+  heightMm: number | null | undefined,
+  linearMeters: number | null | undefined,
+): number | null {
+  if (materialType !== 'PROFILE') {
+    return null;
+  }
+  if (heightMm != null) {
+    return heightMm;
+  }
+  if (linearMeters != null) {
+    return Math.round(linearMeters * 1000);
+  }
+  return null;
+}
+
 export function PartSalePage() {
   const [selectedClientId, setSelectedClientId] = useState<string>('');
   const [notes, setNotes] = useState<string>('');
@@ -317,7 +334,7 @@ export function PartSalePage() {
               quantity: it.quantity,
               widthMm: it.widthMm,
               heightMm: it.heightMm,
-              lengthMm: it.materialType === 'PROFILE' ? (it.heightMm ?? (it.linearMeters ? Math.round(it.linearMeters * 1000) : null)) : null,
+              lengthMm: resolveProfileLengthMm(it.materialType, it.heightMm, it.linearMeters),
               notes: it.notes || undefined,
             })),
           }}
