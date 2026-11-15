@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
-import { useOrder, useOrders, useCancelOrder, useConvertBudget, useDownloadComprovantePdf, useDownloadLabelsPdf } from '../../../features/orders/hooks/useOrders';
+import { useOrder, useOrders, useCancelOrder, useConvertBudget, useDownloadComprovantePdf, useDownloadLabelsPdf, useUpdateOrderStatus } from '../../../features/orders/hooks/useOrders';
 import { ordersApi } from '../../../features/orders/services/ordersApi';
 import type { Order } from '../../../features/orders/types';
 import toast from 'react-hot-toast';
@@ -275,6 +275,60 @@ describe('useOrders hooks', () => {
 
       await waitFor(() => expect(result.current.isError).toBe(true));
       expect(toast.error).toHaveBeenCalledWith('Erro ao gerar as etiquetas térmicas.');
+    });
+  });
+
+  describe('Invalidação reativa de estoque (US-21.2)', () => {
+    it('useCancelOrder deve invalidar queries de estoque ao cancelar O.S.', async () => {
+      vi.mocked(ordersApi.cancelOrder).mockResolvedValueOnce({
+        id: 'order-1',
+        status: 'CANCELLED',
+      } as Order);
+
+      const queryClient = new QueryClient({
+        defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+      });
+      const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
+      const wrapper = ({ children }: { children: React.ReactNode }) => (
+        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+      );
+
+      const { result } = renderHook(() => useCancelOrder('order-1'), { wrapper });
+
+      result.current.mutate({ justificativa: 'Cancelado pelo cliente' });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['orders'] });
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['order', 'order-1'] });
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['stock-balances'] });
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['stock-item'] });
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['stock-movements'] });
+    });
+
+    it('useUpdateOrderStatus deve invalidar queries de estoque ao concluir O.S. (COMPLETED)', async () => {
+      vi.mocked(ordersApi.updateStatus).mockResolvedValueOnce({
+        id: 'order-2',
+        status: 'COMPLETED',
+      } as Order);
+
+      const queryClient = new QueryClient({
+        defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+      });
+      const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
+      const wrapper = ({ children }: { children: React.ReactNode }) => (
+        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+      );
+
+      const { result } = renderHook(() => useUpdateOrderStatus('order-2'), { wrapper });
+
+      result.current.mutate('COMPLETED');
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['stock-balances'] });
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['stock-item'] });
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['stock-movements'] });
     });
   });
 });

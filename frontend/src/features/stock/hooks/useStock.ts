@@ -78,10 +78,53 @@ export const useReserveStockForOrder = () => {
     mutationFn: (orderId: string) => stockApi.reserveForOrder(orderId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['stock-balances'] });
+      queryClient.invalidateQueries({ queryKey: ['stock-movements'] });
     },
     onError: (error: unknown) => {
       console.error('Erro ao reservar estoque:', error);
       toast.error(extractErrorMessage(error, 'Falha ao reservar estoque da O.S.'));
+    },
+  });
+};
+
+/**
+ * Hook de mutação para efetuar baixa física definitiva dos materiais reservados de uma O.S. concluída.
+ */
+export const useConsumeStockForOrder = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (orderId: string) => stockApi.consumeForOrder(orderId),
+    onSuccess: () => {
+      toast.success('Baixa física de materiais registrada com sucesso!');
+      queryClient.invalidateQueries({ queryKey: ['stock-balances'] });
+      queryClient.invalidateQueries({ queryKey: ['stock-item'] });
+      queryClient.invalidateQueries({ queryKey: ['stock-movements'] });
+    },
+    onError: (error: unknown) => {
+      console.error('Erro ao realizar baixa física de estoque:', error);
+      toast.error(extractErrorMessage(error, 'Falha ao realizar baixa física de estoque da O.S.'));
+    },
+  });
+};
+
+/**
+ * Hook de mutação para estornar as reservas de materiais de uma O.S. cancelada.
+ */
+export const useCancelStockReservationsForOrder = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (orderId: string) => stockApi.cancelReservationsForOrder(orderId),
+    onSuccess: () => {
+      toast.success('Reservas de estoque estornadas com sucesso!');
+      queryClient.invalidateQueries({ queryKey: ['stock-balances'] });
+      queryClient.invalidateQueries({ queryKey: ['stock-item'] });
+      queryClient.invalidateQueries({ queryKey: ['stock-movements'] });
+    },
+    onError: (error: unknown) => {
+      console.error('Erro ao estornar reservas de estoque:', error);
+      toast.error(extractErrorMessage(error, 'Falha ao estornar reservas de estoque da O.S.'));
     },
   });
 };

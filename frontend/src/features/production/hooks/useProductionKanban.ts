@@ -100,7 +100,15 @@ export function useProductionKanban() {
       toast.error(message);
     },
 
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
+      if (variables.status === 'COMPLETED') {
+        toast.success('Produção concluída e baixa de estoque realizada com sucesso!');
+        queryClient.invalidateQueries({ queryKey: ['stock-balances'] });
+        queryClient.invalidateQueries({ queryKey: ['stock-item'] });
+        queryClient.invalidateQueries({ queryKey: ['stock-movements'] });
+        return;
+      }
+
       toast.success('Etapa de produção atualizada com sucesso!');
     },
 

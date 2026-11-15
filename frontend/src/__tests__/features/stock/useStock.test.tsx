@@ -8,6 +8,8 @@ import {
   useStockMovements,
   useRegisterStockMovement,
   useReserveStockForOrder,
+  useConsumeStockForOrder,
+  useCancelStockReservationsForOrder,
 } from '@/features/stock/hooks/useStock';
 import { stockApi } from '@/features/stock/api/stockApi';
 import toast from 'react-hot-toast';
@@ -19,6 +21,8 @@ vi.mock('@/features/stock/api/stockApi', () => ({
     listMovements: vi.fn(),
     registerMovement: vi.fn(),
     reserveForOrder: vi.fn(),
+    consumeForOrder: vi.fn(),
+    cancelReservationsForOrder: vi.fn(),
   },
 }));
 
@@ -176,5 +180,35 @@ describe('useStock Hooks — Testes de Integração com TanStack Query', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     expect(stockApi.reserveForOrder).toHaveBeenCalledWith('order-999');
+  });
+
+  it('useConsumeStockForOrder deve disparar baixa física e exibir toast de sucesso', async () => {
+    vi.mocked(stockApi.consumeForOrder).mockResolvedValueOnce();
+
+    const { result } = renderHook(() => useConsumeStockForOrder(), {
+      wrapper: createWrapper(),
+    });
+
+    result.current.mutate('order-consume-1');
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(stockApi.consumeForOrder).toHaveBeenCalledWith('order-consume-1');
+    expect(toast.success).toHaveBeenCalledWith('Baixa física de materiais registrada com sucesso!');
+  });
+
+  it('useCancelStockReservationsForOrder deve estornar reservas e exibir toast de sucesso', async () => {
+    vi.mocked(stockApi.cancelReservationsForOrder).mockResolvedValueOnce();
+
+    const { result } = renderHook(() => useCancelStockReservationsForOrder(), {
+      wrapper: createWrapper(),
+    });
+
+    result.current.mutate('order-cancel-1');
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(stockApi.cancelReservationsForOrder).toHaveBeenCalledWith('order-cancel-1');
+    expect(toast.success).toHaveBeenCalledWith('Reservas de estoque estornadas com sucesso!');
   });
 });
