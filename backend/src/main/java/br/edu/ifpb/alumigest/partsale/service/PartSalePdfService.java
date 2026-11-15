@@ -45,6 +45,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 /**
@@ -103,13 +104,14 @@ public class PartSalePdfService {
   private final CompanyProperties companyProps;
   private final LabelPdfService labelPdfService;
 
-  public PartSalePdfService(CompanyProperties companyProps) {
-    this(companyProps, new LabelPdfService(companyProps));
-  }
-
+  @Autowired
   public PartSalePdfService(CompanyProperties companyProps, LabelPdfService labelPdfService) {
     this.companyProps = companyProps;
     this.labelPdfService = labelPdfService;
+  }
+
+  public PartSalePdfService(CompanyProperties companyProps) {
+    this(companyProps, new LabelPdfService(companyProps));
   }
 
   /**
@@ -120,16 +122,21 @@ public class PartSalePdfService {
    * @return array de bytes contendo o documento PDF térmico
    */
   public byte[] generateLabelsPdf(PartSale partSale, Client client) {
-    Objects.requireNonNull(partSale, "A venda de partes não pode ser nula para geração das etiquetas.");
+    Objects.requireNonNull(
+        partSale, "A venda de partes não pode ser nula para geração das etiquetas.");
     if (partSale.getItems() == null || partSale.getItems().isEmpty()) {
       throw new BusinessException("A venda não possui itens para geração de etiquetas térmicas.");
     }
 
-    String customerName = client != null && client.getFullName() != null && !client.getFullName().isBlank()
+    String customerName = client != null
+        && client.getFullName() != null
+        && !client.getFullName().isBlank()
         ? client.getFullName()
         : CLIENTE_BALCAO_PADRAO;
 
-    String companyName = companyProps != null && companyProps.getRazaoSocial() != null && !companyProps.getRazaoSocial().isBlank()
+    String companyName = companyProps != null
+        && companyProps.getRazaoSocial() != null
+        && !companyProps.getRazaoSocial().isBlank()
         ? companyProps.getRazaoSocial()
         : "Alumiportas";
 
@@ -149,7 +156,8 @@ public class PartSalePdfService {
           ? item.getDescription()
           : (item.getMaterial() != null ? item.getMaterial().getName() : "Material Avulso");
 
-      String lineOrGroup = item.getMaterialType() != null ? item.getMaterialType().name() : "AVULSO";
+      String lineOrGroup = item.getMaterialType() != null
+          ? item.getMaterialType().name() : "AVULSO";
       int widthMm = item.getWidthMm() != null ? item.getWidthMm() : 0;
       int heightMm = item.getHeightMm() != null ? item.getHeightMm() : 0;
       String color = "Padrão";
@@ -158,7 +166,8 @@ public class PartSalePdfService {
       String skuCode = item.getMaterial() != null ? item.getMaterial().getSkuCode() : null;
 
       for (int pieceNumber = 1; pieceNumber <= quantity; pieceNumber++) {
-        String badge = String.format(Locale.ROOT, "Item %02d | Peça %02d/%02d", itemNumber, pieceNumber, quantity);
+        String badge = String.format(
+            Locale.ROOT, "Item %02d | Peça %02d/%02d", itemNumber, pieceNumber, quantity);
 
         ThermalLabelData data = new ThermalLabelData(
             companyName,
