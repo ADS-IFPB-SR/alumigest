@@ -33,7 +33,7 @@ Como a Central 360° integra múltiplos módulos (Cadastros, Vendas e Fabril), e
     - [ ] **SP**: Exibição elegante de Empty States e tratamento de Erro 500 sem quebrar a sidebar (TC-47-SP01, SP02).
     - [ ] **EC**: O.S. volumosa com scroll vertical suave e validação de tokens Dark Mode (TC-47-EC01, EC02).
 - [ ] **Script NPM**: Adicionar `test:e2e:us47` no `package.json`.
-- [ ] **Testes de Integração Backend**: Validar projeções DTO CQRS em `CustomerDashboardControllerIntegrationTest.java`.
+- [ ] **Testes de Integração Backend**: Validar projeções DTO CQRS em `ClientHubControllerIntegrationTest.java`.
 - [ ] **Documentação QA**: Publicar matriz em `docs/qualidade/casos-de-teste-us47-central-360-clientes.md`.
 
 ---

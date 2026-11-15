@@ -2,7 +2,7 @@
 
 **Identificador**: `US-46`  
 **Issue GitHub**: [#477](https://github.com/ADS-IFPB-SR/alumigest/issues/477)  
-**Status**: 🟢 Em Fechamento (6/7 issues concluídas)
+**Status**: 🟢 Em Fechamento (6/6 issues concluídas)
 
 ---
 
