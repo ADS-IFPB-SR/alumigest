@@ -17,12 +17,14 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.UUID;
+import org.hibernate.annotations.Immutable;
 
 /**
  * Registro imutável (append-only) da trilha de auditoria Kardex de estoque.
  */
 @Entity
 @Table(name = "tb_stock_movements")
+@Immutable
 public class StockMovement {
 
     @Id
