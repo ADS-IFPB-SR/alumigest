@@ -13,7 +13,7 @@ describe('US-46: Listagem e Gestão Canônica de Vendas Avulsas (Opção 1)', ()
       createdSaleCodes.forEach((code) => {
         cy.request({
           method: 'DELETE',
-          url: 'http://localhost:8081/api/v1/test-support/cleanup',
+          url: `${Cypress.env('apiUrl') || 'http://localhost:8081/api/v1'}/test-support/cleanup`,
           body: { partSaleCode: code },
           failOnStatusCode: false,
         }).then((res) => {
@@ -147,6 +147,7 @@ describe('US-46: Listagem e Gestão Canônica de Vendas Avulsas (Opção 1)', ()
     cy.url().should('include', '/vendas/avulsa/nova');
 
     // Adiciona um insumo de perfil
+    cy.get('[data-testid="select-part-category"]').select('Perfil de Alumínio (Metro)');
     cy.get('[data-testid="input-part-description"]').click();
     cy.wait(500);
     cy.contains('[data-testid^="material-option-"]', /Perfil Linha Suprema/).click();

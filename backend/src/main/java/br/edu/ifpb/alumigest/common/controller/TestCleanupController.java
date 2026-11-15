@@ -38,19 +38,33 @@ public class TestCleanupController {
     /**
      * DTO de requisição de limpeza por identificadores.
      *
-     * @param clientId    ID do cliente criado no teste
-     * @param budgetId   ID do orçamento criado no teste
-     * @param orderId    ID da ordem de serviço gerada no teste
-     * @param clientName Nome ou prefixo do cliente para limpeza alternativa por texto
+     * @param clientId     ID do cliente criado no teste
+     * @param budgetId     ID do orçamento criado no teste
+     * @param orderId      ID da ordem de serviço gerada no teste
+     * @param clientName   Nome ou prefixo do cliente para limpeza alternativa por texto
+     * @param partSaleId   ID da venda avulsa criada no teste
+     * @param partSaleCode Código da venda avulsa criada no teste
      */
     public record TestCleanupRequest(
-            UUID clientId,
-            UUID budgetId,
-            UUID orderId,
+            String clientId,
+            String budgetId,
+            String orderId,
             String clientName,
-            UUID partSaleId,
+            String partSaleId,
             String partSaleCode
     ) {}
+
+    private UUID parseUuidOrNull(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        try {
+            return UUID.fromString(raw.trim());
+        } catch (IllegalArgumentException e) {
+            log.debug("Ignorando identificador de limpeza não-UUID: {}", raw);
+            return null;
+        }
+    }
 
     /**
      * Executa a exclusão física ordenada (Hard Delete) de entidades de teste para manter a base limpa.
@@ -65,54 +79,203 @@ public class TestCleanupController {
             return ResponseEntity.noContent().build();
         }
 
+        UUID clientUuid = parseUuidOrNull(request.clientId());
+        UUID budgetUuid = parseUuidOrNull(request.budgetId());
+        UUID orderUuid = parseUuidOrNull(request.orderId());
+        UUID partSaleUuid = parseUuidOrNull(request.partSaleId());
+
         log.info("Executando Hard Delete de teste: clientId={}, budgetId={}, orderId={}, clientName={}, partSaleId={}, partSaleCode={}",
-                request.clientId(), request.budgetId(), request.orderId(), request.clientName(), request.partSaleId(), request.partSaleCode());
+                clientUuid, budgetUuid, orderUuid, request.clientName(), partSaleUuid, request.partSaleCode());
 
-        // 1. Exclui ordens de serviço (tabelas tb_order_item_options e tb_order_items são excluídas via CASCADE)
-        if (request.orderId() != null) {
-            jdbcTemplate.update("DELETE FROM tb_order_item_options WHERE order_item_id IN (SELECT id FROM tb_order_items WHERE order_id = ?)", request.orderId());
-            jdbcTemplate.update("DELETE FROM tb_order_items WHERE order_id = ?", request.orderId());
-            jdbcTemplate.update("DELETE FROM tb_orders WHERE id = ?", request.orderId());
+        // 1. Exclui ordens de serviço por ID (de baixo para cima para respeitar todas as FKs)
+        if (orderUuid != null) {
+            jdbcTemplate.update(
+                    "DELETE FROM tb_order_item_options WHERE order_item_id IN (SELECT id FROM tb_order_items WHERE order_id = ?)",
+                    orderUuid);
+            jdbcTemplate.update("DELETE FROM tb_order_items WHERE order_id = ?", orderUuid);
+            jdbcTemplate.update("DELETE FROM tb_orders WHERE id = ?", orderUuid);
         }
 
-        if (request.budgetId() != null) {
-            jdbcTemplate.update("DELETE FROM tb_orders WHERE orcamento_id = ?", request.budgetId());
-            // 2. Exclui orçamento (tb_budget_items e tb_budget_item_options possuem CASCADE na foreign key)
-            jdbcTemplate.update("DELETE FROM tb_budget_item_options WHERE budget_item_id IN (SELECT id FROM tb_budget_items WHERE budget_id = ?)", request.budgetId());
-            jdbcTemplate.update("DELETE FROM tb_budget_items WHERE budget_id = ?", request.budgetId());
-            jdbcTemplate.update("DELETE FROM tb_budgets WHERE id = ?", request.budgetId());
+        // 2. Exclui ordens derivadas e o próprio orçamento por ID
+        if (budgetUuid != null) {
+            jdbcTemplate.update(
+                    """
+                    DELETE FROM tb_order_item_options
+                    WHERE order_item_id IN (
+                        SELECT oi.id FROM tb_order_items oi
+                        JOIN tb_orders o ON oi.order_id = o.id
+                        WHERE o.orcamento_id = ?
+                    )
+                    """,
+                    budgetUuid);
+            jdbcTemplate.update(
+                    "DELETE FROM tb_order_items WHERE order_id IN (SELECT id FROM tb_orders WHERE orcamento_id = ?)",
+                    budgetUuid);
+            jdbcTemplate.update("DELETE FROM tb_orders WHERE orcamento_id = ?", budgetUuid);
+            jdbcTemplate.update(
+                    "DELETE FROM tb_budget_item_options WHERE budget_item_id IN (SELECT id FROM tb_budget_items WHERE budget_id = ?)",
+                    budgetUuid);
+            jdbcTemplate.update("DELETE FROM tb_budget_items WHERE budget_id = ?", budgetUuid);
+            jdbcTemplate.update("DELETE FROM tb_budgets WHERE id = ?", budgetUuid);
         }
 
-        // 3. Exclui cliente por ID
-        if (request.clientId() != null) {
-            jdbcTemplate.update("DELETE FROM tb_orders WHERE cliente_id = ?", request.clientId());
-            jdbcTemplate.update("DELETE FROM tb_budgets WHERE client_id = ?", request.clientId());
-            jdbcTemplate.update("DELETE FROM tb_clients WHERE id = ?", request.clientId());
+        // 3. Exclui cliente por ID e todos os vínculos dependentes (O.S., Orçamentos e Vendas Avulsas)
+        if (clientUuid != null) {
+            jdbcTemplate.update(
+                    """
+                    DELETE FROM tb_order_item_options
+                    WHERE order_item_id IN (
+                        SELECT oi.id FROM tb_order_items oi
+                        JOIN tb_orders o ON oi.order_id = o.id
+                        WHERE o.cliente_id = ?
+                           OR o.orcamento_id IN (SELECT id FROM tb_budgets WHERE client_id = ?)
+                    )
+                    """,
+                    clientUuid,
+                    clientUuid);
+            jdbcTemplate.update(
+                    """
+                    DELETE FROM tb_order_items
+                    WHERE order_id IN (
+                        SELECT id FROM tb_orders
+                        WHERE cliente_id = ?
+                           OR orcamento_id IN (SELECT id FROM tb_budgets WHERE client_id = ?)
+                    )
+                    """,
+                    clientUuid,
+                    clientUuid);
+            jdbcTemplate.update(
+                    """
+                    DELETE FROM tb_orders
+                    WHERE cliente_id = ?
+                       OR orcamento_id IN (SELECT id FROM tb_budgets WHERE client_id = ?)
+                    """,
+                    clientUuid,
+                    clientUuid);
+            jdbcTemplate.update(
+                    """
+                    DELETE FROM tb_budget_item_options
+                    WHERE budget_item_id IN (
+                        SELECT bi.id FROM tb_budget_items bi
+                        JOIN tb_budgets b ON bi.budget_id = b.id
+                        WHERE b.client_id = ?
+                    )
+                    """,
+                    clientUuid);
+            jdbcTemplate.update(
+                    "DELETE FROM tb_budget_items WHERE budget_id IN (SELECT id FROM tb_budgets WHERE client_id = ?)",
+                    clientUuid);
+            jdbcTemplate.update("DELETE FROM tb_budgets WHERE client_id = ?", clientUuid);
+            jdbcTemplate.update(
+                    "DELETE FROM tb_part_sale_items WHERE part_sale_id IN (SELECT id FROM tb_part_sales WHERE client_id = ?)",
+                    clientUuid);
+            jdbcTemplate.update("DELETE FROM tb_part_sales WHERE client_id = ?", clientUuid);
+            jdbcTemplate.update("DELETE FROM tb_clients WHERE id = ?", clientUuid);
         }
 
-        // 4. Limpeza de contingência por nome do cliente (ex: "Vidraçaria Esperança")
+        // 4. Limpeza de contingência por nome do cliente (tb_clients.full_name / tb_orders.cliente_nome)
         if (request.clientName() != null && !request.clientName().isBlank()) {
-            jdbcTemplate.update("""
-                DELETE FROM tb_orders 
-                WHERE cliente_id IN (SELECT id FROM tb_clients WHERE name LIKE ? OR cliente_nome LIKE ?)
-            """, "%" + request.clientName() + "%", "%" + request.clientName() + "%");
+            String pattern = "%" + request.clientName() + "%";
+            jdbcTemplate.update(
+                    """
+                    DELETE FROM tb_order_item_options
+                    WHERE order_item_id IN (
+                        SELECT oi.id FROM tb_order_items oi
+                        JOIN tb_orders o ON oi.order_id = o.id
+                        WHERE o.cliente_nome LIKE ?
+                           OR o.cliente_id IN (SELECT id FROM tb_clients WHERE full_name LIKE ?)
+                           OR o.orcamento_id IN (
+                               SELECT b.id FROM tb_budgets b
+                               JOIN tb_clients c ON b.client_id = c.id
+                               WHERE c.full_name LIKE ?
+                           )
+                    )
+                    """,
+                    pattern,
+                    pattern,
+                    pattern);
+            jdbcTemplate.update(
+                    """
+                    DELETE FROM tb_order_items
+                    WHERE order_id IN (
+                        SELECT o.id FROM tb_orders o
+                        WHERE o.cliente_nome LIKE ?
+                           OR o.cliente_id IN (SELECT id FROM tb_clients WHERE full_name LIKE ?)
+                           OR o.orcamento_id IN (
+                               SELECT b.id FROM tb_budgets b
+                               JOIN tb_clients c ON b.client_id = c.id
+                               WHERE c.full_name LIKE ?
+                           )
+                    )
+                    """,
+                    pattern,
+                    pattern,
+                    pattern);
+            jdbcTemplate.update(
+                    """
+                    DELETE FROM tb_orders
+                    WHERE cliente_nome LIKE ?
+                       OR cliente_id IN (SELECT id FROM tb_clients WHERE full_name LIKE ?)
+                       OR orcamento_id IN (
+                           SELECT b.id FROM tb_budgets b
+                           JOIN tb_clients c ON b.client_id = c.id
+                           WHERE c.full_name LIKE ?
+                       )
+                    """,
+                    pattern,
+                    pattern,
+                    pattern);
 
-            jdbcTemplate.update("""
-                DELETE FROM tb_budgets 
-                WHERE client_id IN (SELECT id FROM tb_clients WHERE name LIKE ?)
-            """, "%" + request.clientName() + "%");
-
-            jdbcTemplate.update("DELETE FROM tb_clients WHERE name LIKE ?", "%" + request.clientName() + "%");
+            jdbcTemplate.update(
+                    """
+                    DELETE FROM tb_budget_item_options
+                    WHERE budget_item_id IN (
+                        SELECT bi.id FROM tb_budget_items bi
+                        JOIN tb_budgets b ON bi.budget_id = b.id
+                        JOIN tb_clients c ON b.client_id = c.id
+                        WHERE c.full_name LIKE ?
+                    )
+                    """,
+                    pattern);
+            jdbcTemplate.update(
+                    """
+                    DELETE FROM tb_budget_items
+                    WHERE budget_id IN (
+                        SELECT b.id FROM tb_budgets b
+                        JOIN tb_clients c ON b.client_id = c.id
+                        WHERE c.full_name LIKE ?
+                    )
+                    """,
+                    pattern);
+            jdbcTemplate.update(
+                    "DELETE FROM tb_budgets WHERE client_id IN (SELECT id FROM tb_clients WHERE full_name LIKE ?)",
+                    pattern);
+            jdbcTemplate.update(
+                    """
+                    DELETE FROM tb_part_sale_items
+                    WHERE part_sale_id IN (
+                        SELECT ps.id FROM tb_part_sales ps
+                        JOIN tb_clients c ON ps.client_id = c.id
+                        WHERE c.full_name LIKE ?
+                    )
+                    """,
+                    pattern);
+            jdbcTemplate.update(
+                    "DELETE FROM tb_part_sales WHERE client_id IN (SELECT id FROM tb_clients WHERE full_name LIKE ?)",
+                    pattern);
+            jdbcTemplate.update("DELETE FROM tb_clients WHERE full_name LIKE ?", pattern);
         }
 
         // 5. Exclui venda avulsa e itens associados (tb_part_sales e tb_part_sale_items)
-        if (request.partSaleId() != null) {
-            jdbcTemplate.update("DELETE FROM tb_part_sale_items WHERE part_sale_id = ?", request.partSaleId());
-            jdbcTemplate.update("DELETE FROM tb_part_sales WHERE id = ?", request.partSaleId());
+        if (partSaleUuid != null) {
+            jdbcTemplate.update("DELETE FROM tb_part_sale_items WHERE part_sale_id = ?", partSaleUuid);
+            jdbcTemplate.update("DELETE FROM tb_part_sales WHERE id = ?", partSaleUuid);
         }
 
         if (request.partSaleCode() != null && !request.partSaleCode().isBlank()) {
-            jdbcTemplate.update("DELETE FROM tb_part_sale_items WHERE part_sale_id IN (SELECT id FROM tb_part_sales WHERE code = ?)", request.partSaleCode());
+            jdbcTemplate.update(
+                    "DELETE FROM tb_part_sale_items WHERE part_sale_id IN (SELECT id FROM tb_part_sales WHERE code = ?)",
+                    request.partSaleCode());
             jdbcTemplate.update("DELETE FROM tb_part_sales WHERE code = ?", request.partSaleCode());
         }
 

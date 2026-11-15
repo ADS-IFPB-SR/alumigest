@@ -12,7 +12,7 @@ describe('US-46: Suíte de Testes E2E (Critérios de Aceitação) - Venda Avulsa
       createdSaleCodes.forEach((code) => {
         cy.request({
           method: 'DELETE',
-          url: '/api/v1/test-support/cleanup',
+          url: `${Cypress.env('apiUrl') || 'http://localhost:8081/api/v1'}/test-support/cleanup`,
           body: { partSaleCode: code },
           failOnStatusCode: false,
         }).then((res) => {
@@ -149,7 +149,7 @@ describe('US-46: Suíte de Testes E2E (Critérios de Aceitação) - Venda Avulsa
     cy.get('[data-testid="input-glass-height"]').clear().type('1000');
     cy.get('[data-testid="btn-add-part-item"]').click();
 
-    cy.contains(/maior que zero/i).should('be.visible');
+    cy.contains(/maior(?:es)? que zero/i).should('be.visible');
   });
 
   it('TC-46-SP03: Alerta impeditivo quando largura da película excede a bobina', () => {
@@ -160,9 +160,9 @@ describe('US-46: Suíte de Testes E2E (Critérios de Aceitação) - Venda Avulsa
 
     cy.get('input[name="width"], [data-testid="input-film-width"]').last().clear().type('2000');
     cy.get('input[name="height"], [data-testid="input-film-height"]').last().clear().type('1000');
-    cy.get('[data-testid="btn-add-part-item"]').click();
 
-    cy.contains(/excede o limite|bobina/i).should('be.visible');
+    cy.get('[data-testid="warning-film-oversized"]').should('be.visible');
+    cy.contains(/excede|excedeu|bobina/i).should('be.visible');
   });
 
   // =========================================================
