@@ -528,4 +528,50 @@ class PartSaleControllerTest {
           .andExpect(jsonPath("$.message").value("Largura excede o limite da bobina."));
     }
   }
+
+  @Nested
+  @DisplayName("GET /api/v1/part-sales/{id}/labels-pdf")
+  class GetLabelsPdfEndpoint {
+
+    @Test
+    @DisplayName("Deve retornar 200 com PDF de etiquetas térmicas e header de anexo")
+    void shouldReturnLabelsPdfSuccessfully() throws Exception {
+      UUID saleId = UUID.randomUUID();
+      byte[] pdfBytes = "%PDF-1.4 thermal labels content".getBytes();
+      PartSalePdfDTO dto = new PartSalePdfDTO(pdfBytes, "etiquetas-VA-2026-0001.pdf");
+
+      when(partSaleService.generateLabelsPdf(saleId)).thenReturn(dto);
+
+      mockMvc.perform(get("/api/v1/part-sales/{id}/labels-pdf", saleId))
+          .andExpect(status().isOk())
+          .andExpect(header().string("Content-Type", "application/pdf"))
+          .andExpect(header().string(
+              "Content-Disposition",
+              "attachment; filename=\"etiquetas-VA-2026-0001.pdf\""));
+    }
+
+    @Test
+    @DisplayName("Deve retornar 404 se a venda avulsa não for encontrada")
+    void shouldReturn404WhenPartSaleNotFoundForLabelsPdf() throws Exception {
+      UUID saleId = UUID.randomUUID();
+      when(partSaleService.generateLabelsPdf(saleId))
+          .thenThrow(new ResourceNotFoundException("Venda avulsa não encontrada com o ID: " + saleId));
+
+      mockMvc.perform(get("/api/v1/part-sales/{id}/labels-pdf", saleId))
+          .andExpect(status().isNotFound())
+          .andExpect(jsonPath("$.message").value("Venda avulsa não encontrada com o ID: " + saleId));
+    }
+
+    @Test
+    @DisplayName("Deve retornar 422 quando a venda avulsa estiver cancelada")
+    void shouldReturn422WhenPartSaleCanceledForLabelsPdf() throws Exception {
+      UUID saleId = UUID.randomUUID();
+      when(partSaleService.generateLabelsPdf(saleId))
+          .thenThrow(new BusinessException("Não é possível gerar etiquetas para uma venda avulsa cancelada."));
+
+      mockMvc.perform(get("/api/v1/part-sales/{id}/labels-pdf", saleId))
+          .andExpect(status().isUnprocessableEntity())
+          .andExpect(jsonPath("$.message").value("Não é possível gerar etiquetas para uma venda avulsa cancelada."));
+    }
+  }
 }

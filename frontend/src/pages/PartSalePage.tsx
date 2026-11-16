@@ -2,6 +2,7 @@ import { useState, useId } from 'react';
 import { User, X, FileText, Printer, CheckCircle2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useCustomers } from '@/features/customers/hooks/useCustomers';
+import { ThermalLabelModal } from '@/features/orders/components/ThermalLabelModal';
 import {
   PartSaleMaterialForm,
   PartSaleItemTable,
@@ -12,6 +13,23 @@ import {
   type CreatePartSaleRequest,
   type CreatePartSaleItemRequest,
 } from '@/features/part-sales';
+
+function resolveProfileLengthMm(
+  materialType: string,
+  heightMm: number | null | undefined,
+  linearMeters: number | null | undefined,
+): number | null {
+  if (materialType !== 'PROFILE') {
+    return null;
+  }
+  if (heightMm != null) {
+    return heightMm;
+  }
+  if (linearMeters != null) {
+    return Math.round(linearMeters * 1000);
+  }
+  return null;
+}
 
 export function PartSalePage() {
   const [selectedClientId, setSelectedClientId] = useState<string>('');
@@ -300,64 +318,31 @@ export function PartSalePage() {
         </div>
       )}
 
-      {/* MODAL DE ETIQUETAS TÃƒâ€°RMICAS */}
+      {/* MODAL DE ETIQUETAS TÉRMICAS */}
       {isLabelModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full p-6 space-y-5 animate-in fade-in zoom-in-95">
-            <div className="flex justify-between items-center border-b border-slate-200 pb-3">
-              <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
-                <Printer className="w-4 h-4 text-amber-500" /> Etiquetas TÃƒÂ©rmicas de ExpediÃƒÂ§ÃƒÂ£o
-              </h3>
-              <button
-                type="button"
-                onClick={() => setIsLabelModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <p className="text-xs text-slate-600">
-              {items.length} tipo(s) de material(is) pronto(s) para emissÃƒÂ£o em impressora tÃƒÂ©rmica (formato 100x52mm).
-            </p>
-
-            <div className="max-h-60 overflow-y-auto space-y-2 border border-slate-200 rounded-lg p-3 bg-slate-50 text-xs">
-              {items.map((it) => (
-                <div key={it.tempId} className="bg-white border border-slate-200 p-2.5 rounded shadow-xs flex justify-between items-center">
-                  <div>
-                    <strong className="text-slate-800 font-bold block">{it.description}</strong>
-                    <span className="text-[11px] text-slate-500">
-                      Qtd: {it.quantity} un | Tipo: {it.materialType}
-                    </span>
-                  </div>
-                  <span className="font-mono text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded border border-slate-300">
-                    100Ãƒâ€”52mm
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
-              <button
-                type="button"
-                onClick={() => setIsLabelModalOpen(false)}
-                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  window.print();
-                  setIsLabelModalOpen(false);
-                }}
-                className="px-4 py-2 text-xs font-bold text-white bg-navy-900 hover:bg-slate-800 rounded-lg flex items-center gap-1.5 shadow-sm cursor-pointer"
-              >
-                <Printer className="w-3.5 h-3.5 text-amber-400" /> Imprimir Etiquetas
-              </button>
-            </div>
-          </div>
-        </div>
+        <ThermalLabelModal
+          isOpen={isLabelModalOpen}
+          onClose={() => setIsLabelModalOpen(false)}
+          partSale={{
+            code: lastCreatedCode || 'VP-RASCUNHO',
+            clientName: selectedCustomer?.nomeCompleto || 'Cliente Balcão',
+            createdAt: new Date().toISOString(),
+            items: items.map((it) => ({
+              id: it.tempId,
+              description: it.description,
+              category: it.materialType,
+              quantity: it.quantity,
+              widthMm: it.widthMm,
+              heightMm: it.heightMm,
+              lengthMm: resolveProfileLengthMm(it.materialType, it.heightMm, it.linearMeters),
+              notes: it.notes || undefined,
+            })),
+          }}
+          onDownloadPdf={() => {
+            window.print();
+            setIsLabelModalOpen(false);
+          }}
+        />
       )}
     </div>
   );

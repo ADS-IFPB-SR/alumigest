@@ -4,6 +4,8 @@ import br.edu.ifpb.alumigest.budgets.config.CompanyProperties;
 import br.edu.ifpb.alumigest.catalog.domain.MaterialCategoryType;
 import br.edu.ifpb.alumigest.clients.domain.Client;
 import br.edu.ifpb.alumigest.common.exception.BusinessException;
+import br.edu.ifpb.alumigest.orders.service.LabelPdfService;
+import br.edu.ifpb.alumigest.orders.service.pdf.ThermalLabelData;
 import br.edu.ifpb.alumigest.partsale.domain.PartSale;
 import br.edu.ifpb.alumigest.partsale.domain.PartSaleItem;
 import br.edu.ifpb.alumigest.partsale.domain.PartSaleStatus;
@@ -31,9 +33,11 @@ import java.net.URL;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
@@ -41,6 +45,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 /**
@@ -97,9 +102,117 @@ public class PartSalePdfService {
   private static final String SECAO_PELICULAS = "PELÍCULAS (COBRANÇA EM M²)";
 
   private final CompanyProperties companyProps;
+  private final LabelPdfService labelPdfService;
+
+  @Autowired
+  public PartSalePdfService(CompanyProperties companyProps, LabelPdfService labelPdfService) {
+    this.companyProps = companyProps;
+    this.labelPdfService = labelPdfService;
+  }
 
   public PartSalePdfService(CompanyProperties companyProps) {
-    this.companyProps = companyProps;
+    this(companyProps, new LabelPdfService(companyProps));
+  }
+
+  /**
+   * Gera o arquivo PDF de etiquetas térmicas industriais (100x60mm) para os itens da venda avulsa.
+   *
+   * @param partSale venda de partes persistida
+   * @param client cliente associado à venda
+   * @return array de bytes contendo o documento PDF térmico
+   */
+  public byte[] generateLabelsPdf(PartSale partSale, Client client) {
+    Objects.requireNonNull(
+        partSale, "A venda de partes não pode ser nula para geração das etiquetas.");
+    if (partSale.getItems() == null || partSale.getItems().isEmpty()) {
+      throw new BusinessException("A venda não possui itens para geração de etiquetas térmicas.");
+    }
+
+    String customerName = resolverNomeClienteParaEtiqueta(client);
+    String companyName = resolverNomeEmpresaParaEtiqueta();
+    LocalDate issueDate = partSale.getCreatedAt() != null
+        ? partSale.getCreatedAt().toLocalDate()
+        : LocalDate.now(ZONE_SAO_PAULO);
+
+    List<ThermalLabelData> etiquetas = new ArrayList<>();
+    List<PartSaleItem> items = partSale.getItems();
+
+    for (int itemIdx = 0; itemIdx < items.size(); itemIdx++) {
+      adicionarEtiquetasDoItem(
+          etiquetas, items.get(itemIdx), itemIdx + 1, companyName, customerName,
+          partSale.getCode(), issueDate);
+    }
+
+    return labelPdfService.gerarEtiquetasDeDados(etiquetas);
+  }
+
+  private String resolverNomeClienteParaEtiqueta(Client client) {
+    if (client != null && client.getFullName() != null && !client.getFullName().isBlank()) {
+      return client.getFullName();
+    }
+    return CLIENTE_BALCAO_PADRAO;
+  }
+
+  private String resolverNomeEmpresaParaEtiqueta() {
+    if (companyProps != null && companyProps.getRazaoSocial() != null
+        && !companyProps.getRazaoSocial().isBlank()) {
+      return companyProps.getRazaoSocial();
+    }
+    return "Alumiportas";
+  }
+
+  private String resolverDescricaoItem(PartSaleItem item) {
+    if (item.getDescription() != null && !item.getDescription().isBlank()) {
+      return item.getDescription();
+    }
+    if (item.getMaterial() != null && item.getMaterial().getName() != null) {
+      return item.getMaterial().getName();
+    }
+    return "Material Avulso";
+  }
+
+  private void adicionarEtiquetasDoItem(
+      List<ThermalLabelData> etiquetas,
+      PartSaleItem item,
+      int itemNumber,
+      String companyName,
+      String customerName,
+      String saleCode,
+      LocalDate issueDate) {
+    int quantity = item.getQuantity() != null && item.getQuantity() > 0 ? item.getQuantity() : 1;
+    String description = resolverDescricaoItem(item);
+    String lineOrGroup = item.getMaterialType() != null ? item.getMaterialType().name() : "AVULSO";
+    int widthMm = item.getWidthMm() != null ? item.getWidthMm() : 0;
+    int heightMm = item.getHeightMm() != null ? item.getHeightMm() : 0;
+    String color = "Padrão";
+    String glassType = item.getMaterialType() != null ? item.getMaterialType().name() : "N/A";
+    String location = "Venda Avulsa de Balcão";
+    String skuCode = item.getMaterial() != null ? item.getMaterial().getSkuCode() : null;
+
+    for (int pieceNumber = 1; pieceNumber <= quantity; pieceNumber++) {
+      String badge = String.format(
+          Locale.ROOT, "Item %02d | Peça %02d/%02d", itemNumber, pieceNumber, quantity);
+
+      ThermalLabelData data = new ThermalLabelData(
+          companyName,
+          customerName,
+          saleCode,
+          itemNumber,
+          pieceNumber,
+          quantity,
+          description,
+          lineOrGroup,
+          widthMm,
+          heightMm,
+          color,
+          glassType,
+          location,
+          skuCode,
+          issueDate,
+          badge
+      );
+      etiquetas.add(data);
+    }
   }
 
   /**

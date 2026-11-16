@@ -263,4 +263,62 @@ class PartSalePdfServiceTest {
         .isInstanceOf(NullPointerException.class)
         .hasMessageContaining("não pode ser nula");
   }
+
+  @Test
+  @DisplayName("Deve gerar etiquetas térmicas PDF (100x60mm) com sucesso para itens da venda avulsa")
+  void shouldGenerateThermalLabelsPdfSuccessfully() throws IOException {
+    PartSale sale = new PartSale(
+        "VA-2026-0001", UUID.randomUUID(), PartSaleStatus.APPROVED, BigDecimal.ZERO);
+
+    Material glass = new Material();
+    glass.setName("Vidro Incolor 8mm Temperado");
+    PartSaleItem itemGlass = new PartSaleItem(
+        glass, MaterialCategoryType.GLASS, 1000, 2000, 2, null,
+        new BigDecimal("2.0000"), new BigDecimal("150.00"), new BigDecimal("300.00"));
+    sale.addItem(itemGlass);
+
+    Material profile = new Material();
+    profile.setName("Perfil U Suprema Branco");
+    PartSaleItem itemProfile = new PartSaleItem(
+        profile, MaterialCategoryType.PROFILE, 3000, null, 1, new BigDecimal("0.1000"),
+        new BigDecimal("3.3000"), new BigDecimal("45.00"), new BigDecimal("148.50"));
+    sale.addItem(itemProfile);
+
+    Client client = Client.builder()
+        .id(UUID.randomUUID())
+        .fullName("João Silva da Silva")
+        .personType(PersonType.FISICA)
+        .build();
+
+    byte[] pdfBytes = pdfService.generateLabelsPdf(sale, client);
+
+    assertThat(pdfBytes).isNotEmpty();
+    PdfExtractionResult extraction = extrairTextoPdf(pdfBytes);
+    // 2 unidades de vidro + 1 unidade de perfil = 3 páginas de etiquetas
+    assertThat(extraction.totalPages()).isEqualTo(3);
+    assertThat(extraction.fullText())
+        .contains("Alumiportas")
+        .contains("João Silva da Silva")
+        .contains("VA-2026-0001")
+        .contains("Vidro Incolor 8mm Temperado")
+        .contains("Perfil U Suprema Branco");
+  }
+
+  @Test
+  @DisplayName("Deve lançar exceção ao gerar etiquetas para venda avulsa sem itens")
+  void shouldThrowExceptionWhenGeneratingLabelsForSaleWithoutItems() {
+    PartSale sale = new PartSale(
+        "VA-2026-0002", UUID.randomUUID(), PartSaleStatus.DRAFT, BigDecimal.ZERO);
+
+    assertThatThrownBy(() -> pdfService.generateLabelsPdf(sale, null))
+        .isInstanceOf(BusinessException.class)
+        .hasMessageContaining("não possui itens");
+  }
+
+  @Test
+  @DisplayName("Deve lançar exceção ao gerar etiquetas quando a venda for nula")
+  void shouldThrowExceptionWhenGeneratingLabelsForNullSale() {
+    assertThatThrownBy(() -> pdfService.generateLabelsPdf(null, null))
+        .isInstanceOf(NullPointerException.class);
+  }
 }

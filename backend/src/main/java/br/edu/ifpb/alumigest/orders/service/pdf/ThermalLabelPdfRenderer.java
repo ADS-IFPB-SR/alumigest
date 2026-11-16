@@ -30,6 +30,8 @@ public class ThermalLabelPdfRenderer {
 
     private static final Logger log = LoggerFactory.getLogger(ThermalLabelPdfRenderer.class);
 
+    private static final String NAO_INFORMADO = "Não informado";
+
     private static final DateTimeFormatter FORMATTER_DATA =
             DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
@@ -252,7 +254,9 @@ public class ThermalLabelPdfRenderer {
         cellCor.setPaddingRight(0);
         Phrase phraseCor = new Phrase();
         phraseCor.add(new Phrase("COR / ACABAMENTO: ", FONTE_SPEC_ROTULO));
-        phraseCor.add(new Phrase(data.aluminumColor(), FONTE_SPEC_VALOR));
+        phraseCor.add(new Phrase(
+                data.aluminumColor() != null ? data.aluminumColor() : NAO_INFORMADO,
+                FONTE_SPEC_VALOR));
         cellCor.addElement(phraseCor);
         table.addCell(cellCor);
 
@@ -264,7 +268,9 @@ public class ThermalLabelPdfRenderer {
         cellVidro.setPaddingRight(0);
         Phrase phraseVidro = new Phrase();
         phraseVidro.add(new Phrase("VIDRO ESPECIFICADO: ", FONTE_SPEC_ROTULO));
-        phraseVidro.add(new Phrase(data.glassType(), FONTE_SPEC_VALOR));
+        phraseVidro.add(new Phrase(
+                data.glassType() != null ? data.glassType() : NAO_INFORMADO,
+                FONTE_SPEC_VALOR));
         cellVidro.addElement(phraseVidro);
         table.addCell(cellVidro);
 
@@ -284,7 +290,9 @@ public class ThermalLabelPdfRenderer {
 
         Phrase phrase = new Phrase();
         phrase.add(new Phrase("LOCAL / OBS: ", FONTE_SPEC_ROTULO));
-        phrase.add(new Phrase(data.environmentOrLocation(), FONTE_SPEC_VALOR));
+        phrase.add(new Phrase(
+                data.environmentOrLocation() != null ? data.environmentOrLocation() : NAO_INFORMADO,
+                FONTE_SPEC_VALOR));
         cell.addElement(phrase);
 
         table.addCell(cell);
