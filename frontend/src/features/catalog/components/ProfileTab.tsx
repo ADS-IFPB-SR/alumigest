@@ -1,25 +1,34 @@
-import { Table } from '../../../components/ui/Table';
+import type { StockItem } from '@/features/stock';
 import { useProfiles } from '../hooks/useCatalog';
 import type { ProfileDTO } from '../types';
 import { filterByStatus } from '../utils/filters';
+import type { CatalogTableColumn } from '../utils/stockColumns';
+import { CatalogMaterialSection } from './CatalogMaterialSection';
+import type { MobileCardMetadata } from './CatalogMobileMaterialCard';
 
-const columns = [
+const formatProfileLength = (row: ProfileDTO) =>
+  (row.standardLengthM ?? 0).toFixed(1).replace('.', ',');
+
+const formatProfilePrice = (row: ProfileDTO) =>
+  `R$ ${(row.salePrice ?? 0).toFixed(2).replace('.', ',')}`;
+
+const specColumns: readonly CatalogTableColumn<ProfileDTO>[] = [
   {
     header: 'Código',
+    className: 'whitespace-nowrap',
     accessor: (row: ProfileDTO) => (
       <span
         data-cy="profile-reference"
-        className="font-data-mono text-data-mono text-on-surface-variant"
+        className="font-data-mono text-data-mono text-on-surface-variant whitespace-nowrap"
       >
-        {row.commercialReference}
+        {row.commercialReference || '—'}
       </span>
     ),
-    exportValue: (row: ProfileDTO) =>
-      row.commercialReference,
+    exportValue: (row: ProfileDTO) => row.commercialReference,
   },
-
   {
     header: 'Descrição',
+    className: 'min-w-[180px]',
     accessor: (row: ProfileDTO) => (
       <span
         data-cy="profile-name"
@@ -30,66 +39,48 @@ const columns = [
     ),
     exportValue: (row: ProfileDTO) => row.name,
   },
-
   {
     header: 'Tam. Barra (m)',
+    className: 'whitespace-nowrap',
     accessor: (row: ProfileDTO) => (
       <span
         data-cy="profile-length"
-        className="font-data-mono text-data-mono text-secondary"
+        className="font-data-mono text-data-mono text-secondary whitespace-nowrap"
       >
-        {(row.standardLengthM ?? 0)
-          .toFixed(1)
-          .replace('.', ',')}
+        {formatProfileLength(row)}
       </span>
     ),
-    exportValue: (row: ProfileDTO) =>
-      (row.standardLengthM ?? 0).toFixed(1).replace('.', ','),
+    exportValue: formatProfileLength,
   },
-
   {
     header: 'Preço Venda',
+    className: 'whitespace-nowrap',
     accessor: (row: ProfileDTO) => (
       <span
         data-cy="profile-sale-price"
-        className="font-data-mono text-data-mono text-on-surface"
+        className="font-data-mono text-data-mono text-on-surface whitespace-nowrap"
       >
-        R${' '}
-        {(row.salePrice ?? 0)
-          .toFixed(2)
-          .replace('.', ',')}
+        {formatProfilePrice(row)}
       </span>
     ),
-    exportValue: (row: ProfileDTO) =>
-      `R$ ${(row.salePrice ?? 0)
-        .toFixed(2)
-        .replace('.', ',')}`,
-    align: 'right' as const,
-  },
-
-  {
-    header: 'Status',
-    accessor: (row: ProfileDTO) => (
-      <span
-        data-cy="profile-status"
-        className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ${
-          row.active
-            ? 'border border-success/30 bg-success/10 text-success'
-            : 'border border-error/30 bg-error/10 text-error'
-        }`}
-      >
-        {row.active ? 'Ativo' : 'Inativo'}
-      </span>
-    ),
-    exportValue: (row: ProfileDTO) =>
-      row.active ? 'Ativo' : 'Inativo',
-    align: 'center' as const,
+    exportValue: formatProfilePrice,
+    align: 'right',
   },
 ];
+
+const mobileMeta: MobileCardMetadata<ProfileDTO> = {
+  reference: (row) => row.commercialReference || '-',
+  name: (row) => row.name,
+  specSummary: (row) => `Barra ${formatProfileLength(row)} m`,
+  priceLabel: formatProfilePrice,
+};
 
 interface Props {
   readonly searchQuery: string;
   readonly filterStatus: 'ALL' | 'ACTIVE' | 'INACTIVE';
+  readonly stockByMaterialId?: ReadonlyMap<string, StockItem>;
+  readonly onlyNeedsPurchase?: boolean;
+  readonly hideStockAlert?: boolean;
   readonly onEdit: (item: ProfileDTO) => void;
   readonly onViewDetails: (item: ProfileDTO) => void;
 }
@@ -97,6 +88,9 @@ interface Props {
 export function ProfileTab({
   searchQuery,
   filterStatus,
+  stockByMaterialId,
+  onlyNeedsPurchase,
+  hideStockAlert,
   onEdit,
   onViewDetails,
 }: Props) {
@@ -109,7 +103,7 @@ export function ProfileTab({
       return false;
     }
 
-    const term = searchQuery.toLowerCase();
+    const term = searchQuery.trim().toLowerCase();
 
     return (
       profile.name.toLowerCase().includes(term) ||
@@ -117,32 +111,24 @@ export function ProfileTab({
     );
   });
 
-  if (isLoading) {
-    return (
-      <div
-        data-cy="profile-loading"
-        className="p-md text-secondary"
-      >
-        Carregando perfis...
-      </div>
-    );
-  }
-
   return (
-    <div
-      data-cy="profile-table"
-      className="flex-1 overflow-hidden flex flex-col p-xs sm:p-md"
-    >
-      <Table
-        columns={columns}
-        data={filteredProfiles}
-        onEdit={(row) => onEdit(row)}
-        onViewDetails={(row) => onViewDetails(row)}
-        rowTestId={() => 'profile-row'}
-        rowTestAttributes={(row) => ({
-          'data-profile-name': row.name,
-        })}
-      />
-    </div>
+    <CatalogMaterialSection
+      dataCyContainer="profile-table"
+      dataCyLoading="profile-loading"
+      loadingMessage="Carregando perfis..."
+      isLoading={isLoading}
+      rows={filteredProfiles}
+      specColumns={specColumns}
+      statusDataCy="profile-status"
+      defaultUnitMeasure="BARRA_6M"
+      stockByMaterialId={stockByMaterialId}
+      onlyNeedsPurchase={onlyNeedsPurchase}
+      hideStockAlert={hideStockAlert}
+      mobileMeta={mobileMeta}
+      rowTestId="profile-row"
+      rowTestAttributes={(row) => ({ 'data-profile-name': row.name })}
+      onEdit={onEdit}
+      onViewDetails={onViewDetails}
+    />
   );
 }

@@ -1,8 +1,42 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AxiosError } from 'axios';
 import { catalogApi } from '../services/catalogApi';
-import type { GlassDTO, ProfileDTO, HardwareDTO, FilmDTO, ProductRequest } from '../types';
+import type {
+  GlassDTO,
+  ProfileDTO,
+  HardwareDTO,
+  FilmDTO,
+  PageResponse,
+  ProductRequest,
+} from '../types';
 import toast from 'react-hot-toast';
+
+/**
+ * Carrega todas as páginas de uma categoria do catálogo quando totalPages > 1,
+ * garantindo que busca, status, saldos de estoque e paginação na UI operem sobre 100% dos materiais.
+ */
+async function fetchAllCatalogPages<T>(
+  fetchPage: (page?: number) => Promise<PageResponse<T>>
+): Promise<PageResponse<T>> {
+  const firstPage = await fetchPage();
+  const totalPages = firstPage?.totalPages ?? firstPage?.page?.totalPages ?? 1;
+  if (totalPages <= 1) {
+    return firstPage;
+  }
+
+  const remainingPageNumbers = Array.from({ length: totalPages - 1 }, (_, idx) => idx + 1);
+  const remainingPages = await Promise.all(
+    remainingPageNumbers.map((pageNumber) => fetchPage(pageNumber))
+  );
+
+  return {
+    ...firstPage,
+    content: [
+      ...(firstPage.content || []),
+      ...remainingPages.flatMap((pageData) => pageData.content || []),
+    ],
+  };
+}
 
 interface ApiErrorResponse {
   message?: string;
@@ -21,7 +55,7 @@ function extractErrorMessage(error: unknown, fallback: string): string {
 export const useGlasses = () => {
   return useQuery({
     queryKey: ['glasses'],
-    queryFn: catalogApi.getGlasses,
+    queryFn: () => fetchAllCatalogPages(catalogApi.getGlasses),
   });
 };
 
@@ -59,7 +93,7 @@ export const useUpdateGlass = () => {
 export const useProfiles = () => {
   return useQuery({
     queryKey: ['profiles'],
-    queryFn: catalogApi.getProfiles,
+    queryFn: () => fetchAllCatalogPages(catalogApi.getProfiles),
   });
 };
 
@@ -97,7 +131,7 @@ export const useUpdateProfile = () => {
 export const useHardwares = () => {
   return useQuery({
     queryKey: ['hardwares'],
-    queryFn: catalogApi.getHardwares,
+    queryFn: () => fetchAllCatalogPages(catalogApi.getHardwares),
   });
 };
 
@@ -135,7 +169,7 @@ export const useUpdateHardware = () => {
 export const useFilms = () => {
   return useQuery({
     queryKey: ['films'],
-    queryFn: catalogApi.getFilms,
+    queryFn: () => fetchAllCatalogPages(catalogApi.getFilms),
   });
 };
 

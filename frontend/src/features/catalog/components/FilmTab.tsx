@@ -1,25 +1,31 @@
-import { Table } from '../../../components/ui/Table';
+import type { StockItem } from '@/features/stock';
 import { useFilms } from '../hooks/useCatalog';
 import type { FilmDTO } from '../types';
 import { filterByStatus } from '../utils/filters';
+import type { CatalogTableColumn } from '../utils/stockColumns';
+import { CatalogMaterialSection } from './CatalogMaterialSection';
+import type { MobileCardMetadata } from './CatalogMobileMaterialCard';
 
-const columns = [
+const formatFilmPrice = (row: FilmDTO) =>
+  `R$ ${(row.salePrice ?? 0).toFixed(2).replace('.', ',')}`;
+
+const specColumns: readonly CatalogTableColumn<FilmDTO>[] = [
   {
     header: 'Referência',
+    className: 'whitespace-nowrap',
     accessor: (row: FilmDTO) => (
       <span
         data-cy="film-reference"
-        className="font-data-mono text-data-mono text-on-surface-variant"
+        className="font-data-mono text-data-mono text-on-surface-variant whitespace-nowrap"
       >
-        {row.commercialReference || row.skuCode}
+        {row.commercialReference || row.skuCode || '—'}
       </span>
     ),
-    exportValue: (row: FilmDTO) =>
-      row.commercialReference || row.skuCode,
+    exportValue: (row: FilmDTO) => row.commercialReference || row.skuCode,
   },
-
   {
     header: 'Descrição',
+    className: 'min-w-[180px]',
     accessor: (row: FilmDTO) => (
       <span
         data-cy="film-name"
@@ -30,50 +36,35 @@ const columns = [
     ),
     exportValue: (row: FilmDTO) => row.name,
   },
-
   {
     header: 'Preço Venda (m²)',
+    className: 'whitespace-nowrap',
     accessor: (row: FilmDTO) => (
       <span
         data-cy="film-sale-price"
-        className="font-data-mono text-data-mono text-on-surface"
+        className="font-data-mono text-data-mono text-on-surface whitespace-nowrap"
       >
-        R${' '}
-        {(row.salePrice ?? 0)
-          .toFixed(2)
-          .replace('.', ',')}
+        {formatFilmPrice(row)}
       </span>
     ),
-    exportValue: (row: FilmDTO) =>
-      `R$ ${(row.salePrice ?? 0)
-        .toFixed(2)
-        .replace('.', ',')}`,
-    align: 'right' as const,
-  },
-
-  {
-    header: 'Status',
-    accessor: (row: FilmDTO) => (
-      <span
-        data-cy="film-status"
-        className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ${
-          row.active
-            ? 'border border-success/30 bg-success/10 text-success'
-            : 'border border-error/30 bg-error/10 text-error'
-        }`}
-      >
-        {row.active ? 'Ativo' : 'Inativo'}
-      </span>
-    ),
-    exportValue: (row: FilmDTO) =>
-      row.active ? 'Ativo' : 'Inativo',
-    align: 'center' as const,
+    exportValue: formatFilmPrice,
+    align: 'right',
   },
 ];
+
+const mobileMeta: MobileCardMetadata<FilmDTO> = {
+  reference: (row) => row.commercialReference || row.skuCode || '-',
+  name: (row) => row.name,
+  specSummary: (row) => row.colorFinish || '',
+  priceLabel: (row) => `${formatFilmPrice(row)} / m²`,
+};
 
 interface Props {
   readonly searchQuery: string;
   readonly filterStatus: 'ALL' | 'ACTIVE' | 'INACTIVE';
+  readonly stockByMaterialId?: ReadonlyMap<string, StockItem>;
+  readonly onlyNeedsPurchase?: boolean;
+  readonly hideStockAlert?: boolean;
   readonly onEdit: (item: FilmDTO) => void;
   readonly onViewDetails: (item: FilmDTO) => void;
 }
@@ -81,13 +72,13 @@ interface Props {
 export function FilmTab({
   searchQuery,
   filterStatus,
+  stockByMaterialId,
+  onlyNeedsPurchase,
+  hideStockAlert,
   onEdit,
   onViewDetails,
 }: Props) {
-  const {
-    data,
-    isLoading,
-  } = useFilms();
+  const { data, isLoading } = useFilms();
 
   const films = data?.content || [];
 
@@ -96,7 +87,7 @@ export function FilmTab({
       return false;
     }
 
-    const term = searchQuery.toLowerCase();
+    const term = searchQuery.trim().toLowerCase();
 
     return (
       film.name.toLowerCase().includes(term) ||
@@ -105,32 +96,24 @@ export function FilmTab({
     );
   });
 
-  if (isLoading) {
-    return (
-      <div
-        data-cy="film-loading"
-        className="p-md text-secondary"
-      >
-        Carregando películas...
-      </div>
-    );
-  }
-
   return (
-    <div
-      data-cy="film-table"
-      className="flex-1 overflow-hidden flex flex-col p-xs sm:p-md"
-    >
-      <Table
-        columns={columns}
-        data={filteredFilms}
-        onEdit={(row) => onEdit(row)}
-        onViewDetails={(row) => onViewDetails(row)}
-        rowTestId={() => 'film-row'}
-        rowTestAttributes={(row) => ({
-          'data-film-name': row.name,
-        })}
-      />
-    </div>
+    <CatalogMaterialSection
+      dataCyContainer="film-table"
+      dataCyLoading="film-loading"
+      loadingMessage="Carregando películas..."
+      isLoading={isLoading}
+      rows={filteredFilms}
+      specColumns={specColumns}
+      statusDataCy="film-status"
+      defaultUnitMeasure="M2"
+      stockByMaterialId={stockByMaterialId}
+      onlyNeedsPurchase={onlyNeedsPurchase}
+      hideStockAlert={hideStockAlert}
+      mobileMeta={mobileMeta}
+      rowTestId="film-row"
+      rowTestAttributes={(row) => ({ 'data-film-name': row.name })}
+      onEdit={onEdit}
+      onViewDetails={onViewDetails}
+    />
   );
 }
