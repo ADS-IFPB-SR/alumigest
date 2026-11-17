@@ -78,6 +78,7 @@ export const useReserveStockForOrder = () => {
     mutationFn: (orderId: string) => stockApi.reserveForOrder(orderId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['stock-balances'] });
+      queryClient.invalidateQueries({ queryKey: ['stock-item'] });
       queryClient.invalidateQueries({ queryKey: ['stock-movements'] });
     },
     onError: (error: unknown) => {

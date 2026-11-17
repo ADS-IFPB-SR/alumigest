@@ -15,6 +15,16 @@ import java.util.UUID;
 public interface StockPort {
 
     /**
+     * Reserva matérias-primas automaticamente no modelo Make-to-Order (RN-05)
+     * ao aprovar/converter uma O.S. (US-13) ou transicionar para {@code WAITING_PRODUCTION}.
+     *
+     * @param orderId Identificador da Ordem de Serviço
+     */
+    default void reserveMaterials(UUID orderId) {
+        reserveMaterialsForOrder(orderId);
+    }
+
+    /**
      * Reserva matérias-primas automaticamente ao aprovar uma Ordem de Serviço (US-13)
      * ou confirmar uma Venda Avulsa (US-46).
      *
