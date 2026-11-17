@@ -182,16 +182,34 @@ public class StockItem {
     }
 
     /**
+     * Indica se o saldo disponível está negativo (demanda de O.S. supera o estoque físico).
+     *
+     * @return {@code true} quando há necessidade imediata de compra
+     */
+    public boolean needsPurchase() {
+        return this.availableQuantity.compareTo(BigDecimal.ZERO) < 0;
+    }
+
+    /**
+     * Indica se o saldo disponível atingiu ou está abaixo do estoque mínimo configurado.
+     *
+     * @return {@code true} quando o estoque mínimo positivo foi atingido ou violado
+     */
+    public boolean isBelowMinimumStock() {
+        return this.minimumStock.compareTo(BigDecimal.ZERO) > 0
+            && this.availableQuantity.compareTo(this.minimumStock) <= 0;
+    }
+
+    /**
      * Calcula o status de alerta de suprimento com base no saldo disponível atual.
      *
      * @return status de alerta correspondente
      */
     public StockAlertStatus resolveAlertStatus() {
-        if (this.availableQuantity.compareTo(BigDecimal.ZERO) < 0) {
+        if (needsPurchase()) {
             return StockAlertStatus.NEED_PURCHASE;
         }
-        if (this.minimumStock.compareTo(BigDecimal.ZERO) > 0
-                && this.availableQuantity.compareTo(this.minimumStock) <= 0) {
+        if (isBelowMinimumStock()) {
             return StockAlertStatus.ORDER_POINT;
         }
         return StockAlertStatus.IN_STOCK;

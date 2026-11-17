@@ -22,6 +22,8 @@ import br.edu.ifpb.alumigest.stock.domain.StockAlertStatus;
 import br.edu.ifpb.alumigest.stock.domain.StockItem;
 import br.edu.ifpb.alumigest.stock.domain.StockMovement;
 import br.edu.ifpb.alumigest.stock.domain.StockMovementType;
+import br.edu.ifpb.alumigest.stock.domain.StockSortField;
+import br.edu.ifpb.alumigest.stock.dto.StockBalanceFilter;
 import br.edu.ifpb.alumigest.stock.dto.StockItemResponseDTO;
 import br.edu.ifpb.alumigest.stock.dto.StockMovementRequestDTO;
 import br.edu.ifpb.alumigest.stock.mapper.StockMapper;
@@ -339,5 +341,100 @@ class StockServiceTest {
 
         assertThatThrownBy(() -> stockService.cancelReservationsForOrder(missingId))
             .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    private List<StockItem> buildCatalogStockFixtures() {
+        Material glassNegative = buildMaterial(
+            UUID.randomUUID(), "VIDRO", "VID-010", "Vidro Fumê 10mm");
+        StockItem deficitItem = new StockItem(glassNegative);
+        deficitItem.addPhysical(new BigDecimal("4.00"));
+        deficitItem.reserve(new BigDecimal("10.00"));
+        deficitItem.updateMinimumStock(new BigDecimal("5.00"));
+
+        Material profileReorder = buildMaterial(
+            UUID.randomUUID(), "ALUMINIO", "PER-001", "Perfil Suprema");
+        StockItem reorderItem = new StockItem(profileReorder);
+        reorderItem.addPhysical(new BigDecimal("5.00"));
+        reorderItem.updateMinimumStock(new BigDecimal("5.00"));
+
+        Material hardwareHealthy = buildMaterial(
+            UUID.randomUUID(), "FERRAGEM", "FER-001", "Fechadura Concha");
+        StockItem healthyItem = new StockItem(hardwareHealthy);
+        healthyItem.addPhysical(new BigDecimal("12.00"));
+        healthyItem.updateMinimumStock(new BigDecimal("5.00"));
+
+        Material filmZeroMin = buildMaterial(
+            UUID.randomUUID(), "PELICULA", "PEL-001", "Película Jateada");
+        StockItem zeroMinItem = new StockItem(filmZeroMin);
+
+        return List.of(healthyItem, reorderItem, deficitItem, zeroMinItem);
+    }
+
+    @Test
+    @DisplayName("[Tabela de Decisão] listStockBalances: combinação needsPurchase e belowMinStock usa OR")
+    void shouldFilterBalancesWithDecisionTableCombinations() {
+        when(stockItemRepository.findAllWithMaterial()).thenReturn(buildCatalogStockFixtures());
+
+        List<StockItemResponseDTO> onlyDeficit = stockService.listStockBalances(
+            new StockBalanceFilter(null, null, null, true, false, StockSortField.NAME)
+        );
+        assertThat(onlyDeficit).extracting(StockItemResponseDTO::materialSku)
+            .containsExactly("VID-010");
+
+        List<StockItemResponseDTO> onlyBelowMin = stockService.listStockBalances(
+            new StockBalanceFilter(null, null, null, false, true, StockSortField.NAME)
+        );
+        assertThat(onlyBelowMin).extracting(StockItemResponseDTO::materialSku)
+            .containsExactly("PER-001", "VID-010");
+
+        List<StockItemResponseDTO> combinedOr = stockService.listStockBalances(
+            new StockBalanceFilter(null, null, null, true, true, StockSortField.CRITICALITY)
+        );
+        assertThat(combinedOr).extracting(StockItemResponseDTO::materialSku)
+            .containsExactly("VID-010", "PER-001");
+    }
+
+    @Test
+    @DisplayName("[Análise de Valor Limite] listStockBalances: respeita fronteira available <= minimumStock")
+    void shouldEvaluateBoundaryBetweenOrderPointAndInStock() {
+        Material exactLimit = buildMaterial(
+            UUID.randomUUID(), "VIDRO", "VID-LIM", "Vidro Limite");
+        StockItem atBoundary = new StockItem(exactLimit);
+        atBoundary.addPhysical(new BigDecimal("5.0000"));
+        atBoundary.updateMinimumStock(new BigDecimal("5.0000"));
+
+        Material aboveLimit = buildMaterial(
+            UUID.randomUUID(), "VIDRO", "VID-OK", "Vidro Acima");
+        StockItem justAbove = new StockItem(aboveLimit);
+        justAbove.addPhysical(new BigDecimal("5.0100"));
+        justAbove.updateMinimumStock(new BigDecimal("5.0000"));
+
+        when(stockItemRepository.findAllWithMaterial()).thenReturn(List.of(atBoundary, justAbove));
+
+        List<StockItemResponseDTO> belowMin = stockService.listStockBalances(
+            new StockBalanceFilter(null, null, null, null, true, StockSortField.AVAILABLE)
+        );
+
+        assertThat(belowMin).hasSize(1);
+        assertThat(belowMin.get(0).materialSku()).isEqualTo("VID-LIM");
+        assertThat(belowMin.get(0).alertStatus()).isEqualTo(StockAlertStatus.ORDER_POINT);
+    }
+
+    @Test
+    @DisplayName("[Partição de Equivalência] listStockBalances: filtra por categoria, busca e ordenação")
+    void shouldFilterByCategorySearchAndSortCriteria() {
+        when(stockItemRepository.findAllWithMaterial()).thenReturn(buildCatalogStockFixtures());
+
+        List<StockItemResponseDTO> byCategoryAndSearch = stockService.listStockBalances(
+            new StockBalanceFilter("PROFILE", null, "suprema", null, null, StockSortField.NAME)
+        );
+        assertThat(byCategoryAndSearch).extracting(StockItemResponseDTO::materialSku)
+            .containsExactly("PER-001");
+
+        List<StockItemResponseDTO> sortedByAvailable = stockService.listStockBalances(
+            new StockBalanceFilter(null, null, null, null, null, StockSortField.AVAILABLE)
+        );
+        assertThat(sortedByAvailable).extracting(StockItemResponseDTO::materialSku)
+            .containsExactly("VID-010", "PEL-001", "PER-001", "FER-001");
     }
 }
