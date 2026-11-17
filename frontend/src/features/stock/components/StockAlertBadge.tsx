@@ -48,6 +48,35 @@ const BADGE_STYLES: Readonly<Record<StockDisplayAlertStatus, BadgeStyleConfig>> 
   },
 };
 
+const IN_STOCK_LABELS: Readonly<Record<StockAlertBadgeVariant, string>> = {
+  kanban: 'Insumos Disponíveis',
+  catalog: 'Em Estoque',
+  default: 'Em Dia',
+};
+
+function resolveNeedPurchaseLabel(
+  variant: StockAlertBadgeVariant,
+  availableQuantity?: number,
+  unitMeasure = ''
+): string {
+  if (variant === 'kanban') {
+    return 'Falta Insumo / Comprar';
+  }
+
+  const hasDeficit = availableQuantity !== undefined && availableQuantity < 0;
+  if (variant === 'catalog') {
+    return hasDeficit
+      ? `Falta ${formatStockQuantity(Math.abs(availableQuantity), unitMeasure)}`
+      : 'Falta Insumo';
+  }
+
+  if (!hasDeficit) {
+    return 'Comprar';
+  }
+  const unitSuffix = unitMeasure ? ` ${unitMeasure}` : '';
+  return `Comprar (${Math.abs(availableQuantity)}${unitSuffix})`;
+}
+
 function resolveBadgeLabel(
   status: StockDisplayAlertStatus,
   variant: StockAlertBadgeVariant,
@@ -58,41 +87,16 @@ function resolveBadgeLabel(
   if (customLabel) {
     return customLabel;
   }
-
   if (status === 'NO_BALANCE') {
     return 'Sem Saldo';
   }
-
   if (status === 'ORDER_POINT') {
     return 'Ponto de Pedido';
   }
-
   if (status === 'IN_STOCK') {
-    if (variant === 'kanban') {
-      return 'Insumos Disponíveis';
-    }
-    return variant === 'catalog' ? 'Em Estoque' : 'Em Dia';
+    return IN_STOCK_LABELS[variant];
   }
-
-  // NEED_PURCHASE
-  if (variant === 'kanban') {
-    return 'Falta Insumo / Comprar';
-  }
-
-  if (variant === 'catalog') {
-    if (availableQuantity !== undefined && availableQuantity < 0) {
-      return `Falta ${formatStockQuantity(Math.abs(availableQuantity), unitMeasure)}`;
-    }
-    return 'Falta Insumo';
-  }
-
-  if (availableQuantity !== undefined && availableQuantity < 0) {
-    const absQty = Math.abs(availableQuantity);
-    const unit = unitMeasure ? ` ${unitMeasure}` : '';
-    return `Comprar (${absQty}${unit})`;
-  }
-
-  return 'Comprar';
+  return resolveNeedPurchaseLabel(variant, availableQuantity, unitMeasure);
 }
 
 export const StockAlertBadge: React.FC<StockAlertBadgeProps> = ({

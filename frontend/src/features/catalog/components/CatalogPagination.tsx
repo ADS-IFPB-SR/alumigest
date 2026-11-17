@@ -35,9 +35,13 @@ export function CatalogPagination({
     >
       <div className="flex items-center gap-3 text-xs text-on-surface-variant">
         <span>
-          Exibindo <strong className="font-data-mono text-on-surface">{startItem}</strong>–
-          <strong className="font-data-mono text-on-surface">{endItem}</strong> de{' '}
-          <strong className="font-data-mono text-on-surface">{totalElements}</strong> materiais
+          {'Exibindo '}
+          <strong className="font-data-mono text-on-surface">{startItem}</strong>
+          {'–'}
+          <strong className="font-data-mono text-on-surface">{endItem}</strong>
+          {' de '}
+          <strong className="font-data-mono text-on-surface">{totalElements}</strong>
+          {' materiais'}
         </span>
 
         <div className="flex items-center gap-1.5 border-l border-outline-variant pl-3">

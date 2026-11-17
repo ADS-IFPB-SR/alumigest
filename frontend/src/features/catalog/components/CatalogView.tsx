@@ -239,7 +239,9 @@ export function CatalogView() {
             <span className="material-symbols-outlined text-[18px]" aria-hidden="true">
               warning
             </span>
-            Não foi possível carregar os saldos de estoque. Os valores exibidos podem estar desatualizados.
+            <span>
+              Não foi possível carregar os saldos de estoque. Os valores exibidos podem estar desatualizados.
+            </span>
           </span>
           <button
             type="button"
