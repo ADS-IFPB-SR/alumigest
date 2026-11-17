@@ -35,6 +35,7 @@ describe('stockPresentation — Utilitários de Apresentação de Estoque (US-22
     expect(formatStockUnit('PAR', 1)).toBe('par');
     expect(formatStockUnit('PAR', 3)).toBe('pares');
     expect(formatStockUnit('UN', 5)).toBe('un');
+    expect(formatStockUnit('CAIXA', 2)).toBe('caixa');
     expect(formatStockUnit(undefined, 2)).toBe('un');
     expect(formatStockNumber(-0)).toBe('0');
     expect(formatStockQuantity(-5.75, 'M2')).toBe('-5,75 m²');
@@ -111,5 +112,42 @@ describe('stockPresentation — Utilitários de Apresentação de Estoque (US-22
     ]);
     expect(sorted[0].availableQuantity).toBe(-8);
     expect(sorted[1].availableQuantity).toBe(-2);
+  });
+
+  it('[Fallback] deve calcular displayStatus localmente quando alertStatus vier omitido', () => {
+    expect(
+      resolveCatalogStockSnapshot(
+        makeStockItem({
+          physicalQuantity: 1,
+          reservedQuantity: 4,
+          availableQuantity: -3,
+          alertStatus: undefined as unknown as StockItem['alertStatus'],
+        })
+      ).displayStatus
+    ).toBe('NEED_PURCHASE');
+
+    expect(
+      resolveCatalogStockSnapshot(
+        makeStockItem({
+          physicalQuantity: 5,
+          reservedQuantity: 0,
+          availableQuantity: 5,
+          minimumStock: 5,
+          alertStatus: undefined as unknown as StockItem['alertStatus'],
+        })
+      ).displayStatus
+    ).toBe('ORDER_POINT');
+
+    expect(
+      resolveCatalogStockSnapshot(
+        makeStockItem({
+          physicalQuantity: 10,
+          reservedQuantity: 0,
+          availableQuantity: 10,
+          minimumStock: 5,
+          alertStatus: undefined as unknown as StockItem['alertStatus'],
+        })
+      ).displayStatus
+    ).toBe('IN_STOCK');
   });
 });

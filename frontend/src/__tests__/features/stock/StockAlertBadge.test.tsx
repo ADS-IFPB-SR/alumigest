@@ -68,6 +68,12 @@ describe('StockAlertBadge', () => {
 
       rerender(<StockAlertBadge variant="catalog" status="NO_BALANCE" />);
       expect(screen.getByTestId('badge-stock-no-balance')).toHaveTextContent('Sem Saldo');
+
+      rerender(<StockAlertBadge variant="catalog" status="NEED_PURCHASE" />);
+      expect(screen.getByTestId('badge-stock-need-purchase')).toHaveTextContent('Falta Insumo');
+
+      rerender(<StockAlertBadge status="IN_STOCK" label="Estoque OK" />);
+      expect(screen.getByText('Estoque OK')).toBeInTheDocument();
     });
 
     it('[Tema Escuro] deve renderizar badges com classes dark preservadas', () => {
@@ -98,6 +104,11 @@ describe('StockAlertBadge', () => {
 
       fireEvent.mouseLeave(badge);
       expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+    });
+
+    it('deve renderizar "Insumos Disponíveis" quando variant="kanban" e status="IN_STOCK"', () => {
+      render(<StockAlertBadge status="IN_STOCK" variant="kanban" />);
+      expect(screen.getByText('Insumos Disponíveis')).toBeInTheDocument();
     });
   });
 });
