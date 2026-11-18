@@ -78,7 +78,7 @@ describe('US-17.5: Homologação E2E — Emissão de Etiquetas Térmicas de Iden
       body: multiItemOrder,
     }).as('getOrderDetails');
 
-    cy.intercept('GET', `**/api/**/orders/${orderId}/labels-pdf*`, {
+    cy.intercept('POST', `**/api/**/orders/${orderId}/labels-pdf*`, {
       statusCode: 200,
       headers: {
         'content-type': 'application/pdf',
@@ -159,7 +159,7 @@ describe('US-17.5: Homologação E2E — Emissão de Etiquetas Térmicas de Iden
       body: multiItemOrder,
     }).as('getOrderDetails');
 
-    cy.intercept('GET', `**/api/**/orders/${orderId}/labels-pdf*`, {
+    cy.intercept('POST', `**/api/**/orders/${orderId}/labels-pdf*`, {
       statusCode: 200,
       headers: {
         'content-type': 'application/pdf',
@@ -199,9 +199,8 @@ describe('US-17.5: Homologação E2E — Emissão de Etiquetas Térmicas de Iden
     cy.get('[data-testid="filter-piece-all"]').click();
     cy.get('[data-testid="thermal-label-card"]').should('have.length', 5);
 
-    // E a interface disponibiliza botões para "Baixar PDF" e "Imprimir Todas na Térmica"
+    // E a interface disponibiliza o botão de impressão/download das etiquetas filtradas ou completas
     cy.get('[data-testid="btn-modal-download-pdf"]').should('be.visible');
-    cy.get('[data-testid="btn-modal-print-thermal"]').should('be.visible');
 
     // E fecha o modal normalmente
     cy.get('[data-testid="btn-close-thermal-modal"]').click();
@@ -215,7 +214,7 @@ describe('US-17.5: Homologação E2E — Emissão de Etiquetas Térmicas de Iden
       body: multiItemOrder,
     }).as('getOrderDetails');
 
-    cy.intercept('GET', `**/api/**/orders/${orderId}/labels-pdf*`, {
+    cy.intercept('POST', `**/api/**/orders/${orderId}/labels-pdf*`, {
       statusCode: 200,
       headers: {
         'content-type': 'application/pdf',
@@ -227,8 +226,11 @@ describe('US-17.5: Homologação E2E — Emissão de Etiquetas Térmicas de Iden
     cy.visit(`/ordens-servico/${orderId}`);
     cy.wait('@getOrderDetails');
 
-    // Espiona as funções de gerenciamento de Blob URL da janela do navegador
+    cy.clock(Date.now(), ['setTimeout']);
+
+    // Espiona as funções de gerenciamento de Blob URL e evita abertura real de aba/popup
     cy.window().then((win) => {
+      cy.stub(win, 'open').returns(null).as('windowOpen');
       cy.spy(win.URL, 'createObjectURL').as('createBlobUrl');
       cy.spy(win.URL, 'revokeObjectURL').as('revokeBlobUrl');
     });
@@ -244,12 +246,13 @@ describe('US-17.5: Homologação E2E — Emissão de Etiquetas Térmicas de Iden
       expect(response?.headers?.['content-disposition']).to.contain(`etiquetas-${orderCodigo}.pdf`);
     });
 
-    // E o frontend cria e revoga o Blob URL em memória determinística após o download
+    // E o frontend cria o Blob URL e exibe notificação toast de sucesso
     cy.get('@createBlobUrl').should('have.been.called');
-    cy.get('@revokeBlobUrl').should('have.been.called');
-
-    // E uma notificação toast de sucesso é exibida
     cy.contains(/Etiquetas térmicas (baixadas|geradas) com sucesso!/i).should('be.visible');
+
+    // E revoga o Blob URL em memória após o timeout programado de 120s
+    cy.tick(120000);
+    cy.get('@revokeBlobUrl').should('have.been.called');
   });
 
   it('Cenário 5: Tratamento de Exceção para O.S. Inexistente (HTTP 404) ou sem Itens (HTTP 422)', () => {
@@ -278,7 +281,7 @@ describe('US-17.5: Homologação E2E — Emissão de Etiquetas Térmicas de Iden
       body: multiItemOrder,
     }).as('getOrderDetails');
 
-    cy.intercept('GET', `**/api/**/orders/${orderId}/labels-pdf*`, {
+    cy.intercept('POST', `**/api/**/orders/${orderId}/labels-pdf*`, {
       statusCode: 422,
       body: {
         title: 'Regra de Negócio Violada',
@@ -290,13 +293,14 @@ describe('US-17.5: Homologação E2E — Emissão de Etiquetas Térmicas de Iden
     cy.visit(`/ordens-servico/${orderId}`);
     cy.wait('@getOrderDetails');
 
-    cy.get('[data-testid="btn-download-labels-pdf"]').click();
+    cy.get('[data-testid="btn-open-thermal-modal"]').click();
+    cy.get('[data-testid="btn-modal-download-pdf"]').should('be.visible').click();
     cy.wait('@getLabels422');
 
     // O sistema captura o erro 422 e exibe toast de erro descritivo em pt-BR
     cy.contains(/erro ao gerar as etiquetas térmicas/i).should('be.visible');
     // E o botão é restaurado para o estado habilitado
-    cy.get('[data-testid="btn-download-labels-pdf"]').should('not.be.disabled');
+    cy.get('[data-testid="btn-modal-download-pdf"]').should('not.be.disabled');
   });
 
   it('Cenário Bônus: Bloqueio e Ocultação das Ações de Etiquetas para Pedidos Cancelados', () => {

@@ -1,9 +1,18 @@
 import type { ProductionOrderSummary } from '../../../src/features/production/services/productionApi';
 
 describe('US-18: Acompanhar Produção via Painel Kanban de Pedidos de Venda (Suíte E2E)', () => {
-  const ontemIso = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-  const amanhaIso = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-  const futuroIso = new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  const toLocalDateIso = (offsetDays: number) => {
+    const d = new Date();
+    d.setDate(d.getDate() + offsetDays);
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
+  const ontemIso = toLocalDateIso(-1);
+  const amanhaIso = toLocalDateIso(1);
+  const futuroIso = toLocalDateIso(15);
 
   const mockProductionOrders: ProductionOrderSummary[] = [
     {

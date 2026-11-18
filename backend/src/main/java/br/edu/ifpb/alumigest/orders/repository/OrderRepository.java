@@ -3,6 +3,7 @@ package br.edu.ifpb.alumigest.orders.repository;
 import br.edu.ifpb.alumigest.orders.domain.ApprovalChannel;
 import br.edu.ifpb.alumigest.orders.domain.Order;
 import br.edu.ifpb.alumigest.orders.domain.OrderStatus;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -24,6 +25,32 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
 
   Optional<Order> findTopByOrcamentoIdOrderByCreatedAtDesc(UUID orcamentoId);
 
+  /**
+   * Busca os pedidos vinculados a um orçamento em ordem determinística (mais recente primeiro),
+   * utilizando o tamanho e valor lexicográfico do código e o UUID como critérios de desempate.
+   *
+   * @param orcamentoId identificador único do orçamento
+   * @param pageable    limite da paginação (esperado {@code PageRequest.of(0, 1)})
+   * @return lista ordenada de pedidos vinculados
+   */
+  @Query("""
+        SELECT o FROM Order o
+        WHERE o.orcamentoId = :orcamentoId
+        ORDER BY o.createdAt DESC, LENGTH(o.codigo) DESC, o.codigo DESC, o.id DESC
+      """)
+  List<Order> findLatestOrdersByOrcamentoId(
+      @Param("orcamentoId") UUID orcamentoId, Pageable pageable);
+
+  /**
+   * Recupera o pedido mais recente vinculado a um orçamento de origem.
+   *
+   * @param orcamentoId identificador único do orçamento
+   * @return pedido mais recente, caso exista
+   */
+  default Optional<Order> findLatestByOrcamentoId(UUID orcamentoId) {
+    return findLatestOrdersByOrcamentoId(orcamentoId, PageRequest.of(0, 1)).stream().findFirst();
+  }
+
   boolean existsByOrcamentoIdAndStatusNot(UUID orcamentoId, OrderStatus status);
 
   boolean existsByCodigo(String codigo);
@@ -31,6 +58,26 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
   Page<Order> findByStatus(OrderStatus status, Pageable pageable);
 
   Page<Order> findAllByOrderByCreatedAtDesc(Pageable pageable);
+
+  long countByClienteIdAndAtivoTrue(UUID clienteId);
+
+  Page<Order> findByClienteIdAndAtivoTrue(UUID clienteId, Pageable pageable);
+
+  @Query("""
+        SELECT DISTINCT o FROM Order o
+        LEFT JOIN FETCH o.items
+        WHERE o.cliente.id = :clienteId
+        ORDER BY o.createdAt DESC
+      """)
+  List<Order> findByClienteIdOrderByCreatedAtDesc(@Param("clienteId") UUID clienteId);
+
+  @Query("""
+        SELECT COALESCE(SUM(o.valorLiquido), 0) FROM Order o
+        WHERE o.cliente.id = :clientId
+          AND o.ativo = true
+          AND o.status <> br.edu.ifpb.alumigest.orders.domain.OrderStatus.CANCELLED
+      """)
+  BigDecimal sumTotalContractedByClienteId(@Param("clientId") UUID clientId);
 
   /**
    * Busca os códigos recentes por prefixo anual ordenados numericamente

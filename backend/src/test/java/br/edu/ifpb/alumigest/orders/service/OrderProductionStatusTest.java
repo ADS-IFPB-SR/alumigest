@@ -16,6 +16,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import org.springframework.context.ApplicationEventPublisher;
+
 import java.util.Optional;
 import java.util.UUID;
 
@@ -44,13 +46,10 @@ class OrderProductionStatusTest {
     private OrderPdfService orderPdfService;
 
     @Mock
-    private LabelPdfService labelPdfService;
+    private OrderLabelService orderLabelService;
 
     @Mock
-    private br.edu.ifpb.alumigest.orders.service.pdf.ThermalLabelDataResolver thermalLabelDataResolver;
-
-    @Mock
-    private br.edu.ifpb.alumigest.orders.service.thermal.ThermalLabelBplbRenderer thermalLabelBplbRenderer;
+    private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
     private OrderServiceImpl orderService;

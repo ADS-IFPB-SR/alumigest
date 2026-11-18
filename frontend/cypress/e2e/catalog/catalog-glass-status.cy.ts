@@ -108,6 +108,7 @@ describe('Status do Vidro - Happy Path', () => {
     // 9. Valida StatusToggle inicialmente ativo
     // =========================================================
     cy.get('button[aria-label="Alternar status"]')
+      .scrollIntoView()
       .should('be.visible')
       .and('have.class', 'bg-green-600');
 
@@ -115,6 +116,7 @@ describe('Status do Vidro - Happy Path', () => {
     // 10. Altera para Inativo
     // =========================================================
     cy.get('button[aria-label="Alternar status"]')
+      .scrollIntoView()
       .click();
 
     cy.get('button[aria-label="Alternar status"]')
@@ -155,12 +157,15 @@ describe('Status do Vidro - Happy Path', () => {
     // 14. Valida que o toggle continua Inativo
     // =========================================================
     cy.get('button[aria-label="Alternar status"]')
-      .should('have.class', 'bg-surface-variant');
+      .scrollIntoView()
+      .should('be.visible')
+      .and('have.class', 'bg-surface-variant');
 
     // =========================================================
     // 15. Altera novamente para Ativo
     // =========================================================
     cy.get('button[aria-label="Alternar status"]')
+      .scrollIntoView()
       .click();
 
     cy.get('button[aria-label="Alternar status"]')

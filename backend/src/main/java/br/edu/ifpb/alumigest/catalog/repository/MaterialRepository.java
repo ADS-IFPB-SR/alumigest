@@ -37,6 +37,12 @@ public interface MaterialRepository extends JpaRepository<Material, UUID> {
     Page<Material> findAllByGroupCode(String groupCode, Pageable pageable);
     Optional<Material> findByIdAndGroupCode(UUID id, String groupCode);
 
+    @Query("SELECT m FROM Material m JOIN FETCH m.group g " +
+            "WHERE m.isActive = true " +
+            "AND (:groupCode IS NULL OR g.code = :groupCode) " +
+            "ORDER BY m.name ASC")
+    List<Material> findActiveByGroupCodeOrderByNameAsc(@Param("groupCode") String groupCode);
+
     /**
      * Lista materiais ativos de um grupo com filtros opcionais por unidade de medida e nome.
      * Usado pelo {@code HardwareService.findAll()} para filtrar ferragens dentro do grupo FERRAGEM.

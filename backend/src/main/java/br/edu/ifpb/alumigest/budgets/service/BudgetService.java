@@ -18,6 +18,8 @@ import br.edu.ifpb.alumigest.common.exception.InvalidBudgetStatusTransitionExcep
 import br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException;
 import br.edu.ifpb.alumigest.common.port.OrderQueryPort;
 import org.hibernate.Hibernate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -37,6 +39,7 @@ import java.util.UUID;
 @Service
 public class BudgetService {
 
+    private static final Logger log = LoggerFactory.getLogger(BudgetService.class);
     private static final String RESOURCE_ORCAMENTO = "Orçamento";
 
     private final BudgetRepository budgetRepository;
@@ -232,6 +235,44 @@ public BudgetResponseDTO create(BudgetCreateRequest requestDTO) {
         budget.setStatus(BudgetStatus.DRAFT);
         budget = budgetRepository.save(budget);
         return budgetMapper.toResponseDTO(budget);
+    }
+
+    /**
+     * Reabre automaticamente um orçamento aprovado de volta para DRAFT após o cancelamento
+     * da ordem de serviço vinculada, retornando {@code false} sem lançar exceções de negócio
+     * quando o orçamento não for encontrado ou não estiver elegível — evitando marcar a transação
+     * de cancelamento da OS como rollback-only.
+     *
+     * @param id identificador único do orçamento
+     * @return {@code true} se o orçamento foi reaberto para DRAFT; {@code false} caso contrário
+     */
+    @Transactional
+    public boolean reabrirOrcamentoSeElegivel(UUID id) {
+        if (id == null) {
+            return false;
+        }
+        Optional<Budget> budgetOpt = budgetRepository.findById(id);
+        if (budgetOpt.isEmpty()) {
+            log.warn("Orçamento ID {} não encontrado ao processar cancelamento de OS vinculada.", id);
+            return false;
+        }
+
+        Budget budget = budgetOpt.get();
+        if (budget.getStatus() != BudgetStatus.APPROVED) {
+            log.warn("Orçamento ID {} não foi reaberto após cancelamento da OS pois está em status {}.",
+                    id, budget.getStatus());
+            return false;
+        }
+
+        Optional<OrderQueryPort.LinkedOrder> orderOpt = orderQueryPort.findLatestByBudgetId(budget.getId());
+        if (orderOpt.isEmpty() || !orderOpt.get().cancelled()) {
+            log.warn("Orçamento ID {} não foi reaberto pois a ordem vinculada mais recente não está cancelada.", id);
+            return false;
+        }
+
+        budget.setStatus(BudgetStatus.DRAFT);
+        budgetRepository.save(budget);
+        return true;
     }
 
     @Transactional

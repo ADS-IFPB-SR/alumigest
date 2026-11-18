@@ -8,7 +8,10 @@ import { BudgetNewPage } from './pages/BudgetNewPage';
 import { BudgetDetailPage } from './pages/BudgetDetailPage';
 import { BudgetEditor } from './features/budgets/components/BudgetEditor';
 import { PlaceholderPage } from './pages/PlaceholderPage';
+import { CustomerHubPage } from './pages/CustomerHubPage';
 import { SeparateSalePage } from './pages/SeparateSalePage';
+import { PartSaleFormPage } from './pages/PartSaleFormPage';
+import { PartSaleListPage } from './pages/PartSaleListPage';
 import { ProductTab as ProductsPage } from './pages/ProductsPage';
 import { ProductBuilderPage } from './pages/ProductBuilderPage';
 import { OrderListPage } from './pages/OrderListPage';
@@ -51,6 +54,12 @@ export function AppRoutes() {
 
         <Route path="orcamentos" element={<BudgetsPage />} />
         <Route path="orcamentos/venda-avulsa" element={<SeparateSalePage />} />
+        {/* Módulo de Venda Avulsa de Partes (US-46) */}
+        <Route path="venda-avulsa" element={<Navigate to="/vendas/avulsa" replace />} />
+        <Route path="vendas/avulsa" element={<PartSaleListPage />} />
+        <Route path="vendas/avulsa/nova" element={<PartSaleFormPage />} />
+        <Route path="vendas/avulsa/:id" element={<PartSaleFormPage />} />
+        <Route path="vendas/partes/nova" element={<Navigate to="/vendas/avulsa/nova" replace />} />
         <Route path="orcamentos/novo" element={<BudgetNewPage />} />
         <Route path="orcamentos/:id" element={<BudgetDetailPage />} />
         <Route path="orcamentos/:id/editar" element={<BudgetEditor />} />
@@ -101,16 +110,7 @@ export function AppRoutes() {
         <Route path="produtos/novo" element={<ProductBuilderPage />} />
         <Route path="produtos/:id/editar" element={<ProductBuilderPage />} />
 
-        <Route
-          path="clientes"
-          element={
-            <PlaceholderPage
-              title="Gestão de Clientes"
-              icon="group"
-              description="Cadastro de clientes, contatos, histórico de orçamentos e vendas realizadas."
-            />
-          }
-        />
+        <Route path="clientes" element={<CustomerHubPage />} />
         <Route
           path="financeiro"
           element={

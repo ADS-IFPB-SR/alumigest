@@ -96,23 +96,23 @@ export function ProductionKanbanPage() {
                     {/* Breadcrumbs */}
                     <nav
                         aria-label="Breadcrumb"
-                        className="flex items-center gap-1.5 text-xs sm:text-sm text-slate-500 mb-1"
+                        className="flex items-center gap-1.5 text-xs sm:text-sm text-on-surface-variant mb-1"
                     >
-                        <Link to="/" className="hover:text-slate-800 transition">
+                        <Link to="/" className="hover:text-primary transition">
                             Início
                         </Link>
-                        <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-                        <span className="font-semibold text-slate-800">
+                        <ChevronRight className="w-3.5 h-3.5 text-on-surface-variant opacity-70" />
+                        <span className="font-semibold text-primary">
                             Kanban
                         </span>
                     </nav>
                     <h1
                         id="kanban-page-title"
-                        className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight"
+                        className="text-xl sm:text-2xl font-headline font-bold text-primary tracking-tight"
                     >
                         Ordens de Serviço (Kanban)
                     </h1>
-                    <p className="text-sm text-slate-600 mt-0.5">
+                    <p className="text-sm font-body text-secondary mt-0.5">
                         Gerencie e acompanhe a fabricação das ordens de serviço geradas a partir de orçamentos aprovados.
                     </p>
                 </div>
@@ -124,10 +124,10 @@ export function ProductionKanbanPage() {
                         type="button"
                         data-testid="btn-print-kanban"
                         onClick={handlePrintKanban}
-                        className="px-3.5 py-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-semibold rounded-lg shadow-2xs transition flex items-center gap-2"
+                        className="px-3.5 py-2 bg-surface-container-lowest border border-outline-variant hover:bg-surface-container-high text-secondary hover:text-primary text-sm font-semibold rounded-lg shadow-2xs transition flex items-center gap-2"
                         title="Imprimir visualização consolidada do PCP"
                     >
-                        <Printer className="w-4 h-4 text-slate-500" />
+                        <Printer className="w-4 h-4" />
                         <span>Imprimir Fichas PCP</span>
                     </button>
 
@@ -136,7 +136,7 @@ export function ProductionKanbanPage() {
                         type="button"
                         data-testid="btn-new-order"
                         onClick={handleNavigateNewOrder}
-                        className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold rounded-lg shadow-2xs transition flex items-center gap-2"
+                        className="px-4 py-2 bg-primary hover:opacity-90 text-on-primary text-sm font-semibold rounded-lg shadow-2xs transition flex items-center gap-2"
                         title="Ordens de serviço são geradas a partir de orçamentos aprovados"
                     >
                         <Plus className="w-4 h-4" />
@@ -150,10 +150,10 @@ export function ProductionKanbanPage() {
                         onClick={() => refetchKanban()}
                         disabled={isLoading}
                         aria-label="Atualizar dados do Kanban"
-                        className="p-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-600 rounded-lg shadow-2xs transition disabled:opacity-50"
+                        className="p-2 bg-surface-container-lowest border border-outline-variant hover:bg-surface-container-high text-secondary hover:text-primary rounded-lg shadow-2xs transition disabled:opacity-50"
                         title="Atualizar dados do Kanban"
                     >
-                        <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin text-blue-600' : ''}`} />
+                        <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin text-primary' : ''}`} />
                     </button>
                 </div>
             </div>

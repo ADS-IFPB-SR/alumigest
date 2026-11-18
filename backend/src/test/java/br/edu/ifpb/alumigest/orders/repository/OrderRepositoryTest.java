@@ -219,4 +219,50 @@ class OrderRepositoryTest {
                 .isNotEmpty()
                 .startsWith("OS-2026-10000", "OS-2026-9999", "OS-2026-0001");
     }
+
+    @Test
+    @DisplayName("[US-47.2 / #532] Deve buscar ordens do cliente com itens carregados via LEFT JOIN FETCH")
+    void deveBuscarOrdensDoClienteComItensOrdenadasPorDataDesc() {
+        Order order = buildOrder("OS-2026-0042", UUID.randomUUID(), OrderStatus.IN_PRODUCTION);
+        OrderItem item = OrderItem.builder()
+                .descricao("Janela de Correr 2 Folhas")
+                .larguraMm(1200)
+                .alturaMm(1400)
+                .quantidade(2)
+                .corAluminio("Natural")
+                .tipoVidro("Mini Boreal")
+                .valorUnitario(new BigDecimal("900.00"))
+                .valorTotal(new BigDecimal("1800.00"))
+                .build();
+        order.addItem(item);
+        orderRepository.save(order);
+
+        entityManager.flush();
+        entityManager.clear();
+
+        var orders = orderRepository.findByClienteIdOrderByCreatedAtDesc(client.getId());
+
+        assertThat(orders).hasSize(1);
+        assertThat(orders.get(0).getCodigo()).isEqualTo("OS-2026-0042");
+        assertThat(orders.get(0).getItems()).hasSize(1);
+        assertThat(orders.get(0).getItems().get(0).getDescricao()).isEqualTo("Janela de Correr 2 Folhas");
+    }
+
+    @Test
+    @DisplayName("[Issue #517] Deve recuperar de forma determinística a OS mais recente vinculada ao orçamento")
+    void shouldFindLatestOrderByOrcamentoIdDeterministically() {
+        UUID orcamentoId = UUID.randomUUID();
+        orderRepository.saveAndFlush(buildOrder("OS-2026-0001", orcamentoId, OrderStatus.CANCELLED));
+        orderRepository.saveAndFlush(buildOrder("OS-2026-0002", orcamentoId, OrderStatus.WAITING_PRODUCTION));
+
+        entityManager.flush();
+        entityManager.clear();
+
+        Optional<Order> latest = orderRepository.findLatestByOrcamentoId(orcamentoId);
+
+        assertThat(latest).isPresent();
+        assertThat(latest.get().getCodigo()).isEqualTo("OS-2026-0002");
+        assertThat(latest.get().getStatus()).isEqualTo(OrderStatus.WAITING_PRODUCTION);
+    }
 }
+

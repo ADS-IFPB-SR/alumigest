@@ -7,12 +7,13 @@ import br.edu.ifpb.alumigest.budgets.domain.BudgetStatus;
 import br.edu.ifpb.alumigest.budgets.repository.BudgetRepository;
 import br.edu.ifpb.alumigest.catalog.domain.Product;
 import br.edu.ifpb.alumigest.clients.domain.Client;
+import br.edu.ifpb.alumigest.common.dto.PageResponse;
 import br.edu.ifpb.alumigest.common.exception.BusinessException;
 import br.edu.ifpb.alumigest.common.exception.ConflictException;
 import br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException;
 import br.edu.ifpb.alumigest.orders.domain.ApprovalChannel;
 import br.edu.ifpb.alumigest.orders.domain.Order;
-import br.edu.ifpb.alumigest.common.dto.PageResponse;
+import br.edu.ifpb.alumigest.orders.domain.OrderCancelledEvent;
 import br.edu.ifpb.alumigest.orders.domain.OrderItem;
 import br.edu.ifpb.alumigest.orders.domain.OrderStatus;
 import br.edu.ifpb.alumigest.orders.dto.OrderCancelRequest;
@@ -22,30 +23,33 @@ import br.edu.ifpb.alumigest.orders.dto.OrderResponse;
 import br.edu.ifpb.alumigest.orders.dto.OrderSummaryResponse;
 import br.edu.ifpb.alumigest.orders.mapper.OrderMapper;
 import br.edu.ifpb.alumigest.orders.repository.OrderRepository;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-
-
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -54,8 +58,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
 
 /**
  * Testes unitários de {@link OrderServiceImpl}.
@@ -81,7 +83,10 @@ class OrderServiceImplTest {
     private OrderPdfService orderPdfService;
 
     @Mock
-    private LabelPdfService labelPdfService;
+    private OrderLabelService orderLabelService;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
     private OrderServiceImpl orderService;
@@ -718,7 +723,7 @@ class OrderServiceImplTest {
         OrderCancelRequest cancelRequest = new OrderCancelRequest("Cliente desistiu por motivo de mudança de obra.");
 
         given(orderRepository.findByIdWithDetails(orderId)).willReturn(Optional.of(savedOrder));
-        given(orderRepository.save(any(Order.class))).willAnswer(inv -> inv.getArgument(0));
+        given(orderRepository.saveAndFlush(any(Order.class))).willAnswer(inv -> inv.getArgument(0));
 
         OrderResponse expectedResponse = new OrderResponse(
                 orderId, "OS-2026-0001", budgetId, null,
@@ -740,20 +745,20 @@ class OrderServiceImplTest {
         assertThat(result.justificativaCancelamento()).isEqualTo("Cliente desistiu por motivo de mudança de obra.");
 
         ArgumentCaptor<Order> captor = ArgumentCaptor.forClass(Order.class);
-        verify(orderRepository).save(captor.capture());
+        verify(orderRepository).saveAndFlush(captor.capture());
         assertThat(captor.getValue().getStatus()).isEqualTo(OrderStatus.CANCELLED);
         assertThat(captor.getValue().getJustificativaCancelamento()).isEqualTo("Cliente desistiu por motivo de mudança de obra.");
+        verify(eventPublisher).publishEvent(any(OrderCancelledEvent.class));
     }
 
     @Test
-    @DisplayName("[US-15.2] Deve cancelar pedido e manter orçamento vinculado como APPROVED sem alteração automática")
-    void shouldCancelOrderAndKeepLinkedBudgetApproved() {
+    @DisplayName("[Issue #517] Deve cancelar pedido e publicar OrderCancelledEvent quando houver orçamento vinculado")
+    void shouldCancelOrderAndPublishOrderCancelledEvent() {
         Order savedOrder = buildSavedOrder();
-        budget.setStatus(BudgetStatus.APPROVED);
         OrderCancelRequest cancelRequest = new OrderCancelRequest("Cliente desistiu da obra.");
 
         given(orderRepository.findByIdWithDetails(orderId)).willReturn(Optional.of(savedOrder));
-        given(orderRepository.save(any(Order.class))).willAnswer(inv -> inv.getArgument(0));
+        given(orderRepository.saveAndFlush(any(Order.class))).willAnswer(inv -> inv.getArgument(0));
 
         OrderResponse expectedResponse = new OrderResponse(
                 orderId, "OS-2026-0001", budgetId, null,
@@ -772,8 +777,49 @@ class OrderServiceImplTest {
 
         assertThat(result).isNotNull();
         assertThat(result.status()).isEqualTo(OrderStatus.CANCELLED);
-        assertThat(budget.getStatus()).isEqualTo(BudgetStatus.APPROVED);
+
+        ArgumentCaptor<OrderCancelledEvent> eventCaptor = ArgumentCaptor.forClass(OrderCancelledEvent.class);
+        verify(eventPublisher).publishEvent(eventCaptor.capture());
+        assertThat(eventCaptor.getValue().orcamentoId()).isEqualTo(budgetId);
         verify(budgetRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("[Issue #517] Deve cancelar pedido sem orçamento vinculado e não publicar OrderCancelledEvent")
+    void shouldCancelOrderWithoutPublishingEventWhenOrcamentoIdIsNull() {
+        Order orderWithoutBudget = Order.builder()
+                .id(orderId)
+                .codigo("OS-2026-0001")
+                .orcamentoId(null)
+                .clienteNome("Empresa XPTO Ltda")
+                .status(OrderStatus.WAITING_PRODUCTION)
+                .canalAprovacao(ApprovalChannel.WHATSAPP)
+                .build();
+
+        OrderCancelRequest cancelRequest = new OrderCancelRequest("Cancelamento de pedido sem orçamento vinculado.");
+
+        given(orderRepository.findByIdWithDetails(orderId)).willReturn(Optional.of(orderWithoutBudget));
+        given(orderRepository.saveAndFlush(any(Order.class))).willAnswer(inv -> inv.getArgument(0));
+
+        OrderResponse expectedResponse = new OrderResponse(
+                orderId, "OS-2026-0001", null, null,
+                "Empresa XPTO Ltda", null, null,
+                OrderStatus.CANCELLED, "Cancelado",
+                ApprovalChannel.WHATSAPP, "WhatsApp",
+                LocalDate.now(ZoneOffset.UTC), request.dataPrevisaoEntrega(), null,
+                budget.getSubtotal(), budget.getDiscountValue(), BigDecimal.ZERO, BigDecimal.ZERO,
+                budget.getTotal(), null, null, null, "Cancelamento de pedido sem orçamento vinculado.",
+                OffsetDateTime.now(ZoneOffset.UTC), OffsetDateTime.now(ZoneOffset.UTC), true,
+                Collections.emptyList()
+        );
+        given(orderMapper.toResponse(any(Order.class))).willReturn(expectedResponse);
+
+        OrderResponse result = orderService.cancelOrder(orderId, cancelRequest);
+
+        assertThat(result).isNotNull();
+        assertThat(result.status()).isEqualTo(OrderStatus.CANCELLED);
+        verify(orderRepository).saveAndFlush(any(Order.class));
+        verify(eventPublisher, never()).publishEvent(any(OrderCancelledEvent.class));
     }
 
     @Test
@@ -788,7 +834,8 @@ class OrderServiceImplTest {
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining(nonExistentId.toString());
 
-        verify(orderRepository, never()).save(any());
+        verify(orderRepository, never()).saveAndFlush(any());
+        verify(eventPublisher, never()).publishEvent(any(OrderCancelledEvent.class));
     }
 
     @Test
@@ -810,7 +857,8 @@ class OrderServiceImplTest {
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("Não é possível cancelar um pedido no status IN_PRODUCTION");
 
-        verify(orderRepository, never()).save(any());
+        verify(orderRepository, never()).saveAndFlush(any());
+        verify(eventPublisher, never()).publishEvent(any(OrderCancelledEvent.class));
     }
 
     @Test
@@ -825,66 +873,68 @@ class OrderServiceImplTest {
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("pelo menos 10 caracteres");
 
-        verify(orderRepository, never()).save(any());
+        verify(orderRepository, never()).saveAndFlush(any());
+        verify(eventPublisher, never()).publishEvent(any(OrderCancelledEvent.class));
     }
 
     @Nested
-    @DisplayName("Cenários de Geração de Etiquetas Térmicas (gerarEtiquetasById) [US-17.2]")
+    @DisplayName("Cenários de Geração de Etiquetas Térmicas (gerarEtiquetasById e gerarBplbEtiquetasById) [US-17.2]")
     class GerarEtiquetasByIdTests {
 
         @Test
-        @DisplayName("Deve gerar etiquetas térmicas com sucesso para pedido existente")
-        void shouldGenerateLabelsSuccessfullyForExistingOrder() {
+        @DisplayName("Deve buscar pedido e delegar geração de etiquetas PDF para OrderLabelService")
+        void shouldDelegatePdfLabelsSuccessfullyForExistingOrder() {
             Order savedOrder = buildSavedOrder();
-            byte[] fakeBytes = "%PDF-1.4 labels".getBytes();
+            OrderPdfDTO expectedDto = new OrderPdfDTO(
+                    "%PDF-1.4 labels".getBytes(StandardCharsets.UTF_8),
+                    "etiquetas-OS-2026-0001.pdf");
             given(orderRepository.findByIdWithDetails(orderId)).willReturn(Optional.of(savedOrder));
-            given(labelPdfService.gerarEtiquetas(savedOrder, null)).willReturn(fakeBytes);
+            given(orderLabelService.gerarEtiquetasPdf(savedOrder, null, null)).willReturn(expectedDto);
 
             OrderPdfDTO result = orderService.gerarEtiquetasById(orderId);
 
-            assertThat(result).isNotNull();
-            assertThat(result.bytes()).isEqualTo(fakeBytes);
-            assertThat(result.filename()).isEqualTo("etiquetas-" + savedOrder.getCodigo().replace("/", "-") + ".pdf");
-
-            verify(labelPdfService).gerarEtiquetas(savedOrder, null);
+            assertThat(result).isEqualTo(expectedDto);
+            verify(orderLabelService).gerarEtiquetasPdf(savedOrder, null, null);
         }
 
         @Test
-        @DisplayName("Deve usar ID como fallback no nome do arquivo quando codigo for nulo")
-        void shouldFallbackToOrderIdInFilenameWhenCodigoIsNull() {
-            // Arrange
-            Order savedOrder = Order.builder()
-                    .id(orderId)
-                    .codigo(null)
-                    .status(OrderStatus.WAITING_PRODUCTION)
-                    .build();
-            byte[] fakeBytes = "%PDF-1.4 labels".getBytes();
-            given(orderRepository.findByIdWithDetails(orderId)).willReturn(Optional.of(savedOrder));
-            given(labelPdfService.gerarEtiquetas(savedOrder, null)).willReturn(fakeBytes);
-
-            // Act
-            OrderPdfDTO result = orderService.gerarEtiquetasById(orderId);
-
-            // Assert
-            assertThat(result).isNotNull();
-            assertThat(result.filename()).isEqualTo("etiquetas-" + orderId + ".pdf");
-            verify(labelPdfService).gerarEtiquetas(savedOrder, null);
-        }
-
-        @Test
-        @DisplayName("Deve repassar itemId ao LabelPdfService quando informado")
-        void shouldPassItemIdToLabelPdfServiceWhenProvided() {
+        @DisplayName("Deve repassar itemId e folhas customizadas ao gerar etiquetas PDF")
+        void shouldPassItemIdAndCustomLeavesToOrderLabelServiceForPdf() {
             Order savedOrder = buildSavedOrder();
             UUID itemId = UUID.randomUUID();
-            byte[] fakeBytes = "%PDF-1.4 labels single".getBytes();
+            Map<UUID, Integer> customLeaves = Map.of(itemId, 2);
+            OrderPdfDTO expectedDto = new OrderPdfDTO(
+                    "%PDF-1.4 custom".getBytes(StandardCharsets.UTF_8),
+                    "etiquetas-OS-2026-0001.pdf");
             given(orderRepository.findByIdWithDetails(orderId)).willReturn(Optional.of(savedOrder));
-            given(labelPdfService.gerarEtiquetas(savedOrder, itemId)).willReturn(fakeBytes);
+            given(orderLabelService.gerarEtiquetasPdf(savedOrder, itemId, customLeaves))
+                    .willReturn(expectedDto);
 
-            OrderPdfDTO result = orderService.gerarEtiquetasById(orderId, itemId);
+            OrderPdfDTO result = orderService.gerarEtiquetasById(orderId, itemId, customLeaves);
 
-            assertThat(result).isNotNull();
-            assertThat(result.bytes()).isEqualTo(fakeBytes);
-            verify(labelPdfService).gerarEtiquetas(savedOrder, itemId);
+            assertThat(result).isEqualTo(expectedDto);
+            verify(orderLabelService).gerarEtiquetasPdf(savedOrder, itemId, customLeaves);
+        }
+
+        @Test
+        @DisplayName("Deve delegar geração de etiquetas BPLB com e sem folhas customizadas")
+        void shouldDelegateBplbLabelsSuccessfully() {
+            Order savedOrder = buildSavedOrder();
+            UUID itemId = UUID.randomUUID();
+            Map<UUID, Integer> customLeaves = Map.of(itemId, 3);
+            byte[] bplbDefault = "N\nP1\n".getBytes(StandardCharsets.ISO_8859_1);
+            byte[] bplbCustom = "N\nD9\nP1\n".getBytes(StandardCharsets.ISO_8859_1);
+
+            given(orderRepository.findByIdWithDetails(orderId)).willReturn(Optional.of(savedOrder));
+            given(orderLabelService.gerarEtiquetasBplb(savedOrder, itemId, null)).willReturn(bplbDefault);
+            given(orderLabelService.gerarEtiquetasBplb(savedOrder, itemId, customLeaves))
+                    .willReturn(bplbCustom);
+
+            assertThat(orderService.gerarBplbEtiquetasById(orderId, itemId)).isEqualTo(bplbDefault);
+            assertThat(orderService.gerarBplbEtiquetasById(orderId, itemId, customLeaves))
+                    .isEqualTo(bplbCustom);
+            verify(orderLabelService).gerarEtiquetasBplb(savedOrder, itemId, null);
+            verify(orderLabelService).gerarEtiquetasBplb(savedOrder, itemId, customLeaves);
         }
 
         @Test
@@ -896,28 +946,7 @@ class OrderServiceImplTest {
                     .isInstanceOf(ResourceNotFoundException.class)
                     .hasMessageContaining("Pedido");
 
-            verify(labelPdfService, never()).gerarEtiquetas(any(), any());
-        }
-
-        @Test
-        @DisplayName("Deve lançar BusinessException ao tentar gerar etiquetas para ordem cancelada (BUG-484)")
-        void shouldThrowBusinessExceptionWhenOrderIsCancelled() {
-            // Arrange
-            Order savedOrder = Order.builder()
-                    .id(orderId)
-                    .codigo("OS-2026-0001")
-                    .status(OrderStatus.CANCELLED)
-                    .build();
-
-            given(orderRepository.findByIdWithDetails(orderId)).willReturn(Optional.of(savedOrder));
-
-            // Act & Assert
-            assertThatThrownBy(() -> orderService.gerarEtiquetasById(orderId))
-                    .isInstanceOf(BusinessException.class)
-                    .hasMessageContaining("Não é permitido emitir etiquetas de identificação para uma ordem de serviço cancelada.");
-
-            // Garante que o serviço PDF nunca é acionado por segurança
-            verify(labelPdfService, never()).gerarEtiquetas(any(), any());
+            verify(orderLabelService, never()).gerarEtiquetasPdf(any(), any(), any());
         }
     }
 }

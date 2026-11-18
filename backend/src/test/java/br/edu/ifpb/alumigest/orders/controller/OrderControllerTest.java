@@ -31,6 +31,10 @@ import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+
+import br.edu.ifpb.alumigest.orders.dto.production.ProductionSheetResponse;
+import br.edu.ifpb.alumigest.orders.service.production.ProductionSheetPdfService;
+import br.edu.ifpb.alumigest.orders.service.production.ProductionSheetService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -58,6 +62,12 @@ class OrderControllerTest {
 
   @MockitoBean
   private OrderService orderService;
+
+  @MockitoBean
+  private ProductionSheetService productionSheetService;
+
+  @MockitoBean
+  private ProductionSheetPdfService productionSheetPdfService;
 
   @Nested
   @DisplayName("GET /api/v1/orders - Listar Pedidos Paginados (US-13.4)")
@@ -162,46 +172,46 @@ class OrderControllerTest {
     }
   }
 
-  @Nested
-  @DisplayName("POST /api/v1/orders/convert/{budgetId} - Converter Orçamento em Pedido (US-13.2)")
-  class ConvertBudgetEndpointTests {
+    @Nested
+    @DisplayName("POST /api/v1/orders/convert/{budgetId} - Converter Orçamento em Pedido (US-13.2)")
+    class ConvertBudgetEndpointTests {
 
-    @Test
-    @DisplayName("Deve converter orçamento na rota canônica /api/v1/orders/convert/{budgetId}")
-    void shouldConvertOnCanonicalRoute() throws Exception {
-      UUID budgetId = UUID.randomUUID();
-      UUID orderId = UUID.randomUUID();
-      OrderResponse response = new OrderResponse(
-          orderId,
-          "OS-2026-0001",
-          budgetId,
-          null,
-          "Cliente Teste",
-          "(83) 98888-7777",
-          "Av. Central, 500",
-          OrderStatus.WAITING_PRODUCTION,
-          "Aguardando Produção",
-          ApprovalChannel.PRESENCIAL,
-          "Presencial",
-          LocalDate.now(),
-          LocalDate.now().plusDays(10),
-          null,
-          new BigDecimal("1500.00"),
-          BigDecimal.ZERO,
-          BigDecimal.ZERO,
-          BigDecimal.ZERO,
-          new BigDecimal("1500.00"),
-          "A vista",
-          null,
-          "Obs",
-          null,
-          OffsetDateTime.now(),
-          OffsetDateTime.now(),
-          true,
-          Collections.emptyList()
-      );
+        @Test
+        @DisplayName("Deve converter orçamento na rota canônica /api/v1/orders/convert/{budgetId}")
+        void shouldConvertOnCanonicalRoute() throws Exception {
+            UUID budgetId = UUID.randomUUID();
+            UUID orderId = UUID.randomUUID();
+            OrderResponse response = new OrderResponse(
+                    orderId,
+                    "OS-2026-0001",
+                    budgetId,
+                    null,
+                    "Cliente Teste",
+                    "(83) 98888-7777",
+                    "Av. Central, 500",
+                    OrderStatus.WAITING_PRODUCTION,
+                    "Aguardando Produção",
+                    ApprovalChannel.PRESENCIAL,
+                    "Presencial",
+                    LocalDate.now(),
+                    LocalDate.now().plusDays(10),
+                    null,
+                    new BigDecimal("1500.00"),
+                    BigDecimal.ZERO,
+                    BigDecimal.ZERO,
+                    BigDecimal.ZERO,
+                    new BigDecimal("1500.00"),
+                    "A vista",
+                    null,
+                    "Obs",
+                    null,
+                    OffsetDateTime.now(),
+                    OffsetDateTime.now(),
+                    true,
+                    Collections.emptyList()
+            );
 
-      when(orderService.convertBudgetToOrder(eq(budgetId), any(OrderConvertRequest.class))).thenReturn(response);
+            when(orderService.convertBudgetToOrder(eq(budgetId), any(OrderConvertRequest.class))).thenReturn(response);
 
       mockMvc.perform(post("/api/v1/orders/convert/{budgetId}", budgetId)
               .contentType(MediaType.APPLICATION_JSON)
@@ -299,7 +309,6 @@ class OrderControllerTest {
           .andExpect(status().isCreated());
     }
   }
-
   @Nested
   @DisplayName("GET /api/v1/orders/{id} - Detalhe do Pedido")
     class FindByIdEndpointTests {
@@ -743,6 +752,68 @@ class OrderControllerTest {
               .param("status", "STATUS_INEXISTENTE"))
           .andExpect(status().isBadRequest())
           .andExpect(jsonPath("$.status").value(400));
+    }
+  }
+
+  @Nested
+  @DisplayName("GET /api/v1/orders/{id}/production-sheet - Ficha Técnica de Produção (US-47.3)")
+  class ProductionSheetEndpointTests {
+
+    @Test
+    @DisplayName("Deve retornar 200 OK com dados paramétricos da ficha técnica")
+    void shouldReturn200WithProductionSheetData() throws Exception {
+      UUID orderId = UUID.randomUUID();
+      ProductionSheetResponse response = new ProductionSheetResponse(
+          "OS-2026-0042",
+          "Maria Oliveira",
+          List.of(),
+          List.of(),
+          List.of()
+      );
+
+      when(productionSheetService.generateSheetData(orderId)).thenReturn(response);
+
+      mockMvc.perform(get("/api/v1/orders/{id}/production-sheet", orderId)
+              .contentType(MediaType.APPLICATION_JSON))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.orderCode").value("OS-2026-0042"))
+          .andExpect(jsonPath("$.clientName").value("Maria Oliveira"));
+    }
+
+    @Test
+    @DisplayName("Deve retornar 200 OK com PDF da ficha técnica")
+    void shouldReturn200WithProductionSheetPdf() throws Exception {
+      UUID orderId = UUID.randomUUID();
+      ProductionSheetResponse response = new ProductionSheetResponse(
+          "OS-2026-0042",
+          "Maria Oliveira",
+          List.of(),
+          List.of(),
+          List.of()
+      );
+
+      byte[] mockPdf = "%PDF-1.4 test".getBytes();
+
+      when(productionSheetService.generateSheetData(orderId)).thenReturn(response);
+      when(productionSheetPdfService.generatePdf(response)).thenReturn(mockPdf);
+
+      mockMvc.perform(get("/api/v1/orders/{id}/production-sheet/pdf", orderId))
+          .andExpect(status().isOk())
+          .andExpect(header().string("Content-Type", MediaType.APPLICATION_PDF_VALUE))
+          .andExpect(header().string("Content-Disposition", "attachment; filename=\"Ficha_Tecnica_OS-2026-0042.pdf\""))
+          .andExpect(content().bytes(mockPdf));
+    }
+
+    @Test
+    @DisplayName("Deve retornar 404 NOT FOUND quando pedido não existir")
+    void shouldReturn404WhenOrderNotFound() throws Exception {
+      UUID orderId = UUID.randomUUID();
+
+      when(productionSheetService.generateSheetData(orderId))
+          .thenThrow(new ResourceNotFoundException("Pedido", orderId.toString()));
+
+      mockMvc.perform(get("/api/v1/orders/{id}/production-sheet", orderId))
+          .andExpect(status().isNotFound());
     }
   }
 }
