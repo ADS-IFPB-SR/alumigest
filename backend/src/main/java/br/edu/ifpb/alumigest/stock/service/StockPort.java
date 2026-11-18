@@ -20,9 +20,7 @@ public interface StockPort {
      *
      * @param orderId Identificador da Ordem de Serviço
      */
-    default void reserveMaterials(UUID orderId) {
-        reserveMaterialsForOrder(orderId);
-    }
+    void reserveMaterials(UUID orderId);
 
     /**
      * Reserva matérias-primas automaticamente ao aprovar uma Ordem de Serviço (US-13)

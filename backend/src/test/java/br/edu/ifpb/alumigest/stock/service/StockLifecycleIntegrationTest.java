@@ -361,6 +361,30 @@ class StockLifecycleIntegrationTest {
     }
 
     @Test
+    @DisplayName("POST /api/v1/stock/reserve-for-order/{orderId}: deve reservar materiais Make-to-Order e retornar 204")
+    void shouldReserveMaterialsViaReserveForOrderEndpoint() throws Exception {
+        Material material = persistMaterial("VID-INT-EP", new BigDecimal("3.00"));
+        Order order = persistOrder(OrderStatus.WAITING_PRODUCTION, material, new BigDecimal("5.00"));
+
+        mockMvc.perform(post("/api/v1/stock/reserve-for-order/{orderId}", order.getId()))
+            .andExpect(status().isNoContent());
+
+        StockItem afterReserve = stockItemRepository.findByMaterialId(material.getId()).orElseThrow();
+        assertThat(afterReserve.getPhysicalQuantity()).isEqualByComparingTo("3.0000");
+        assertThat(afterReserve.getReservedQuantity()).isEqualByComparingTo("5.0000");
+        assertThat(afterReserve.getAvailableQuantity()).isEqualByComparingTo("-2.0000");
+        assertThat(afterReserve.resolveAlertStatus()).isEqualTo(StockAlertStatus.NEED_PURCHASE);
+
+        List<StockMovement> movements = stockMovementRepository.findByOrderIdOrderByCreatedAtAsc(order.getId());
+        assertThat(movements).hasSize(1);
+        assertThat(movements.getFirst().getType()).isEqualTo(StockMovementType.PRODUCTION_RESERVATION);
+
+        mockMvc.perform(post("/api/v1/stock/reserve-for-order/{orderId}", order.getId()))
+            .andExpect(status().isNoContent());
+        assertThat(stockMovementRepository.findByOrderIdOrderByCreatedAtAsc(order.getId())).hasSize(1);
+    }
+
+    @Test
     @DisplayName("Ao transicionar O.S. de CREATED para WAITING_PRODUCTION sem reserva prévia, deve reservar materiais automaticamente")
     void shouldReserveMaterialsWhenOrderTransitionsFromCreatedToWaitingProduction() throws Exception {
         Material material = persistMaterial("VID-INT-WAIT", new BigDecimal("15.00"));
