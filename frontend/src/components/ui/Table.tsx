@@ -21,6 +21,7 @@ interface TableProps<T> {
   readonly onEdit?: (row: T) => void;
   readonly onViewDetails?: (row: T) => void;
   readonly onDelete?: (row: T) => void;
+  readonly onOpenKardex?: (row: T) => void;
 
   /**
    * Define o data-cy da linha.
@@ -56,6 +57,7 @@ export function Table<
   onEdit,
   onViewDetails,
   onDelete,
+  onOpenKardex,
   rowTestId,
   rowTestAttributes,
 }: TableProps<T>) {
@@ -132,7 +134,11 @@ export function Table<
   const cellPad = compact ? 'px-2 py-2' : 'p-xs sm:p-sm lg:p-md';
   const headText = compact ? 'text-xs whitespace-nowrap' : 'text-xs sm:text-sm';
   const bodyText = compact ? 'text-xs' : 'text-xs sm:text-sm';
-  const actionWidth = compact ? 'w-[72px] min-w-[72px]' : 'w-28 min-w-[104px]';
+  const hasActions = Boolean(onEdit || onViewDetails || onDelete || onOpenKardex);
+  let actionWidth = compact ? 'w-[72px] min-w-[72px]' : 'w-28 min-w-[104px]';
+  if (onOpenKardex) {
+    actionWidth = compact ? 'w-[180px] min-w-[180px]' : 'w-48 min-w-[176px]';
+  }
   const resolvedTotal = totalCount ?? data.length;
 
   return (
@@ -199,7 +205,7 @@ export function Table<
                 </th>
               ))}
 
-              {(onEdit || onViewDetails || onDelete) && (
+              {hasActions && (
                 <th
                   className={`
                     ${cellPad}
@@ -265,7 +271,7 @@ export function Table<
                   {/* =========================================
                       Ações
                       ========================================= */}
-                  {(onEdit || onViewDetails || onDelete) && (
+                  {hasActions && (
                     <td
                       className={`
                         ${cellPad}
@@ -278,6 +284,23 @@ export function Table<
                       `}
                     >
                       <div className="flex items-center justify-center gap-xs">
+
+                        {/* Extrato Kardex */}
+                        {onOpenKardex && (
+                          <button
+                            type="button"
+                            data-cy="table-kardex-button"
+                            data-testid={`kardex-button-${row.id}`}
+                            onClick={() => onOpenKardex(row)}
+                            className="p-xs sm:p-sm text-secondary hover:text-primary hover:bg-secondary-container/40 rounded-md transition-colors cursor-pointer"
+                            title="Extrato Kardex"
+                            aria-label="Extrato Kardex"
+                          >
+                            <span className="material-symbols-outlined text-[18px] sm:text-[20px]">
+                              receipt_long
+                            </span>
+                          </button>
+                        )}
 
                         {/* Editar */}
                         {onEdit && (

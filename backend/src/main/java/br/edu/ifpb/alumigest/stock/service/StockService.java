@@ -262,11 +262,9 @@ public class StockService implements StockPort {
     }
 
     /**
-     * Lista o histórico de movimentações Kardex, opcionalmente filtrado por material.
-     *
-     * @param materialId identificador opcional do material
-     * @return lista ordenada cronologicamente do mais recente ao mais antigo
+     * {@inheritDoc}
      */
+    @Override
     public List<StockMovementResponseDTO> listMovements(UUID materialId) {
         List<StockMovement> movements = materialId != null
             ? stockMovementRepository.findByMaterialIdOrderByCreatedAtDesc(materialId)

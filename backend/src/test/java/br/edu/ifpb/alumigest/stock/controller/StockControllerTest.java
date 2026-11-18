@@ -12,9 +12,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import br.edu.ifpb.alumigest.common.exception.GlobalExceptionHandler;
 import br.edu.ifpb.alumigest.stock.domain.StockAlertStatus;
+import br.edu.ifpb.alumigest.stock.domain.StockMovementType;
 import br.edu.ifpb.alumigest.stock.domain.StockSortField;
 import br.edu.ifpb.alumigest.stock.dto.StockBalanceFilter;
 import br.edu.ifpb.alumigest.stock.dto.StockItemResponseDTO;
+import br.edu.ifpb.alumigest.stock.dto.StockMovementResponseDTO;
 import br.edu.ifpb.alumigest.stock.service.StockService;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -142,5 +144,91 @@ class StockControllerTest {
             .andExpect(jsonPath("$.message").exists());
 
         verifyNoInteractions(stockService);
+    }
+
+    @Test
+    @DisplayName("[Partição de Equivalência] GET /api/v1/stock/movements com materialId retorna extrato")
+    void shouldListKardexMovementsFilteredByMaterial() throws Exception {
+        UUID materialId = UUID.randomUUID();
+        UUID orderId = UUID.randomUUID();
+        StockMovementResponseDTO reservation = new StockMovementResponseDTO(
+            UUID.randomUUID(),
+            UUID.randomUUID(),
+            materialId,
+            "PER-SUP-01",
+            "Perfil Suprema 6m",
+            "BARRA_6M",
+            StockMovementType.PRODUCTION_RESERVATION,
+            new BigDecimal("6.0000"),
+            null,
+            new BigDecimal("2.0000"),
+            new BigDecimal("2.0000"),
+            new BigDecimal("2.0000"),
+            new BigDecimal("8.0000"),
+            orderId,
+            "OS-2026-0088",
+            "Reserva automática O.S.",
+            "SYSTEM",
+            OffsetDateTime.now()
+        );
+        when(stockService.listMovements(materialId)).thenReturn(List.of(reservation));
+
+        mockMvc.perform(get("/api/v1/stock/movements").param("materialId", materialId.toString()))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$", hasSize(1)))
+            .andExpect(jsonPath("$[0].materialSku", is("PER-SUP-01")))
+            .andExpect(jsonPath("$[0].unitMeasure", is("BARRA_6M")))
+            .andExpect(jsonPath("$[0].type", is("PRODUCTION_RESERVATION")))
+            .andExpect(jsonPath("$[0].referenceDocument", is("OS-2026-0088")))
+            .andExpect(jsonPath("$[0].orderId", is(orderId.toString())));
+
+        verify(stockService).listMovements(materialId);
+    }
+
+    @Test
+    @DisplayName("[Partição de Equivalência] GET /api/v1/stock/movements sem filtro lista todas")
+    void shouldListAllKardexMovementsWhenMaterialIdOmitted() throws Exception {
+        StockMovementResponseDTO entry = new StockMovementResponseDTO(
+            UUID.randomUUID(),
+            UUID.randomUUID(),
+            UUID.randomUUID(),
+            "VID-008",
+            "Vidro 8mm Incolor",
+            "M2",
+            StockMovementType.PURCHASE_ENTRY,
+            new BigDecimal("10.0000"),
+            new BigDecimal("138.50"),
+            BigDecimal.ZERO,
+            new BigDecimal("10.0000"),
+            BigDecimal.ZERO,
+            BigDecimal.ZERO,
+            null,
+            "Asa #1024",
+            "Compra de reposição",
+            "Almoxarife",
+            OffsetDateTime.now()
+        );
+        when(stockService.listMovements(null)).thenReturn(List.of(entry));
+
+        mockMvc.perform(get("/api/v1/stock/movements"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$", hasSize(1)))
+            .andExpect(jsonPath("$[0].type", is("PURCHASE_ENTRY")))
+            .andExpect(jsonPath("$[0].unitCost", is(138.50)));
+
+        verify(stockService).listMovements(null);
+    }
+
+    @Test
+    @DisplayName("[Análise de Valor Limite] GET /api/v1/stock/movements vazio retorna 200 OK")
+    void shouldReturnEmptyListWhenMaterialHasNoMovements() throws Exception {
+        UUID materialId = UUID.randomUUID();
+        when(stockService.listMovements(materialId)).thenReturn(List.of());
+
+        mockMvc.perform(get("/api/v1/stock/movements").param("materialId", materialId.toString()))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$", hasSize(0)));
+
+        verify(stockService).listMovements(materialId);
     }
 }

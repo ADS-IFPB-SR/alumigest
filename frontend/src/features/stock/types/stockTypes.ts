@@ -39,16 +39,26 @@ export interface StockMovement {
   materialId: string;
   materialSku: string;
   materialName: string;
+  unitMeasure?: string;
   type: StockMovementType;
   quantity: number;
+  unitCost?: number | null;
   previousPhysicalQuantity: number;
   newPhysicalQuantity: number;
   previousReservedQuantity?: number;
   newReservedQuantity?: number;
+  orderId?: string | null;
   referenceDocument?: string;
   reason?: string;
   registeredBy?: string;
   createdAt: string;
+}
+
+export interface KardexMaterialTarget {
+  readonly id: string;
+  readonly skuCode?: string;
+  readonly name: string;
+  readonly unitMeasure?: string;
 }
 
 export interface StockMovementRequest {

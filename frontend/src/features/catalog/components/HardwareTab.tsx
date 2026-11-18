@@ -86,6 +86,7 @@ interface Props {
   readonly hideStockAlert?: boolean;
   readonly onEdit: (item: HardwareDTO) => void;
   readonly onViewDetails: (item: HardwareDTO) => void;
+  readonly onOpenKardex?: (item: HardwareDTO) => void;
 }
 
 export function HardwareTab({
@@ -96,6 +97,7 @@ export function HardwareTab({
   hideStockAlert,
   onEdit,
   onViewDetails,
+  onOpenKardex,
 }: Props) {
   const { data, isLoading } = useHardwares();
 
@@ -133,6 +135,7 @@ export function HardwareTab({
       rowTestAttributes={(row) => ({ 'data-hardware-name': row.name })}
       onEdit={onEdit}
       onViewDetails={onViewDetails}
+      onOpenKardex={onOpenKardex}
     />
   );
 }

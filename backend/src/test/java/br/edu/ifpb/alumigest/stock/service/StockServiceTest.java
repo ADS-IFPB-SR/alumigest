@@ -26,6 +26,7 @@ import br.edu.ifpb.alumigest.stock.domain.StockSortField;
 import br.edu.ifpb.alumigest.stock.dto.StockBalanceFilter;
 import br.edu.ifpb.alumigest.stock.dto.StockItemResponseDTO;
 import br.edu.ifpb.alumigest.stock.dto.StockMovementRequestDTO;
+import br.edu.ifpb.alumigest.stock.dto.StockMovementResponseDTO;
 import br.edu.ifpb.alumigest.stock.mapper.StockMapper;
 import br.edu.ifpb.alumigest.stock.repository.StockItemRepository;
 import br.edu.ifpb.alumigest.stock.repository.StockMovementRepository;
@@ -436,5 +437,90 @@ class StockServiceTest {
         );
         assertThat(sortedByAvailable).extracting(StockItemResponseDTO::materialSku)
             .containsExactly("VID-010", "PEL-001", "PER-001", "FER-001");
+    }
+
+    @Test
+    @DisplayName("[Partição de Equivalência] listMovements: filtra por material e mapeia auditoria")
+    void shouldListMovementsFilteredByMaterialWithExtendedAuditFields() {
+        UUID materialId = UUID.randomUUID();
+        UUID orderId = UUID.randomUUID();
+        Material material = buildMaterial(materialId, "VIDRO", "VID-008", "Vidro Incolor 8mm");
+        StockItem stockItem = new StockItem(material);
+
+        StockMovement entry = StockMovement.builder()
+            .stockItem(stockItem)
+            .material(material)
+            .type(StockMovementType.PURCHASE_ENTRY)
+            .quantity(new BigDecimal("10.0000"))
+            .unitCost(new BigDecimal("95.00"))
+            .previousPhysicalQuantity(BigDecimal.ZERO)
+            .newPhysicalQuantity(new BigDecimal("10.0000"))
+            .previousReservedQuantity(BigDecimal.ZERO)
+            .newReservedQuantity(BigDecimal.ZERO)
+            .referenceDocument("NF-1024")
+            .reason("Compra inicial")
+            .registeredBy("Almoxarife")
+            .build();
+
+        StockMovement reservation = StockMovement.builder()
+            .stockItem(stockItem)
+            .material(material)
+            .orderId(orderId)
+            .type(StockMovementType.PRODUCTION_RESERVATION)
+            .quantity(new BigDecimal("4.0000"))
+            .previousPhysicalQuantity(new BigDecimal("10.0000"))
+            .newPhysicalQuantity(new BigDecimal("10.0000"))
+            .previousReservedQuantity(BigDecimal.ZERO)
+            .newReservedQuantity(new BigDecimal("4.0000"))
+            .referenceDocument("OS-2026-0001")
+            .reason("Reserva O.S.")
+            .registeredBy("SYSTEM")
+            .build();
+
+        when(stockMovementRepository.findByMaterialIdOrderByCreatedAtDesc(materialId))
+            .thenReturn(List.of(reservation, entry));
+
+        List<StockMovementResponseDTO> result = stockService.listMovements(materialId);
+
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0).type()).isEqualTo(StockMovementType.PRODUCTION_RESERVATION);
+        assertThat(result.get(0).orderId()).isEqualTo(orderId);
+        assertThat(result.get(0).unitMeasure()).isEqualTo("M2");
+        assertThat(result.get(1).type()).isEqualTo(StockMovementType.PURCHASE_ENTRY);
+        assertThat(result.get(1).unitCost()).isEqualByComparingTo("95.00");
+        verify(stockMovementRepository).findByMaterialIdOrderByCreatedAtDesc(materialId);
+    }
+
+    @Test
+    @DisplayName("[Partição de Equivalência] listMovements: sem filtro consulta todas com JOIN FETCH")
+    void shouldListAllMovementsWhenMaterialIdIsNull() {
+        UUID materialId = UUID.randomUUID();
+        Material material = buildMaterial(materialId, "FERRAGEM", "FER-010", "Fecho Concha");
+        material.setUnitMeasure(null);
+        StockItem stockItem = new StockItem(material);
+
+        StockMovement outflow = StockMovement.builder()
+            .stockItem(stockItem)
+            .material(material)
+            .type(StockMovementType.PRODUCTION_OUTFLOW)
+            .quantity(new BigDecimal("2.0000"))
+            .previousPhysicalQuantity(new BigDecimal("5.0000"))
+            .newPhysicalQuantity(new BigDecimal("3.0000"))
+            .previousReservedQuantity(new BigDecimal("2.0000"))
+            .newReservedQuantity(BigDecimal.ZERO)
+            .referenceDocument("OS-2026-0002")
+            .reason("Baixa de conclusão")
+            .registeredBy("SYSTEM")
+            .build();
+
+        when(stockMovementRepository.findAllWithMaterialOrderByCreatedAtDesc())
+            .thenReturn(List.of(outflow));
+
+        List<StockMovementResponseDTO> result = stockService.listMovements(null);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).unitMeasure()).isNull();
+        assertThat(result.get(0).type()).isEqualTo(StockMovementType.PRODUCTION_OUTFLOW);
+        verify(stockMovementRepository).findAllWithMaterialOrderByCreatedAtDesc();
     }
 }

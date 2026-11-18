@@ -24,6 +24,7 @@ interface CatalogMobileMaterialCardProps<
   readonly rowTestId: string;
   readonly onEdit: (row: T) => void;
   readonly onViewDetails: (row: T) => void;
+  readonly onOpenKardex?: (row: T) => void;
 }
 
 const AVAILABLE_CLASSES: Readonly<Record<StockDisplayAlertStatus, string>> = {
@@ -47,6 +48,7 @@ export function CatalogMobileMaterialCard<
   rowTestId,
   onEdit,
   onViewDetails,
+  onOpenKardex,
 }: CatalogMobileMaterialCardProps<T>) {
   const snapshot = resolveCatalogStockSnapshot(
     stockItem,
@@ -89,6 +91,18 @@ export function CatalogMobileMaterialCard<
         </div>
 
         <div className="flex items-center gap-xs shrink-0">
+          {onOpenKardex && (
+            <button
+              type="button"
+              data-testid={`mobile-kardex-button-${row.id}`}
+              onClick={() => onOpenKardex(row)}
+              className="p-xs text-secondary hover:text-primary hover:bg-secondary-container/40 rounded-md transition-colors cursor-pointer"
+              title="Extrato Kardex"
+              aria-label={`Extrato Kardex de ${meta.name(row)}`}
+            >
+              <span className="material-symbols-outlined text-[18px]">receipt_long</span>
+            </button>
+          )}
           <button
             type="button"
             onClick={() => onEdit(row)}
@@ -140,7 +154,7 @@ export function CatalogMobileMaterialCard<
       </div>
 
       {!hideStockAlert && (
-        <div className="flex items-center justify-between pt-xs">
+        <div className="pt-xs">
           <StockAlertBadge
             variant="catalog"
             status={snapshot.displayStatus}

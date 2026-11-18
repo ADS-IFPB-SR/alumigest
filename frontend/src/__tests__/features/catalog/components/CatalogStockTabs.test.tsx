@@ -452,4 +452,42 @@ describe('Abas do Catálogo com Saldos e Badges de Estoque (US-22.1)', () => {
     expect(within(desktopTable).getByText('Vidro Padrão 23')).toBeInTheDocument();
     expect(within(desktopTable).getByText('Falta 8 m²')).toBeInTheDocument();
   });
+
+  it('[Ação Extrato Kardex] deve acionar onOpenKardex no botão desktop e mobile sem alterar paginação', () => {
+    const onOpenKardex = vi.fn();
+    const glassRow = {
+      id: 'g-kardex-1',
+      name: 'Vidro Laminado 8mm',
+      thicknessMm: 8,
+      colorFinish: 'Incolor',
+      pricePerSqm: 210,
+      salePrice: 210,
+      commercialReference: 'VID-LAM-08',
+      maxWidthMm: 2000,
+      maxHeightMm: 3000,
+      active: true,
+    };
+    vi.mocked(useGlasses).mockReturnValue({
+      isLoading: false,
+      data: { content: [glassRow] },
+    } as unknown as ReturnType<typeof useGlasses>);
+
+    render(
+      <GlassTab
+        searchQuery=""
+        filterStatus="ALL"
+        stockByMaterialId={makeStockMap([])}
+        onEdit={noop}
+        onViewDetails={noop}
+        onOpenKardex={onOpenKardex}
+      />
+    );
+
+    fireEvent.click(screen.getByTestId('kardex-button-g-kardex-1'));
+    expect(onOpenKardex).toHaveBeenCalledWith(glassRow);
+
+    fireEvent.click(screen.getByTestId('mobile-kardex-button-g-kardex-1'));
+    expect(onOpenKardex).toHaveBeenCalledTimes(2);
+    expect(onOpenKardex).toHaveBeenLastCalledWith(glassRow);
+  });
 });

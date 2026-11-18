@@ -67,6 +67,7 @@ interface Props {
   readonly hideStockAlert?: boolean;
   readonly onEdit: (item: FilmDTO) => void;
   readonly onViewDetails: (item: FilmDTO) => void;
+  readonly onOpenKardex?: (item: FilmDTO) => void;
 }
 
 export function FilmTab({
@@ -77,6 +78,7 @@ export function FilmTab({
   hideStockAlert,
   onEdit,
   onViewDetails,
+  onOpenKardex,
 }: Props) {
   const { data, isLoading } = useFilms();
 
@@ -114,6 +116,7 @@ export function FilmTab({
       rowTestAttributes={(row) => ({ 'data-film-name': row.name })}
       onEdit={onEdit}
       onViewDetails={onViewDetails}
+      onOpenKardex={onOpenKardex}
     />
   );
 }

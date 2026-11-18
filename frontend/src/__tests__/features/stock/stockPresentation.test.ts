@@ -1,12 +1,18 @@
 import { describe, it, expect } from 'vitest';
 import {
   compareCatalogStockCriticality,
+  computeKardexAvailableAfter,
+  formatKardexCurrency,
+  formatKardexDateTime,
+  formatKardexDeltaSummary,
   formatStockNumber,
   formatStockQuantity,
   formatStockUnit,
+  getKardexMovementPresentation,
   needsPurchaseOrReorder,
   resolveCatalogStockSnapshot,
   type StockItem,
+  type StockMovement,
 } from '@/features/stock';
 
 function makeStockItem(overrides: Partial<StockItem> = {}): StockItem {
@@ -149,5 +155,51 @@ describe('stockPresentation — Utilitários de Apresentação de Estoque (US-22
         })
       ).displayStatus
     ).toBe('IN_STOCK');
+  });
+
+  it('[Kardex US-22.2] deve mapear metadados semânticos, formatar data/moeda/variação e calcular disponível', () => {
+    expect(getKardexMovementPresentation('PURCHASE_ENTRY').badge).toBe('🟢 Entrada de Compras');
+    expect(getKardexMovementPresentation('PRODUCTION_RESERVATION').badge).toBe(
+      '🔵 Reserva para Produção'
+    );
+    expect(getKardexMovementPresentation('PRODUCTION_OUTFLOW').badge).toBe(
+      '🟠 Baixa Física na Conclusão'
+    );
+    expect(getKardexMovementPresentation('RESERVATION_CANCELLATION').badge).toBe(
+      '⚪ Estorno de Cancelamento'
+    );
+    expect(getKardexMovementPresentation('SCRAP_LOSS').badge).toBe(
+      '🔴 Saída por Perda/Sucata'
+    );
+    expect(getKardexMovementPresentation('MANUAL_ADJUSTMENT').badge).toBe(
+      '🟣 Ajuste Manual'
+    );
+
+    expect(formatKardexDateTime(undefined)).toBe('—');
+    expect(formatKardexDateTime('data-invalida')).toBe('data-invalida');
+    expect(formatKardexDateTime('2026-11-18T10:30:00Z')).toMatch(/\d{2}\/\d{2}\/2026/);
+
+    expect(formatKardexCurrency(null)).toBeNull();
+    expect(formatKardexCurrency(undefined)).toBeNull();
+    expect(formatKardexCurrency(138.5)).toContain('138,50');
+
+    const movement: StockMovement = {
+      id: 'm1',
+      stockItemId: 's1',
+      materialId: 'mat-1',
+      materialSku: 'VID-008',
+      materialName: 'Vidro 8mm',
+      unitMeasure: 'M2',
+      type: 'PRODUCTION_RESERVATION',
+      quantity: 6,
+      previousPhysicalQuantity: 4,
+      newPhysicalQuantity: 4,
+      previousReservedQuantity: 0,
+      newReservedQuantity: 6,
+      createdAt: '2026-11-18T10:30:00Z',
+    };
+
+    expect(formatKardexDeltaSummary(movement)).toBe('+6 m² (reservadas)');
+    expect(computeKardexAvailableAfter(movement)).toBe(-2);
   });
 });

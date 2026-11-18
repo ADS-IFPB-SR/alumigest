@@ -83,6 +83,7 @@ interface Props {
   readonly hideStockAlert?: boolean;
   readonly onEdit: (item: ProfileDTO) => void;
   readonly onViewDetails: (item: ProfileDTO) => void;
+  readonly onOpenKardex?: (item: ProfileDTO) => void;
 }
 
 export function ProfileTab({
@@ -93,6 +94,7 @@ export function ProfileTab({
   hideStockAlert,
   onEdit,
   onViewDetails,
+  onOpenKardex,
 }: Props) {
   const { data, isLoading } = useProfiles();
 
@@ -129,6 +131,7 @@ export function ProfileTab({
       rowTestAttributes={(row) => ({ 'data-profile-name': row.name })}
       onEdit={onEdit}
       onViewDetails={onViewDetails}
+      onOpenKardex={onOpenKardex}
     />
   );
 }
