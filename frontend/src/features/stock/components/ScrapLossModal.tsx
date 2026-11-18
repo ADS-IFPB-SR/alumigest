@@ -91,7 +91,15 @@ export const ScrapLossModal: React.FC<ScrapLossModalProps> = ({
 
   const numQuantity = Number(watchedQuantity);
   const isExceedingStock =
-    !isNaN(numQuantity) && numQuantity > 0 && numQuantity > effectivePhysical;
+    !Number.isNaN(numQuantity) && numQuantity > 0 && numQuantity > effectivePhysical;
+
+  let quantityBorderClass =
+    'border-outline-variant focus:ring-primary/20 focus:border-primary';
+  if (errors.quantity) {
+    quantityBorderClass = 'border-rose-500 focus:ring-rose-500/20';
+  } else if (isExceedingStock) {
+    quantityBorderClass = 'border-amber-500 focus:ring-amber-500/20';
+  }
 
   const handleClose = useCallback(() => {
     if (isSubmitting) return;
@@ -292,13 +300,7 @@ export const ScrapLossModal: React.FC<ScrapLossModalProps> = ({
                 placeholder="Ex: 1.5"
                 disabled={isSubmitting}
                 data-testid="input-scrap-quantity"
-                className={`w-full px-3.5 py-2 text-sm rounded-lg border bg-surface-container-lowest text-on-surface focus:outline-hidden focus:ring-2 transition-all disabled:opacity-60 disabled:cursor-not-allowed ${
-                  errors.quantity
-                    ? 'border-rose-500 focus:ring-rose-500/20'
-                    : isExceedingStock
-                    ? 'border-amber-500 focus:ring-amber-500/20'
-                    : 'border-outline-variant focus:ring-primary/20 focus:border-primary'
-                }`}
+                className={`w-full px-3.5 py-2 text-sm rounded-lg border bg-surface-container-lowest text-on-surface focus:outline-hidden focus:ring-2 transition-all disabled:opacity-60 disabled:cursor-not-allowed ${quantityBorderClass}`}
                 {...register('quantity')}
               />
             </div>
