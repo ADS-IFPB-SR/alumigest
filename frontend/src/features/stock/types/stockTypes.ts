@@ -12,6 +12,10 @@ export type StockMovementType =
 
 export type StockAlertStatus = 'IN_STOCK' | 'ORDER_POINT' | 'NEED_PURCHASE';
 
+export type StockDisplayAlertStatus = StockAlertStatus | 'NO_BALANCE';
+
+export type StockSortField = 'NAME' | 'AVAILABLE' | 'CRITICALITY';
+
 export type StockCategoryType = 'GLASS' | 'PROFILE' | 'HARDWARE' | 'FILM';
 
 export interface StockItem {
@@ -61,4 +65,7 @@ export interface StockFilterParams {
   category?: string;
   alertStatus?: StockAlertStatus;
   search?: string;
+  needsPurchase?: boolean;
+  belowMinStock?: boolean;
+  sort?: StockSortField;
 }

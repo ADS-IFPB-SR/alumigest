@@ -11,6 +11,7 @@ import br.edu.ifpb.alumigest.orders.repository.OrderRepository;
 import br.edu.ifpb.alumigest.stock.domain.StockItem;
 import br.edu.ifpb.alumigest.stock.domain.StockMovement;
 import br.edu.ifpb.alumigest.stock.domain.StockMovementType;
+import br.edu.ifpb.alumigest.stock.dto.StockBalanceFilter;
 import br.edu.ifpb.alumigest.stock.dto.StockItemResponseDTO;
 import br.edu.ifpb.alumigest.stock.dto.StockMovementRequestDTO;
 import br.edu.ifpb.alumigest.stock.dto.StockMovementResponseDTO;
@@ -19,6 +20,7 @@ import br.edu.ifpb.alumigest.stock.repository.StockItemRepository;
 import br.edu.ifpb.alumigest.stock.repository.StockMovementRepository;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
@@ -202,9 +204,61 @@ public class StockService implements StockPort {
      */
     @Override
     public List<StockItemResponseDTO> listStockBalances() {
+        return listStockBalances(StockBalanceFilter.empty());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public List<StockItemResponseDTO> listStockBalances(StockBalanceFilter filter) {
+        StockBalanceFilter effectiveFilter = filter != null ? filter : StockBalanceFilter.empty();
         return stockItemRepository.findAllWithMaterial().stream()
+            .filter(item -> matchesProcurementFilter(item, effectiveFilter))
             .map(stockMapper::toItemResponseDTO)
+            .filter(dto -> matchesDtoFilter(dto, effectiveFilter))
+            .sorted(effectiveFilter.effectiveSort().comparator())
             .toList();
+    }
+
+    private boolean matchesProcurementFilter(StockItem item, StockBalanceFilter filter) {
+        if (!filter.hasProcurementFilter()) {
+            return true;
+        }
+        boolean matchNeedsPurchase = Boolean.TRUE.equals(filter.needsPurchase())
+            && item.needsPurchase();
+        boolean matchBelowMin = Boolean.TRUE.equals(filter.belowMinStock())
+            && item.isBelowMinimumStock();
+        return matchNeedsPurchase || matchBelowMin;
+    }
+
+    private boolean matchesDtoFilter(StockItemResponseDTO dto, StockBalanceFilter filter) {
+        if (!matchesCategory(dto, filter.category())) {
+            return false;
+        }
+        if (filter.alertStatus() != null && dto.alertStatus() != filter.alertStatus()) {
+            return false;
+        }
+        return matchesSearch(dto, filter.search());
+    }
+
+    private boolean matchesCategory(StockItemResponseDTO dto, String category) {
+        if (category == null || category.isBlank()) {
+            return true;
+        }
+        return dto.category() != null && dto.category().equalsIgnoreCase(category.trim());
+    }
+
+    private boolean matchesSearch(StockItemResponseDTO dto, String search) {
+        if (search == null || search.isBlank()) {
+            return true;
+        }
+        String term = search.trim().toLowerCase(Locale.ROOT);
+        boolean inName = dto.materialName() != null
+            && dto.materialName().toLowerCase(Locale.ROOT).contains(term);
+        boolean inSku = dto.materialSku() != null
+            && dto.materialSku().toLowerCase(Locale.ROOT).contains(term);
+        return inName || inSku;
     }
 
     /**

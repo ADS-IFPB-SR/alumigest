@@ -13,6 +13,10 @@ interface Column<T> {
 interface TableProps<T> {
   readonly columns: readonly Column<T>[];
   readonly data: readonly T[];
+  readonly exportData?: readonly T[];
+  readonly totalCount?: number;
+  readonly compact?: boolean;
+  readonly footer?: React.ReactNode;
 
   readonly onEdit?: (row: T) => void;
   readonly onViewDetails?: (row: T) => void;
@@ -45,6 +49,10 @@ export function Table<
 >({
   columns,
   data,
+  exportData,
+  totalCount,
+  compact = false,
+  footer,
   onEdit,
   onViewDetails,
   onDelete,
@@ -52,7 +60,8 @@ export function Table<
   rowTestAttributes,
 }: TableProps<T>) {
   const handleExport = () => {
-    if (data.length === 0) {
+    const sourceData = exportData ?? data;
+    if (sourceData.length === 0) {
       return;
     }
 
@@ -62,7 +71,7 @@ export function Table<
       .join(';');
 
     // Linhas do CSV
-    const rows = data.map((row) => {
+    const rows = sourceData.map((row) => {
       return columns
         .map((column) => {
           if (typeof column.exportValue === 'function') {
@@ -120,19 +129,27 @@ export function Table<
     URL.revokeObjectURL(url);
   };
 
+  const cellPad = compact ? 'px-2 py-2' : 'p-xs sm:p-sm lg:p-md';
+  const headText = compact ? 'text-xs whitespace-nowrap' : 'text-xs sm:text-sm';
+  const bodyText = compact ? 'text-xs' : 'text-xs sm:text-sm';
+  const actionWidth = compact ? 'w-[72px] min-w-[72px]' : 'w-28 min-w-[104px]';
+  const resolvedTotal = totalCount ?? data.length;
+
   return (
-    <div className="bg-surface-container-lowest border border-outline-variant rounded-md flex flex-col flex-1 overflow-hidden shadow-xs relative">
+    <div className="bg-surface-container-lowest border border-outline-variant rounded-md flex flex-col flex-1 min-h-0 overflow-hidden shadow-xs relative">
 
       {/* =====================================================
           Barra de controles
           ===================================================== */}
-      <div className="p-xs sm:p-md border-b border-outline-variant bg-surface-container flex justify-between items-center gap-xs sm:gap-sm flex-wrap">
+      <div
+        className={`${compact ? 'px-3 py-1.5' : 'p-xs sm:p-md'} border-b border-outline-variant bg-surface-container flex justify-between items-center gap-xs sm:gap-sm flex-wrap flex-none`}
+      >
 
         <div className="flex gap-xs sm:gap-sm">
           <button
             type="button"
             onClick={handleExport}
-            className="flex items-center gap-xs px-xs py-xs sm:px-sm sm:py-sm border border-outline-variant rounded-md bg-surface-container-lowest text-secondary font-body text-xs sm:text-sm hover:bg-surface-container-low transition-colors shadow-sm"
+            className={`flex items-center gap-xs ${compact ? 'px-2.5 py-1' : 'px-xs py-xs sm:px-sm sm:py-sm'} border border-outline-variant rounded-md bg-surface-container-lowest text-secondary font-body text-xs sm:text-sm hover:bg-surface-container-low transition-colors shadow-sm`}
           >
             <span className="material-symbols-outlined text-[16px] sm:text-[18px]">
               download
@@ -145,16 +162,18 @@ export function Table<
         </div>
 
         <span className="font-data-mono text-data-mono text-secondary text-xs sm:text-sm font-semibold">
-          Total: {data.length}
+          Total: {resolvedTotal}
         </span>
       </div>
 
       {/* =====================================================
           Tabela
           ===================================================== */}
-      <div className="overflow-x-auto overflow-y-auto flex-1 w-full relative">
+      <div className="overflow-x-auto overflow-y-auto flex-1 min-h-0 w-full relative">
 
-        <table className="table-zebra w-full text-left border-collapse min-w-[500px]">
+        <table
+          className={`table-zebra w-full text-left border-collapse ${compact ? '' : 'min-w-[500px]'}`}
+        >
 
           {/* =================================================
               Cabeçalho
@@ -166,11 +185,11 @@ export function Table<
                 <th
                   key={column.header}
                   className={`
-                    p-xs sm:p-sm lg:p-md
+                    ${cellPad}
                     font-label-bold
                     text-label-bold
                     text-primary
-                    text-xs sm:text-sm
+                    ${headText}
                     text-${column.align || 'left'}
                     ${column.className || ''}
                     bg-surface-container-low
@@ -182,21 +201,21 @@ export function Table<
 
               {(onEdit || onViewDetails || onDelete) && (
                 <th
-                  className="
-                    p-xs sm:p-sm lg:p-md
+                  className={`
+                    ${cellPad}
                     font-label-bold
                     text-label-bold
                     text-primary
-                    text-xs sm:text-sm
+                    ${headText}
                     text-center
-                    w-28 min-w-[104px]
+                    ${actionWidth}
                     sticky right-0 top-0
                     bg-surface-container-low
                     border-l
                     border-outline-variant
                     shadow-[-4px_0px_8px_rgba(0,0,0,0.06)]
                     z-30
-                  "
+                  `}
                 >
                   Ações
                 </th>
@@ -208,7 +227,7 @@ export function Table<
           {/* =================================================
               Corpo
               ================================================= */}
-          <tbody className="font-body text-xs sm:text-sm">
+          <tbody className={`font-body ${bodyText}`}>
 
             {data.map((row) => {
               const testAttributes =
@@ -229,7 +248,7 @@ export function Table<
                     <td
                       key={column.header}
                       className={`
-                        p-xs sm:p-sm lg:p-md
+                        ${cellPad}
                         text-on-surface
                         text-${column.align || 'left'}
                         ${column.className || ''}
@@ -248,17 +267,17 @@ export function Table<
                       ========================================= */}
                   {(onEdit || onViewDetails || onDelete) && (
                     <td
-                      className="
-                        p-xs sm:p-sm lg:p-md
+                      className={`
+                        ${cellPad}
                         sticky right-0
                         border-l
                         border-outline-variant/40
                         shadow-[-4px_0px_8px_rgba(0,0,0,0.06)]
                         z-10
                         bg-surface-container-lowest group-hover:bg-surface-container-high
-                      "
+                      `}
                     >
-                      <div className="flex items-center justify-center gap-xs sm:gap-sm">
+                      <div className="flex items-center justify-center gap-xs">
 
                         {/* Editar */}
                         {onEdit && (
@@ -322,6 +341,7 @@ export function Table<
           </tbody>
         </table>
       </div>
+      {footer}
     </div>
   );
 }

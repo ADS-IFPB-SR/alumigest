@@ -1,5 +1,11 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Tabs, Tab } from '../../../components/ui/Tabs';
+import {
+  needsPurchaseOrReorder,
+  resolveCatalogStockSnapshot,
+  useStockBalances,
+  type StockItem,
+} from '@/features/stock';
 import { GlassTab } from './GlassTab';
 import { ProfileTab } from './ProfileTab';
 import { FilmTab } from './FilmTab';
@@ -11,15 +17,67 @@ import { FilmFormModal } from './FilmFormModal';
 import { ProfileFormModal } from './ProfileFormModal';
 import { MaterialDetailsModal } from './MaterialDetailsModal';
 import { Button } from '../../../components/ui/Button';
-import type { MaterialType } from '../types';
+import type {
+  FilmDTO,
+  GlassDTO,
+  HardwareDTO,
+  MaterialType,
+  ProfileDTO,
+} from '../types';
+
+type CatalogMaterialItem = GlassDTO | ProfileDTO | HardwareDTO | FilmDTO;
+
+const HIDE_ALERT_STORAGE_KEY = 'alumigest.catalog.hideStockAlert';
+
+function readHideAlertPreference(): boolean {
+  try {
+    return globalThis.localStorage?.getItem(HIDE_ALERT_STORAGE_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+function persistHideAlertPreference(value: boolean): void {
+  try {
+    globalThis.localStorage?.setItem(HIDE_ALERT_STORAGE_KEY, String(value));
+  } catch {
+    // Ignora falha de armazenamento em ambientes restritos
+  }
+}
 
 export function CatalogView() {
   const [isSelectionModalOpen, setIsSelectionModalOpen] = useState(false);
   const [activeFormType, setActiveFormType] = useState<MaterialType | null>(null);
-  const [editingItem, setEditingItem] = useState<any>(null);
-  const [detailsItem, setDetailsItem] = useState<{ item: any; tipo: MaterialType } | null>(null);
+  const [editingItem, setEditingItem] = useState<CatalogMaterialItem | null>(null);
+  const [detailsItem, setDetailsItem] = useState<{
+    item: CatalogMaterialItem;
+    tipo: MaterialType;
+  } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL');
+  const [onlyNeedsPurchase, setOnlyNeedsPurchase] = useState(false);
+  const [hideStockAlert, setHideStockAlert] = useState<boolean>(readHideAlertPreference);
+
+  const {
+    data: stockItems = [],
+    isError: isStockError,
+    refetch: refetchStock,
+  } = useStockBalances();
+
+  const { stockByMaterialId, pendingPurchaseCount } = useMemo(() => {
+    const map = new Map<string, StockItem>();
+    let pendingCount = 0;
+
+    for (const item of stockItems) {
+      map.set(item.materialId, item);
+      const snapshot = resolveCatalogStockSnapshot(item, item.unitMeasure);
+      if (needsPurchaseOrReorder(snapshot.displayStatus)) {
+        pendingCount += 1;
+      }
+    }
+
+    return { stockByMaterialId: map, pendingPurchaseCount: pendingCount };
+  }, [stockItems]);
 
   const handleOpenSelectionModal = () => {
     setIsSelectionModalOpen(true);
@@ -31,12 +89,12 @@ export function CatalogView() {
     setActiveFormType(tipo);
   };
 
-  const handleEditItem = (item: any, tipo: MaterialType) => {
+  const handleEditItem = (item: CatalogMaterialItem, tipo: MaterialType) => {
     setEditingItem(item);
     setActiveFormType(tipo);
   };
 
-  const handleViewDetails = (item: any, tipo: MaterialType) => {
+  const handleViewDetails = (item: CatalogMaterialItem, tipo: MaterialType) => {
     setDetailsItem({ item, tipo });
   };
 
@@ -45,10 +103,69 @@ export function CatalogView() {
     setEditingItem(null);
   };
 
+  const handleToggleHideStockAlert = (checked: boolean) => {
+    setHideStockAlert(checked);
+    persistHideAlertPreference(checked);
+  };
+
+  const stockFilterControls = (
+    <>
+      <label
+        data-testid="filter-needs-purchase-label"
+        className={`cursor-pointer select-none inline-flex items-center gap-xs px-2.5 py-1 rounded-md border shadow-xs text-xs transition-colors ${
+          onlyNeedsPurchase
+            ? 'bg-rose-50 border-rose-300 text-rose-800 dark:bg-rose-500/15 dark:border-rose-500/40 dark:text-rose-200'
+            : 'bg-surface-container-lowest border-outline-variant text-on-surface hover:bg-surface-container-low'
+        }`}
+      >
+        <input
+          id="catalog-filter-needs-purchase"
+          name="onlyNeedsPurchase"
+          type="checkbox"
+          data-cy="filter-needs-purchase"
+          checked={onlyNeedsPurchase}
+          onChange={(e) => setOnlyNeedsPurchase(e.target.checked)}
+          className="w-3.5 h-3.5 accent-rose-600 rounded cursor-pointer"
+        />
+        <span className="font-medium">Apenas com necessidade de compra</span>
+        <span
+          data-testid="needs-purchase-count"
+          className={`font-data-mono tabular-nums text-[11px] font-bold px-1.5 py-px rounded-full ${
+            onlyNeedsPurchase
+              ? 'bg-rose-600 text-white'
+              : 'bg-rose-500/15 text-rose-700 dark:text-rose-300'
+          }`}
+        >
+          {pendingPurchaseCount}
+        </span>
+      </label>
+
+      <label
+        data-testid="toggle-hide-stock-alert-label"
+        className={`cursor-pointer select-none inline-flex items-center gap-xs px-2.5 py-1 rounded-md border shadow-xs text-xs transition-colors ${
+          hideStockAlert
+            ? 'bg-secondary-container border-primary/40 text-primary'
+            : 'bg-surface-container-lowest border-outline-variant text-on-surface hover:bg-surface-container-low'
+        }`}
+      >
+        <input
+          id="catalog-toggle-hide-stock-alert"
+          name="hideStockAlert"
+          type="checkbox"
+          data-cy="toggle-hide-stock-alert"
+          checked={hideStockAlert}
+          onChange={(e) => handleToggleHideStockAlert(e.target.checked)}
+          className="w-3.5 h-3.5 accent-primary rounded cursor-pointer"
+        />
+        <span className="font-medium">Ocultar Alerta de Estoque</span>
+      </label>
+    </>
+  );
+
   return (
     <>
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-md gap-sm flex-none">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-sm gap-sm flex-none">
         <div>
           <h2
             data-cy="catalog-title"
@@ -63,7 +180,6 @@ export function CatalogView() {
         </div>
 
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-sm">
-
           {/* Universal Search Bar */}
           <div className="relative flex-1 sm:w-64">
             <span className="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-secondary pointer-events-none text-[18px]">
@@ -113,51 +229,75 @@ export function CatalogView() {
         </div>
       </div>
 
-      {/* Tabs */}
-      <Tabs>
-        <Tab
-          label="Vidros"
-          dataCy="catalog-tab-glasses"
+      {isStockError && (
+        <div
+          role="alert"
+          data-testid="stock-balance-error-banner"
+          className="mb-sm px-md py-xs rounded-md border border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/15 dark:text-amber-200 flex flex-wrap items-center justify-between gap-sm text-xs flex-none"
         >
+          <span className="flex items-center gap-xs">
+            <span className="material-symbols-outlined text-[18px]" aria-hidden="true">
+              warning
+            </span>
+            <span>
+              Não foi possível carregar os saldos de estoque. Os valores exibidos podem estar desatualizados.
+            </span>
+          </span>
+          <button
+            type="button"
+            onClick={() => void refetchStock()}
+            className="px-sm py-xs rounded border border-amber-400/70 dark:border-amber-400/40 font-semibold hover:bg-amber-100 dark:hover:bg-amber-500/20 transition-colors cursor-pointer"
+          >
+            Tentar novamente
+          </button>
+        </div>
+      )}
+
+      {/* Tabs */}
+      <Tabs rightSlot={stockFilterControls}>
+        <Tab label="Vidros" dataCy="catalog-tab-glasses">
           <GlassTab
             searchQuery={searchQuery}
             filterStatus={filterStatus}
+            stockByMaterialId={stockByMaterialId}
+            onlyNeedsPurchase={onlyNeedsPurchase}
+            hideStockAlert={hideStockAlert}
             onEdit={(item) => handleEditItem(item, 'Glass')}
             onViewDetails={(item) => handleViewDetails(item, 'Glass')}
           />
         </Tab>
 
-        <Tab
-          label="Perfis de Alumínio"
-          dataCy="catalog-tab-profiles"
-        >
+        <Tab label="Perfis de Alumínio" dataCy="catalog-tab-profiles">
           <ProfileTab
             searchQuery={searchQuery}
             filterStatus={filterStatus}
+            stockByMaterialId={stockByMaterialId}
+            onlyNeedsPurchase={onlyNeedsPurchase}
+            hideStockAlert={hideStockAlert}
             onEdit={(item) => handleEditItem(item, 'Profile')}
             onViewDetails={(item) => handleViewDetails(item, 'Profile')}
           />
         </Tab>
 
-        <Tab
-          label="Películas"
-          dataCy="catalog-tab-films"
-        >
+        <Tab label="Películas" dataCy="catalog-tab-films">
           <FilmTab
             searchQuery={searchQuery}
             filterStatus={filterStatus}
+            stockByMaterialId={stockByMaterialId}
+            onlyNeedsPurchase={onlyNeedsPurchase}
+            hideStockAlert={hideStockAlert}
             onEdit={(item) => handleEditItem(item, 'Film')}
             onViewDetails={(item) => handleViewDetails(item, 'Film')}
           />
         </Tab>
 
-        <Tab
-          label="Ferragens"
-          dataCy="catalog-tab-hardwares"
-        >
+        <Tab label="Ferragens" dataCy="catalog-tab-hardwares">
           <HardwareTab
             searchQuery={searchQuery}
             filterStatus={filterStatus}
+            stockByMaterialId={stockByMaterialId}
+            onlyNeedsPurchase={onlyNeedsPurchase}
+            hideStockAlert={hideStockAlert}
             onEdit={(item) => handleEditItem(item, 'Hardware')}
             onViewDetails={(item) => handleViewDetails(item, 'Hardware')}
           />

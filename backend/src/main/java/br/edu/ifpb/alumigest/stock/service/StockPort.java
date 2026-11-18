@@ -1,5 +1,6 @@
 package br.edu.ifpb.alumigest.stock.service;
 
+import br.edu.ifpb.alumigest.stock.dto.StockBalanceFilter;
 import br.edu.ifpb.alumigest.stock.dto.StockItemResponseDTO;
 import br.edu.ifpb.alumigest.stock.dto.StockMovementRequestDTO;
 import br.edu.ifpb.alumigest.stock.dto.StockMovementResponseDTO;
@@ -59,4 +60,14 @@ public interface StockPort {
      * @return Lista com os saldos consolidados
      */
     List<StockItemResponseDTO> listStockBalances();
+
+    /**
+     * Lista os saldos consolidados aplicando filtros de suprimentos e ordenação segura.
+     *
+     * @param filter critérios opcionais de filtragem e ordenação
+     * @return Lista filtrada e ordenada com os saldos consolidados
+     */
+    default List<StockItemResponseDTO> listStockBalances(StockBalanceFilter filter) {
+        return listStockBalances();
+    }
 }

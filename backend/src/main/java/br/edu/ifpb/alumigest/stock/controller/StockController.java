@@ -1,10 +1,14 @@
 package br.edu.ifpb.alumigest.stock.controller;
 
+import br.edu.ifpb.alumigest.stock.domain.StockAlertStatus;
+import br.edu.ifpb.alumigest.stock.domain.StockSortField;
+import br.edu.ifpb.alumigest.stock.dto.StockBalanceFilter;
 import br.edu.ifpb.alumigest.stock.dto.StockItemResponseDTO;
 import br.edu.ifpb.alumigest.stock.dto.StockMovementRequestDTO;
 import br.edu.ifpb.alumigest.stock.dto.StockMovementResponseDTO;
 import br.edu.ifpb.alumigest.stock.service.StockService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -36,8 +40,28 @@ public class StockController {
 
     @GetMapping
     @Operation(summary = "Listar saldos consolidados de estoque")
-    public ResponseEntity<List<StockItemResponseDTO>> listBalances() {
-        return ResponseEntity.ok(stockService.listStockBalances());
+    public ResponseEntity<List<StockItemResponseDTO>> listBalances(
+            @Parameter(description = "Categoria do material (GLASS, PROFILE, HARDWARE, FILM)")
+            @RequestParam(required = false) String category,
+            @Parameter(description = "Filtro por status de alerta de suprimento")
+            @RequestParam(required = false) StockAlertStatus alertStatus,
+            @Parameter(description = "Termo de busca por nome ou SKU do material")
+            @RequestParam(required = false) String search,
+            @Parameter(description = "Quando true, inclui itens com saldo disponível negativo")
+            @RequestParam(required = false) Boolean needsPurchase,
+            @Parameter(description = "Quando true, inclui itens no ponto de pedido (<= mínimo)")
+            @RequestParam(required = false) Boolean belowMinStock,
+            @Parameter(description = "Ordenação permitida: NAME, AVAILABLE, CRITICALITY")
+            @RequestParam(required = false) String sort) {
+        StockBalanceFilter filter = new StockBalanceFilter(
+            category,
+            alertStatus,
+            search,
+            needsPurchase,
+            belowMinStock,
+            StockSortField.fromParam(sort)
+        );
+        return ResponseEntity.ok(stockService.listStockBalances(filter));
     }
 
     @GetMapping("/materials/{materialId}")
