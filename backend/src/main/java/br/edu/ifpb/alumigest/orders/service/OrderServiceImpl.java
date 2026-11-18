@@ -149,9 +149,7 @@ public class OrderServiceImpl implements OrderService {
         convertItems(budget, order);
 
         order = orderRepository.saveAndFlush(order);
-        if (order != null && order.getId() != null) {
-            eventPublisher.publishEvent(new OrderMaterialsReservationEvent(order.getId()));
-        }
+        eventPublisher.publishEvent(new OrderMaterialsReservationEvent(order.getId()));
         return orderMapper.toResponse(order);
     }
 
@@ -476,8 +474,7 @@ public class OrderServiceImpl implements OrderService {
         }
         Order savedOrder = orderRepository.save(order);
         if (targetStatus == OrderStatus.WAITING_PRODUCTION) {
-            UUID targetOrderId = savedOrder != null && savedOrder.getId() != null ? savedOrder.getId() : id;
-            eventPublisher.publishEvent(new OrderMaterialsReservationEvent(targetOrderId));
+            eventPublisher.publishEvent(new OrderMaterialsReservationEvent(savedOrder.getId()));
         } else if (targetStatus == OrderStatus.COMPLETED) {
             eventPublisher.publishEvent(new OrderCompletedEvent(savedOrder.getId()));
         }
