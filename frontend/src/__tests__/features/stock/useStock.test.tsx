@@ -136,7 +136,7 @@ describe('useStock Hooks — Testes de Integração com TanStack Query', () => {
     expect(result.current.data).toEqual(mockMovements);
   });
 
-  it('useRegisterStockMovement deve disparar mutação e exibir toast de sucesso', async () => {
+  it('useRegisterStockMovement deve disparar mutação, exibir toast e invalidar stock-order-alert', async () => {
     const payload = {
       materialId: 'm1',
       type: 'MANUAL_ADJUSTMENT' as const,
@@ -158,8 +158,18 @@ describe('useStock Hooks — Testes de Integração com TanStack Query', () => {
 
     vi.mocked(stockApi.registerMovement).mockResolvedValueOnce(mockResponse);
 
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
+    const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
+
     const { result } = renderHook(() => useRegisterStockMovement(), {
-      wrapper: createWrapper(),
+      wrapper: ({ children }: { children: React.ReactNode }) => (
+        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+      ),
     });
 
     result.current.mutate(payload);
@@ -168,6 +178,9 @@ describe('useStock Hooks — Testes de Integração com TanStack Query', () => {
 
     expect(stockApi.registerMovement).toHaveBeenCalledWith(payload);
     expect(toast.success).toHaveBeenCalledWith('Movimentação registrada com sucesso no Kardex!');
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['stock-balances'] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['stock-movements'] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['stock-order-alert'] });
   });
 
   it('useReserveStockForOrder deve disparar reserva de materiais', async () => {

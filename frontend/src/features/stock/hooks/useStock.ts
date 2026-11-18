@@ -98,6 +98,7 @@ export const useRegisterStockMovement = () => {
       toast.success('Movimentação registrada com sucesso no Kardex!');
       queryClient.invalidateQueries({ queryKey: ['stock-balances'] });
       queryClient.invalidateQueries({ queryKey: ['stock-movements'] });
+      queryClient.invalidateQueries({ queryKey: ['stock-order-alert'] });
     },
     onError: (error: unknown) => {
       console.error('Erro ao registrar movimentação de estoque:', error);

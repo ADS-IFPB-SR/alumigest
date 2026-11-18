@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { StockAlertBadge } from '@/features/stock/components/StockAlertBadge';
 
@@ -60,7 +60,7 @@ describe('StockAlertBadge', () => {
       expect(screen.getByText('Estoque OK')).toBeInTheDocument();
     });
 
-    it('deve definir o atributo title e renderizar o tooltip no hover quando tooltip for informado', () => {
+    it('deve renderizar tooltip via portal no document.body no hover e remover no unhover', () => {
       render(
         <StockAlertBadge
           status="NEED_PURCHASE"
@@ -77,12 +77,58 @@ describe('StockAlertBadge', () => {
 
       // Ao passar o mouse (hover)
       fireEvent.mouseEnter(badge);
-      expect(screen.getByRole('tooltip')).toBeInTheDocument();
-      expect(screen.getByRole('tooltip')).toHaveTextContent('Insumos faltantes: Perfil 50x50');
+      const tooltip = screen.getByRole('tooltip');
+      expect(tooltip).toBeInTheDocument();
+      expect(tooltip).toHaveTextContent('Insumos faltantes: Perfil 50x50');
+      expect(document.body).toContainElement(tooltip);
 
       // Ao tirar o mouse (unhover)
       fireEvent.mouseLeave(badge);
       expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+    });
+
+    it('deve suportar tooltip via prop title como fallback', () => {
+      render(
+        <StockAlertBadge
+          status="IN_STOCK"
+          variant="kanban"
+          title="Tudo disponível no estoque"
+        />
+      );
+
+      const badge = screen.getByTestId('badge-stock-in-stock');
+      fireEvent.mouseEnter(badge);
+      const tooltip = screen.getByRole('tooltip');
+      expect(tooltip).toBeInTheDocument();
+      expect(tooltip).toHaveTextContent('Tudo disponível no estoque');
+    });
+
+    it('deve posicionar tooltip acima quando houver espaço no topo (top >= 60)', () => {
+      render(
+        <StockAlertBadge
+          status="ORDER_POINT"
+          tooltip="Ponto de pedido atingido"
+        />
+      );
+
+      const badge = screen.getByTestId('badge-stock-order-point');
+      vi.spyOn(badge, 'getBoundingClientRect').mockReturnValue({
+        top: 150,
+        bottom: 180,
+        left: 200,
+        right: 300,
+        width: 100,
+        height: 30,
+        x: 200,
+        y: 150,
+        toJSON: () => {},
+      });
+
+      fireEvent.mouseEnter(badge);
+      const tooltip = screen.getByRole('tooltip');
+      expect(tooltip).toBeInTheDocument();
+      expect(tooltip.style.top).toBe('144px');
+      expect(tooltip.style.transform).toContain('translate(-50%, -100%)');
     });
   });
 });

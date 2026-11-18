@@ -343,14 +343,105 @@ class StockServiceTest {
     }
 
     @Test
+    @DisplayName("getOrderStockAlert: deve validar orderId nulo e pedido inexistente")
+    void shouldValidateNullAndMissingOrderInGetOrderStockAlert() {
+        assertThatThrownBy(() -> stockService.getOrderStockAlert(null))
+            .isInstanceOf(BusinessException.class);
+
+        UUID missingId = UUID.randomUUID();
+        when(orderRepository.findByIdWithDetails(missingId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> stockService.getOrderStockAlert(missingId))
+            .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
     @DisplayName("getOrderStockAlert: deve retornar IN_STOCK quando a O.S. não tiver reservas pendentes")
     void shouldReturnInStockWhenOrderHasNoPendingReservations() {
         UUID orderId = UUID.randomUUID();
+        Order order = Order.builder().id(orderId).codigo("OS-2026-0001").build();
+        when(orderRepository.findByIdWithDetails(orderId)).thenReturn(Optional.of(order));
         when(stockMovementRepository.findByOrderIdOrderByCreatedAtAsc(orderId)).thenReturn(List.of());
 
         OrderStockAlertResponseDTO alert = stockService.getOrderStockAlert(orderId);
 
         assertThat(alert.alertStatus()).isEqualTo(StockAlertStatus.IN_STOCK);
+        assertThat(alert.missingMaterials()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("getOrderStockAlert: deve retornar IN_STOCK quando houver reserva ativa mas o estoque for suficiente")
+    void shouldReturnInStockWhenOrderHasActiveReservationWithSufficientStock() {
+        UUID orderId = UUID.randomUUID();
+        UUID materialId = UUID.randomUUID();
+        Material material = buildMaterial(materialId, "PERFIL", "ALU-5050", "Perfil 50x50");
+
+        StockItem stockItem = new StockItem(material);
+        stockItem.addPhysical(new BigDecimal("20.00"));
+        stockItem.reserve(new BigDecimal("5.00"));
+        stockItem.updateMinimumStock(new BigDecimal("5.00"));
+
+        Order order = Order.builder().id(orderId).codigo("OS-2026-0001").build();
+        when(orderRepository.findByIdWithDetails(orderId)).thenReturn(Optional.of(order));
+
+        StockMovement reservationMovement = StockMovement.builder()
+            .stockItem(stockItem)
+            .material(material)
+            .orderId(orderId)
+            .type(StockMovementType.PRODUCTION_RESERVATION)
+            .quantity(new BigDecimal("5.00"))
+            .previousPhysicalQuantity(new BigDecimal("20.00"))
+            .newPhysicalQuantity(new BigDecimal("20.00"))
+            .previousReservedQuantity(BigDecimal.ZERO)
+            .newReservedQuantity(new BigDecimal("5.00"))
+            .build();
+
+        when(stockMovementRepository.findByOrderIdOrderByCreatedAtAsc(orderId))
+            .thenReturn(List.of(reservationMovement));
+        when(stockItemRepository.findAllByMaterialIdIn(any()))
+            .thenReturn(List.of(stockItem));
+
+        OrderStockAlertResponseDTO alert = stockService.getOrderStockAlert(orderId);
+
+        assertThat(alert.alertStatus()).isEqualTo(StockAlertStatus.IN_STOCK);
+        assertThat(alert.missingMaterials()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("getOrderStockAlert: deve retornar ORDER_POINT quando o saldo disponível atingir o estoque mínimo")
+    void shouldReturnOrderPointWhenReservedMaterialReachesMinimumStock() {
+        UUID orderId = UUID.randomUUID();
+        UUID materialId = UUID.randomUUID();
+        Material material = buildMaterial(materialId, "PERFIL", "ALU-5050", "Perfil 50x50");
+
+        StockItem stockItem = new StockItem(material);
+        stockItem.addPhysical(new BigDecimal("15.00"));
+        stockItem.reserve(new BigDecimal("10.00"));
+        stockItem.updateMinimumStock(new BigDecimal("5.00"));
+
+        Order order = Order.builder().id(orderId).codigo("OS-2026-0001").build();
+        when(orderRepository.findByIdWithDetails(orderId)).thenReturn(Optional.of(order));
+
+        StockMovement reservationMovement = StockMovement.builder()
+            .stockItem(stockItem)
+            .material(material)
+            .orderId(orderId)
+            .type(StockMovementType.PRODUCTION_RESERVATION)
+            .quantity(new BigDecimal("10.00"))
+            .previousPhysicalQuantity(new BigDecimal("15.00"))
+            .newPhysicalQuantity(new BigDecimal("15.00"))
+            .previousReservedQuantity(BigDecimal.ZERO)
+            .newReservedQuantity(new BigDecimal("10.00"))
+            .build();
+
+        when(stockMovementRepository.findByOrderIdOrderByCreatedAtAsc(orderId))
+            .thenReturn(List.of(reservationMovement));
+        when(stockItemRepository.findAllByMaterialIdIn(any()))
+            .thenReturn(List.of(stockItem));
+
+        OrderStockAlertResponseDTO alert = stockService.getOrderStockAlert(orderId);
+
+        assertThat(alert.alertStatus()).isEqualTo(StockAlertStatus.ORDER_POINT);
         assertThat(alert.missingMaterials()).isEmpty();
     }
 
@@ -366,6 +457,9 @@ class StockServiceTest {
         stockItem.addPhysical(new BigDecimal("2.00"));
         stockItem.reserve(new BigDecimal("10.00"));
 
+        Order order = Order.builder().id(orderId).codigo("OS-2026-0001").build();
+        when(orderRepository.findByIdWithDetails(orderId)).thenReturn(Optional.of(order));
+
         StockMovement reservationMovement = StockMovement.builder()
             .stockItem(stockItem)
             .material(material)
@@ -380,8 +474,8 @@ class StockServiceTest {
 
         when(stockMovementRepository.findByOrderIdOrderByCreatedAtAsc(orderId))
             .thenReturn(List.of(reservationMovement));
-        when(stockItemRepository.findByMaterialId(materialId))
-            .thenReturn(Optional.of(stockItem));
+        when(stockItemRepository.findAllByMaterialIdIn(any()))
+            .thenReturn(List.of(stockItem));
 
         OrderStockAlertResponseDTO alert = stockService.getOrderStockAlert(orderId);
 

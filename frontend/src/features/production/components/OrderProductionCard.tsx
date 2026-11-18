@@ -108,16 +108,18 @@ export const OrderProductionCard: React.FC<OrderProductionCardProps> = ({
     >
       {/* 1. Header: Código da OS, Orçamento Origem, Alerta de Estoque e Alerta de Prazo */}
       <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="font-bold text-slate-950 text-sm tracking-tight">{order.codigo}</span>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <span className="font-bold text-slate-950 text-sm tracking-tight whitespace-nowrap shrink-0">
+            {order.codigo}
+          </span>
           {order.orcamentoCodigo && (
-            <span className="text-[10px] font-bold text-slate-800 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-300">
+            <span className="text-[10px] font-bold text-slate-800 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-300 whitespace-nowrap shrink-0">
               {order.orcamentoCodigo}
             </span>
           )}
         </div>
 
-        <div className="flex items-center gap-1.5 flex-wrap justify-end">
+        <div className="flex items-center gap-1.5 flex-wrap justify-end shrink-0">
           {activeStockAlert && (
             <StockAlertBadge
               status={activeStockAlert.alertStatus}
@@ -128,7 +130,7 @@ export const OrderProductionCard: React.FC<OrderProductionCardProps> = ({
 
           {alertConfig && (
             <span
-              className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border ${alertConfig.color}`}
+              className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border whitespace-nowrap shrink-0 ${alertConfig.color}`}
             >
               {alertConfig.icon}
               {alertConfig.label}

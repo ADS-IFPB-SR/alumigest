@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -216,11 +217,20 @@ public class StockService implements StockPort {
      */
     @Override
     public OrderStockAlertResponseDTO getOrderStockAlert(UUID orderId) {
+        findOrderOrThrow(orderId);
         Map<UUID, BigDecimal> pendingReservations = computeNetPendingReservations(orderId);
 
         if (pendingReservations.isEmpty()) {
             return new OrderStockAlertResponseDTO(StockAlertStatus.IN_STOCK, List.of());
         }
+
+        return buildOrderStockAlert(pendingReservations);
+    }
+
+    private OrderStockAlertResponseDTO buildOrderStockAlert(Map<UUID, BigDecimal> pendingReservations) {
+        List<StockItem> stockItems = stockItemRepository.findAllByMaterialIdIn(pendingReservations.keySet());
+        Map<UUID, StockItem> itemsByMaterialId = stockItems.stream()
+            .collect(Collectors.toMap(item -> item.getMaterial().getId(), item -> item));
 
         List<MissingMaterialDTO> missingMaterials = new ArrayList<>();
         StockAlertStatus worstStatus = StockAlertStatus.IN_STOCK;
@@ -229,33 +239,23 @@ public class StockService implements StockPort {
             UUID materialId = entry.getKey();
             BigDecimal reserved = entry.getValue();
 
-            java.util.Optional<StockItem> optItem = stockItemRepository.findByMaterialId(materialId);
-            if (optItem.isEmpty()) {
+            StockItem item = itemsByMaterialId.get(materialId);
+            if (item == null) {
                 worstStatus = StockAlertStatus.NEED_PURCHASE;
                 continue;
             }
 
-            StockItem item = optItem.get();
             StockAlertStatus itemStatus = item.resolveAlertStatus();
-            if (itemStatus.ordinal() > worstStatus.ordinal()) {
+            if (itemStatus.isMoreCriticalThan(worstStatus)) {
                 worstStatus = itemStatus;
             }
 
             if (itemStatus == StockAlertStatus.NEED_PURCHASE) {
-                String unitMeasure = item.getMaterial().getUnitMeasure() != null
-                    ? item.getMaterial().getUnitMeasure().name()
-                    : "";
-                missingMaterials.add(new MissingMaterialDTO(
-                    item.getMaterial().getName(),
-                    item.getMaterial().getSkuCode(),
-                    item.getAvailableQuantity(),
-                    reserved,
-                    unitMeasure
-                ));
+                missingMaterials.add(stockMapper.toMissingMaterialDTO(item, reserved));
             }
         }
 
-        return new OrderStockAlertResponseDTO(worstStatus, missingMaterials);
+        return new OrderStockAlertResponseDTO(worstStatus, List.copyOf(missingMaterials));
     }
 
     /**
