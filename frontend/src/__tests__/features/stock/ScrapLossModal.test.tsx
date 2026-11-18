@@ -7,6 +7,7 @@ import { stockApi } from '@/features/stock/api/stockApi';
 
 vi.mock('@/features/stock/api/stockApi', () => ({
   stockApi: {
+    listBalances: vi.fn(),
     registerMovement: vi.fn(),
   },
 }));
@@ -295,6 +296,67 @@ describe('ScrapLossModal — [US-21.7] Modal de Registro de Perdas/Sucata', () =
 
       fireEvent.click(screen.getByTestId('btn-scrap-cancel'));
       expect(onClose).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('[Seleção de Insumo quando materialId não é fornecido]', () => {
+    it('deve exibir o seletor de insumo, exigir seleção e submeter o materialId escolhido', async () => {
+      vi.mocked(stockApi.listBalances).mockResolvedValueOnce([
+        {
+          id: 'si-1',
+          materialId: 'mat-select-01',
+          materialSku: 'GL-TEMP-8MM',
+          materialName: 'Vidro Temperado Incolor 8mm',
+          category: 'GLASS',
+          unitMeasure: 'M2',
+          physicalQuantity: 12.0,
+          reservedQuantity: 2.0,
+          availableQuantity: 10.0,
+          minimumStock: 5.0,
+          alertStatus: 'IN_STOCK',
+        },
+      ]);
+
+      const onConfirm = vi.fn().mockResolvedValue(undefined);
+      const Wrapper = createWrapper();
+      render(
+        <Wrapper>
+          <ScrapLossModal isOpen={true} onClose={vi.fn()} onConfirm={onConfirm} />
+        </Wrapper>
+      );
+
+      const select = await screen.findByTestId('select-scrap-material');
+      expect(select).toBeInTheDocument();
+
+      // Tenta enviar sem selecionar insumo
+      fireEvent.change(screen.getByTestId('input-scrap-quantity'), { target: { value: '2' } });
+      fireEvent.change(screen.getByTestId('textarea-scrap-reason'), {
+        target: { value: 'Chapa trincada no cavalete' },
+      });
+      fireEvent.click(screen.getByTestId('btn-scrap-submit'));
+
+      await waitFor(() => {
+        expect(screen.getByText(/Selecione o insumo para registrar a perda/i)).toBeInTheDocument();
+      });
+      expect(onConfirm).not.toHaveBeenCalled();
+
+      // Seleciona o insumo e submete
+      await waitFor(() => {
+        expect(screen.getByText(/GL-TEMP-8MM — Vidro Temperado Incolor 8mm/i)).toBeInTheDocument();
+      });
+      fireEvent.change(select, { target: { value: 'mat-select-01' } });
+      fireEvent.click(screen.getByTestId('btn-scrap-submit'));
+
+      await waitFor(() => {
+        expect(onConfirm).toHaveBeenCalledWith(
+          expect.objectContaining({
+            materialId: 'mat-select-01',
+            type: 'SCRAP_LOSS',
+            quantity: 2,
+            reason: 'Chapa trincada no cavalete',
+          })
+        );
+      });
     });
   });
 });

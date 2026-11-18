@@ -1,9 +1,9 @@
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AlertTriangle, AlertOctagon, X, Package, Hash, FileText, CheckCircle2 } from 'lucide-react';
-import { useRegisterStockMovement } from '../hooks/useStock';
+import { useRegisterStockMovement, useStockBalances } from '../hooks/useStock';
 import { scrapLossSchema, type ScrapLossFormData } from '../schemas/stockSchema';
 import type { StockMovementRequest } from '../types';
 
@@ -44,6 +44,31 @@ export const ScrapLossModal: React.FC<ScrapLossModalProps> = ({
   const registerMovementMutation = useRegisterStockMovement();
   const isSubmitting = registerMovementMutation.isPending;
 
+  const isSelectionMode = !materialId;
+  const [selectedMaterialId, setSelectedMaterialId] = useState<string>('');
+  const [materialError, setMaterialError] = useState<string | null>(null);
+
+  const { data: stockBalances = [] } = useStockBalances(undefined, {
+    enabled: isOpen && isSelectionMode,
+  });
+
+  const selectedStockItem = isSelectionMode
+    ? stockBalances.find((item) => item.materialId === selectedMaterialId)
+    : undefined;
+
+  const effectiveMaterialId = materialId || selectedMaterialId;
+  const effectiveSku = materialId ? materialSku : selectedStockItem?.materialSku ?? 'N/A';
+  const effectiveName = materialId
+    ? materialName
+    : selectedStockItem?.materialName ?? 'Selecione um insumo abaixo';
+  const effectiveUnit = materialId ? unitMeasure : selectedStockItem?.unitMeasure ?? 'UN';
+  const effectivePhysical = materialId
+    ? currentPhysical
+    : selectedStockItem?.physicalQuantity ?? 0;
+  const effectiveReserved = materialId
+    ? currentReserved
+    : selectedStockItem?.reservedQuantity ?? 0;
+
   const {
     register,
     handleSubmit,
@@ -66,11 +91,13 @@ export const ScrapLossModal: React.FC<ScrapLossModalProps> = ({
 
   const numQuantity = Number(watchedQuantity);
   const isExceedingStock =
-    !isNaN(numQuantity) && numQuantity > 0 && numQuantity > currentPhysical;
+    !isNaN(numQuantity) && numQuantity > 0 && numQuantity > effectivePhysical;
 
   const handleClose = useCallback(() => {
     if (isSubmitting) return;
     reset();
+    setSelectedMaterialId('');
+    setMaterialError(null);
     onClose();
   }, [isSubmitting, reset, onClose]);
 
@@ -99,8 +126,13 @@ export const ScrapLossModal: React.FC<ScrapLossModalProps> = ({
   };
 
   const onSubmit = async (data: ScrapLossFormData) => {
+    if (!effectiveMaterialId) {
+      setMaterialError('Selecione o insumo para registrar a perda.');
+      return;
+    }
+
     const payload: StockMovementRequest = {
-      materialId,
+      materialId: effectiveMaterialId,
       type: 'SCRAP_LOSS',
       quantity: data.quantity,
       reason: data.reason,
@@ -115,6 +147,8 @@ export const ScrapLossModal: React.FC<ScrapLossModalProps> = ({
         await registerMovementMutation.mutateAsync(payload);
       }
       reset();
+      setSelectedMaterialId('');
+      setMaterialError(null);
       onSuccess?.();
       onClose();
     } catch {
@@ -162,32 +196,71 @@ export const ScrapLossModal: React.FC<ScrapLossModalProps> = ({
           </button>
         </div>
 
-        {/* Card Informativo do Material */}
-        <div className="px-6 pt-5 pb-1">
+        {/* Seleção ou Card Informativo do Material */}
+        <div className="px-6 pt-5 pb-1 space-y-3">
+          {isSelectionMode && (
+            <div>
+              <label
+                htmlFor="scrap-material-select"
+                className="block text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-1"
+              >
+                Insumo / Material *
+              </label>
+              <select
+                id="scrap-material-select"
+                value={selectedMaterialId}
+                disabled={isSubmitting}
+                data-testid="select-scrap-material"
+                onChange={(e) => {
+                  setSelectedMaterialId(e.target.value);
+                  if (e.target.value) setMaterialError(null);
+                }}
+                className={`w-full px-3 py-2 text-sm rounded-lg border bg-surface-container-lowest text-on-surface focus:outline-hidden focus:ring-2 transition-all disabled:opacity-60 ${
+                  materialError
+                    ? 'border-rose-500 focus:ring-rose-500/20'
+                    : 'border-outline-variant focus:ring-primary/20 focus:border-primary'
+                }`}
+              >
+                <option value="">Selecione um insumo em estoque...</option>
+                {stockBalances.map((item) => (
+                  <option key={item.materialId} value={item.materialId}>
+                    {item.materialSku} — {item.materialName} (Saldo: {item.physicalQuantity} {item.unitMeasure})
+                  </option>
+                ))}
+              </select>
+              {materialError && (
+                <p className="text-xs text-rose-600 mt-1 font-medium flex items-center gap-1">
+                  <AlertOctagon className="w-3.5 h-3.5" />
+                  {materialError}
+                </p>
+              )}
+            </div>
+          )}
+
           <div className="p-3.5 bg-surface-container rounded-xl border border-outline-variant/60 space-y-2">
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-2">
                 <Package className="w-4 h-4 text-primary shrink-0" />
                 <span className="font-semibold text-sm text-on-surface line-clamp-1">
-                  {materialName}
+                  {effectiveName}
                 </span>
               </div>
               <span className="px-2 py-0.5 text-xs font-mono font-medium rounded-md bg-surface-container-highest text-on-surface-variant border border-outline-variant">
-                SKU: {materialSku}
+                SKU: {effectiveSku}
               </span>
             </div>
             <div className="flex items-center gap-4 text-xs text-on-surface-variant pt-1 border-t border-outline-variant/40">
               <div>
                 Saldo Físico Atual:{' '}
                 <strong className="text-on-surface font-semibold">
-                  {currentPhysical} {unitMeasure}
+                  {effectivePhysical} {effectiveUnit}
                 </strong>
               </div>
-              {currentReserved > 0 && (
+              {effectiveReserved > 0 && (
                 <div>
                   Reservado:{' '}
                   <strong className="text-amber-600 font-semibold">
-                    {currentReserved} {unitMeasure}
+                    {effectiveReserved} {effectiveUnit}
                   </strong>
                 </div>
               )}
@@ -204,10 +277,10 @@ export const ScrapLossModal: React.FC<ScrapLossModalProps> = ({
                 htmlFor="scrap-quantity"
                 className="block text-xs font-semibold uppercase tracking-wider text-on-surface-variant"
               >
-                Quantidade da Perda ({unitMeasure}) *
+                Quantidade da Perda ({effectiveUnit}) *
               </label>
               <span className="text-xs text-on-surface-variant/80">
-                Máximo sugerido: {currentPhysical} {unitMeasure}
+                Máximo sugerido: {effectivePhysical} {effectiveUnit}
               </span>
             </div>
             <div className="relative">
@@ -238,7 +311,7 @@ export const ScrapLossModal: React.FC<ScrapLossModalProps> = ({
             {isExceedingStock && !errors.quantity && (
               <p className="text-xs text-amber-600 mt-1 font-medium flex items-center gap-1">
                 <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-                Atenção: A quantidade informada ({numQuantity}) é maior que o saldo físico em estoque ({currentPhysical}). A operação será rejeitada pelo servidor (RN-03).
+                Atenção: A quantidade informada ({numQuantity}) é maior que o saldo físico em estoque ({effectivePhysical}). A operação será rejeitada pelo servidor (RN-03).
               </p>
             )}
           </div>
