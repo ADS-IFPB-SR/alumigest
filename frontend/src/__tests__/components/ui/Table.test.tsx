@@ -111,4 +111,17 @@ describe('Table Component [Joseph Nichollas]', () => {
 
     expect(onDelete).toHaveBeenCalledWith(mockData[0]);
   });
+
+  it('deve renderizar o botão apenas com ícone de Extrato Kardex e disparar onOpenKardex ao clicar', () => {
+    const onOpenKardex = vi.fn();
+    render(<Table columns={columns} data={mockData} onOpenKardex={onOpenKardex} />);
+
+    const kardexBtn = screen.getByTestId('kardex-button-1');
+    expect(kardexBtn).toHaveAttribute('title', 'Extrato Kardex');
+    expect(kardexBtn).toHaveAttribute('aria-label', 'Extrato Kardex');
+    expect(kardexBtn).toHaveTextContent('receipt_long');
+    fireEvent.click(kardexBtn);
+
+    expect(onOpenKardex).toHaveBeenCalledWith(mockData[0]);
+  });
 });

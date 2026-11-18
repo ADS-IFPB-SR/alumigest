@@ -39,6 +39,7 @@ interface CatalogMaterialSectionProps<
   readonly rowTestAttributes?: (row: T) => Record<string, string | undefined>;
   readonly onEdit: (row: T) => void;
   readonly onViewDetails: (row: T) => void;
+  readonly onOpenKardex?: (row: T) => void;
 }
 
 /**
@@ -65,6 +66,7 @@ export function CatalogMaterialSection<
   rowTestAttributes,
   onEdit,
   onViewDetails,
+  onOpenKardex,
 }: CatalogMaterialSectionProps<T>) {
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
@@ -172,6 +174,7 @@ export function CatalogMaterialSection<
               footer={renderPaginationBar(`catalog-page-size-${dataCyContainer}-desktop`)}
               onEdit={onEdit}
               onViewDetails={onViewDetails}
+              onOpenKardex={onOpenKardex}
               rowTestId={() => rowTestId}
               rowTestAttributes={rowTestAttributes}
             />
@@ -193,6 +196,7 @@ export function CatalogMaterialSection<
                   rowTestId={rowTestId}
                   onEdit={onEdit}
                   onViewDetails={onViewDetails}
+                  onOpenKardex={onOpenKardex}
                 />
               ))}
             </div>

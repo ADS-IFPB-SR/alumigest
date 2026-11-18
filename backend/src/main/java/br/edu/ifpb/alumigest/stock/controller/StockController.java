@@ -73,6 +73,7 @@ public class StockController {
     @GetMapping("/movements")
     @Operation(summary = "Listar trilha de movimentações Kardex")
     public ResponseEntity<List<StockMovementResponseDTO>> listMovements(
+            @Parameter(description = "ID opcional do material para filtrar o Kardex")
             @RequestParam(required = false) UUID materialId) {
         return ResponseEntity.ok(stockService.listMovements(materialId));
     }

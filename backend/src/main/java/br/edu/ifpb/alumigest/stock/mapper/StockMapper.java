@@ -49,18 +49,24 @@ public class StockMapper {
      */
     public StockMovementResponseDTO toMovementResponseDTO(StockMovement movement) {
         Material material = movement.getMaterial();
+        String unitMeasure = material.getUnitMeasure() != null
+            ? material.getUnitMeasure().name()
+            : null;
         return new StockMovementResponseDTO(
             movement.getId(),
             movement.getStockItem().getId(),
             material.getId(),
             material.getSkuCode(),
             material.getName(),
+            unitMeasure,
             movement.getType(),
             movement.getQuantity(),
+            movement.getUnitCost(),
             movement.getPreviousPhysicalQuantity(),
             movement.getNewPhysicalQuantity(),
             movement.getPreviousReservedQuantity(),
             movement.getNewReservedQuantity(),
+            movement.getOrderId(),
             movement.getReferenceDocument(),
             movement.getReason(),
             movement.getRegisteredBy(),

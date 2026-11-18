@@ -88,6 +88,7 @@ interface Props {
   readonly hideStockAlert?: boolean;
   readonly onEdit: (item: GlassDTO) => void;
   readonly onViewDetails: (item: GlassDTO) => void;
+  readonly onOpenKardex?: (item: GlassDTO) => void;
 }
 
 export function GlassTab({
@@ -98,6 +99,7 @@ export function GlassTab({
   hideStockAlert,
   onEdit,
   onViewDetails,
+  onOpenKardex,
 }: Props) {
   const { data, isLoading } = useGlasses();
 
@@ -135,6 +137,7 @@ export function GlassTab({
       rowTestAttributes={(row) => ({ 'data-glass-name': row.name })}
       onEdit={onEdit}
       onViewDetails={onViewDetails}
+      onOpenKardex={onOpenKardex}
     />
   );
 }

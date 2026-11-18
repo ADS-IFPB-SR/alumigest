@@ -14,14 +14,60 @@ public record StockMovementResponseDTO(
     UUID materialId,
     String materialSku,
     String materialName,
+    String unitMeasure,
     StockMovementType type,
     BigDecimal quantity,
+    BigDecimal unitCost,
     BigDecimal previousPhysicalQuantity,
     BigDecimal newPhysicalQuantity,
     BigDecimal previousReservedQuantity,
     BigDecimal newReservedQuantity,
+    UUID orderId,
     String referenceDocument,
     String reason,
     String registeredBy,
     OffsetDateTime createdAt
-) {}
+) {
+
+    /**
+     * Construtor de retrocompatibilidade para chamadores legados sem campos estendidos de auditoria.
+     */
+    @SuppressWarnings("java:S107")
+    public StockMovementResponseDTO(
+            UUID id,
+            UUID stockItemId,
+            UUID materialId,
+            String materialSku,
+            String materialName,
+            StockMovementType type,
+            BigDecimal quantity,
+            BigDecimal previousPhysicalQuantity,
+            BigDecimal newPhysicalQuantity,
+            BigDecimal previousReservedQuantity,
+            BigDecimal newReservedQuantity,
+            String referenceDocument,
+            String reason,
+            String registeredBy,
+            OffsetDateTime createdAt) {
+        this(
+            id,
+            stockItemId,
+            materialId,
+            materialSku,
+            materialName,
+            null,
+            type,
+            quantity,
+            null,
+            previousPhysicalQuantity,
+            newPhysicalQuantity,
+            previousReservedQuantity,
+            newReservedQuantity,
+            null,
+            referenceDocument,
+            reason,
+            registeredBy,
+            createdAt
+        );
+    }
+}

@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 import { CatalogView } from '@/features/catalog/components/CatalogView';
-import { useStockBalances } from '@/features/stock';
+import { stockApi, useStockBalances } from '@/features/stock';
 
 vi.mock('@/features/stock', async () => {
   const actual = await vi.importActual<typeof import('@/features/stock')>('@/features/stock');
@@ -20,6 +21,7 @@ vi.mock('@/features/catalog/components/GlassTab', () => ({
     hideStockAlert,
     onEdit,
     onViewDetails,
+    onOpenKardex,
   }: any) => (
     <div data-testid="glass-tab">
       <span>
@@ -32,12 +34,24 @@ vi.mock('@/features/catalog/components/GlassTab', () => ({
       <button type="button" onClick={() => onViewDetails({ id: '1', name: 'Vidro Temperado' })}>
         Detalhes Vidro
       </button>
+      <button
+        type="button"
+        onClick={() =>
+          onOpenKardex?.({
+            id: 'mat-g1',
+            name: 'Vidro Temperado 8mm',
+            commercialReference: 'VID-008',
+          })
+        }
+      >
+        Extrato Kardex Vidro
+      </button>
     </div>
   ),
 }));
 
 vi.mock('@/features/catalog/components/ProfileTab', () => ({
-  ProfileTab: ({ onlyNeedsPurchase, hideStockAlert, onEdit, onViewDetails }: any) => (
+  ProfileTab: ({ onlyNeedsPurchase, hideStockAlert, onEdit, onViewDetails, onOpenKardex }: any) => (
     <div data-testid="profile-tab">
       <span>
         ProfileTab (need: {String(Boolean(onlyNeedsPurchase))}, hide:{' '}
@@ -49,12 +63,24 @@ vi.mock('@/features/catalog/components/ProfileTab', () => ({
       <button type="button" onClick={() => onViewDetails({ id: '2', name: 'Perfil Tubo' })}>
         Detalhes Perfil
       </button>
+      <button
+        type="button"
+        onClick={() =>
+          onOpenKardex?.({
+            id: 'mat-p1',
+            name: 'Perfil Suprema',
+            commercialReference: 'AL-SUP-01',
+          })
+        }
+      >
+        Extrato Kardex Perfil
+      </button>
     </div>
   ),
 }));
 
 vi.mock('@/features/catalog/components/FilmTab', () => ({
-  FilmTab: ({ onEdit, onViewDetails }: any) => (
+  FilmTab: ({ onEdit, onViewDetails, onOpenKardex }: any) => (
     <div data-testid="film-tab">
       <span>FilmTab</span>
       <button type="button" onClick={() => onEdit({ id: '3', name: 'Película Fumê' })}>
@@ -63,12 +89,24 @@ vi.mock('@/features/catalog/components/FilmTab', () => ({
       <button type="button" onClick={() => onViewDetails({ id: '3', name: 'Película Fumê' })}>
         Detalhes Película
       </button>
+      <button
+        type="button"
+        onClick={() =>
+          onOpenKardex?.({
+            id: 'mat-f1',
+            name: 'Película Jateada',
+            skuCode: 'PEL-JAT-01',
+          })
+        }
+      >
+        Extrato Kardex Película
+      </button>
     </div>
   ),
 }));
 
 vi.mock('@/features/catalog/components/HardwareTab', () => ({
-  HardwareTab: ({ onEdit, onViewDetails }: any) => (
+  HardwareTab: ({ onEdit, onViewDetails, onOpenKardex }: any) => (
     <div data-testid="hardware-tab">
       <span>HardwareTab</span>
       <button type="button" onClick={() => onEdit({ id: '4', name: 'Fecho Concha' })}>
@@ -76,6 +114,18 @@ vi.mock('@/features/catalog/components/HardwareTab', () => ({
       </button>
       <button type="button" onClick={() => onViewDetails({ id: '4', name: 'Fecho Concha' })}>
         Detalhes Ferragem
+      </button>
+      <button
+        type="button"
+        onClick={() =>
+          onOpenKardex?.({
+            id: 'mat-h1',
+            name: 'Fecho Concha',
+            skuCode: 'FEC-01',
+          })
+        }
+      >
+        Extrato Kardex Ferragem
       </button>
     </div>
   ),
@@ -371,5 +421,54 @@ describe('CatalogView Component [Joseph Nichollas + US-22.1]', () => {
     );
     fireEvent.click(screen.getByRole('button', { name: 'Tentar novamente' }));
     expect(refetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('deve abrir a KardexDrawer pelo catálogo preservando filtros ativos e fechar ao clicar em X ou Esc', async () => {
+    const listMovementsSpy = vi.spyOn(stockApi, 'listMovements').mockResolvedValueOnce([
+      {
+        id: 'mov-1',
+        stockItemId: 'st-1',
+        materialId: 'mat-g1',
+        materialSku: 'VID-008',
+        materialName: 'Vidro Temperado 8mm',
+        unitMeasure: 'M2',
+        type: 'PURCHASE_ENTRY',
+        quantity: 12,
+        previousPhysicalQuantity: 0,
+        newPhysicalQuantity: 12,
+        previousReservedQuantity: 0,
+        newReservedQuantity: 0,
+        referenceDocument: 'NF-500',
+        createdAt: '2026-11-18T08:00:00Z',
+      },
+    ]);
+
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <CatalogView />
+      </QueryClientProvider>
+    );
+
+    fireEvent.change(screen.getByPlaceholderText('Buscar código ou insumo...'), {
+      target: { value: 'Temperado' },
+    });
+
+    fireEvent.click(screen.getByText('Extrato Kardex Vidro'));
+
+    expect(screen.getByTestId('kardex-drawer')).toBeInTheDocument();
+    expect(screen.getByTestId('kardex-material-sku')).toHaveTextContent('#VID-008');
+    await waitFor(() => {
+      expect(screen.getByTestId('kardex-timeline')).toHaveTextContent('NF-500');
+    });
+    expect(listMovementsSpy).toHaveBeenCalledWith('mat-g1');
+    expect(screen.getByTestId('glass-tab')).toHaveTextContent('search: Temperado');
+
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(screen.queryByTestId('kardex-drawer')).not.toBeInTheDocument();
+    expect(screen.getByTestId('glass-tab')).toHaveTextContent('search: Temperado');
   });
 });

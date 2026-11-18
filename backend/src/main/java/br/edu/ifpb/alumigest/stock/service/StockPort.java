@@ -70,4 +70,12 @@ public interface StockPort {
     default List<StockItemResponseDTO> listStockBalances(StockBalanceFilter filter) {
         return listStockBalances();
     }
+
+    /**
+     * Lista o histórico imutável de movimentações Kardex, opcionalmente filtrado por material.
+     *
+     * @param materialId Identificador opcional do material
+     * @return Lista ordenada cronologicamente do registro mais recente ao mais antigo
+     */
+    List<StockMovementResponseDTO> listMovements(UUID materialId);
 }

@@ -49,6 +49,18 @@ export const useStockMovements = (materialId?: string) => {
 };
 
 /**
+ * Hook dedicado à Gaveta Lateral Kardex (US-22.2): busca a trilha de movimentações
+ * apenas quando há um material selecionado e a gaveta está aberta.
+ */
+export const useKardex = (materialId: string | undefined, enabled = true) => {
+  return useQuery({
+    queryKey: ['stock-movements', materialId],
+    queryFn: () => stockApi.listMovements(materialId),
+    enabled: Boolean(materialId) && enabled,
+  });
+};
+
+/**
  * Hook de mutação para registro manual de movimentação de estoque.
  */
 export const useRegisterStockMovement = () => {

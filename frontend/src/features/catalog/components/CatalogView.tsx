@@ -1,9 +1,11 @@
 import { useMemo, useState } from 'react';
 import { Tabs, Tab } from '../../../components/ui/Tabs';
 import {
+  KardexDrawer,
   needsPurchaseOrReorder,
   resolveCatalogStockSnapshot,
   useStockBalances,
+  type KardexMaterialTarget,
   type StockItem,
 } from '@/features/stock';
 import { GlassTab } from './GlassTab';
@@ -45,6 +47,24 @@ function persistHideAlertPreference(value: boolean): void {
   }
 }
 
+function toKardexTarget(
+  item: CatalogMaterialItem,
+  defaultUnitMeasure: string
+): KardexMaterialTarget {
+  const skuCode =
+    ('skuCode' in item ? item.skuCode : undefined) ||
+    ('commercialReference' in item ? item.commercialReference : undefined);
+  const unitMeasure =
+    'unitMeasure' in item && item.unitMeasure ? item.unitMeasure : defaultUnitMeasure;
+
+  return {
+    id: item.id,
+    skuCode,
+    name: item.name,
+    unitMeasure,
+  };
+}
+
 export function CatalogView() {
   const [isSelectionModalOpen, setIsSelectionModalOpen] = useState(false);
   const [activeFormType, setActiveFormType] = useState<MaterialType | null>(null);
@@ -53,6 +73,8 @@ export function CatalogView() {
     item: CatalogMaterialItem;
     tipo: MaterialType;
   } | null>(null);
+  const [selectedKardexMaterial, setSelectedKardexMaterial] =
+    useState<KardexMaterialTarget | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL');
   const [onlyNeedsPurchase, setOnlyNeedsPurchase] = useState(false);
@@ -96,6 +118,10 @@ export function CatalogView() {
 
   const handleViewDetails = (item: CatalogMaterialItem, tipo: MaterialType) => {
     setDetailsItem({ item, tipo });
+  };
+
+  const handleOpenKardex = (item: CatalogMaterialItem, defaultUnitMeasure: string) => {
+    setSelectedKardexMaterial(toKardexTarget(item, defaultUnitMeasure));
   };
 
   const handleCloseFormModal = () => {
@@ -264,6 +290,7 @@ export function CatalogView() {
             hideStockAlert={hideStockAlert}
             onEdit={(item) => handleEditItem(item, 'Glass')}
             onViewDetails={(item) => handleViewDetails(item, 'Glass')}
+            onOpenKardex={(item) => handleOpenKardex(item, 'M2')}
           />
         </Tab>
 
@@ -276,6 +303,7 @@ export function CatalogView() {
             hideStockAlert={hideStockAlert}
             onEdit={(item) => handleEditItem(item, 'Profile')}
             onViewDetails={(item) => handleViewDetails(item, 'Profile')}
+            onOpenKardex={(item) => handleOpenKardex(item, 'BARRA_6M')}
           />
         </Tab>
 
@@ -288,6 +316,7 @@ export function CatalogView() {
             hideStockAlert={hideStockAlert}
             onEdit={(item) => handleEditItem(item, 'Film')}
             onViewDetails={(item) => handleViewDetails(item, 'Film')}
+            onOpenKardex={(item) => handleOpenKardex(item, 'M2')}
           />
         </Tab>
 
@@ -300,6 +329,7 @@ export function CatalogView() {
             hideStockAlert={hideStockAlert}
             onEdit={(item) => handleEditItem(item, 'Hardware')}
             onViewDetails={(item) => handleViewDetails(item, 'Hardware')}
+            onOpenKardex={(item) => handleOpenKardex(item, 'UN')}
           />
         </Tab>
       </Tabs>
@@ -355,6 +385,18 @@ export function CatalogView() {
             setDetailsItem(null);
           }
         }}
+      />
+
+      {/* Gaveta Lateral de Extrato Kardex (US-22.2) */}
+      <KardexDrawer
+        isOpen={Boolean(selectedKardexMaterial)}
+        material={selectedKardexMaterial}
+        stockItem={
+          selectedKardexMaterial
+            ? stockByMaterialId.get(selectedKardexMaterial.id)
+            : undefined
+        }
+        onClose={() => setSelectedKardexMaterial(null)}
       />
     </>
   );
