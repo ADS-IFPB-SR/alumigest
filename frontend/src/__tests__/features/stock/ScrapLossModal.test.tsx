@@ -67,7 +67,11 @@ describe('ScrapLossModal — [US-21.7] Modal de Registro de Perdas/Sucata', () =
         </Wrapper>
       );
 
-      expect(screen.getByTestId('modal-scrap-loss')).toBeInTheDocument();
+      const modal = screen.getByTestId('modal-scrap-loss');
+      expect(modal).toBeInTheDocument();
+      expect(modal).toHaveAttribute('role', 'dialog');
+      expect(modal).toHaveAttribute('aria-modal', 'true');
+      expect(modal).toHaveAttribute('aria-labelledby', 'scrap-loss-title');
       expect(screen.getByText('Registrar Perda / Sucata')).toBeInTheDocument();
       expect(screen.getByText('Perfil de Alumínio Tubular 50x50')).toBeInTheDocument();
       expect(screen.getByText(/SKU: AL-PER-001/i)).toBeInTheDocument();
@@ -356,6 +360,129 @@ describe('ScrapLossModal — [US-21.7] Modal de Registro de Perdas/Sucata', () =
             reason: 'Chapa trincada no cavalete',
           })
         );
+      });
+    });
+
+    it('NÃO deve exibir aviso falso de RN-03 ao digitar quantidade antes de selecionar um insumo', async () => {
+      vi.mocked(stockApi.listBalances).mockResolvedValueOnce([
+        {
+          id: 'si-1',
+          materialId: 'mat-select-01',
+          materialSku: 'GL-TEMP-8MM',
+          materialName: 'Vidro Temperado Incolor 8mm',
+          category: 'GLASS',
+          unitMeasure: 'M2',
+          physicalQuantity: 12.0,
+          reservedQuantity: 0,
+          availableQuantity: 12.0,
+          minimumStock: 5.0,
+          alertStatus: 'IN_STOCK',
+        },
+      ]);
+
+      const Wrapper = createWrapper();
+      render(
+        <Wrapper>
+          <ScrapLossModal isOpen={true} onClose={vi.fn()} />
+        </Wrapper>
+      );
+
+      await screen.findByTestId('select-scrap-material');
+      const quantityInput = screen.getByTestId('input-scrap-quantity');
+      fireEvent.change(quantityInput, { target: { value: '2' } });
+
+      expect(
+        screen.queryByText(/é maior que o saldo físico em estoque/i)
+      ).not.toBeInTheDocument();
+      expect(screen.getByText(/Aguardando seleção de insumo/i)).toBeInTheDocument();
+    });
+
+    it('deve exibir feedback de loading no select enquanto busca os insumos em estoque', () => {
+      vi.mocked(stockApi.listBalances).mockReturnValueOnce(new Promise(() => {}));
+
+      const Wrapper = createWrapper();
+      render(
+        <Wrapper>
+          <ScrapLossModal isOpen={true} onClose={vi.fn()} />
+        </Wrapper>
+      );
+
+      const select = screen.getByTestId('select-scrap-material') as HTMLSelectElement;
+      expect(select).toBeDisabled();
+      expect(screen.getByText(/Carregando insumos em estoque/i)).toBeInTheDocument();
+    });
+
+    it('deve exibir erro e permitir tentar novamente quando a busca de insumos falhar', async () => {
+      vi.mocked(stockApi.listBalances)
+        .mockRejectedValueOnce(new Error('Network error'))
+        .mockResolvedValueOnce([
+          {
+            id: 'si-2',
+            materialId: 'mat-retry-01',
+            materialSku: 'AL-RETRY',
+            materialName: 'Perfil Recuperado',
+            category: 'PROFILE',
+            unitMeasure: 'UN',
+            physicalQuantity: 8,
+            reservedQuantity: 0,
+            availableQuantity: 8,
+            minimumStock: 2,
+            alertStatus: 'IN_STOCK',
+          },
+        ]);
+
+      const Wrapper = createWrapper();
+      render(
+        <Wrapper>
+          <ScrapLossModal isOpen={true} onClose={vi.fn()} />
+        </Wrapper>
+      );
+
+      expect(await screen.findByTestId('select-scrap-error')).toBeInTheDocument();
+      expect(
+        screen.getByText(/Não foi possível carregar os insumos em estoque/i)
+      ).toBeInTheDocument();
+
+      fireEvent.click(screen.getByTestId('btn-retry-balances'));
+
+      await waitFor(() => {
+        expect(screen.getByText(/AL-RETRY — Perfil Recuperado/i)).toBeInTheDocument();
+      });
+    });
+
+    it('deve bloquear botões e inputs durante execução de onConfirm assíncrono (formState.isSubmitting)', async () => {
+      let resolveSubmit!: () => void;
+      const onConfirm = vi.fn(
+        () =>
+          new Promise<void>((resolve) => {
+            resolveSubmit = resolve;
+          })
+      );
+
+      const Wrapper = createWrapper();
+      render(
+        <Wrapper>
+          <ScrapLossModal {...defaultProps} onConfirm={onConfirm} />
+        </Wrapper>
+      );
+
+      fireEvent.change(screen.getByTestId('input-scrap-quantity'), { target: { value: '2' } });
+      fireEvent.change(screen.getByTestId('textarea-scrap-reason'), {
+        target: { value: 'Quebra na bancada de corte' },
+      });
+      fireEvent.click(screen.getByTestId('btn-scrap-submit'));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('btn-scrap-submit')).toBeDisabled();
+        expect(screen.getByTestId('btn-scrap-cancel')).toBeDisabled();
+        expect(screen.getByTestId('input-scrap-quantity')).toBeDisabled();
+        expect(screen.getByText(/Registrando.../i)).toBeInTheDocument();
+      });
+
+      resolveSubmit();
+
+      await waitFor(() => {
+        expect(onConfirm).toHaveBeenCalledTimes(1);
       });
     });
   });

@@ -42,13 +42,17 @@ export const ScrapLossModal: React.FC<ScrapLossModalProps> = ({
   onConfirm,
 }) => {
   const registerMovementMutation = useRegisterStockMovement();
-  const isSubmitting = registerMovementMutation.isPending;
 
   const isSelectionMode = !materialId;
   const [selectedMaterialId, setSelectedMaterialId] = useState<string>('');
   const [materialError, setMaterialError] = useState<string | null>(null);
 
-  const { data: stockBalances = [] } = useStockBalances(undefined, {
+  const {
+    data: stockBalances = [],
+    isLoading: isLoadingBalances,
+    isError: isErrorBalances,
+    refetch: refetchBalances,
+  } = useStockBalances(undefined, {
     enabled: isOpen && isSelectionMode,
   });
 
@@ -56,6 +60,7 @@ export const ScrapLossModal: React.FC<ScrapLossModalProps> = ({
     ? stockBalances.find((item) => item.materialId === selectedMaterialId)
     : undefined;
 
+  const hasMaterialSelected = !isSelectionMode || Boolean(selectedStockItem);
   const effectiveMaterialId = materialId || selectedMaterialId;
   const effectiveSku = materialId ? materialSku : selectedStockItem?.materialSku ?? 'N/A';
   const effectiveName = materialId
@@ -75,7 +80,7 @@ export const ScrapLossModal: React.FC<ScrapLossModalProps> = ({
     setValue,
     watch,
     reset,
-    formState: { errors },
+    formState: { errors, isSubmitting: isFormSubmitting },
   } = useForm({
     resolver: zodResolver(scrapLossSchema),
     defaultValues: {
@@ -86,12 +91,17 @@ export const ScrapLossModal: React.FC<ScrapLossModalProps> = ({
     },
   });
 
+  const isSubmitting = registerMovementMutation.isPending || isFormSubmitting;
+
   const watchedQuantity = watch('quantity');
   const watchedReason = watch('reason');
 
   const numQuantity = Number(watchedQuantity);
   const isExceedingStock =
-    !Number.isNaN(numQuantity) && numQuantity > 0 && numQuantity > effectivePhysical;
+    hasMaterialSelected &&
+    !Number.isNaN(numQuantity) &&
+    numQuantity > 0 &&
+    numQuantity > effectivePhysical;
 
   let quantityBorderClass =
     'border-outline-variant focus:ring-primary/20 focus:border-primary';
@@ -164,10 +174,23 @@ export const ScrapLossModal: React.FC<ScrapLossModalProps> = ({
     }
   };
 
+  let selectPlaceholder = 'Selecione um insumo em estoque...';
+  if (isLoadingBalances) {
+    selectPlaceholder = 'Carregando insumos em estoque...';
+  } else if (isErrorBalances) {
+    selectPlaceholder = 'Erro ao carregar insumos';
+  } else if (stockBalances.length === 0) {
+    selectPlaceholder = 'Nenhum insumo cadastrado em estoque';
+  }
+
   return createPortal(
     <div
       className="fixed inset-0 z-[9999] flex items-center justify-center p-4 animate-fadeIn"
       data-testid="modal-scrap-loss"
+      // oxlint-disable-next-line jsx-a11y/prefer-tag-over-role
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="scrap-loss-title"
     >
       {/* Backdrop */}
       <button
@@ -217,25 +240,46 @@ export const ScrapLossModal: React.FC<ScrapLossModalProps> = ({
               <select
                 id="scrap-material-select"
                 value={selectedMaterialId}
-                disabled={isSubmitting}
+                disabled={isSubmitting || isLoadingBalances}
                 data-testid="select-scrap-material"
                 onChange={(e) => {
                   setSelectedMaterialId(e.target.value);
                   if (e.target.value) setMaterialError(null);
                 }}
                 className={`w-full px-3 py-2 text-sm rounded-lg border bg-surface-container-lowest text-on-surface focus:outline-hidden focus:ring-2 transition-all disabled:opacity-60 ${
-                  materialError
+                  materialError || isErrorBalances
                     ? 'border-rose-500 focus:ring-rose-500/20'
                     : 'border-outline-variant focus:ring-primary/20 focus:border-primary'
                 }`}
               >
-                <option value="">Selecione um insumo em estoque...</option>
+                <option value="">{selectPlaceholder}</option>
                 {stockBalances.map((item) => (
                   <option key={item.materialId} value={item.materialId}>
                     {item.materialSku} — {item.materialName} (Saldo: {item.physicalQuantity} {item.unitMeasure})
                   </option>
                 ))}
               </select>
+              {isErrorBalances && (
+                <div
+                  className="mt-1.5 flex items-center justify-between gap-2 text-xs text-rose-600 font-medium"
+                  data-testid="select-scrap-error"
+                >
+                  <span className="flex items-center gap-1">
+                    <AlertOctagon className="w-3.5 h-3.5 shrink-0" />
+                    Não foi possível carregar os insumos em estoque.
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void refetchBalances();
+                    }}
+                    data-testid="btn-retry-balances"
+                    className="underline hover:text-rose-700 font-semibold shrink-0"
+                  >
+                    Tentar novamente
+                  </button>
+                </div>
+              )}
               {materialError && (
                 <p className="text-xs text-rose-600 mt-1 font-medium flex items-center gap-1">
                   <AlertOctagon className="w-3.5 h-3.5" />
@@ -288,7 +332,9 @@ export const ScrapLossModal: React.FC<ScrapLossModalProps> = ({
                 Quantidade da Perda ({effectiveUnit}) *
               </label>
               <span className="text-xs text-on-surface-variant/80">
-                Máximo sugerido: {effectivePhysical} {effectiveUnit}
+                {hasMaterialSelected
+                  ? `Máximo sugerido: ${effectivePhysical} ${effectiveUnit}`
+                  : 'Aguardando seleção de insumo'}
               </span>
             </div>
             <div className="relative">
@@ -386,7 +432,7 @@ export const ScrapLossModal: React.FC<ScrapLossModalProps> = ({
             <div>
               <label
                 htmlFor="scrap-reference-doc"
-                className="block text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-1 flex items-center gap-1"
+                className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-1 flex items-center gap-1"
               >
                 <FileText className="w-3 h-3 text-on-surface-variant" />
                 Doc. Referência (Opcional)
@@ -405,7 +451,7 @@ export const ScrapLossModal: React.FC<ScrapLossModalProps> = ({
             <div>
               <label
                 htmlFor="scrap-registered-by"
-                className="block text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-1 flex items-center gap-1"
+                className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-1 flex items-center gap-1"
               >
                 <Hash className="w-3 h-3 text-on-surface-variant" />
                 Operador / Setor
