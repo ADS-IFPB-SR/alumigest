@@ -106,10 +106,10 @@ export const OrderProductionCard: React.FC<OrderProductionCardProps> = ({
         e.currentTarget.classList.remove('opacity-50', 'scale-[0.98]');
       }}
     >
-      {/* 1. Header: Código da OS, Orçamento Origem, Alerta de Estoque e Alerta de Prazo */}
+      {/* 1. Header: Código da OS, Orçamento Origem e Alerta de Prazo */}
       <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1.5 shrink-0">
-          <span className="font-bold text-slate-950 text-sm tracking-tight whitespace-nowrap shrink-0">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <span className="font-bold text-slate-950 text-sm tracking-tight whitespace-nowrap truncate">
             {order.codigo}
           </span>
           {order.orcamentoCodigo && (
@@ -119,25 +119,24 @@ export const OrderProductionCard: React.FC<OrderProductionCardProps> = ({
           )}
         </div>
 
-        <div className="flex items-center gap-1.5 flex-wrap justify-end shrink-0">
-          {activeStockAlert && (
-            <StockAlertBadge
-              status={activeStockAlert.alertStatus}
-              variant="kanban"
-              tooltip={stockTooltip}
-            />
-          )}
-
-          {alertConfig && (
-            <span
-              className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border whitespace-nowrap shrink-0 ${alertConfig.color}`}
-            >
-              {alertConfig.icon}
-              {alertConfig.label}
-            </span>
-          )}
-        </div>
+        {alertConfig && (
+          <span
+            className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border whitespace-nowrap shrink-0 ${alertConfig.color}`}
+          >
+            {alertConfig.icon}
+            {alertConfig.label}
+          </span>
+        )}
       </div>
+
+      {/* 1b. Badge Make-to-Order (US-21.4) — linha dedicada para evitar overflow */}
+      {activeStockAlert && (
+        <StockAlertBadge
+          status={activeStockAlert.alertStatus}
+          variant="kanban"
+          tooltip={stockTooltip}
+        />
+      )}
 
       {/* 2. Cliente e Esquadrias com Container Destacado */}
       <div className="space-y-0.5">
