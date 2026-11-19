@@ -197,6 +197,13 @@ public class StockService implements StockPort {
             throw new BusinessException("Material e tipo de movimentação são obrigatórios.");
         }
 
+        if ((request.type() == StockMovementType.SCRAP_LOSS || request.type() == StockMovementType.MANUAL_ADJUSTMENT)
+                && (request.reason() == null || request.reason().trim().isEmpty())) {
+            throw new BusinessException(
+                "A justificativa é obrigatória para movimentações extraordinárias de perda ou ajuste manual."
+            );
+        }
+
         StockItem stockItem = getOrCreateStockItemForUpdate(request.materialId());
         BigDecimal prevPhysical = stockItem.getPhysicalQuantity();
         BigDecimal prevReserved = stockItem.getReservedQuantity();

@@ -335,6 +335,25 @@ class StockServiceTest {
     }
 
     @Test
+    @DisplayName("registerMovement: deve rejeitar SCRAP_LOSS com justificativa em branco")
+    void shouldRejectScrapLossWithBlankReason() {
+        UUID materialId = UUID.randomUUID();
+        StockMovementRequestDTO emptyReason = new StockMovementRequestDTO(
+            materialId,
+            StockMovementType.SCRAP_LOSS,
+            new BigDecimal("1.00"),
+            null,
+            "   ",
+            null,
+            "almoxarife"
+        );
+
+        assertThatThrownBy(() -> stockService.registerMovement(emptyReason))
+            .isInstanceOf(BusinessException.class)
+            .hasMessageContaining("justificativa é obrigatória");
+    }
+
+    @Test
     @DisplayName("Deve validar orderId nulo e pedido inexistente")
     void shouldValidateNullAndMissingOrder() {
         assertThatThrownBy(() -> stockService.consumeReservedMaterialsForOrder(null))

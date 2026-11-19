@@ -34,10 +34,14 @@ const fallbackClient = new QueryClient({
 /**
  * Hook para consultar os saldos consolidados de estoque com filtros reativos.
  */
-export const useStockBalances = (params?: StockFilterParams) => {
+export const useStockBalances = (
+  params?: StockFilterParams,
+  options?: { enabled?: boolean }
+) => {
   return useQuery({
     queryKey: ['stock-balances', params],
     queryFn: () => stockApi.listBalances(params),
+    enabled: options?.enabled ?? true,
   });
 };
 
