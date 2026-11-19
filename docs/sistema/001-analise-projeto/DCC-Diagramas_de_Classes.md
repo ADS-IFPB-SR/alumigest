@@ -4,8 +4,8 @@
 |---|---|
 | **Projeto** | AlumiGest — Sistema de Gestão para Vidraçaria e Esquadrias |
 | **Sigla** | ALG |
-| **Versão** | 4.0 (Revisão Completa e Auditoria Estrita com o Código-Fonte de Produção) |
-| **Data** | 24/09/2026 |
+| **Versão** | 5.0 (Consolidado com Ordens de Serviço, Ficha Técnica, Venda Avulsa, Hub 360° e Prévia Estoque S09) |
+| **Data** | 18/11/2026 |
 | **Governança** | Docs-as-Code — Oficial de Governança (`alumigest-doc-governor`) |
 
 ---
@@ -17,15 +17,15 @@
 | 05/08/2026 | 1.0 | Versão inicial dos diagramas conceituais | Ítalo Jefferson / Equipe AlumiGest |
 | 12/08/2026 | 2.0 | Ajustes de relacionamentos na Sprint 2 | Equipe AlumiGest |
 | 31/08/2026 | 3.0 | Atualização preliminar da Sprint 3 com padrões Strategy e UUIDs | Equipe AlumiGest |
-| 24/09/2026 | 4.0 | Revisão minuciosa e fiel ao código: entidade `Client`, modelo unificado `Material`, esquadrias paramétricas `Product` com JSONB, novo motor de PDF (OpenPDF) e DTOs Records | Equipe AlumiGest (Tech Lead: Ítalo Jefferson) |
+| 24/09/2026 | 4.0 | Revisão minuciosa e fiel ao código: `Client`, `Material`, `Product` paramétrico, OpenPDF e DTOs Records | Equipe AlumiGest (Tech Lead: Ítalo Jefferson) |
+| 18/11/2026 | 5.0 | Expansão com os pacotes `orders` (O.S., Snapshot, Etiquetas, Kanban, Ficha Técnica), `partsale` (Venda Avulsa Strategy + Factory), `clients` (Hub 360° CQRS) e prévia de `stock` (Sprint 09) | Equipe AlumiGest (Tech Lead: Ítalo Jefferson) |
 
 ---
 
-## 1. 🏛️ Modelo de Domínio Completo (Entidades JPA)
+## 1. 🏛️ Modelo de Domínio Base: Clientes, Catálogo e Orçamentos
 
 ```mermaid
 classDiagram
-    %% Módulo de Clientes
     class Client {
         -UUID id
         -String fullName
@@ -55,7 +55,6 @@ classDiagram
         JURIDICA
     }
 
-    %% Módulo de Catálogo
     class MaterialGroup {
         -UUID id
         -String code
@@ -63,8 +62,6 @@ classDiagram
         -CalculationType calculationType
         -boolean isSystemDefault
         -boolean isActive
-        -OffsetDateTime createdAt
-        -OffsetDateTime updatedAt
     }
 
     class Material {
@@ -86,8 +83,6 @@ classDiagram
         -String attributesJson
         -boolean isHandle
         -boolean isActive
-        -OffsetDateTime createdAt
-        -OffsetDateTime updatedAt
     }
 
     class Product {
@@ -97,27 +92,9 @@ classDiagram
         -TemplateConfig templateConfig
         -List~MaterialCategoryType~ categoryRequirements
         -boolean isActive
-        -OffsetDateTime createdAt
-        -OffsetDateTime updatedAt
         +getCategoryName() String
     }
 
-    class DoorTemplateType {
-        <<enumeration>>
-        SLIDING_DOOR_1F
-        SLIDING_DOOR_2F
-        SLIDING_DOOR_3F
-        SLIDING_DOOR_4F
-        SWING_DOOR_1F
-        SWING_DOOR_2F
-        AWNING_WINDOW_1F
-        AWNING_WINDOW_1F_INV
-        FRONT_DRAWER
-        FIXED_PANEL
-        +getGroupName() String
-    }
-
-    %% Módulo de Orçamentos
     class Budget {
         -UUID id
         -String code
@@ -127,16 +104,10 @@ classDiagram
         -BigDecimal discountValue
         -BigDecimal total
         -BudgetStatus status
-        -String notes
         -PaymentCondition paymentCondition
         -String paymentNotes
         -OffsetDateTime validUntil
-        -OffsetDateTime createdAt
-        -OffsetDateTime updatedAt
         -List~BudgetItem~ items
-        +addItem(BudgetItem item) void
-        +removeItem(BudgetItem item) void
-        +isExpired() boolean
     }
 
     class BudgetItem {
@@ -145,18 +116,12 @@ classDiagram
         -Product product
         -String productName
         -String templateType
-        -String templateConfig
-        -String handleConfig
-        -String drillingConfig
         -BigDecimal widthMm
         -BigDecimal heightMm
         -Integer quantity
         -BigDecimal laborCost
         -BigDecimal subtotal
-        -String notes
         -List~BudgetItemOption~ options
-        +addOption(BudgetItemOption option) void
-        +removeOption(BudgetItemOption option) void
     }
 
     class BudgetItemOption {
@@ -166,49 +131,311 @@ classDiagram
         -String materialName
         -String unitMeasure
         -MaterialCategoryType categoryType
-        -String selectedType
-        -String selectedColor
         -BigDecimal quantity
         -BigDecimal unitPrice
         -BigDecimal totalPrice
     }
 
-    class BudgetStatus {
-        <<enumeration>>
-        DRAFT
-        SENT
-        APPROVED
-        REJECTED
-        CANCELLED
-        EXPIRED
-        +getDescricao() String
-    }
-
-    class PaymentCondition {
-        <<enumeration>>
-        A_VISTA_PIX
-        ENTRADA_50_SALDO_ENTREGA
-        CARTAO_12X
-        A_COMBINAR
-        +getDescricao() String
-    }
-
-    %% Relacionamentos
-    Client "1" --> "1" PersonType : classifica
-    MaterialGroup "1" --> "*" Material : categoriza
-    Budget "*" --> "1" Client : pertence a
-    Budget "1" --> "1" BudgetStatus : possui
-    Budget "1" --> "0..1" PaymentCondition : define
-    Budget "1" *-- "*" BudgetItem : compõe
-    BudgetItem "*" --> "1" Product : instancia
-    Product "1" --> "1" DoorTemplateType : baseia-se em
-    BudgetItem "1" *-- "*" BudgetItemOption : especifica insumos
-    BudgetItemOption "*" --> "1" Material : consome
+    Client "1" --> "1" PersonType
+    MaterialGroup "1" --> "*" Material
+    Budget "*" --> "1" Client
+    Budget "1" *-- "*" BudgetItem
+    BudgetItem "*" --> "1" Product
+    BudgetItem "1" *-- "*" BudgetItemOption
+    BudgetItemOption "*" --> "1" Material
 ```
 
 ---
 
-## 2. 🧮 Motor de Cálculo Físico e Precificação (Padrão Strategy + Factory)
+## 2. 📦 Domínio de Ordens de Serviço, Etiquetas e Ficha Técnica (`orders`)
+
+```mermaid
+classDiagram
+    class Order {
+        -UUID id
+        -String codigo
+        -Budget orcamento
+        -Client cliente
+        -String clienteNome
+        -String clienteTelefone
+        -String clienteEndereco
+        -OrderStatus status
+        -ApprovalChannel canalAprovacao
+        -LocalDate dataAprovacao
+        -LocalDate dataPrevisaoEntrega
+        -LocalDate dataConclusao
+        -BigDecimal valorBruto
+        -BigDecimal valorMaoDeObra
+        -BigDecimal valorDesconto
+        -BigDecimal taxaInstalacao
+        -BigDecimal taxaFrete
+        -BigDecimal valorLiquido
+        -String justificativaCancelamento
+        -Boolean ativo
+        -List~OrderItem~ items
+    }
+
+    class OrderItem {
+        -UUID id
+        -Order order
+        -Product product
+        -String descricao
+        -Integer larguraMm
+        -Integer alturaMm
+        -Integer quantidade
+        -String corAluminio
+        -String tipoVidro
+        -String orientacaoAbertura
+        -String ferragens
+        -BigDecimal valorUnitario
+        -BigDecimal valorTotal
+        -String templateConfig
+        -String handleConfig
+        -String drillingConfig
+        -Integer ordem
+        -List~OrderItemOption~ options
+    }
+
+    class OrderItemOption {
+        -UUID id
+        -OrderItem orderItem
+        -Material material
+        -String materialName
+        -String unitMeasure
+        -String categoryType
+        -BigDecimal quantity
+        -BigDecimal unitPrice
+        -BigDecimal totalPrice
+    }
+
+    class OrderStatus {
+        <<enumeration>>
+        CREATED
+        WAITING_PRODUCTION
+        IN_PRODUCTION
+        COMPLETED
+        CANCELLED
+        +canCancel() boolean
+    }
+
+    class ApprovalChannel {
+        <<enumeration>>
+        WHATSAPP
+        PRESENCIAL
+        TELEFONE
+        EMAIL
+        OUTRO
+    }
+
+    class FrameCalculatorStrategy {
+        <<interface>>
+        +supports(OrderItem item) boolean
+        +calculateCuts(OrderItem item, ProductionSheetBuilder builder) void
+    }
+
+    class SupremaSlidingWindowCalculator {
+        +supports(OrderItem item) boolean
+        +calculateCuts(OrderItem item, ProductionSheetBuilder builder) void
+    }
+
+    class DefaultFrameCalculator {
+        +supports(OrderItem item) boolean
+        +calculateCuts(OrderItem item, ProductionSheetBuilder builder) void
+    }
+
+    class ProductionSheetService {
+        +generateSheetData(UUID orderId) ProductionSheetResponse
+    }
+
+    class ProductionSheetPdfService {
+        +generatePdf(ProductionSheetResponse data) byte[]
+    }
+
+    class OrderService {
+        <<interface>>
+        +convertBudgetToOrder(UUID budgetId, OrderConvertRequest req) OrderResponse
+        +findAll(...) PageResponse~OrderSummaryResponse~
+        +findDetailedById(UUID id) OrderResponse
+        +updateStatus(UUID id, OrderStatus status) OrderResponse
+        +cancelOrder(UUID id, OrderCancelRequest req) OrderResponse
+        +gerarComprovanteById(UUID id) OrderPdfDTO
+        +gerarEtiquetasById(UUID id, UUID itemId) OrderPdfDTO
+        +gerarBplbEtiquetasById(UUID id, UUID itemId) byte[]
+    }
+
+    Order "1" *-- "*" OrderItem
+    OrderItem "1" *-- "*" OrderItemOption
+    Order --> OrderStatus
+    Order --> ApprovalChannel
+    FrameCalculatorStrategy <|.. SupremaSlidingWindowCalculator
+    FrameCalculatorStrategy <|.. DefaultFrameCalculator
+    ProductionSheetService --> FrameCalculatorStrategy
+```
+
+---
+
+## 3. 🛒 Domínio de Venda Avulsa de Partes (`partsale` — US-46)
+
+```mermaid
+classDiagram
+    class PartSale {
+        -UUID id
+        -String code
+        -Client client
+        -PartSaleStatus status
+        -BigDecimal subtotalAmount
+        -BigDecimal discountAmount
+        -BigDecimal totalAmount
+        -OffsetDateTime createdAt
+        -OffsetDateTime updatedAt
+        -List~PartSaleItem~ items
+    }
+
+    class PartSaleItem {
+        -UUID id
+        -PartSale partSale
+        -Material material
+        -MaterialCategoryType materialType
+        -Integer widthMm
+        -Integer heightMm
+        -Integer quantity
+        -BigDecimal lossFactor
+        -BigDecimal calculatedUnitMeasure
+        -BigDecimal unitPrice
+        -BigDecimal totalPrice
+    }
+
+    class PartSaleStatus {
+        <<enumeration>>
+        DRAFT
+        APPROVED
+        CANCELLED
+        +canTransitionTo(PartSaleStatus target) boolean
+    }
+
+    class PartItemCalculator {
+        <<interface>>
+        +getCategory() MaterialCategoryType
+        +calculate(CalculatePartItemRequest request) CalculatePartItemResponse
+    }
+
+    class GlassPartCalculator {
+        -BigDecimal MIN_BILLABLE_AREA = 0.2500
+        +calculate(CalculatePartItemRequest request) CalculatePartItemResponse
+    }
+
+    class AluminumProfilePartCalculator {
+        -int MAX_STANDARD_BAR_LENGTH_MM = 6000
+        +calculate(CalculatePartItemRequest request) CalculatePartItemResponse
+    }
+
+    class FilmPartCalculator {
+        +calculate(CalculatePartItemRequest request) CalculatePartItemResponse
+    }
+
+    class HardwarePartCalculator {
+        +calculate(CalculatePartItemRequest request) CalculatePartItemResponse
+    }
+
+    class PartCalculatorFactory {
+        -Map~MaterialCategoryType, PartItemCalculator~ calculators
+        +getCalculator(MaterialCategoryType category) PartItemCalculator
+    }
+
+    class PartSaleService {
+        <<interface>>
+        +calculateItem(CalculatePartItemRequest req) CalculatePartItemResponse
+        +create(CreatePartSaleRequest req) PartSaleResponse
+        +findAll(PartSaleStatus status, String search, Pageable pageable) PageResponse~PartSaleResponse~
+        +findById(UUID id) PartSaleResponse
+        +updateStatus(UUID id, PartSaleStatus status) PartSaleResponse
+        +generatePdf(UUID id) PartSalePdfDTO
+        +generatePdfPreview(CreatePartSaleRequest req) byte[]
+    }
+
+    PartSale "1" *-- "*" PartSaleItem
+    PartSale --> PartSaleStatus
+    PartSale "*" --> "1" Client
+    PartSaleItem "*" --> "1" Material
+    PartItemCalculator <|.. GlassPartCalculator
+    PartItemCalculator <|.. AluminumProfilePartCalculator
+    PartItemCalculator <|.. FilmPartCalculator
+    PartItemCalculator <|.. HardwarePartCalculator
+    PartCalculatorFactory o-- PartItemCalculator
+    PartSaleService --> PartCalculatorFactory
+```
+
+---
+
+## 4. 👤 Hub 360° do Cliente (`clients` — US-47) & Prévia de Estoque (`stock` — Sprint 09)
+
+```mermaid
+classDiagram
+    class ClientHubController {
+        -ClientHubService clientHubService
+        +getDashboard(UUID id) ClientDashboardDto
+        +getBudgets(UUID id) List~ClientBudgetSummaryDto~
+        +getOrders(UUID id) List~ClientOrderSummaryDto~
+    }
+
+    class ClientHubService {
+        -ClientRepository clientRepository
+        -BudgetRepository budgetRepository
+        -OrderRepository orderRepository
+        +getDashboard(UUID clientId) ClientDashboardDto
+        +getClientBudgets(UUID clientId) List~ClientBudgetSummaryDto~
+        +getClientOrders(UUID clientId) List~ClientOrderSummaryDto~
+    }
+
+    class StockItem {
+        -UUID id
+        -Material material
+        -BigDecimal physicalQuantity
+        -BigDecimal reservedQuantity
+        -BigDecimal availableQuantity
+        -BigDecimal minimumStock
+    }
+
+    class StockMovement {
+        -UUID id
+        -StockItem stockItem
+        -Material material
+        -UUID orderId
+        -StockMovementType type
+        -BigDecimal quantity
+        -BigDecimal unitCost
+        -BigDecimal previousPhysicalQuantity
+        -BigDecimal newPhysicalQuantity
+        -BigDecimal previousReservedQuantity
+        -BigDecimal newReservedQuantity
+        -String referenceDocument
+        -String reason
+        -String registeredBy
+    }
+
+    class StockPort {
+        <<interface>>
+        +reserveMaterialsForOrder(UUID orderId) void
+        +consumeReservedMaterialsForOrder(UUID orderId) void
+        +cancelReservationsForOrder(UUID orderId) void
+    }
+
+    class StockService {
+        +listStockBalances(StockBalanceFilter filter) List~StockItemResponseDTO~
+        +getStockBalance(UUID materialId) StockItemResponseDTO
+        +listMovements(UUID materialId) List~StockMovementResponseDTO~
+        +registerMovement(StockMovementRequestDTO req) StockMovementResponseDTO
+    }
+
+    ClientHubController --> ClientHubService
+    StockPort <|.. StockService
+    StockItem "1" *-- "*" StockMovement
+    StockService --> StockItem
+```
+
+---
+
+## 5. 🧮 Motor de Cálculo de Orçamentos & Emissão Documental (`budgets`)
 
 ```mermaid
 classDiagram
@@ -217,236 +444,25 @@ classDiagram
         +getCategoryType() CategoryType
         +calculate(TemplateType templateType, int widthMm, int heightMm, int quantity, BigDecimal requestedMaterialQty) BigDecimal
     }
-
-    class GlassQuantityCalculator {
-        -BigDecimal MIN_AREA = 0.25
-        +getCategoryType() CategoryType
-        +calculate(...) BigDecimal
-    }
-
-    class ProfileQuantityCalculator {
-        +getCategoryType() CategoryType
-        +calculate(...) BigDecimal
-    }
-
-    class HardwareQuantityCalculator {
-        +getCategoryType() CategoryType
-        +calculate(...) BigDecimal
-    }
-
-    class FilmQuantityCalculator {
-        -BigDecimal MIN_AREA = 0.25
-        +getCategoryType() CategoryType
-        +calculate(...) BigDecimal
-    }
-
     class MaterialCalculatorFactory {
-        -Map~CategoryType, MaterialQuantityCalculator~ calculators
         +getCalculator(CategoryType categoryType) MaterialQuantityCalculator
     }
-
     class BudgetQuantityService {
-        -MaterialCalculatorFactory calculatorFactory
-        -MaterialRepository materialRepository
-        -ProductRepository productRepository
         +calculateQuantities(Budget budget) void
         +previewCalculation(BudgetItemCalculationRequestDTO request) BudgetItemCalculationResponseDTO
     }
-
     class BudgetPricingService {
-        -MaterialRepository materialRepository
         +calculatePricing(Budget budget) void
     }
-
-    MaterialQuantityCalculator <|.. GlassQuantityCalculator
-    MaterialQuantityCalculator <|.. ProfileQuantityCalculator
-    MaterialQuantityCalculator <|.. HardwareQuantityCalculator
-    MaterialQuantityCalculator <|.. FilmQuantityCalculator
-    MaterialCalculatorFactory o-- MaterialQuantityCalculator
-    BudgetQuantityService --> MaterialCalculatorFactory
-    BudgetPricingService --> MaterialRepository
-```
-
----
-
-## 3. 📄 Motor de Emissão Documental e Relatórios (OpenPDF)
-
-```mermaid
-classDiagram
     class BudgetPdfService {
-        -CompanyProperties companyProperties
         +gerarPdfComercial(Budget budget) byte[]
         +gerarPdfTecnico(Budget budget) byte[]
         +gerarResumoWhatsApp(Budget budget) String
     }
 
-    class BudgetPdfPageEvent {
-        -CompanyProperties companyProperties
-        -PdfTemplate totalPages
-        +onEndPage(PdfWriter writer, Document document) void
-        +onCloseDocument(PdfWriter writer, Document document) void
-    }
-
-    class TechnicalPdfPageEvent {
-        -CompanyProperties companyProperties
-        -PdfTemplate totalPages
-        +onEndPage(PdfWriter writer, Document document) void
-        +onCloseDocument(PdfWriter writer, Document document) void
-    }
-
-    class CompanyProperties {
-        -String name
-        -String cnpj
-        -String phone
-        -String email
-        -String address
-    }
-
-    class BudgetCodeGenerator {
-        -BudgetRepository budgetRepository
-        +generateCode() String
-    }
-
-    class BudgetPdfDTO {
-        <<record>>
-        +byte[] bytes
-        +String filename
-    }
-
-    BudgetPdfService --> BudgetPdfPageEvent : utiliza na via cliente
-    BudgetPdfService --> TechnicalPdfPageEvent : utiliza na via oficina
-    BudgetPdfService --> CompanyProperties : dados cadastrais
-    BudgetPdfService ..> BudgetPdfDTO : encapsula resposta
+    BudgetQuantityService --> MaterialCalculatorFactory
+    MaterialCalculatorFactory o-- MaterialQuantityCalculator
 ```
 
 ---
-
-## 4. ⚙️ Camada de Serviços da Aplicação (Services)
-
-```mermaid
-classDiagram
-    class ClientService {
-        -ClientRepository clientRepository
-        -ClientMapper clientMapper
-        +findAll(String busca, Pageable pageable) PageResponse~ClientResponseDTO~
-        +findById(UUID id) ClientResponseDTO
-        +create(ClientRequestDTO request) ClientResponseDTO
-        +update(UUID id, ClientRequestDTO request) ClientResponseDTO
-        +delete(UUID id) void
-    }
-
-    class ProductService {
-        -ProductRepository productRepository
-        -ProductMapper productMapper
-        +findAll(Pageable pageable) PageResponse~ProductResponseDTO~
-        +findById(UUID id) ProductResponseDTO
-        +create(ProductRequestDTO request) ProductResponseDTO
-        +update(UUID id, ProductRequestDTO request) ProductResponseDTO
-        +delete(UUID id) void
-    }
-
-    class BudgetService {
-        -BudgetRepository budgetRepository
-        -ClientRepository clientRepository
-        -ProductRepository productRepository
-        -MaterialRepository materialRepository
-        -BudgetMapper budgetMapper
-        -BudgetQuantityService budgetQuantityService
-        -BudgetPricingService budgetPricingService
-        -BudgetCodeGenerator budgetCodeGenerator
-        -BudgetPdfService budgetPdfService
-        +create(BudgetCreateRequest request) BudgetResponseDTO
-        +findAll(Pageable pageable) PageResponse~BudgetSummaryResponseDTO~
-        +findById(UUID id) BudgetResponseDTO
-        +aplicarDesconto(UUID id, DiscountRequest request) BudgetResponseDTO
-        +alterarStatus(UUID id, StatusChangeRequest request) BudgetResponseDTO
-        +adicionarItem(UUID id, BudgetItemRequestDTO request) BudgetItemResponseDTO
-        +gerarPdfComercial(UUID id) BudgetPdfDTO
-        +gerarPdfTecnico(UUID id) BudgetPdfDTO
-        +gerarResumoWhatsApp(UUID id) String
-        +delete(UUID id) void
-    }
-
-    BudgetService --> ClientService : valida cliente
-    BudgetService --> ProductService : valida template
-    BudgetService --> BudgetQuantityService : resolve dimensões
-    BudgetService --> BudgetPricingService : calcula totais
-    BudgetService --> BudgetPdfService : gera PDFs
-    BudgetService --> BudgetCodeGenerator : gera sequencial
-```
-
----
-
-## 5. 📦 Catálogo de DTOs Records de Entrada e Saída
-
-```mermaid
-classDiagram
-    class BudgetCreateRequest {
-        <<record>>
-        +UUID clientId
-        +String observacoes
-        +BigDecimal descontoPercentual
-        +PaymentCondition condicaoPagamento
-        +LocalDate dataValidade
-        +List~BudgetItemCreateRequest~ itens
-    }
-
-    class BudgetItemCreateRequest {
-        <<record>>
-        +UUID productId
-        +BigDecimal larguraMm
-        +BigDecimal alturaMm
-        +Integer quantidade
-        +BigDecimal valorUnitario
-        +String ferragens
-        +String descricao
-    }
-
-    class DiscountRequest {
-        <<record>>
-        +DiscountType tipo
-        +BigDecimal valor
-        +PaymentCondition condicaoPagamento
-        +String observacoesPagamento
-        +LocalDate dataValidade
-    }
-
-    class StatusChangeRequest {
-        <<record>>
-        +BudgetStatus status
-    }
-
-    class BudgetResponseDTO {
-        <<record>>
-        +UUID id
-        +String code
-        +ClientSummaryDTO client
-        +BigDecimal subtotal
-        +BigDecimal discountPercent
-        +BigDecimal discountValue
-        +BigDecimal total
-        +BudgetStatus status
-        +PaymentCondition paymentCondition
-        +String paymentNotes
-        +OffsetDateTime validUntil
-        +List~BudgetItemResponseDTO~ items
-        +OffsetDateTime createdAt
-    }
-
-    class BudgetSummaryResponseDTO {
-        <<record>>
-        +UUID id
-        +String code
-        +String clientName
-        +BigDecimal total
-        +BudgetStatus status
-        +PaymentCondition paymentCondition
-        +OffsetDateTime validUntil
-        +OffsetDateTime createdAt
-    }
-
-    BudgetCreateRequest *-- BudgetItemCreateRequest
-```
-
----
-*Documento homologado pelo Oficial de Governança Técnica (`alumigest-doc-governor`) em 24/09/2026.*
+*Documento homologado pelo Oficial de Governança Técnica (`alumigest-doc-governor`) em 18/11/2026.*

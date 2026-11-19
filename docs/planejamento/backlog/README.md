@@ -14,9 +14,9 @@ Este diretório centraliza todas as User Stories futuras do projeto (**`US-17` a
 | [`US-17`](../sprint-07/spec.md) | Emitir Etiquetas de Identificação de Peças por Item do Pedido | [#142](https://github.com/ADS-IFPB-SR/alumigest/issues/142) | **4** | 🟢 Concluída (Sprint 07) |
 | [`US-18`](../sprint-07/spec.md) | Acompanhar Produção via Painel Kanban de Pedidos de Venda | [#143](https://github.com/ADS-IFPB-SR/alumigest/issues/143) | **7** | 🟢 Concluída (Sprint 07) |
 | [`US-19`](US-19-lista-corte-pedido/spec.md) | Consolidar Lista Linear e Plana de Corte do Pedido | [#144](https://github.com/ADS-IFPB-SR/alumigest/issues/144) | **8** | 🔵 No Backlog |
-| [`US-20`](US-20-ficha-tecnica-montagem/spec.md) | Gerar Ficha Técnica de Montagem por Item do Pedido | [#145](https://github.com/ADS-IFPB-SR/alumigest/issues/145) | **4** | 🔵 No Backlog |
-| [`US-21`](US-21-reserva-baixa-estoque/spec.md) | Reservar e Baixar Matéria-Prima no Estoque Automaticamente | [#146](https://github.com/ADS-IFPB-SR/alumigest/issues/146) | **15** | 🔵 No Backlog |
-| [`US-22`](US-22-posicao-estoque-kardex/spec.md) | Consultar Posição de Estoque e Kardex de Movimentações | [#147](https://github.com/ADS-IFPB-SR/alumigest/issues/147) | **6** | 🔵 No Backlog |
+| [`US-20`](US-20-ficha-tecnica-montagem/spec.md) | Gerar Ficha Técnica de Montagem por Item do Pedido | [#145](https://github.com/ADS-IFPB-SR/alumigest/issues/145) | **4** | 🟡 Parcial na US-47.3 (Sprint 08) |
+| [`US-21`](../sprint-09/spec.md) | Reservar e Baixar Matéria-Prima no Estoque Automaticamente (Make-to-Order) | [#146](https://github.com/ADS-IFPB-SR/alumigest/issues/146) | **8** | 🔄 Em Andamento (Sprint 09) |
+| [`US-22`](../sprint-09/spec.md) | Consultar Posição de Estoque e Kardex de Movimentações | [#147](https://github.com/ADS-IFPB-SR/alumigest/issues/147) | **4** | 🔄 Em Andamento (Sprint 09) |
 | [`US-23`](US-23-homologacao-release-2/spec.md) | Homologação Integrada da Release 2 (v2.0.0) Incorporada no DoD | [#148](https://github.com/ADS-IFPB-SR/alumigest/issues/148) | **7** | 🔵 No Backlog |
 | [`US-24`](US-24-cobranca-pix-dinamico/spec.md) | Gerar Cobrança PIX com QR Code Dinâmico e Copia e Cola | [#149](https://github.com/ADS-IFPB-SR/alumigest/issues/149) | **14** | 🔵 No Backlog |
 | [`US-25`](US-25-webhook-pix-confirmacao/spec.md) | Confirmar Pagamento PIX via Webhook com Liberação Automática | [#150](https://github.com/ADS-IFPB-SR/alumigest/issues/150) | **6** | 🔵 No Backlog |
@@ -24,7 +24,7 @@ Este diretório centraliza todas as User Stories futuras do projeto (**`US-17` a
 | [`US-27`](descartadas/US-27-parcelamento-pedidos/spec.md) | Desdobrar e Gerenciar Parcelamento de Pedidos | [#152](https://github.com/ADS-IFPB-SR/alumigest/issues/152) | **11** | ⚪ Descartada (Absorvida pela US-30) |
 | [`US-28`](descartadas/US-28-contas-receber-inadimplencia/spec.md) | Controlar Contas a Receber, Vencimentos e Inadimplência | [#153](https://github.com/ADS-IFPB-SR/alumigest/issues/153) | **5** | ⚪ Descartada (Absorvida pela US-30) |
 | [`US-29`](descartadas/US-29-extrato-financeiro-recibo/spec.md) | Emitir Extrato Financeiro do Cliente e Recibo de Quitação | [#154](https://github.com/ADS-IFPB-SR/alumigest/issues/154) | **9** | ⚪ Descartada (Absorvida pela US-30) |
-| [`US-30`](US-30-fluxo-caixa-mensal/spec.md) | Fluxo de Caixa Mensal e Gestão de Despesas Operacionais | [#155](https://github.com/ADS-IFPB-SR/alumigest/issues/155) | **10** | 🔵 No Backlog (Sprint 09) |
+| [`US-30`](US-30-fluxo-caixa-mensal/spec.md) | Fluxo de Caixa Mensal e Gestão de Despesas Operacionais | [#155](https://github.com/ADS-IFPB-SR/alumigest/issues/155) | **10** | 🔵 No Backlog (Pós-R2) |
 | [`US-31`](descartadas/US-31-execucao-os-campo-pwa/spec.md) | Executar e Concluir OS em Campo com Registro Fotográfico (PWA) | [#156](https://github.com/ADS-IFPB-SR/alumigest/issues/156) | **11** | ⚪ Descartada (Fotos em Campo) |
 | [`US-32`](descartadas/US-32-calendario-instalacoes/spec.md) | Visualizar Calendário de Instalações e Prevenção de Conflitos | [#157](https://github.com/ADS-IFPB-SR/alumigest/issues/157) | **6** | ⚪ Descartada (Calendário de Instalações) |
 | [`US-33`](US-33-emissao-os-pdf/spec.md) | Emitir Ordem de Serviço (OS) em PDF | [#158](https://github.com/ADS-IFPB-SR/alumigest/issues/158) | **7** | 🔵 No Backlog |
@@ -40,8 +40,8 @@ Este diretório centraliza todas as User Stories futuras do projeto (**`US-17` a
 | [`US-43`](US-43-backup-disaster-recovery/spec.md) | Executar Rotinas de Backup Automático e Disaster Recovery | [#168](https://github.com/ADS-IFPB-SR/alumigest/issues/168) | **10** | 🔵 No Backlog |
 | [`US-44`](US-44-trilha-auditoria-imutavel/spec.md) | Registrar Trilha de Auditoria Imutável para Ações Críticas | [#169](https://github.com/ADS-IFPB-SR/alumigest/issues/169) | **7** | 🔵 No Backlog |
 | [`US-45`](US-45-monitoramento-actuator-documentacao/spec.md) | Monitorar Saúde do Sistema com Actuator e Publicar Documentação | [#170](https://github.com/ADS-IFPB-SR/alumigest/issues/170) | **6** | 🔵 No Backlog |
-| [`US-46`](US-46-venda-de-partes/spec.md) | Módulo de Venda Avulsa de Partes (Vidro em m², Alumínio em Metro Linear, Ferragens e Películas) | [#171](https://github.com/ADS-IFPB-SR/alumigest/issues/171) | **4** | 🔵 No Backlog |
-| [`US-47`](US-47-painel-360-clientes/spec.md) | Central 360° do Cliente com Gestão Unificada de Orçamentos, O.S., Ficha Técnica e Etiquetas | [#496](https://github.com/ADS-IFPB-SR/alumigest/issues/496) | **8** | 🔵 No Backlog |
+| [`US-46`](US-46-venda-de-partes/spec.md) | Módulo de Venda Avulsa de Partes (Vidro em m², Alumínio em Metro Linear, Ferragens e Películas) | [#477](https://github.com/ADS-IFPB-SR/alumigest/issues/477) | **6** | 🟢 Concluída (Sprint 08) |
+| [`US-47`](US-47-painel-360-clientes/spec.md) | Central 360° do Cliente com Gestão Unificada de Orçamentos, O.S., Ficha Técnica e Etiquetas | [#496](https://github.com/ADS-IFPB-SR/alumigest/issues/496) | **6** | 🟢 Concluída (Sprint 08) |
 
 ---
 

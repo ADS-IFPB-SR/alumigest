@@ -4,8 +4,8 @@
 |---|---|
 | **Projeto** | AlumiGest — Sistema de Gestão para Vidraçaria e Esquadrias |
 | **Sigla** | ALG |
-| **Versão** | 1.3 (Homologado com Baselines v0.2.x/v0.3.0, CI run-tests-on-all-prs e Docs-as-Code) |
-| **Data/Hora** | 24/09/2026 - 09:20 |
+| **Versão** | 1.4 (Homologado com Baselines v0.4.0 a v0.8.0, Tríade Centralizada e Release 2) |
+| **Data/Hora** | 18/11/2026 - 22:50 |
 | **Governança** | Docs-as-Code — Oficial de Governança (`alumigest-doc-governor`) |
 
 ---
@@ -18,6 +18,7 @@
 | 18/08/2026 | 1.1 | Registro das Baselines de Sprint 1 e Sprint 2 | Equipe AlumiGest |
 | 31/08/2026 | 1.2 | Registro da Baseline da Sprint 3 (B-ALG-v0.3.0-S03-01), SonarQube e Cypress | Equipe AlumiGest (Scrum Master: Italo Santos) |
 | 24/09/2026 | 1.3 | Registro das Baselines v0.2.1, v0.2.2 e v0.3.0, inclusão do diretório `docs/planejamento/`, workflow CI `run-tests-on-all-prs` e formalização do princípio Docs-as-Code | Equipe AlumiGest (Tech Lead: Ítalo Jefferson) |
+| 18/11/2026 | 1.4 | Registro das Baselines `v0.5.0` a `v0.8.0` (Sprints 05–08), centralização da tríade de testes em `docs/projeto-001/003-teste/`, atualização da stack (React 19, TS 6, Vite 8, Flyway V1–V25) e novos módulos (`orders`, `partsale`, `stock`) | Equipe AlumiGest (Tech Lead: Ítalo Jefferson) |
 
 ---
 
@@ -52,25 +53,26 @@ O controle de versão é operado no **GitHub** sob o repositório centralizado `
 ```
 alumigest/
 ├── docs/
-│   ├── planejamento/                 # Planejamento Estratégico e Sprints
+│   ├── planejamento/                 # Planejamento Estratégico, Backlog e Sprints
 │   │   ├── constitution.md           # Princípios inegociáveis do projeto
-│   │   ├── sprint-01/ a sprint-16/   # Plans, specs, tasks e issues por sprint
-│   │   └── TEMPLATE-ISSUES-QA-SPRINT-04.md
+│   │   ├── backlog/                  # User Stories futuras e descartadas
+│   │   └── sprint-01/ a sprint-09/   # Plans, specs, protótipos e issues por sprint
 │   ├── sistema/                      # Artefatos do Produto / Sistema
-│   │   ├── 000-requisitos/           # PBL, REQ, UCS, RN (v4.0)
-│   │   ├── 001-analise-projeto/      # ARQ (v3.0), MER, DER, DCC (v4.0), API, ESQ
+│   │   ├── 000-requisitos/           # PBL, REQ, UCS, RN
+│   │   ├── 001-analise-projeto/      # ARQ, MER, DER, DCC, API, ESQ
 │   │   ├── 002-especificacoes/       # SPEC-SonarQube-CI-Pipeline
-│   │   ├── 002-implementacao/        # PAD (v3.0), GIT
-│   │   ├── 003-teste/                # TEA por sprint
-│   │   └── 004-gerencia-configuracao/# PGC (v1.3)
-│   ├── projeto-001/                  # Artefatos de Processo e Governança
+│   │   ├── 002-implementacao/        # PAD, GIT
+│   │   └── 004-gerencia-configuracao/# PGC
+│   ├── projeto-001/                  # Artefatos de Processo, Governança e Qualidade
 │   │   ├── 000-gerencia-projeto/     # PPJ, DRI
 │   │   ├── 001-atas-reuniao/         # ATAs de Planning, Dailies, Review e Retro
 │   │   ├── 002-acompanhamento/       # PIT, BRD, RAP por sprint
-│   │   └── 003-teste/                # PLT e RET por sprint
-│   └── qualidade/                    # Relatórios de Cobertura JaCoCo/Vitest
-├── backend/                          # Código Java 21 LTS + Spring Boot 3.4
-└── frontend/                         # Código React 18/19 + Vite + TypeScript
+│   │   └── 003-teste/                # PLT, RBD e Tríade Canônica (TEA, RTM, RET) em sprint-XX/
+│   ├── diagramas/                    # Diagramas SVG (Arquitetura, Pipeline, Fluxos)
+│   ├── sprint-04/                    # Template histórico de issues QA
+│   └── qualidade/                    # Casos de teste e relatórios de cobertura
+├── backend/                          # Código Java 21 LTS + Spring Boot 3.4.2
+└── frontend/                         # Código React 19 + Vite 8 + TypeScript 6
 ```
 
 ---
@@ -81,9 +83,9 @@ O AlumiGest opera sob o princípio **Docs-as-Code orientado a Pull Requests**:
 1. **Sincronização Atômica:** Nenhuma alteração de arquitetura, migração de banco (Flyway), endpoint REST ou regra física de cálculo pode ser mergeada na branch `develop` ou `main` sem que a documentação oficial correspondente seja atualizada no mesmo PR.
 2. **Matriz de Impacto Obrigatória:**
    * Alterou Migração Flyway (`V*.sql`) ➔ Atualizar `MER-Modelo_de_Dados.md` e `DER-Catalogo_Materiais.md`.
-   * Alterou Controller ou DTO (`*Controller.java`, `*Request.java`) ➔ Atualizar `API-Especificacao_API_REST.md`.
+   * Alterou Controller ou DTO (`*Controller.java`, `*Request.java`, `*Response.java`) ➔ Atualizar `API-Especificacao_API_REST.md`.
    * Alterou Calculadora ou Regra Física (`*Calculator.java`, `calculations.ts`) ➔ Atualizar `RN-Regras_de_Calculo.md`.
-   * Concluiu Sprint ➔ Gerar `CHANGELOG.md`, `RET` e `ATA-Review`.
+   * Concluiu Sprint ➔ Gerar `CHANGELOG.md`, Tríade de Testes (`TEA`/`RTM`/`RET` em `docs/projeto-001/003-teste/sprint-XX/`), `PIT`/`RAP`/`BRD` e `ATA-Review`.
 
 ---
 
@@ -98,7 +100,12 @@ O identificador canônico de baseline segue o formato: `B-ALG-v<MAJOR>.<MINOR>.<
 | `B-ALG-v0.2.1-S02-02` | 19/08/2026 | Sprint 02 | Refinamento de busca, exportação de dados e responsividade mobile | ✅ Aprovada |
 | `B-ALG-v0.2.2-S02-03` | 25/08/2026 | Sprint 02 | Pipeline de integração do SonarQube com relatórios separados | ✅ Aprovada |
 | `B-ALG-v0.3.0-S03-01` | 31/08/2026 | Sprint 03 | Motor Strategy de Orçamentos, CRUD Clientes, Templates Paramétricos e Cypress E2E | ✅ Aprovada |
-| `B-ALG-v0.4.0-S04-DRAFT` | Em Homologação | Sprint 04 | Emissão de PDF Comercial e Ficha Técnica com Sigilo Comercial (OpenPDF), Resumo WhatsApp e Condições Comerciais | 🔄 Em Revisão |
+| `B-ALG-v0.4.0-S04-01` | 14/09/2026 | Sprint 04 | Templates SVG, Studio CAD e Descontos Base (`US-09` P1) | ✅ Aprovada |
+| `B-ALG-v0.5.0-S05-01` | 28/09/2026 | Sprint 05 | Proposta Comercial PDF/WhatsApp (`US-10`), Via Técnica (`US-11`) e Homologação Release 1 | ✅ Aprovada |
+| `B-ALG-v0.6.0-S06-02` | 17/10/2026 | Sprint 06 | Pedidos de Venda (`US-13`), Snapshot Imutável (`US-14`), Cancelamento (`US-15`) e Comprovante PDF (`US-16`) | ✅ Aprovada |
+| `B-ALG-v0.7.0-S07-01` | 26/10/2026 | Sprint 07 | Etiquetas Térmicas 100×60mm PDF/BPLB (`US-17`) e Painel Kanban de Produção (`US-18`) | ✅ Aprovada |
+| `B-ALG-v0.8.0-S08-01` | 15/11/2026 | Sprint 08 | Venda Avulsa de Partes (`US-46`), Central 360° do Cliente (`US-47`) e Ficha Técnica A4 | ✅ Aprovada |
+| `B-ALG-v0.9.0-S09-WIP` | Em andamento | Sprint 09 | Estoque Make-to-Order e Trilha Kardex (`US-21`, `US-22`) | 🔄 Em Desenvolvimento |
 
 ---
 
@@ -110,12 +117,12 @@ O identificador canônico de baseline segue o formato: `B-ALG-v<MAJOR>.<MINOR>.<
 | **GitHub** | Monorepo, Pull Requests, Actions e Rulesets | Cloud | `ADS-IFPB-SR/alumigest` |
 | **Java JDK** | Plataforma de compilação backend | Backend | 21 LTS (Eclipse Temurin) |
 | **Spring Boot** | Framework REST API, Injeção e Data JPA | Backend | 3.4.2 |
-| **React & Vite** | SPA PWA e empacotamento rápido | Frontend | React 18/19 / Vite 5/6 |
+| **React, Vite & TS** | SPA e empacotamento | Frontend | React 19.2 / Vite 8.2 / TypeScript 6.0 |
 | **TanStack Query** | Gerenciamento de estado de servidor e cache | Frontend | v5 |
 | **Zod** | Validação estrita de schemas em runtime | Frontend | 3.x |
-| **OpenPDF / iText** | Motor de geração de PDFs de alta performance | Backend | 2.0.2 |
+| **OpenPDF** | Motor de geração de PDFs de alta performance | Backend | 2.0.3 |
 | **PostgreSQL** | SGBD Relacional (UUIDs, JSONB) | Banco | 16+ |
-| **Flyway** | Versionamento e migrações de banco | Banco | 10.x (Migrations V1-V12+) |
+| **Flyway** | Versionamento e migrações de banco | Banco | Migrations V1–V25 (V26 em S09) |
 | **SonarQube** | SAST, Cobertura JaCoCo e Quality Gate | CI/CD | `sonar.italohub.cloud` |
 | **Coolify / Docker** | Deploy contínuo e staging | Staging | `develop.italuhub.cloud` |
 

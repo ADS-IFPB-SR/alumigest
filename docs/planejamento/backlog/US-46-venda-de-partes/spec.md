@@ -2,7 +2,7 @@
 
 **Identificador**: `US-46`  
 **Issue GitHub**: [#477](https://github.com/ADS-IFPB-SR/alumigest/issues/477)  
-**Status**: 🔵 Planejada para Sprint 08  
+**Status**: 🟢 Concluída na Sprint 08 (`release/v0.8.0` — 6/6 sub-tarefas entregues)  
 **Diretriz de Idioma**: Conforme `PAD-Padroes_de_Codigo.md`, variáveis, atributos Java, colunas SQL, DTOs e enums são em **inglês técnico** (`camelCase`/`snake_case`), e a tradução para `pt-BR` ocorre na camada de UI do Frontend.
 
 ---
@@ -132,12 +132,12 @@ As sub-tarefas da US-46 foram decompostas em **fatias verticais autônomas por t
 
 ### Backend (Spring Boot 3 / JPA / PostgreSQL)
 
-- **Flyway Migration:** `V46__create_part_sales_schema.sql`
+- **Flyway Migrations:** `V23__create_part_sales_schema.sql` e `V24__seed_default_walk_in_client.sql`
 - **Tabela `tb_part_sales`:**
   - `id`: UUID (PK)
-  - `code`: VARCHAR(30) UNIQUE NOT NULL (Padrão: `PART-YYYY-NNNN`)
-  - `customer_id`: UUID NOT NULL (FK para `tb_customers` ou clientes)
-  - `status`: VARCHAR(20) NOT NULL (ENUM: `DRAFT`, `QUOTED`, `APPROVED`, `DELIVERED`, `CANCELLED`)
+  - `code`: VARCHAR(30) UNIQUE NOT NULL (Padrão: `VP-YYYY-NNNN`)
+  - `client_id`: UUID NOT NULL (FK para `tb_clients`; default `Cliente Balcão` `00000000-0000-0000-0000-000000000001`)
+  - `status`: VARCHAR(20) NOT NULL (ENUM `PartSaleStatus`: `DRAFT`, `APPROVED`, `CANCELLED`)
   - `subtotal_amount`: NUMERIC(12, 2) NOT NULL
   - `discount_amount`: NUMERIC(12, 2) DEFAULT 0.00
   - `total_amount`: NUMERIC(12, 2) NOT NULL
@@ -148,28 +148,30 @@ As sub-tarefas da US-46 foram decompostas em **fatias verticais autônomas por t
   - `id`: UUID (PK)
   - `part_sale_id`: UUID NOT NULL (FK para `tb_part_sales`)
   - `material_id`: UUID NOT NULL (FK para `tb_materials` no catálogo)
-  - `material_type`: VARCHAR(30) NOT NULL (ENUM: `GLASS`, `ALUMINUM_PROFILE`, `HARDWARE`, `FILM`)
-  - `width_mm`: INT NULL (obrigatório para `GLASS` e `FILM`, nulo para `HARDWARE`)
-  - `height_mm`: INT NULL (obrigatório para `GLASS`, `FILM` e comprimento para `ALUMINUM_PROFILE`, nulo para `HARDWARE`)
+  - `material_type`: VARCHAR(30) NOT NULL (ENUM `MaterialCategoryType`: `GLASS`, `PROFILE`, `HARDWARE`, `FILM`)
+  - `width_mm`: INT NULL (obrigatório para `GLASS` e `FILM`, nulo para `HARDWARE` e `PROFILE`)
+  - `height_mm`: INT NULL (obrigatório para `GLASS`, `FILM` e comprimento para `PROFILE`, nulo para `HARDWARE`)
   - `quantity`: INT NOT NULL
-  - `calculated_unit_measure`: NUMERIC(10, 4) NOT NULL (Área em m² para vidro/película, comprimento em metros para alumínio, ou 1.0000 para ferragem)
+  - `loss_factor`: NUMERIC(6, 4) NULL
+  - `calculated_unit_measure`: NUMERIC(10, 4) NOT NULL (Área em m² para vidro/película, metros para alumínio, ou quantidade para ferragem)
   - `unit_price`: NUMERIC(12, 2) NOT NULL
   - `total_price`: NUMERIC(12, 2) NOT NULL
 
-- **Endpoints REST:**
+- **Endpoints REST (`PartSaleController` — `/api/v1/part-sales`):**
   - `POST /api/v1/part-sales/calculate-item` — Pré-cálculo de preço e metragem faturável sem persistência.
-  - `POST /api/v1/part-sales` — Salva rascunho ou gera nova cotação de partes.
+  - `POST /api/v1/part-sales` — Salva rascunho ou gera nova venda avulsa (`VP-YYYY-NNNN`).
+  - `GET /api/v1/part-sales` — Lista vendas avulsas paginadas com filtros (`status`, `search`).
   - `GET /api/v1/part-sales/{id}` — Retorna o detalhamento completo da venda e itens.
-  - `PATCH /api/v1/part-sales/{id}/status` — Altera o status da cotação/venda (`APPROVED`, `DELIVERED`, `CANCELLED`).
-  - `GET /api/v1/part-sales/{id}/pdf` — Gera e faz streaming do documento PDF de proposta/venda.
+  - `PATCH /api/v1/part-sales/{id}/status` — Altera o status comercial (`DRAFT` ➔ `APPROVED`/`CANCELLED`, `APPROVED` ➔ `CANCELLED`).
+  - `GET /api/v1/part-sales/{id}/pdf` — Gera e faz streaming do documento PDF A4 agrupado.
+  - `POST /api/v1/part-sales/export-pdf` — Gera PDF prévio sem persistência.
 
 ### Frontend (React 19 / TanStack Query / Tailwind CSS)
 
-- **Páginas & Componentes:**
-  - `PartSaleFormPage.tsx` (`/vendas/partes/nova`): Formulário principal com debounce e query reativa.
-  - `PartSaleItemGrid.tsx`: Grid dinâmico para adição e remoção de peças com campos contextuais conforme o `materialType`.
-  - `PartSaleSummaryCard.tsx`: Resumo financeiro flutuante com cálculo fornecido pelo backend.
-  - `PartSalePdfExportButton.tsx`: Botão de exportação para download de blob com feedback visual.
+- **Páginas & Componentes (`frontend/src/features/part-sales/`):**
+  - `PartSaleListPage.tsx` (`/vendas/avulsa`) e `PartSaleFormPage.tsx` (`/vendas/avulsa/nova`, com redirect de `/vendas/partes/nova` e `/venda-avulsa`)
+  - `PartSaleMaterialForm.tsx`, `MaterialAutocomplete.tsx`, `CustomerSearchSelector.tsx`, `PartSaleSummaryCard.tsx`
+  - Subcomponentes por categoria: `HardwareItemFields.tsx`, `AluminumItemFields.tsx`, `GlassItemFields.tsx`, `FilmItemFields.tsx`
 - **Padrões Visuais:**
   - **Cards:** `bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-lg`
   - **Badge Vidro:** `bg-cyan-500/10 text-cyan-400 border-cyan-500/20`
@@ -188,14 +190,16 @@ As sub-tarefas da US-46 foram decompostas em **fatias verticais autônomas por t
 
 ---
 
-## 📋 Sub-Tarefas / Fatias Verticais Vinculadas (4 fatias)
+## 📋 Sub-Tarefas / Fatias Verticais Entregues (6 fatias)
 
 | Sub-Task | Issue GitHub | Tarefa / Descrição | Tipo | Status |
 |---|:---:|---|:---:|:---:|
-| [US-46.1](issues/US-46.1-venda-avulsa-ferragens-unidade/issue.md) | [#527](https://github.com/ADS-IFPB-SR/alumigest/issues/527) | Venda Avulsa de Ferragens por Unidade (Fullstack) | Fullstack | 🔲 No Backlog |
-| [US-46.2](issues/US-46.2-venda-perfis-aluminio-metro-linear/issue.md) | [#528](https://github.com/ADS-IFPB-SR/alumigest/issues/528) | Venda de Perfis de Alumínio em Metro Linear (Fullstack) | Fullstack | 🔲 No Backlog |
-| [US-46.3](issues/US-46.3-venda-vidros-peliculas-metro-quadrado/issue.md) | [#529](https://github.com/ADS-IFPB-SR/alumigest/issues/529) | Venda de Vidros e Películas em m² com Área Mínima (Fullstack) | Fullstack | 🔲 No Backlog |
-| [US-46.4](issues/US-46.4-geracao-exportacao-orcamento-pedido-pdf/issue.md) | [#530](https://github.com/ADS-IFPB-SR/alumigest/issues/530) | Geração e Exportação do Orçamento/Pedido em PDF A4 (Fullstack) | Fullstack | 🔲 No Backlog |
+| [US-46.1](issues/US-46.1-venda-avulsa-ferragens-unidade/issue.md) | [#527](https://github.com/ADS-IFPB-SR/alumigest/issues/527) | Venda Avulsa de Ferragens por Unidade (Fullstack) | Fullstack | 🟢 Concluída (PR #542) |
+| [US-46.2](issues/US-46.2-venda-perfis-aluminio-metro-linear/issue.md) | [#528](https://github.com/ADS-IFPB-SR/alumigest/issues/528) | Venda de Perfis de Alumínio em Metro Linear (Fullstack) | Fullstack | 🟢 Concluída (PR #538) |
+| [US-46.3](issues/US-46.3-venda-vidros-peliculas-metro-quadrado/issue.md) | [#529](https://github.com/ADS-IFPB-SR/alumigest/issues/529) | Venda de Vidros e Películas em m² com Área Mínima (Fullstack) | Fullstack | 🟢 Concluída (PR #543 / #549) |
+| [US-46.4](issues/US-46.4-geracao-exportacao-orcamento-pedido-pdf/issue.md) | [#530](https://github.com/ADS-IFPB-SR/alumigest/issues/530) | Geração e Exportação do Orçamento/Pedido em PDF A4 (Fullstack) | Fullstack | 🟢 Concluída (PR #565) |
+| US-46.5 | [#551](https://github.com/ADS-IFPB-SR/alumigest/issues/551) | Listagem de Tipo do Material no Seletor & Cliente Balcão (`V24`) | Fullstack | 🟢 Concluída (PR #561) |
+| US-46.6 | [#555](https://github.com/ADS-IFPB-SR/alumigest/issues/555) | Suíte de Testes E2E (Cypress), Integração e Matriz de Casos | QA / E2E | 🟢 Concluída (PR #557 / #564) |
 
 ---
 

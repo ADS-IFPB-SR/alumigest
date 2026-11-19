@@ -33,23 +33,23 @@ A Sprint 09 é estruturada em **Fatias Atômicas (*Atomic Slices*) de até 3.5 h
 - [x] Interface desacoplada `StockPort` para contratos externos.
 - [x] Tipagem TypeScript, cliente API `stockApi.ts`, hooks TanStack Query e componente visual `StockAlertBadge.tsx`.
 
-#### US-21.2: Migração Flyway `V21` e Entidades JPA com Lock Pessimista [1 pt / 3.0h]
-- **Issue**: [#572](https://github.com/ADS-IFPB-SR/alumigest/issues/572)
-- [ ] Criação do script Flyway `V21__create_stock_schema.sql` com tabelas `tb_stock_items` e `tb_stock_movements`.
-- [ ] Mapeamento das entidades JPA `StockItem` e `StockMovement` com campos em inglês técnico e auditoria imutável.
-- [ ] Repositório `StockItemRepository` com lock pessimista defensivo (`@Lock(LockModeType.PESSIMISTIC_WRITE)`).
-- [ ] Testes de repositório JPA e validação de schema PostgreSQL.
+#### US-21.2: Migração Flyway `V26` e Entidades JPA com Lock Pessimista [1 pt / 3.0h]
+- **Issue**: [#572](https://github.com/ADS-IFPB-SR/alumigest/issues/572) | **PR**: [#596](https://github.com/ADS-IFPB-SR/alumigest/pull/596) *(integrado na `feat/us-21-reserva-baixa-estoque`)*
+- [x] Criação do script Flyway `V26__create_stock_schema.sql` *(provisoriamente `V25__create_stock_schema.sql` na branch — ajustar para `V26` no merge com `release/v0.8.0`)* com tabelas `tb_stock_items` e `tb_stock_movements`.
+- [x] Mapeamento das entidades JPA `StockItem` e `StockMovement` com campos em inglês técnico e auditoria imutável.
+- [x] Repositório `StockItemRepository` com lock pessimista defensivo (`@Lock(LockModeType.PESSIMISTIC_WRITE)`).
+- [x] Testes de repositório JPA e validação de schema PostgreSQL.
 
 #### US-21.3: Motor de Reserva Automática Make-to-Order (`reserveMaterials`) [2 pts / 3.5h]
-- **Issue**: [#573](https://github.com/ADS-IFPB-SR/alumigest/issues/573)
-- [ ] Implementação de `StockService.reserveMaterials(UUID orderId)` acionado no evento de aprovação/conversão de pedidos (`US-13`).
-- [ ] Cálculo da invariante: decrementa $available = physical - reserved$ e incrementa $reserved$.
-- [ ] **Regra Make-to-Order (RN-05)**: Nunca bloquear a aprovação caso $available < 0$; sinalizar necessidade de compras.
-- [ ] Testes unitários JUnit/AssertJ validando o comportamento com saldo suficiente e insuficiente.
+- **Issue**: [#573](https://github.com/ADS-IFPB-SR/alumigest/issues/573) | **PR**: [#602](https://github.com/ADS-IFPB-SR/alumigest/pull/602) *(integrado na `feat/us-21-reserva-baixa-estoque`)*
+- [x] Implementação de `StockService.reserveMaterials(UUID orderId)` acionado no evento de aprovação/conversão de pedidos (`US-13`).
+- [x] Cálculo da invariante: decrementa $available = physical - reserved$ e incrementa $reserved$.
+- [x] **Regra Make-to-Order (RN-05)**: Nunca bloquear a aprovação caso $available < 0$; sinalizar necessidade de compras.
+- [x] Testes unitários JUnit/AssertJ validando o comportamento com saldo suficiente e insuficiente.
 
 #### US-21.4: Indicador Visual Make-to-Order no Card do Kanban Fabril [1 pt / 2.5h]
-- **Issue**: [#574](https://github.com/ADS-IFPB-SR/alumigest/issues/574)
-- [ ] Conectar o card do Kanban (`OrderProductionCard.tsx`) ao hook `useStockItem`/`useStockBalances`.
+- **Issue**: [#574](https://github.com/ADS-IFPB-SR/alumigest/issues/574) | **Branch**: `feat/us-21.4-indicador-visual-make-to-order-574` *(em revisão / `PR #599`)*
+- [ ] Conectar o card do Kanban (`OrderProductionCard.tsx`) ao endpoint `GET /api/v1/stock/orders/{orderId}/alert` e hook correspondente.
 - [ ] Renderizar badge semântico: `🔴 Falta Insumo / Comprar` quando houver itens com saldo negativo ou `🟢 Insumos OK`.
 - [ ] Testes de renderização com Vitest e React Testing Library simulando diferentes estados de estoque.
 
@@ -85,15 +85,15 @@ A Sprint 09 é estruturada em **Fatias Atômicas (*Atomic Slices*) de até 3.5 h
 ### 📦 US-22 — Consultar Posição de Estoque e Kardex (4 Sub-tarefas Verticais / 5 Story Points)
 
 #### US-22.1: Visualização de Saldos e Badges de Estoque nas 4 Abas do Catálogo (Fullstack) [2 pts / 6.0h]
-- **Issue**: [#587](https://github.com/ADS-IFPB-SR/alumigest/issues/587) *(Unifica as antigas #586 e #587)*
-- [ ] Atualização unificada das 4 abas do catálogo (`GlassTab.tsx`, `ProfileTab.tsx`, `HardwareTab.tsx`, `FilmTab.tsx`).
-- [ ] Adição das colunas Saldo Físico, Reservado e Disponível conforme protótipo `catalogo-materiais-estoque-kardex.html`.
-- [ ] Badges visuais inteligentes (`🔴 Falta X un/m` em vermelho quando $available < 0$ e `🟡 Ponto de Pedido` em âmbar) e checkbox de filtro rápido "Apenas com Necessidade de Compra" no topo.
-- [ ] Refinamento do endpoint `GET /api/v1/stock` com suporte a filtros (`needsPurchase`, `belowMinStock`) e ordenação.
-- [ ] Testes automatizados: MockMvc no backend e Vitest com React Testing Library nos temas claro e escuro.
+- **Issue**: [#587](https://github.com/ADS-IFPB-SR/alumigest/issues/587) | **PR**: [#601](https://github.com/ADS-IFPB-SR/alumigest/pull/601) *(integrado na `feat/us-22-posicao-estoque-kardex`)*
+- [x] Atualização unificada das 4 abas do catálogo (`GlassTab.tsx`, `ProfileTab.tsx`, `HardwareTab.tsx`, `FilmTab.tsx`).
+- [x] Adição das colunas Saldo Físico, Reservado e Disponível conforme protótipo `catalogo-materiais-estoque-kardex.html`.
+- [x] Badges visuais inteligentes (`🔴 Falta X un/m` em vermelho quando $available < 0$ e `🟡 Ponto de Pedido` em âmbar) e checkbox de filtro rápido "Apenas com Necessidade de Compra" no topo.
+- [x] Refinamento do endpoint `GET /api/v1/stock` com suporte a filtros (`needsPurchase`, `belowMinStock`) e ordenação.
+- [x] Testes automatizados: MockMvc no backend e Vitest com React Testing Library nos temas claro e escuro.
 
 #### US-22.2: Gaveta Lateral de Extrato Kardex (`KardexDrawer.tsx`) e Linha do Tempo (Fullstack) [1 pt / 4.5h]
-- **Issue**: [#589](https://github.com/ADS-IFPB-SR/alumigest/issues/589) *(Unifica as antigas #588 e #589)*
+- **Issue**: [#589](https://github.com/ADS-IFPB-SR/alumigest/issues/589) | **Branch**: `feat/us-22.2-gaveta-kardex-auditoria-589` *(em revisão/integração)*
 - [ ] Componente `KardexDrawer.tsx` (gaveta lateral deslizante à direita / Sheet) conforme protótipo homologado.
 - [ ] Cabeçalho com os 3 saldos consolidados e timeline interativa com ícones semânticos (`🟢 Entrada`, `🔵 Reserva`, `🟠 Baixa`, `⚪ Estorno`, `🔴 Perda`).
 - [ ] Botão de ação "📜 Extrato Kardex" diretamente na linha de cada insumo e atalho de fechamento via teclado (Esc).
@@ -131,7 +131,7 @@ A Sprint 09 é estruturada em **Fatias Atômicas (*Atomic Slices*) de até 3.5 h
 ## 4. 🛡️ Definition of Done (DoD) da Sprint 09
 
 - [ ] Todas as 12 sub-tarefas aprovadas com PRs revisados e mergeados em `develop`.
-- [ ] Migrations Flyway `V21` executadas com sucesso sem regressão no banco de dados.
+- [ ] Migrations Flyway `V26` executadas com sucesso sem regressão no banco de dados (ajustando `V25__create_stock_schema.sql` das branches para `V26` para não colidir com `V25__set_default_order_status_created.sql` da `release/v0.8.0`).
 - [ ] Testes de backend (`mvn test`) com 100% de sucesso e cobertura $\ge 80\%$.
 - [ ] Testes de frontend (`npm run test`) com 100% de sucesso no Vitest.
 - [ ] Interface visual 100% fiel ao protótipo homologado `catalogo-materiais-estoque-kardex.html`.

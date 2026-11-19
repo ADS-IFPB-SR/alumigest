@@ -2,7 +2,7 @@
 
 **Identificador**: `US-47`  
 **Issue GitHub**: [#496](https://github.com/ADS-IFPB-SR/alumigest/issues/496)  
-**Status**: 🔵 Planejada para Sprint 08 (Release 2 — Gestão Comercial & Fábrica)  
+**Status**: 🟢 Concluída na Sprint 08 (`release/v0.8.0` — 6/6 sub-tarefas entregues)  
 **Diretriz de Idioma**: Conforme `PAD-Padroes_de_Codigo.md`, variáveis, atributos Java, colunas SQL, DTOs e enums são em **inglês técnico** (`camelCase`/`snake_case`), e a tradução para `pt-BR` ocorre na camada de UI do Frontend.
 
 ---
@@ -104,25 +104,24 @@ As sub-tarefas da US-47 foram decompostas em **fatias verticais autônomas por c
 ## 🔌 Especificação Técnica
 
 ### Backend (Spring Boot 3 / OpenPDF / PostgreSQL)
-- **Endpoints CQRS de Leitura:**
-  - `GET /api/v1/customers/{id}/dashboard`: Indicadores consolidados de KPIs do cliente.
-  - `GET /api/v1/customers/{id}/orders`: Histórico de ordens de serviço com status e itens nominais.
-  - `GET /api/v1/customers/{id}/budgets`: Histórico de orçamentos e propostas comerciais.
-- **Endpoints de Documentos e Mídia:**
-  - `GET /api/v1/orders/{orderId}/technical-sheet.pdf`: Ficha Técnica A4 com listas de corte e folgas de montagem.
+- **Endpoints CQRS de Leitura (`ClientHubController` — `/api/v1/clients`, aliases `/api/v1/clientes`, `/api/clientes`, `/api/v1/customers`):**
+  - `GET /api/v1/clients/{id}/dashboard`: Indicadores consolidados de KPIs do cliente (`ClientDashboardDto`).
+  - `GET /api/v1/clients/{id}/orders`: Histórico de ordens de serviço com status e itens nominais (`ClientOrderSummaryDto`).
+  - `GET /api/v1/clients/{id}/budgets`: Histórico de orçamentos e propostas comerciais (`ClientBudgetSummaryDto`).
+- **Endpoints de Ficha Técnica (`OrderController`):**
+  - `GET /api/v1/orders/{id}/production-sheet`: Dados paramétricos da Ficha Técnica de Corte (`ProductionSheetResponse`).
+  - `GET /api/v1/orders/{id}/production-sheet/pdf`: Ficha Técnica A4 em PDF com listas de corte e folgas de montagem.
 - **Services:**
-  - `CustomerHubService`: Leitura e orquestração de KPIs.
-  - `TechnicalSheetPdfService`: Compilação da Ficha Técnica A4 com base nas fórmulas paramétricas do catálogo.
+  - `ClientHubService`: Leitura e orquestração de KPIs, orçamentos e O.S.
+  - `ProductionSheetService` & `ProductionSheetPdfService` (`SupremaSlidingWindowCalculator`, `DefaultFrameCalculator`).
 
 ### Frontend (React 19 / TypeScript / TanStack Query / Tailwind CSS)
-- **Componentes:**
-  - `CustomerHubPage.tsx`: Layout mestre-detalhe principal.
+- **Componentes (`frontend/src/features/customers/components/`):**
+  - `CustomerHubPage.tsx`: Layout mestre-detalhe principal (rota `/clientes`).
   - `CustomerMasterSidebar.tsx`: Lista de clientes com filtro instantâneo.
-  - `CustomerHeroCard.tsx`: Card de identificação com CTAs e KPIs.
-  - `CustomerOrdersTable.tsx`: Tabela de O.S. sem sobreposição flexbox.
-  - `CustomerBudgetsTable.tsx`: Tabela de orçamentos e propostas comerciais.
-  - `CustomerOrderItemsDrawer.tsx`: Card de esquadrias e medidas nominais.
-  - `TechnicalSheetModal.tsx`: Modal interativo da Ficha Técnica de Produção.
+  - `CustomerHeroCard.tsx` & `CustomerKpiGrid.tsx`: Card de identificação, CTAs, edição (`EditCustomerModal.tsx`) e KPIs.
+  - `CustomerOrdersTab.tsx`: Tabela de O.S. com detalhamento das esquadrias e medidas nominais em mm.
+  - `CustomerBudgetsTab.tsx`: Tabela de orçamentos e propostas comerciais com ações PDF e WhatsApp.
   - Reutilização do `ThermalLabelModal.tsx` da US-17.
 
 ---
@@ -137,14 +136,16 @@ As sub-tarefas da US-47 foram decompostas em **fatias verticais autônomas por c
 
 ---
 
-## 📋 Sub-Tarefas / Fatias Verticais Vinculadas (4 fatias)
+## 📋 Sub-Tarefas / Fatias Verticais Entregues (6 fatias)
 
 | Sub-Task | Issue GitHub | Tarefa / Descrição | Tipo | Status |
 |---|:---:|---|:---:|:---:|
-| [US-47.1](issues/US-47.1-hub-base-kpis-gestao-orcamentos-comerciais/issue.md) | [#531](https://github.com/ADS-IFPB-SR/alumigest/issues/531) | Hub 360° Base, KPIs e Gestão de Orçamentos (Fullstack) | Fullstack | 🔲 No Backlog |
-| [US-47.2](issues/US-47.2-gestao-ordens-servico-detalhamento-esquadrias/issue.md) | [#532](https://github.com/ADS-IFPB-SR/alumigest/issues/532) | Gestão de Ordens de Serviço (O.S.) e Detalhamento de Esquadrias (Fullstack) | Fullstack | 🔲 No Backlog |
-| [US-47.3](issues/US-47.3-emissao-ficha-tecnica-a4-producao-corte/issue.md) | [#533](https://github.com/ADS-IFPB-SR/alumigest/issues/533) | Emissão da Ficha Técnica A4 de Produção com Lista de Corte (Fullstack) | Fullstack | 🔲 No Backlog |
-| [US-47.4](issues/US-47.4-impressao-etiquetas-termicas-hub-360/issue.md) | [#534](https://github.com/ADS-IFPB-SR/alumigest/issues/534) | Impressão de Etiquetas Térmicas (100x60mm) da O.S. no Hub (Fullstack / UI) | Fullstack / UI | 🔲 No Backlog |
+| [US-47.1](issues/US-47.1-hub-base-kpis-gestao-orcamentos-comerciais/issue.md) | [#531](https://github.com/ADS-IFPB-SR/alumigest/issues/531) | Hub 360° Base, KPIs e Gestão de Orçamentos (Fullstack) | Fullstack | 🟢 Concluída (PR #545) |
+| [US-47.2](issues/US-47.2-gestao-ordens-servico-detalhamento-esquadrias/issue.md) | [#532](https://github.com/ADS-IFPB-SR/alumigest/issues/532) | Gestão de Ordens de Serviço (O.S.) e Detalhamento de Esquadrias (Fullstack) | Fullstack | 🟢 Concluída (PR #552) |
+| [US-47.3](issues/US-47.3-emissao-ficha-tecnica-a4-producao-corte/issue.md) | [#533](https://github.com/ADS-IFPB-SR/alumigest/issues/533) | Emissão da Ficha Técnica A4 de Produção com Lista de Corte (Fullstack) | Fullstack | 🟢 Concluída (PR #553) |
+| [US-47.4](issues/US-47.4-impressao-etiquetas-termicas-hub-360/issue.md) | [#534](https://github.com/ADS-IFPB-SR/alumigest/issues/534) | Impressão de Etiquetas Térmicas (100x60mm) da O.S. no Hub (Fullstack / UI) | Fullstack / UI | 🟢 Concluída (PR #560) |
+| US-47.5 | [#556](https://github.com/ADS-IFPB-SR/alumigest/issues/556) | Suíte de Testes E2E (Cypress), Integração e Matriz de Casos | QA / E2E | 🟢 Concluída (PR #563) |
+| US-47.6 | [#558](https://github.com/ADS-IFPB-SR/alumigest/issues/558) | Edição de Dados Cadastrais do Cliente no Hub 360° | Fullstack / UI | 🟢 Concluída (PR #559) |
 
 ---
 

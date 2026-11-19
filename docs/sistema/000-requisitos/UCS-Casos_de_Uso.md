@@ -4,8 +4,8 @@
 |---|---|
 | **Projeto** | AlumiGest — Sistema de Gestão para Vidraçaria e Esquadrias |
 | **Sigla** | ALG |
-| **Versão** | 4.0 (Reestruturação Completa com Fluxos Alternativos, Fluxos de Exceção, Vias Segregadas e Segurança) |
-| **Data** | 24/09/2026 |
+| **Versão** | 5.0 (Consolidado com Release 2 até `v0.8.0`: O.S., Etiquetas, Kanban, Ficha Técnica, Venda Avulsa e Hub 360°) |
+| **Data** | 18/11/2026 |
 | **Governança** | Docs-as-Code — Oficial de Governança (`alumigest-doc-governor`) |
 
 ---
@@ -18,6 +18,7 @@
 | 31/08/2026 | 2.0 | Atualização com medidas em mm, área mínima de 0,25 m², templates de esquadrias, descontos em %/R$ e máquina de estados | Equipe AlumiGest (Scrum Master: Italo Santos) |
 | 24/09/2026 | 3.0 | Revisão e alinhamento com o código-fonte (PDF Comercial, PDF Técnico com Sigilo, WhatsApp, Alertas Físicos) | Equipe AlumiGest (Tech Lead: Ítalo Jefferson) |
 | 24/09/2026 | 4.0 | Reincorporação e aprofundamento exaustivo de todos os Fluxos Alternativos (FA) e Fluxos de Exceção (FE) para os 18 Casos de Uso do sistema, restauração de módulos de autenticação e matriz de rastreabilidade | Equipe AlumiGest (Tech Lead & QA: Ítalo Jefferson) |
+| 18/11/2026 | 5.0 | Inclusão dos Casos de Uso da Release 2 entregues até a Sprint 08 (`UC-19` a `UC-24`: Conversão/Gestão de O.S., Etiquetas Térmicas PDF/BPLB, Kanban Fabril, Ficha Técnica de Corte A4, Venda Avulsa de Partes e Central 360° do Cliente) | Equipe AlumiGest |
 
 ---
 
@@ -63,15 +64,32 @@ graph TD
         UC14["UC-14: Gerenciar Ciclo de Vida (Máquina de Estados)"]
     end
 
-    subgraph ModuloClientes["Módulo 3: Gestão de Clientes"]
+    subgraph ModuloClientes["Módulo 3: Gestão de Clientes & Hub 360°"]
         UC15["UC-15: Cadastrar Cliente (PF/PJ com ViaCEP)"]
         UC16["UC-16: Pesquisar e Selecionar Cliente"]
+        UC24["UC-24: Consultar Central 360° do Cliente"]
     end
 
-    subgraph ModuloSeguranca["Módulo 4: Autenticação & Acesso"]
+    subgraph ModuloProducao["Módulo 5: Ordens de Serviço, Produção & Venda Avulsa (Release 2)"]
+        UC19["UC-19: Converter Orçamento em O.S. e Gerenciar Ciclo/Cancelamento"]
+        UC20["UC-20: Emitir Etiquetas Térmicas (100x60mm PDF / BPLB)"]
+        UC21["UC-21: Acompanhar Produção no Painel Kanban"]
+        UC22["UC-22: Emitir Ficha Técnica A4 de Corte da O.S."]
+        UC23["UC-23: Realizar Venda Avulsa de Partes e Exportar PDF"]
+    end
+
+    subgraph ModuloSeguranca["Módulo 4: Autenticação & Acesso (Planejado)"]
         UC17["UC-17: Fazer Login e Autenticação"]
         UC18["UC-18: Gerenciar Usuários e Perfis"]
     end
+
+    Vend --> UC19
+    Vend --> UC23
+    Vend --> UC24
+    Admin --> UC24
+    Prod --> UC20
+    Prod --> UC21
+    Prod --> UC22
 
     Admin --> UC01
     Admin --> UC02
@@ -719,6 +737,153 @@ graph TD
 
 ---
 
+### UC-19: Converter Orçamento em O.S. e Gerenciar Ciclo/Cancelamento
+
+| Campo | Descrição |
+|---|---|
+| **ID** | UC-19 |
+| **Nome** | Converter Orçamento em Ordem de Serviço (O.S.) e Gerenciar Ciclo de Vida |
+| **Ator Principal** | Vendedor, Administrador |
+| **Pré-condições** | Orçamento válido (`DRAFT` ou `SENT`) com ao menos 1 item e sem O.S. ativa vinculada |
+| **Pós-condições** | O.S. (`OS-YYYY-NNNN`) persistida em `tb_orders` com *deep copy* imutável e lock de preços (`valor_mao_de_obra`, itens e opções congelados) |
+| **Requisitos** | RF-036, RF-037, RF-038, RN-005 |
+
+**Fluxo Principal:**
+1. O operador acessa os detalhes do orçamento e clica em **"Aprovar / Gerar Ordem de Serviço"**.
+2. Informa canal de aprovação (`WHATSAPP`, `PRESENCIAL`, `TELEFONE`, `EMAIL`, `OUTRO`), data prevista de entrega e observações.
+3. O sistema aciona `POST /api/v1/orders/convert/{budgetId}`, promove o orçamento para `APPROVED`, gera o código `OS-YYYY-NNNN` e cria o snapshot imutável dos itens e opções.
+4. Na tela da O.S., o operador pode baixar o comprovante oficial via `GET /api/v1/orders/{id}/pdf/comprovante`.
+
+**Fluxos Alternativos:**
+- **FA-01 — Cancelamento com justificativa:** Estando a O.S. em `CREATED` ou `WAITING_PRODUCTION`, o operador cancela via `PATCH /api/v1/orders/{id}/cancel` informando justificativa ($\ge 10$ caracteres).
+- **FA-02 — Reabertura do orçamento após cancelamento:** Com a O.S. em `CANCELLED`, o operador pode acionar `POST /api/v1/budgets/{id}/reopen` para retornar o orçamento para `DRAFT` e renegociar.
+
+**Fluxos de Exceção:**
+- **FE-01 — Conversão duplicada (HTTP 409):** Se já houver O.S. ativa (`status <> 'CANCELLED'`), o sistema bloqueia a duplicidade via índice único parcial `uk_orders_orcamento_ativo`.
+- **FE-02 — Cancelamento em produção ou concluído (HTTP 422):** Ordens em `IN_PRODUCTION` ou `COMPLETED` não podem ser canceladas.
+
+---
+
+### UC-20: Emitir Etiquetas Térmicas (100×60mm PDF / BPLB)
+
+| Campo | Descrição |
+|---|---|
+| **ID** | UC-20 |
+| **Nome** | Emitir Etiquetas Adesivas Térmicas de Identificação por Peça Física |
+| **Ator Principal** | Produção / Oficina, Vendedor |
+| **Pré-condições** | Ordem de Serviço ativa (não cancelada) com itens físicos |
+| **Pós-condições** | Etiquetas geradas em PDF térmico (100×60mm) ou script BPLB (`.prn`) para impressora Elgin L42 |
+| **Requisitos** | RF-042 |
+
+**Fluxo Principal:**
+1. Na tela da O.S. ou na Central 360°, o operador clica em **"Imprimir Etiquetas"**.
+2. O modal térmico (`ThermalLabelModal`) exibe uma etiqueta por exemplar físico fracionado (`Peça 01/03`, etc.) com dimensões $L \times A$ mm, cor do perfil e tipo de vidro.
+3. O operador pode filtrar por item específico (`?itemId=`) ou ajustar a contagem de folhas e baixar o PDF (`GET/POST /api/v1/orders/{id}/labels-pdf`) ou script BPLB (`GET/POST /api/v1/orders/{id}/labels-bplb`).
+
+**Fluxos Alternativos:**
+- **FA-01 — Impressão direta de bobina térmica:** Seleção do formato BPLB nativo para envio direto à impressora Elgin L42.
+
+**Fluxos de Exceção:**
+- **FE-01 — O.S. cancelada ou sem itens (HTTP 422):** Ações são ocultadas na UI e bloqueadas no backend com HTTP 422.
+
+---
+
+### UC-21: Acompanhar Produção no Painel Kanban
+
+| Campo | Descrição |
+|---|---|
+| **ID** | UC-21 |
+| **Nome** | Acompanhar Esteira de Produção via Painel Kanban |
+| **Ator Principal** | Produção / Oficina, Administrador |
+| **Pré-condições** | Ordens de Serviço criadas no sistema |
+| **Pós-condições** | Status fabril da O.S. atualizado com registro de `data_conclusao` na conclusão |
+| **Requisitos** | RF-038, RF-039 |
+
+**Fluxo Principal:**
+1. O operador acessa `/producao` pelo menu lateral.
+2. O sistema exibe os KPIs superiores (incluindo somatório real de peças físicas) e as 3 colunas (`WAITING_PRODUCTION`, `IN_PRODUCTION`, `COMPLETED`) com badges de SLA/prazo.
+3. O operador arrasta o card ou clica no botão de avanço contextual, disparando `PATCH /api/v1/orders/{id}/production-status` com UI otimista.
+4. Ao avançar para `COMPLETED`, o backend grava automaticamente `data_conclusao` no fuso `America/Sao_Paulo`.
+
+**Fluxos Alternativos:**
+- **FA-01 — Filtragem e Impressão PCP:** Busca instantânea por cliente/código, filtro por atrasados e impressão em paisagem.
+
+**Fluxos de Exceção:**
+- **FE-01 — Falha de rede ou transição inválida:** Em caso de erro HTTP 422/500, o frontend executa *rollback* otimista restaurando o card à coluna original.
+
+---
+
+### UC-22: Emitir Ficha Técnica A4 de Corte da O.S.
+
+| Campo | Descrição |
+|---|---|
+| **ID** | UC-22 |
+| **Nome** | Emitir Ficha Técnica A4 com Plano de Corte e Folgas Paramétricas |
+| **Ator Principal** | Produção / Oficina, Vendedor |
+| **Pré-condições** | Ordem de Serviço existente com ao menos 1 esquadria/item |
+| **Pós-condições** | Plano de corte (perfis a $45^\circ/90^\circ$, vidros deduzidos e acessórios) consultado ou exportado em PDF A4 |
+| **Requisitos** | RF-040, RF-041 |
+
+**Fluxo Principal:**
+1. Na Central 360° ou detalhe da O.S., o operador aciona **"Ficha Técnica"**.
+2. O backend (`ProductionSheetService` + `FrameCalculatorStrategy`) resolve cortes paramétricos via `SupremaSlidingWindowCalculator` ou `DefaultFrameCalculator` (`GET /api/v1/orders/{id}/production-sheet`).
+3. Para exportação, `GET /api/v1/orders/{id}/production-sheet/pdf` retorna o arquivo `Ficha_Tecnica_OS-YYYY-NNNN.pdf`.
+
+**Fluxos de Exceção:**
+- **FE-01 — O.S. inexistente (HTTP 404):** Exibe notificação de erro sem quebra de tela.
+
+---
+
+### UC-23: Realizar Venda Avulsa de Partes e Exportar PDF
+
+| Campo | Descrição |
+|---|---|
+| **ID** | UC-23 |
+| **Nome** | Cotar e Registrar Venda Avulsa de Partes e Insumos (`US-46`) |
+| **Ator Principal** | Vendedor, Administrador |
+| **Pré-condições** | Materiais cadastrados no catálogo (`tb_materials`) e cliente selecionado (ou `Cliente Balcão`) |
+| **Pós-condições** | Venda avulsa (`VP-YYYY-NNNN`) persistida em `tb_part_sales` e `tb_part_sale_items` com cálculo exato por categoria |
+| **Requisitos** | RF-057, RN-001 a RN-003 |
+
+**Fluxo Principal:**
+1. O operador acessa `/vendas/avulsa/nova`, seleciona cliente (ou mantém `Cliente Balcão`) e escolhe a categoria (`GLASS`, `PROFILE`, `HARDWARE`, `FILM`).
+2. Pesquisa e seleciona o material via autocomplete (`GET /api/v1/materials?category=...`) e informa dimensões/quantidade.
+3. O backend calcula metragem faturável e preço via `POST /api/v1/part-sales/calculate-item` (`0,25 m²` mínimo para vidros, até `6000 mm` com perda para perfis, perda em película e unidade para ferragens).
+4. Ao salvar (`POST /api/v1/part-sales`), o operador pode exportar o PDF A4 agrupado por seções (`GET /api/v1/part-sales/{id}/pdf` ou `/export-pdf`).
+
+**Fluxos Alternativos:**
+- **FA-01 — Alternância de abas:** Ao trocar de categoria, os campos dimensionais incompatíveis são ocultados/resetados reativamente.
+
+**Fluxos de Exceção:**
+- **FE-01 — Dimensão excede chapa/bobina ou barra (HTTP 422):** `PartSaleValidationService` rejeita medidas acima de `maxWidthMm`/`maxHeightMm` ou barras $> 6000\text{ mm}$.
+
+---
+
+### UC-24: Consultar Central 360° do Cliente
+
+| Campo | Descrição |
+|---|---|
+| **ID** | UC-24 |
+| **Nome** | Operar a Central 360° do Cliente (`US-47`) |
+| **Ator Principal** | Vendedor, Administrador |
+| **Pré-condições** | Clientes cadastrados no sistema |
+| **Pós-condições** | Visão unificada de KPIs, orçamentos, O.S., edição cadastral e impressão rápida operada sem troca de contexto |
+| **Requisitos** | RF-012, RF-058 |
+
+**Fluxo Principal:**
+1. O operador acessa `/clientes` e busca/seleciona um cliente na barra lateral (`CustomerMasterSidebar`).
+2. O sistema carrega `GET /api/v1/clients/{id}/dashboard`, `/budgets` e `/orders`, exibindo Hero Card com 3 KPIs (`Total Contratado`, `Ordens de Serviço`, `Orçamentos Vinculados`).
+3. Na aba **Orçamentos**, o operador baixa propostas PDF ou abre link direto de WhatsApp; na aba **Ordens de Serviço (O.S.)**, clica na linha para abrir as esquadrias (`📐 L x A mm`) e acionar **Ficha Técnica** ou **Etiquetas**.
+
+**Fluxos Alternativos:**
+- **FA-01 — Novo orçamento pré-preenchido:** Botão "+ Novo Orçamento" navega para `/orcamentos/novo?clienteId={id}`.
+- **FA-02 — Edição cadastral no Hub:** Modal `EditCustomerModal` atualiza dados do cliente sem sair da Central 360°.
+
+**Fluxos de Exceção:**
+- **FE-01 — Falha de API ou cliente sem histórico:** Exibe Empty States ou fallback amigável preservando a sidebar lateral navegável.
+
+---
+
 ## 4. Matriz de Rastreabilidade (Casos de Uso × Requisitos Funcionais × Regras de Negócio)
 
 | Caso de Uso | Requisitos Funcionais Atendidos | Regras de Negócio Aplicadas |
@@ -739,9 +904,15 @@ graph TD
 | **UC-14: Gerenciar Ciclo de Vida (Máquina de Estados)** | RF-035 | RN-STAT01 a RN-STAT04, RN-CONG01 |
 | **UC-15: Cadastrar Cliente (PF/PJ com ViaCEP)** | RF-007, RF-008, RF-011 | RN-CLI01, RN-CLI02 |
 | **UC-16: Pesquisar e Selecionar Cliente** | RF-009, RF-010 | RN-CLI01 |
-| **UC-17: Fazer Login e Autenticação** | RF-001, RF-002, RF-003, RF-004 | Segurança e Controle de Acesso |
-| **UC-18: Gerenciar Usuários e Perfis** | RF-005, RF-006 | Governança de Perfis |
+| **UC-17: Fazer Login e Autenticação** | RF-001, RF-002, RF-003, RF-004 | Planejado (`auth/package-info.java`) |
+| **UC-18: Gerenciar Usuários e Perfis** | RF-005, RF-006 | Planejado |
+| **UC-19: Converter Orçamento em O.S. e Gerenciar Ciclo** | RF-036, RF-037, RF-038 | RN-005, `uk_orders_orcamento_ativo` |
+| **UC-20: Emitir Etiquetas Térmicas (100×60mm)** | RF-042 | Fracionamento físico por peça, bloqueio `CANCELLED` |
+| **UC-21: Acompanhar Produção no Painel Kanban** | RF-038, RF-039 | Transição estrita, `data_conclusao` SP |
+| **UC-22: Emitir Ficha Técnica A4 de Corte da O.S.** | RF-040, RF-041 | Folgas paramétricas Suprema & Fallback |
+| **UC-23: Realizar Venda Avulsa de Partes e Exportar PDF** | RF-057 | Piso `0,25 m²`, perda corte/bobina, limites físicos |
+| **UC-24: Consultar Central 360° do Cliente** | RF-012, RF-058 | Projeções CQRS, medidas nominais mm |
 
 ---
 
-*Documento homologado pelo Oficial de Governança Técnica (`alumigest-doc-governor`) com cobertura de 100% de Fluxos Principais, Alternativos e de Exceção.*
+*Documento homologado pelo Oficial de Governança Técnica (`alumigest-doc-governor`) — Versão 5.0 (18/11/2026).*

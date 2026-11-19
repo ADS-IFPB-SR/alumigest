@@ -4,10 +4,10 @@
 |---|---|
 | **Projeto** | AlumiGest — Sistema de Gestão para Vidraçaria e Esquadrias |
 | **Documento** | Registro Unificado de Bugs, Defeitos e Hotfixes (RBD) |
-| **Versão** | 2.8.0 (Catálogo consolidado até BUG-040, incluindo as correções da US-14.1 / Sprint 06) |
-| **Data de Atualização** | 13/10/2026 |
-| **Responsável QA / SM** | Herbert Carvalho dos Santos / Júlio Kennedy dos Santos Silva / Equipe de Engenharia AlumiGest |
-| **Branch** | `feat/us-14.1-snapshot-imutavel-lock-precos-deep-copy-360` |
+| **Versão** | 2.9.0 (Catálogo consolidado até BUG-045, incluindo defeitos da Sprint 08 — US-46 e US-47) |
+| **Data de Atualização** | 18/11/2026 |
+| **Responsável QA / SM** | Equipe de Engenharia e QA AlumiGest |
+| **Branch** | `planejamento` (Baseline `release/v0.8.0`) |
 | **Padrão de Template** | Baseado em [`.github/ISSUE_TEMPLATE/bug_report.md`](../../../.github/ISSUE_TEMPLATE/bug_report.md) |
 | **Auditoria Técnica** | Análise estática SonarQube, Pipeline CI/CD GitHub Actions e Histórico Git |
 
@@ -68,6 +68,11 @@ Seguindo a governança do **Plano de Gerência de Configuração (PGC)** e do **
 | **[BUG-038](#bug-038)** | Extrator de Puxador Falha por Divergência de Chaves (`model` vs `handleType`) | Backend / Orders | 🔴 Alta | Sprint 06 | ✅ Resolvido | Issue #422 / Commit `ccc44e5` |
 | **[BUG-039](#bug-039)** | Inversão de Precedência no Snapshot e Omissão de `slidingMode` | Full-Stack / Orders | 🔴 Alta | Sprint 06 | ✅ Resolvido | Issue #433 / Commit `4e4788c` |
 | **[BUG-040](#bug-040)** | Duplicação do Índice Ordinal na `OrderItemList` | Frontend / UI | 🟡 Média | Sprint 06 | ✅ Resolvido | Issue #421 / Commit `c3b47e0` |
+| **[BUG-041](#bug-041)** | Falha na Persistência de Venda com Cliente Balcão não Cadastrado (HTTP 404/500) | Backend / PartSale | 🔴 Alta | Sprint 08 | ✅ Resolvido | Migration `V24` / Issue #477 |
+| **[BUG-042](#bug-042)** | Markup Surpresa de Perda de Corte no Alumínio (+5% no Checkout de Venda Avulsa) | Full-Stack / PartSale | 🟡 Média | Sprint 08 | ✅ Resolvido | US-46 / Issue #551 |
+| **[BUG-043](#bug-043)** | Poluição Visual e Redundância de Preço no Seletor de Materiais do Catálogo | Frontend / UI | 🟢 Baixa | Sprint 08 | ✅ Resolvido | US-46.5 / Issue #551 |
+| **[BUG-044](#bug-044)** | Falha de Isolamento em Testes E2E com Resíduos de Vendas Avulsas no PostgreSQL | Backend / Testes | 🟡 Média | Sprint 08 | ✅ Resolvido | `TestCleanupController` / Issue #555 |
+| **[BUG-045](#bug-045)** | `NullPointerException` em O.S. sem Orçamento Vinculado no Hub 360° | Backend / Testes | 🟡 Média | Sprint 08 | ✅ Resolvido | US-47.5 / Issue #556 |
 
 ---
 
@@ -1291,15 +1296,135 @@ A numeração deve ser sequencial e iniciar em 1.
 
 ---
 
+### BUG-041
+#### [BUG] Falha na Persistência de Venda com Cliente Balcão não Cadastrado (HTTP 404/500)
+
+**Descrição do Problema:**
+Ao salvar uma venda avulsa sem selecionar um cliente nominal específico (utilizando o fluxo de Cliente Balcão / `walk-in`), a API retornava erro HTTP 404/500 por ausência do registro padrão na tabela `tb_clients`.
+
+**Passos para Reproduzir:**
+1. Acessar `/vendas/avulsa/nova` mantendo a opção padrão `Cliente Balcão`.
+2. Inserir ao menos um item válido e clicar em salvar venda.
+
+**Comportamento Esperado:**
+O backend deve resolver automaticamente ou semear o registro canônico `Cliente Balcão` e concluir a gravação com código `VP-YYYY-NNNN` (HTTP 201).
+
+**Contexto / Ambiente:**
+- **Módulos Afetados:** `PartSaleServiceImpl.java` e migration `V24__seed_walk_in_client_and_part_sales.sql`.
+- **Severidade:** 🔴 Alta | **Sprint:** 08 | **Status:** ✅ Resolvido.
+- **Detecção / Correção:** US-46 / Issue #477.
+
+**Causa Raiz Técnica & Solução:**
+* **Causa Raiz:** Ausência de seed inicial para Cliente Balcão e fallback não resiliente no resolvedor de cliente.
+* **Solução:** Adicionada migration `V24` garantindo o registro padrão e implementado método defensivo `resolveClient`.
+
+---
+
+### BUG-042
+#### [BUG] Markup Surpresa de Perda de Corte no Alumínio (+5% no Checkout de Venda Avulsa)
+
+**Descrição do Problema:**
+Ao adicionar `1000 mm` (1 metro linear) de perfil de alumínio cotado a R$ 80,00/m na venda avulsa, o checkout aplicava um acréscimo inesperado de +5% separado no subtotal em vez de refletir a perda proporcional no preço informado.
+
+**Passos para Reproduzir:**
+1. Em `/vendas/avulsa/nova`, selecionar `PROFILE` e buscar um perfil com preço R$ 80,00/m.
+2. Informar comprimento `1000 mm` e quantidade `1` e observar o resumo calculado.
+
+**Comportamento Esperado:**
+Exibir de forma transparente `1,0000 m × R$ 80,00 = R$ 80,00` sem acréscimo surpresa no total.
+
+**Contexto / Ambiente:**
+- **Módulos Afetados:** `AluminumPartCalculator` / `AluminumItemFields.tsx`.
+- **Severidade:** 🟡 Média | **Sprint:** 08 | **Status:** ✅ Resolvido.
+- **Detecção / Correção:** US-46.5 / Issue #551.
+
+**Causa Raiz Técnica & Solução:**
+* **Causa Raiz:** Divergência entre o critério comercial transparente exibido no formulário e a sobretaxa residual no fechamento.
+* **Solução:** Padronizado o cálculo proporcional no módulo de venda avulsa com regressão em `AluminumItemFields.test.tsx` e `us46_venda_avulsa_visual.cy.ts`.
+
+---
+
+### BUG-043
+#### [BUG] Poluição Visual e Redundância de Preço no Seletor de Materiais do Catálogo
+
+**Descrição do Problema:**
+O dropdown de autocomplete (`MaterialAutocomplete`) repetia badges de preço dentro de cada opção listada, gerando poluição visual e redundância com o campo de preço auto-preenchido no formulário.
+
+**Passos para Reproduzir:**
+1. Na tela `/vendas/avulsa/nova`, abrir o campo de busca de material do catálogo `[data-testid="input-part-description"]`.
+2. Observar os itens listados no dropdown.
+
+**Comportamento Esperado:**
+O seletor deve priorizar Nome e Família (`familyCode`) de forma limpa, preenchendo automaticamente o preço unitário no campo apropriado após seleção.
+
+**Contexto / Ambiente:**
+- **Módulos Afetados:** `MaterialAutocomplete.tsx` e `MaterialAutocomplete.test.tsx`.
+- **Severidade:** 🟢 Baixa | **Sprint:** 08 | **Status:** ✅ Resolvido.
+- **Detecção / Correção:** US-46.5 / Issue #551.
+
+**Causa Raiz Técnica & Solução:**
+* **Causa Raiz:** Renderização redundante da badge de valor unitário no componente de opção do autocomplete.
+* **Solução:** Removida a badge de preço da lista suspensa, mantendo foco visual em Nome e Família.
+
+---
+
+### BUG-044
+#### [BUG] Falha de Isolamento em Testes E2E com Resíduos de Vendas Avulsas no PostgreSQL
+
+**Descrição do Problema:**
+Execuções sucessivas da suíte E2E real no PostgreSQL deixavam registros de vendas avulsas persistidos no banco, impactando contadores e buscas das execuções seguintes.
+
+**Passos para Reproduzir:**
+1. Executar `npm run test:e2e:us46` contra o backend conectado ao PostgreSQL.
+2. Reexecutar os cenários de listagem e validar contagens de seeds.
+
+**Comportamento Esperado:**
+O ambiente de teste deve remover os registros gerados ao final da suíte sem intervenção manual.
+
+**Contexto / Ambiente:**
+- **Módulos Afetados:** `TestCleanupController.java` e hooks `after()` em `frontend/cypress/e2e/part-sales/`.
+- **Severidade:** 🟡 Média | **Sprint:** 08 | **Status:** ✅ Resolvido.
+- **Detecção / Correção:** QA-US-46 / Issue #555.
+
+**Causa Raiz Técnica & Solução:**
+* **Causa Raiz:** Ausência de endpoint de limpeza isolada para massa criada em execução E2E real.
+* **Solução:** Disponibilizado `DELETE /api/v1/test-support/cleanup` (exclusão em cascata condicionada a perfil/suporte de teste) e acoplado ao hook `after()` do Cypress.
+
+---
+
+### BUG-045
+#### [BUG] `NullPointerException` em O.S. sem Orçamento Vinculado no Hub 360°
+
+**Descrição do Problema:**
+Testes de integração da Central 360° do Cliente (`ClientHubControllerIntegrationTest`) falhavam com `NullPointerException` ao montar ou consultar cenários de Ordens de Serviço sem vínculo completo de orçamento e timestamps consistentes.
+
+**Passos para Reproduzir:**
+1. Executar `./mvnw test -Dtest=ClientHubControllerIntegrationTest`.
+2. Consultar `/api/v1/clientes/{id}/orders` com massa incompleta de O.S.
+
+**Comportamento Esperado:**
+Consultas e agregações do Hub 360° devem operar sem NPE e retornar status HTTP 200/404 previsíveis.
+
+**Contexto / Ambiente:**
+- **Módulos Afetados:** `ClientHubServiceImpl.java` e `ClientHubControllerIntegrationTest.java`.
+- **Severidade:** 🟡 Média | **Sprint:** 08 | **Status:** ✅ Resolvido.
+- **Detecção / Correção:** US-47.5 / Issue #556.
+
+**Causa Raiz Técnica & Solução:**
+* **Causa Raiz:** Setup de teste e manipulação de O.S. sem associação válida de `orcamentoId` e inconsistência com `OffsetDateTime`.
+* **Solução:** Ajustada a suíte de integração com `orcamentoId` obrigatório e tratamento seguro de datas em `OffsetDateTime`.
+
+---
+
 ## 4. 📈 Análise Categórica e Lições Aprendidas de Qualidade
 
 ### 4.1 Distribuição dos Defeitos por Camada
 
 ```mermaid
 pie title "Origem dos Defeitos Identificados"
-    "Frontend & UI/UX" : 13
-    "Backend & Regras de Negócio" : 15
-    "Incompatibilidade de Contratos / Fullstack" : 7
+    "Frontend & UI/UX" : 14
+    "Backend & Regras de Negócio" : 18
+    "Incompatibilidade de Contratos / Fullstack" : 8
     "Pipeline CI/CD & SonarQube" : 3
     "Infraestrutura & Docker" : 2
     "Governança & Git Flow" : 1
@@ -1320,4 +1445,4 @@ pie title "Origem dos Defeitos Identificados"
 
 ---
 
-*Documento mantido e auditado pelo Time de Engenharia e QA — AlumiGest — Outubro/2026*
+*Documento mantido e auditado pelo Time de Engenharia e QA — AlumiGest — Novembro/2026*

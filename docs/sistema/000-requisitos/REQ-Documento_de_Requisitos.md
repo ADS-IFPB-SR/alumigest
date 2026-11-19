@@ -4,8 +4,8 @@
 |---|---|
 | **Projeto** | AlumiGest — Sistema de Gestão para Vidraçaria e Esquadrias |
 | **Sigla** | ALG |
-| **Versão** | 2.0 |
-| **Data** | 04/09/2026 |
+| **Versão** | 3.0 |
+| **Data** | 18/11/2026 |
 
 ---
 
@@ -15,6 +15,7 @@
 |---|---|---|---|
 | 05/08/2026 | 1.0 | Versão inicial do Documento de Requisitos | Ítalo Jefferson / Equipe AlumiGest |
 | 04/09/2026 | 2.0 | Alinhamento com decisões de escopo (Kanban de pedidos, estoque sem sucata, PIX e fluxo mensal) | Ítalo Jefferson / Equipe AlumiGest |
+| 18/11/2026 | 3.0 | Sincronização com entregas R2 (`v0.8.0`): código `OS-YYYY-NNNN`, ciclo de vida Kanban, Venda Avulsa (`US-46`), Hub 360° (`US-47`), piso `0,25 m²` em mm e modelo Make-to-Order de estoque (`US-21`/`US-22`) | Equipe AlumiGest |
 
 
 ---
@@ -121,13 +122,15 @@ O sistema AlumiGest cobre os módulos de Cadastros, Orçamentos, Pedidos/PCP, Es
 
 | ID | Requisito | Prioridade | Release |
 |---|---|---|---|
-| RF-036 | O sistema deve permitir converter um orçamento aprovado em pedido, **congelando** todos os dados (preços, medidas, quantidades, descontos) na data da conversão. | 🔴 Must | R2 |
-| RF-037 | O sistema deve gerar número sequencial único para pedidos no formato `PED-YYYYMMDD-NNNN`. | 🔴 Must | R2 |
-| RF-038 | O sistema deve registrar e exibir o status do pedido: **Aprovado** → **Em Produção** → **Pronto** → **Instalado/Retirado**. | 🔴 Must | R2 |
-| RF-039 | O sistema deve permitir acompanhar a produção diretamente a partir do Pedido de Venda e seus itens através de painel Kanban operacional, sem necessidade de emissão de Ordens de Produção (OP) individuais por peça. | 🔴 Must | R2 |
-| RF-040 | O sistema deve gerar **listas de corte de perfis de alumínio** agrupados por tipo e comprimento da barra. | 🔴 Must | R2 |
-| RF-041 | O sistema deve gerar **listas de corte de vidro** com as medidas de cada peça. | 🔴 Must | R2 |
-| RF-042 | O sistema deve gerar etiquetas de identificação adesivas por peça/item do pedido (código do pedido, cliente, medidas nominais, cor do alumínio, tipo de vidro e sentido de abertura). | 🟡 Should | R2 |
+| RF-036 | O sistema deve permitir converter um orçamento aprovado em pedido, **congelando** todos os dados (preços, mão de obra, medidas, quantidades, descontos) na data da conversão. | 🔴 Must | R2 |
+| RF-037 | O sistema deve gerar número sequencial único para pedidos/O.S. no formato `OS-YYYY-NNNN` (unificado a partir da migração `V20`). | 🔴 Must | R2 |
+| RF-038 | O sistema deve registrar e gerenciar a máquina de estados da O.S.: **Criado (`CREATED`)** → **Aguardando Produção (`WAITING_PRODUCTION`)** → **Em Produção (`IN_PRODUCTION`)** → **Concluído (`COMPLETED`)** ou **Cancelado (`CANCELLED`)**. | 🔴 Must | R2 |
+| RF-039 | O sistema deve permitir acompanhar a produção diretamente a partir da Ordem de Serviço através de painel Kanban operacional com badges de SLA/prazo. | 🔴 Must | R2 |
+| RF-040 | O sistema deve gerar **Ficha Técnica de Produção A4** (`production-sheet`) com lista de corte de perfis (ângulos $45^\circ/90^\circ$), vidros com folgas e acessórios por item da O.S. | 🔴 Must | R2 |
+| RF-041 | O sistema deve gerar **listas de corte de vidro** com as medidas deduzidas de cada peça. | 🔴 Must | R2 |
+| RF-042 | O sistema deve gerar etiquetas térmicas adesivas de identificação (100×60mm em PDF e comandos nativos BPLB para Elgin L42) por exemplar físico de peça do pedido. | 🟡 Should | R2 |
+| RF-057 | O sistema deve permitir cotar e registrar **Vendas Avulsas de Partes** (`VP-YYYY-NNNN`) para vidros ($m^2$, piso $0,25\text{ m}^2$), perfis (metro linear até 6000 mm), películas ($m^2$ com perda) e ferragens (`UN`), inclusive para Cliente Balcão e com exportação em PDF A4 agrupado (`US-46`). | 🔴 Must | R2 |
+| RF-058 | O sistema deve disponibilizar a **Central 360° do Cliente** (`/clientes`) com sidebar pesquisável, Hero Card com 3 KPIs agregados, histórico de orçamentos, O.S. com detalhamento em mm, Ficha Técnica A4 e etiquetas (`US-47`). | 🔴 Must | R2 |
 
 ### 2.7 Módulo de Estoque
 
@@ -221,14 +224,14 @@ O sistema AlumiGest cobre os módulos de Cadastros, Orçamentos, Pedidos/PCP, Es
 
 | ID | Regra | Módulo |
 |---|---|---|
-| RN-001 | A área de vidro é calculada como `(largura_cm / 100) × (altura_cm / 100)` = m², com área mínima de 0,50 m². | Orçamentos |
-| RN-002 | O consumo de perfis é calculado com base na composição do tipo de produto (perímetro, montantes, travessas). | Orçamentos |
-| RN-003 | Ferragens são incluídas automaticamente conforme a tabela de composição do tipo de produto. | Orçamentos |
-| RN-004 | Descontos não podem ultrapassar a margem mínima definida pelo administrador. | Orçamentos |
-| RN-005 | Ao aprovar um orçamento, todos os dados (preços, medidas, quantidades) são congelados e não podem ser alterados no pedido resultante. | Pedidos |
-| RN-006 | Materiais reservados por pedidos aprovados não estão disponíveis para novos orçamentos. | Estoque |
-| RN-007 | O estoque não pode ficar negativo. Se não houver material suficiente, o sistema deve alertar antes da aprovação. | Estoque |
-| RN-008 | Parcelas vencidas há mais de 30 dias devem ser destacadas como inadimplentes no painel financeiro. | Financeiro |
+| RN-001 | A área de vidro é calculada em milímetros como `(largura_mm / 1000) × (altura_mm / 1000)` = m², com área mínima faturável de **0,25 m²** por peça. | Orçamentos & Venda Avulsa |
+| RN-002 | O consumo de perfis é calculado com base na composição do tipo de produto (perímetro, montantes, travessas) ou metro linear com perda na venda avulsa. | Orçamentos & Venda Avulsa |
+| RN-003 | Ferragens são incluídas automaticamente conforme a tabela de composição do tipo de produto ou por unidade inteira na venda avulsa. | Orçamentos & Venda Avulsa |
+| RN-004 | Descontos comerciais (% ou R$) possuem validação de faixa ($0\%$ a $100\%$ ou $0$ a subtotal) com cálculo em cascata (`HALF_EVEN`). | Orçamentos |
+| RN-005 | Ao converter um orçamento em O.S., todos os dados (preços, mão de obra, medidas, quantidades, descontos e opções) são congelados via *deep copy* imutável. | Pedidos / O.S. |
+| RN-006 | **Modelo Make-to-Order (Sprint 09):** Materiais são reservados automaticamente na aprovação da O.S. segundo a invariante `available = physical - reserved`, **sem bloquear** pedidos comerciais quando `available < 0` (sinalizando necessidade de compra). | Estoque |
+| RN-007 | Saídas físicas manuais de estoque (ajustes/sucata) não podem tornar `physical_quantity` negativo, retornando HTTP 422. | Estoque |
+| RN-008 | O fluxo financeiro foca em cobrança PIX dinâmica (`US-24` a `US-26`) e Fluxo de Caixa Mensal enxuto (`US-30`). | Financeiro |
 
 ---
 
@@ -236,21 +239,21 @@ O sistema AlumiGest cobre os módulos de Cadastros, Orçamentos, Pedidos/PCP, Es
 
 ### 5.1 Requisitos × User Stories
 
-> 💡 Para consultar a equivalência detalhada entre a numeração antiga do PO e a numeração consolidada, consulte a [Tabela De-Para Oficial de User Stories](file:///c:/Users/italo/Desktop/Projects/alumigest/docs/planejamento/de-para-user-stories.md).
+> 💡 Para consultar a equivalência detalhada entre a numeração antiga do PO e a numeração consolidada, consulte a [Tabela De-Para Oficial de User Stories](../../planejamento/de-para-user-stories.md).
 
-| Requisitos Funcionais | Módulo / Área | User Stories Ativas (Planejamento) |
+| Requisitos Funcionais | Módulo / Área | User Stories Ativas |
 |---|---|---|
 | RF-001 a RF-006 | Autenticação, Infraestrutura & Governança | `US-01`, `US-44`, `US-45` |
-| RF-007 a RF-012 | Gestão de Clientes PF e PJ | `US-04`, `US-40` |
-| RF-013 a RF-015 | Cadastro e Associação de Fornecedores | `US-02` (Catálogo Genérico) |
+| RF-007 a RF-012, RF-058 | Gestão de Clientes PF/PJ & Central 360° | `US-04`, `US-40`, `US-47` |
+| RF-013 a RF-015 | Cadastro e Associação de Fornecedores / Materiais | `US-02` (Catálogo Genérico) |
 | RF-016 a RF-021 | Catálogo de Materiais, Fichas & Templates | `US-02`, `US-03`, `US-05` |
 | RF-022 a RF-035 | Orçamentos, Motor de Cálculo, Descontos & PDFs | `US-06`, `US-07`, `US-08`, `US-09`, `US-10`, `US-11`, `US-12` |
-| RF-036 a RF-042 | Pedidos de Venda, Lock, Etiquetas & Kanban | `US-13`, `US-14`, `US-15`, `US-16`, `US-17`, `US-18`, `US-19`, `US-20` |
-| RF-043 a RF-048 | Gestão de Estoque, Reservas & Kardex | `US-21`, `US-22`, `US-23` |
-| RF-049 a RF-053 | Financeiro, Cobrança PIX, Recebíveis & Fluxo Mensal | `US-24`, `US-25`, `US-26`, `US-27`, `US-28`, `US-29`, `US-30` |
-| RF-054 a RF-056 | Gestão de Instalações, OS em Campo & PWA Offline | `US-31`, `US-32`, `US-33`, `US-37`, `US-38`, `US-39` |
+| RF-036 a RF-042, RF-057 | Pedidos/O.S., Etiquetas, Kanban, Ficha Técnica & Venda Avulsa | `US-13`, `US-14`, `US-15`, `US-16`, `US-17`, `US-18`, `US-19`, `US-20`, `US-46`, `US-47` |
+| RF-043 a RF-048 | Gestão de Estoque Make-to-Order & Kardex | `US-21`, `US-22`, `US-23` |
+| RF-049 a RF-053 | Financeiro, Cobrança PIX & Fluxo de Caixa Mensal | `US-24`, `US-25`, `US-26`, `US-30` *(US-27–29 e US-34–36 descartadas)* |
+| RF-054 a RF-056 | Emissão de OS PDF & PWA Offline (Orçamentos) | `US-33`, `US-37` *(US-31–32, US-38–39, US-42 descartadas)* |
 
 ---
 
-*Documento elaborado pela Equipe AlumiGest — IFPB CST em ADS — Versão 2.0 (Setembro/2026)*
+*Documento elaborado pela Equipe AlumiGest — IFPB CST em ADS — Versão 3.0 (Novembro/2026)*
 

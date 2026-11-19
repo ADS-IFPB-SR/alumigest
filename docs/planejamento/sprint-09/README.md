@@ -48,7 +48,7 @@ Apresentação visual fiel ao protótipo canônico homologado (`catalogo-materia
 | Sub-Task | Issue GitHub | Título da Tarefa Atômica | Estratégia de Desacoplamento & Escopo Delimitado | Story Points | Horas Estimadas |
 |:---:|:---:|---|---|:---:|:---:|
 | **US-21.1** | [#571](https://github.com/ADS-IFPB-SR/alumigest/issues/571) | **Setup & Estrutura Base do Módulo de Estoque** | Pacote `stock`, enums canônicos, records DTOs, types TS, client API e componente `StockAlertBadge.tsx`. | 1 pt | 2.5h |
-| **US-21.2** | [#572](https://github.com/ADS-IFPB-SR/alumigest/issues/572) | **Migração Flyway `V21` e Entidades JPA com Lock Pessimista** | Script Flyway `V21__create_stock_schema.sql`, entidades `StockItem`/`StockMovement` e `StockItemRepository` com `@Lock(PESSIMISTIC_WRITE)`. | 1 pt | 3.0h |
+| **US-21.2** | [#572](https://github.com/ADS-IFPB-SR/alumigest/issues/572) | **Migração Flyway `V26` e Entidades JPA com Lock Pessimista** | Script Flyway `V26__create_stock_schema.sql` *(provisoriamente `V25` na branch antes da integração com a `release/v0.8.0`)*, entidades `StockItem`/`StockMovement` e `StockItemRepository` com `@Lock(PESSIMISTIC_WRITE)`. | 1 pt | 3.0h |
 | **US-21.3** | [#573](https://github.com/ADS-IFPB-SR/alumigest/issues/573) | **Motor de Reserva Automática Make-to-Order (`reserveMaterials`)** | Método `reserveMaterials(UUID orderId)` no `StockService` sem bloqueio por estoque físico (RN-05), acionado na aprovação da O.S. (`US-13`). | 2 pts | 3.5h |
 | **US-21.4** | [#574](https://github.com/ADS-IFPB-SR/alumigest/issues/574) | **Indicador Visual Make-to-Order no Card do Kanban Fabril** | Conectar `OrderProductionCard.tsx` aos saldos para exibir badges `🔴 Falta Insumo / Comprar` ou `🟢 Insumos OK`. | 1 pt | 2.5h |
 | **US-21.5** | [#575](https://github.com/ADS-IFPB-SR/alumigest/issues/575) | **Baixa Física Definitiva na Conclusão da Produção (`COMPLETED`)** | Método transacional `consumeReservedMaterials` decrementando físico e reserva simultaneamente ao arrastar card para `COMPLETED` no Kanban (`US-18`). | 1 pt | 3.0h |
@@ -92,4 +92,4 @@ Apresentação visual fiel ao protótipo canônico homologado (`catalogo-materia
 - 📦 **Especificações Detalhadas do Backlog**:
   - [US-21 — Reservar e Baixar Matéria-Prima](../backlog/US-21-reserva-baixa-estoque/spec.md)
   - [US-22 — Consultar Posição de Estoque e Kardex](../backlog/US-22-posicao-estoque-kardex/spec.md)
-- 🏛️ **Constituição e Padrões Arquiteturais do Projeto**: [`constitution.md`](../../constitution.md)
+- 🏛️ **Constituição e Padrões Arquiteturais do Projeto**: [`constitution.md`](../constitution.md)

@@ -4,8 +4,8 @@
 |---|---|
 | **Projeto** | AlumiGest — Sistema de Gestão para Vidraçaria e Esquadrias |
 | **Sigla** | ALG |
-| **Versão** | 2.4.0 (Retrofit da Tríade Documental Canônica: Sprints 02 a 07 padronizadas sob Docs-as-Code) |
-| **Data** | 28/10/2026 |
+| **Versão** | 2.5.0 (Inclusão da Tríade Canônica da Sprint 08 — Venda Avulsa e Central 360° — Baseline v0.8.0) |
+| **Data** | 18/11/2026 |
 | **Responsável de QA** | Herbert Carvalho dos Santos / Jose Guylherme / Equipe de Engenharia e QA |
 | **Governança** | Docs-as-Code — Oficial de Governança (`alumigest-doc-governor`) |
 
@@ -30,19 +30,19 @@ Este documento define a estratégia, a pirâmide de testes, as ferramentas, os a
 ```mermaid
 graph TD
     subgraph Pirâmide["Pirâmide de Testes AlumiGest"]
-        E2E["Testes End-to-End (Cypress PWA)<br><i>34+ Specs automatizadas em Catálogo, Orçamentos e Ordens</i>"]
-        COMP["Testes de Componentes Frontend (Vitest / Testing Library)<br><i>883 Testes Automatizados</i>"]
-        INTEG["Testes de Integração Backend (Spring Boot + MockMvc + PostgreSQL)<br><i>Fluxos de Orçamento, Clientes, Ordens e Produção</i>"]
-        UNIT["Testes Unitários Backend (JUnit 5 + Mockito + AssertJ)<br><i>882 Testes de Serviço e Domínio</i>"]
+        E2E["Testes End-to-End (Cypress PWA)<br><i>39 Specs automatizadas em Catálogo, Orçamentos, Ordens, Venda Avulsa e Hub 360°</i>"]
+        COMP["Testes de Componentes Frontend (Vitest / Testing Library)<br><i>1.025 Testes em 122 Suítes</i>"]
+        INTEG["Testes de Integração Backend (Spring Boot + MockMvc + PostgreSQL/H2)<br><i>Fluxos de Catálogo, Orçamento, Clientes/Hub 360°, Ordens, Produção e Venda Avulsa</i>"]
+        UNIT["Testes Unitários Backend (JUnit 5 + Mockito + AssertJ)<br><i>89 Classes de Teste Java (882+ testes acumulados + 40 focados S08)</i>"]
     end
 ```
 
 | Nível de Teste | Escopo | Ferramentas / Frameworks | Métricas / Volume | Execução |
 |---|---|---|---|---|
-| **Unitário (Backend)** | Serviços de Domínio, Motores de Cálculo (`MaterialQuantityCalculator`), Mappers e Entidades | JUnit 5, Mockito, AssertJ | **882 testes** (Unitários + Integração) | Local (`mvn test`) e CI/CD GitHub Actions |
-| **Integração (Backend)** | Controllers REST, Validações JSR-380/Zod, Filtros de Paginação e Exceptions | SpringBootTest, MockMvc, H2 / PostgreSQL Testcontainers | Cobertura integrada de Catálogo, Clientes, Orçamentos e Ordens | Local e CI/CD |
-| **Componentes Frontend** | Modais, Seletores, Formulários, Schemas Zod e Hooks React Query | Vitest, React Testing Library, happy-dom | **883 testes** automatizados | Local (`npm run test`) |
-| **End-to-End (Frontend)** | Catálogo PWA, Orçamentos, Conversão em O.S., Etiquetas Térmicas e Kanban Fabril | Cypress 13, TypeScript | **34+ specs** automatizadas | Local (`npm run test:e2e`) |
+| **Unitário (Backend)** | Serviços de Domínio, Motores de Cálculo (`MaterialQuantityCalculator`, `partsale.calculator`), Mappers e Entidades | JUnit 5, Mockito, AssertJ | **89 classes Java** (**40 testes** focados S08; **882+** acumulados) | Local (`mvn test`) e CI/CD GitHub Actions |
+| **Integração (Backend)** | Controllers REST, Validações JSR-380/Zod, Filtros de Paginação e Exceptions | SpringBootTest, MockMvc, H2 / PostgreSQL Testcontainers | Cobertura integrada de Catálogo, Clientes/Hub 360°, Orçamentos, Ordens e Venda Avulsa | Local e CI/CD |
+| **Componentes Frontend** | Modais, Seletores (`MaterialAutocomplete`), Formulários, Schemas Zod e Hooks React Query | Vitest, React Testing Library, happy-dom | **1.025 testes** em **122 suítes** | Local (`npm run test`) |
+| **End-to-End (Frontend)** | Catálogo PWA, Orçamentos, Conversão em O.S., Etiquetas Térmicas, Kanban Fabril, Venda Avulsa e Hub 360° | Cypress 13, TypeScript | **39 specs** automatizadas | Local (`npm run test:e2e`) |
 | **Aceitação (BDD / TEA)** | Validação de Regras de Negócio e Homologação com PO | Gherkin / BDD (Tríade Documental por sprint) | Cenários BDD por História de Usuário | Homologação em `develop.italuhub.cloud` |
 
 ---
@@ -74,6 +74,7 @@ Para garantir rastreabilidade rigorosa entre os requisitos, a especificação fo
 | **Sprint 05** | Homologação R1, Orçamentos e Via Técnica | [`TEA-S05`](./sprint-05/TEA-Testes_de_Aceitacao_Sprint05.md) | [`RTM-S05`](./sprint-05/RTM-Roteiro_de_Testes_Manuais_Sprint05.md) | [`RET-S05`](./sprint-05/RET-Relatorio_Execucao_Testes_Sprint05.md) | 🟢 Tríade Canônica |
 | **Sprint 06** | Pedidos de Venda, Lock de Preços e PDF R2 | [`TEA-S06`](./sprint-06/TEA-Testes_de_Aceitacao_Sprint06.md) | [`RTM-S06`](./sprint-06/RTM-Roteiro_de_Testes_Manuais_Sprint06.md) | [`RET-S06`](./sprint-06/RET-Relatorio_Execucao_Testes_Sprint06.md) | 🟢 Tríade Canônica |
 | **Sprint 07** | Gestão Fabril, Kanban e Etiquetas Térmicas | [`TEA-S07`](./sprint-07/TEA-Testes_de_Aceitacao_Sprint07.md) | [`RTM-S07`](./sprint-07/RTM-Roteiro_de_Testes_Manuais_Sprint07.md) | [`RET-S07`](./sprint-07/RET-Relatorio_Execucao_Testes_Sprint07.md) | 🟢 Tríade Canônica |
+| **Sprint 08** | Venda Avulsa de Partes (`US-46`), Central 360° (`US-47`) e Kanban (`#524`/`#525`) | [`TEA-S08`](./sprint-08/TEA-Testes_de_Aceitacao_Sprint08.md) | [`RTM-S08`](./sprint-08/RTM-Roteiro_de_Testes_Manuais_Sprint08.md) | [`RET-S08`](./sprint-08/RET-Relatorio_Execucao_Testes_Sprint08.md) | 🟢 Tríade Canônica |
 
 ---
 
@@ -91,12 +92,12 @@ Para garantir rastreabilidade rigorosa entre os requisitos, a especificação fo
 
 Um item só é considerado pronto e elegível para merge quando:
 1. **100% dos testes unitários e de integração passarem** sem falhas ou erros (`mvn clean verify`).
-2. **Cobertura de linhas de código superior a 80%** nos serviços críticos de negócio (`BudgetService`, `BudgetQuantityService`, `ProductService`, `ClientService`, `OrderService`).
+2. **Cobertura de linhas de código superior a 80%** nos serviços críticos de negócio (`BudgetService`, `BudgetQuantityService`, `ProductService`, `ClientService`, `ClientHubService`, `OrderService`, `PartSaleService`).
 3. **Quality Gate do SonarQube Aprovado** no GitHub Actions (zero bugs, zero vulnerabilidades e cobertura em código novo $\ge 80\%$).
 4. **Specs Cypress executando com 100% de sucesso** em modo headless (`npm run test:e2e`).
 5. **Tríade Documental de Testes (`TEA`, `RTM`, `RET`) gerada e arquivada** na pasta da respectiva sprint em `docs/projeto-001/003-teste/sprint-XX/`.
-6. **Defeitos e incidentes catalogados** no [`RBD-Registro_de_Bugs_e_Defeitos.md`](file:///c:/Users/italo/Desktop/Projects/alumigest/docs/projeto-001/003-teste/RBD-Registro_de_Bugs_e_Defeitos.md) e reportados via template interativo YAML (`.github/ISSUE_TEMPLATE/bug_report.yml`).
+6. **Defeitos e incidentes catalogados** no [`RBD-Registro_de_Bugs_e_Defeitos.md`](./RBD-Registro_de_Bugs_e_Defeitos.md) e reportados via template interativo YAML (`.github/ISSUE_TEMPLATE/bug_report.yml`).
 
 ---
 
-*Plano homologado pela Equipe de QA AlumiGest — Atualizado em 28/10/2026*
+*Plano homologado pela Equipe de QA AlumiGest — Atualizado em 18/11/2026*

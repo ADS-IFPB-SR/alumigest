@@ -4,9 +4,9 @@
 |---|---|
 | **Projeto** | AlumiGest — Sistema de Gestão para Vidraçaria e Esquadrias |
 | **Sigla** | ALG |
-| **Versão** | 3.0 (Atualizado para Sprint 6 — Ordens de Serviço / Pedidos) |
-| **Data** | 12/10/2026 |
-| **Base URL** | `http://localhost:8080/api` |
+| **Versão** | 4.0 (Consolidado com Release v0.8.0 — Sprint 08 + Prévia Sprint 09 Estoque) |
+| **Data** | 18/11/2026 |
+| **Base URL** | `http://localhost:8080/api` (Swagger UI em `/swagger-ui.html`) |
 
 ---
 
@@ -15,9 +15,11 @@
 | Data | Versão | Descrição | Autor |
 |---|---|---|---|
 | 05/08/2026 | 1.0 | Versão inicial — Endpoints da Release 1 (Materiais) | Ítalo Jefferson / Equipe AlumiGest |
-| 21/08/2026 | 2.0 | Atualização Sprint 3 — Módulo de Produtos com Templates Paramétricos SVG, Requisitos de Categorias e Orçamentos com Romaneio | Equipe de Engenharia AlumiGest |
-| 23/09/2026 | 2.1 | Atualização Sprint 4 — Módulo de Orçamentos com Descontos Comerciais (US-09), Emissão de PDF Comercial e WhatsApp (US-10) e Emissão de PDF Técnico de Oficina (US-11) | Equipe de Engenharia AlumiGest |
-| 12/10/2026 | 3.0 | Atualização Sprint 6 — Módulo de Ordens de Serviço (O.S. / Pedidos): Conversão de Orçamento (US-13), Snapshot Imutável e Lock de Preços (US-14), Gestão de Status e Cancelamento (US-15) e Comprovante em PDF (US-16) | Equipe de Engenharia AlumiGest |
+| 21/08/2026 | 2.0 | Atualização Sprint 3 — Módulo de Produtos com Templates Paramétricos SVG e Orçamentos | Equipe de Engenharia AlumiGest |
+| 23/09/2026 | 2.1 | Atualização Sprint 4 — Descontos Comerciais (US-09), PDF Comercial/WhatsApp (US-10) e PDF Técnico (US-11) | Equipe de Engenharia AlumiGest |
+| 12/10/2026 | 3.0 | Atualização Sprint 6 — Módulo de Ordens de Serviço (`/api/v1/orders`, US-13 a US-16) | Equipe de Engenharia AlumiGest |
+| 17/10/2026 | 3.1 | Atualização Sprint 7 — Etiquetas Térmicas (US-17) e Kanban Fabril (US-18) | Equipe de Engenharia AlumiGest |
+| 18/11/2026 | 4.0 | Sincronização Integral com Código (`release/v0.8.0`): Rotas reais `/api/v1/catalog/*`, `/api/v1/materials`, Venda Avulsa (`/api/v1/part-sales`, US-46), Hub 360° do Cliente (`ClientHubController`, US-47), Ficha Técnica de Produção (`/production-sheet`, US-47.3), BPLB e prévia de Estoque (`/api/v1/stock`, Sprint 09) | Equipe de Engenharia AlumiGest |
 
 ---
 
@@ -26,596 +28,362 @@
 ### 1.1 Padrões de URL
 
 ```
-/api/{recurso}              → Coleção (GET lista, POST cria)
-/api/{recurso}/{id}         → Elemento (GET detalhe, PUT atualiza, DELETE remove)
-/api/{recurso}/{id}/{acao}  → Ação específica
+/api/v1/{recurso}              → Coleção canônica (GET lista, POST cria)
+/api/v1/{recurso}/{id}         → Elemento (GET detalhe, PUT/PATCH atualiza, DELETE inativa)
+/api/v1/{recurso}/{id}/{acao}  → Ação específica (conversão, status, PDF, etc.)
 ```
+
+> **Nota de Compatibilidade:** Alguns controllers (`BudgetController`, `ClientController`, `ClientHubController`, `MaterialController`, `OrderLegacyController`) mantêm aliases retrocompatíveis sem `/v1` ou em português (ex.: `/api/orcamentos`, `/api/clientes`), mantidos com `@Hidden` no OpenAPI quando aplicável.
 
 ### 1.2 Formatos de Resposta
 
-- **Content-Type:** `application/json; charset=UTF-8`
-- **Datas:** ISO 8601 (`2026-08-21T14:30:00`)
-- **Monetário:** Decimal com 2 casas (`180.00`)
-- **Paginação:** `PageResponse<T>` com `content`, `page: { number, size, totalElements, totalPages }`
+- **Content-Type:** `application/json; charset=UTF-8` (ou `application/pdf` / `application/octet-stream` / `text/plain; charset=UTF-8` em exportações).
+- **Datas:** ISO 8601 (`OffsetDateTime` / `LocalDate`, ex.: `2026-11-15T14:30:00Z` ou `2026-11-15`).
+- **Monetário:** Decimal com 2 casas (`180.00`).
+- **Envelope Padrão:**
+  - Módulos de catálogo e saúde utilizam `ApiResponse<T>` (`{ "status", "message", "data" }`).
+  - Listagens paginadas utilizam `PageResponse<T>` (`{ "content": [...], "page": { "number", "size", "totalElements", "totalPages" } }`).
 
 ### 1.3 Códigos de Status HTTP
 
 | Código | Significado | Uso |
 |---|---|---|
-| 200 | OK | Consulta ou atualização bem-sucedida |
-| 201 | Created | Recurso criado com sucesso |
-| 204 | No Content | Exclusão/ação sem retorno |
-| 400 | Bad Request | Validação falhou |
-| 401 | Unauthorized | Token ausente ou inválido |
-| 403 | Forbidden | Perfil sem permissão |
-| 404 | Not Found | Recurso não encontrado |
-| 409 | Conflict | Duplicidade (CPF, código, etc.) |
-| 422 | Unprocessable Entity | Regra de negócio violada |
-| 500 | Internal Server Error | Erro inesperado |
+| `200` | OK | Consulta, cálculo ou atualização bem-sucedida |
+| `201` | Created | Recurso criado com sucesso |
+| `204` | No Content | Exclusão lógica ou comando sem payload |
+| `400` | Bad Request | Bean Validation falhou ou parâmetro inválido |
+| `404` | Not Found | Recurso não encontrado |
+| `409` | Conflict | Conflito de integridade / unicidade (CPF/CNPJ, conversão duplicada de O.S.) |
+| `422` | Unprocessable Entity | Regra de negócio ou limite físico violado (`BusinessException`) |
+| `500` | Internal Server Error | Erro inesperado |
 
 ---
 
-## 2. Módulo de Autenticação (`/api/auth`)
+## 2. Infraestrutura, Saúde e Autenticação
 
-### POST `/api/auth/login`
-Autentica o usuário e retorna tokens JWT.
+### 2.1 Health Check (`HealthController` — `/api/v1/health`)
 
-### POST `/api/auth/refresh`
-Renova o token JWT usando o refresh token.
+#### GET `/api/v1/health`
+Retorna o status operacional da API, versão da aplicação e timestamp UTC.
+* **Response 200 OK:** `ApiResponse<Map<String, Object>>` com `status: "UP"`, `application: "AlumiGest Backend"`, `version`, `timestamp`, `partner: "Alumiportas"`.
 
-### POST `/api/auth/logout`
-Invalida o refresh token.
+### 2.2 Suporte a Testes E2E (`TestCleanupController` — `/api/v1/test-support`)
+* `DELETE /api/v1/test-support/cleanup` *(alias `/api/test-support/cleanup`)* — Limpeza controlada de massa gerada em execuções E2E (ex.: parâmetro `partSaleCode`), protegida por perfil/ambiente de testes.
+
+### 2.3 Módulo de Autenticação (`br.edu.ifpb.alumigest.auth`)
+> **Status Atual:** O pacote `auth` possui apenas `package-info.java` reservado para evolução futura; nenhum `AuthController` (`/api/auth/*`) encontra-se ativo no código da `release/v0.8.0`.
 
 ---
 
-## 3. Módulo de Clientes (`/api/clientes`)
+## 3. Módulo de Clientes e Hub 360°
 
-> **Perfis:** ADMINISTRADOR, VENDEDOR
+### 3.1 CRUD de Clientes (`ClientController` — `/api/v1/clients`, alias `/api/clientes`)
 
-### GET `/api/clientes`
-Lista clientes com paginação e busca textual.
+> **Perfis Autorizados:** `ADMINISTRADOR`, `VENDEDOR`
 
-**Query params:** `?page=0&size=20&busca=silva&ativo=true`
+* **`GET /api/v1/clients`**: Lista clientes paginados com busca textual e filtros.
+  * **Query Params:** `?busca=silva&personType=FISICA&ativo=true&page=0&size=20`
+  * **Response 200 OK:** `PageResponse<ClientSummaryDTO>`.
+* **`GET /api/v1/clients/{id}`**: Retorna o detalhe completo do cliente (`ClientResponseDTO`).
+* **`POST /api/v1/clients`**: Cadastra novo cliente PF ou PJ (`ClientRequestDTO`), retornando `201 Created` (`409 Conflict` se CPF/CNPJ já existir).
+* **`PUT /api/v1/clients/{id}`**: Atualiza os dados cadastrais do cliente (`ClientRequestDTO`).
+* **`PATCH /api/v1/clients/{id}/status`**: Alterna status ativo/inativo do cliente (*soft delete*).
 
-**Response 200:**
+### 3.2 Hub 360° do Cliente (`ClientHubController` — US-47)
+
+> **Base Paths:** `/api/v1/clients`, `/api/v1/clientes`, `/api/clientes`, `/api/v1/customers`  
+> **Perfis Autorizados:** `ADMINISTRADOR`, `VENDEDOR`, `OPERADOR`
+
+#### GET `/api/v1/clients/{id}/dashboard` *(US-47.1)*
+Retorna a projeção consolidada (CQRS) com dados de contato do cliente e KPIs comerciais calculados no backend.
+
+* **Path Variables:** `{id}` (UUID do cliente).
+* **Response 200 OK (`ClientDashboardDto`):**
 ```json
 {
-  "content": [
-    {
-      "id": "cli-1",
-      "nomeCompleto": "João da Silva",
-      "cpfCnpj": "123.456.789-00",
-      "telefone": "(83) 99999-0000",
-      "email": "joao@email.com",
-      "cidade": "Santa Rita",
-      "uf": "PB",
-      "ativo": true
-    }
-  ],
-  "page": {
-    "size": 20,
-    "number": 0,
-    "totalElements": 1,
-    "totalPages": 1
-  }
-}
-```
-
-### GET `/api/clientes/{id}`
-Retorna detalhe completo do cliente com endereço da obra.
-
-### POST `/api/clientes`
-Cadastra um novo cliente.
-
-**Request:**
-```json
-{
-  "nomeCompleto": "João da Silva",
-  "cpfCnpj": "123.456.789-00",
-  "telefone": "(83) 99999-0000",
-  "email": "joao@email.com",
-  "cep": "58300-000",
-  "logradouro": "Rua das Flores",
-  "numero": "123",
-  "complemento": "Casa",
-  "bairro": "Centro",
-  "cidade": "Santa Rita",
+  "id": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
+  "nomeCompleto": "Antônio Alfredo Figueiredo",
+  "personType": "FISICA",
+  "documento": "04289144409",
+  "telefone": "83988452100",
+  "email": "antonio@email.com",
+  "bairro": "Torre",
+  "cidade": "João Pessoa",
   "uf": "PB",
-  "observacoes": "Entrega na obra principal"
+  "totalContratado": 4500.00,
+  "quantidadeOrdensServico": 2,
+  "quantidadeOrcamentos": 2
 }
 ```
+* **Erros:** `404 Not Found` caso o cliente não exista.
 
-**Response 201:** Retorna o cliente criado com `id`.
+#### GET `/api/v1/clients/{id}/budgets` *(US-47.1)*
+Lista as propostas comerciais vinculadas ao cliente (`List<ClientBudgetSummaryDto>`).
+* **Campos retornados:** `id`, `codigo`, `dataCriacao`, `dataValidade`, `valorTotal`, `status`, `statusDescricao`.
 
-### PUT `/api/clientes/{id}`
-Atualiza os dados do cliente.
-
-### PATCH `/api/clientes/{id}/status`
-Ativa ou inativa o cliente (soft delete).
-
----
-
-## 4. Módulo de Catálogo de Materiais
-
-### 4.1 Vidros (`/api/vidros` ou `/api/glasses`)
-- `GET /api/glasses` — Lista tipos de vidro cadastrados.
-- `POST /api/glasses` — Cadastra novo vidro (espessura mm, cor/acabamento, preço/m²).
-- `PUT /api/glasses/{id}` | `PATCH /api/glasses/{id}/status`
-
-### 4.2 Perfis de Alumínio (`/api/aluminum-profiles`)
-- `GET /api/aluminum-profiles` — Lista perfis lineares (barra 3m/6m, preço/m, cor).
-- `POST /api/aluminum-profiles` — Cadastra perfil de alumínio.
-
-### 4.3 Ferragens (`/api/hardwares`)
-- `GET /api/hardwares` — Lista ferragens, puxadores e kits.
-- `POST /api/hardwares` — Cadastra ferragem.
-
-### 4.4 Películas (`/api/films`)
-- `GET /api/films` — Lista películas decorativas e de proteção.
-
-### 4.5 Resumo de Materiais (`/api/materials/summary`)
-Retorna visão simplificada de todos os insumos para os seletores de formulário.
+#### GET `/api/v1/clients/{id}/orders` *(US-47.2)*
+Lista as Ordens de Serviço vinculadas ao cliente com o detalhamento das esquadrias físicas em milímetros (`List<ClientOrderSummaryDto>`).
+* **Campos retornados:** `id`, `codigo`, `data`, `status`, `statusDescricao`, `valorTotal`, `totalEsquadrias`, `items` (`List<ClientOrderItemDto>`: `id`, `descricao`, `larguraMm`, `alturaMm`, `quantidade`, `corAluminio`, `tipoVidro`, `valorTotal`).
 
 ---
 
-## 5. Módulo de Produtos e Templates (`/api/products`)
+## 4. Módulo de Catálogo de Materiais e Templates
 
-> **Conceito:** Cada produto funciona como um **Template de Esquadria Paramétrica** com modelo gráfico SVG e **Requisitos de Categorias de Insumos** (`GLASS`, `PROFILE`, `HARDWARE`, `FILM`).
+### 4.1 Busca Unificada de Materiais (`MaterialController` — `/api/v1/materials`, alias `/api/v1/catalog/materials`)
 
-### GET `/api/products`
-Lista todos os produtos/templates com paginação.
+* **`GET /api/v1/materials?category={category}`**: Lista materiais ativos, opcionalmente filtrados por categoria (`GLASS`, `PROFILE`, `ALUMINUM`, `FILM`, `HARDWARE`). Retorna `ApiResponse<List<MaterialSummaryDTO>>` com consulta otimizada (`JOIN FETCH`) sem queries N+1.
+* **`GET /api/v1/materials/families?groupCode={groupCode}`**: Lista códigos únicos de família (`familyCode`) cadastrados, opcionalmente filtrados por grupo (`VIDRO`, `ALUMINIO`, `PELICULA`, `FERRAGEM`). Retorna `ApiResponse<List<String>>`.
 
-**Response 200:**
+### 4.2 Vidros (`GlassController` — `/api/v1/catalog/glasses`)
+* `GET /api/v1/catalog/glasses?thickness=&color=` — Lista vidros (`PageResponse` / `ApiResponse`).
+* `POST /api/v1/catalog/glasses` — Cadastra novo vidro (`GlassCreateDTO`).
+* `PUT /api/v1/catalog/glasses/{id}` — Atualiza vidro (`GlassUpdateDTO`).
+* `DELETE /api/v1/catalog/glasses/{id}` — Inativa vidro (*soft delete*, `204 No Content`).
+
+### 4.3 Perfis de Alumínio (`AluminumProfileController` — `/api/v1/catalog/aluminum-profiles`)
+* `GET /api/v1/catalog/aluminum-profiles?colorFinish=&name=` — Lista perfis paginados.
+* `GET /api/v1/catalog/aluminum-profiles/{id}` — Detalha um perfil.
+* `POST /api/v1/catalog/aluminum-profiles` — Cadastra perfil (`AluminumProfileRequestDTO`).
+* `PUT /api/v1/catalog/aluminum-profiles/{id}` — Atualiza perfil (`AluminumProfileUpdateDTO`).
+* `DELETE /api/v1/catalog/aluminum-profiles/{id}` — Inativa perfil (`204 No Content`).
+
+### 4.4 Ferragens (`HardwareController` — `/api/v1/catalog/hardware`)
+* `GET /api/v1/catalog/hardware?unitMeasure=&unit=&name=` — Lista ferragens, puxadores e acessórios.
+* `GET /api/v1/catalog/hardware/{id}` — Detalha uma ferragem.
+* `POST /api/v1/catalog/hardware` — Cadastra ferragem (`HardwareRequestDTO`).
+* `PUT /api/v1/catalog/hardware/{id}` — Atualiza ferragem (`HardwareUpdatePriceDTO`).
+* `DELETE /api/v1/catalog/hardware/{id}` — Inativa ferragem (`204 No Content`).
+
+### 4.5 Películas (`FilmController` — `/api/v1/catalog/films`)
+* `GET /api/v1/catalog/films` — Lista películas decorativas e solares.
+* `POST /api/v1/catalog/films` — Cadastra película (`FilmRequestDTO`).
+* `PUT /api/v1/catalog/films/{id}` — Atualiza película (`FilmUpdatePriceDTO`).
+* `DELETE /api/v1/catalog/films/{id}` — Inativa película (`204 No Content`).
+
+### 4.6 Produtos e Templates Paramétricos (`ProductController` — `/api/v1/catalog/products`)
+> **Nota:** A antiga rota `/api/product-categories` foi extinta na migração Flyway `V12`. A categoria deriva dinamicamente do `DoorTemplateType`.
+
+* `GET /api/v1/catalog/products?activeOnly=true` — Lista templates paramétricos paginados.
+* `GET /api/v1/catalog/products/{id}` — Detalha o template (`templateConfig`, `categoryRequirements`).
+* `POST /api/v1/catalog/products` — Cria novo template (`ProductRequestDTO`).
+* `PUT /api/v1/catalog/products/{id}` — Atualiza template (`ProductRequestDTO`).
+* `DELETE /api/v1/catalog/products/{id}` — Inativa template (`204 No Content`).
+
+---
+
+## 5. Módulo de Orçamentos (`BudgetController`)
+
+> **Base Paths:** `/api/v1/budgets`, `/api/orcamentos`, `/api/budgets`  
+> **Perfis Autorizados:** `ADMINISTRADOR`, `VENDEDOR`
+
+* **`GET /api/v1/budgets?page=0&size=20&status=DRAFT&busca=joao`**: Lista orçamentos paginados (`PageResponse<BudgetSummaryResponseDTO>`).
+* **`GET /api/v1/budgets/{id}`**: Retorna detalhe completo do orçamento, itens e opções de insumos (`BudgetResponseDTO`).
+* **`POST /api/v1/budgets`**: Cria orçamento completo (`BudgetCreateRequest`) e calcula quantidades e totais.
+* **`PUT /api/v1/budgets/{id}`**: Atualiza orçamento em rascunho (`DRAFT`).
+* **`PATCH /api/v1/budgets/{id}/status`**: Altera status (`DRAFT` ➔ `SENT` ➔ `APPROVED` / `REJECTED` / `CANCELLED`).
+* **`PUT /api/v1/budgets/{id}/discount`** *(alias `/desconto`)*: Aplica desconto (`PERCENTUAL` ou `VALOR_FIXO`), taxas e condições comerciais (`DiscountRequest`).
+* **`POST /api/v1/budgets/{id}/items`** *(alias `/itens`)*: Adiciona item ao orçamento em rascunho.
+* **`POST /api/v1/budgets/{id}/recalcular`**: Força recálculo de quantidades e preços de um orçamento `DRAFT`.
+* **`POST /api/v1/budgets/{id}/reopen`** *(alias `/reabrir` — US-15.2)*: Reabre orçamento `APPROVED` de volta para `DRAFT` quando a O.S. vinculada estiver `CANCELLED` (`409 Conflict` se houver O.S. ativa).
+* **`POST /api/v1/budgets/items/preview-calculation`**: Pré-calcula sugestões de consumo de vidro/perfil/película e emite alertas de consistência física (`BudgetItemCalculationRequestDTO` ➔ `BudgetItemCalculationResponseDTO`).
+* **`DELETE /api/v1/budgets/{id}`**: Cancela o orçamento (`CANCELLED`, `204 No Content`).
+* **`GET /api/v1/budgets/{id}/pdf/comercial`** *(alias `/pdf`)*: Emite Proposta Comercial PDF A4.
+* **`GET /api/v1/budgets/{id}/pdf/tecnico`** *(alias `/technical-pdf`)*: Emite Via Técnica de Oficina em PDF A4 sob sigilo comercial (zero menções monetárias).
+* **`GET /api/v1/budgets/{id}/resumo-whatsapp`**: Retorna `text/plain;charset=UTF-8` formatado para envio no WhatsApp.
+
+---
+
+## 6. Módulo de Ordens de Serviço e Produção (`OrderController` — `/api/v1/orders`)
+
+> **Contrato Canônico:** `/api/v1/orders` (`OrderController`). Aliases legados (`/api/v1/ordens-servico`, `/api/orders`, `/api/ordens-servico`, `/api/pedidos`) residem no `OrderLegacyController`.
+
+### 6.1 Gestão e Ciclo de Vida
+
+* **`GET /api/v1/orders?status=&channel=&search=&page=0&size=10`**: Lista O.S. paginadas (`PageResponse<OrderSummaryResponse>`).
+* **`POST /api/v1/orders/convert/{budgetId}`** *(alias `/from-budget/{budgetId}`)*: Converte orçamento elegível em O.S. `OS-YYYY-NNNN` com *deep copy* imutável e lock de preços (`OrderConvertRequest` ➔ `201 Created` `OrderResponse`). Retorna `409` se já houver O.S. ativa.
+* **`GET /api/v1/orders/{id}`**: Retorna detalhes completos e itens congelados (`OrderResponse`).
+* **`GET /api/v1/orders/by-budget/{budgetId}`**: Recupera a O.S. mais recente vinculada a um orçamento (`OrderSummaryResponse` ou `404`).
+* **`PATCH /api/v1/orders/{id}/production-status`** *(alias `/status`)*: Avança o status na esteira Kanban (`CREATED` / `WAITING_PRODUCTION` ➔ `IN_PRODUCTION` ➔ `COMPLETED`), preenchendo `dataConclusao` no fuso `America/Sao_Paulo`. Aceita body `OrderStatusUpdateRequest` ou query `?status=`.
+* **`PATCH /api/v1/orders/{id}/cancel`**: Cancela O.S. (`CREATED` ou `WAITING_PRODUCTION`) mediante `OrderCancelRequest` (`justificativa` com 10 a 1000 caracteres). Bloqueia `IN_PRODUCTION`/`COMPLETED` com `422`.
+
+### 6.2 Documentos e Etiquetas
+
+* **`GET /api/v1/orders/{id}/pdf/comprovante`** *(US-16)*: Emite o Comprovante Oficial do Pedido em PDF A4 utilizando valores congelados.
+* **`GET /api/v1/orders/{id}/labels-pdf?itemId=`** *(alias `/etiquetas-pdf` — US-17)*: Emite etiquetas térmicas 100×60mm em PDF.
+* **`POST /api/v1/orders/{id}/labels-pdf?itemId=`** *(alias `/etiquetas-pdf`)*: Emite etiquetas PDF aceitando no body `Map<UUID, Integer>` com contagem customizada de folhas por item.
+* **`GET /api/v1/orders/{id}/labels-bplb?itemId=`**: Gera script nativo de comandos térmicos BPLB (`.prn`) para impressora Elgin L42.
+* **`POST /api/v1/orders/{id}/labels-bplb?itemId=`**: Gera script BPLB (`.prn`) com mapa opcional de folhas customizadas (`Map<UUID, Integer>`).
+
+### 6.3 Ficha Técnica de Produção e Plano de Corte *(US-47.3 / US-20)*
+
+#### GET `/api/v1/orders/{id}/production-sheet`
+Calcula e retorna os dados paramétricos da ficha técnica de corte (perfis com ângulos $45^\circ/90^\circ$, vidros com folgas deduzidas e acessórios).
+
+* **Response 200 OK (`ProductionSheetResponse`):**
 ```json
 {
-  "content": [
-    {
-      "id": "prod-1",
-      "name": "Porta de Correr 2 Folhas Linha Suprema",
-      "categoryId": "cat-portas",
-      "categoryName": "Portas de Vidro e Alumínio",
-      "laborCost": 150.00,
-      "isActive": true,
-      "templateType": "SLIDING_DOOR_2F",
-      "templateConfig": {
-        "templateType": "SLIDING_DOOR_2F",
-        "aluminumColor": "BLACK",
-        "glassFinish": "CLEAR",
-        "openingDirection": "LEFT_TO_RIGHT",
-        "handleType": "BAR_TUBULAR",
-        "handleConfig": {
-          "handleType": "BAR_TUBULAR",
-          "side": "BOTH_SIDES",
-          "coverage": "PIECE",
-          "pieceLengthCm": 40
-        },
-        "drillingConfig": {
-          "holeCount": 2,
-          "divisionType": "EQUAL",
-          "customDistancesMm": [150, 450]
-        }
-      },
-      "categoryRequirements": [
-        { "id": "req-vidro", "categoryType": "GLASS", "label": "Vidro das Folhas", "isOptional": false },
-        { "id": "req-perfil", "categoryType": "PROFILE", "label": "Perfis e Trilhos de Alumínio", "isOptional": false },
-        { "id": "req-ferragem", "categoryType": "HARDWARE", "label": "Kit de Ferragens e Fechos", "isOptional": false },
-        { "id": "req-pelicula", "categoryType": "FILM", "label": "Película Protetora/Decorativa", "isOptional": true }
-      ]
-    }
+  "orderCode": "OS-2026-0042",
+  "clientName": "Antônio Alfredo Figueiredo",
+  "aluminumCuts": [
+    { "profileCode": "SU-001", "description": "Marco Lateral", "lengthMm": 1200, "cutAngle": "90°", "quantity": 2 }
   ],
-  "page": { "size": 20, "number": 0, "totalElements": 1, "totalPages": 1 }
-}
-```
-
-### GET `/api/products/{id}`
-Retorna detalhe completo do template com todas as configurações.
-
-### POST `/api/products`
-Cria um novo template de produto.
-
-**Request:**
-```json
-{
-  "name": "Box Frontal F1 com Fixo e Correr",
-  "categoryId": "cat-box",
-  "laborCost": 100.00,
-  "templateType": "GLASS_BOX_FRONTAL",
-  "templateConfig": {
-    "templateType": "GLASS_BOX_FRONTAL",
-    "aluminumColor": "NATURAL",
-    "glassFinish": "CLEAR",
-    "openingDirection": "LEFT_TO_RIGHT",
-    "handleType": "SHELL_LOCK"
-  },
-  "categoryRequirements": [
-    { "id": "req-1", "categoryType": "GLASS", "label": "Vidro Temperado 8mm", "isOptional": false },
-    { "id": "req-2", "categoryType": "PROFILE", "label": "Kit Alumínio Box", "isOptional": false },
-    { "id": "req-3", "categoryType": "HARDWARE", "label": "Roldanas e Acessórios", "isOptional": false }
+  "glassCuts": [
+    { "glassType": "Incolor Temperado 8mm", "widthMm": 603, "heightMm": 1146, "quantity": 2 }
+  ],
+  "accessories": [
+    { "code": "ROL-112", "description": "Roldana Dupla Suprema", "quantity": 4, "unit": "UN" }
   ]
 }
 ```
 
-**Response 201:** Retorna o produto criado com `id`.
-
-### PUT `/api/products/{id}`
-Atualiza dados do template e seus requisitos de categorias.
+#### GET `/api/v1/orders/{id}/production-sheet/pdf`
+Renderiza e exporta a Ficha Técnica A4 de Produção Fabril em PDF (`Content-Type: application/pdf`, `attachment; filename="Ficha_Tecnica_OS-YYYY-NNNN.pdf"`).
 
 ---
 
-## 6. Módulo de Orçamentos (`/api/orcamentos` ou `/api/budgets`)
+## 7. Módulo de Venda Avulsa de Partes (`PartSaleController` — `/api/v1/part-sales` — US-46)
 
-> **Conceito:** O orçamento agrega dados do cliente, itens de esquadrias cotadas com medidas em mm, insumos específicos selecionados para cada categoria, puxadores, furação e totais calculados.
+> **Perfis Autorizados:** `ADMINISTRADOR`, `VENDEDOR`
 
-### GET `/api/orcamentos`
-Lista orçamentos com filtros de status e busca.
+### POST `/api/v1/part-sales/calculate-item`
+Pré-calcula metragem/área faturável e valor total do item avulso sem persistência, aplicando piso mínimo de vidro ($0,25\text{ m}^2$), fator de perda e validação de limites físicos do material (`maxWidthMm`, `maxHeightMm`).
 
-**Query params:** `?page=0&size=20&status=DRAFT&busca=joao`
-
-**Response 200:**
+* **Request Body (`CalculatePartItemRequest`):**
 ```json
 {
-  "content": [
-    {
-      "id": "orc-1",
-      "code": "ORC-2026-001",
-      "customer": {
-        "id": "cli-1",
-        "name": "João da Silva",
-        "phone": "(83) 99999-0000"
-      },
-      "status": "DRAFT",
-      "subtotal": 1850.00,
-      "discountPercent": 5.0,
-      "discountValue": 92.50,
-      "total": 1757.50,
-      "itemCount": 1,
-      "createdAt": "2026-08-21T10:00:00",
-      "validUntil": "2026-09-05T10:00:00"
-    }
-  ],
-  "page": { "size": 20, "number": 0, "totalElements": 1, "totalPages": 1 }
+  "category": "GLASS",
+  "widthMm": 300,
+  "heightMm": 400,
+  "quantity": 2,
+  "unitPrice": 180.00,
+  "lossFactor": 0.00,
+  "materialId": "c8d234a1-7e89-4a0b-bc11-d92ef5638102"
+}
+```
+* **Response 200 OK (`CalculatePartItemResponse`):**
+```json
+{
+  "calculatedUnitMeasure": 0.5000,
+  "unitPrice": 180.00,
+  "totalPrice": 90.00,
+  "minimumAreaApplied": true
 }
 ```
 
-### GET `/api/orcamentos/{id}`
-Retorna orçamento completo com todos os itens, opções de materiais, gabarito e romaneio.
+### POST `/api/v1/part-sales`
+Persiste uma nova venda avulsa de partes (`VP-YYYY-NNNN`) com status `DRAFT` ou `APPROVED`. Se `clientId` apontar para o `Cliente Balcão` padrão (`00000000-0000-0000-0000-000000000001`), vincula o consumidor final da migração `V24`.
 
-**Response 200:**
+* **Request Body (`CreatePartSaleRequest`):**
 ```json
 {
-  "id": "orc-1",
-  "code": "ORC-2026-001",
-  "customer": {
-    "id": "cli-1",
-    "name": "João da Silva",
-    "phone": "(83) 99999-0000",
-    "email": "joao@email.com",
-    "document": "123.456.789-00",
-    "address": "Rua das Flores, 123 - Centro - Santa Rita/PB"
-  },
-  "status": "DRAFT",
-  "subtotal": 1850.00,
-  "discountPercent": 5.0,
-  "discountValue": 92.50,
-  "total": 1757.50,
-  "notes": "Entrega em até 15 dias úteis. Pagamento em 3x no cartão.",
-  "createdAt": "2026-08-21T10:00:00",
-  "validUntil": "2026-09-05T10:00:00",
+  "clientId": "00000000-0000-0000-0000-000000000001",
+  "status": "APPROVED",
+  "discountAmount": 10.00,
   "items": [
     {
-      "id": "item-1",
-      "productId": "prod-1",
-      "productName": "Porta de Correr 2 Folhas Linha Suprema",
-      "templateType": "SLIDING_DOOR_2F",
-      "templateConfig": {
-        "templateType": "SLIDING_DOOR_2F",
-        "aluminumColor": "BLACK",
-        "glassFinish": "CLEAR",
-        "openingDirection": "LEFT_TO_RIGHT"
-      },
-      "handleConfig": {
-        "handleType": "BAR_TUBULAR",
-        "side": "BOTH_SIDES",
-        "coverage": "PIECE",
-        "pieceLengthCm": 40
-      },
-      "drillingConfig": {
-        "holeCount": 2,
-        "divisionType": "EQUAL"
-      },
-      "width": 2000,
-      "height": 2100,
-      "quantity": 1,
-      "laborCost": 150.00,
-      "options": [
-        {
-          "materialId": "mat-vidro-8mm",
-          "materialName": "Vidro Temperado 8mm Incolor",
-          "categoryType": "GLASS",
-          "unitMeasure": "M2",
-          "selectedType": "8mm Temperado",
-          "selectedColor": "Incolor",
-          "quantity": 4.20,
-          "unitPrice": 220.00,
-          "totalPrice": 924.00
-        },
-        {
-          "materialId": "mat-perfil-suprema",
-          "materialName": "Perfis Linha Suprema",
-          "categoryType": "PROFILE",
-          "unitMeasure": "METRO",
-          "selectedType": "Suprema 25",
-          "selectedColor": "Preto",
-          "quantity": 8.20,
-          "unitPrice": 45.00,
-          "totalPrice": 369.00
-        },
-        {
-          "materialId": "mat-kit-porta",
-          "materialName": "Kit Acessórios Porta de Correr",
-          "categoryType": "HARDWARE",
-          "unitMeasure": "UN",
-          "quantity": 1,
-          "unitPrice": 407.00,
-          "totalPrice": 407.00
-        }
-      ],
-      "subtotal": 1850.00,
-      "notes": "Folha esquerda fixa, direita móvel."
+      "materialType": "PROFILE",
+      "referenceId": "d1a2b3c4-1111-2222-3333-444455556666",
+      "quantity": 2,
+      "widthMm": null,
+      "heightMm": 2500,
+      "unitPrice": 45.00,
+      "lossFactor": 0.05
     }
   ]
 }
 ```
+* **Response 201 Created (`PartSaleResponse`):** Retorna `id`, `code`, `clientId`, `clientName`, `status`, `subtotalAmount`, `discountAmount`, `totalAmount`, `items` (`List<PartSaleItemResponse>`), `createdAt`, `updatedAt`.
 
-### POST `/api/orcamentos`
-Cria um orçamento completo.
+### GET `/api/v1/part-sales`
+Lista vendas avulsas paginadas (`PageableDefault` ordenado por data decrescente) com filtros opcionais `?status=DRAFT|APPROVED|CANCELLED&search=VP-2026`.
 
-**Request:**
-```json
-{
-  "customerId": "cli-1",
-  "discountPercent": 5.0,
-  "notes": "Orçamento para reforma da sala",
-  "items": [
-    {
-      "productId": "prod-1",
-      "templateType": "SLIDING_DOOR_2F",
-      "templateConfig": {
-        "templateType": "SLIDING_DOOR_2F",
-        "aluminumColor": "BLACK",
-        "glassFinish": "CLEAR",
-        "openingDirection": "LEFT_TO_RIGHT"
-      },
-      "handleConfig": {
-        "handleType": "BAR_TUBULAR",
-        "side": "BOTH_SIDES",
-        "coverage": "PIECE",
-        "pieceLengthCm": 40
-      },
-      "drillingConfig": {
-        "holeCount": 2,
-        "divisionType": "EQUAL"
-      },
-      "width": 2000,
-      "height": 2100,
-      "quantity": 1,
-      "options": [
-        { "materialId": "mat-vidro-8mm", "quantity": 4.20 },
-        { "materialId": "mat-perfil-suprema", "quantity": 8.20 },
-        { "materialId": "mat-kit-porta", "quantity": 1 }
-      ],
-      "notes": "Folha esquerda fixa, direita móvel."
-    }
-  ]
-}
-```
+### GET `/api/v1/part-sales/{id}`
+Retorna os detalhes completos da venda avulsa (`PartSaleResponse`).
 
-**Response 201:** Retorna o orçamento criado com código gerado (`ORC-2026-001`) e totais calculados.
+### PATCH `/api/v1/part-sales/{id}/status`
+Atualiza o status comercial (`PartSaleStatusUpdateRequest`: `DRAFT` ➔ `APPROVED` | `CANCELLED`; `APPROVED` ➔ `CANCELLED`; `CANCELLED` terminal).
 
-### PUT `/api/budgets/{id}`
-Atualiza o orçamento em status `DRAFT`.
+### GET `/api/v1/part-sales/{id}/pdf`
+Gera e exporta o orçamento/venda avulsa em PDF A4 agrupado por seções temáticas (`VIDROS`, `ALUMÍNIOS`, `FERRAGENS`, `PELÍCULAS`).
 
-### PATCH `/api/budgets/{id}/status`
-Altera o status do orçamento (`DRAFT` $\rightarrow$ `SENT` $\rightarrow$ `APPROVED` ou `REJECTED` ou `CANCELLED`).
-
-**Request:**
-```json
-{
-  "status": "APPROVED"
-}
-```
-
-### PUT `/api/budgets/{id}/discount` *(US-09)*
-Aplica condições comerciais, descontos (percentual ou valor fixo em R$) e taxas adicionais ao orçamento com recálculo reativo. Mapeado também no alias `PUT /api/budgets/{id}/desconto`.
-
-> **Perfis:** ADMINISTRADOR, VENDEDOR
-
-**Request:**
-```json
-{
-  "discountType": "PERCENTAGE",
-  "discountValue": 10.0,
-  "shippingFee": 150.00,
-  "installationFee": 300.00,
-  "paymentConditions": "50% entrada via PIX e 50% na instalação",
-  "validityDays": 15
-}
-```
-
-**Response 200:** Retorna o `BudgetResponseDTO` atualizado com o valor líquido recalculado.
-
-### GET `/api/budgets/{id}/pdf/comercial` *(US-10)*
-Gera e exporta a proposta comercial oficial em formato PDF A4 institucional (OpenPDF) para download. Mapeado também no alias `GET /api/budgets/{id}/pdf`.
-
-> **Perfis:** ADMINISTRADOR, VENDEDOR, OPERADOR  
-> **Headers de Resposta:**  
-> - `Content-Type: application/pdf`  
-> - `Content-Disposition: attachment; filename="orcamento-comercial-ORC-YYYY-NNNN.pdf"`
-
-**Conteúdo do Documento:**
-- Cabeçalho timbrado com logotipo e dados institucionais da Alumiportas
-- Dados cadastrais do cliente (Nome, CPF/CNPJ, Telefone, Endereço da obra)
-- Tabela de itens com dimensões nominais (LxA mm), acabamento, vidro e subtotais
-- Painel de fechamento financeiro (Valor Bruto, Desconto aplicado, Frete/Instalação e Valor Total Líquido)
-- Prazos de validade da proposta (15 dias corridos padrão), condições de pagamento e campo para assinatura.
-
-### GET `/api/budgets/{id}/resumo-whatsapp` *(US-10)*
-Gera e retorna o texto formatado (`text/plain;charset=UTF-8`) com os dados do orçamento prontos para envio via WhatsApp.
-
-> **Perfis:** ADMINISTRADOR, VENDEDOR  
-> **Content-Type:** `text/plain; charset=UTF-8`
-
-**Response 200 (Texto Puro):**
-```text
-*ORÇAMENTO ALUMIPORTAS - ORC-2026-0005*
-
-Olá, João da Silva! Segue a proposta comercial:
-- 2x Janela Suprema 2F (1200x1000mm) - Branco
-
-*Valor Total:* R$ 3.800,00
-*Validade:* 15 dias corridos
-
-Para aprovar ou tirar dúvidas, responda esta mensagem.
-```
-
-### GET `/api/budgets/{id}/pdf/tecnico` *(US-11)*
-Gera e exporta a ficha de corte e usinagem da oficina (Romaneio Técnico de Fabricação) em formato PDF A4 via OpenPDF, direcionada aos cortadores e montadores do galpão de produção sob **estrito sigilo comercial**.
-
-> **Perfis:** ADMINISTRADOR, VENDEDOR, OPERADOR  
-> **Headers de Resposta:**  
-> - `Content-Type: application/pdf`  
-> - `Content-Disposition: attachment; filename="orcamento-tecnico-ORC-YYYY-NNNN.pdf"`
-
-**Garantias de Domínio & Sigilo Comercial:**
-- **Supressão Total de Preços:** Omissão absoluta de valores unitários, margens, descontos e valor total (zero menções a R$)
-- **Especificações Físicas:** Cotas nominais milimétricas de corte (Largura x Altura mm)
-- **Detalhes Construtivos:** Cor do perfil, tipo e espessura do vidro, sentido de abertura e lado de travamento
-- **Checklist de Bancada:** Itens marcáveis para conferência visual na oficina (corte, esquadro, usinagem, vedação) com visto técnico.
+### POST `/api/v1/part-sales/export-pdf`
+Gera PDF prévio (`orcamento-partes-rascunho.pdf`) diretamente a partir de um `CreatePartSaleRequest` sem necessidade de persistência prévia.
 
 ---
 
----
+## 8. Módulo de Estoque e Kardex (`StockController` — `/api/v1/stock` — Sprint 09 em Desenvolvimento)
 
-## 7. Módulo de Ordens de Serviço / Pedidos (`/api/orders`) *(Release 2 / Sprint 06)*
+> **Escopo em Desenvolvimento (Branches `feat/us-21*` e `feat/us-22*`):** Contrato implementado nas branches ativas da Sprint 09 (ainda não integrado em `develop`).
 
-Centraliza a formalização da proposta comercial aprovada em **Ordem de Serviço (O.S.)** vinculante para o chão de fábrica, garantindo imutabilidade cadastral (*deep copy* e lock de preços), gestão do ciclo de vida e emissão de comprovante em PDF.
-
-### POST `/api/orders/from-budget/{budgetId}` *(US-13)*
-Converte um orçamento aprovado (`DRAFT` ou `SENT`) em uma nova Ordem de Serviço com geração de código anual sequencial `PED-YYYY-NNNN` e bloqueio de conversão duplicada.
-
-> **Perfis:** ADMINISTRADOR, VENDEDOR  
-> **Headers:** `Content-Type: application/json`
-
-**Request Body (`OrderConvertRequest`):**
-```json
-{
-  "canalAprovacao": "WHATSAPP",
-  "dataPrevisaoEntrega": "2026-10-25",
-  "observacoes": "Aprovado via WhatsApp após confirmação das medidas"
-}
-```
-
-**Response Body (`201 Created` — `OrderResponse`):**
-```json
-{
-  "id": "c1f7a0b5-7c91-4d3e-9081-3e4b7b209a81",
-  "codigo": "PED-2026-0001",
-  "orcamentoId": "d8e3b2a1-5f4c-4e2b-9871-2a3b4c5d6e7f",
-  "clienteId": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
-  "clienteNome": "João da Silva",
-  "status": "AGUARDANDO_PRODUCAO",
-  "canalAprovacao": "WHATSAPP",
-  "dataAprovacao": "2026-10-12",
-  "dataPrevisaoEntrega": "2026-10-25",
-  "dataConclusao": null,
-  "valorLiquido": 4500.00,
-  "createdAt": "2026-10-12T10:00:00"
-}
-```
+* **`GET /api/v1/stock`**: Lista saldos consolidados (`List<StockItemResponseDTO>`) com filtros `?category=`, `?alertStatus=`, `?search=`, `?needsPurchase=`, `?belowMinStock=` e `?sort=NAME|AVAILABLE|CRITICALITY`.
+* **`GET /api/v1/stock/materials/{materialId}`**: Consulta o saldo consolidado de um material específico (`StockItemResponseDTO`).
+* **`GET /api/v1/stock/movements?materialId=`**: Lista trilha cronológica Kardex (`List<StockMovementResponseDTO>`).
+* **`POST /api/v1/stock/movements`**: Registra movimentação manual (`StockMovementRequestDTO` — entrada de compras com `unitCost` e `referenceDocument` livre, ajuste manual ou perda/sucata; retorna `201 Created` ou `422` se saldo físico ficar negativo).
+* **`POST /api/v1/stock/reserve-for-order/{orderId}`**: Reserva insumos da O.S. no modelo Make-to-Order sem bloqueio por falta de estoque (`204 No Content`).
+* **`POST /api/v1/stock/consume-for-order/{orderId}`**: Efetiva baixa física e libera reserva na conclusão da produção (`204 No Content`).
+* **`POST /api/v1/stock/cancel-reservations/{orderId}`**: Estorna reservas de O.S. cancelada (`204 No Content`).
+* **`GET /api/v1/stock/orders/{orderId}/alert`** *(branch `feat/us-21.4`)*: Retorna o status agregado de alerta Make-to-Order da O.S. (`OrderStockAlertResponseDTO` com `alertStatus` e `missingMaterials`).
 
 ---
 
-### GET `/api/orders` *(US-13.4)*
-Lista as Ordens de Serviço paginadas com busca textual (código ou cliente) e filtros por status fabril.
+## 9. Resumo Geral de Rotas da API
 
-> **Parâmetros de Consulta:**
-> - `page` (int, default: 0)
-> - `size` (int, default: 20)
-> - `status` (string, opcional): `CRIADO`, `AGUARDANDO_PRODUCAO`, `EM_PRODUCAO`, `CONCLUIDO`, `CANCELADO`
-> - `busca` (string, opcional): Código do pedido ou nome do cliente
-
-**Response (`200 OK` — `PageResponse<OrderSummaryResponse>`)**
-
----
-
-### GET `/api/orders/{id}` *(US-13.5 & US-14)*
-Retorna o detalhamento completo da Ordem de Serviço com todos os itens congelados (*snapshot* imutável de medidas nominais L x A mm, valores unitários, acabamento de perfis, vidros e configurações técnicas).
-
-> **Response:** `200 OK` (`OrderResponse` com lista de `OrderItemResponse`)
-
----
-
-### PATCH `/api/orders/{id}/cancel` *(US-15)*
-Cancela formalmente a Ordem de Serviço mediante registro de justificativa obrigatória ($\ge 10$ caracteres).
-
-> **Request Body (`OrderCancelRequest`):**
-```json
-{
-  "justificativa": "Cliente cancelou a obra temporariamente por motivos de força maior"
-}
-```
-
-> **Validações:**
-> - Bloqueia cancelamento de ordens já em `EM_PRODUCAO` ou `CONCLUIDO` (HTTP 422).
-> - Permite a reabertura condicional do orçamento de origem para novas negociações (`US-15.2`).
-
----
-
-### GET `/api/orders/{id}/pdf/comprovante` *(US-16)*
-Emite e exporta o Comprovante Oficial da Ordem de Serviço timbrado em formato PDF A4 institucional via OpenPDF.
-
-> **Headers de Resposta:**  
-> - `Content-Type: application/pdf`  
-> - `Content-Disposition: inline; filename="comprovante-pedido-PED-YYYY-NNNN.pdf"`
-
----
-
-## 8. Resumo Geral de Rotas da API
-
-| Método | Rota | Descrição | Módulo | Release / US |
+| Método | Rota Canônica | Descrição | Módulo | Status / Sprint |
 |---|---|---|---|:---:|
-| **Autenticação** | | | | |
-| `POST` | `/api/auth/login` | Autenticação e obtenção de token JWT | `auth` | R1 |
-| `POST` | `/api/auth/refresh` | Renovação de token JWT | `auth` | R1 |
-| `POST` | `/api/auth/logout` | Invalidação de sessão | `auth` | R1 |
-| **Clientes** | | | | |
-| `GET` | `/api/clientes` | Listar clientes paginados com busca | `clients` | R1 / US-04 |
-| `GET` | `/api/clientes/{id}` | Detalhes do cliente | `clients` | R1 / US-04 |
-| `POST` | `/api/clientes` | Criar cliente (PF ou PJ com validação) | `clients` | R1 / US-04 |
-| `PUT` | `/api/clientes/{id}` | Atualizar dados cadastrais | `clients` | R1 / US-04 |
-| `PATCH` | `/api/clientes/{id}/status` | Ativar ou inativar cliente | `clients` | R1 / US-04 |
-| **Produtos & Templates** | | | | |
-| `GET` | `/api/products` | Listar produtos/templates de esquadrias | `catalog` | R1 / US-05 |
-| `GET` | `/api/products/{id}` | Detalhes do template paramétrico SVG | `catalog` | R1 / US-05 |
-| `POST` | `/api/products` | Criar template de produto | `catalog` | R1 / US-05 |
-| `PUT` | `/api/products/{id}` | Atualizar template | `catalog` | R1 / US-05 |
-| `GET` | `/api/product-categories` | Listar categorias de produto | `catalog` | R1 / US-02 |
-| **Orçamentos (Budgets)** | | | | |
-| `GET` | `/api/budgets` | Listar orçamentos paginados com filtros | `budgets` | R1 / US-06 |
-| `GET` | `/api/budgets/{id}` | Detalhes do orçamento e romaneio | `budgets` | R1 / US-06 |
-| `POST` | `/api/budgets` | Criar orçamento completo com cálculo paramétrico | `budgets` | R1 / US-07 |
-| `PUT` | `/api/budgets/{id}` | Atualizar orçamento em rascunho (`DRAFT`) | `budgets` | R1 / US-06 |
-| `PATCH` | `/api/budgets/{id}/status` | Alterar status do ciclo de vida | `budgets` | R1 / US-06 |
-| `PUT` | `/api/budgets/{id}/discount` | Aplicar descontos, taxas e condições comerciais | `budgets` | R1 / US-09 |
-| `POST` | `/api/budgets/{id}/items` | Adicionar item avulso ao orçamento | `budgets` | R1 / US-09 |
-| `GET` | `/api/budgets/{id}/pdf/comercial` | Emitir Proposta Comercial em PDF A4 | `budgets` | R1 / US-10 |
-| `GET` | `/api/budgets/{id}/resumo-whatsapp` | Obter texto formatado para envio no WhatsApp | `budgets` | R1 / US-10 |
-| `GET` | `/api/budgets/{id}/pdf/tecnico` | Emitir Via Técnica de Oficina em PDF (Sem Preços) | `budgets` | R1 / US-11 |
-| **Ordens de Serviço / Pedidos** | | | | |
-| `POST` | `/api/orders/from-budget/{budgetId}` | Converter orçamento em Ordem de Serviço vinculante | `orders` | R2 / US-13 |
-| `GET` | `/api/orders` | Listar Ordens de Serviço paginadas com filtros | `orders` | R2 / US-13 |
-| `GET` | `/api/orders/{id}` | Detalhar Ordem de Serviço com snapshot de itens | `orders` | R2 / US-14 |
-| `PATCH` | `/api/orders/{id}/cancel` | Cancelar Ordem de Serviço com justificativa formal | `orders` | R2 / US-15 |
-| `GET` | `/api/orders/{id}/pdf/comprovante` | Emitir Comprovante Oficial da Ordem de Serviço em PDF | `orders` | R2 / US-16 |
-
-
+| `GET` | `/api/v1/health` | Status operacional e versão da API | `common` | R1 / S01 |
+| `DELETE` | `/api/v1/test-support/cleanup` | Limpeza controlada de massa E2E | `common` | R2 / S08 |
+| `GET` | `/api/v1/clients` | Listar clientes paginados com busca e filtros | `clients` | R1 / S03 |
+| `GET` | `/api/v1/clients/{id}` | Detalhes do cliente | `clients` | R1 / S03 |
+| `POST` | `/api/v1/clients` | Criar cliente PF ou PJ | `clients` | R1 / S03 |
+| `PUT` | `/api/v1/clients/{id}` | Atualizar dados cadastrais do cliente | `clients` | R1 / S03 |
+| `PATCH` | `/api/v1/clients/{id}/status` | Ativar/inativar cliente | `clients` | R1 / S03 |
+| `GET` | `/api/v1/clients/{id}/dashboard` | Dados cadastrais e KPIs agregados (Hub 360°) | `clients` | R2 / S08 (`US-47.1`) |
+| `GET` | `/api/v1/clients/{id}/budgets` | Histórico de orçamentos do cliente (Hub 360°) | `clients` | R2 / S08 (`US-47.1`) |
+| `GET` | `/api/v1/clients/{id}/orders` | Ordens de Serviço e esquadrias do cliente | `clients` | R2 / S08 (`US-47.2`) |
+| `GET` | `/api/v1/materials` | Busca unificada de materiais ativos por categoria | `catalog` | R2 / S08 (`US-46.5`) |
+| `GET` | `/api/v1/materials/families` | Listar famílias de materiais cadastradas | `catalog` | R2 / S08 |
+| `GET/POST/PUT/DELETE` | `/api/v1/catalog/glasses` | CRUD de Vidros | `catalog` | R1 / S02 |
+| `GET/POST/PUT/DELETE` | `/api/v1/catalog/aluminum-profiles` | CRUD de Perfis de Alumínio | `catalog` | R1 / S02 |
+| `GET/POST/PUT/DELETE` | `/api/v1/catalog/hardware` | CRUD de Ferragens | `catalog` | R1 / S02 |
+| `GET/POST/PUT/DELETE` | `/api/v1/catalog/films` | CRUD de Películas | `catalog` | R1 / S02 |
+| `GET/POST/PUT/DELETE` | `/api/v1/catalog/products` | CRUD de Templates Paramétricos de Esquadrias | `catalog` | R1 / S03 |
+| `GET` | `/api/v1/budgets` | Listar orçamentos paginados com filtros | `budgets` | R1 / S03 |
+| `GET` | `/api/v1/budgets/{id}` | Detalhar orçamento e romaneio | `budgets` | R1 / S03 |
+| `POST` | `/api/v1/budgets` | Criar orçamento com cálculo paramétrico | `budgets` | R1 / S03 |
+| `PUT` | `/api/v1/budgets/{id}` | Atualizar orçamento em rascunho | `budgets` | R1 / S03 |
+| `PATCH` | `/api/v1/budgets/{id}/status` | Alterar status do orçamento | `budgets` | R1 / S03 |
+| `PUT` | `/api/v1/budgets/{id}/discount` | Aplicar descontos, taxas e condições comerciais | `budgets` | R1 / S04 (`US-09`) |
+| `POST` | `/api/v1/budgets/{id}/items` | Adicionar item ao orçamento | `budgets` | R1 / S04 |
+| `POST` | `/api/v1/budgets/{id}/recalcular` | Forçar recálculo do orçamento `DRAFT` | `budgets` | R1 / S04 |
+| `POST` | `/api/v1/budgets/{id}/reopen` | Reabrir orçamento após cancelamento de O.S. | `budgets` | R2 / S06 (`US-15.2`) |
+| `POST` | `/api/v1/budgets/items/preview-calculation` | Pré-cálculo de insumos e alerta físico | `budgets` | R1 / S04 |
+| `DELETE` | `/api/v1/budgets/{id}` | Cancelar orçamento | `budgets` | R1 / S03 |
+| `GET` | `/api/v1/budgets/{id}/pdf/comercial` | Emitir Proposta Comercial PDF A4 | `budgets` | R1 / S05 (`US-10`) |
+| `GET` | `/api/v1/budgets/{id}/resumo-whatsapp` | Obter resumo formatado para WhatsApp | `budgets` | R1 / S05 (`US-10`) |
+| `GET` | `/api/v1/budgets/{id}/pdf/tecnico` | Emitir Via Técnica de Oficina PDF A4 | `budgets` | R1 / S05 (`US-11`) |
+| `GET` | `/api/v1/orders` | Listar O.S. paginadas com filtros | `orders` | R2 / S06 (`US-13.4`) |
+| `POST` | `/api/v1/orders/convert/{budgetId}` | Converter orçamento em O.S. com lock de preços | `orders` | R2 / S06 (`US-13`) |
+| `GET` | `/api/v1/orders/{id}` | Detalhar O.S. e snapshot imutável | `orders` | R2 / S06 (`US-14`) |
+| `GET` | `/api/v1/orders/by-budget/{budgetId}` | Buscar O.S. mais recente de um orçamento | `orders` | R2 / S08 |
+| `PATCH` | `/api/v1/orders/{id}/production-status` | Atualizar etapa fabril no Kanban | `orders` | R2 / S07 (`US-18`) |
+| `PATCH` | `/api/v1/orders/{id}/cancel` | Cancelar O.S. com justificativa obrigatória | `orders` | R2 / S06 (`US-15`) |
+| `GET` | `/api/v1/orders/{id}/pdf/comprovante` | Emitir Comprovante PDF A4 da O.S. | `orders` | R2 / S06 (`US-16`) |
+| `GET/POST` | `/api/v1/orders/{id}/labels-pdf` | Emitir Etiquetas Térmicas PDF (100×60mm) | `orders` | R2 / S07 (`US-17`) |
+| `GET/POST` | `/api/v1/orders/{id}/labels-bplb` | Gerar script nativo térmico BPLB (Elgin L42) | `orders` | R2 / S07 (`US-17`) |
+| `GET` | `/api/v1/orders/{id}/production-sheet` | Dados paramétricos da Ficha Técnica de Corte | `orders` | R2 / S08 (`US-47.3`) |
+| `GET` | `/api/v1/orders/{id}/production-sheet/pdf` | Exportar Ficha Técnica A4 de Produção em PDF | `orders` | R2 / S08 (`US-47.3`) |
+| `POST` | `/api/v1/part-sales/calculate-item` | Pré-cálculo de item avulso por categoria | `partsale` | R2 / S08 (`US-46`) |
+| `POST` | `/api/v1/part-sales` | Criar venda avulsa de partes (`VP-YYYY-NNNN`) | `partsale` | R2 / S08 (`US-46`) |
+| `GET` | `/api/v1/part-sales` | Listar vendas avulsas paginadas com filtros | `partsale` | R2 / S08 (`US-46`) |
+| `GET` | `/api/v1/part-sales/{id}` | Detalhar venda avulsa de partes | `partsale` | R2 / S08 (`US-46`) |
+| `PATCH` | `/api/v1/part-sales/{id}/status` | Atualizar status comercial da venda avulsa | `partsale` | R2 / S08 (`US-46`) |
+| `GET` | `/api/v1/part-sales/{id}/pdf` | Exportar PDF A4 agrupado da venda avulsa | `partsale` | R2 / S08 (`US-46.4`) |
+| `POST` | `/api/v1/part-sales/export-pdf` | Gerar PDF prévio de rascunho avulso | `partsale` | R2 / S08 (`US-46.4`) |
+| `GET` | `/api/v1/stock` | Listar saldos consolidados de estoque | `stock` | S09 (`US-22.1`, em branch) |
+| `GET` | `/api/v1/stock/materials/{materialId}` | Consultar saldo de um material | `stock` | S09 (`US-21/22`, em branch) |
+| `GET` | `/api/v1/stock/movements` | Consultar trilha Kardex | `stock` | S09 (`US-22.2`, em branch) |
+| `POST` | `/api/v1/stock/movements` | Registrar entrada/ajuste/perda manual | `stock` | S09 (`US-21.7`, em branch) |
+| `POST` | `/api/v1/stock/reserve-for-order/{orderId}` | Reservar insumos para O.S. (Make-to-Order) | `stock` | S09 (`US-21.3`, em branch) |
+| `POST` | `/api/v1/stock/consume-for-order/{orderId}` | Baixa física definitiva na conclusão da O.S. | `stock` | S09 (`US-21.5`, em branch) |
+| `POST` | `/api/v1/stock/cancel-reservations/{orderId}` | Estornar reservas de O.S. cancelada | `stock` | S09 (`US-21.6`, em branch) |
+| `GET` | `/api/v1/stock/orders/{orderId}/alert` | Alerta Make-to-Order da O.S. para o Kanban | `stock` | S09 (`US-21.4`, em branch) |
