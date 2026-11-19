@@ -585,8 +585,10 @@ describe('US-47: Central 360° do Cliente com Gestão Unificada de Orçamentos, 
     // Simula a ativação da classe dark no elemento html raiz
     cy.get('html').invoke('addClass', 'dark');
 
-    // Valida que os contêineres principais possuem classes dark ativas
-    cy.get('aside[aria-label="Lista de Clientes"]').should('have.class', 'dark:bg-slate-900');
+    // Valida que os contêineres principais aplicam os tokens semânticos M3 no modo escuro
+    cy.get('aside[aria-label="Lista de Clientes"]')
+      .should('have.class', 'bg-surface')
+      .and('have.css', 'background-color', 'rgb(45, 49, 51)');
     cy.get('h1').contains('Antônio Alfredo Figueiredo').should('be.visible');
     cy.contains('Total Contratado').should('be.visible');
 
