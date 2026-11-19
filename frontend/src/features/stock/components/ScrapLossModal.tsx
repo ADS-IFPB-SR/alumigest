@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { AlertTriangle, AlertOctagon, X, Package, Hash, FileText, CheckCircle2 } from 'lucide-react';
 import { useRegisterStockMovement, useStockBalances } from '../hooks/useStock';
 import { scrapLossSchema, type ScrapLossFormData } from '../schemas/stockSchema';
-import type { StockMovementRequest } from '../types';
+import type { StockItem, StockMovementRequest } from '../types';
 
 export interface ScrapLossModalProps {
   isOpen: boolean;
@@ -28,6 +28,54 @@ const COMMON_REASON_PRESETS = [
   'Defeito de fabricação',
   'Dano por manuseio na usinagem',
 ] as const;
+
+function resolveMaterialSnapshot(
+  props: Pick<
+    ScrapLossModalProps,
+    | 'materialId'
+    | 'materialSku'
+    | 'materialName'
+    | 'unitMeasure'
+    | 'currentPhysical'
+    | 'currentReserved'
+  >,
+  selectedStockItem?: StockItem
+) {
+  if (props.materialId) {
+    return {
+      hasMaterialSelected: true,
+      effectiveMaterialId: props.materialId,
+      effectiveSku: props.materialSku ?? 'N/A',
+      effectiveName: props.materialName ?? 'Material não especificado',
+      effectiveUnit: props.unitMeasure ?? 'UN',
+      effectivePhysical: props.currentPhysical ?? 0,
+      effectiveReserved: props.currentReserved ?? 0,
+    };
+  }
+
+  return {
+    hasMaterialSelected: Boolean(selectedStockItem),
+    effectiveMaterialId: selectedStockItem?.materialId ?? '',
+    effectiveSku: selectedStockItem?.materialSku ?? 'N/A',
+    effectiveName: selectedStockItem?.materialName ?? 'Selecione um insumo abaixo',
+    effectiveUnit: selectedStockItem?.unitMeasure ?? 'UN',
+    effectivePhysical: selectedStockItem?.physicalQuantity ?? 0,
+    effectiveReserved: selectedStockItem?.reservedQuantity ?? 0,
+  };
+}
+
+function getSelectPlaceholder(isLoading: boolean, isError: boolean, totalItems: number): string {
+  if (isLoading) return 'Carregando insumos em estoque...';
+  if (isError) return 'Erro ao carregar insumos';
+  if (totalItems === 0) return 'Nenhum insumo cadastrado em estoque';
+  return 'Selecione um insumo em estoque...';
+}
+
+function getQuantityBorderClass(hasError: boolean, isExceedingStock: boolean): string {
+  if (hasError) return 'border-rose-500 focus:ring-rose-500/20';
+  if (isExceedingStock) return 'border-amber-500 focus:ring-amber-500/20';
+  return 'border-outline-variant focus:ring-primary/20 focus:border-primary';
+}
 
 export const ScrapLossModal: React.FC<ScrapLossModalProps> = ({
   isOpen,
@@ -60,19 +108,18 @@ export const ScrapLossModal: React.FC<ScrapLossModalProps> = ({
     ? stockBalances.find((item) => item.materialId === selectedMaterialId)
     : undefined;
 
-  const hasMaterialSelected = !isSelectionMode || Boolean(selectedStockItem);
-  const effectiveMaterialId = materialId || selectedMaterialId;
-  const effectiveSku = materialId ? materialSku : selectedStockItem?.materialSku ?? 'N/A';
-  const effectiveName = materialId
-    ? materialName
-    : selectedStockItem?.materialName ?? 'Selecione um insumo abaixo';
-  const effectiveUnit = materialId ? unitMeasure : selectedStockItem?.unitMeasure ?? 'UN';
-  const effectivePhysical = materialId
-    ? currentPhysical
-    : selectedStockItem?.physicalQuantity ?? 0;
-  const effectiveReserved = materialId
-    ? currentReserved
-    : selectedStockItem?.reservedQuantity ?? 0;
+  const {
+    hasMaterialSelected,
+    effectiveMaterialId,
+    effectiveSku,
+    effectiveName,
+    effectiveUnit,
+    effectivePhysical,
+    effectiveReserved,
+  } = resolveMaterialSnapshot(
+    { materialId, materialSku, materialName, unitMeasure, currentPhysical, currentReserved },
+    selectedStockItem
+  );
 
   const {
     register,
@@ -92,7 +139,6 @@ export const ScrapLossModal: React.FC<ScrapLossModalProps> = ({
   });
 
   const isSubmitting = registerMovementMutation.isPending || isFormSubmitting;
-
   const watchedQuantity = watch('quantity');
   const watchedReason = watch('reason');
 
@@ -103,13 +149,12 @@ export const ScrapLossModal: React.FC<ScrapLossModalProps> = ({
     numQuantity > 0 &&
     numQuantity > effectivePhysical;
 
-  let quantityBorderClass =
-    'border-outline-variant focus:ring-primary/20 focus:border-primary';
-  if (errors.quantity) {
-    quantityBorderClass = 'border-rose-500 focus:ring-rose-500/20';
-  } else if (isExceedingStock) {
-    quantityBorderClass = 'border-amber-500 focus:ring-amber-500/20';
-  }
+  const quantityBorderClass = getQuantityBorderClass(Boolean(errors.quantity), isExceedingStock);
+  const selectPlaceholder = getSelectPlaceholder(
+    isLoadingBalances,
+    isErrorBalances,
+    stockBalances.length
+  );
 
   const handleClose = useCallback(() => {
     if (isSubmitting) return;
@@ -174,21 +219,11 @@ export const ScrapLossModal: React.FC<ScrapLossModalProps> = ({
     }
   };
 
-  let selectPlaceholder = 'Selecione um insumo em estoque...';
-  if (isLoadingBalances) {
-    selectPlaceholder = 'Carregando insumos em estoque...';
-  } else if (isErrorBalances) {
-    selectPlaceholder = 'Erro ao carregar insumos';
-  } else if (stockBalances.length === 0) {
-    selectPlaceholder = 'Nenhum insumo cadastrado em estoque';
-  }
-
   return createPortal(
-    <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 animate-fadeIn"
+    <dialog
+      open
+      className="fixed inset-0 z-[9999] m-0 w-full h-full max-w-none max-h-none border-0 bg-transparent flex items-center justify-center p-4 animate-fadeIn"
       data-testid="modal-scrap-loss"
-      // oxlint-disable-next-line jsx-a11y/prefer-tag-over-role
-      role="dialog"
       aria-modal="true"
       aria-labelledby="scrap-loss-title"
     >
@@ -440,6 +475,7 @@ export const ScrapLossModal: React.FC<ScrapLossModalProps> = ({
               <input
                 id="scrap-reference-doc"
                 type="text"
+                autoComplete="off"
                 placeholder="Ex: OS-2026-0042 ou LAUDO"
                 disabled={isSubmitting}
                 data-testid="input-scrap-doc"
@@ -459,6 +495,7 @@ export const ScrapLossModal: React.FC<ScrapLossModalProps> = ({
               <input
                 id="scrap-registered-by"
                 type="text"
+                autoComplete="off"
                 placeholder="Oficina / Fábrica"
                 disabled={isSubmitting}
                 data-testid="input-scrap-operator"
@@ -497,7 +534,7 @@ export const ScrapLossModal: React.FC<ScrapLossModalProps> = ({
           </div>
         </form>
       </div>
-    </div>,
+    </dialog>,
     document.body
   );
 };

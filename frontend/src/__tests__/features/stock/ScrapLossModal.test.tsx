@@ -69,7 +69,7 @@ describe('ScrapLossModal — [US-21.7] Modal de Registro de Perdas/Sucata', () =
 
       const modal = screen.getByTestId('modal-scrap-loss');
       expect(modal).toBeInTheDocument();
-      expect(modal).toHaveAttribute('role', 'dialog');
+      expect(screen.getByRole('dialog')).toBe(modal);
       expect(modal).toHaveAttribute('aria-modal', 'true');
       expect(modal).toHaveAttribute('aria-labelledby', 'scrap-loss-title');
       expect(screen.getByText('Registrar Perda / Sucata')).toBeInTheDocument();
