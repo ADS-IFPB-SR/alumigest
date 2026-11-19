@@ -1,5 +1,6 @@
 import { api } from '@/lib/api';
 import type {
+  OrderStockAlert,
   StockFilterParams,
   StockItem,
   StockMovement,
@@ -60,5 +61,14 @@ export const stockApi = {
    */
   cancelReservationsForOrder: async (orderId: string): Promise<void> => {
     await api.post(`/stock/cancel-reservations/${orderId}`);
+  },
+
+  /**
+   * Consulta o status Make-to-Order agregado dos materiais reservados de uma O.S.
+   * Retorna o pior alertStatus e a lista de insumos com déficit (US-21.4).
+   */
+  getOrderStockAlert: async (orderId: string): Promise<OrderStockAlert> => {
+    const { data } = await api.get<OrderStockAlert>(`/stock/orders/${orderId}/alert`);
+    return data;
   },
 };

@@ -8,9 +8,12 @@ import br.edu.ifpb.alumigest.orders.domain.Order;
 import br.edu.ifpb.alumigest.orders.domain.OrderItem;
 import br.edu.ifpb.alumigest.orders.domain.OrderItemOption;
 import br.edu.ifpb.alumigest.orders.repository.OrderRepository;
+import br.edu.ifpb.alumigest.stock.domain.StockAlertStatus;
 import br.edu.ifpb.alumigest.stock.domain.StockItem;
 import br.edu.ifpb.alumigest.stock.domain.StockMovement;
 import br.edu.ifpb.alumigest.stock.domain.StockMovementType;
+import br.edu.ifpb.alumigest.stock.dto.OrderStockAlertResponseDTO;
+import br.edu.ifpb.alumigest.stock.dto.OrderStockAlertResponseDTO.MissingMaterialDTO;
 import br.edu.ifpb.alumigest.stock.dto.StockItemResponseDTO;
 import br.edu.ifpb.alumigest.stock.dto.StockMovementRequestDTO;
 import br.edu.ifpb.alumigest.stock.dto.StockMovementResponseDTO;
@@ -18,10 +21,12 @@ import br.edu.ifpb.alumigest.stock.mapper.StockMapper;
 import br.edu.ifpb.alumigest.stock.repository.StockItemRepository;
 import br.edu.ifpb.alumigest.stock.repository.StockMovementRepository;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -228,6 +233,52 @@ public class StockService implements StockPort {
         return stockItemRepository.findAllWithMaterial().stream()
             .map(stockMapper::toItemResponseDTO)
             .toList();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public OrderStockAlertResponseDTO getOrderStockAlert(UUID orderId) {
+        findOrderOrThrow(orderId);
+        Map<UUID, BigDecimal> pendingReservations = computeNetPendingReservations(orderId);
+
+        if (pendingReservations.isEmpty()) {
+            return new OrderStockAlertResponseDTO(StockAlertStatus.IN_STOCK, List.of());
+        }
+
+        return buildOrderStockAlert(pendingReservations);
+    }
+
+    private OrderStockAlertResponseDTO buildOrderStockAlert(Map<UUID, BigDecimal> pendingReservations) {
+        List<StockItem> stockItems = stockItemRepository.findAllByMaterialIdIn(pendingReservations.keySet());
+        Map<UUID, StockItem> itemsByMaterialId = stockItems.stream()
+            .collect(Collectors.toMap(item -> item.getMaterial().getId(), item -> item));
+
+        List<MissingMaterialDTO> missingMaterials = new ArrayList<>();
+        StockAlertStatus worstStatus = StockAlertStatus.IN_STOCK;
+
+        for (Map.Entry<UUID, BigDecimal> entry : pendingReservations.entrySet()) {
+            UUID materialId = entry.getKey();
+            BigDecimal reserved = entry.getValue();
+
+            StockItem item = itemsByMaterialId.get(materialId);
+            if (item == null) {
+                worstStatus = StockAlertStatus.NEED_PURCHASE;
+                continue;
+            }
+
+            StockAlertStatus itemStatus = item.resolveAlertStatus();
+            if (itemStatus.isMoreCriticalThan(worstStatus)) {
+                worstStatus = itemStatus;
+            }
+
+            if (itemStatus == StockAlertStatus.NEED_PURCHASE) {
+                missingMaterials.add(stockMapper.toMissingMaterialDTO(item, reserved));
+            }
+        }
+
+        return new OrderStockAlertResponseDTO(worstStatus, List.copyOf(missingMaterials));
     }
 
     /**

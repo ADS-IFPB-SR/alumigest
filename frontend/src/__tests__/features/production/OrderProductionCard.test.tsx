@@ -458,4 +458,115 @@ describe('OrderProductionCard Component', () => {
       expect(mockOnMoveOrder).toHaveBeenCalledWith('order-uuid-1', 'IN_PRODUCTION');
     });
   });
+
+  describe('Indicador Visual Make-to-Order de Estoque (US-21.4)', () => {
+    it('deve renderizar a tag 🔴 "Falta Insumo / Comprar" quando a O.S. tiver insumos com saldo negativo (NEED_PURCHASE)', () => {
+      render(
+        <OrderProductionCard
+          order={baseOrder}
+          onClickDetails={mockOnClickDetails}
+          stockAlert={{
+            alertStatus: 'NEED_PURCHASE',
+            missingMaterials: [
+              {
+                materialName: 'Perfil Linha Suprema 50x50',
+                materialSku: 'ALU-5050',
+                availableQuantity: -4.5,
+                reservedQuantity: 10,
+                unitMeasure: 'm',
+              },
+            ],
+          }}
+        />
+      );
+
+      const badge = screen.getByTestId('badge-stock-need-purchase');
+      expect(badge).toBeInTheDocument();
+      expect(badge).toHaveTextContent('Falta Insumo / Comprar');
+      expect(badge).toHaveAttribute(
+        'title',
+        expect.stringContaining('Perfil Linha Suprema 50x50')
+      );
+    });
+
+    it('deve exibir o tooltip com a lista de insumos faltantes e déficits ao passar o mouse', () => {
+      render(
+        <OrderProductionCard
+          order={baseOrder}
+          onClickDetails={mockOnClickDetails}
+          stockAlert={{
+            alertStatus: 'NEED_PURCHASE',
+            missingMaterials: [
+              {
+                materialName: 'Vidro Temperado 8mm Incolor',
+                materialSku: 'VID-008',
+                availableQuantity: -2,
+                reservedQuantity: 6,
+                unitMeasure: 'm²',
+              },
+            ],
+          }}
+        />
+      );
+
+      const badge = screen.getByTestId('badge-stock-need-purchase');
+      fireEvent.mouseEnter(badge);
+
+      const tooltip = screen.getByRole('tooltip');
+      expect(tooltip).toBeInTheDocument();
+      expect(tooltip).toHaveTextContent('Vidro Temperado 8mm Incolor');
+      expect(tooltip).toHaveTextContent('déficit: 2 m²');
+    });
+
+    it('deve renderizar a tag 🟢 "Insumos Disponíveis" quando todos os insumos estiverem fisicamente disponíveis (IN_STOCK)', () => {
+      render(
+        <OrderProductionCard
+          order={baseOrder}
+          onClickDetails={mockOnClickDetails}
+          stockAlert={{
+            alertStatus: 'IN_STOCK',
+            missingMaterials: [],
+          }}
+        />
+      );
+
+      const badge = screen.getByTestId('badge-stock-in-stock');
+      expect(badge).toBeInTheDocument();
+      expect(badge).toHaveTextContent('Insumos Disponíveis');
+      expect(badge).toHaveAttribute(
+        'title',
+        'Todos os insumos estão fisicamente disponíveis para produção.'
+      );
+    });
+
+    it('deve renderizar a tag 🟠 "Ponto de Pedido" quando os insumos estiverem em ORDER_POINT', () => {
+      render(
+        <OrderProductionCard
+          order={baseOrder}
+          onClickDetails={mockOnClickDetails}
+          stockAlert={{
+            alertStatus: 'ORDER_POINT',
+            missingMaterials: [],
+          }}
+        />
+      );
+
+      const badge = screen.getByTestId('badge-stock-order-point');
+      expect(badge).toBeInTheDocument();
+      expect(badge).toHaveTextContent('Ponto de Pedido');
+    });
+
+    it('NÃO deve renderizar badge de estoque quando stockAlert for undefined (carregamento ou sem dados)', () => {
+      render(
+        <OrderProductionCard
+          order={baseOrder}
+          onClickDetails={mockOnClickDetails}
+        />
+      );
+
+      expect(screen.queryByTestId('badge-stock-need-purchase')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('badge-stock-in-stock')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('badge-stock-order-point')).not.toBeInTheDocument();
+    });
+  });
 });

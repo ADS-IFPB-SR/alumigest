@@ -1,8 +1,15 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import React from 'react';
+import {
+  QueryClient,
+  QueryClientContext,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 import type { AxiosError } from 'axios';
 import toast from 'react-hot-toast';
 import { stockApi } from '../api/stockApi';
-import type { StockFilterParams, StockMovementRequest } from '../types';
+import type { OrderStockAlert, StockFilterParams, StockMovementRequest } from '../types';
 
 interface ApiErrorData {
   message?: string;
@@ -16,6 +23,13 @@ function extractErrorMessage(error: unknown, fallback: string): string {
   }
   return fallback;
 }
+
+// Fallback client defensivo para testes unitários isolados que não fornecem QueryClientProvider
+const fallbackClient = new QueryClient({
+  defaultOptions: {
+    queries: { enabled: false, retry: false },
+  },
+});
 
 /**
  * Hook para consultar os saldos consolidados de estoque com filtros reativos.
@@ -49,6 +63,30 @@ export const useStockMovements = (materialId?: string) => {
 };
 
 /**
+ * Hook para consultar o status Make-to-Order agregado dos materiais reservados de uma O.S.
+ * Retorna alertStatus (pior status) e lista de insumos com déficit (US-21.4).
+ * Suporta fallback transparente quando renderizado fora de um QueryClientProvider.
+ */
+export const useStockAlertForOrder = (orderId: string | undefined): {
+  data: OrderStockAlert | undefined;
+  isLoading: boolean;
+} => {
+  const contextClient = React.useContext(QueryClientContext);
+  const clientToUse = contextClient ?? fallbackClient;
+  const isEnabled = Boolean(orderId) && Boolean(contextClient);
+
+  return useQuery(
+    {
+      queryKey: ['stock-order-alert', orderId],
+      queryFn: () => stockApi.getOrderStockAlert(orderId!),
+      enabled: isEnabled,
+      staleTime: 30_000,
+    },
+    clientToUse
+  );
+};
+
+/**
  * Hook de mutação para registro manual de movimentação de estoque.
  */
 export const useRegisterStockMovement = () => {
@@ -59,7 +97,9 @@ export const useRegisterStockMovement = () => {
     onSuccess: () => {
       toast.success('Movimentação registrada com sucesso no Kardex!');
       queryClient.invalidateQueries({ queryKey: ['stock-balances'] });
+      queryClient.invalidateQueries({ queryKey: ['stock-item'] });
       queryClient.invalidateQueries({ queryKey: ['stock-movements'] });
+      queryClient.invalidateQueries({ queryKey: ['stock-order-alert'] });
     },
     onError: (error: unknown) => {
       console.error('Erro ao registrar movimentação de estoque:', error);
@@ -80,6 +120,7 @@ export const useReserveStockForOrder = () => {
       queryClient.invalidateQueries({ queryKey: ['stock-balances'] });
       queryClient.invalidateQueries({ queryKey: ['stock-item'] });
       queryClient.invalidateQueries({ queryKey: ['stock-movements'] });
+      queryClient.invalidateQueries({ queryKey: ['stock-order-alert'] });
     },
     onError: (error: unknown) => {
       console.error('Erro ao reservar estoque:', error);
@@ -101,6 +142,7 @@ export const useConsumeStockForOrder = () => {
       queryClient.invalidateQueries({ queryKey: ['stock-balances'] });
       queryClient.invalidateQueries({ queryKey: ['stock-item'] });
       queryClient.invalidateQueries({ queryKey: ['stock-movements'] });
+      queryClient.invalidateQueries({ queryKey: ['stock-order-alert'] });
     },
     onError: (error: unknown) => {
       console.error('Erro ao realizar baixa física de estoque:', error);
@@ -122,6 +164,7 @@ export const useCancelStockReservationsForOrder = () => {
       queryClient.invalidateQueries({ queryKey: ['stock-balances'] });
       queryClient.invalidateQueries({ queryKey: ['stock-item'] });
       queryClient.invalidateQueries({ queryKey: ['stock-movements'] });
+      queryClient.invalidateQueries({ queryKey: ['stock-order-alert'] });
     },
     onError: (error: unknown) => {
       console.error('Erro ao estornar reservas de estoque:', error);

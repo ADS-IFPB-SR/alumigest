@@ -4,8 +4,10 @@ import br.edu.ifpb.alumigest.catalog.domain.Material;
 import br.edu.ifpb.alumigest.catalog.domain.MaterialCategoryType;
 import br.edu.ifpb.alumigest.stock.domain.StockItem;
 import br.edu.ifpb.alumigest.stock.domain.StockMovement;
+import br.edu.ifpb.alumigest.stock.dto.OrderStockAlertResponseDTO.MissingMaterialDTO;
 import br.edu.ifpb.alumigest.stock.dto.StockItemResponseDTO;
 import br.edu.ifpb.alumigest.stock.dto.StockMovementResponseDTO;
+import java.math.BigDecimal;
 import org.springframework.stereotype.Component;
 
 /**
@@ -68,6 +70,25 @@ public class StockMapper {
         );
     }
 
+    /**
+     * Converte um {@link StockItem} em {@link MissingMaterialDTO} com a quantidade reservada informada.
+     *
+     * @param item item de estoque com saldo em déficit
+     * @param reservedQuantity quantidade reservada para a O.S.
+     * @return DTO com informações do insumo faltante
+     */
+    public MissingMaterialDTO toMissingMaterialDTO(StockItem item, BigDecimal reservedQuantity) {
+        Material material = item.getMaterial();
+        String unitMeasure = material.getUnitMeasure() != null ? material.getUnitMeasure().name() : "";
+        return new MissingMaterialDTO(
+            material.getName(),
+            material.getSkuCode(),
+            item.getAvailableQuantity(),
+            reservedQuantity,
+            unitMeasure
+        );
+    }
+
     private String resolveCategory(Material material) {
         if (material.getGroup() == null || material.getGroup().getCode() == null) {
             return null;
@@ -77,4 +98,3 @@ public class StockMapper {
         return categoryType != null ? categoryType.name() : groupCode;
     }
 }
-

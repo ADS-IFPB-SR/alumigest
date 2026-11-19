@@ -1,5 +1,6 @@
 package br.edu.ifpb.alumigest.stock.service;
 
+import br.edu.ifpb.alumigest.stock.dto.OrderStockAlertResponseDTO;
 import br.edu.ifpb.alumigest.stock.dto.StockItemResponseDTO;
 import br.edu.ifpb.alumigest.stock.dto.StockMovementRequestDTO;
 import br.edu.ifpb.alumigest.stock.dto.StockMovementResponseDTO;
@@ -67,4 +68,17 @@ public interface StockPort {
      * @return Lista com os saldos consolidados
      */
     List<StockItemResponseDTO> listStockBalances();
+
+    /**
+     * Retorna o status Make-to-Order agregado dos materiais com reserva pendente
+     * para a Ordem de Serviço informada.
+     *
+     * <p>Calcula o pior {@code StockAlertStatus} entre todos os insumos reservados
+     * para a O.S., além de listar os materiais com déficit de saldo disponível
+     * para exibição no tooltip do card Kanban (US-21.4).
+     *
+     * @param orderId Identificador da Ordem de Serviço
+     * @return DTO com o status agregado e lista de insumos em falta
+     */
+    OrderStockAlertResponseDTO getOrderStockAlert(UUID orderId);
 }

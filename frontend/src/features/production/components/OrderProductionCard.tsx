@@ -5,6 +5,9 @@ import { normalizeProductionStatus, type ProductionStatus } from '../types';
 import { formatDate } from '../../orders/utils/formatDate';
 import { getDeadlineStatus } from '../utils/deadlineUtils';
 import { calculateTotalPieces } from '../utils/kanbanUtils';
+import { StockAlertBadge } from '../../stock/components/StockAlertBadge';
+import { useStockAlertForOrder } from '../../stock/hooks/useStock';
+import type { OrderStockAlert } from '../../stock/types';
 
 /** Mapa de próxima etapa na máquina de estados de produção */
 const NEXT_STATUS_MAP: Partial<Record<ProductionStatus, { status: ProductionStatus; label: string }>> = {
@@ -17,13 +20,35 @@ interface OrderProductionCardProps {
   onClickDetails: (orderId: string) => void;
   /** Callback opcional para mover o card para a próxima etapa via botão (fallback touch/mobile) */
   onMoveOrder?: (orderId: string, newStatus: ProductionStatus) => void;
+  /** Status Make-to-Order opcional (injetável para testes ou fallback síncrono) */
+  stockAlert?: OrderStockAlert | null;
 }
 
 export const OrderProductionCard: React.FC<OrderProductionCardProps> = ({
   order,
   onClickDetails,
   onMoveOrder,
+  stockAlert: propStockAlert,
 }) => {
+  // Consulta o status Make-to-Order agregado de estoque (US-21.4)
+  const stockAlertQuery = useStockAlertForOrder(order.id);
+  const activeStockAlert = propStockAlert !== undefined ? propStockAlert : stockAlertQuery.data;
+
+  // Monta texto descritivo do tooltip para os insumos faltantes
+  let stockTooltip = '';
+  if (activeStockAlert) {
+    if (activeStockAlert.missingMaterials && activeStockAlert.missingMaterials.length > 0) {
+      const itemsList = activeStockAlert.missingMaterials
+        .map((m) => `• ${m.materialName} (déficit: ${Math.abs(m.availableQuantity)} ${m.unitMeasure})`)
+        .join('\n');
+      stockTooltip = `Insumos faltantes para esta O.S.:\n${itemsList}`;
+    } else if (activeStockAlert.alertStatus === 'IN_STOCK') {
+      stockTooltip = 'Todos os insumos estão fisicamente disponíveis para produção.';
+    } else if (activeStockAlert.alertStatus === 'ORDER_POINT') {
+      stockTooltip = 'Insumos disponíveis, mas no ponto de pedido.';
+    }
+  }
+
   // 1. Descobre o status atual normalizado primeiro
   const currentNormalized = normalizeProductionStatus(order.status);
   const nextStep = currentNormalized ? NEXT_STATUS_MAP[currentNormalized] ?? null : null;
@@ -83,10 +108,12 @@ export const OrderProductionCard: React.FC<OrderProductionCardProps> = ({
     >
       {/* 1. Header: Código da OS, Orçamento Origem e Alerta de Prazo */}
       <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="font-bold text-slate-950 text-sm tracking-tight">{order.codigo}</span>
+        <div className="flex items-center gap-1.5 min-w-0">
+          <span className="font-bold text-slate-950 text-sm tracking-tight whitespace-nowrap truncate">
+            {order.codigo}
+          </span>
           {order.orcamentoCodigo && (
-            <span className="text-[10px] font-bold text-slate-800 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-300">
+            <span className="text-[10px] font-bold text-slate-800 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-300 whitespace-nowrap shrink-0">
               {order.orcamentoCodigo}
             </span>
           )}
@@ -94,13 +121,22 @@ export const OrderProductionCard: React.FC<OrderProductionCardProps> = ({
 
         {alertConfig && (
           <span
-            className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border ${alertConfig.color}`}
+            className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border whitespace-nowrap shrink-0 ${alertConfig.color}`}
           >
             {alertConfig.icon}
             {alertConfig.label}
           </span>
         )}
       </div>
+
+      {/* 1b. Badge Make-to-Order (US-21.4) — linha dedicada para evitar overflow */}
+      {activeStockAlert && (
+        <StockAlertBadge
+          status={activeStockAlert.alertStatus}
+          variant="kanban"
+          tooltip={stockTooltip}
+        />
+      )}
 
       {/* 2. Cliente e Esquadrias com Container Destacado */}
       <div className="space-y-0.5">

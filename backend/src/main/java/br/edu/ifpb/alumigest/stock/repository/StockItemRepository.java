@@ -2,6 +2,7 @@ package br.edu.ifpb.alumigest.stock.repository;
 
 import br.edu.ifpb.alumigest.stock.domain.StockItem;
 import jakarta.persistence.LockModeType;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -26,4 +27,7 @@ public interface StockItemRepository extends JpaRepository<StockItem, UUID> {
 
     @Query("SELECT s FROM StockItem s JOIN FETCH s.material m LEFT JOIN FETCH m.group ORDER BY m.name ASC")
     List<StockItem> findAllWithMaterial();
+
+    @Query("SELECT s FROM StockItem s JOIN FETCH s.material m WHERE m.id IN :materialIds")
+    List<StockItem> findAllByMaterialIdIn(@Param("materialIds") Collection<UUID> materialIds);
 }
