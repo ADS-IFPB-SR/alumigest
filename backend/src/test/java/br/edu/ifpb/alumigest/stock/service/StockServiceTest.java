@@ -3,7 +3,10 @@ package br.edu.ifpb.alumigest.stock.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -17,6 +20,7 @@ import br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException;
 import br.edu.ifpb.alumigest.orders.domain.Order;
 import br.edu.ifpb.alumigest.orders.domain.OrderItem;
 import br.edu.ifpb.alumigest.orders.domain.OrderItemOption;
+import br.edu.ifpb.alumigest.orders.domain.OrderMaterialsReservationEvent;
 import br.edu.ifpb.alumigest.orders.repository.OrderRepository;
 import br.edu.ifpb.alumigest.stock.domain.StockAlertStatus;
 import br.edu.ifpb.alumigest.stock.domain.StockItem;
@@ -39,6 +43,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataAccessResourceFailureException;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("StockService — Testes Unitários de Ciclo de Vida e Kardex (US-21.2)")
@@ -340,6 +345,161 @@ class StockServiceTest {
 
         assertThatThrownBy(() -> stockService.cancelReservationsForOrder(missingId))
             .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("reserveMaterials: deve reservar materiais com saldo disponível positivo mantendo invariante e gravando PRODUCTION_RESERVATION")
+    void shouldReserveMaterialsWithPositiveAvailableBalance() {
+        UUID orderId = UUID.randomUUID();
+        UUID materialId = UUID.randomUUID();
+        Material material = buildMaterial(materialId, "VIDRO", "VID-10MM", "Vidro Temperado 10mm");
+        Order order = buildOrderWithMaterial(orderId, material, new BigDecimal("6.50"));
+
+        StockItem stockItem = new StockItem(material);
+        stockItem.addPhysical(new BigDecimal("20.00"));
+
+        when(orderRepository.findByIdWithDetails(orderId)).thenReturn(Optional.of(order));
+        when(stockMovementRepository.findByOrderIdOrderByCreatedAtAsc(orderId)).thenReturn(List.of());
+        when(stockItemRepository.findByMaterialIdForUpdate(materialId)).thenReturn(Optional.of(stockItem));
+        when(stockItemRepository.saveAndFlush(any(StockItem.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(stockMovementRepository.saveAndFlush(any(StockMovement.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        stockService.reserveMaterials(orderId);
+
+        assertThat(stockItem.getPhysicalQuantity()).isEqualByComparingTo("20.00");
+        assertThat(stockItem.getReservedQuantity()).isEqualByComparingTo("6.50");
+        assertThat(stockItem.getAvailableQuantity()).isEqualByComparingTo("13.50");
+        assertThat(stockItem.resolveAlertStatus()).isEqualTo(StockAlertStatus.IN_STOCK);
+
+        ArgumentCaptor<StockMovement> movementCaptor = ArgumentCaptor.forClass(StockMovement.class);
+        verify(stockMovementRepository).saveAndFlush(movementCaptor.capture());
+        StockMovement reservation = movementCaptor.getValue();
+        assertThat(reservation.getType()).isEqualTo(StockMovementType.PRODUCTION_RESERVATION);
+        assertThat(reservation.getQuantity()).isEqualByComparingTo("6.50");
+        assertThat(reservation.getPreviousPhysicalQuantity()).isEqualByComparingTo("20.00");
+        assertThat(reservation.getNewPhysicalQuantity()).isEqualByComparingTo("20.00");
+        assertThat(reservation.getPreviousReservedQuantity()).isEqualByComparingTo("0.00");
+        assertThat(reservation.getNewReservedQuantity()).isEqualByComparingTo("6.50");
+        assertThat(reservation.getOrderId()).isEqualTo(orderId);
+        assertThat(reservation.getReferenceDocument()).isEqualTo("OS-2026-0001");
+    }
+
+    @Test
+    @DisplayName("reserveMaterials: deve concluir reserva Make-to-Order (RN-05) com disponível negativo, sinalizar NEED_PURCHASE e auto-criar StockItem")
+    void shouldReserveMaterialsInMakeToOrderWithNegativeAvailableBalance() {
+        UUID orderId = UUID.randomUUID();
+        UUID existingMaterialId = UUID.fromString("00000000-0000-0000-0000-000000000001");
+        UUID newMaterialId = UUID.fromString("00000000-0000-0000-0000-000000000002");
+
+        Material existingMaterial = buildMaterial(existingMaterialId, "ALUMINIO", "PER-100", "Perfil Marco");
+        Material newMaterial = buildMaterial(newMaterialId, "FERRAGEM", "FER-200", "Kit Roldana");
+
+        Order order = buildOrderWithMaterial(orderId, existingMaterial, new BigDecimal("10.00"));
+        OrderItemOption secondOption = OrderItemOption.builder()
+            .id(UUID.randomUUID())
+            .material(newMaterial)
+            .materialName(newMaterial.getName())
+            .unitMeasure("UN")
+            .categoryType("HARDWARE")
+            .quantity(new BigDecimal("4.00"))
+            .build();
+        order.getItems().getFirst().addOption(secondOption);
+
+        StockItem existingStockItem = new StockItem(existingMaterial);
+        existingStockItem.addPhysical(new BigDecimal("3.00"));
+
+        when(orderRepository.findByIdWithDetails(orderId)).thenReturn(Optional.of(order));
+        when(stockMovementRepository.findByOrderIdOrderByCreatedAtAsc(orderId)).thenReturn(List.of());
+        when(stockItemRepository.findByMaterialIdForUpdate(existingMaterialId))
+            .thenReturn(Optional.of(existingStockItem));
+        when(stockItemRepository.findByMaterialIdForUpdate(newMaterialId))
+            .thenReturn(Optional.empty());
+        when(materialRepository.findById(newMaterialId)).thenReturn(Optional.of(newMaterial));
+        when(stockItemRepository.saveAndFlush(any(StockItem.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(stockMovementRepository.saveAndFlush(any(StockMovement.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        stockService.reserveMaterials(orderId);
+
+        assertThat(existingStockItem.getPhysicalQuantity()).isEqualByComparingTo("3.00");
+        assertThat(existingStockItem.getReservedQuantity()).isEqualByComparingTo("10.00");
+        assertThat(existingStockItem.getAvailableQuantity()).isEqualByComparingTo("-7.00");
+        assertThat(existingStockItem.resolveAlertStatus()).isEqualTo(StockAlertStatus.NEED_PURCHASE);
+
+        ArgumentCaptor<StockItem> savedItemsCaptor = ArgumentCaptor.forClass(StockItem.class);
+        verify(stockItemRepository, times(3)).saveAndFlush(savedItemsCaptor.capture());
+        StockItem autoCreatedAndReserved = savedItemsCaptor.getAllValues().getLast();
+        assertThat(autoCreatedAndReserved.getMaterial().getId()).isEqualTo(newMaterialId);
+        assertThat(autoCreatedAndReserved.getPhysicalQuantity()).isEqualByComparingTo("0.00");
+        assertThat(autoCreatedAndReserved.getReservedQuantity()).isEqualByComparingTo("4.00");
+        assertThat(autoCreatedAndReserved.getAvailableQuantity()).isEqualByComparingTo("-4.00");
+        assertThat(autoCreatedAndReserved.resolveAlertStatus()).isEqualTo(StockAlertStatus.NEED_PURCHASE);
+
+        ArgumentCaptor<StockMovement> movementCaptor = ArgumentCaptor.forClass(StockMovement.class);
+        verify(stockMovementRepository, times(2)).saveAndFlush(movementCaptor.capture());
+        assertThat(movementCaptor.getAllValues())
+            .extracting(StockMovement::getType)
+            .containsOnly(StockMovementType.PRODUCTION_RESERVATION);
+    }
+
+    @Test
+    @DisplayName("reserveMaterials: deve ser idempotente quando a O.S. já possui reservas pendentes")
+    void shouldBeIdempotentWhenReservingMaterialsTwiceForSameOrder() {
+        UUID orderId = UUID.randomUUID();
+        UUID materialId = UUID.randomUUID();
+        Material material = buildMaterial(materialId, "VIDRO", "VID-8MM", "Vidro Temperado 8mm");
+        Order order = buildOrderWithMaterial(orderId, material, new BigDecimal("5.00"));
+        StockItem stockItem = new StockItem(material);
+
+        StockMovement activeReservation = StockMovement.builder()
+            .stockItem(stockItem)
+            .material(material)
+            .orderId(orderId)
+            .type(StockMovementType.PRODUCTION_RESERVATION)
+            .quantity(new BigDecimal("5.00"))
+            .previousPhysicalQuantity(BigDecimal.ZERO)
+            .newPhysicalQuantity(BigDecimal.ZERO)
+            .previousReservedQuantity(BigDecimal.ZERO)
+            .newReservedQuantity(new BigDecimal("5.00"))
+            .build();
+
+        when(orderRepository.findByIdWithDetails(orderId)).thenReturn(Optional.of(order));
+        when(stockMovementRepository.findByOrderIdOrderByCreatedAtAsc(orderId))
+            .thenReturn(List.of(activeReservation));
+
+        stockService.reserveMaterials(orderId);
+
+        verify(stockItemRepository, never()).saveAndFlush(any());
+        verify(stockMovementRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
+    @DisplayName("reserveMaterials e StockOrderEventListener: deve propagar exceção de infraestrutura para rollback e delegar evento")
+    void shouldPropagateInfrastructureExceptionOnReserveMaterialsAndDelegateFromListener() {
+        UUID orderId = UUID.randomUUID();
+        UUID materialId = UUID.randomUUID();
+        Material material = buildMaterial(materialId, "ALUMINIO", "PER-500", "Perfil Tubular");
+        Order order = buildOrderWithMaterial(orderId, material, new BigDecimal("2.00"));
+        StockItem stockItem = new StockItem(material);
+
+        when(orderRepository.findByIdWithDetails(orderId)).thenReturn(Optional.of(order));
+        when(stockMovementRepository.findByOrderIdOrderByCreatedAtAsc(orderId)).thenReturn(List.of());
+        when(stockItemRepository.findByMaterialIdForUpdate(materialId)).thenReturn(Optional.of(stockItem));
+        doThrow(new DataAccessResourceFailureException("Falha de conexão simulada"))
+            .when(stockItemRepository).saveAndFlush(any(StockItem.class));
+
+        assertThatThrownBy(() -> stockService.reserveMaterials(orderId))
+            .isInstanceOf(DataAccessResourceFailureException.class)
+            .hasMessageContaining("Falha de conexão simulada");
+
+        verify(stockMovementRepository, never()).saveAndFlush(any());
+
+        StockPort portMock = mock(StockPort.class);
+        StockOrderEventListener listener = new StockOrderEventListener(portMock);
+        listener.onOrderMaterialsReservation(null);
+        listener.onOrderMaterialsReservation(new OrderMaterialsReservationEvent(null));
+        listener.onOrderMaterialsReservation(new OrderMaterialsReservationEvent(orderId));
+
+        verify(portMock).reserveMaterials(orderId);
     }
 
     @Test

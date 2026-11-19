@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { StockAlertStatus } from '../types';
 
@@ -69,22 +69,51 @@ export const StockAlertBadge: React.FC<StockAlertBadgeProps> = ({
   const [tooltipCoords, setTooltipCoords] = useState<{
     top: number;
     left: number;
-    placement: 'top' | 'bottom';
   } | null>(null);
 
   const badgeRef = useRef<HTMLSpanElement>(null);
+  const tooltipRef = useRef<HTMLSpanElement>(null);
   const effectiveTooltip = tooltip || title;
 
-  const handleMouseEnter = () => {
-    if (badgeRef.current) {
-      const rect = badgeRef.current.getBoundingClientRect();
-      const isCloseToTop = rect.top < 60;
-      setTooltipCoords({
-        top: isCloseToTop ? rect.bottom + 6 : rect.top - 6,
-        left: rect.left + rect.width / 2,
-        placement: isCloseToTop ? 'bottom' : 'top',
-      });
+  const updateTooltipPosition = useCallback(() => {
+    if (!badgeRef.current || typeof window === 'undefined') return;
+    const badgeRect = badgeRef.current.getBoundingClientRect();
+
+    const tooltipEl = tooltipRef.current;
+    const tooltipWidth = tooltipEl ? tooltipEl.offsetWidth || 280 : 280;
+    const tooltipHeight = tooltipEl ? tooltipEl.offsetHeight || 60 : 60;
+
+    const viewportWidth = window.innerWidth || 1024;
+    const viewportHeight = window.innerHeight || 768;
+    const PADDING = 8;
+    const GAP = 6;
+
+    const spaceAbove = badgeRect.top;
+    const spaceBelow = viewportHeight - badgeRect.bottom;
+
+    let top: number;
+    if (spaceAbove >= tooltipHeight + GAP + PADDING) {
+      top = badgeRect.top - tooltipHeight - GAP;
+    } else if (spaceBelow >= tooltipHeight + GAP + PADDING) {
+      top = badgeRect.bottom + GAP;
+    } else if (spaceAbove >= spaceBelow) {
+      top = Math.max(PADDING, badgeRect.top - tooltipHeight - GAP);
+    } else {
+      top = Math.min(viewportHeight - tooltipHeight - PADDING, badgeRect.bottom + GAP);
     }
+
+    let left = badgeRect.left + (badgeRect.width - tooltipWidth) / 2;
+    if (left < PADDING) {
+      left = PADDING;
+    } else if (left + tooltipWidth > viewportWidth - PADDING) {
+      left = Math.max(PADDING, viewportWidth - tooltipWidth - PADDING);
+    }
+
+    setTooltipCoords({ top, left });
+  }, []);
+
+  const handleMouseEnter = () => {
+    updateTooltipPosition();
     setShowHoverTooltip(true);
   };
 
@@ -92,6 +121,25 @@ export const StockAlertBadge: React.FC<StockAlertBadgeProps> = ({
     setShowHoverTooltip(false);
     setTooltipCoords(null);
   };
+
+  useLayoutEffect(() => {
+    if (showHoverTooltip) {
+      updateTooltipPosition();
+    }
+  }, [showHoverTooltip, effectiveTooltip, updateTooltipPosition]);
+
+  useEffect(() => {
+    if (!showHoverTooltip) return;
+    const handleReposition = () => {
+      updateTooltipPosition();
+    };
+    window.addEventListener('scroll', handleReposition, true);
+    window.addEventListener('resize', handleReposition);
+    return () => {
+      window.removeEventListener('scroll', handleReposition, true);
+      window.removeEventListener('resize', handleReposition);
+    };
+  }, [showHoverTooltip, updateTooltipPosition]);
 
   const config = STATUS_CONFIG[status] || STATUS_CONFIG.IN_STOCK;
   const displayLabel = label || config.getDefaultLabel({ variant, availableQuantity, unitMeasure });
@@ -112,22 +160,19 @@ export const StockAlertBadge: React.FC<StockAlertBadgeProps> = ({
 
       {showHoverTooltip &&
         effectiveTooltip &&
-        tooltipCoords &&
         typeof document !== 'undefined' &&
         createPortal(
           <span
+            ref={tooltipRef}
             role="tooltip"
             data-testid="stock-alert-tooltip"
             style={{
               position: 'fixed',
-              top: `${tooltipCoords.top}px`,
-              left: `${tooltipCoords.left}px`,
-              transform:
-                tooltipCoords.placement === 'top'
-                  ? 'translate(-50%, -100%)'
-                  : 'translate(-50%, 0)',
+              top: tooltipCoords ? `${tooltipCoords.top}px` : '-9999px',
+              left: tooltipCoords ? `${tooltipCoords.left}px` : '-9999px',
+              visibility: tooltipCoords ? 'visible' : 'hidden',
             }}
-            className="px-2.5 py-1.5 text-[11px] font-normal bg-slate-900 text-white rounded-md shadow-lg z-[9999] whitespace-pre pointer-events-none text-left max-w-xs sm:max-w-md"
+            className="px-2.5 py-1.5 text-[11px] font-normal bg-slate-900 text-white rounded-md shadow-xl z-[99999] whitespace-pre-wrap break-words pointer-events-none text-left max-w-xs sm:max-w-sm"
           >
             {effectiveTooltip}
           </span>,

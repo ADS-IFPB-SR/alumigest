@@ -58,6 +58,9 @@ export const useConvertBudget = (defaultBudgetId?: string) => {
       }
       queryClient.invalidateQueries({ queryKey: ['budgets'] });
       queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['stock-balances'] });
+      queryClient.invalidateQueries({ queryKey: ['stock-item'] });
+      queryClient.invalidateQueries({ queryKey: ['stock-movements'] });
     },
     onError: (error: unknown) => {
       const err = error as { response?: { data?: { message?: string } } };

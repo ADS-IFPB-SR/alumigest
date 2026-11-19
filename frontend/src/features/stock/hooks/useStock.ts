@@ -97,6 +97,7 @@ export const useRegisterStockMovement = () => {
     onSuccess: () => {
       toast.success('Movimentação registrada com sucesso no Kardex!');
       queryClient.invalidateQueries({ queryKey: ['stock-balances'] });
+      queryClient.invalidateQueries({ queryKey: ['stock-item'] });
       queryClient.invalidateQueries({ queryKey: ['stock-movements'] });
       queryClient.invalidateQueries({ queryKey: ['stock-order-alert'] });
     },
@@ -117,6 +118,7 @@ export const useReserveStockForOrder = () => {
     mutationFn: (orderId: string) => stockApi.reserveForOrder(orderId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['stock-balances'] });
+      queryClient.invalidateQueries({ queryKey: ['stock-item'] });
       queryClient.invalidateQueries({ queryKey: ['stock-movements'] });
       queryClient.invalidateQueries({ queryKey: ['stock-order-alert'] });
     },

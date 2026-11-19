@@ -179,22 +179,35 @@ describe('useStock Hooks — Testes de Integração com TanStack Query', () => {
     expect(stockApi.registerMovement).toHaveBeenCalledWith(payload);
     expect(toast.success).toHaveBeenCalledWith('Movimentação registrada com sucesso no Kardex!');
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['stock-balances'] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['stock-item'] });
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['stock-movements'] });
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['stock-order-alert'] });
   });
 
-  it('useReserveStockForOrder deve disparar reserva de materiais', async () => {
+  it('useReserveStockForOrder deve disparar reserva de materiais e invalidar queries de estoque', async () => {
     vi.mocked(stockApi.reserveForOrder).mockResolvedValueOnce();
 
-    const { result } = renderHook(() => useReserveStockForOrder(), {
-      wrapper: createWrapper(),
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
     });
+    const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+
+    const { result } = renderHook(() => useReserveStockForOrder(), { wrapper });
 
     result.current.mutate('order-999');
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     expect(stockApi.reserveForOrder).toHaveBeenCalledWith('order-999');
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['stock-balances'] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['stock-item'] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['stock-movements'] });
   });
 
   it('useConsumeStockForOrder deve disparar baixa física e exibir toast de sucesso', async () => {

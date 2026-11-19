@@ -103,7 +103,7 @@ describe('StockAlertBadge', () => {
       expect(tooltip).toHaveTextContent('Tudo disponível no estoque');
     });
 
-    it('deve posicionar tooltip acima quando houver espaço no topo (top >= 60)', () => {
+    it('deve posicionar tooltip acima quando houver espaço no topo e reposicionar no scroll', () => {
       render(
         <StockAlertBadge
           status="ORDER_POINT"
@@ -127,8 +127,70 @@ describe('StockAlertBadge', () => {
       fireEvent.mouseEnter(badge);
       const tooltip = screen.getByRole('tooltip');
       expect(tooltip).toBeInTheDocument();
-      expect(tooltip.style.top).toBe('144px');
-      expect(tooltip.style.transform).toContain('translate(-50%, -100%)');
+      expect(tooltip.style.top).toBe('84px');
+      expect(tooltip.style.left).toBe('110px');
+
+      // Dispara scroll para garantir que listener de reposicionamento é acionado sem quebrar
+      fireEvent.scroll(window);
+      expect(screen.getByRole('tooltip')).toBeInTheDocument();
+    });
+
+    it('deve posicionar tooltip abaixo quando estiver próximo do topo para não cortar no Kanban', () => {
+      render(
+        <StockAlertBadge
+          status="NEED_PURCHASE"
+          variant="kanban"
+          tooltip="Insumos em falta"
+        />
+      );
+
+      const badge = screen.getByTestId('badge-stock-need-purchase');
+      vi.spyOn(badge, 'getBoundingClientRect').mockReturnValue({
+        top: 20,
+        bottom: 50,
+        left: 300,
+        right: 400,
+        width: 100,
+        height: 30,
+        x: 300,
+        y: 20,
+        toJSON: () => {},
+      });
+
+      fireEvent.mouseEnter(badge);
+      const tooltip = screen.getByRole('tooltip');
+      expect(tooltip).toBeInTheDocument();
+      // Como spaceAbove (20) < 74 e spaceBelow é grande, posiciona abaixo: bottom (50) + GAP (6) = 56px
+      expect(tooltip.style.top).toBe('56px');
+    });
+
+    it('deve ajustar a posição horizontal do tooltip para não vazar a borda direita da viewport', () => {
+      render(
+        <StockAlertBadge
+          status="NEED_PURCHASE"
+          variant="kanban"
+          tooltip="Insumos faltantes múltiplos"
+        />
+      );
+
+      const badge = screen.getByTestId('badge-stock-need-purchase');
+      vi.spyOn(badge, 'getBoundingClientRect').mockReturnValue({
+        top: 150,
+        bottom: 180,
+        left: 950,
+        right: 1020,
+        width: 70,
+        height: 30,
+        x: 950,
+        y: 150,
+        toJSON: () => {},
+      });
+
+      fireEvent.mouseEnter(badge);
+      const tooltip = screen.getByRole('tooltip');
+      expect(tooltip).toBeInTheDocument();
+      // viewportWidth (1024) - tooltipWidth (280) - PADDING (8) = 736px
+      expect(tooltip.style.left).toBe('736px');
     });
   });
 });

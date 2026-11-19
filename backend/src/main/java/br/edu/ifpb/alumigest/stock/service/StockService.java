@@ -71,7 +71,20 @@ public class StockService implements StockPort {
      */
     @Override
     @Transactional
+    public void reserveMaterials(UUID orderId) {
+        executeMaterialReservation(orderId);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @Transactional
     public void reserveMaterialsForOrder(UUID orderId) {
+        executeMaterialReservation(orderId);
+    }
+
+    private void executeMaterialReservation(UUID orderId) {
         Order order = findOrderOrThrow(orderId);
         Map<UUID, BigDecimal> pendingReservations = computeNetPendingReservations(orderId);
         if (!pendingReservations.isEmpty()) {
@@ -87,6 +100,16 @@ public class StockService implements StockPort {
 
             stockItem.reserve(entry.getValue());
             stockItem = stockItemRepository.saveAndFlush(stockItem);
+
+            if (stockItem.getAvailableQuantity().compareTo(BigDecimal.ZERO) < 0) {
+                log.info(
+                    "Reserva Make-to-Order (RN-05) para O.S. {} gerou necessidade líquida de compra "
+                        + "(NEED_PURCHASE) para material {}: saldo disponível = {}.",
+                    order.getCodigo(),
+                    entry.getKey(),
+                    stockItem.getAvailableQuantity()
+                );
+            }
 
             recordMovement(
                 stockItem,
