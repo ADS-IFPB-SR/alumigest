@@ -118,11 +118,7 @@ export const useUpdateOrderStatus = (id?: string) => {
         queryClient.invalidateQueries({ queryKey: ['order', id] });
       }
 
-      if (
-        status === 'WAITING_PRODUCTION' ||
-        status === 'COMPLETED' ||
-        status === 'CANCELLED'
-      ) {
+      if (status === 'COMPLETED' || status === 'CANCELLED') {
         queryClient.invalidateQueries({ queryKey: ['stock-balances'] });
         queryClient.invalidateQueries({ queryKey: ['stock-item'] });
         queryClient.invalidateQueries({ queryKey: ['stock-movements'] });

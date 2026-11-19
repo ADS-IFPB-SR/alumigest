@@ -15,7 +15,6 @@ import br.edu.ifpb.alumigest.orders.domain.OrderCancelledEvent;
 import br.edu.ifpb.alumigest.orders.domain.OrderCompletedEvent;
 import br.edu.ifpb.alumigest.orders.domain.OrderItem;
 import br.edu.ifpb.alumigest.orders.domain.OrderItemOption;
-import br.edu.ifpb.alumigest.orders.domain.OrderMaterialsReservationEvent;
 import br.edu.ifpb.alumigest.orders.domain.OrderStatus;
 import br.edu.ifpb.alumigest.orders.domain.OrderStockCancelledEvent;
 import br.edu.ifpb.alumigest.orders.dto.OrderCancelRequest;
@@ -149,7 +148,6 @@ public class OrderServiceImpl implements OrderService {
         convertItems(budget, order);
 
         order = orderRepository.saveAndFlush(order);
-        eventPublisher.publishEvent(new OrderMaterialsReservationEvent(order.getId()));
         return orderMapper.toResponse(order);
     }
 
@@ -473,9 +471,7 @@ public class OrderServiceImpl implements OrderService {
             );
         }
         Order savedOrder = orderRepository.save(order);
-        if (targetStatus == OrderStatus.WAITING_PRODUCTION) {
-            eventPublisher.publishEvent(new OrderMaterialsReservationEvent(savedOrder.getId()));
-        } else if (targetStatus == OrderStatus.COMPLETED) {
+        if (targetStatus == OrderStatus.COMPLETED) {
             eventPublisher.publishEvent(new OrderCompletedEvent(savedOrder.getId()));
         }
         return orderMapper.toResponse(savedOrder);

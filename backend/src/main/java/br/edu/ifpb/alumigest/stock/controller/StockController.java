@@ -63,7 +63,7 @@ public class StockController {
     @PostMapping("/reserve-for-order/{orderId}")
     @Operation(summary = "Reservar materiais para Ordem de Serviço (Make-to-Order)")
     public ResponseEntity<Void> reserveForOrder(@PathVariable UUID orderId) {
-        stockService.reserveMaterials(orderId);
+        stockService.reserveMaterialsForOrder(orderId);
         return ResponseEntity.noContent().build();
     }
 
