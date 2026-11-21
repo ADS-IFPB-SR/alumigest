@@ -68,6 +68,7 @@ public class StockMapper {
             movement.getNewReservedQuantity(),
             movement.getOrderId(),
             movement.getReferenceDocument(),
+            movement.getSupplier(),
             movement.getReason(),
             movement.getRegisteredBy(),
             movement.getCreatedAt()

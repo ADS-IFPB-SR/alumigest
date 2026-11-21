@@ -167,9 +167,7 @@ public class StockService implements StockPort {
     @Override
     @Transactional
     public StockMovementResponseDTO registerMovement(StockMovementRequestDTO request) {
-        if (request == null || request.materialId() == null || request.type() == null) {
-            throw new BusinessException("Material e tipo de movimentação são obrigatórios.");
-        }
+        validateManualMovementRequest(request);
 
         StockItem stockItem = getOrCreateStockItemForUpdate(request.materialId());
         BigDecimal prevPhysical = stockItem.getPhysicalQuantity();
@@ -343,6 +341,45 @@ public class StockService implements StockPort {
             });
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @Transactional
+    public StockItemResponseDTO provisionStockItem(UUID materialId, BigDecimal minimumStock) {
+        if (materialId == null) {
+            throw new BusinessException("O identificador do material é obrigatório.");
+        }
+        if (minimumStock != null && minimumStock.compareTo(BigDecimal.ZERO) < 0) {
+            throw new BusinessException("O ponto de pedido (estoque mínimo) não pode ser negativo.");
+        }
+
+        StockItem stockItem = getOrCreateStockItemForUpdate(materialId);
+        if (minimumStock != null) {
+            stockItem.updateMinimumStock(minimumStock);
+            stockItem = stockItemRepository.saveAndFlush(stockItem);
+        }
+        return stockMapper.toItemResponseDTO(stockItem);
+    }
+
+    private void validateManualMovementRequest(StockMovementRequestDTO request) {
+        if (request == null || request.materialId() == null || request.type() == null) {
+            throw new BusinessException("Material e tipo de movimentação são obrigatórios.");
+        }
+        if (request.quantity() == null || request.quantity().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new BusinessException("A quantidade movimentada deve ser maior que zero.");
+        }
+        if (request.unitCost() != null && request.unitCost().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new BusinessException("O preço de compra unitário deve ser maior que zero.");
+        }
+        // RN-06: Preço de compra unitário obrigatório em entradas de compra
+        if (request.type() == StockMovementType.PURCHASE_ENTRY && request.unitCost() == null) {
+            throw new BusinessException(
+                "O preço de compra unitário (unitCost) é obrigatório para entradas de compra (RN-06)."
+            );
+        }
+    }
+
     private StockMovement recordMovement(
             StockItem stockItem,
             StockMovementType type,
@@ -362,6 +399,7 @@ public class StockService implements StockPort {
             .previousReservedQuantity(previousReserved)
             .newReservedQuantity(stockItem.getReservedQuantity())
             .referenceDocument(context.referenceDocument())
+            .supplier(context.supplier())
             .reason(context.reason())
             .registeredBy(context.registeredBy())
             .build();
@@ -374,6 +412,7 @@ public class StockService implements StockPort {
     private record MovementAuditContext(
             UUID orderId,
             String referenceDocument,
+            String supplier,
             String reason,
             String registeredBy,
             BigDecimal unitCost) {
@@ -382,6 +421,7 @@ public class StockService implements StockPort {
             return new MovementAuditContext(
                 order.getId(),
                 order.getCodigo(),
+                null,
                 reason,
                 SYSTEM_USER,
                 null
@@ -391,13 +431,18 @@ public class StockService implements StockPort {
         static MovementAuditContext forManual(StockMovementRequestDTO request) {
             return new MovementAuditContext(
                 null,
-                request.referenceDocument(),
-                request.reason(),
+                normalizeOptionalText(request.referenceDocument()),
+                normalizeOptionalText(request.supplier()),
+                normalizeOptionalText(request.reason()),
                 request.registeredBy() != null && !request.registeredBy().isBlank()
-                    ? request.registeredBy()
+                    ? request.registeredBy().trim()
                     : SYSTEM_USER,
                 request.unitCost()
             );
+        }
+
+        private static String normalizeOptionalText(String value) {
+            return value != null && !value.isBlank() ? value.trim() : null;
         }
     }
 }

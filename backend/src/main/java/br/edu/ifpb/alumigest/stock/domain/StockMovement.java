@@ -65,6 +65,9 @@ public class StockMovement {
     @Column(name = "reference_document", length = 100, updatable = false)
     private String referenceDocument;
 
+    @Column(name = "supplier", length = 150, updatable = false)
+    private String supplier;
+
     @Column(name = "reason", columnDefinition = "TEXT", updatable = false)
     private String reason;
 
@@ -92,6 +95,7 @@ public class StockMovement {
         this.referenceDocument = builder.referenceDocument;
         this.reason = builder.reason;
         this.registeredBy = builder.registeredBy;
+        this.supplier = builder.supplier;
     }
 
     public static Builder builder() {
@@ -165,6 +169,10 @@ public class StockMovement {
         return createdAt;
     }
 
+    public String getSupplier() {
+        return supplier;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -198,6 +206,7 @@ public class StockMovement {
         private String referenceDocument;
         private String reason;
         private String registeredBy;
+        private String supplier;
 
         public Builder stockItem(StockItem stockItem) {
             this.stockItem = stockItem;
@@ -263,6 +272,11 @@ public class StockMovement {
             this.registeredBy = registeredBy;
             return this;
         }
+
+        public Builder supplier(String supplier) {
+        this.supplier = supplier;
+        return this;
+    }
 
         public StockMovement build() {
             return new StockMovement(this);
