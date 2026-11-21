@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Tabs, Tab } from '../../../components/ui/Tabs';
 import {
   KardexDrawer,
@@ -8,6 +8,7 @@ import {
   type KardexMaterialTarget,
   type StockItem,
 } from '@/features/stock';
+import { CatalogOperationGuideBanner } from './CatalogOperationGuideBanner';
 import { GlassTab } from './GlassTab';
 import { ProfileTab } from './ProfileTab';
 import { FilmTab } from './FilmTab';
@@ -65,7 +66,11 @@ function toKardexTarget(
   };
 }
 
-export function CatalogView() {
+export interface CatalogViewProps {
+  readonly initialOnlyNeedsPurchase?: boolean;
+}
+
+export function CatalogView({ initialOnlyNeedsPurchase = false }: CatalogViewProps = {}) {
   const [isSelectionModalOpen, setIsSelectionModalOpen] = useState(false);
   const [activeFormType, setActiveFormType] = useState<MaterialType | null>(null);
   const [editingItem, setEditingItem] = useState<CatalogMaterialItem | null>(null);
@@ -77,8 +82,14 @@ export function CatalogView() {
     useState<KardexMaterialTarget | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL');
-  const [onlyNeedsPurchase, setOnlyNeedsPurchase] = useState(false);
+  const [onlyNeedsPurchase, setOnlyNeedsPurchase] = useState(initialOnlyNeedsPurchase);
   const [hideStockAlert, setHideStockAlert] = useState<boolean>(readHideAlertPreference);
+
+  useEffect(() => {
+    if (initialOnlyNeedsPurchase) {
+      setOnlyNeedsPurchase(true);
+    }
+  }, [initialOnlyNeedsPurchase]);
 
   const {
     data: stockItems = [],
@@ -193,15 +204,23 @@ export function CatalogView() {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-sm gap-sm flex-none">
         <div>
-          <h2
-            data-cy="catalog-title"
-            className="font-headline text-headline-md sm:text-headline-lg font-bold text-primary leading-tight"
-          >
-            Catálogo de Materiais
-          </h2>
+          <div className="flex flex-wrap items-center gap-2">
+            <h2
+              data-cy="catalog-title"
+              className="font-headline text-headline-md sm:text-headline-lg font-bold text-primary leading-tight"
+            >
+              Catálogo de Materiais
+            </h2>
+            <span
+              data-testid="catalog-unified-badge"
+              className="bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-300 dark:border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded-full"
+            >
+              Almoxarifado &amp; Kardex Integrados
+            </span>
+          </div>
 
           <p className="font-body text-sm text-secondary mt-xs">
-            Gerencie especificações técnicas e precificação de insumos.
+            Gerencie especificações técnicas, precificação, saldos físicos, demanda de compra e trilha Kardex dos insumos em um só lugar.
           </p>
         </div>
 
@@ -254,6 +273,8 @@ export function CatalogView() {
           </Button>
         </div>
       </div>
+
+      <CatalogOperationGuideBanner pendingPurchaseCount={pendingPurchaseCount} />
 
       {isStockError && (
         <div

@@ -46,11 +46,21 @@ function OrderDetailRedirect() {
   return <Navigate to={`${target}${location.search}${location.hash}`} replace />;
 }
 
+/**
+ * Redireciona a rota legada /estoque para a experiência unificada /catalogo,
+ * preservando query params (ex.: ?needsPurchase=true) e hash.
+ */
+function CatalogRedirect() {
+  const location = useLocation();
+  return <Navigate to={`/catalogo${location.search}${location.hash}`} replace />;
+}
+
 export function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<DashboardLayout />}>
         <Route index element={<CatalogPage />} />
+        <Route path="catalogo" element={<CatalogPage />} />
 
         <Route path="orcamentos" element={<BudgetsPage />} />
         <Route path="orcamentos/venda-avulsa" element={<SeparateSalePage />} />
@@ -95,16 +105,7 @@ export function AppRoutes() {
             />
           }
         />
-        <Route
-          path="estoque"
-          element={
-            <PlaceholderPage
-              title="Gestão de Estoque"
-              icon="inventory"
-              description="Controle de saldos de barras de alumínio, chapas de vidro, ferragens e insumos em almoxarifado."
-            />
-          }
-        />
+        <Route path="estoque" element={<CatalogRedirect />} />
 
         <Route path="produtos" element={<ProductsPage />} />
         <Route path="produtos/novo" element={<ProductBuilderPage />} />

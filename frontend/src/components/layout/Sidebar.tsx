@@ -1,13 +1,24 @@
 import { NavLink, useLocation } from 'react-router-dom';
 
-const navItems = [
+interface NavItem {
+  readonly path: string;
+  readonly label: string;
+  readonly icon: string;
+  readonly badge?: string;
+}
+
+const navItems: readonly NavItem[] = [
   { path: '/dashboard', label: 'Dashboard', icon: 'dashboard' },
   { path: '/orcamentos', label: 'Orçamentos', icon: 'receipt_long' },
   { path: '/ordens-servico', label: 'Ordens de Serviço', icon: 'assignment' },
   { path: '/producao', label: 'Produção (Kanban)', icon: 'precision_manufacturing' },
-  { path: '/', label: 'Catálogo de Materiais', icon: 'inventory_2' },
+  {
+    path: '/catalogo',
+    label: 'Catálogo & Estoque',
+    icon: 'inventory_2',
+    badge: 'Unificado',
+  },
   { path: '/vendas/avulsa', label: 'Venda Avulsa', icon: 'shopping_cart' },
-  { path: '/estoque', label: 'Estoque', icon: 'inventory' },
   { path: '/produtos', label: 'Produtos', icon: 'category' },
   { path: '/clientes', label: 'Clientes', icon: 'group' },
   { path: '/financeiro', label: 'Financeiro', icon: 'payments' },
@@ -25,8 +36,13 @@ export function Sidebar({ isOpen, onClose, isCollapsed = false, onToggleCollapse
   const location = useLocation();
 
   const isItemActive = (itemPath: string, isNavLinkActive: boolean) => {
-    if (itemPath === '/') {
-      return location.pathname === '/';
+    if (itemPath === '/catalogo') {
+      return (
+        isNavLinkActive ||
+        location.pathname === '/' ||
+        location.pathname.startsWith('/catalogo') ||
+        location.pathname.startsWith('/estoque')
+      );
     }
     if (itemPath === '/ordens-servico') {
       return isNavLinkActive || location.pathname.startsWith('/ordens-servico') || location.pathname.startsWith('/pedidos') || location.pathname.startsWith('/work-orders');
@@ -114,8 +130,31 @@ export function Sidebar({ isOpen, onClose, isCollapsed = false, onToggleCollapse
               `;
               }}
             >
-              <span className="material-symbols-outlined text-[20px] shrink-0">{item.icon}</span>
-              {!isCollapsed && <span className="font-body truncate">{item.label}</span>}
+              {({ isActive }) => {
+                const active = isItemActive(item.path, isActive);
+                return (
+                  <>
+                    <span className="material-symbols-outlined text-[20px] shrink-0">{item.icon}</span>
+                    {!isCollapsed && (
+                      <>
+                        <span className="font-body truncate">{item.label}</span>
+                        {item.badge && (
+                          <span
+                            data-testid="sidebar-unified-badge"
+                            className={`ml-auto font-data-mono text-[9px] font-bold px-1.5 py-0.5 rounded shrink-0 ${
+                              active
+                                ? 'bg-blue-500 text-white'
+                                : 'bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary'
+                            }`}
+                          >
+                            {item.badge}
+                          </span>
+                        )}
+                      </>
+                    )}
+                  </>
+                );
+              }}
             </NavLink>
           ))}
         </nav>
