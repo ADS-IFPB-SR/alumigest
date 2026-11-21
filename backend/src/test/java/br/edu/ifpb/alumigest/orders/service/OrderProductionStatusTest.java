@@ -16,6 +16,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import org.springframework.context.ApplicationEventPublisher;
+
 import java.util.Optional;
 import java.util.UUID;
 
@@ -43,6 +45,12 @@ class OrderProductionStatusTest {
     @Mock
     private OrderPdfService orderPdfService;
 
+    @Mock
+    private OrderLabelService orderLabelService;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
+
     @InjectMocks
     private OrderServiceImpl orderService;
 
@@ -61,7 +69,7 @@ class OrderProductionStatusTest {
     @DisplayName("Deve transicionar de WAITING_PRODUCTION para IN_PRODUCTION com sucesso")
     void testTransitionToInProductionSuccess() {
         // Arrange
-        when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
+        when(orderRepository.findByIdWithDetails(orderId)).thenReturn(Optional.of(order));
         when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         OrderResponse mockResponse = new OrderResponse(
@@ -87,7 +95,7 @@ class OrderProductionStatusTest {
                 .codigo("OS-2026-0001")
                 .status(OrderStatus.IN_PRODUCTION)
                 .build();
-        when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
+        when(orderRepository.findByIdWithDetails(orderId)).thenReturn(Optional.of(order));
         when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         OrderResponse mockResponse = new OrderResponse(
@@ -110,7 +118,7 @@ class OrderProductionStatusTest {
     @DisplayName("Deve lançar BusinessException ao tentar transicionar para WAITING_PRODUCTION")
     void testTransitionToWaitingProductionThrowsException() {
         // Arrange
-        when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
+        when(orderRepository.findByIdWithDetails(orderId)).thenReturn(Optional.of(order));
 
         // Act & Assert
         assertThatThrownBy(() -> orderService.updateStatus(orderId, OrderStatus.WAITING_PRODUCTION))
@@ -124,7 +132,7 @@ class OrderProductionStatusTest {
     @DisplayName("Deve lançar BusinessException ao tentar transicionar para CREATED")
     void testTransitionToCreatedThrowsException() {
         // Arrange
-        when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
+        when(orderRepository.findByIdWithDetails(orderId)).thenReturn(Optional.of(order));
 
         // Act & Assert
         assertThatThrownBy(() -> orderService.updateStatus(orderId, OrderStatus.CREATED))
@@ -138,7 +146,7 @@ class OrderProductionStatusTest {
     @DisplayName("Deve lançar IllegalArgumentException se o targetStatus for nulo")
     void testTransitionToNullThrowsException() {
         // Arrange
-        when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
+        when(orderRepository.findByIdWithDetails(orderId)).thenReturn(Optional.of(order));
 
         // Act & Assert
         assertThatThrownBy(() -> orderService.updateStatus(orderId, null))
@@ -152,7 +160,7 @@ class OrderProductionStatusTest {
     @DisplayName("Deve lançar ResourceNotFoundException quando o pedido não for encontrado")
     void testUpdateStatusOrderNotFoundThrowsException() {
         // Arrange
-        when(orderRepository.findById(orderId)).thenReturn(Optional.empty());
+        when(orderRepository.findByIdWithDetails(orderId)).thenReturn(Optional.empty());
 
         // Act & Assert
         assertThatThrownBy(() -> orderService.updateStatus(orderId, OrderStatus.IN_PRODUCTION))
@@ -165,7 +173,7 @@ class OrderProductionStatusTest {
     @DisplayName("Deve lançar BusinessException ao tentar concluir pedido que ainda está em WAITING_PRODUCTION")
     void testTransitionDirectlyToCompletedThrowsException() {
         // Arrange
-        when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
+        when(orderRepository.findByIdWithDetails(orderId)).thenReturn(Optional.of(order));
 
         // Act & Assert
         assertThatThrownBy(() -> orderService.updateStatus(orderId, OrderStatus.COMPLETED))

@@ -4,15 +4,22 @@ import type { Order } from '../../../src/features/orders/types';
 describe('US-16.4: homologação E2E do fluxo de orçamento, pedido e comprovante', () => {
   const budgetId = 'b1600000-0000-4000-8000-000000000004';
   const orderId = '01600000-0000-4000-8000-000000000004';
+  const createdAtIso = new Date().toISOString();
+  const validUntilDate = new Date(Date.now() + 15 * 86400000).toISOString().split('T')[0];
 
-  const budget: BudgetDetail = {
+  const budget = {
     id: budgetId,
     code: 'ORC-2026-0016',
     customerId: 'c1600000-0000-4000-8000-000000000004',
     customerName: 'Cliente Homologação US-16',
+    clientId: 'c1600000-0000-4000-8000-000000000004',
+    clientName: 'Cliente Homologação US-16',
+    clientPhone: '(83) 99999-1616',
+    clientEmail: 'homologacao.us16@alumigest.com',
+    clientAddress: 'Rua da Homologação, 16 - Sousa/PB',
     status: 'SENT',
-    createdAt: '2026-10-13T09:00:00-03:00',
-    validUntil: '2026-10-28',
+    createdAt: createdAtIso,
+    validUntil: validUntilDate,
     isExpired: false,
     itemCount: 1,
     subtotal: 4500,
@@ -33,13 +40,15 @@ describe('US-16.4: homologação E2E do fluxo de orçamento, pedido e comprovant
         drillingConfig: { holeCount: 0 },
         width: 1500,
         height: 1200,
+        widthMm: 1500,
+        heightMm: 1200,
         quantity: 1,
         laborCost: 500,
         options: [],
         subtotal: 4500,
       },
     ],
-  };
+  } as unknown as BudgetDetail;
 
   const activeOrder: Order = {
     id: orderId,

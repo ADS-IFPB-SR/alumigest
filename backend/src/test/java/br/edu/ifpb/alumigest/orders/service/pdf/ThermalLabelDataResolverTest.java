@@ -308,6 +308,45 @@ class ThermalLabelDataResolverTest {
         }
 
         @Test
+        @DisplayName("[BUG #510] Deve atribuir índices únicos e incrementais quando itens distintos compartilham o mesmo ordem")
+        void deveAtribuirIndicesUnicosQuandoOrdemDuplicada() {
+            Order order = Order.builder()
+                    .codigo("OS-2026-0043")
+                    .clienteNome("Cliente Teste")
+                    .build();
+
+            order.addItem(OrderItem.builder().id(UUID.randomUUID()).quantidade(2).descricao("Janela Maxim-ar").ordem(1).build());
+            order.addItem(OrderItem.builder().id(UUID.randomUUID()).quantidade(1).descricao("Porta de Giro").ordem(1).build());
+            order.addItem(OrderItem.builder().id(UUID.randomUUID()).quantidade(3).descricao("Janela Basculante").ordem(2).build());
+
+            List<ThermalLabelData> labels = resolver.resolveLabels(order);
+
+            assertThat(labels).hasSize(6);
+            assertThat(labels)
+                    .extracting(ThermalLabelData::itemIndex)
+                    .containsExactly(1, 1, 2, 3, 3, 3);
+            assertThat(labels.get(2).labelBadge()).isEqualTo("Item 02 • Esquadria 01/01 | Peça 01/01");
+            assertThat(labels.get(2).pieceNumber()).isEqualTo(3);
+        }
+
+        @Test
+        @DisplayName("[BUG #510] Não deve reutilizar o índice 1 ao misturar item sem ordem com item de ordem positiva")
+        void naoDeveReutilizarIndiceAoMisturarOrdemAusenteEPositiva() {
+            Order order = Order.builder()
+                    .codigo("OS-2026-MIX")
+                    .build();
+
+            order.addItem(OrderItem.builder().id(UUID.randomUUID()).quantidade(1).descricao("Sem Ordem").ordem(0).build());
+            order.addItem(OrderItem.builder().id(UUID.randomUUID()).quantidade(1).descricao("Com Ordem").ordem(1).build());
+
+            List<ThermalLabelData> labels = resolver.resolveLabels(order);
+
+            assertThat(labels)
+                    .extracting(ThermalLabelData::itemIndex)
+                    .containsExactly(1, 2);
+        }
+
+        @Test
         @DisplayName("Deve ignorar itens com quantidade nula ou menor/igual a zero")
         void deveIgnorarItensComQuantidadeZeroOuNula() {
             Order order = Order.builder()

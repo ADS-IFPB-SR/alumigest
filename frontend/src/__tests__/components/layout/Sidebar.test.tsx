@@ -106,3 +106,47 @@ describe('Sidebar Component - [US-18.6]', () => {
     expect(producaoLink.className).toContain('text-on-primary');
   });
 });
+
+describe('Sidebar Component - [BUG #524]', () => {
+  it('não deve renderizar atalho genérico para /kanban na barra lateral', () => {
+    render(
+      <MemoryRouter initialEntries={['/dashboard']}>
+        <Sidebar isOpen={true} onClose={vi.fn()} />
+      </MemoryRouter>
+    );
+
+    const genericKanbanLink = screen.queryByRole('link', { name: /^kanban$/i });
+    expect(genericKanbanLink).not.toBeInTheDocument();
+
+    const producaoLink = screen.getByRole('link', { name: /produção \(kanban\)/i });
+    expect(producaoLink).toBeInTheDocument();
+    expect(producaoLink).toHaveAttribute('href', '/producao');
+  });
+});
+
+describe('Sidebar Component - [US-46.1]', () => {
+  it('deve renderizar o atalho Venda Avulsa apontando para /vendas/avulsa', () => {
+    render(
+      <MemoryRouter initialEntries={['/dashboard']}>
+        <Sidebar isOpen={true} onClose={vi.fn()} />
+      </MemoryRouter>
+    );
+
+    const link = screen.getByRole('link', { name: /venda avulsa/i });
+    expect(link).toBeInTheDocument();
+    expect(link).toHaveAttribute('href', '/vendas/avulsa');
+    expect(link).toHaveTextContent('shopping_cart');
+  });
+
+  it('deve aplicar estilo de rota ativa quando o usuário estiver em /vendas/avulsa', () => {
+    render(
+      <MemoryRouter initialEntries={['/vendas/avulsa']}>
+        <Sidebar isOpen={true} onClose={vi.fn()} />
+      </MemoryRouter>
+    );
+
+    const link = screen.getByRole('link', { name: /venda avulsa/i });
+    expect(link.className).toContain('bg-primary');
+    expect(link.className).toContain('text-on-primary');
+  });
+});

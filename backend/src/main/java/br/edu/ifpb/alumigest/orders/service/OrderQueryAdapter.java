@@ -19,7 +19,7 @@ public class OrderQueryAdapter implements OrderQueryPort {
 
     @Override
     public Optional<LinkedOrder> findLatestByBudgetId(UUID budgetId) {
-        return orderRepository.findTopByOrcamentoIdOrderByCreatedAtDesc(budgetId)
+        return orderRepository.findLatestByOrcamentoId(budgetId)
                 .map(order -> new LinkedOrder(
                         order.getCodigo(),
                         order.getStatus() == OrderStatus.CANCELLED

@@ -4,7 +4,8 @@
  * garantir paridade entre o modal e o PDF gerado:
  *  - itens com quantidade nula, zero ou negativa são ignorados;
  *  - itens são ordenados pelo campo `ordem` (ordenação estável);
- *  - o índice do item usa `ordem` quando positivo, senão um contador sequencial;
+ *  - o índice do item é o contador sequencial (1..N) dos itens válidos já ordenados, garantindo
+ *    rótulos únicos mesmo quando itens distintos compartilham o mesmo `ordem` (BUG #510);
  *  - o local/ambiente prioriza o `templateConfig` do item, depois observações e endereço da O.S.
  * BUG #486 — Paridade do ThermalLabelModal com o backend.
  */
@@ -39,7 +40,7 @@ const isNonBlank = (value: unknown): value is string =>
 
 /**
  * Ordena os itens por `ordem` (nulos/ausentes tratados como 0) e descarta os que não
- * possuem quantidade positiva, atribuindo o índice exibido na etiqueta.
+ * possuem quantidade positiva, atribuindo o índice sequencial único exibido na etiqueta.
  */
 export function resolveLabelItems(items: OrderItem[] | null | undefined): LabelItemGroup[] {
   if (!items || items.length === 0) return [];
@@ -52,7 +53,7 @@ export function resolveLabelItems(items: OrderItem[] | null | undefined): LabelI
   for (const item of ordenados) {
     if (!hasPositiveQuantity(item)) continue;
 
-    const itemIndex = typeof item.ordem === 'number' && item.ordem > 0 ? item.ordem : sequencial;
+    const itemIndex = sequencial;
     grupos.push({ item, itemIndex, quantidade: Math.floor(item.quantidade) });
     sequencial++;
   }

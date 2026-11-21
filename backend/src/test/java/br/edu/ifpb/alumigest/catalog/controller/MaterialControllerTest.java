@@ -128,4 +128,90 @@ class MaterialControllerTest {
             verify(repository).findDistinctFamilyCodesByGroupCode(null);
         }
     }
+
+    @Nested
+    @DisplayName("Listagem Filtrada por Categoria (GET /api/v1/materials?category=...)")
+    class FindActiveByCategoryTests {
+
+        @Test
+        @DisplayName("[Partição de Equivalência] Deve retornar materiais filtrados por categoria válida (GLASS) via /api/v1/materials")
+        void shouldReturnMaterialsFilteredByGlassCategory() throws Exception {
+            // Given (Arrange)
+            br.edu.ifpb.alumigest.catalog.domain.MaterialGroup glassGroup =
+                    new br.edu.ifpb.alumigest.catalog.domain.MaterialGroup();
+            glassGroup.setCode("VIDRO");
+            glassGroup.setName("Vidros");
+
+            Material glass = new Material();
+            glass.setId(UUID.randomUUID());
+            glass.setName("Vidro Temperado 8mm Incolor");
+            glass.setGroup(glassGroup);
+            glass.setSalePrice(new BigDecimal("180.00"));
+            glass.setCostPrice(new BigDecimal("90.00"));
+            glass.setUnitMeasure(UnitMeasure.M2);
+            glass.setColorFinish("Incolor");
+            glass.setThicknessMm(new BigDecimal("8.00"));
+            glass.setFamilyCode("FAM-VIDRO-8MM");
+            glass.setActive(true);
+
+            when(repository.findActiveByGroupCodeOrderByNameAsc("VIDRO"))
+                    .thenReturn(List.of(glass));
+
+            // When (Act) & Then (Assert)
+            mockMvc.perform(get("/api/v1/materials").param("category", "GLASS"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.data.length()").value(1))
+                    .andExpect(jsonPath("$.data[0].id").value(glass.getId().toString()))
+                    .andExpect(jsonPath("$.data[0].name").value("Vidro Temperado 8mm Incolor"))
+                    .andExpect(jsonPath("$.data[0].category").value("GLASS"))
+                    .andExpect(jsonPath("$.data[0].unitPrice").value(180.00))
+                    .andExpect(jsonPath("$.data[0].unitOfMeasure").value("M2"))
+                    .andExpect(jsonPath("$.data[0].color").value("Incolor"))
+                    .andExpect(jsonPath("$.data[0].thicknessMm").value(8.00))
+                    .andExpect(jsonPath("$.data[0].familyCode").value("FAM-VIDRO-8MM"));
+
+            verify(repository).findActiveByGroupCodeOrderByNameAsc("VIDRO");
+        }
+
+        @Test
+        @DisplayName("[Partição de Equivalência - Alias] Deve resolver alias ALUMINUM para o grupo ALUMINIO e retornar perfil")
+        void shouldResolveAluminumAliasToProfileGroup() throws Exception {
+            // Given (Arrange)
+            br.edu.ifpb.alumigest.catalog.domain.MaterialGroup aluGroup =
+                    new br.edu.ifpb.alumigest.catalog.domain.MaterialGroup();
+            aluGroup.setCode("ALUMINIO");
+            aluGroup.setName("Perfis de Alumínio");
+
+            Material profile = new Material();
+            profile.setId(UUID.randomUUID());
+            profile.setName("Perfil U Linha Suprema");
+            profile.setGroup(aluGroup);
+            profile.setSalePrice(new BigDecimal("45.00"));
+            profile.setUnitMeasure(UnitMeasure.METRO);
+            profile.setColorFinish("Branco");
+            profile.setActive(true);
+
+            when(repository.findActiveByGroupCodeOrderByNameAsc("ALUMINIO"))
+                    .thenReturn(List.of(profile));
+
+            // When (Act) & Then (Assert)
+            mockMvc.perform(get("/api/v1/materials").param("category", "ALUMINUM"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.data[0].category").value("PROFILE"))
+                    .andExpect(jsonPath("$.data[0].name").value("Perfil U Linha Suprema"));
+
+            verify(repository).findActiveByGroupCodeOrderByNameAsc("ALUMINIO");
+        }
+
+        @Test
+        @DisplayName("[Partição de Equivalência - Categoria Inválida] Deve retornar 400 Bad Request quando categoria for desconhecida")
+        void shouldReturnBadRequestWhenCategoryIsInvalid() throws Exception {
+            // When (Act) & Then (Assert)
+            mockMvc.perform(get("/api/v1/materials").param("category", "CATEGORIA_INEXISTENTE"))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("Categoria de material inválida")));
+        }
+    }
 }
