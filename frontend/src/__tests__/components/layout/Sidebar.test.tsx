@@ -150,3 +150,52 @@ describe('Sidebar Component - [US-46.1]', () => {
     expect(link.className).toContain('text-on-primary');
   });
 });
+
+describe('Sidebar Component - [US-22.4]', () => {
+  it('deve unificar Catálogo e Estoque no atalho Catálogo & Estoque apontando para /catalogo', () => {
+    render(
+      <MemoryRouter initialEntries={['/dashboard']}>
+        <Sidebar isOpen={true} onClose={vi.fn()} />
+      </MemoryRouter>
+    );
+
+    const unifiedLink = screen.getByRole('link', { name: /catálogo & estoque/i });
+    expect(unifiedLink).toBeInTheDocument();
+    expect(unifiedLink).toHaveAttribute('href', '/catalogo');
+    expect(unifiedLink).toHaveTextContent('inventory_2');
+    expect(screen.getByTestId('sidebar-unified-badge')).toHaveTextContent('Unificado');
+
+    expect(screen.queryByRole('link', { name: /^estoque$/i })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', { name: /catálogo de materiais/i })
+    ).not.toBeInTheDocument();
+  });
+
+  it('deve destacar Catálogo & Estoque nas rotas /catalogo, / e /estoque', () => {
+    for (const route of ['/catalogo', '/', '/estoque']) {
+      const { unmount } = render(
+        <MemoryRouter initialEntries={[route]}>
+          <Sidebar isOpen={true} onClose={vi.fn()} />
+        </MemoryRouter>
+      );
+
+      const unifiedLink = screen.getByRole('link', { name: /catálogo & estoque/i });
+      expect(unifiedLink.className).toContain('bg-primary');
+      expect(unifiedLink.className).toContain('text-on-primary');
+      expect(screen.getByTestId('sidebar-unified-badge').className).toContain('bg-blue-500');
+      unmount();
+    }
+  });
+
+  it('deve ocultar rótulo e badge quando a barra lateral estiver recolhida', () => {
+    render(
+      <MemoryRouter initialEntries={['/catalogo']}>
+        <Sidebar isOpen={true} onClose={vi.fn()} isCollapsed={true} />
+      </MemoryRouter>
+    );
+
+    const unifiedLink = screen.getByTitle('Catálogo & Estoque');
+    expect(unifiedLink).toHaveAttribute('href', '/catalogo');
+    expect(screen.queryByTestId('sidebar-unified-badge')).not.toBeInTheDocument();
+  });
+});

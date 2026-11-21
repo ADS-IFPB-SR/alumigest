@@ -6,6 +6,7 @@ import {
     ProductionKanbanBoard,
     ProductionKanbanMetrics,
     ProductionKanbanFilters,
+    ProductionStockAlertBanner,
 } from '../features/production/components';
 import {
     type DeadlineFilterOption,
@@ -157,6 +158,9 @@ export function ProductionKanbanPage() {
                     </button>
                 </div>
             </div>
+
+            {/* 1.5 Faixa Superior de Avisos Fabris (US-22.4) */}
+            <ProductionStockAlertBanner />
 
             {/* 2. Barra de Indicadores Gerenciais (Métricas Reais) */}
             <ProductionKanbanMetrics orders={orders} />
