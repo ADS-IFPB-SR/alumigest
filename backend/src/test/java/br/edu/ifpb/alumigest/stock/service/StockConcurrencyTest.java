@@ -241,8 +241,9 @@ class StockConcurrencyTest {
 
         // Trilha Kardex deve conter exatamente 10 registros de PRODUCTION_RESERVATION
         List<StockMovement> movements = stockMovementRepository.findByMaterialIdOrderByCreatedAtDesc(material.getId());
-        assertThat(movements).hasSize(THREAD_COUNT);
-        assertThat(movements).allMatch(m -> m.getType() == StockMovementType.PRODUCTION_RESERVATION);
+        assertThat(movements)
+            .hasSize(THREAD_COUNT)
+            .allMatch(m -> m.getType() == StockMovementType.PRODUCTION_RESERVATION);
     }
 
     @Test
@@ -289,8 +290,9 @@ class StockConcurrencyTest {
 
         assertThat(finalStock.getPhysicalQuantity()).isEqualByComparingTo("0.0000");
         assertThat(finalStock.getReservedQuantity()).isEqualByComparingTo(expectedReserved);
-        assertThat(finalStock.getAvailableQuantity()).isEqualByComparingTo(expectedAvailable);
-        assertThat(finalStock.getAvailableQuantity()).isNegative();
+        assertThat(finalStock.getAvailableQuantity())
+            .isEqualByComparingTo(expectedAvailable)
+            .isNegative();
 
         // Invariante RN-01 preservada
         assertThat(finalStock.getAvailableQuantity())
@@ -411,8 +413,9 @@ class StockConcurrencyTest {
         assertThat(finalStock.getAvailableQuantity()).isEqualByComparingTo(expectedPhysical);
 
         List<StockMovement> movements = stockMovementRepository.findByMaterialIdOrderByCreatedAtDesc(material.getId());
-        assertThat(movements).hasSize(THREAD_COUNT);
-        assertThat(movements).allMatch(m -> m.getType() == StockMovementType.PURCHASE_ENTRY);
+        assertThat(movements)
+            .hasSize(THREAD_COUNT)
+            .allMatch(m -> m.getType() == StockMovementType.PURCHASE_ENTRY);
     }
 }
 
