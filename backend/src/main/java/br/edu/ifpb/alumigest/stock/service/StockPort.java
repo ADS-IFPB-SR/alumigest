@@ -1,5 +1,6 @@
 package br.edu.ifpb.alumigest.stock.service;
 
+import br.edu.ifpb.alumigest.stock.dto.OrderStockAlertResponseDTO;
 import br.edu.ifpb.alumigest.stock.dto.StockItemResponseDTO;
 import br.edu.ifpb.alumigest.stock.dto.StockMovementRequestDTO;
 import br.edu.ifpb.alumigest.stock.dto.StockMovementResponseDTO;
@@ -13,6 +14,14 @@ import java.util.UUID;
  * cancelamentos e auditoria Kardex, assegurando conformidade com o modelo Make-to-Order.
  */
 public interface StockPort {
+
+    /**
+     * Reserva matérias-primas automaticamente no modelo Make-to-Order (RN-05)
+     * ao aprovar/converter uma O.S. (US-13) ou transicionar para {@code WAITING_PRODUCTION}.
+     *
+     * @param orderId Identificador da Ordem de Serviço
+     */
+    void reserveMaterials(UUID orderId);
 
     /**
      * Reserva matérias-primas automaticamente ao aprovar uma Ordem de Serviço (US-13)
@@ -59,4 +68,17 @@ public interface StockPort {
      * @return Lista com os saldos consolidados
      */
     List<StockItemResponseDTO> listStockBalances();
+
+    /**
+     * Retorna o status Make-to-Order agregado dos materiais com reserva pendente
+     * para a Ordem de Serviço informada.
+     *
+     * <p>Calcula o pior {@code StockAlertStatus} entre todos os insumos reservados
+     * para a O.S., além de listar os materiais com déficit de saldo disponível
+     * para exibição no tooltip do card Kanban (US-21.4).
+     *
+     * @param orderId Identificador da Ordem de Serviço
+     * @return DTO com o status agregado e lista de insumos em falta
+     */
+    OrderStockAlertResponseDTO getOrderStockAlert(UUID orderId);
 }

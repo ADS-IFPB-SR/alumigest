@@ -10,6 +10,7 @@ import {
   useReserveStockForOrder,
   useConsumeStockForOrder,
   useCancelStockReservationsForOrder,
+  useStockAlertForOrder,
 } from '@/features/stock/hooks/useStock';
 import { stockApi } from '@/features/stock/api/stockApi';
 import toast from 'react-hot-toast';
@@ -23,6 +24,7 @@ vi.mock('@/features/stock/api/stockApi', () => ({
     reserveForOrder: vi.fn(),
     consumeForOrder: vi.fn(),
     cancelReservationsForOrder: vi.fn(),
+    getOrderStockAlert: vi.fn(),
   },
 }));
 
@@ -134,7 +136,7 @@ describe('useStock Hooks — Testes de Integração com TanStack Query', () => {
     expect(result.current.data).toEqual(mockMovements);
   });
 
-  it('useRegisterStockMovement deve disparar mutação e exibir toast de sucesso', async () => {
+  it('useRegisterStockMovement deve disparar mutação, exibir toast e invalidar stock-order-alert', async () => {
     const payload = {
       materialId: 'm1',
       type: 'MANUAL_ADJUSTMENT' as const,
@@ -156,8 +158,18 @@ describe('useStock Hooks — Testes de Integração com TanStack Query', () => {
 
     vi.mocked(stockApi.registerMovement).mockResolvedValueOnce(mockResponse);
 
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
+    const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
+
     const { result } = renderHook(() => useRegisterStockMovement(), {
-      wrapper: createWrapper(),
+      wrapper: ({ children }: { children: React.ReactNode }) => (
+        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+      ),
     });
 
     result.current.mutate(payload);
@@ -166,20 +178,36 @@ describe('useStock Hooks — Testes de Integração com TanStack Query', () => {
 
     expect(stockApi.registerMovement).toHaveBeenCalledWith(payload);
     expect(toast.success).toHaveBeenCalledWith('Movimentação registrada com sucesso no Kardex!');
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['stock-balances'] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['stock-item'] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['stock-movements'] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['stock-order-alert'] });
   });
 
-  it('useReserveStockForOrder deve disparar reserva de materiais', async () => {
+  it('useReserveStockForOrder deve disparar reserva de materiais e invalidar queries de estoque', async () => {
     vi.mocked(stockApi.reserveForOrder).mockResolvedValueOnce();
 
-    const { result } = renderHook(() => useReserveStockForOrder(), {
-      wrapper: createWrapper(),
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
     });
+    const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+
+    const { result } = renderHook(() => useReserveStockForOrder(), { wrapper });
 
     result.current.mutate('order-999');
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     expect(stockApi.reserveForOrder).toHaveBeenCalledWith('order-999');
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['stock-balances'] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['stock-item'] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['stock-movements'] });
   });
 
   it('useConsumeStockForOrder deve disparar baixa física e exibir toast de sucesso', async () => {
@@ -210,5 +238,50 @@ describe('useStock Hooks — Testes de Integração com TanStack Query', () => {
 
     expect(stockApi.cancelReservationsForOrder).toHaveBeenCalledWith('order-cancel-1');
     expect(toast.success).toHaveBeenCalledWith('Reservas de estoque estornadas com sucesso!');
+  });
+
+  describe('useStockAlertForOrder (US-21.4)', () => {
+    it('deve buscar e retornar o status Make-to-Order da O.S.', async () => {
+      const mockAlert = {
+        alertStatus: 'NEED_PURCHASE' as const,
+        missingMaterials: [
+          {
+            materialName: 'Perfil U 50x50',
+            materialSku: 'ALU-001',
+            availableQuantity: -2,
+            reservedQuantity: 5,
+            unitMeasure: 'barras',
+          },
+        ],
+      };
+
+      vi.mocked(stockApi.getOrderStockAlert).mockResolvedValueOnce(mockAlert);
+
+      const { result } = renderHook(() => useStockAlertForOrder('order-uuid-alert'), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.data).toBeDefined());
+
+      expect(stockApi.getOrderStockAlert).toHaveBeenCalledWith('order-uuid-alert');
+      expect(result.current.data).toEqual(mockAlert);
+    });
+
+    it('não deve disparar a query quando orderId for indefinido', () => {
+      const { result } = renderHook(() => useStockAlertForOrder(undefined), {
+        wrapper: createWrapper(),
+      });
+
+      expect(stockApi.getOrderStockAlert).not.toHaveBeenCalled();
+      expect(result.current.data).toBeUndefined();
+    });
+
+    it('deve retornar undefined com segurança sem lançar erro quando renderizado fora de um QueryClientProvider', () => {
+      // Sem wrapper QueryClientProvider
+      const { result } = renderHook(() => useStockAlertForOrder('order-without-provider'));
+
+      expect(result.current.data).toBeUndefined();
+      expect(result.current.isLoading).toBe(false);
+    });
   });
 });

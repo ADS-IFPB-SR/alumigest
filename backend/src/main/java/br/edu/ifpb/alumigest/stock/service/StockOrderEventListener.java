@@ -1,6 +1,7 @@
 package br.edu.ifpb.alumigest.stock.service;
 
 import br.edu.ifpb.alumigest.orders.domain.OrderCompletedEvent;
+import br.edu.ifpb.alumigest.orders.domain.OrderMaterialsReservationEvent;
 import br.edu.ifpb.alumigest.orders.domain.OrderStockCancelledEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,6 +23,21 @@ public class StockOrderEventListener {
 
     public StockOrderEventListener(StockPort stockPort) {
         this.stockPort = stockPort;
+    }
+
+    /**
+     * Reserva matérias-primas automaticamente (Make-to-Order) quando a O.S. é aprovada/convertida
+     * ou transiciona para {@code WAITING_PRODUCTION}.
+     *
+     * @param event evento de reserva de materiais da ordem
+     */
+    @EventListener
+    public void onOrderMaterialsReservation(OrderMaterialsReservationEvent event) {
+        if (event == null || event.orderId() == null) {
+            return;
+        }
+        log.info("Executando reserva automática Make-to-Order de estoque para O.S.: {}", event.orderId());
+        stockPort.reserveMaterials(event.orderId());
     }
 
     /**

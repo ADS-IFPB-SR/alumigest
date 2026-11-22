@@ -2,6 +2,7 @@ package br.edu.ifpb.alumigest.stock.dto;
 
 import br.edu.ifpb.alumigest.stock.domain.StockMovementType;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import java.math.BigDecimal;
@@ -48,4 +49,17 @@ public record StockMovementRequestDTO(
 
     @Schema(description = "Identificação do operador responsável pelo registro", example = "joao.almoxarife")
     String registeredBy
-) {}
+) {
+    /**
+     * Valida se a justificativa foi devidamente preenchida para movimentações extraordinárias.
+     *
+     * @return {@code true} se a justificativa for válida conforme o tipo de movimentação
+     */
+    @AssertTrue(message = "A justificativa é obrigatória para perdas e ajustes manuais")
+    public boolean isReasonValid() {
+        if (type == StockMovementType.SCRAP_LOSS || type == StockMovementType.MANUAL_ADJUSTMENT) {
+            return reason != null && !reason.trim().isEmpty();
+        }
+        return true;
+    }
+}

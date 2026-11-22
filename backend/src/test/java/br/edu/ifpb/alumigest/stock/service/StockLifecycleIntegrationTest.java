@@ -1,19 +1,27 @@
 package br.edu.ifpb.alumigest.stock.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import br.edu.ifpb.alumigest.budgets.domain.Budget;
+import br.edu.ifpb.alumigest.budgets.domain.BudgetItem;
+import br.edu.ifpb.alumigest.budgets.domain.BudgetItemOption;
 import br.edu.ifpb.alumigest.budgets.domain.BudgetStatus;
 import br.edu.ifpb.alumigest.budgets.repository.BudgetRepository;
 import br.edu.ifpb.alumigest.catalog.domain.CalculationType;
+import br.edu.ifpb.alumigest.catalog.domain.DoorTemplateType;
 import br.edu.ifpb.alumigest.catalog.domain.Material;
+import br.edu.ifpb.alumigest.catalog.domain.MaterialCategoryType;
 import br.edu.ifpb.alumigest.catalog.domain.MaterialGroup;
+import br.edu.ifpb.alumigest.catalog.domain.Product;
 import br.edu.ifpb.alumigest.catalog.domain.UnitMeasure;
 import br.edu.ifpb.alumigest.catalog.repository.MaterialGroupRepository;
 import br.edu.ifpb.alumigest.catalog.repository.MaterialRepository;
+import br.edu.ifpb.alumigest.catalog.repository.ProductRepository;
 import br.edu.ifpb.alumigest.clients.domain.Client;
 import br.edu.ifpb.alumigest.clients.repository.ClientRepository;
 import br.edu.ifpb.alumigest.orders.domain.ApprovalChannel;
@@ -22,7 +30,9 @@ import br.edu.ifpb.alumigest.orders.domain.OrderItem;
 import br.edu.ifpb.alumigest.orders.domain.OrderItemOption;
 import br.edu.ifpb.alumigest.orders.domain.OrderStatus;
 import br.edu.ifpb.alumigest.orders.dto.OrderCancelRequest;
+import br.edu.ifpb.alumigest.orders.dto.OrderConvertRequest;
 import br.edu.ifpb.alumigest.orders.repository.OrderRepository;
+import br.edu.ifpb.alumigest.stock.domain.StockAlertStatus;
 import br.edu.ifpb.alumigest.stock.domain.StockItem;
 import br.edu.ifpb.alumigest.stock.domain.StockMovement;
 import br.edu.ifpb.alumigest.stock.domain.StockMovementType;
@@ -44,6 +54,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -81,9 +92,13 @@ class StockLifecycleIntegrationTest {
     @Autowired
     private MaterialGroupRepository materialGroupRepository;
 
+    @Autowired
+    private ProductRepository productRepository;
+
     private final List<UUID> createdOrderIds = new ArrayList<>();
     private final List<UUID> createdBudgetIds = new ArrayList<>();
     private final List<UUID> createdClientIds = new ArrayList<>();
+    private final List<UUID> createdProductIds = new ArrayList<>();
     private final List<UUID> createdMaterialIds = new ArrayList<>();
     private final List<UUID> createdGroupIds = new ArrayList<>();
 
@@ -94,11 +109,13 @@ class StockLifecycleIntegrationTest {
         createdOrderIds.forEach(orderRepository::deleteById);
         createdBudgetIds.forEach(budgetRepository::deleteById);
         createdClientIds.forEach(clientRepository::deleteById);
+        createdProductIds.forEach(productRepository::deleteById);
         createdMaterialIds.forEach(materialRepository::deleteById);
         createdGroupIds.forEach(materialGroupRepository::deleteById);
         createdOrderIds.clear();
         createdBudgetIds.clear();
         createdClientIds.clear();
+        createdProductIds.clear();
         createdMaterialIds.clear();
         createdGroupIds.clear();
     }
@@ -251,5 +268,161 @@ class StockLifecycleIntegrationTest {
         assertThat(movements.get(1).getType()).isEqualTo(StockMovementType.RESERVATION_CANCELLATION);
         assertThat(movements.get(1).getQuantity()).isEqualByComparingTo("14.00");
         assertThat(movements.get(1).getNewReservedQuantity()).isEqualByComparingTo("0.00");
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/stock/orders/{id}/alert deve retornar o status Make-to-Order e insumos faltantes")
+    void shouldReturnStockAlertForOrderViaEndpoint() throws Exception {
+        Material material = persistMaterial("VID-INT-ALERT", new BigDecimal("5.00"));
+        Order order = persistOrder(OrderStatus.WAITING_PRODUCTION, material, new BigDecimal("12.00"));
+
+        stockPort.reserveMaterialsForOrder(order.getId());
+
+        mockMvc.perform(get("/api/v1/stock/orders/{id}/alert", order.getId()))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.alertStatus").value("NEED_PURCHASE"))
+            .andExpect(jsonPath("$.missingMaterials").isArray())
+            .andExpect(jsonPath("$.missingMaterials[0].materialSku").value("VID-INT-ALERT"))
+            .andExpect(jsonPath("$.missingMaterials[0].availableQuantity").value(-7.0));
+    }
+
+    @Test
+    @DisplayName("Ao aprovar/converter orçamento e avançar para WAITING_PRODUCTION, deve reservar materiais Make-to-Order sem bloquear")
+    void shouldAutoReserveMaterialsInMakeToOrderWhenConvertingBudgetAndTransitioningToWaitingProduction()
+            throws Exception {
+        Material material = persistMaterial("VID-INT-MTO", new BigDecimal("2.00"));
+
+        Client client = Client.builder()
+            .fullName("Cliente Make-to-Order IT")
+            .phone("83988881111")
+            .build();
+        client = clientRepository.saveAndFlush(client);
+        createdClientIds.add(client.getId());
+
+        Product product = new Product();
+        product.setName("Porta de Correr MTO");
+        product.setTemplateType(DoorTemplateType.SLIDING_DOOR_1F);
+        product.setActive(true);
+        product = productRepository.saveAndFlush(product);
+        createdProductIds.add(product.getId());
+
+        Budget budget = new Budget();
+        budget.setCode("ORC-MTO-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
+        budget.setClient(client);
+        budget.setStatus(BudgetStatus.SENT);
+        budget.setSubtotal(new BigDecimal("1800.00"));
+        budget.setTotal(new BigDecimal("1800.00"));
+
+        BudgetItem budgetItem = new BudgetItem();
+        budgetItem.setProduct(product);
+        budgetItem.setProductName(product.getName());
+        budgetItem.setWidthMm(new BigDecimal("1500"));
+        budgetItem.setHeightMm(new BigDecimal("2100"));
+        budgetItem.setQuantity(1);
+        budgetItem.setSubtotal(new BigDecimal("1800.00"));
+        budgetItem.setLaborCost(BigDecimal.ZERO);
+
+        BudgetItemOption option = new BudgetItemOption();
+        option.setMaterial(material);
+        option.setMaterialName(material.getName());
+        option.setUnitMeasure("M2");
+        option.setCategoryType(MaterialCategoryType.GLASS);
+        option.setQuantity(new BigDecimal("7.50"));
+        option.setUnitPrice(new BigDecimal("100.00"));
+        option.setTotalPrice(new BigDecimal("750.00"));
+        budgetItem.addOption(option);
+        budget.addItem(budgetItem);
+
+        budget = budgetRepository.saveAndFlush(budget);
+        createdBudgetIds.add(budget.getId());
+
+        OrderConvertRequest convertRequest = new OrderConvertRequest(
+            ApprovalChannel.WHATSAPP,
+            LocalDate.now(ZoneOffset.UTC).plusDays(10),
+            "Reserva Make-to-Order automática"
+        );
+
+        MvcResult convertResult = mockMvc.perform(post("/api/v1/orders/from-budget/{budgetId}", budget.getId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(convertRequest)))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.status").value("CREATED"))
+            .andReturn();
+
+        UUID createdOrderId = UUID.fromString(
+            objectMapper.readTree(convertResult.getResponse().getContentAsString()).get("id").asText()
+        );
+        createdOrderIds.add(createdOrderId);
+
+        StockItem afterConvert = stockItemRepository.findByMaterialId(material.getId()).orElseThrow();
+        assertThat(afterConvert.getPhysicalQuantity()).isEqualByComparingTo("2.0000");
+        assertThat(afterConvert.getReservedQuantity()).isEqualByComparingTo("7.5000");
+        assertThat(afterConvert.getAvailableQuantity()).isEqualByComparingTo("-5.5000");
+        assertThat(afterConvert.resolveAlertStatus()).isEqualTo(StockAlertStatus.NEED_PURCHASE);
+
+        List<StockMovement> movementsAfterConvert =
+            stockMovementRepository.findByOrderIdOrderByCreatedAtAsc(createdOrderId);
+        assertThat(movementsAfterConvert).hasSize(1);
+        assertThat(movementsAfterConvert.getFirst().getType()).isEqualTo(StockMovementType.PRODUCTION_RESERVATION);
+        assertThat(movementsAfterConvert.getFirst().getQuantity()).isEqualByComparingTo("7.50");
+
+        mockMvc.perform(patch("/api/v1/orders/{id}/status", createdOrderId)
+                .param("status", "WAITING_PRODUCTION"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.status").value("WAITING_PRODUCTION"));
+
+        StockItem afterWaiting = stockItemRepository.findByMaterialId(material.getId()).orElseThrow();
+        assertThat(afterWaiting.getReservedQuantity()).isEqualByComparingTo("7.5000");
+        assertThat(afterWaiting.getAvailableQuantity()).isEqualByComparingTo("-5.5000");
+        assertThat(stockMovementRepository.findByOrderIdOrderByCreatedAtAsc(createdOrderId)).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/stock/reserve-for-order/{orderId}: deve reservar materiais Make-to-Order e retornar 204")
+    void shouldReserveMaterialsViaReserveForOrderEndpoint() throws Exception {
+        Material material = persistMaterial("VID-INT-EP", new BigDecimal("3.00"));
+        Order order = persistOrder(OrderStatus.WAITING_PRODUCTION, material, new BigDecimal("5.00"));
+
+        mockMvc.perform(post("/api/v1/stock/reserve-for-order/{orderId}", order.getId()))
+            .andExpect(status().isNoContent());
+
+        StockItem afterReserve = stockItemRepository.findByMaterialId(material.getId()).orElseThrow();
+        assertThat(afterReserve.getPhysicalQuantity()).isEqualByComparingTo("3.0000");
+        assertThat(afterReserve.getReservedQuantity()).isEqualByComparingTo("5.0000");
+        assertThat(afterReserve.getAvailableQuantity()).isEqualByComparingTo("-2.0000");
+        assertThat(afterReserve.resolveAlertStatus()).isEqualTo(StockAlertStatus.NEED_PURCHASE);
+
+        List<StockMovement> movements = stockMovementRepository.findByOrderIdOrderByCreatedAtAsc(order.getId());
+        assertThat(movements).hasSize(1);
+        assertThat(movements.getFirst().getType()).isEqualTo(StockMovementType.PRODUCTION_RESERVATION);
+
+        mockMvc.perform(post("/api/v1/stock/reserve-for-order/{orderId}", order.getId()))
+            .andExpect(status().isNoContent());
+        assertThat(stockMovementRepository.findByOrderIdOrderByCreatedAtAsc(order.getId())).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("Ao transicionar O.S. de CREATED para WAITING_PRODUCTION sem reserva prévia, deve reservar materiais automaticamente")
+    void shouldReserveMaterialsWhenOrderTransitionsFromCreatedToWaitingProduction() throws Exception {
+        Material material = persistMaterial("VID-INT-WAIT", new BigDecimal("15.00"));
+        Order order = persistOrder(OrderStatus.CREATED, material, new BigDecimal("4.25"));
+
+        assertThat(stockMovementRepository.findByOrderIdOrderByCreatedAtAsc(order.getId())).isEmpty();
+
+        mockMvc.perform(patch("/api/v1/orders/{id}/status", order.getId())
+                .param("status", "WAITING_PRODUCTION"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.status").value("WAITING_PRODUCTION"));
+
+        StockItem afterTransition = stockItemRepository.findByMaterialId(material.getId()).orElseThrow();
+        assertThat(afterTransition.getPhysicalQuantity()).isEqualByComparingTo("15.0000");
+        assertThat(afterTransition.getReservedQuantity()).isEqualByComparingTo("4.2500");
+        assertThat(afterTransition.getAvailableQuantity()).isEqualByComparingTo("10.7500");
+        assertThat(afterTransition.resolveAlertStatus()).isEqualTo(StockAlertStatus.IN_STOCK);
+
+        List<StockMovement> movements = stockMovementRepository.findByOrderIdOrderByCreatedAtAsc(order.getId());
+        assertThat(movements).hasSize(1);
+        assertThat(movements.getFirst().getType()).isEqualTo(StockMovementType.PRODUCTION_RESERVATION);
+        assertThat(movements.getFirst().getQuantity()).isEqualByComparingTo("4.25");
     }
 }

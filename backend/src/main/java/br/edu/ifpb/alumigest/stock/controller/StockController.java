@@ -1,5 +1,6 @@
 package br.edu.ifpb.alumigest.stock.controller;
 
+import br.edu.ifpb.alumigest.stock.dto.OrderStockAlertResponseDTO;
 import br.edu.ifpb.alumigest.stock.dto.StockItemResponseDTO;
 import br.edu.ifpb.alumigest.stock.dto.StockMovementRequestDTO;
 import br.edu.ifpb.alumigest.stock.dto.StockMovementResponseDTO;
@@ -130,7 +131,7 @@ public class StockController {
     public ResponseEntity<Void> reserveForOrder(
             @Parameter(description = "Identificador único (UUID) da Ordem de Serviço", required = true)
             @PathVariable UUID orderId) {
-        stockService.reserveMaterialsForOrder(orderId);
+        stockService.reserveMaterials(orderId);
         return ResponseEntity.noContent().build();
     }
 
@@ -166,5 +167,25 @@ public class StockController {
             @PathVariable UUID orderId) {
         stockService.cancelReservationsForOrder(orderId);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/orders/{orderId}/alert")
+    @Operation(
+        summary = "Consultar status Make-to-Order agregado dos materiais reservados de uma O.S.",
+        description = "Retorna o status agregado de suprimento (IN_STOCK, NEED_PURCHASE) dos materiais demandados por uma O.S."
+    )
+    @ApiResponses({
+        @ApiResponse(
+            responseCode = "200",
+            description = "Status Make-to-Order da O.S. recuperado com sucesso",
+            content = @Content(schema = @Schema(implementation = OrderStockAlertResponseDTO.class))
+        ),
+        @ApiResponse(responseCode = "400", description = "Identificador de Ordem de Serviço inválido"),
+        @ApiResponse(responseCode = "404", description = "Ordem de Serviço não encontrada")
+    })
+    public ResponseEntity<OrderStockAlertResponseDTO> getOrderStockAlert(
+            @Parameter(description = "Identificador único (UUID) da Ordem de Serviço", required = true)
+            @PathVariable UUID orderId) {
+        return ResponseEntity.ok(stockService.getOrderStockAlert(orderId));
     }
 }
