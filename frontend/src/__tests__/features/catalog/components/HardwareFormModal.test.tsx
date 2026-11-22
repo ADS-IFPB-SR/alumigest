@@ -1,17 +1,23 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import React from 'react';
 import { HardwareFormModal } from '@/features/catalog/components/HardwareFormModal';
 import { buildMockHardware } from '@/test/fixtures/catalogFixtures';
 
-const mockCreateHardware = vi.fn();
+const mockCreateMaterialWithStock = vi.fn();
 const mockUpdateHardware = vi.fn();
 
+vi.mock('@/features/stock', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/features/stock')>();
+  return {
+    ...actual,
+    useCreateMaterialWithStock: () => ({
+      mutate: mockCreateMaterialWithStock,
+      isPending: false,
+    }),
+  };
+});
+
 vi.mock('@/features/catalog/hooks/useCatalog', () => ({
-  useCreateHardware: () => ({
-    mutate: mockCreateHardware,
-    isPending: false,
-  }),
   useUpdateHardware: () => ({
     mutate: mockUpdateHardware,
     isPending: false,
@@ -60,7 +66,7 @@ describe('HardwareFormModal Component', () => {
     expect(onClose).toHaveBeenCalled();
   });
 
-  it('Técnica: Transição e Submissão - deve validar e disparar createHardware ao salvar nova ferragem', async () => {
+  it('Técnica: Transição e Submissão - deve validar e disparar createMaterialWithStock ao salvar nova ferragem', async () => {
     render(<HardwareFormModal isOpen={true} onClose={vi.fn()} />);
 
     const skuInput = document.querySelector('[data-cy="hardware-form-sku"]') as HTMLInputElement;
@@ -79,14 +85,18 @@ describe('HardwareFormModal Component', () => {
     fireEvent.click(saveBtn);
 
     await waitFor(() => {
-      expect(mockCreateHardware).toHaveBeenCalledTimes(1);
-      expect(mockCreateHardware).toHaveBeenCalledWith(
+      expect(mockCreateMaterialWithStock).toHaveBeenCalledTimes(1);
+      expect(mockCreateMaterialWithStock).toHaveBeenCalledWith(
         expect.objectContaining({
-          skuCode: 'HW-ROL-01',
-          name: 'ROLDANA DUPLA SUPREMA',
-          unitMeasure: 'UN',
-          costPrice: 18.0,
-          salePrice: 42.0,
+          categoryType: 'HARDWARE',
+          hardware: expect.objectContaining({
+            skuCode: 'HW-ROL-01',
+            name: 'ROLDANA DUPLA SUPREMA',
+            unitMeasure: 'UN',
+            costPrice: 18.0,
+            salePrice: 42.0,
+          }),
+          initialStock: null,
         }),
         expect.any(Object)
       );

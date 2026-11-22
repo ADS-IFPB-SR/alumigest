@@ -1,5 +1,7 @@
 import { api } from '@/lib/api';
 import type {
+  MaterialWithStockCreateRequest,
+  MaterialWithStockResponse,
   StockFilterParams,
   StockItem,
   StockMovement,
@@ -38,6 +40,17 @@ export const stockApi = {
    */
   registerMovement: async (payload: StockMovementRequest): Promise<StockMovement> => {
     const { data } = await api.post<StockMovement>('/stock/movements', payload);
+    return data;
+  },
+
+  /**
+   * Fluxo 2 em 1 (US-22.3): cadastra o material, provisiona tb_stock_items
+   * e, quando initialStock é informado, registra PURCHASE_ENTRY na mesma transação.
+   */
+  createMaterialWithStock: async (
+    payload: MaterialWithStockCreateRequest
+  ): Promise<MaterialWithStockResponse> => {
+    const { data } = await api.post<MaterialWithStockResponse>('/stock/materials', payload);
     return data;
   },
 

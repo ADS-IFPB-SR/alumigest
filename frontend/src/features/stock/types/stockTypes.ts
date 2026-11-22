@@ -49,6 +49,7 @@ export interface StockMovement {
   newReservedQuantity?: number;
   orderId?: string | null;
   referenceDocument?: string;
+  supplier?: string | null;
   reason?: string;
   registeredBy?: string;
   createdAt: string;
@@ -69,6 +70,34 @@ export interface StockMovementRequest {
   reason?: string;
   referenceDocument?: string;
   registeredBy?: string;
+  supplier?: string;
+}
+
+export interface InitialStockEntryRequest {
+  quantity: number;
+  unitCost: number;
+  minimumStock?: number;
+  supplier?: string;
+  referenceDocument?: string;
+  reason?: string;
+  registeredBy?: string;
+}
+
+export interface MaterialWithStockCreateRequest {
+  categoryType: StockCategoryType;
+  aluminumProfile?: Record<string, unknown>;
+  glass?: Record<string, unknown>;
+  hardware?: Record<string, unknown>;
+  film?: Record<string, unknown>;
+  initialStock?: InitialStockEntryRequest | null;
+}
+
+export interface MaterialWithStockResponse {
+  materialId: string;
+  categoryType: StockCategoryType;
+  material: unknown;
+  stockItem: StockItem;
+  initialMovement?: StockMovement | null;
 }
 
 export interface StockFilterParams {

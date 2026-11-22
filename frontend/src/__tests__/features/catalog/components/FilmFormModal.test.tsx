@@ -1,17 +1,23 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import React from 'react';
 import { FilmFormModal } from '@/features/catalog/components/FilmFormModal';
 import { buildMockFilm } from '@/test/fixtures/catalogFixtures';
 
-const mockCreateFilm = vi.fn();
+const mockCreateMaterialWithStock = vi.fn();
 const mockUpdateFilm = vi.fn();
 
+vi.mock('@/features/stock', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/features/stock')>();
+  return {
+    ...actual,
+    useCreateMaterialWithStock: () => ({
+      mutate: mockCreateMaterialWithStock,
+      isPending: false,
+    }),
+  };
+});
+
 vi.mock('@/features/catalog/hooks/useCatalog', () => ({
-  useCreateFilm: () => ({
-    mutate: mockCreateFilm,
-    isPending: false,
-  }),
   useUpdateFilm: () => ({
     mutate: mockUpdateFilm,
     isPending: false,
@@ -56,10 +62,9 @@ describe('FilmFormModal Component', () => {
     expect(onClose).toHaveBeenCalled();
   });
 
-  it('Técnica: Transição e Submissão - deve validar e disparar createFilm ao salvar formulário de cadastro', async () => {
+  it('Técnica: Transição e Submissão - deve validar e disparar createMaterialWithStock ao salvar formulário de cadastro', async () => {
     render(<FilmFormModal isOpen={true} onClose={vi.fn()} />);
 
-    // Preenche campos obrigatórios
     const nameInput = document.querySelector('[data-cy="film-form-name"]') as HTMLInputElement;
     const typeInput = document.querySelector('[data-cy="film-form-type"]') as HTMLInputElement;
     const costInput = document.querySelector('[data-cy="film-form-cost-price"]') as HTMLInputElement;
@@ -74,12 +79,16 @@ describe('FilmFormModal Component', () => {
     fireEvent.click(saveBtn);
 
     await waitFor(() => {
-      expect(mockCreateFilm).toHaveBeenCalledTimes(1);
-      expect(mockCreateFilm).toHaveBeenCalledWith(
+      expect(mockCreateMaterialWithStock).toHaveBeenCalledTimes(1);
+      expect(mockCreateMaterialWithStock).toHaveBeenCalledWith(
         expect.objectContaining({
-          name: 'PELÍCULA BLACKOUT 100%',
-          costPrice: 40.0,
-          salePrice: 95.0,
+          categoryType: 'FILM',
+          film: expect.objectContaining({
+            name: 'PELÍCULA BLACKOUT 100%',
+            costPrice: 40.0,
+            salePrice: 95.0,
+          }),
+          initialStock: null,
         }),
         expect.any(Object)
       );

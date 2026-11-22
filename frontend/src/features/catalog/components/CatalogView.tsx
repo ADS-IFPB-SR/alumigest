@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Tabs, Tab } from '../../../components/ui/Tabs';
 import {
   KardexDrawer,
+  PurchaseEntryModal,
   needsPurchaseOrReorder,
   resolveCatalogStockSnapshot,
   useStockBalances,
@@ -75,6 +76,10 @@ export function CatalogView() {
   } | null>(null);
   const [selectedKardexMaterial, setSelectedKardexMaterial] =
     useState<KardexMaterialTarget | null>(null);
+  const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false);
+  const [purchaseDefaultMaterialId, setPurchaseDefaultMaterialId] = useState<
+    string | undefined
+  >(undefined);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL');
   const [onlyNeedsPurchase, setOnlyNeedsPurchase] = useState(false);
@@ -103,6 +108,16 @@ export function CatalogView() {
 
   const handleOpenSelectionModal = () => {
     setIsSelectionModalOpen(true);
+  };
+
+  const handleOpenPurchaseModal = (materialId?: string) => {
+    setPurchaseDefaultMaterialId(materialId);
+    setIsPurchaseModalOpen(true);
+  };
+
+  const handleClosePurchaseModal = () => {
+    setIsPurchaseModalOpen(false);
+    setPurchaseDefaultMaterialId(undefined);
   };
 
   const handleSelectTipo = (tipo: MaterialType) => {
@@ -242,6 +257,22 @@ export function CatalogView() {
               expand_more
             </span>
           </div>
+
+          {/* Registrar Entrada / Compra (US-22.3) */}
+          <button
+            type="button"
+            onClick={() => handleOpenPurchaseModal()}
+            data-cy="register-purchase-button"
+            className="inline-flex items-center justify-center gap-xs px-md py-sm rounded-md border border-outline-variant bg-surface-container-lowest hover:bg-surface-container-low text-sm font-semibold text-on-surface shadow-sm transition-colors cursor-pointer"
+          >
+            <span
+              className="material-symbols-outlined text-[18px] text-primary"
+              aria-hidden="true"
+            >
+              inventory_2
+            </span>
+            <span>Registrar Entrada / Compra</span>
+          </button>
 
           {/* Novo Material */}
           <Button
@@ -398,6 +429,17 @@ export function CatalogView() {
         }
         onClose={() => setSelectedKardexMaterial(null)}
       />
+
+      {/* Modal de Entrada de Compras (US-22.3) */}
+      {isPurchaseModalOpen && (
+        <PurchaseEntryModal
+          isOpen={true}
+          onClose={handleClosePurchaseModal}
+          stockItems={stockItems}
+          defaultMaterialId={purchaseDefaultMaterialId}
+          onRequestNewMaterial={handleOpenSelectionModal}
+        />
+      )}
     </>
   );
 }
