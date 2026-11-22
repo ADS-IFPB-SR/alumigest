@@ -9,7 +9,17 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
+import br.edu.ifpb.alumigest.catalog.domain.MaterialCategoryType;
+import br.edu.ifpb.alumigest.common.exception.BusinessException;
+import br.edu.ifpb.alumigest.stock.dto.MaterialWithStockResponseDTO;
+import br.edu.ifpb.alumigest.stock.dto.StockMovementRequestDTO;
+import br.edu.ifpb.alumigest.stock.service.MaterialOnboardingService;
+import java.time.ZoneOffset;
+import java.util.Map;
+import org.springframework.http.MediaType;
 import br.edu.ifpb.alumigest.common.exception.GlobalExceptionHandler;
 import br.edu.ifpb.alumigest.stock.domain.StockAlertStatus;
 import br.edu.ifpb.alumigest.stock.domain.StockMovementType;
@@ -34,7 +44,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("StockController — Testes MockMvc do Endpoint GET /api/v1/stock (US-22.1)")
+@DisplayName("StockController — Testes MockMvc do Endpoint GET /api/v1/stock (US-22.1) e (US-22.3)")
 class StockControllerTest {
 
     private MockMvc mockMvc;
@@ -44,6 +54,9 @@ class StockControllerTest {
 
     @InjectMocks
     private StockController stockController;
+
+    @Mock
+    private MaterialOnboardingService materialOnboardingService;
 
     @BeforeEach
     void setUp() {
@@ -230,5 +243,319 @@ class StockControllerTest {
             .andExpect(jsonPath("$", hasSize(0)));
 
         verify(stockService).listMovements(materialId);
+    }
+
+    @Test
+    @DisplayName("[Partição de Equivalência] POST /api/v1/stock/movements aceita documento livre via alias documentNumber (RN-05) e unitCost positivo (RN-06)")
+    void shouldRegisterPurchaseEntryWithFreeDocumentAndUnitCost() throws Exception {
+        UUID materialId = UUID.randomUUID();
+        UUID movementId = UUID.randomUUID();
+        UUID stockItemId = UUID.randomUUID();
+
+        StockMovementResponseDTO response = new StockMovementResponseDTO(
+            movementId,
+            stockItemId,
+            materialId,
+            "ALU-SUP-105",
+            "PERFIL GUIA SUPERIOR 2 VIAS 6M BRANCO",
+            "BARRA_6M",
+            StockMovementType.PURCHASE_ENTRY,
+            new BigDecimal("10.0000"),
+            new BigDecimal("145.00"),
+            BigDecimal.ZERO,
+            new BigDecimal("10.0000"),
+            BigDecimal.ZERO,
+            BigDecimal.ZERO,
+            null,
+            "Pedido 1088",
+            "Distribuidora Asa",
+            "Reposição de estoque",
+            "almoxarifado",
+            OffsetDateTime.now(ZoneOffset.UTC)
+        );
+        when(stockService.registerMovement(any(StockMovementRequestDTO.class))).thenReturn(response);
+
+        String payload = """
+            {
+              "materialId": "%s",
+              "type": "PURCHASE_ENTRY",
+              "quantity": 10,
+              "unitCost": 145.00,
+              "supplier": "Distribuidora Asa",
+              "documentNumber": "Pedido 1088",
+              "reason": "Reposição de estoque",
+              "registeredBy": "almoxarifado"
+            }
+            """.formatted(materialId);
+
+        mockMvc.perform(post("/api/v1/stock/movements")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(payload))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.id", is(movementId.toString())))
+            .andExpect(jsonPath("$.type", is("PURCHASE_ENTRY")))
+            .andExpect(jsonPath("$.unitCost", is(145.00)))
+            .andExpect(jsonPath("$.referenceDocument", is("Pedido 1088")))
+            .andExpect(jsonPath("$.supplier", is("Distribuidora Asa")));
+
+        ArgumentCaptor<StockMovementRequestDTO> captor =
+            ArgumentCaptor.forClass(StockMovementRequestDTO.class);
+        verify(stockService).registerMovement(captor.capture());
+        assertThat(captor.getValue().referenceDocument()).isEqualTo("Pedido 1088");
+        assertThat(captor.getValue().supplier()).isEqualTo("Distribuidora Asa");
+        assertThat(captor.getValue().unitCost()).isEqualByComparingTo("145.00");
+    }
+
+    @Test
+    @DisplayName("[Tabela de Decisão] POST /api/v1/stock/movements retorna 422 quando PURCHASE_ENTRY omite unitCost (RN-06)")
+    void shouldReturnUnprocessableEntityWhenPurchaseEntryMissingUnitCost() throws Exception {
+        UUID materialId = UUID.randomUUID();
+        when(stockService.registerMovement(any(StockMovementRequestDTO.class)))
+            .thenThrow(new BusinessException(
+                "O preço de compra unitário (unitCost) é obrigatório para entradas de compra (RN-06)."
+            ));
+
+        String payload = """
+            {
+              "materialId": "%s",
+              "type": "PURCHASE_ENTRY",
+              "quantity": 5,
+              "referenceDocument": "Recibo Loja 442",
+              "reason": "Compra sem custo unitário"
+            }
+            """.formatted(materialId);
+
+        mockMvc.perform(post("/api/v1/stock/movements")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(payload))
+            .andExpect(status().isUnprocessableEntity())
+            .andExpect(jsonPath("$.message").exists());
+    }
+
+    @Test
+    @DisplayName("[Análise de Valor Limite] POST /api/v1/stock/movements retorna 400 quando unitCost é zero")
+    void shouldReturnBadRequestWhenUnitCostIsZero() throws Exception {
+        UUID materialId = UUID.randomUUID();
+        String payload = """
+            {
+              "materialId": "%s",
+              "type": "PURCHASE_ENTRY",
+              "quantity": 5,
+              "unitCost": 0,
+              "referenceDocument": "Pedido 1089"
+            }
+            """.formatted(materialId);
+
+        mockMvc.perform(post("/api/v1/stock/movements")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(payload))
+            .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(stockService);
+    }
+
+    @Test
+    @DisplayName("[Partição de Equivalência] POST /api/v1/stock/materials cadastra material com entrada inicial atômica (2 em 1)")
+    void shouldCreateMaterialWithInitialStock() throws Exception {
+        UUID materialId = UUID.randomUUID();
+        UUID stockItemId = UUID.randomUUID();
+        UUID movementId = UUID.randomUUID();
+        OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
+
+        StockItemResponseDTO stockItem = new StockItemResponseDTO(
+            stockItemId,
+            materialId,
+            "ALU-SUP-105",
+            "PERFIL GUIA SUPERIOR 2 VIAS 6M BRANCO",
+            "PROFILE",
+            "BARRA_6M",
+            new BigDecimal("10.0000"),
+            BigDecimal.ZERO,
+            new BigDecimal("10.0000"),
+            new BigDecimal("4.0000"),
+            StockAlertStatus.IN_STOCK,
+            now
+        );
+
+        StockMovementResponseDTO movement = new StockMovementResponseDTO(
+            movementId,
+            stockItemId,
+            materialId,
+            "ALU-SUP-105",
+            "PERFIL GUIA SUPERIOR 2 VIAS 6M BRANCO",
+            "BARRA_6M",
+            StockMovementType.PURCHASE_ENTRY,
+            new BigDecimal("10.0000"),
+            new BigDecimal("145.00"),
+            BigDecimal.ZERO,
+            new BigDecimal("10.0000"),
+            BigDecimal.ZERO,
+            BigDecimal.ZERO,
+            null,
+            "Pedido 1088",
+            "Distribuidora Asa",
+            "Entrada inicial no cadastro do material",
+            "almoxarifado",
+            now
+        );
+
+        MaterialWithStockResponseDTO response = new MaterialWithStockResponseDTO(
+            materialId,
+            MaterialCategoryType.PROFILE,
+            Map.of("id", materialId.toString(), "name", "PERFIL GUIA SUPERIOR 2 VIAS 6M BRANCO"),
+            stockItem,
+            movement
+        );
+        when(materialOnboardingService.createMaterialWithStock(any())).thenReturn(response);
+
+        String payload = """
+            {
+              "categoryType": "PROFILE",
+              "aluminumProfile": {
+                "name": "PERFIL GUIA SUPERIOR 2 VIAS 6M BRANCO",
+                "commercialReference": "ALU-SUP-105",
+                "commercialLine": "SUPREMA",
+                "ncmCode": "76042100",
+                "colorFinish": "BRANCO",
+                "standardLengthM": 6,
+                "costPrice": 145.00,
+                "salePrice": 42.00,
+                "weight": 0.920,
+                "familyCode": "FAM-SUPREMA",
+                "isHandle": false
+              },
+              "initialStock": {
+                "quantity": 10,
+                "unitCost": 145.00,
+                "minimumStock": 4,
+                "supplier": "Distribuidora Asa",
+                "referenceDocument": "Pedido 1088",
+                "reason": "Entrada inicial no cadastro do material",
+                "registeredBy": "almoxarifado"
+              }
+            }
+            """;
+
+        mockMvc.perform(post("/api/v1/stock/materials")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(payload))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.materialId", is(materialId.toString())))
+            .andExpect(jsonPath("$.categoryType", is("PROFILE")))
+            .andExpect(jsonPath("$.stockItem.physicalQuantity", is(10.0)))
+            .andExpect(jsonPath("$.stockItem.minimumStock", is(4.0)))
+            .andExpect(jsonPath("$.initialMovement.type", is("PURCHASE_ENTRY")))
+            .andExpect(jsonPath("$.initialMovement.supplier", is("Distribuidora Asa")))
+            .andExpect(jsonPath("$.initialMovement.referenceDocument", is("Pedido 1088")));
+
+        verify(materialOnboardingService).createMaterialWithStock(any());
+    }
+
+    @Test
+    @DisplayName("[Partição de Equivalência] POST /api/v1/stock/materials cadastra material sem entrada inicial provisionando saldo zerado")
+    void shouldCreateMaterialWithoutInitialStock() throws Exception {
+        UUID materialId = UUID.randomUUID();
+        StockItemResponseDTO stockItem = new StockItemResponseDTO(
+            UUID.randomUUID(),
+            materialId,
+            "ALU-PUX-201",
+            "PERFIL PUXADOR CAVA 6M PRETO",
+            "PROFILE",
+            "BARRA_6M",
+            BigDecimal.ZERO,
+            BigDecimal.ZERO,
+            BigDecimal.ZERO,
+            BigDecimal.ZERO,
+            StockAlertStatus.IN_STOCK,
+            OffsetDateTime.now(ZoneOffset.UTC)
+        );
+        MaterialWithStockResponseDTO response = new MaterialWithStockResponseDTO(
+            materialId,
+            MaterialCategoryType.PROFILE,
+            Map.of("id", materialId.toString()),
+            stockItem,
+            null
+        );
+        when(materialOnboardingService.createMaterialWithStock(any())).thenReturn(response);
+
+        String payload = """
+            {
+              "categoryType": "PROFILE",
+              "aluminumProfile": {
+                "name": "PERFIL PUXADOR CAVA 6M PRETO",
+                "commercialReference": "ALU-PUX-201",
+                "commercialLine": "SUPREMA",
+                "ncmCode": "76042100",
+                "colorFinish": "PRETO",
+                "standardLengthM": 6,
+                "costPrice": 160.00,
+                "salePrice": 48.00,
+                "weight": 1.050,
+                "isHandle": true
+              },
+              "initialStock": null
+            }
+            """;
+
+        mockMvc.perform(post("/api/v1/stock/materials")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(payload))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.stockItem.physicalQuantity", is(0)))
+            .andExpect(jsonPath("$.initialMovement").doesNotExist());
+
+        verify(materialOnboardingService).createMaterialWithStock(any());
+    }
+
+    @Test
+    @DisplayName("[Análise de Valor Limite] POST /api/v1/stock/materials retorna 400 quando initialStock omite unitCost (RN-06)")
+    void shouldReturnBadRequestWhenInitialStockMissingUnitCost() throws Exception {
+        String payload = """
+            {
+              "categoryType": "PROFILE",
+              "aluminumProfile": {
+                "name": "PERFIL TESTE RN06",
+                "commercialReference": "ALU-SUP-999",
+                "commercialLine": "SUPREMA",
+                "ncmCode": "76042100",
+                "colorFinish": "BRANCO",
+                "standardLengthM": 6,
+                "costPrice": 145.00,
+                "salePrice": 42.00,
+                "weight": 0.920,
+                "isHandle": false
+              },
+              "initialStock": {
+                "quantity": 10,
+                "minimumStock": 4,
+                "supplier": "Distribuidora Asa",
+                "referenceDocument": "Pedido 1088"
+              }
+            }
+            """;
+
+        mockMvc.perform(post("/api/v1/stock/materials")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(payload))
+            .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(materialOnboardingService);
+    }
+
+    @Test
+    @DisplayName("[Partição de Equivalência] POST /api/v1/stock/materials retorna 400 quando categoryType não é informado")
+    void shouldReturnBadRequestWhenCategoryTypeIsMissing() throws Exception {
+        String payload = """
+            {
+              "initialStock": null
+            }
+            """;
+
+        mockMvc.perform(post("/api/v1/stock/materials")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(payload))
+            .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(materialOnboardingService);
     }
 }
