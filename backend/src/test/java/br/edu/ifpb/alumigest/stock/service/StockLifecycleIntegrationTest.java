@@ -425,4 +425,131 @@ class StockLifecycleIntegrationTest {
         assertThat(movements.getFirst().getType()).isEqualTo(StockMovementType.PRODUCTION_RESERVATION);
         assertThat(movements.getFirst().getQuantity()).isEqualByComparingTo("4.25");
     }
+
+    @Test
+    @DisplayName("E2E Completo (US-21.8): Orçamento aprovado -> Conversão em O.S. -> Reserva Make-to-Order -> Fabricação -> Baixa Física, validando invariante em cada etapa")
+    void shouldExecuteFullLifecycleFromBudgetToOrderCompletionVerifyingInvariants() throws Exception {
+        // 1. Estado Inicial do Estoque: 25.00 unidades físicas
+        Material material = persistMaterial("VID-E2E-FULL", new BigDecimal("25.0000"));
+        StockItem initialStock = stockItemRepository.findByMaterialId(material.getId()).orElseThrow();
+        assertThat(initialStock.getPhysicalQuantity()).isEqualByComparingTo("25.0000");
+        assertThat(initialStock.getReservedQuantity()).isEqualByComparingTo("0.0000");
+        assertThat(initialStock.getAvailableQuantity()).isEqualByComparingTo("25.0000");
+        assertThat(initialStock.getAvailableQuantity())
+            .isEqualByComparingTo(initialStock.getPhysicalQuantity().subtract(initialStock.getReservedQuantity()));
+
+        // 2. Criação do Orçamento Aprovado demandando 9.00 do insumo
+        Client client = Client.builder()
+            .fullName("Cliente Jornada E2E")
+            .phone("83988882222")
+            .build();
+        client = clientRepository.saveAndFlush(client);
+        createdClientIds.add(client.getId());
+
+        Product product = new Product();
+        product.setName("Janela Integrada E2E");
+        product.setTemplateType(DoorTemplateType.SLIDING_DOOR_1F);
+        product.setActive(true);
+        product = productRepository.saveAndFlush(product);
+        createdProductIds.add(product.getId());
+
+        Budget budget = new Budget();
+        budget.setCode("ORC-E2E-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
+        budget.setClient(client);
+        budget.setStatus(BudgetStatus.APPROVED);
+        budget.setSubtotal(new BigDecimal("2200.00"));
+        budget.setTotal(new BigDecimal("2200.00"));
+
+        BudgetItem budgetItem = new BudgetItem();
+        budgetItem.setProduct(product);
+        budgetItem.setProductName(product.getName());
+        budgetItem.setWidthMm(new BigDecimal("1200"));
+        budgetItem.setHeightMm(new BigDecimal("1400"));
+        budgetItem.setQuantity(1);
+        budgetItem.setSubtotal(new BigDecimal("2200.00"));
+        budgetItem.setLaborCost(BigDecimal.ZERO);
+
+        BudgetItemOption option = new BudgetItemOption();
+        option.setMaterial(material);
+        option.setMaterialName(material.getName());
+        option.setUnitMeasure("M2");
+        option.setCategoryType(MaterialCategoryType.GLASS);
+        option.setQuantity(new BigDecimal("9.0000"));
+        option.setUnitPrice(new BigDecimal("120.00"));
+        option.setTotalPrice(new BigDecimal("1080.00"));
+        budgetItem.addOption(option);
+        budget.addItem(budgetItem);
+
+        budget = budgetRepository.saveAndFlush(budget);
+        createdBudgetIds.add(budget.getId());
+
+        // 3. Conversão em Ordem de Serviço -> Disparo de Reserva Make-to-Order
+        OrderConvertRequest convertRequest = new OrderConvertRequest(
+            ApprovalChannel.WHATSAPP,
+            LocalDate.now(ZoneOffset.UTC).plusDays(15),
+            "Conversão E2E oficial"
+        );
+
+        MvcResult convertResult = mockMvc.perform(post("/api/v1/orders/from-budget/{budgetId}", budget.getId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(convertRequest)))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.status").value("CREATED"))
+            .andReturn();
+
+        UUID orderId = UUID.fromString(
+            objectMapper.readTree(convertResult.getResponse().getContentAsString()).get("id").asText()
+        );
+        createdOrderIds.add(orderId);
+
+        // Validação da Invariante após Reserva Automática
+        StockItem stockAfterReserve = stockItemRepository.findByMaterialId(material.getId()).orElseThrow();
+        assertThat(stockAfterReserve.getPhysicalQuantity()).isEqualByComparingTo("25.0000");
+        assertThat(stockAfterReserve.getReservedQuantity()).isEqualByComparingTo("9.0000");
+        assertThat(stockAfterReserve.getAvailableQuantity()).isEqualByComparingTo("16.0000");
+        assertThat(stockAfterReserve.getAvailableQuantity())
+            .isEqualByComparingTo(stockAfterReserve.getPhysicalQuantity().subtract(stockAfterReserve.getReservedQuantity()));
+
+        // 4. Fabricação: Transições na esteira CREATED -> WAITING_PRODUCTION -> IN_PRODUCTION
+        mockMvc.perform(patch("/api/v1/orders/{id}/status", orderId)
+                .param("status", "WAITING_PRODUCTION"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.status").value("WAITING_PRODUCTION"));
+
+        mockMvc.perform(patch("/api/v1/orders/{id}/status", orderId)
+                .param("status", "IN_PRODUCTION"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.status").value("IN_PRODUCTION"));
+
+        // Invariante durante a produção permanece estável
+        StockItem stockDuringProd = stockItemRepository.findByMaterialId(material.getId()).orElseThrow();
+        assertThat(stockDuringProd.getPhysicalQuantity()).isEqualByComparingTo("25.0000");
+        assertThat(stockDuringProd.getReservedQuantity()).isEqualByComparingTo("9.0000");
+        assertThat(stockDuringProd.getAvailableQuantity()).isEqualByComparingTo("16.0000");
+        assertThat(stockDuringProd.getAvailableQuantity())
+            .isEqualByComparingTo(stockDuringProd.getPhysicalQuantity().subtract(stockDuringProd.getReservedQuantity()));
+
+        // 5. Conclusão da Produção: Baixa Física Definitiva
+        mockMvc.perform(patch("/api/v1/orders/{id}/production-status", orderId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"status\":\"COMPLETED\"}"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.status").value("COMPLETED"));
+
+        // Validação da Invariante Final após Baixa Física (Delta disponível = 0)
+        StockItem finalStock = stockItemRepository.findByMaterialId(material.getId()).orElseThrow();
+        assertThat(finalStock.getPhysicalQuantity()).isEqualByComparingTo("16.0000"); // 25.00 - 9.00
+        assertThat(finalStock.getReservedQuantity()).isEqualByComparingTo("0.0000");  // 9.00 - 9.00
+        assertThat(finalStock.getAvailableQuantity()).isEqualByComparingTo("16.0000"); // inalterado!
+        assertThat(finalStock.getAvailableQuantity())
+            .isEqualByComparingTo(finalStock.getPhysicalQuantity().subtract(finalStock.getReservedQuantity()));
+
+        // Trilha Kardex com histórico imutável: exatamente 2 movimentações vinculadas à O.S.
+        List<StockMovement> orderMovements = stockMovementRepository.findByOrderIdOrderByCreatedAtAsc(orderId);
+        assertThat(orderMovements).hasSize(2);
+        assertThat(orderMovements.get(0).getType()).isEqualTo(StockMovementType.PRODUCTION_RESERVATION);
+        assertThat(orderMovements.get(0).getQuantity()).isEqualByComparingTo("9.0000");
+        assertThat(orderMovements.get(1).getType()).isEqualTo(StockMovementType.PRODUCTION_OUTFLOW);
+        assertThat(orderMovements.get(1).getQuantity()).isEqualByComparingTo("9.0000");
+    }
 }
