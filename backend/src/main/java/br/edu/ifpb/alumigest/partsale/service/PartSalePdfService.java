@@ -4,6 +4,7 @@ import br.edu.ifpb.alumigest.budgets.config.CompanyProperties;
 import br.edu.ifpb.alumigest.catalog.domain.MaterialCategoryType;
 import br.edu.ifpb.alumigest.clients.domain.Client;
 import br.edu.ifpb.alumigest.common.exception.BusinessException;
+import br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException;
 import br.edu.ifpb.alumigest.orders.service.LabelPdfService;
 import br.edu.ifpb.alumigest.orders.service.pdf.ThermalLabelData;
 import br.edu.ifpb.alumigest.partsale.domain.PartSale;
@@ -41,6 +42,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
@@ -49,7 +51,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 /**
- * Serviço responsável pela geração do Orçamento / Pedido de Venda Avulsa de Partes em PDF (A4).
+ * Serviço de geração do Orçamento / Pedido de Venda Avulsa de Partes em PDF (A4).
  * US-46.4 — Geração e Exportação do Orçamento em PDF A4 (#530).
  */
 @Service
@@ -122,24 +124,50 @@ public class PartSalePdfService {
    * @return array de bytes contendo o documento PDF térmico
    */
   public byte[] generateLabelsPdf(PartSale partSale, Client client) {
+    return generateLabelsPdf(partSale, client, null);
+  }
+
+  /**
+   * Gera o arquivo PDF de etiquetas térmicas industriais (100x60mm) para os itens da venda avulsa,
+   * com suporte a filtro opcional por item específico.
+   *
+   * @param partSale venda de partes persistida
+   * @param client cliente associado à venda
+   * @param itemId identificador opcional de um item específico para filtragem
+   * @return array de bytes contendo o documento PDF térmico
+   */
+  public byte[] generateLabelsPdf(PartSale partSale, Client client, UUID itemId) {
     Objects.requireNonNull(
         partSale, "A venda de partes não pode ser nula para geração das etiquetas.");
     if (partSale.getItems() == null || partSale.getItems().isEmpty()) {
-      throw new BusinessException("A venda não possui itens para geração de etiquetas térmicas.");
+      throw new BusinessException(
+          "A venda não possui itens para geração de etiquetas térmicas.");
+    }
+
+    if (itemId != null) {
+      boolean itemExiste = partSale.getItems().stream()
+          .anyMatch(i -> Objects.equals(i.getId(), itemId));
+      if (!itemExiste) {
+        throw new ResourceNotFoundException("Item da Venda Avulsa", itemId.toString());
+      }
     }
 
     String customerName = resolverNomeClienteParaEtiqueta(client);
     String companyName = resolverNomeEmpresaParaEtiqueta();
     LocalDate issueDate = partSale.getCreatedAt() != null
-        ? partSale.getCreatedAt().toLocalDate()
+        ? partSale.getCreatedAt().atZoneSameInstant(ZONE_SAO_PAULO).toLocalDate()
         : LocalDate.now(ZONE_SAO_PAULO);
 
     List<ThermalLabelData> etiquetas = new ArrayList<>();
     List<PartSaleItem> items = partSale.getItems();
 
     for (int itemIdx = 0; itemIdx < items.size(); itemIdx++) {
+      PartSaleItem item = items.get(itemIdx);
+      if (itemId != null && !Objects.equals(item.getId(), itemId)) {
+        continue;
+      }
       adicionarEtiquetasDoItem(
-          etiquetas, items.get(itemIdx), itemIdx + 1, companyName, customerName,
+          etiquetas, item, itemIdx + 1, companyName, customerName,
           partSale.getCode(), issueDate);
     }
 
@@ -148,7 +176,7 @@ public class PartSalePdfService {
 
   private String resolverNomeClienteParaEtiqueta(Client client) {
     if (client != null && client.getFullName() != null && !client.getFullName().isBlank()) {
-      return client.getFullName();
+      return truncarTexto(client.getFullName().trim(), 48);
     }
     return CLIENTE_BALCAO_PADRAO;
   }
@@ -156,7 +184,7 @@ public class PartSalePdfService {
   private String resolverNomeEmpresaParaEtiqueta() {
     if (companyProps != null && companyProps.getRazaoSocial() != null
         && !companyProps.getRazaoSocial().isBlank()) {
-      return companyProps.getRazaoSocial();
+      return truncarTexto(companyProps.getRazaoSocial().trim(), 40);
     }
     return "Alumiportas";
   }
@@ -171,6 +199,25 @@ public class PartSalePdfService {
     return "Material Avulso";
   }
 
+  private String resolverCor(PartSaleItem item) {
+    if (item.getMaterial() != null && item.getMaterial().getColorFinish() != null
+        && !item.getMaterial().getColorFinish().isBlank()) {
+      return truncarTexto(item.getMaterial().getColorFinish().trim(), 25);
+    }
+    return NAO_INFORMADO;
+  }
+
+  private String truncarTexto(String texto, int maxLen) {
+    if (texto == null) {
+      return "";
+    }
+    String trimmed = texto.trim();
+    if (trimmed.length() <= maxLen) {
+      return trimmed;
+    }
+    return trimmed.substring(0, maxLen - 3) + "...";
+  }
+
   private void adicionarEtiquetasDoItem(
       List<ThermalLabelData> etiquetas,
       PartSaleItem item,
@@ -180,14 +227,53 @@ public class PartSalePdfService {
       String saleCode,
       LocalDate issueDate) {
     int quantity = item.getQuantity() != null && item.getQuantity() > 0 ? item.getQuantity() : 1;
-    String description = resolverDescricaoItem(item);
+    String description = truncarTexto(resolverDescricaoItem(item), 60);
     String lineOrGroup = item.getMaterialType() != null ? item.getMaterialType().name() : "AVULSO";
     int widthMm = item.getWidthMm() != null ? item.getWidthMm() : 0;
     int heightMm = item.getHeightMm() != null ? item.getHeightMm() : 0;
-    String color = "Padrão";
-    String glassType = item.getMaterialType() != null ? item.getMaterialType().name() : "N/A";
-    String location = "Venda Avulsa de Balcão";
+    String color = resolverCor(item);
+    String location = truncarTexto("Venda Avulsa de Balcão", 52);
     String skuCode = item.getMaterial() != null ? item.getMaterial().getSkuCode() : null;
+
+    String measurementTitle;
+    String measurementValue;
+    String specLabel;
+    String specValue;
+
+    MaterialCategoryType category = item.getMaterialType();
+    if (category == MaterialCategoryType.PROFILE) {
+      measurementTitle = "CORTE / COMPRIMENTO";
+      int length = heightMm;
+      if (length <= 0 && widthMm > 0) {
+        length = widthMm;
+      }
+      if (length <= 0 && item.getCalculatedUnitMeasure() != null) {
+        length = item.getCalculatedUnitMeasure().multiply(BigDecimal.valueOf(1000)).intValue();
+      }
+      measurementValue = String.format(Locale.ROOT, "CORTE: %d mm", length);
+      specLabel = "ESPECIFICAÇÃO:";
+      specValue = truncarTexto("Perfil de Alumínio", 28);
+    } else if (category == MaterialCategoryType.HARDWARE
+        || category == MaterialCategoryType.ROLLERS) {
+      measurementTitle = "QUANTIDADE INDIVIDUAL";
+      measurementValue = "1 UNIDADE";
+      specLabel = "ESPECIFICAÇÃO:";
+      specValue = truncarTexto("Ferragem / Acessório", 28);
+    } else if (category == MaterialCategoryType.FILM) {
+      measurementTitle = "MEDIDAS NOMINAIS (L x A)";
+      measurementValue = String.format(Locale.ROOT, "%d x %d mm", widthMm, heightMm);
+      specLabel = "ESPECIFICAÇÃO:";
+      specValue = truncarTexto("Película", 28);
+    } else {
+      measurementTitle = "MEDIDAS NOMINAIS (L x A)";
+      measurementValue = String.format(Locale.ROOT, "%d x %d mm", widthMm, heightMm);
+      specLabel = "VIDRO ESPECIFICADO:";
+      specValue = truncarTexto(
+          item.getDescription() != null && !item.getDescription().isBlank()
+              ? item.getDescription()
+              : (item.getMaterial() != null && item.getMaterial().getName() != null
+                  ? item.getMaterial().getName() : "Vidro Temperado"), 28);
+    }
 
     for (int pieceNumber = 1; pieceNumber <= quantity; pieceNumber++) {
       String badge = String.format(
@@ -205,11 +291,15 @@ public class PartSalePdfService {
           widthMm,
           heightMm,
           color,
-          glassType,
+          specValue,
           location,
           skuCode,
           issueDate,
-          badge
+          badge,
+          measurementTitle,
+          measurementValue,
+          specLabel,
+          specValue
       );
       etiquetas.add(data);
     }

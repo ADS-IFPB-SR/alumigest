@@ -8,6 +8,7 @@ import {
   PartSaleItemTable,
   PartSaleSummaryCard,
   useCreatePartSale,
+  partSaleApi,
   type PartSaleItemDraft,
   type PartSaleStatus,
   type CreatePartSaleRequest,
@@ -38,7 +39,9 @@ export function PartSalePage() {
   const [items, setItems] = useState<PartSaleItemDraft[]>([]);
   const [isPdfModalOpen, setIsPdfModalOpen] = useState<boolean>(false);
   const [isLabelModalOpen, setIsLabelModalOpen] = useState<boolean>(false);
+  const [isDownloadingLabels, setIsDownloadingLabels] = useState<boolean>(false);
   const [lastCreatedCode, setLastCreatedCode] = useState<string | null>(null);
+  const [lastCreatedId, setLastCreatedId] = useState<string | null>(null);
 
   const clientIdSelectId = useId();
   const notesTextareaId = useId();
@@ -51,7 +54,7 @@ export function PartSalePage() {
 
   const handleAddItem = (item: PartSaleItemDraft) => {
     setItems((prev) => [...prev, item]);
-    toast.success(`${item.description} adicionado ÃƒÂ  venda!`);
+    toast.success(`${item.description} adicionado à venda!`);
   };
 
   const handleRemoveItem = (tempId: string) => {
@@ -80,7 +83,7 @@ export function PartSalePage() {
 
   const handleSaveSale = async (status: PartSaleStatus) => {
     if (items.length === 0) {
-      toast.error('Adicione pelo menos um item ÃƒÂ  venda antes de salvar.');
+      toast.error('Adicione pelo menos um item à venda antes de salvar.');
       return;
     }
 
@@ -88,20 +91,21 @@ export function PartSalePage() {
       const request = buildCreateRequest(status);
       const result = await createPartSale.mutateAsync(request);
       setLastCreatedCode(result.code);
+      setLastCreatedId(result.id);
 
-      // Limpar formulÃƒÂ¡rio apÃƒÂ³s sucesso
+      // Limpar formulário após sucesso
       setItems([]);
       setDiscount(0);
       setNotes('');
       setSelectedClientId('');
     } catch {
-      // Erro jÃƒÂ¡ tratado no hook useCreatePartSale via toast
+      // Erro já tratado no hook useCreatePartSale via toast
     }
   };
 
   const handleExportPdf = () => {
     if (items.length === 0) {
-      toast.error('Adicione itens ÃƒÂ  venda para visualizar o documento PDF');
+      toast.error('Adicione itens à venda para visualizar o documento PDF');
       return;
     }
     setIsPdfModalOpen(true);
@@ -109,10 +113,26 @@ export function PartSalePage() {
 
   const handlePrintLabels = () => {
     if (items.length === 0) {
-      toast.error('Adicione itens ÃƒÂ  venda para emitir etiquetas');
+      toast.error('Adicione itens à venda para emitir etiquetas');
       return;
     }
     setIsLabelModalOpen(true);
+  };
+
+  const handleDownloadLabels = async (itemId?: string) => {
+    if (lastCreatedId && lastCreatedCode) {
+      try {
+        setIsDownloadingLabels(true);
+        await partSaleApi.downloadLabelsPdf(lastCreatedId, lastCreatedCode, itemId);
+        toast.success('Etiquetas térmicas geradas com sucesso!');
+      } catch {
+        toast.error('Erro ao gerar etiquetas térmicas. Tente novamente.');
+      } finally {
+        setIsDownloadingLabels(false);
+      }
+    } else {
+      toast('Salve a venda para gerar e imprimir as etiquetas térmicas oficiais.', { icon: 'ℹ️' });
+    }
   };
 
   const subtotal = items.reduce((acc, item) => acc + item.totalPrice, 0);
@@ -308,7 +328,19 @@ export function PartSalePage() {
               </button>
               <button
                 type="button"
-                onClick={() => window.print()}
+                onClick={async () => {
+                  try {
+                    if (lastCreatedId && lastCreatedCode) {
+                      await partSaleApi.downloadPdf(lastCreatedId, lastCreatedCode);
+                    } else {
+                      const request = buildCreateRequest('DRAFT');
+                      await partSaleApi.downloadPdfPreview(request);
+                    }
+                    toast.success('Download do PDF A4 iniciado com sucesso!');
+                  } catch {
+                    toast.error('Erro ao gerar/baixar PDF.');
+                  }
+                }}
                 className="px-4 py-2 text-xs font-bold text-white bg-navy-900 hover:bg-slate-800 rounded-lg flex items-center gap-1.5 shadow-sm cursor-pointer"
               >
                 <Printer className="w-3.5 h-3.5" /> Imprimir Documento
@@ -323,7 +355,9 @@ export function PartSalePage() {
         <ThermalLabelModal
           isOpen={isLabelModalOpen}
           onClose={() => setIsLabelModalOpen(false)}
+          isDownloadingPdf={isDownloadingLabels}
           partSale={{
+            id: lastCreatedId || undefined,
             code: lastCreatedCode || 'VP-RASCUNHO',
             clientName: selectedCustomer?.nomeCompleto || 'Cliente Balcão',
             createdAt: new Date().toISOString(),
@@ -338,10 +372,7 @@ export function PartSalePage() {
               notes: it.notes || undefined,
             })),
           }}
-          onDownloadPdf={() => {
-            window.print();
-            setIsLabelModalOpen(false);
-          }}
+          onDownloadPdf={handleDownloadLabels}
         />
       )}
     </div>

@@ -193,6 +193,7 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const downloadingPdfRef = useRef(false);
   const [isLabelModalOpen, setIsLabelModalOpen] = useState(false);
+  const [isDownloadingLabels, setIsDownloadingLabels] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const savingRef = useRef(false);
   const [savedSale, setSavedSale] = useState<PartSaleResponse | null>(null);
@@ -508,6 +509,22 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
     } finally {
       downloadingPdfRef.current = false;
       setIsDownloadingPdf(false);
+    }
+  };
+
+  const handleDownloadLabels = async (itemId?: string) => {
+    if (savedSale?.id) {
+      try {
+        setIsDownloadingLabels(true);
+        await partSaleApi.downloadLabelsPdf(savedSale.id, savedSale.code, itemId);
+        toast.success('Etiquetas térmicas geradas com sucesso!');
+      } catch {
+        toast.error('Erro ao gerar etiquetas térmicas. Tente novamente.');
+      } finally {
+        setIsDownloadingLabels(false);
+      }
+    } else {
+      toast('Salve a venda para gerar e imprimir as etiquetas térmicas oficiais.', { icon: 'ℹ️' });
     }
   };
 
@@ -1152,7 +1169,7 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
               </button>
               <button
                 type="button"
-                onClick={() => window.print()}
+                onClick={handleDownloadPdf}
                 className="px-4 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 rounded-lg flex items-center gap-1.5 shadow-sm cursor-pointer"
               >
                 <Printer className="w-3.5 h-3.5" />
@@ -1168,10 +1185,12 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
         <ThermalLabelModal
           isOpen={isLabelModalOpen}
           onClose={() => setIsLabelModalOpen(false)}
+          isDownloadingPdf={isDownloadingLabels}
           partSale={{
-            code: 'VP-RASCUNHO',
+            id: savedSale?.id,
+            code: savedSale?.code || 'VP-RASCUNHO',
             clientName: selectedCustomer?.nomeCompleto || DEFAULT_WALK_IN_CLIENT_NAME,
-            createdAt: new Date().toISOString(),
+            createdAt: savedSale?.createdAt || new Date().toISOString(),
             items: items.map((it) => ({
               id: it.id,
               description: it.description,
@@ -1183,10 +1202,7 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
               lengthMm: it.category === 'PROFILE' ? (it.heightMm ?? Math.round(it.calculatedUnitMeasure * 1000)) : null,
             })),
           }}
-          onDownloadPdf={() => {
-            window.print();
-            setIsLabelModalOpen(false);
-          }}
+          onDownloadPdf={handleDownloadLabels}
         />
       )}
     </div>

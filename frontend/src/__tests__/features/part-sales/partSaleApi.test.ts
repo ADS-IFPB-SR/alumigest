@@ -306,6 +306,43 @@ describe('partSaleApi [US-46.1] - API Service Tests', () => {
         createElementSpy.mockRestore();
       }
     });
+
+    it('downloadLabelsPdf deve anexar query param ?itemId={itemId} quando itemId for informado', async () => {
+      const mockBlob = new Blob(['pdf-thermal-labels-item-mock'], { type: 'application/pdf' });
+      vi.mocked(api.get).mockResolvedValueOnce({
+        data: mockBlob,
+        headers: {
+          'content-disposition': 'attachment; filename="etiquetas-venda-partes-VP-2026-0001.pdf"',
+        },
+      });
+
+      const originalCreateElement = document.createElement.bind(document);
+      let capturedLink: HTMLAnchorElement | null = null;
+      const createElementSpy = vi
+        .spyOn(document, 'createElement')
+        .mockImplementation((tagName: string) => {
+          const el = originalCreateElement(tagName);
+          if (tagName.toLowerCase() === 'a') {
+            capturedLink = el as HTMLAnchorElement;
+            vi.spyOn(capturedLink, 'click').mockImplementation(() => {});
+          }
+          return el;
+        });
+
+      try {
+        await partSaleApi.downloadLabelsPdf('sale-1', 'VP-2026-0001', 'item-42');
+
+        expect(api.get).toHaveBeenCalledWith('/part-sales/sale-1/labels-pdf?itemId=item-42', {
+          responseType: 'blob',
+        });
+        expect(capturedLink?.getAttribute('download')).toBe('etiquetas-venda-partes-VP-2026-0001.pdf');
+        expect(capturedLink?.click).toHaveBeenCalledTimes(1);
+        expect(window.URL.createObjectURL).toHaveBeenCalled();
+        expect(window.URL.revokeObjectURL).toHaveBeenCalledWith('blob:mock-url');
+      } finally {
+        createElementSpy.mockRestore();
+      }
+    });
   });
 });
 

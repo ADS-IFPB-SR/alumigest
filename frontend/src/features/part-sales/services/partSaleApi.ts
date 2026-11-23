@@ -105,8 +105,9 @@ export const partSaleApi = {
   /**
    * Baixa o documento em PDF com etiquetas térmicas (100x60mm) da venda de partes avulsas (US-46).
    */
-  async downloadLabelsPdf(id: string, code?: string): Promise<void> {
-    const response = await api.get<Blob>(`/part-sales/${id}/labels-pdf`, {
+  async downloadLabelsPdf(id: string, code?: string, itemId?: string): Promise<void> {
+    const query = itemId ? `?itemId=${encodeURIComponent(itemId)}` : '';
+    const response = await api.get<Blob>(`/part-sales/${id}/labels-pdf${query}`, {
       responseType: 'blob',
     });
     const fallback = `etiquetas-venda-partes-${(code || id).replaceAll('/', '-')}.pdf`;

@@ -279,8 +279,6 @@ export const ThermalLabelModal: React.FC<ThermalLabelModalProps> = ({
   let printActionText = printButtonLabel;
   if (isDownloadingPdf) {
     printActionText = 'Abrindo Impressão...';
-  } else if (isPartSaleMode) {
-    printActionText = 'Imprimir Etiquetas';
   }
 
   return (

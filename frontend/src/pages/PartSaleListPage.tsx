@@ -85,11 +85,11 @@ export function PartSaleListPage() {
   const [isDownloadingLabels, setIsDownloadingLabels] = useState(false);
   const downloadingPdfRef = useRef(false);
 
-  const handleDownloadLabels = async () => {
+  const handleDownloadLabels = async (itemId?: string) => {
     if (!selectedSaleForLabels) return;
     try {
       setIsDownloadingLabels(true);
-      await partSaleApi.downloadLabelsPdf(selectedSaleForLabels.id, selectedSaleForLabels.code);
+      await partSaleApi.downloadLabelsPdf(selectedSaleForLabels.id, selectedSaleForLabels.code, itemId);
       toast.success('Etiquetas térmicas geradas com sucesso!');
     } catch {
       toast.error('Erro ao gerar etiquetas térmicas. Tente novamente.');
@@ -340,8 +340,17 @@ export function PartSaleListPage() {
               <button
                 type="button"
                 onClick={() => setSelectedSaleForLabels(sale)}
-                className="flex items-center justify-center p-1 border border-outline-variant rounded text-amber-600 dark:text-amber-400 bg-surface hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-colors cursor-pointer"
-                title="Emitir etiquetas térmicas Elgin (100x60mm)"
+                disabled={sale.status === 'CANCELLED'}
+                className={`flex items-center justify-center p-1 border border-outline-variant rounded transition-colors ${
+                  sale.status === 'CANCELLED'
+                    ? 'text-slate-300 dark:text-slate-600 bg-slate-100 dark:bg-slate-800 cursor-not-allowed opacity-50'
+                    : 'text-amber-600 dark:text-amber-400 bg-surface hover:bg-amber-50 dark:hover:bg-amber-950/30 cursor-pointer'
+                }`}
+                title={
+                  sale.status === 'CANCELLED'
+                    ? 'Não é permitido emitir etiquetas de uma venda cancelada'
+                    : 'Emitir etiquetas térmicas Elgin (100x60mm)'
+                }
                 aria-label={`Emitir etiquetas Elgin da venda ${sale.code}`}
               >
                 <Printer className="w-3.5 h-3.5" />
@@ -704,11 +713,21 @@ export function PartSaleListPage() {
               </button>
               <button
                 type="button"
+                disabled={selectedSaleForDetails.status === 'CANCELLED'}
                 onClick={() => {
                   setSelectedSaleForLabels(selectedSaleForDetails);
                   setSelectedSaleForDetails(null);
                 }}
-                className="px-3 py-1.5 text-xs font-semibold border border-outline-variant bg-surface rounded-md hover:bg-surface-container text-on-surface flex items-center gap-1.5 cursor-pointer"
+                className={`px-3 py-1.5 text-xs font-semibold border border-outline-variant rounded-md flex items-center gap-1.5 ${
+                  selectedSaleForDetails.status === 'CANCELLED'
+                    ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed opacity-50'
+                    : 'bg-surface hover:bg-surface-container text-on-surface cursor-pointer'
+                }`}
+                title={
+                  selectedSaleForDetails.status === 'CANCELLED'
+                    ? 'Não é permitido emitir etiquetas de uma venda cancelada'
+                    : 'Emitir etiquetas térmicas Elgin (100x60mm)'
+                }
               >
                 <Printer className="w-3.5 h-3.5 text-amber-500" />
                 <span>Etiquetas Elgin</span>

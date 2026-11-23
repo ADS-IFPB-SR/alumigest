@@ -194,10 +194,14 @@ public class PartSaleController {
       summary = "Exporta etiquetas térmicas da venda avulsa em PDF (100x60mm)",
       description = "Gera o arquivo PDF formatado para impressora térmica adesiva (100x60mm).")
   @ApiResponse(responseCode = "200", description = "PDF de etiquetas gerado com sucesso")
-  @ApiResponse(responseCode = "400", description = "Venda cancelada ou sem itens para emissão")
   @ApiResponse(responseCode = "404", description = "Venda de partes não encontrada")
-  public ResponseEntity<byte[]> downloadLabelsPdf(@PathVariable UUID id) {
-    PartSalePdfDTO pdfDto = partSaleService.generateLabelsPdf(id);
+  @ApiResponse(responseCode = "422", description = "Venda cancelada ou sem itens para emissão")
+  public ResponseEntity<byte[]> downloadLabelsPdf(
+      @PathVariable UUID id,
+      @Parameter(
+          description = "Identificador opcional de um item específico para filtragem individual")
+      @RequestParam(required = false) UUID itemId) {
+    PartSalePdfDTO pdfDto = partSaleService.generateLabelsPdf(id, itemId);
     ContentDisposition contentDisposition = ContentDisposition.attachment()
         .filename(pdfDto.filename())
         .build();

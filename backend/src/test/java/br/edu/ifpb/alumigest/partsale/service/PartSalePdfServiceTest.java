@@ -9,6 +9,7 @@ import br.edu.ifpb.alumigest.catalog.domain.MaterialCategoryType;
 import br.edu.ifpb.alumigest.clients.domain.Client;
 import br.edu.ifpb.alumigest.clients.domain.PersonType;
 import br.edu.ifpb.alumigest.common.exception.BusinessException;
+import br.edu.ifpb.alumigest.common.exception.ResourceNotFoundException;
 import br.edu.ifpb.alumigest.partsale.domain.PartSale;
 import br.edu.ifpb.alumigest.partsale.domain.PartSaleItem;
 import br.edu.ifpb.alumigest.partsale.domain.PartSaleStatus;
@@ -20,6 +21,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @DisplayName("PartSalePdfService [US-46.4] - Geração de PDF A4 Diagramado")
 class PartSalePdfServiceTest {
@@ -272,6 +274,7 @@ class PartSalePdfServiceTest {
 
     Material glass = new Material();
     glass.setName("Vidro Incolor 8mm Temperado");
+    glass.setColorFinish("Incolor");
     PartSaleItem itemGlass = new PartSaleItem(
         glass, MaterialCategoryType.GLASS, 1000, 2000, 2, null,
         new BigDecimal("2.0000"), new BigDecimal("150.00"), new BigDecimal("300.00"));
@@ -279,8 +282,9 @@ class PartSalePdfServiceTest {
 
     Material profile = new Material();
     profile.setName("Perfil U Suprema Branco");
+    profile.setColorFinish("Branco");
     PartSaleItem itemProfile = new PartSaleItem(
-        profile, MaterialCategoryType.PROFILE, 3000, null, 1, new BigDecimal("0.1000"),
+        profile, MaterialCategoryType.PROFILE, null, 3000, 1, new BigDecimal("0.1000"),
         new BigDecimal("3.3000"), new BigDecimal("45.00"), new BigDecimal("148.50"));
     sale.addItem(itemProfile);
 
@@ -293,6 +297,11 @@ class PartSalePdfServiceTest {
     byte[] pdfBytes = pdfService.generateLabelsPdf(sale, client);
 
     assertThat(pdfBytes).isNotEmpty();
+    try (PdfReader reader = new PdfReader(pdfBytes)) {
+      assertThat(reader.getPageSize(1).getWidth()).isEqualTo(283.46f);
+      assertThat(reader.getPageSize(1).getHeight()).isEqualTo(170.08f);
+    }
+
     PdfExtractionResult extraction = extrairTextoPdf(pdfBytes);
     // 2 unidades de vidro + 1 unidade de perfil = 3 páginas de etiquetas
     assertThat(extraction.totalPages()).isEqualTo(3);
@@ -301,7 +310,136 @@ class PartSalePdfServiceTest {
         .contains("João Silva da Silva")
         .contains("VA-2026-0001")
         .contains("Vidro Incolor 8mm Temperado")
-        .contains("Perfil U Suprema Branco");
+        .contains("Perfil U Suprema Branco")
+        .contains("MEDIDAS NOMINAIS (L x A)")
+        .contains("1000 x 2000 mm")
+        .contains("VIDRO ESPECIFICADO:")
+        .contains("CORTE / COMPRIMENTO")
+        .contains("CORTE: 3000 mm")
+        .contains("ESPECIFICAÇÃO:")
+        .contains("Perfil de Alumínio");
+  }
+
+  @Test
+  @DisplayName("Deve gerar etiquetas térmicas para ferragens com texto contextual de 1 UNIDADE")
+  void shouldGenerateThermalLabelsForHardwareItemWithContextualText() throws IOException {
+    PartSale sale = new PartSale(
+        "VA-2026-0003", UUID.randomUUID(), PartSaleStatus.APPROVED, BigDecimal.ZERO);
+
+    Material hardware = new Material();
+    hardware.setName("Roldana 112 Dupla");
+    hardware.setColorFinish("Preto");
+    PartSaleItem itemHardware = new PartSaleItem(
+        hardware, MaterialCategoryType.HARDWARE, null, null, 2, null,
+        new BigDecimal("2.0000"), new BigDecimal("35.00"), new BigDecimal("70.00"));
+    sale.addItem(itemHardware);
+
+    byte[] pdfBytes = pdfService.generateLabelsPdf(sale, null);
+
+    assertThat(pdfBytes).isNotEmpty();
+    try (PdfReader reader = new PdfReader(pdfBytes)) {
+      assertThat(reader.getPageSize(1).getWidth()).isEqualTo(283.46f);
+      assertThat(reader.getPageSize(1).getHeight()).isEqualTo(170.08f);
+    }
+
+    PdfExtractionResult extraction = extrairTextoPdf(pdfBytes);
+    assertThat(extraction.totalPages()).isEqualTo(2);
+    assertThat(extraction.fullText())
+        .contains("QUANTIDADE INDIVIDUAL")
+        .contains("1 UNIDADE")
+        .contains("ESPECIFICAÇÃO:")
+        .contains("Ferragem / Acessório")
+        .contains("COR / ACABAMENTO:")
+        .contains("Preto")
+        .contains("Cliente Balcão (Consumidor Final)");
+  }
+
+  @Test
+  @DisplayName("Deve gerar etiquetas térmicas para películas com dimensões L x A e especificação contextual")
+  void shouldGenerateThermalLabelsForFilmItemWithContextualText() throws IOException {
+    PartSale sale = new PartSale(
+        "VA-2026-0004", UUID.randomUUID(), PartSaleStatus.APPROVED, BigDecimal.ZERO);
+
+    Material film = new Material();
+    film.setName("Película Solar Fumê");
+    film.setColorFinish("Fumê");
+    PartSaleItem itemFilm = new PartSaleItem(
+        film, MaterialCategoryType.FILM, 800, 1500, 1, null,
+        new BigDecimal("1.2000"), new BigDecimal("60.00"), new BigDecimal("72.00"));
+    sale.addItem(itemFilm);
+
+    byte[] pdfBytes = pdfService.generateLabelsPdf(sale, null);
+
+    assertThat(pdfBytes).isNotEmpty();
+    try (PdfReader reader = new PdfReader(pdfBytes)) {
+      assertThat(reader.getPageSize(1).getWidth()).isEqualTo(283.46f);
+      assertThat(reader.getPageSize(1).getHeight()).isEqualTo(170.08f);
+    }
+
+    PdfExtractionResult extraction = extrairTextoPdf(pdfBytes);
+    assertThat(extraction.totalPages()).isEqualTo(1);
+    assertThat(extraction.fullText())
+        .contains("MEDIDAS NOMINAIS (L x A)")
+        .contains("800 x 1500 mm")
+        .contains("ESPECIFICAÇÃO:")
+        .contains("Película")
+        .contains("COR / ACABAMENTO:")
+        .contains("Fumê");
+  }
+
+  @Test
+  @DisplayName("Deve gerar etiquetas térmicas filtradas por itemId")
+  void shouldGenerateThermalLabelsFilteredByItemId() throws IOException {
+    PartSale sale = new PartSale(
+        "VA-2026-0005", UUID.randomUUID(), PartSaleStatus.APPROVED, BigDecimal.ZERO);
+
+    UUID glassItemId = UUID.randomUUID();
+    UUID profileItemId = UUID.randomUUID();
+
+    Material glass = new Material();
+    glass.setName("Vidro Temperado 10mm");
+    PartSaleItem itemGlass = new PartSaleItem(
+        glass, MaterialCategoryType.GLASS, 1000, 2000, 1, null,
+        new BigDecimal("2.0000"), new BigDecimal("150.00"), new BigDecimal("300.00"));
+    ReflectionTestUtils.setField(itemGlass, "id", glassItemId);
+    sale.addItem(itemGlass);
+
+    Material profile = new Material();
+    profile.setName("Perfil Linha Suprema");
+    PartSaleItem itemProfile = new PartSaleItem(
+        profile, MaterialCategoryType.PROFILE, null, 2500, 1, null,
+        new BigDecimal("2.5000"), new BigDecimal("40.00"), new BigDecimal("100.00"));
+    ReflectionTestUtils.setField(itemProfile, "id", profileItemId);
+    sale.addItem(itemProfile);
+
+    byte[] pdfBytes = pdfService.generateLabelsPdf(sale, null, glassItemId);
+
+    assertThat(pdfBytes).isNotEmpty();
+    PdfExtractionResult extraction = extrairTextoPdf(pdfBytes);
+    assertThat(extraction.totalPages()).isEqualTo(1);
+    assertThat(extraction.fullText())
+        .contains("Vidro Temperado 10mm")
+        .doesNotContain("Perfil Linha Suprema");
+  }
+
+  @Test
+  @DisplayName("Deve lançar ResourceNotFoundException ao filtrar por itemId inexistente na venda")
+  void shouldThrowResourceNotFoundExceptionWhenFilteringByNonExistentItemId() {
+    PartSale sale = new PartSale(
+        "VA-2026-0006", UUID.randomUUID(), PartSaleStatus.APPROVED, BigDecimal.ZERO);
+
+    Material glass = new Material();
+    glass.setName("Vidro Temperado");
+    PartSaleItem item = new PartSaleItem(
+        glass, MaterialCategoryType.GLASS, 1000, 1000, 1, null,
+        BigDecimal.ONE, BigDecimal.TEN, BigDecimal.TEN);
+    ReflectionTestUtils.setField(item, "id", UUID.randomUUID());
+    sale.addItem(item);
+
+    UUID nonExistentId = UUID.randomUUID();
+    assertThatThrownBy(() -> pdfService.generateLabelsPdf(sale, null, nonExistentId))
+        .isInstanceOf(ResourceNotFoundException.class)
+        .hasMessageContaining(nonExistentId.toString());
   }
 
   @Test

@@ -457,4 +457,109 @@ describe('PartSaleListPage — [US-46] Listagem Canônica de Vendas Avulsas de P
     expect(screen.getByTestId('btn-download-pdf-official')).not.toBeDisabled();
     downloadSpy.mockRestore();
   });
+
+  it('deve chamar partSaleApi.downloadLabelsPdf ao clicar em Imprimir no modal de etiquetas térmicas', async () => {
+    vi.spyOn(usePartSalesModule, 'usePartSalesList').mockReturnValue({
+      data: {
+        content: mockPartSales,
+        totalElements: 2,
+        totalPages: 1,
+      },
+      isLoading: false,
+      isError: false,
+      isFetching: false,
+    } as any);
+    const downloadLabelsSpy = vi.spyOn(partSaleApi, 'downloadLabelsPdf').mockResolvedValueOnce(undefined);
+
+    render(
+      <MemoryRouter>
+        <PartSaleListPage />
+      </MemoryRouter>
+    );
+
+    // Abre o modal de etiquetas térmicas da primeira venda (sale-uuid-1)
+    const labelBtn = screen.getByRole('button', { name: /emitir etiquetas elgin da venda vp-2026-0001/i });
+    fireEvent.click(labelBtn);
+
+    expect(screen.getByTestId('modal-thermal-labels')).toBeInTheDocument();
+
+    // Clica no botão de imprimir todas as etiquetas
+    const printBtn = screen.getByTestId('btn-modal-download-pdf');
+    expect(printBtn).toHaveTextContent('Imprimir (3)');
+    fireEvent.click(printBtn);
+
+    await waitFor(() => {
+      expect(downloadLabelsSpy).toHaveBeenCalledWith('sale-uuid-1', 'VP-2026-0001', undefined);
+      expect(toast.success).toHaveBeenCalledWith('Etiquetas térmicas geradas com sucesso!');
+    });
+
+    downloadLabelsSpy.mockRestore();
+  });
+
+  it('deve chamar partSaleApi.downloadLabelsPdf com itemId filtrado ao imprimir etiqueta individual', async () => {
+    vi.spyOn(usePartSalesModule, 'usePartSalesList').mockReturnValue({
+      data: {
+        content: mockPartSales,
+        totalElements: 2,
+        totalPages: 1,
+      },
+      isLoading: false,
+      isError: false,
+      isFetching: false,
+    } as any);
+    const downloadLabelsSpy = vi.spyOn(partSaleApi, 'downloadLabelsPdf').mockResolvedValueOnce(undefined);
+
+    render(
+      <MemoryRouter>
+        <PartSaleListPage />
+      </MemoryRouter>
+    );
+
+    const labelBtn = screen.getByRole('button', { name: /emitir etiquetas elgin da venda vp-2026-0001/i });
+    fireEvent.click(labelBtn);
+
+    // Filtra pelo Item 2 (Perfil Tubular - item-2)
+    fireEvent.click(screen.getByTestId('filter-piece-item-2'));
+
+    const printBtn = screen.getByTestId('btn-modal-download-pdf');
+    expect(printBtn).toHaveTextContent('Imprimir Filtradas (1)');
+    fireEvent.click(printBtn);
+
+    await waitFor(() => {
+      expect(downloadLabelsSpy).toHaveBeenCalledWith('sale-uuid-1', 'VP-2026-0001', 'item-2');
+      expect(toast.success).toHaveBeenCalledWith('Etiquetas térmicas geradas com sucesso!');
+    });
+
+    downloadLabelsSpy.mockRestore();
+  });
+
+  it('deve desabilitar o botão de emissão de etiquetas térmicas em vendas canceladas', () => {
+    vi.spyOn(usePartSalesModule, 'usePartSalesList').mockReturnValue({
+      data: {
+        content: [
+          {
+            ...mockPartSales[0],
+            id: 'sale-cancelled-1',
+            code: 'VP-2026-0999',
+            status: 'CANCELLED',
+          },
+        ],
+        totalElements: 1,
+        totalPages: 1,
+      },
+      isLoading: false,
+      isError: false,
+      isFetching: false,
+    } as any);
+
+    render(
+      <MemoryRouter>
+        <PartSaleListPage />
+      </MemoryRouter>
+    );
+
+    const labelBtn = screen.getByRole('button', { name: /emitir etiquetas elgin da venda vp-2026-0999/i });
+    expect(labelBtn).toBeDisabled();
+    expect(labelBtn).toHaveAttribute('title', 'Não é permitido emitir etiquetas de uma venda cancelada');
+  });
 });

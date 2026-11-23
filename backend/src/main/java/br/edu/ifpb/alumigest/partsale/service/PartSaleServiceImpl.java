@@ -223,6 +223,12 @@ public class PartSaleServiceImpl implements PartSaleService {
   @Override
   @Transactional(readOnly = true)
   public PartSalePdfDTO generateLabelsPdf(UUID id) {
+    return generateLabelsPdf(id, null);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public PartSalePdfDTO generateLabelsPdf(UUID id, UUID itemId) {
     PartSale partSale = partSaleRepository.findWithDetailsById(id)
         .orElseThrow(() -> new ResourceNotFoundException(MSG_SALE_NOT_FOUND + id));
 
@@ -235,7 +241,7 @@ public class PartSaleServiceImpl implements PartSaleService {
         ? clientRepository.findById(partSale.getClientId()).orElse(null)
         : null;
 
-    byte[] pdfBytes = partSalePdfService.generateLabelsPdf(partSale, client);
+    byte[] pdfBytes = partSalePdfService.generateLabelsPdf(partSale, client, itemId);
 
     String codigoBase = partSale.getCode() != null && !partSale.getCode().isBlank()
         ? partSale.getCode().trim()
