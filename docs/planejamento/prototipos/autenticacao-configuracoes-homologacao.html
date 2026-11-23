@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AlumiGest — Protótipo Sprint 10: Autenticação, Configurações & Calibração</title>
+  
+  <!-- Tipografia Oficial do AlumiGest -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome CDN para ícones -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    :root {
+      --primary: #041632;
+      --primary-container: #1b2b48;
+      --primary-accent: #2563eb;
+      --primary-accent-hover: #1d4ed8;
+      
+      --bg-app: #f8fafc;
+      --bg-surface: #ffffff;
+      --bg-surface-subtle: #f1f5f9;
+      --bg-surface-hover: #f8fafc;
+
+      --text-title: #0f172a;
+      --text-body: #334155;
+      --text-muted: #64748b;
+      --text-light: #94a3b8;
+
+      --border-light: #e2e8f0;
+      --border-medium: #cbd5e1;
+
+      --status-success: #059669;
+      --status-success-bg: #d1fae5;
+      --status-warning: #d97706;
+      --status-warning-bg: #fef3c7;
+      --status-info: #2563eb;
+      --status-info-bg: #dbeafe;
+      --status-danger: #dc2626;
+      --status-danger-bg: #fee2e2;
+
+      --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
+      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.03);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg-app);
+      color: var(--text-body);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Navbar Superior */
+    header.navbar {
+      background: #ffffff;
+      border-bottom: 1px solid var(--border-light);
+      padding: 0.65rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 60px;
+      flex-shrink: 0;
+      z-index: 30;
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .nav-logo-badge {
+      width: 36px;
+      height: 36px;
+      background: var(--primary);
+      color: #ffffff;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Hanken Grotesk', sans-serif;
+      font-weight: 800;
+      font-size: 1.1rem;
+      letter-spacing: -0.5px;
+    }
+
+    .nav-titles h1 {
+      font-family: 'Hanken Grotesk', sans-serif;
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: var(--text-title);
+      line-height: 1.2;
+    }
+
+    .nav-titles span {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      display: block;
+    }
+
+    /* Abas de Navegação dos 4 Pilares */
+    .pillar-nav {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--bg-surface-subtle);
+      padding: 4px;
+      border-radius: 8px;
+      border: 1px solid var(--border-light);
+    }
+
+    .pillar-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.45rem 0.9rem;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .pillar-btn:hover {
+      color: var(--text-title);
+    }
+
+    .pillar-btn.active {
+      background: #ffffff;
+      color: var(--primary-accent);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .pillar-btn .badge-pill {
+      font-size: 0.65rem;
+      padding: 2px 6px;
+      border-radius: 12px;
+      font-weight: 700;
+    }
+
+    .badge-primary { background: var(--status-info-bg); color: var(--status-info); }
+    .badge-success { background: var(--status-success-bg); color: var(--status-success); }
+    .badge-warning { background: var(--status-warning-bg); color: var(--status-warning); }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .user-pill {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.35rem 0.75rem;
+      background: var(--bg-surface-subtle);
+      border-radius: 20px;
+      border: 1px solid var(--border-light);
+      font-size: 0.8rem;
+    }
+
+    .user-avatar {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: var(--primary-accent);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.75rem;
+    }
+
+    /* Container Principal */
+    main.main-viewport {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+      background: var(--bg-app);
+    }
+
+    .tab-content {
+      flex: 1;
+      display: none;
+      overflow-y: auto;
+      padding: 1.5rem 2rem;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* Banner Informativo */
+    .banner-sprint {
+      background: linear-gradient(135deg, #041632 0%, #1e293b 100%);
+      color: #ffffff;
+      padding: 1.25rem 1.5rem;
+      border-radius: 12px;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: var(--shadow-md);
+    }
+
+    .banner-sprint h2 {
+      font-family: 'Hanken Grotesk', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 800;
+      margin-bottom: 0.25rem;
+    }
+
+    .banner-sprint p {
+      font-size: 0.85rem;
+      color: #94a3b8;
+    }
+
+    .sprint-stats {
+      display: flex;
+      gap: 1.5rem;
+      background: rgba(255, 255, 255, 0.08);
+      padding: 0.6rem 1.2rem;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .stat-item {
+      text-align: center;
+    }
+
+    .stat-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: #38bdf8;
+    }
+
+    .stat-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #cbd5e1;
+    }
+
+    /* Grid de Conteúdo */
+    .content-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+
+    .card-panel {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-light);
+      border-radius: 10px;
+      padding: 1.5rem;
+      box-shadow: var(--shadow-xs);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.25rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--border-light);
+    }
+
+    .card-title {
+      font-family: 'Hanken Grotesk', sans-serif;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text-title);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* Formulários Elegantes */
+    .form-group {
+      margin-bottom: 1rem;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-body);
+      margin-bottom: 0.35rem;
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 0.55rem 0.85rem;
+      border: 1px solid var(--border-medium);
+      border-radius: 6px;
+      font-size: 0.85rem;
+      color: var(--text-title);
+      transition: all 0.2s;
+    }
+
+    .form-control:focus {
+      outline: none;
+      border-color: var(--primary-accent);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .btn-action {
+      background: var(--primary-accent);
+      color: #ffffff;
+      border: none;
+      padding: 0.6rem 1.2rem;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: background 0.2s;
+    }
+
+    .btn-action:hover {
+      background: var(--primary-accent-hover);
+    }
+
+    /* Simulação de Preview A4 de Cabeçalho */
+    .a4-preview-box {
+      background: #ffffff;
+      border: 2px dashed var(--border-medium);
+      border-radius: 8px;
+      padding: 1.25rem;
+      box-shadow: var(--shadow-sm);
+      position: relative;
+    }
+
+    .a4-preview-badge {
+      position: absolute;
+      top: -10px;
+      right: 15px;
+      background: var(--primary);
+      color: #ffffff;
+      font-size: 0.65rem;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .header-render {
+      border-bottom: 2px solid #0f172a;
+      padding-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .header-logo-area {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .header-logo-placeholder {
+      width: 54px;
+      height: 54px;
+      background: #041632;
+      color: #ffffff;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 1.3rem;
+    }
+
+    .header-company-info h3 {
+      font-family: 'Hanken Grotesk', sans-serif;
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: #0f172a;
+      line-height: 1.2;
+    }
+
+    .header-company-info p {
+      font-size: 0.75rem;
+      color: #475569;
+      line-height: 1.4;
+    }
+
+    .header-doc-tag {
+      text-align: right;
+    }
+
+    .doc-type {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1rem;
+      font-weight: 800;
+      color: #2563eb;
+    }
+
+    .doc-date {
+      font-size: 0.72rem;
+      color: #64748b;
+    }
+
+    /* Tabela de Calibração */
+    .calibration-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+      font-size: 0.85rem;
+    }
+
+    .calibration-table th {
+      background: var(--bg-surface-subtle);
+      padding: 0.65rem 0.85rem;
+      text-align: left;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border-light);
+    }
+
+    .calibration-table td {
+      padding: 0.85rem;
+      border-bottom: 1px solid var(--border-light);
+      color: var(--text-body);
+      vertical-align: middle;
+    }
+
+    .calibration-table tr:hover {
+      background: #f8fafc;
+    }
+
+    .parity-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.25rem 0.6rem;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      background: var(--status-success-bg);
+      color: var(--status-success);
+    }
+
+    /* Tela de Login Demo */
+    .login-container {
+      max-width: 420px;
+      margin: 2rem auto;
+      background: #ffffff;
+      border: 1px solid var(--border-light);
+      border-radius: 12px;
+      padding: 2.25rem;
+      box-shadow: var(--shadow-lg);
+    }
+
+    .login-header {
+      text-align: center;
+      margin-bottom: 1.75rem;
+    }
+
+    .login-header .nav-logo-badge {
+      width: 48px;
+      height: 48px;
+      margin: 0 auto 0.75rem;
+      font-size: 1.4rem;
+    }
+
+    .role-switcher {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+      background: var(--bg-surface-subtle);
+      padding: 4px;
+      border-radius: 8px;
+    }
+
+    .role-btn {
+      flex: 1;
+      padding: 0.4rem;
+      border: none;
+      background: transparent;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .role-btn.active {
+      background: #ffffff;
+      color: var(--primary-accent);
+      box-shadow: var(--shadow-xs);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Topo da Aplicação -->
+  <header class="navbar">
+    <div class="nav-brand">
+      <div class="nav-logo-badge">AG</div>
+      <div class="nav-titles">
+        <h1>AlumiGest <span style="display:inline; font-weight:400; color:var(--text-muted)">— Sprint 10</span></h1>
+        <span>Preparação, Segurança & Calibração da 1ª Entrega</span>
+      </div>
+    </div>
+
+    <!-- Navegação entre os 4 Pilares -->
+    <div class="pillar-nav">
+      <button class="pillar-btn active" onclick="switchTab('auth')">
+        <i class="fa-solid fa-shield-halved"></i> 1. Autenticação (RBAC)
+        <span class="badge-pill badge-primary">6 pts</span>
+      </button>
+      <button class="pillar-btn" onclick="switchTab('settings')">
+        <i class="fa-solid fa-sliders"></i> 2. Configurações da Empresa
+        <span class="badge-pill badge-warning">4 pts</span>
+      </button>
+      <button class="pillar-btn" onclick="switchTab('calibration')">
+        <i class="fa-solid fa-calculator"></i> 3. Calibração Real
+        <span class="badge-pill badge-success">2 pts</span>
+      </button>
+      <button class="pillar-btn" onclick="switchTab('qa')">
+        <i class="fa-solid fa-circle-check"></i> 4. Qualidade & Homologação
+        <span class="badge-pill badge-primary">2 pts</span>
+      </button>
+    </div>
+
+    <div class="nav-actions">
+      <div class="user-pill">
+        <div class="user-avatar" id="avatarRole">AD</div>
+        <div>
+          <strong id="userName">José Guylherme</strong>
+          <span style="display:block; font-size:0.7rem; color:var(--text-muted)" id="userRole">Administrador</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Área Principal de Conteúdo -->
+  <main class="main-viewport">
+
+    <!-- ========================================== -->
+    <!-- ABA 1: AUTENTICAÇÃO E CONTROLE DE ACESSO   -->
+    <!-- ========================================== -->
+    <section class="tab-content active" id="tab-auth">
+      <div class="banner-sprint">
+        <div>
+          <h2>🔐 Pilar 1: Sistema de Autenticação, Usuários e RBAC</h2>
+          <p>Spring Security 6 stateless + Tokens JWT assinados com controle de permissão por perfil de colaborador.</p>
+        </div>
+        <div class="sprint-stats">
+          <div class="stat-item">
+            <div class="stat-value">3</div>
+            <div class="stat-label">Perfis RBAC</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">100%</div>
+            <div class="stat-label">Rotas Protegidas</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">BCrypt</div>
+            <div class="stat-label">Criptografia</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="content-grid">
+        <!-- Simulação da Tela de Login -->
+        <div class="card-panel">
+          <div class="card-header">
+            <div class="card-title">
+              <i class="fa-solid fa-arrow-right-to-bracket text-primary"></i>
+              Simulador da Tela de Login (`/login`)
+            </div>
+            <span class="parity-badge"><i class="fa-solid fa-lock"></i> JWT Stateless</span>
+          </div>
+
+          <div class="role-switcher">
+            <button class="role-btn active" onclick="setRole('ADMIN')">Admin (Dono)</button>
+            <button class="role-btn" onclick="setRole('VENDEDOR')">Vendedor (Balcão)</button>
+            <button class="role-btn" onclick="setRole('OPERADOR')">Operador (Oficina)</button>
+          </div>
+
+          <div class="login-container" style="margin: 0 auto; box-shadow:none; border:1px solid var(--border-light);">
+            <div class="login-header">
+              <div class="nav-logo-badge">AG</div>
+              <h2 style="font-family:'Hanken Grotesk'; font-size:1.2rem; font-weight:800;">Acesso ao AlumiGest</h2>
+              <p style="font-size:0.8rem; color:var(--text-muted)">Sistema de Gestão de Esquadrias e Vidros</p>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">E-mail Corporativo</label>
+              <input type="email" class="form-control" id="loginEmail" value="admin@alumiportas.com.br" readonly>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Senha de Acesso</label>
+              <input type="password" class="form-control" value="••••••••••••" readonly>
+            </div>
+
+            <button class="btn-action" style="width:100%; justify-content:center; padding:0.75rem;" onclick="simulateLogin()">
+              <i class="fa-solid fa-key"></i> Entrar no Sistema
+            </button>
+          </div>
+        </div>
+
+        <!-- Matriz de Permissões RBAC -->
+        <div class="card-panel">
+          <div class="card-header">
+            <div class="card-title">
+              <i class="fa-solid fa-users-gear text-primary"></i>
+              Matriz de Acessos por Perfil de Colaborador
+            </div>
+            <span class="badge-pill badge-primary">Spring Security 6</span>
+          </div>
+
+          <p style="font-size:0.82rem; color:var(--text-muted); margin-bottom:1rem;">
+            O AlumiGest restringe as rotas para garantir que cada colaborador veja apenas o que compete à sua função:
+          </p>
+
+          <table class="calibration-table">
+            <thead>
+              <tr>
+                <th>Módulo da Aplicação</th>
+                <th>ADMIN</th>
+                <th>VENDEDOR</th>
+                <th>OPERADOR</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Orçamentos & Clientes</strong></td>
+                <td><i class="fa-solid fa-circle-check text-success"></i> Completo</td>
+                <td><i class="fa-solid fa-circle-check text-success"></i> Completo</td>
+                <td><i class="fa-solid fa-ban text-muted"></i> Bloqueado</td>
+              </tr>
+              <tr>
+                <td><strong>Venda Avulsa de Partes</strong></td>
+                <td><i class="fa-solid fa-circle-check text-success"></i> Completo</td>
+                <td><i class="fa-solid fa-circle-check text-success"></i> Completo</td>
+                <td><i class="fa-solid fa-ban text-muted"></i> Bloqueado</td>
+              </tr>
+              <tr>
+                <td><strong>Kanban Fabril & Produção</strong></td>
+                <td><i class="fa-solid fa-circle-check text-success"></i> Visualiza/Edita</td>
+                <td><i class="fa-solid fa-eye text-info"></i> Apenas Consulta</td>
+                <td><i class="fa-solid fa-circle-check text-success"></i> Movimenta Cards</td>
+              </tr>
+              <tr>
+                <td><strong>Etiquetas & Ficha Técnica</strong></td>
+                <td><i class="fa-solid fa-circle-check text-success"></i> Emite</td>
+                <td><i class="fa-solid fa-circle-check text-success"></i> Emite</td>
+                <td><i class="fa-solid fa-circle-check text-success"></i> Emite na bancada</td>
+              </tr>
+              <tr>
+                <td><strong>Configurações & Catálogo</strong></td>
+                <td><i class="fa-solid fa-circle-check text-success"></i> Exclusivo</td>
+                <td><i class="fa-solid fa-ban text-muted"></i> Bloqueado</td>
+                <td><i class="fa-solid fa-ban text-muted"></i> Bloqueado</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- ABA 2: CONFIGURAÇÕES DA EMPRESA & CABEÇALHO-->
+    <!-- ========================================== -->
+    <section class="tab-content" id="tab-settings">
+      <div class="banner-sprint">
+        <div>
+          <h2>⚙️ Pilar 2: Configurações da Empresa & Cabeçalho Dinâmico</h2>
+          <p>Personalize os dados cadastrais e a identidade visual da empresa refletidos em todos os relatórios e PDFs.</p>
+        </div>
+        <div class="sprint-stats">
+          <div class="stat-item">
+            <div class="stat-value">5 PDFs</div>
+            <div class="stat-label">Integrados</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">Ao Vivo</div>
+            <div class="stat-label">Preview Dinâmico</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="content-grid">
+        <!-- Formulário de Configurações -->
+        <div class="card-panel">
+          <div class="card-header">
+            <div class="card-title">
+              <i class="fa-solid fa-building text-primary"></i>
+              Dados Cadastrais da Empresa (`/configuracoes`)
+            </div>
+            <button class="btn-action" style="padding:0.4rem 0.8rem; font-size:0.75rem;" onclick="saveSettings()">
+              <i class="fa-solid fa-floppy-disk"></i> Salvar Parâmetros
+            </button>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Razão Social</label>
+              <input type="text" class="form-control" id="cfgRazaoSocial" value="Alumiportas Indústria e Comércio LTDA" oninput="updateHeaderPreview()">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Nome Fantasia</label>
+              <input type="text" class="form-control" id="cfgNomeFantasia" value="Alumiportas Vidraçaria & Esquadrias" oninput="updateHeaderPreview()">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">CNPJ</label>
+              <input type="text" class="form-control" id="cfgCnpj" value="08.123.456/0001-99" oninput="updateHeaderPreview()">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Inscrição Estadual (IE)</label>
+              <input type="text" class="form-control" id="cfgIe" value="16.987.654-3" oninput="updateHeaderPreview()">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Telefone / WhatsApp Comercial</label>
+              <input type="text" class="form-control" id="cfgTelefone" value="(83) 98888-2222" oninput="updateHeaderPreview()">
+            </div>
+            <div class="form-group">
+              <label class="form-label">E-mail de Contato</label>
+              <input type="email" class="form-control" id="cfgEmail" value="contato@alumiportas.com.br" oninput="updateHeaderPreview()">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Endereço da Fábrica / Showroom</label>
+            <input type="text" class="form-control" id="cfgEndereco" value="Av. Deputado José de Paiva Gadelha, 500 - Jardim Bela Vista" oninput="updateHeaderPreview()">
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Cidade - UF</label>
+              <input type="text" class="form-control" id="cfgCidadeUf" value="Sousa - PB" oninput="updateHeaderPreview()">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Logo Institucional (Sigla ou Imagem)</label>
+              <input type="text" class="form-control" id="cfgLogoSigla" value="AL" oninput="updateHeaderPreview()">
+            </div>
+          </div>
+        </div>
+
+        <!-- Preview em Tempo Real do Cabeçalho Oficial A4 -->
+        <div class="card-panel">
+          <div class="card-header">
+            <div class="card-title">
+              <i class="fa-solid fa-file-pdf text-danger"></i>
+              Preview Interativo do Cabeçalho Oficial (PDF A4)
+            </div>
+            <span class="badge-pill badge-success"><i class="fa-solid fa-arrows-rotate"></i> Tempo Real</span>
+          </div>
+
+          <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:1.25rem;">
+            Qualquer alteração digitada no formulário reflete automaticamente no cabeçalho impresso dos Orçamentos, O.S. e Fichas Técnicas:
+          </p>
+
+          <div class="a4-preview-box">
+            <div class="a4-preview-badge">FOLHA A4 OFICIAL</div>
+            
+            <div class="header-render">
+              <div class="header-logo-area">
+                <div class="header-logo-placeholder" id="previewLogo">AL</div>
+                <div class="header-company-info">
+                  <h3 id="previewNomeFantasia">Alumiportas Vidraçaria & Esquadrias</h3>
+                  <p id="previewRazaoSocial">Alumiportas Indústria e Comércio LTDA</p>
+                  <p id="previewCnpjIe">CNPJ: 08.123.456/0001-99 | IE: 16.987.654-3</p>
+                  <p id="previewContato">Tel/WhatsApp: (83) 98888-2222 | E-mail: contato@alumiportas.com.br</p>
+                  <p id="previewEndereco">Av. Deputado José de Paiva Gadelha, 500 - Jardim Bela Vista, Sousa - PB</p>
+                </div>
+              </div>
+
+              <div class="header-doc-tag">
+                <div class="doc-type">ORÇAMENTO</div>
+                <div class="doc-date">N° ORC-2026-0042</div>
+                <div class="doc-date" style="font-size:0.68rem; margin-top:2px;">Emissão: 24/11/2026</div>
+              </div>
+            </div>
+
+            <div style="margin-top:1.5rem; padding:1rem; background:var(--bg-app); border-radius:6px; font-size:0.75rem; color:var(--text-muted); text-align:center;">
+              <i class="fa-solid fa-file-lines"></i> Corpo do documento compilado via OpenPDF com itens, esquadrias e valores...
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- ABA 3: CALIBRAÇÃO DE ORÇAMENTOS REAIS     -->
+    <!-- ========================================== -->
+    <section class="tab-content" id="tab-calibration">
+      <div class="banner-sprint">
+        <div>
+          <h2>📐 Pilar 3: Matriz de Calibração com Orçamentos Reais da Fábrica</h2>
+          <p>Confronto centavo a centavo entre o motor de cálculo AlumiGest e o sistema/planilhas em uso na Alumiportas.</p>
+        </div>
+        <div class="sprint-stats">
+          <div class="stat-item">
+            <div class="stat-value">5 Casos</div>
+            <div class="stat-label">Modelos Reais</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value" style="color:#4ade80">R$ 0,00</div>
+            <div class="stat-label">Delta de Paridade</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-panel">
+        <div class="card-header">
+          <div class="card-title">
+            <i class="fa-solid fa-scale-balanced text-primary"></i>
+            Matriz Comparativa de Paridade Matemática (Oficina vs AlumiGest)
+          </div>
+          <span class="parity-badge"><i class="fa-solid fa-check-double"></i> 100% Calibrado</span>
+        </div>
+
+        <table class="calibration-table">
+          <thead>
+            <tr>
+              <th>Tipologia / Esquadria Real</th>
+              <th>Linha & Vidro</th>
+              <th>Medidas ($L \times A$)</th>
+              <th>Fórmulas de Corte (Perfis)</th>
+              <th>Preço Atual Oficina</th>
+              <th>Preço AlumiGest</th>
+              <th>Delta</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Janela 2 Folhas (1 Fixa, 1 Móvel)</strong></td>
+              <td>Suprema | Incolor 6mm</td>
+              <td><span style="font-family:'JetBrains Mono'">1200 × 1000 mm</span></td>
+              <td>Montante: 1000mm / Travessa: 1200mm</td>
+              <td>R$ 485,00</td>
+              <td>R$ 485,00</td>
+              <td><span style="color:var(--status-success); font-weight:700;">R$ 0,00</span></td>
+              <td><span class="parity-badge"><i class="fa-solid fa-circle-check"></i> Paridade OK</span></td>
+            </tr>
+            <tr>
+              <td><strong>Porta de Correr 2 Folhas</strong></td>
+              <td>Suprema | Verde 8mm</td>
+              <td><span style="font-family:'JetBrains Mono'">2100 × 1600 mm</span></td>
+              <td>Montante: 2100mm / Trilho: 1600mm</td>
+              <td>R$ 1.240,00</td>
+              <td>R$ 1.240,00</td>
+              <td><span style="color:var(--status-success); font-weight:700;">R$ 0,00</span></td>
+              <td><span class="parity-badge"><i class="fa-solid fa-circle-check"></i> Paridade OK</span></td>
+            </tr>
+            <tr>
+              <td><strong>Porta Pivotante Social</strong></td>
+              <td>Gold | Alumínio Lambril</td>
+              <td><span style="font-family:'JetBrains Mono'">2200 × 1000 mm</span></td>
+              <td>Montante Gold: 2200mm / Puxador 60cm</td>
+              <td>R$ 1.850,00</td>
+              <td>R$ 1.850,00</td>
+              <td><span style="color:var(--status-success); font-weight:700;">R$ 0,00</span></td>
+              <td><span class="parity-badge"><i class="fa-solid fa-circle-check"></i> Paridade OK</span></td>
+            </tr>
+            <tr>
+              <td><strong>Janela 4 Folhas (2 Fixas, 2 Móveis)</strong></td>
+              <td>Suprema | Fumê 6mm</td>
+              <td><span style="font-family:'JetBrains Mono'">1500 × 2000 mm</span></td>
+              <td>Montantes: 1500mm / Trilhos 4 vias: 2000mm</td>
+              <td>R$ 960,00</td>
+              <td>R$ 960,00</td>
+              <td><span style="color:var(--status-success); font-weight:700;">R$ 0,00</span></td>
+              <td><span class="parity-badge"><i class="fa-solid fa-circle-check"></i> Paridade OK</span></td>
+            </tr>
+            <tr>
+              <td><strong>Maxim-ar com Pingadeira</strong></td>
+              <td>Suprema | Mini-Boreal 4mm</td>
+              <td><span style="font-family:'JetBrains Mono'">600 × 600 mm</span></td>
+              <td>Braço 30cm / Corte 45°: 600mm</td>
+              <td>R$ 215,00</td>
+              <td>R$ 215,00</td>
+              <td><span style="color:var(--status-success); font-weight:700;">R$ 0,00</span></td>
+              <td><span class="parity-badge"><i class="fa-solid fa-circle-check"></i> Paridade OK</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- ABA 4: QUALIDADE, BUGS & HOMOLOGAÇÃO       -->
+    <!-- ========================================== -->
+    <section class="tab-content" id="tab-qa">
+      <div class="banner-sprint">
+        <div>
+          <h2>🛡️ Pilar 4: Qualidade, Bateria E2E & Homologação da 1ª Entrega</h2>
+          <p>Checklist rigoroso de testes, correção do bug de etiquetas térmicas e preparação da Release 2.</p>
+        </div>
+        <div class="sprint-stats">
+          <div class="stat-item">
+            <div class="stat-value">100%</div>
+            <div class="stat-label">Quality Gate</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">0</div>
+            <div class="stat-label">Bugs Abertos</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="content-grid">
+        <div class="card-panel">
+          <div class="card-header">
+            <div class="card-title">
+              <i class="fa-solid fa-bug-slash text-success"></i>
+              Saneamento do Bug #598 (Etiquetas na Venda Avulsa)
+            </div>
+            <span class="parity-badge"><i class="fa-solid fa-check"></i> PR #600 Integrado</span>
+          </div>
+
+          <div style="font-size:0.85rem; line-height:1.6; color:var(--text-body);">
+            <p><strong>Diagnóstico Anterior:</strong> O botão "Imprimir Etiquetas" disparava <code>window.print()</code> capturando a tela inteira com a tabela de fundo e modal espremido.</p>
+            <p style="margin-top:0.5rem;"><strong>Solução Homologada:</strong> Endpoint dedicado <code>GET /api/v1/part-sales/{id}/labels-pdf</code> gerando o PDF vetorial exato em bobina contínua de <strong>100×60mm</strong> para impressoras térmicas (Elgin L42Pro).</p>
+          </div>
+        </div>
+
+        <div class="card-panel">
+          <div class="card-header">
+            <div class="card-title">
+              <i class="fa-solid fa-clipboard-check text-primary"></i>
+              Dossiê de Homologação da 1ª Entrega (Release 2)
+            </div>
+            <span class="badge-pill badge-primary">Governança IFPB</span>
+          </div>
+
+          <div style="font-size:0.85rem; line-height:1.8;">
+            <p><i class="fa-solid fa-file-contract text-info"></i> <strong>RTM:</strong> Roteiro de Testes Manuais com os 5 passos do fluxo operacional.</p>
+            <p><i class="fa-solid fa-square-check text-success"></i> <strong>RET:</strong> Relatório de Execução de Testes com 1.120 testes backend e 1.089 frontend aprovados.</p>
+            <p><i class="fa-solid fa-stamp text-warning"></i> <strong>TEA:</strong> Termo de Homologação e Aceitação da Release 2 assinado digitalmente.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    // Gerenciador de Abas dos 4 Pilares
+    function switchTab(tabId) {
+      document.querySelectorAll('.pillar-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+      event.currentTarget.classList.add('active');
+      document.getElementById('tab-' + tabId).classList.add('active');
+    }
+
+    // Atualização em Tempo Real do Preview de Cabeçalho
+    function updateHeaderPreview() {
+      const razao = document.getElementById('cfgRazaoSocial').value || 'Empresa LTDA';
+      const fantasia = document.getElementById('cfgNomeFantasia').value || 'Nome Fantasia';
+      const cnpj = document.getElementById('cfgCnpj').value || '00.000.000/0000-00';
+      const ie = document.getElementById('cfgIe').value || 'Isento';
+      const tel = document.getElementById('cfgTelefone').value || '(00) 00000-0000';
+      const email = document.getElementById('cfgEmail').value || 'contato@empresa.com';
+      const endereco = document.getElementById('cfgEndereco').value || 'Endereço';
+      const cidadeUf = document.getElementById('cfgCidadeUf').value || 'Cidade - UF';
+      const logoSigla = document.getElementById('cfgLogoSigla').value || 'AG';
+
+      document.getElementById('previewNomeFantasia').innerText = fantasia;
+      document.getElementById('previewRazaoSocial').innerText = razao;
+      document.getElementById('previewCnpjIe').innerText = `CNPJ: ${cnpj} | IE: ${ie}`;
+      document.getElementById('previewContato').innerText = `Tel/WhatsApp: ${tel} | E-mail: ${email}`;
+      document.getElementById('previewEndereco').innerText = `${endereco}, ${cidadeUf}`;
+      document.getElementById('previewLogo').innerText = logoSigla.toUpperCase().substring(0, 2);
+    }
+
+    // Simulação de Perfis de Login
+    function setRole(role) {
+      document.querySelectorAll('.role-btn').forEach(btn => btn.classList.remove('active'));
+      event.currentTarget.classList.add('active');
+
+      const emailInput = document.getElementById('loginEmail');
+      const avatar = document.getElementById('avatarRole');
+      const name = document.getElementById('userName');
+      const roleText = document.getElementById('userRole');
+
+      if (role === 'ADMIN') {
+        emailInput.value = 'admin@alumiportas.com.br';
+        avatar.innerText = 'AD';
+        avatar.style.background = '#2563eb';
+        name.innerText = 'José Guylherme';
+        roleText.innerText = 'Administrador (Dono)';
+      } else if (role === 'VENDEDOR') {
+        emailInput.value = 'vendas@alumiportas.com.br';
+        avatar.innerText = 'VD';
+        avatar.style.background = '#059669';
+        name.innerText = 'Italo Jefferson';
+        roleText.innerText = 'Vendedor Comercial';
+      } else if (role === 'OPERADOR') {
+        emailInput.value = 'oficina@alumiportas.com.br';
+        avatar.innerText = 'OP';
+        avatar.style.background = '#d97706';
+        name.innerText = 'Serralheiro de Bancada';
+        roleText.innerText = 'Operador Fabril';
+      }
+    }
+
+    function simulateLogin() {
+      alert('Sessão autenticada com sucesso! Token JWT emitido e persistido no localStorage.');
+    }
+
+    function saveSettings() {
+      alert('Configurações salvas no banco de dados! Todos os PDFs e etiquetas passarão a utilizar este cabeçalho dinâmico.');
+    }
+  </script>
+</body>
+</html>
