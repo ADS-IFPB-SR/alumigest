@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <title>Catálogo Técnico - Alumiportas</title>
+    <!-- Google Fonts & FontAwesome para ícones e tipografia moderna -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@500;600;700;800;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        @page {
+            size: A4 landscape;
+            margin: 12mm 12mm;
+        }
+        body {
+            font-family: 'Inter', 'Segoe UI', 'Helvetica', 'Arial', sans-serif;
+            margin: 0;
+            padding: 20px;
+            color: #1e293b;
+            background-color: #f1f5f9;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        * {
+            box-sizing: border-box;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 24px 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        .header {
+            background-color: #041632;
+            color: #ffffff;
+            padding: 22px 28px;
+            border-bottom: 5px solid #2563eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-radius: 8px 8px 0 0;
+        }
+        .header-left {
+            display: flex;
+            flex-direction: column;
+        }
+        .header-title {
+            font-family: 'Hanken Grotesk', sans-serif;
+            font-size: 22pt;
+            font-weight: 800;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .header-subtitle {
+            font-size: 11pt;
+            margin-top: 4px;
+            color: #94a3b8;
+            font-weight: 500;
+        }
+        .alumiportas-branding {
+            font-family: 'Hanken Grotesk', sans-serif;
+            font-size: 20pt;
+            font-weight: 900;
+            color: #ffffff;
+            letter-spacing: 2px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .alumiportas-branding span.highlight {
+            color: #38bdf8;
+        }
+
+        /* Banner de Instruções de Impressão */
+        .instructions {
+            background-color: #eff6ff;
+            color: #1e40af;
+            padding: 12px 18px;
+            border: 1px solid #bfdbfe;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 10pt;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Card Vitrine de Cores e Acabamentos */
+        .colors-showcase-panel {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-left: 5px solid #2563eb;
+            border-radius: 8px;
+            padding: 14px 20px;
+            margin-top: 18px;
+            margin-bottom: 22px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+        .colors-showcase-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .colors-showcase-title {
+            font-family: 'Hanken Grotesk', sans-serif;
+            font-size: 12pt;
+            font-weight: 800;
+            color: #0f172a;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .colors-showcase-subtitle {
+            font-size: 9pt;
+            color: #64748b;
+            font-weight: 500;
+        }
+
+        /* Minicards / Swatches de Cores */
+        .color-swatch-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+        }
+        .color-swatch {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 8.5pt;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 5px;
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            color: #1e293b;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        .color-swatch:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+        }
+
+        /* Amostras Circulares com Tons Exatos dos Perfis */
+        .dot-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            flex-shrink: 0;
+        }
+        .dot-fosco {
+            background: linear-gradient(135deg, #f1f5f9 0%, #cbd5e1 50%, #94a3b8 100%);
+            border: 1px solid #94a3b8;
+        }
+        .dot-preto {
+            background: #0f172a;
+            border: 1px solid #000000;
+            box-shadow: inset 0 0 2px rgba(255,255,255,0.2);
+        }
+        .dot-champ {
+            background: linear-gradient(135deg, #e9d5a1 0%, #d4b26f 50%, #b89658 100%);
+            border: 1px solid #9e7f45;
+        }
+        .dot-branco {
+            background: #ffffff;
+            border: 1px solid #94a3b8;
+            box-shadow: inset 0 0 2px rgba(0,0,0,0.1);
+        }
+        .dot-inox {
+            background: linear-gradient(135deg, #ffffff 0%, #d1d5db 40%, #9ca3af 70%, #6b7280 100%);
+            border: 1px solid #6b7280;
+        }
+        .dot-dourado {
+            background: linear-gradient(135deg, #fef08a 0%, #eab308 50%, #ca8a04 100%);
+            border: 1px solid #a16207;
+        }
+        .dot-titanio {
+            background: linear-gradient(135deg, #64748b 0%, #475569 50%, #334155 100%);
+            border: 1px solid #1e293b;
+        }
+
+        /* Seção e Tabela */
+        h2 {
+            font-family: 'Hanken Grotesk', sans-serif;
+            color: #0f172a;
+            font-size: 15pt;
+            font-weight: 800;
+            margin-top: 15px;
+            margin-bottom: 15px;
+            border-left: 5px solid #2563eb;
+            padding-left: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            border: 1px solid #e2e8f0;
+            padding: 12px 14px;
+            text-align: left;
+            vertical-align: middle;
+            font-size: 9.5pt;
+        }
+        th {
+            background-color: #f8fafc;
+            color: #0f172a;
+            font-family: 'Hanken Grotesk', sans-serif;
+            font-weight: 700;
+            font-size: 9pt;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid #cbd5e1;
+        }
+        tr:nth-child(even) {
+            background-color: #fcfdfe;
+        }
+        tr:hover {
+            background-color: #f1f5f9;
+        }
+        .code-cell {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            color: #2563eb;
+            font-size: 10pt;
+            white-space: nowrap;
+        }
+        .img-cell {
+            text-align: center;
+            width: 110px;
+            background: #ffffff;
+        }
+        img {
+            max-width: 95px;
+            max-height: 80px;
+            object-fit: contain;
+            display: inline-block;
+        }
+        .model-title {
+            font-size: 11pt;
+            font-weight: 800;
+            color: #0f172a;
+            font-family: 'Hanken Grotesk', sans-serif;
+        }
+        .model-desc {
+            font-size: 8.5pt;
+            color: #64748b;
+            margin-top: 2px;
+        }
+        .glass-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: #e0f2fe;
+            color: #0369a1;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 8.5pt;
+            font-weight: 700;
+            border: 1px solid #bae6fd;
+        }
+        .complement-list {
+            font-size: 8.5pt;
+            line-height: 1.45;
+            color: #334155;
+        }
+        .complement-list span {
+            display: block;
+        }
+        
+        @media print {
+            body {
+                background-color: #fff;
+                padding: 0;
+            }
+            .container {
+                box-shadow: none;
+                padding: 0;
+                max-width: 100%;
+            }
+            .instructions {
+                display: none;
+            }
+            tr {
+                page-break-inside: avoid;
+            }
+            .header {
+                border-radius: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- Instruções de Salvamento em PDF -->
+        <div class="instructions">
+            <i class="fa-solid fa-circle-info fa-lg"></i>
+            <div>
+                <strong>Como salvar em PDF de alta qualidade:</strong> Pressione <b>Ctrl + P</b> (Imprimir). Defina o Destino como <b>"Salvar como PDF"</b>, o Layout como <b>"Paisagem"</b> e, nas opções avançadas, marque <b>"Gráficos de segundo plano"</b> para preservar cores e imagens.
+            </div>
+        </div>
+
+        <!-- Cabeçalho Oficial Alumiportas -->
+        <div class="header">
+            <div class="header-left">
+                <h1 class="header-title">Catálogo Técnico Moveleiro</h1>
+                <div class="header-subtitle">Perfis de Alumínio Rometal &bull; Linha 45 mm para Vidro 4 mm</div>
+            </div>
+            <div class="alumiportas-branding">
+                <span class="highlight">ALUMI</span>PORTAS
+            </div>
+        </div>
+
+        <!-- Vitrine de Minicards com as 7 Cores Homologadas -->
+        <div class="colors-showcase-panel">
+            <div class="colors-showcase-header">
+                <div class="colors-showcase-title">
+                    <i class="fa-solid fa-swatchbook text-primary" style="color:#2563eb;"></i>
+                    Acabamentos & Cores Disponíveis em Catálogo (Linha 45 mm)
+                </div>
+                <div class="colors-showcase-subtitle">
+                    Perfis fornecidos em barras com acabamento de alta resistência para móveis planejados
+                </div>
+            </div>
+            <div class="color-swatch-group">
+                <span class="color-swatch">
+                    <span class="dot-color dot-fosco"></span> Fosco
+                </span>
+                <span class="color-swatch">
+                    <span class="dot-color dot-preto"></span> Preto
+                </span>
+                <span class="color-swatch">
+                    <span class="dot-color dot-champ"></span> Champ 1001
+                </span>
+                <span class="color-swatch">
+                    <span class="dot-color dot-branco"></span> Branco
+                </span>
+                <span class="color-swatch">
+                    <span class="dot-color dot-inox"></span> Inox
+                </span>
+                <span class="color-swatch">
+                    <span class="dot-color dot-dourado"></span> Dourado
+                </span>
+                <span class="color-swatch">
+                    <span class="dot-color dot-titanio"></span> Titânio
+                </span>
+            </div>
+        </div>
+
+        <h2>Listagem de Perfis e Componentes Estruturais</h2>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 7%;">Código</th> 
+                    <th style="width: 22%;">Descrição / Modelo</th>
+                    <th style="width: 14%;">Imagem (Ref)</th>
+                    <th style="width: 11%;">Aplicação</th>
+                    <th style="width: 26%;">Cores Disponíveis (Minicards)</th>
+                    <th style="width: 20%;">Complementos & Acessórios</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- RM-059 -->
+                <tr>
+                    <td class="code-cell">3253</td>
+                    <td>
+                        <div class="model-title">RM-059</div>
+                        <div class="model-desc">Perfil porta aba frontal alta (45 mm)</div>
+                    </td>
+                    <td class="img-cell">
+                        <img src="https://www2.rometal.com.br/uploads/RZ4ogQceeQfxPDKTIVt6yMgJIVvVEzfp3oEcHcJa.png" alt="RM-059">
+                    </td>
+                    <td><span class="glass-badge"><i class="fa-regular fa-window-maximize"></i> Vidro 4 mm</span></td>
+                    <td>
+                        <div class="color-swatch-group">
+                            <span class="color-swatch"><span class="dot-color dot-fosco"></span> Fosco</span>
+                            <span class="color-swatch"><span class="dot-color dot-preto"></span> Preto</span>
+                            <span class="color-swatch"><span class="dot-color dot-champ"></span> Champ 1001</span>
+                            <span class="color-swatch"><span class="dot-color dot-branco"></span> Branco</span>
+                            <span class="color-swatch"><span class="dot-color dot-inox"></span> Inox</span>
+                            <span class="color-swatch"><span class="dot-color dot-dourado"></span> Dourado</span>
+                            <span class="color-swatch"><span class="dot-color dot-titanio"></span> Titânio</span>
+                        </div>
+                    </td>
+                    <td class="complement-list">
+                        <span>&bull; Esquadreta ESQ-041 / ESQ-055</span>
+                        <span>&bull; Parafusos M4X8 CC</span>
+                        <span>&bull; Baguete BG-216</span>
+                    </td>
+                </tr>
+
+                <!-- RM-060 -->
+                <tr>
+                    <td class="code-cell">3268</td>
+                    <td>
+                        <div class="model-title">RM-060</div>
+                        <div class="model-desc">Perfil porta aba frontal baixa (45 mm)</div>
+                    </td>
+                    <td class="img-cell">
+                        <img src="https://www2.rometal.com.br/uploads/mpjeX79AOKATMMK7PArNlAYcGzFPey1ksZQ41tlk.png" alt="RM-060">
+                    </td>
+                    <td><span class="glass-badge"><i class="fa-regular fa-window-maximize"></i> Vidro 4 mm</span></td>
+                    <td>
+                        <div class="color-swatch-group">
+                            <span class="color-swatch"><span class="dot-color dot-fosco"></span> Fosco</span>
+                            <span class="color-swatch"><span class="dot-color dot-preto"></span> Preto</span>
+                            <span class="color-swatch"><span class="dot-color dot-champ"></span> Champ 1001</span>
+                            <span class="color-swatch"><span class="dot-color dot-branco"></span> Branco</span>
+                            <span class="color-swatch"><span class="dot-color dot-inox"></span> Inox</span>
+                            <span class="color-swatch"><span class="dot-color dot-dourado"></span> Dourado</span>
+                            <span class="color-swatch"><span class="dot-color dot-titanio"></span> Titânio</span>
+                        </div>
+                    </td>
+                    <td class="complement-list">
+                        <span>&bull; Esquadreta ESQ-041 / ESQ-055</span>
+                        <span>&bull; Parafusos M4X8 CC</span>
+                        <span>&bull; Baguete BG-216</span>
+                    </td>
+                </tr>
+
+                <!-- RM-057 -->
+                <tr>
+                    <td class="code-cell">3251</td>
+                    <td>
+                        <div class="model-title">RM-057</div>
+                        <div class="model-desc">Perfil Puxador / Porta 45 mm</div>
+                    </td>
+                    <td class="img-cell">
+                        <img src="https://www2.rometal.com.br/uploads/BOlFkS5IIHRjpWHKMi8z3xBtv90toNluPYFpaHT9.png" alt="RM-057">
+                    </td>
+                    <td><span class="glass-badge"><i class="fa-regular fa-window-maximize"></i> Vidro 4 mm</span></td>
+                    <td>
+                        <div class="color-swatch-group">
+                            <span class="color-swatch"><span class="dot-color dot-fosco"></span> Fosco</span>
+                            <span class="color-swatch"><span class="dot-color dot-preto"></span> Preto</span>
+                            <span class="color-swatch"><span class="dot-color dot-champ"></span> Champ 1001</span>
+                            <span class="color-swatch"><span class="dot-color dot-branco"></span> Branco</span>
+                            <span class="color-swatch"><span class="dot-color dot-inox"></span> Inox</span>
+                            <span class="color-swatch"><span class="dot-color dot-dourado"></span> Dourado</span>
+                            <span class="color-swatch"><span class="dot-color dot-titanio"></span> Titânio</span>
+                        </div>
+                    </td>
+                    <td class="complement-list">
+                        <span>&bull; Esquadreta ESQ-041 / ESQ-055</span>
+                        <span>&bull; Parafusos M4X8 CC</span>
+                        <span>&bull; Baguete BG-216</span>
+                    </td>
+                </tr>
+
+                <!-- RM-405 -->
+                <tr>
+                    <td class="code-cell">7818</td>
+                    <td>
+                        <div class="model-title">RM-405</div>
+                        <div class="model-desc">Perfil Porta / Puxador Slim 45 mm</div>
+                    </td>
+                    <td class="img-cell">
+                        <img src="https://www2.rometal.com.br/uploads/X1AFCDnb3VrR1q0irzQ2MLHmlYDkXMgfSeXMc8h3.png" alt="RM-405">
+                    </td>
+                    <td><span class="glass-badge"><i class="fa-regular fa-window-maximize"></i> Vidro 4 mm</span></td>
+                    <td>
+                        <div class="color-swatch-group">
+                            <span class="color-swatch"><span class="dot-color dot-fosco"></span> Fosco</span>
+                            <span class="color-swatch"><span class="dot-color dot-preto"></span> Preto</span>
+                            <span class="color-swatch"><span class="dot-color dot-champ"></span> Champ 1001</span>
+                            <span class="color-swatch"><span class="dot-color dot-branco"></span> Branco</span>
+                            <span class="color-swatch"><span class="dot-color dot-inox"></span> Inox</span>
+                            <span class="color-swatch"><span class="dot-color dot-dourado"></span> Dourado</span>
+                            <span class="color-swatch"><span class="dot-color dot-titanio"></span> Titânio</span>
+                        </div>
+                    </td>
+                    <td class="complement-list">
+                        <span>&bull; Esquadreta ESQ-055 / ESQ-041</span>
+                        <span>&bull; Ponteiras plásticas de acabamento</span>
+                        <span>&bull; Parafusos M4X8</span>
+                    </td>
+                </tr>
+
+                <!-- RM-410 -->
+                <tr>
+                    <td class="code-cell">6952</td>
+                    <td>
+                        <div class="model-title">RM-410</div>
+                        <div class="model-desc">Perfil porta aba frontal alta robusto</div>
+                    </td>
+                    <td class="img-cell">
+                        <img src="https://homolog.rometal.com.br/uploads/conteudos/3824960c-8d17-11f1-9dc8-02006e230003.png" alt="RM-410">
+                    </td>
+                    <td><span class="glass-badge"><i class="fa-regular fa-window-maximize"></i> Vidro 4 mm</span></td>
+                    <td>
+                        <div class="color-swatch-group">
+                            <span class="color-swatch"><span class="dot-color dot-fosco"></span> Fosco</span>
+                            <span class="color-swatch"><span class="dot-color dot-preto"></span> Preto</span>
+                            <span class="color-swatch"><span class="dot-color dot-champ"></span> Champ 1001</span>
+                            <span class="color-swatch"><span class="dot-color dot-branco"></span> Branco</span>
+                            <span class="color-swatch"><span class="dot-color dot-inox"></span> Inox</span>
+                            <span class="color-swatch"><span class="dot-color dot-dourado"></span> Dourado</span>
+                            <span class="color-swatch"><span class="dot-color dot-titanio"></span> Titânio</span>
+                        </div>
+                    </td>
+                    <td class="complement-list">
+                        <span>&bull; Esquadreta ESQ-041 / ESQ-055</span>
+                        <span>&bull; Parafusos M4X8 CC</span>
+                        <span>&bull; Baguete BG-216</span>
+                    </td>
+                </tr>
+
+                <!-- RM-183 -->
+                <tr>
+                    <td class="code-cell">10492</td>
+                    <td>
+                        <div class="model-title">RM-183</div>
+                        <div class="model-desc">Perfil Porta Puxador Integrado 45 mm</div>
+                    </td>
+                    <td class="img-cell">
+                        <img src="https://www2.rometal.com.br/uploads/Bu3fyAxPl4DsWt4GzUzgNNrvJdz0SVGDi9unVcbS.png" alt="RM-183">
+                    </td>
+                    <td><span class="glass-badge"><i class="fa-regular fa-window-maximize"></i> Vidro 4 mm</span></td>
+                    <td>
+                        <div class="color-swatch-group">
+                            <span class="color-swatch"><span class="dot-color dot-fosco"></span> Fosco</span>
+                            <span class="color-swatch"><span class="dot-color dot-preto"></span> Preto</span>
+                            <span class="color-swatch"><span class="dot-color dot-champ"></span> Champ 1001</span>
+                            <span class="color-swatch"><span class="dot-color dot-branco"></span> Branco</span>
+                            <span class="color-swatch"><span class="dot-color dot-inox"></span> Inox</span>
+                            <span class="color-swatch"><span class="dot-color dot-dourado"></span> Dourado</span>
+                            <span class="color-swatch"><span class="dot-color dot-titanio"></span> Titânio</span>
+                        </div>
+                    </td>
+                    <td class="complement-list">
+                        <span>&bull; Esquadreta ESQ-055</span>
+                        <span>&bull; Tampas laterais de acabamento</span>
+                        <span>&bull; Parafusos M4X8</span>
+                    </td>
+                </tr>
+
+                <!-- RM-089 -->
+                <tr>
+                    <td class="code-cell">10234</td>
+                    <td>
+                        <div class="model-title">RM-089</div>
+                        <div class="model-desc">Perfil Porta Cava / Puxador Oculto 45 mm</div>
+                    </td>
+                    <td class="img-cell">
+                        <img src="https://www2.rometal.com.br/uploads/O9Xh4pbsnUxIrtG9mZ9H8JCdh66g7m6pn8G54wyP.png" alt="RM-089">
+                    </td>
+                    <td><span class="glass-badge"><i class="fa-regular fa-window-maximize"></i> Vidro 4 mm</span></td>
+                    <td>
+                        <div class="color-swatch-group">
+                            <span class="color-swatch"><span class="dot-color dot-fosco"></span> Fosco</span>
+                            <span class="color-swatch"><span class="dot-color dot-preto"></span> Preto</span>
+                            <span class="color-swatch"><span class="dot-color dot-champ"></span> Champ 1001</span>
+                            <span class="color-swatch"><span class="dot-color dot-branco"></span> Branco</span>
+                            <span class="color-swatch"><span class="dot-color dot-inox"></span> Inox</span>
+                            <span class="color-swatch"><span class="dot-color dot-dourado"></span> Dourado</span>
+                            <span class="color-swatch"><span class="dot-color dot-titanio"></span> Titânio</span>
+                        </div>
+                    </td>
+                    <td class="complement-list">
+                        <span>&bull; Esquadreta ESQ-055 / ESQ-041</span>
+                        <span>&bull; Parafusos M4X8 CC</span>
+                    </td>
+                </tr>
+
+                <!-- RM-378 -->
+                <tr>
+                    <td class="code-cell">3289</td>
+                    <td>
+                        <div class="model-title">RM-378</div>
+                        <div class="model-desc">Perfil Puxador Sobreposto / Pega Lateral</div>
+                    </td>
+                    <td class="img-cell">
+                        <img src="https://www2.rometal.com.br/uploads/HaJEVBQsQ5w2wfH9U23uHok7Rny7ToeINbCmz28j.png" alt="RM-378">
+                    </td>
+                    <td><span class="glass-badge"><i class="fa-regular fa-window-maximize"></i> Vidro 4 mm</span></td>
+                    <td>
+                        <div class="color-swatch-group">
+                            <span class="color-swatch"><span class="dot-color dot-fosco"></span> Fosco</span>
+                            <span class="color-swatch"><span class="dot-color dot-preto"></span> Preto</span>
+                            <span class="color-swatch"><span class="dot-color dot-champ"></span> Champ 1001</span>
+                            <span class="color-swatch"><span class="dot-color dot-branco"></span> Branco</span>
+                            <span class="color-swatch"><span class="dot-color dot-inox"></span> Inox</span>
+                            <span class="color-swatch"><span class="dot-color dot-dourado"></span> Dourado</span>
+                            <span class="color-swatch"><span class="dot-color dot-titanio"></span> Titânio</span>
+                        </div>
+                    </td>
+                    <td class="complement-list">
+                        <span>&bull; Ponteiras de acabamento específicas</span>
+                        <span>&bull; Parafusos de união</span>
+                    </td>
+                </tr>
+
+                <!-- RM-088 -->
+                <tr>
+                    <td class="code-cell">3288</td>
+                    <td>
+                        <div class="model-title">RM-088</div>
+                        <div class="model-desc">Perfil Estrutural / Travessa Central 45 mm</div>
+                    </td>
+                    <td class="img-cell">
+                        <img src="https://www2.rometal.com.br/uploads/Tm1wDPF0aIzX4yfjhFityxDNCIYjUvZa31qTDUKX.png" alt="RM-088">
+                    </td>
+                    <td><span class="glass-badge"><i class="fa-regular fa-window-maximize"></i> Vidro 4 mm / Painel</span></td>
+                    <td>
+                        <div class="color-swatch-group">
+                            <span class="color-swatch"><span class="dot-color dot-fosco"></span> Fosco</span>
+                            <span class="color-swatch"><span class="dot-color dot-preto"></span> Preto</span>
+                            <span class="color-swatch"><span class="dot-color dot-champ"></span> Champ 1001</span>
+                            <span class="color-swatch"><span class="dot-color dot-branco"></span> Branco</span>
+                            <span class="color-swatch"><span class="dot-color dot-inox"></span> Inox</span>
+                            <span class="color-swatch"><span class="dot-color dot-dourado"></span> Dourado</span>
+                            <span class="color-swatch"><span class="dot-color dot-titanio"></span> Titânio</span>
+                        </div>
+                    </td>
+                    <td class="complement-list">
+                        <span>&bull; Esquadreta ESQ-041 / ESQ-055</span>
+                        <span>&bull; Parafusos de fixação</span>
+                    </td>
+                </tr>
+
+                <!-- RM-084 -->
+                <tr>
+                    <td class="code-cell">4117</td>
+                    <td>
+                        <div class="model-title">RM-084</div>
+                        <div class="model-desc">Travessa Divisória de Perfil</div>
+                    </td>
+                    <td class="img-cell">
+                        <img src="https://www2.rometal.com.br/uploads/2Xe6xizs03qndrnRmLLLb99vHReFjvAwLMqytgja.png" alt="RM-084">
+                    </td>
+                    <td><span class="glass-badge"><i class="fa-regular fa-window-maximize"></i> Vidro 4 mm</span></td>
+                    <td>
+                        <div class="color-swatch-group">
+                            <span class="color-swatch"><span class="dot-color dot-fosco"></span> Fosco</span>
+                            <span class="color-swatch"><span class="dot-color dot-preto"></span> Preto</span>
+                            <span class="color-swatch"><span class="dot-color dot-champ"></span> Champ 1001</span>
+                            <span class="color-swatch"><span class="dot-color dot-branco"></span> Branco</span>
+                            <span class="color-swatch"><span class="dot-color dot-inox"></span> Inox</span>
+                            <span class="color-swatch"><span class="dot-color dot-dourado"></span> Dourado</span>
+                            <span class="color-swatch"><span class="dot-color dot-titanio"></span> Titânio</span>
+                        </div>
+                    </td>
+                    <td class="complement-list">
+                        <span>&bull; Ponteiras de acabamento específicas</span>
+                        <span>&bull; Parafusos de união</span>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>
