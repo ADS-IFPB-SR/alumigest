@@ -363,6 +363,23 @@ class MaterialOnboardingServiceTest {
             .hasMessageContaining("não correspondem à categoria");
     }
 
+    @Test
+    @DisplayName("Deve lançar BusinessException quando categoryType for nulo")
+    void shouldThrowExceptionWhenCategoryTypeIsNull() {
+        MaterialWithStockCreateRequestDTO request = new MaterialWithStockCreateRequestDTO(
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+        );
+
+        assertThatThrownBy(() -> onboardingService.createMaterialWithStock(request))
+            .isInstanceOf(BusinessException.class)
+            .hasMessageContaining("A categoria do material é obrigatória.");
+    }
+
     private StockItemResponseDTO buildStockItem(
             UUID materialId, BigDecimal physical, BigDecimal minimumStock) {
         return new StockItemResponseDTO(

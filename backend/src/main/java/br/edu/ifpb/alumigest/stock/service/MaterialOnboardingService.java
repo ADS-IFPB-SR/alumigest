@@ -76,6 +76,10 @@ public class MaterialOnboardingService {
     }
 
     private void validatePayloadConsistency(MaterialWithStockCreateRequestDTO request) {
+        if (request.categoryType() == null) {
+            throw new BusinessException("A categoria do material é obrigatória.");
+        }
+
         int filledCount = countNonNull(
             request.aluminumProfile(),
             request.glass(),

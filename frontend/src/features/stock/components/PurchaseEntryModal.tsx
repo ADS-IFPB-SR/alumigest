@@ -53,6 +53,17 @@ export function PurchaseEntryModal({
     }
   }, [isOpen, defaultMaterialId, reset]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const onSubmit = (values: PurchaseEntryFormValues) => {
@@ -79,9 +90,16 @@ export function PurchaseEntryModal({
       open
       aria-modal="true"
       aria-labelledby="purchase-entry-modal-title"
-      className="fixed inset-0 z-50 m-0 flex h-full w-full max-h-none max-w-none items-center justify-center border-0 bg-black/50 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-50 m-0 flex h-full w-full max-h-none max-w-none items-center justify-center border-0 bg-transparent p-4"
     >
-      <div className="w-full max-w-lg rounded-2xl border border-outline-variant bg-surface-container-lowest shadow-2xl overflow-hidden">
+      <button
+        type="button"
+        className="fixed inset-0 h-full w-full bg-black/50 backdrop-blur-sm border-0 cursor-default"
+        onClick={onClose}
+        tabIndex={-1}
+        aria-label="Fechar fundo do modal"
+      />
+      <div className="relative z-10 w-full max-w-lg rounded-2xl border border-outline-variant bg-surface-container-lowest shadow-2xl overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-outline-variant bg-surface-container-low p-5">
           <div className="flex items-center gap-2.5">

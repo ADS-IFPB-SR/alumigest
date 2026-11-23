@@ -1,9 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import {
-  InitialStockSection,
-  useInitialStockSection,
-} from '../../../features/stock/components/InitialStockSection';
+import { InitialStockSection } from '../../../features/stock/components/InitialStockSection';
+import { useInitialStockSection } from '../../../features/stock/hooks/useInitialStockSection';
 import type { InitialStockEntryRequest } from '../../../features/stock/types';
 
 interface HarnessProps {

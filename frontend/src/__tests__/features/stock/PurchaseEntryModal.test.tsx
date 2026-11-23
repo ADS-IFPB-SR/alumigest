@@ -101,4 +101,30 @@ describe('PurchaseEntryModal (US-22.3)', () => {
       expect(mockOnClose).toHaveBeenCalled();
     });
   });
+
+  it('deve fechar o modal ao pressionar a tecla Escape', () => {
+    render(
+      <PurchaseEntryModal
+        isOpen={true}
+        onClose={mockOnClose}
+        stockItems={mockStockItems}
+      />
+    );
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(mockOnClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('deve fechar o modal ao clicar no backdrop (overlay)', () => {
+    render(
+      <PurchaseEntryModal
+        isOpen={true}
+        onClose={mockOnClose}
+        stockItems={mockStockItems}
+      />
+    );
+
+    fireEvent.click(screen.getByLabelText('Fechar fundo do modal'));
+    expect(mockOnClose).toHaveBeenCalledTimes(1);
+  });
 });

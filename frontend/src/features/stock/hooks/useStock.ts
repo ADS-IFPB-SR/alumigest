@@ -76,6 +76,8 @@ export const useRegisterStockMovement = () => {
       toast.success('Movimentação registrada com sucesso no Kardex!');
       queryClient.invalidateQueries({ queryKey: ['stock-balances'] });
       queryClient.invalidateQueries({ queryKey: ['stock-movements'] });
+      queryClient.invalidateQueries({ queryKey: ['stock-item'] });
+      queryClient.invalidateQueries({ queryKey: ['stock-order-alert'] });
     },
     onError: (error: unknown) => {
       console.error('Erro ao registrar movimentação de estoque:', error);
@@ -161,6 +163,8 @@ export const useCreateMaterialWithStock = () => {
       toast.success(msg);
       queryClient.invalidateQueries({ queryKey: ['stock-balances'] });
       queryClient.invalidateQueries({ queryKey: ['stock-movements'] });
+      queryClient.invalidateQueries({ queryKey: ['stock-item'] });
+      queryClient.invalidateQueries({ queryKey: ['stock-order-alert'] });
       queryClient.invalidateQueries({ queryKey: ['catalog'] });
       queryClient.invalidateQueries({ queryKey: ['profiles'] });
       queryClient.invalidateQueries({ queryKey: ['glasses'] });
