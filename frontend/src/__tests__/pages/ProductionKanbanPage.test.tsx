@@ -3,12 +3,21 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { ProductionKanbanPage } from '../../pages/ProductionKanbanPage';
 import { useProductionKanban } from '../../features/production/hooks/useProductionKanban';
+import { useStockBalances } from '../../features/stock';
 import type { OrderSummary } from '../../features/orders/types';
 
 // Mock do hook de produção para termos controle total dos dados e estados nos testes
 vi.mock('../../features/production/hooks/useProductionKanban', () => ({
   useProductionKanban: vi.fn(),
 }));
+
+vi.mock('../../features/stock', async () => {
+  const actual = await vi.importActual<typeof import('../../features/stock')>('../../features/stock');
+  return {
+    ...actual,
+    useStockBalances: vi.fn(),
+  };
+});
 
 // Mock do hook de navegação do react-router-dom para inspecionar rotas
 const mockNavigate = vi.fn();
@@ -85,6 +94,12 @@ describe('ProductionKanbanPage Component (US-18.5)', () => {
       updateStatusAsync: vi.fn(),
       isUpdating: false,
     });
+    vi.mocked(useStockBalances).mockReturnValue({
+      data: [],
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useStockBalances>);
   });
 
   const renderComponent = () => {
@@ -287,5 +302,38 @@ describe('ProductionKanbanPage Component (US-18.5)', () => {
     fireEvent.click(retryBtn);
 
     expect(mockRefetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('deve exibir a faixa de avisos fabris no topo do Kanban quando houver insumos em falta', () => {
+    vi.mocked(useStockBalances).mockReturnValue({
+      data: [
+        {
+          id: 'st-1',
+          materialId: 'm1',
+          materialSku: 'PER-001',
+          materialName: 'Perfil Suprema',
+          category: 'PROFILE',
+          unitMeasure: 'BARRA_6M',
+          physicalQuantity: 1,
+          reservedQuantity: 5,
+          availableQuantity: -4,
+          minimumStock: 2,
+          alertStatus: 'NEED_PURCHASE',
+        },
+      ],
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useStockBalances>);
+
+    renderComponent();
+
+    const alertBanner = screen.getByTestId('kanban-stock-alert-banner');
+    expect(alertBanner).toHaveTextContent('Alerta Fabril: 1 insumo em falta para produção');
+    expect(alertBanner).toHaveTextContent('PER-001');
+    expect(screen.getByTestId('kanban-stock-alert-cta')).toHaveAttribute(
+      'href',
+      '/catalogo?needsPurchase=true'
+    );
   });
 });

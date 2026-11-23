@@ -31,9 +31,9 @@ export function PlaceholderPage({ title, icon, description }: Props) {
  </p>
 
  {/* Action to Return */}
- <Link to="/">
+ <Link to="/catalogo">
  <Button variant="primary" icon="swap_horiz">
- Ir para Catálogo de Materiais
+ Ir para Catálogo & Estoque
  </Button>
  </Link>
  </div>

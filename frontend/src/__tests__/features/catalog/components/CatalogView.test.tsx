@@ -267,16 +267,32 @@ describe('CatalogView Component [Joseph Nichollas + US-22.1]', () => {
     } as unknown as ReturnType<typeof useStockBalances>);
   });
 
-  it('deve renderizar a tela com cabeçalho, campo de busca, filtro de status, checkboxes de estoque e botão Novo Material', () => {
+  it('deve renderizar a tela com cabeçalho, badge unificado, guia de operação, filtros e botão Novo Material', () => {
     render(<CatalogView />);
 
     expect(screen.getByText('Catálogo de Materiais')).toBeInTheDocument();
+    expect(screen.getByTestId('catalog-unified-badge')).toHaveTextContent(
+      'Almoxarifado & Kardex Integrados'
+    );
+    expect(screen.getByTestId('catalog-operation-guide-banner')).toBeInTheDocument();
+    expect(screen.getByTestId('operation-guide-pending-count')).toHaveTextContent(
+      '2 insumos pendentes'
+    );
     expect(screen.getByPlaceholderText('Buscar código ou insumo...')).toBeInTheDocument();
     expect(screen.getByRole('combobox')).toBeInTheDocument();
     expect(screen.getByLabelText(/Apenas com necessidade de compra/i)).toBeInTheDocument();
     expect(screen.getByTestId('needs-purchase-count')).toHaveTextContent('2');
     expect(screen.getByLabelText(/Ocultar Alerta de Estoque/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Novo Material/i })).toBeInTheDocument();
+  });
+
+  it('deve ativar o filtro de compra quando initialOnlyNeedsPurchase for true', () => {
+    const { rerender } = render(<CatalogView initialOnlyNeedsPurchase={false} />);
+    expect(screen.getByLabelText(/Apenas com necessidade de compra/i)).not.toBeChecked();
+
+    rerender(<CatalogView initialOnlyNeedsPurchase={true} />);
+    expect(screen.getByLabelText(/Apenas com necessidade de compra/i)).toBeChecked();
+    expect(screen.getByTestId('glass-tab')).toHaveTextContent('need: true');
   });
 
   it('deve propagar os checkboxes entre as abas e persistir Ocultar Alerta de Estoque em localStorage', () => {
