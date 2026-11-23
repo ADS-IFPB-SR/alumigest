@@ -1,21 +1,16 @@
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-
-function getModalSaveLabel(isPending: boolean, isEditing: boolean): string {
-  if (isPending) return 'Salvando...';
-  return isEditing ? 'Atualizar' : 'Salvar';
-}
-
+import toast from 'react-hot-toast';
+import {
+  InitialStockSection,
+  useCreateMaterialWithStock,
+  useInitialStockSection,
+} from '@/features/stock';
 import { Modal } from '../../../components/ui/Modal';
 import { Input } from '../../../components/ui/Input';
 import { Button } from '../../../components/ui/Button';
-
-import {
-  useCreateProfile,
-  useUpdateProfile,
-} from '../hooks/useCatalog';
-
+import { useUpdateProfile } from '../hooks/useCatalog';
 import {
   formatCurrencyInput,
   parseCurrencyString,
@@ -24,17 +19,17 @@ import {
   formatWeightInput,
   parseWeightString,
 } from '../../../utils/formatters';
-
 import { StatusToggle } from './StatusToggle';
-
-import toast from 'react-hot-toast';
-
 import {
   profileSchema,
   type ProfileFormValues,
 } from '../schemas/catalogSchemas';
-
 import { FamilyAutocompleteInput } from './FamilyAutocompleteInput';
+
+function getModalSaveLabel(isPending: boolean, isEditing: boolean): string {
+  if (isPending) return 'Salvando...';
+  return isEditing ? 'Atualizar' : 'Salvar';
+}
 
 interface Props {
   readonly isOpen: boolean;
@@ -50,17 +45,16 @@ export function ProfileFormModal({
   const isEditing = Boolean(initialData);
 
   const {
-    mutate: createProfile,
+    mutate: createMaterialWithStock,
     isPending: isCreatePending,
-  } = useCreateProfile();
+  } = useCreateMaterialWithStock();
 
   const {
     mutate: updateProfile,
     isPending: isUpdatePending,
   } = useUpdateProfile();
 
-  const isPending =
-    isCreatePending || isUpdatePending;
+  const isPending = isCreatePending || isUpdatePending;
 
   const {
     register,
@@ -71,7 +65,6 @@ export function ProfileFormModal({
     formState: { errors },
   } = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
-
     defaultValues: {
       skuCode: '',
       commercialLine: '',
@@ -91,6 +84,12 @@ export function ProfileFormModal({
   const activeValue = watch('active');
   const familyCodeValue = watch('familyCode');
   const isHandleValue = watch('isHandle');
+  const costPriceValue = watch('costPrice');
+
+  const initialStock = useInitialStockSection(
+    isOpen && !isEditing,
+    costPriceValue ? parseCurrencyString(costPriceValue) : undefined
+  );
 
   useEffect(() => {
     if (!isOpen) {
@@ -99,47 +98,18 @@ export function ProfileFormModal({
 
     if (initialData) {
       reset({
-        skuCode:
-          initialData.commercialReference || '',
-
-        commercialLine:
-          initialData.commercialLine || '',
-
-        description:
-          initialData.name || '',
-
-        ncmCode:
-          initialData.ncmCode || '',
-
-        colorFinish:
-          initialData.colorFinish || 'INCOLOR',
-
-        familyCode:
-          initialData.familyCode || '',
-
-        weight:
-          formatWeightInput(
-            initialData.weight?.toFixed(3) || ''
-          ),
-
-        length:
-          initialData.standardLengthM?.toString() || '3',
-
-        costPrice:
-          formatCurrencyInput(
-            (initialData.costPrice ?? 0).toFixed(2)
-          ),
-
-        salePrice:
-          formatCurrencyInput(
-            (initialData.salePrice ?? 0).toFixed(2)
-          ),
-
-        active:
-          initialData.active ?? true,
-
-        isHandle:
-          initialData.isHandle ?? false,
+        skuCode: initialData.commercialReference || '',
+        commercialLine: initialData.commercialLine || '',
+        description: initialData.name || '',
+        ncmCode: initialData.ncmCode || '',
+        colorFinish: initialData.colorFinish || 'INCOLOR',
+        familyCode: initialData.familyCode || '',
+        weight: formatWeightInput(initialData.weight?.toFixed(3) || ''),
+        length: initialData.standardLengthM?.toString() || '3',
+        costPrice: formatCurrencyInput((initialData.costPrice ?? 0).toFixed(2)),
+        salePrice: formatCurrencyInput((initialData.salePrice ?? 0).toFixed(2)),
+        active: initialData.active ?? true,
+        isHandle: initialData.isHandle ?? false,
       });
 
       return;
@@ -170,9 +140,7 @@ export function ProfileFormModal({
       standardLengthM: Number(data.length),
       weight: parseWeightString(data.weight),
       unitMeasure: 'BARRA_6M' as const,
-      ncmCode: data.ncmCode?.trim()
-        ? data.ncmCode.trim()
-        : undefined,
+      ncmCode: data.ncmCode?.trim() ? data.ncmCode.trim() : undefined,
       colorFinish: data.colorFinish,
       costPrice: parseCurrencyString(data.costPrice),
       salePrice: parseCurrencyString(data.salePrice),
@@ -188,11 +156,9 @@ export function ProfileFormModal({
         },
         {
           onSuccess: onClose,
-          onError: (err: any) => {
-            toast.error(
-              err?.response?.data?.message ||
-                'Erro de servidor.'
-            );
+          onError: (err: unknown) => {
+            const apiError = err as { response?: { data?: { message?: string } } };
+            toast.error(apiError?.response?.data?.message || 'Erro de servidor.');
           },
         }
       );
@@ -200,15 +166,22 @@ export function ProfileFormModal({
       return;
     }
 
-    createProfile(payload as any, {
-      onSuccess: onClose,
-      onError: (err: any) => {
-        toast.error(
-          err?.response?.data?.message ||
-            'Erro de servidor.'
-        );
+    const { valid, payload: initialStockPayload } =
+      initialStock.validateAndBuildPayload();
+    if (!valid) {
+      return;
+    }
+
+    createMaterialWithStock(
+      {
+        categoryType: 'PROFILE',
+        aluminumProfile: payload,
+        initialStock: initialStockPayload,
       },
-    });
+      {
+        onSuccess: onClose,
+      }
+    );
   };
 
   return (
@@ -239,7 +212,6 @@ export function ProfileFormModal({
       }
     >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-md">
-
         {/* Código */}
         <div data-cy="profile-form-sku-field">
           <Input
@@ -249,10 +221,7 @@ export function ProfileFormModal({
             aria-invalid={Boolean(errors.skuCode)}
             {...register('skuCode', {
               onChange: (e) => {
-                setValue(
-                  'skuCode',
-                  formatUppercase(e.target.value)
-                );
+                setValue('skuCode', formatUppercase(e.target.value));
               },
             })}
             error={errors.skuCode?.message}
@@ -268,10 +237,7 @@ export function ProfileFormModal({
             aria-invalid={Boolean(errors.commercialLine)}
             {...register('commercialLine', {
               onChange: (e) => {
-                setValue(
-                  'commercialLine',
-                  formatUppercase(e.target.value)
-                );
+                setValue('commercialLine', formatUppercase(e.target.value));
               },
             })}
             error={errors.commercialLine?.message}
@@ -290,10 +256,7 @@ export function ProfileFormModal({
             aria-invalid={Boolean(errors.description)}
             {...register('description', {
               onChange: (e) => {
-                setValue(
-                  'description',
-                  formatUppercase(e.target.value)
-                );
+                setValue('description', formatUppercase(e.target.value));
               },
             })}
             error={errors.description?.message}
@@ -309,10 +272,7 @@ export function ProfileFormModal({
             aria-invalid={Boolean(errors.colorFinish)}
             {...register('colorFinish', {
               onChange: (e) => {
-                setValue(
-                  'colorFinish',
-                  formatUppercase(e.target.value)
-                );
+                setValue('colorFinish', formatUppercase(e.target.value));
               },
             })}
             error={errors.colorFinish?.message}
@@ -343,10 +303,7 @@ export function ProfileFormModal({
             placeholder="Opcional"
             {...register('ncmCode', {
               onChange: (e) => {
-                setValue(
-                  'ncmCode',
-                  formatInteger(e.target.value).slice(0, 8)
-                );
+                setValue('ncmCode', formatInteger(e.target.value).slice(0, 8));
               },
             })}
           />
@@ -362,10 +319,7 @@ export function ProfileFormModal({
             aria-invalid={Boolean(errors.weight)}
             {...register('weight', {
               onChange: (e) => {
-                setValue(
-                  'weight',
-                  formatWeightInput(e.target.value)
-                );
+                setValue('weight', formatWeightInput(e.target.value));
               },
             })}
             error={errors.weight?.message}
@@ -382,10 +336,7 @@ export function ProfileFormModal({
             aria-invalid={Boolean(errors.length)}
             {...register('length', {
               onChange: (e) => {
-                setValue(
-                  'length',
-                  formatInteger(e.target.value).slice(0, 2)
-                );
+                setValue('length', formatInteger(e.target.value).slice(0, 2));
               },
             })}
             error={errors.length?.message}
@@ -394,7 +345,6 @@ export function ProfileFormModal({
 
         {/* Preços */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-md col-span-1 md:col-span-2 mt-xs">
-
           {/* Custo */}
           <div data-cy="profile-form-cost-price-field">
             <Input
@@ -405,10 +355,7 @@ export function ProfileFormModal({
               aria-invalid={Boolean(errors.costPrice)}
               {...register('costPrice', {
                 onChange: (e) => {
-                  setValue(
-                    'costPrice',
-                    formatCurrencyInput(e.target.value)
-                  );
+                  setValue('costPrice', formatCurrencyInput(e.target.value));
                 },
               })}
               error={errors.costPrice?.message}
@@ -425,22 +372,21 @@ export function ProfileFormModal({
               aria-invalid={Boolean(errors.salePrice)}
               {...register('salePrice', {
                 onChange: (e) => {
-                  setValue(
-                    'salePrice',
-                    formatCurrencyInput(e.target.value)
-                  );
+                  setValue('salePrice', formatCurrencyInput(e.target.value));
                 },
               })}
               error={errors.salePrice?.message}
             />
           </div>
-
         </div>
 
         {/* É Puxador? */}
         <div className="col-span-1 md:col-span-2 mt-xs p-3 rounded-lg border border-border bg-background-light flex items-center justify-between">
           <div>
-            <label className="font-medium text-sm text-foreground flex items-center gap-2 cursor-pointer" htmlFor="profile-is-handle">
+            <label
+              className="font-medium text-sm text-foreground flex items-center gap-2 cursor-pointer"
+              htmlFor="profile-is-handle"
+            >
               <span>Este perfil é um puxador?</span>
             </label>
             <p className="text-xs text-muted-foreground mt-0.5">
@@ -456,18 +402,27 @@ export function ProfileFormModal({
           />
         </div>
 
+        {/* Fluxo 2 em 1: Entrada Inicial no Estoque (US-22.3) */}
+        {!isEditing && (
+          <InitialStockSection
+            enabled={initialStock.enabled}
+            draft={initialStock.draft}
+            errors={initialStock.errors}
+            unitLabel="barras"
+            onToggle={initialStock.toggleEnabled}
+            onChangeField={initialStock.updateField}
+          />
+        )}
+
         {/* Status */}
         {isEditing && (
           <div className="col-span-1 md:col-span-2 mt-xs">
             <StatusToggle
               active={activeValue}
-              onChange={(value) =>
-                setValue('active', value)
-              }
+              onChange={(value) => setValue('active', value)}
             />
           </div>
         )}
-
       </div>
     </Modal>
   );

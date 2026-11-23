@@ -1,17 +1,23 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import React from 'react';
 import { GlassFormModal } from '@/features/catalog/components/GlassFormModal';
 import { buildMockGlass } from '@/test/fixtures/catalogFixtures';
 
-const mockCreateGlass = vi.fn();
+const mockCreateMaterialWithStock = vi.fn();
 const mockUpdateGlass = vi.fn();
 
+vi.mock('@/features/stock', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/features/stock')>();
+  return {
+    ...actual,
+    useCreateMaterialWithStock: () => ({
+      mutate: mockCreateMaterialWithStock,
+      isPending: false,
+    }),
+  };
+});
+
 vi.mock('@/features/catalog/hooks/useCatalog', () => ({
-  useCreateGlass: () => ({
-    mutate: mockCreateGlass,
-    isPending: false,
-  }),
   useUpdateGlass: () => ({
     mutate: mockUpdateGlass,
     isPending: false,
@@ -63,7 +69,7 @@ describe('GlassFormModal Component', () => {
     expect(onClose).toHaveBeenCalled();
   });
 
-  it('Técnica: Transição e Submissão - deve validar e disparar createGlass ao salvar cadastro de vidro', async () => {
+  it('Técnica: Transição e Submissão - deve validar e disparar createMaterialWithStock ao salvar cadastro de vidro', async () => {
     render(<GlassFormModal isOpen={true} onClose={vi.fn()} />);
 
     const nameInput = document.querySelector('[data-cy="glass-form-name"]') as HTMLInputElement;
@@ -80,13 +86,17 @@ describe('GlassFormModal Component', () => {
     fireEvent.click(saveBtn);
 
     await waitFor(() => {
-      expect(mockCreateGlass).toHaveBeenCalledTimes(1);
-      expect(mockCreateGlass).toHaveBeenCalledWith(
+      expect(mockCreateMaterialWithStock).toHaveBeenCalledTimes(1);
+      expect(mockCreateMaterialWithStock).toHaveBeenCalledWith(
         expect.objectContaining({
-          name: 'VIDRO FLOAT INCOLOR 10MM',
-          colorFinish: 'INCOLOR',
-          costPrice: 90.0,
-          salePrice: 180.0,
+          categoryType: 'GLASS',
+          glass: expect.objectContaining({
+            name: 'VIDRO FLOAT INCOLOR 10MM',
+            colorFinish: 'INCOLOR',
+            costPrice: 90.0,
+            salePrice: 180.0,
+          }),
+          initialStock: null,
         }),
         expect.any(Object)
       );

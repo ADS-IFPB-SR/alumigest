@@ -1,6 +1,27 @@
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import toast from 'react-hot-toast';
+import {
+  InitialStockSection,
+  useCreateMaterialWithStock,
+  useInitialStockSection,
+} from '@/features/stock';
+import { Modal } from '../../../components/ui/Modal';
+import { Input } from '../../../components/ui/Input';
+import { Button } from '../../../components/ui/Button';
+import { useUpdateHardware } from '../hooks/useCatalog';
+import {
+  formatCurrencyInput,
+  parseCurrencyString,
+  formatUppercase,
+  formatInteger,
+} from '../../../utils/formatters';
+import { StatusToggle } from './StatusToggle';
+import {
+  hardwareSchema,
+  type HardwareFormValues,
+} from '../schemas/catalogSchemas';
 
 function getModalSaveLabel(isPending: boolean, isEditing: boolean): string {
   if (isPending) return 'Salvando...';
@@ -13,31 +34,6 @@ function resolveCalculationType(unitMeasure: string): string {
   return 'LINEAR_METER';
 }
 
-import { Modal } from '../../../components/ui/Modal';
-import { Input } from '../../../components/ui/Input';
-import { Button } from '../../../components/ui/Button';
-
-import {
-  useCreateHardware,
-  useUpdateHardware,
-} from '../hooks/useCatalog';
-
-import {
-  formatCurrencyInput,
-  parseCurrencyString,
-  formatUppercase,
-  formatInteger,
-} from '../../../utils/formatters';
-
-import { StatusToggle } from './StatusToggle';
-
-import toast from 'react-hot-toast';
-
-import {
-  hardwareSchema,
-  type HardwareFormValues,
-} from '../schemas/catalogSchemas';
-
 interface Props {
   readonly isOpen: boolean;
   readonly onClose: () => void;
@@ -48,21 +44,20 @@ export function HardwareFormModal({
   isOpen,
   onClose,
   initialData,
-}: Props) {
+}: Readonly<Props>) {
   const isEditing = Boolean(initialData);
 
   const {
-    mutate: createHardware,
+    mutate: createMaterialWithStock,
     isPending: isCreatePending,
-  } = useCreateHardware();
+  } = useCreateMaterialWithStock();
 
   const {
     mutate: updateHardware,
     isPending: isUpdatePending,
   } = useUpdateHardware();
 
-  const isPending =
-    isCreatePending || isUpdatePending;
+  const isPending = isCreatePending || isUpdatePending;
 
   const {
     register,
@@ -73,7 +68,6 @@ export function HardwareFormModal({
     formState: { errors },
   } = useForm<HardwareFormValues>({
     resolver: zodResolver(hardwareSchema),
-
     defaultValues: {
       skuCode: '',
       name: '',
@@ -89,6 +83,13 @@ export function HardwareFormModal({
 
   const activeValue = watch('active');
   const isHandleValue = watch('isHandle');
+  const unitMeasureValue = watch('unitMeasure');
+  const costPriceValue = watch('costPrice');
+
+  const initialStock = useInitialStockSection(
+    isOpen && !isEditing,
+    costPriceValue ? parseCurrencyString(costPriceValue) : undefined
+  );
 
   useEffect(() => {
     if (!isOpen) {
@@ -101,14 +102,9 @@ export function HardwareFormModal({
         name: initialData.name || '',
         ncmCode: initialData.ncmCode || '',
         familyCode: initialData.familyCode || '',
-        unitMeasure:
-          initialData.unitMeasure || 'UN',
-        costPrice: formatCurrencyInput(
-          (initialData.costPrice ?? 0).toFixed(2)
-        ),
-        salePrice: formatCurrencyInput(
-          (initialData.salePrice ?? 0).toFixed(2)
-        ),
+        unitMeasure: initialData.unitMeasure || 'UN',
+        costPrice: formatCurrencyInput((initialData.costPrice ?? 0).toFixed(2)),
+        salePrice: formatCurrencyInput((initialData.salePrice ?? 0).toFixed(2)),
         active: initialData.active ?? true,
         isHandle: initialData.isHandle ?? false,
       });
@@ -135,21 +131,10 @@ export function HardwareFormModal({
       skuCode: data.skuCode,
       unitMeasure: data.unitMeasure,
       familyCode: data.familyCode?.trim() ? data.familyCode.trim() : undefined,
-
       calculationType: resolveCalculationType(data.unitMeasure),
-
-      costPrice: parseCurrencyString(
-        data.costPrice
-      ),
-
-      salePrice: parseCurrencyString(
-        data.salePrice
-      ),
-
-      ncmCode: data.ncmCode?.trim()
-        ? data.ncmCode.trim()
-        : undefined,
-
+      costPrice: parseCurrencyString(data.costPrice),
+      salePrice: parseCurrencyString(data.salePrice),
+      ncmCode: data.ncmCode?.trim() ? data.ncmCode.trim() : undefined,
       active: data.active,
       isHandle: data.isHandle,
     };
@@ -162,11 +147,9 @@ export function HardwareFormModal({
         },
         {
           onSuccess: onClose,
-          onError: (err: any) => {
-            toast.error(
-              err?.response?.data?.message ||
-                'Erro de servidor.'
-            );
+          onError: (err: unknown) => {
+            const apiError = err as { response?: { data?: { message?: string } } };
+            toast.error(apiError?.response?.data?.message || 'Erro de servidor.');
           },
         }
       );
@@ -174,15 +157,22 @@ export function HardwareFormModal({
       return;
     }
 
-    createHardware(payload as any, {
-      onSuccess: onClose,
-      onError: (err: any) => {
-        toast.error(
-          err?.response?.data?.message ||
-            'Erro de servidor.'
-        );
+    const { valid, payload: initialStockPayload } =
+      initialStock.validateAndBuildPayload();
+    if (!valid) {
+      return;
+    }
+
+    createMaterialWithStock(
+      {
+        categoryType: 'HARDWARE',
+        hardware: payload,
+        initialStock: initialStockPayload,
       },
-    });
+      {
+        onSuccess: onClose,
+      }
+    );
   };
 
   return (
@@ -213,7 +203,6 @@ export function HardwareFormModal({
       }
     >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-md">
-
         {/* Código */}
         <div
           data-cy="hardware-form-sku-field"
@@ -226,10 +215,7 @@ export function HardwareFormModal({
             aria-invalid={Boolean(errors.skuCode)}
             {...register('skuCode', {
               onChange: (e) => {
-                setValue(
-                  'skuCode',
-                  formatUppercase(e.target.value)
-                );
+                setValue('skuCode', formatUppercase(e.target.value));
               },
             })}
             error={errors.skuCode?.message}
@@ -248,10 +234,7 @@ export function HardwareFormModal({
             aria-invalid={Boolean(errors.name)}
             {...register('name', {
               onChange: (e) => {
-                setValue(
-                  'name',
-                  formatUppercase(e.target.value)
-                );
+                setValue('name', formatUppercase(e.target.value));
               },
             })}
             error={errors.name?.message}
@@ -269,65 +252,48 @@ export function HardwareFormModal({
             placeholder="Opcional"
             {...register('ncmCode', {
               onChange: (e) => {
-                setValue(
-                  'ncmCode',
-                  formatInteger(
-                    e.target.value
-                  ).slice(0, 8)
-                );
+                setValue('ncmCode', formatInteger(e.target.value).slice(0, 8));
               },
             })}
           />
         </div>
 
         {/* Unidade */}
-       <div
-         data-cy="hardware-form-unit-field"
-         className="flex flex-col gap-xs col-span-1 md:col-span-2"
-       >
-         <label
-           htmlFor="hardware-unit"
-           className="font-label-bold text-label-bold text-on-surface text-xs"
-         >
-           Unidade de Medida *
-         </label>
+        <div
+          data-cy="hardware-form-unit-field"
+          className="flex flex-col gap-xs col-span-1 md:col-span-2"
+        >
+          <label
+            htmlFor="hardware-unit"
+            className="font-label-bold text-label-bold text-on-surface text-xs"
+          >
+            Unidade de Medida *
+          </label>
 
-         <select
-           id="hardware-unit"
-           data-cy="hardware-form-unit"
-           className="w-full px-sm py-xs bg-surface-container-low border border-outline-variant rounded-sm font-body-sm text-body-sm text-on-surface h-[34px]"
-           {...register('unitMeasure')}
-         >
-           <option value="">
-             Selecione uma unidade
-           </option>
+          <select
+            id="hardware-unit"
+            data-cy="hardware-form-unit"
+            className="w-full px-sm py-xs bg-surface-container-low border border-outline-variant rounded-sm font-body-sm text-body-sm text-on-surface h-[34px]"
+            {...register('unitMeasure')}
+          >
+            <option value="">Selecione uma unidade</option>
+            <option value="UN">Unidade (UN)</option>
+            <option value="PAR">Par (PAR)</option>
+            <option value="METRO">Metro Linear (M)</option>
+          </select>
 
-           <option value="UN">
-             Unidade (UN)
-           </option>
-
-           <option value="PAR">
-             Par (PAR)
-           </option>
-
-           <option value="METRO">
-             Metro Linear (M)
-           </option>
-         </select>
-
-         {errors.unitMeasure?.message && (
-           <span
-             data-cy="hardware-form-unit-error"
-             className="font-body-sm text-body-sm text-error"
-           >
-             {errors.unitMeasure.message}
-           </span>
-         )}
-       </div>
+          {errors.unitMeasure?.message && (
+            <span
+              data-cy="hardware-form-unit-error"
+              className="font-body-sm text-body-sm text-error"
+            >
+              {errors.unitMeasure.message}
+            </span>
+          )}
+        </div>
 
         {/* Preços */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-md col-span-1 md:col-span-2 mt-xs">
-
           {/* Custo */}
           <div data-cy="hardware-form-cost-price-field">
             <Input
@@ -338,12 +304,7 @@ export function HardwareFormModal({
               aria-invalid={Boolean(errors.costPrice)}
               {...register('costPrice', {
                 onChange: (e) => {
-                  setValue(
-                    'costPrice',
-                    formatCurrencyInput(
-                      e.target.value
-                    )
-                  );
+                  setValue('costPrice', formatCurrencyInput(e.target.value));
                 },
               })}
               error={errors.costPrice?.message}
@@ -360,12 +321,7 @@ export function HardwareFormModal({
               aria-invalid={Boolean(errors.salePrice)}
               {...register('salePrice', {
                 onChange: (e) => {
-                  setValue(
-                    'salePrice',
-                    formatCurrencyInput(
-                      e.target.value
-                    )
-                  );
+                  setValue('salePrice', formatCurrencyInput(e.target.value));
                 },
               })}
               error={errors.salePrice?.message}
@@ -376,7 +332,10 @@ export function HardwareFormModal({
         {/* É Puxador? */}
         <div className="col-span-1 md:col-span-2 mt-xs p-3 rounded-lg border border-border bg-background-light flex items-center justify-between">
           <div>
-            <label className="font-medium text-sm text-foreground flex items-center gap-2 cursor-pointer" htmlFor="hardware-is-handle">
+            <label
+              className="font-medium text-sm text-foreground flex items-center gap-2 cursor-pointer"
+              htmlFor="hardware-is-handle"
+            >
               <span>Esta ferragem é um puxador / fecho?</span>
             </label>
             <p className="text-xs text-muted-foreground mt-0.5">
@@ -392,6 +351,18 @@ export function HardwareFormModal({
           />
         </div>
 
+        {/* Fluxo 2 em 1: Entrada Inicial no Estoque (US-22.3) */}
+        {!isEditing && (
+          <InitialStockSection
+            enabled={initialStock.enabled}
+            draft={initialStock.draft}
+            errors={initialStock.errors}
+            unitLabel={unitMeasureValue || 'UN'}
+            onToggle={initialStock.toggleEnabled}
+            onChangeField={initialStock.updateField}
+          />
+        )}
+
         {/* Status */}
         {isEditing && (
           <div
@@ -400,9 +371,7 @@ export function HardwareFormModal({
           >
             <StatusToggle
               active={activeValue}
-              onChange={(value) =>
-                setValue('active', value)
-              }
+              onChange={(value) => setValue('active', value)}
             />
           </div>
         )}

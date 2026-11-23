@@ -17,6 +17,8 @@
     "test:e2e:us17": "cypress run --spec cypress/e2e/orders/us17_5_etiquetas_identificacao_termica.cy.ts",
     "test:e2e:us46": "cypress run --spec cypress/e2e/part-sales/us46_venda_avulsa_partes.cy.ts",
     "test:e2e:us46:headed": "cypress run --headed --browser chrome --spec cypress/e2e/part-sales/us46_venda_avulsa_partes.cy.ts",
+    "test:e2e:sprint08": "cypress run --spec cypress/e2e/part-sales/us46_venda_avulsa_partes.cy.ts,cypress/e2e/customers/us47_hub_360_cliente.cy.ts",
+    "test:e2e:sprint08:headed": "cypress run --headed --browser chrome --spec cypress/e2e/part-sales/us46_venda_avulsa_partes.cy.ts,cypress/e2e/customers/us47_hub_360_cliente.cy.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",

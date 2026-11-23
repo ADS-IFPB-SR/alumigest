@@ -6,6 +6,7 @@ import br.edu.ifpb.alumigest.stock.dto.StockMovementRequestDTO;
 import br.edu.ifpb.alumigest.stock.dto.StockMovementResponseDTO;
 import java.util.List;
 import java.util.UUID;
+import java.math.BigDecimal;
 
 /**
  * Porta de entrada e contrato de serviços do módulo de estoque.
@@ -78,4 +79,8 @@ public interface StockPort {
      * @return Lista ordenada cronologicamente do registro mais recente ao mais antigo
      */
     List<StockMovementResponseDTO> listMovements(UUID materialId);
+    /**
+     * Garante a existência do registro em tb_stock_items para o material e aplica o ponto de pedido, se informado.
+     */
+    StockItemResponseDTO provisionStockItem(UUID materialId, BigDecimal minimumStock);
 }

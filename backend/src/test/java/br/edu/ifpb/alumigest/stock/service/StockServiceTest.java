@@ -6,6 +6,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 
 import br.edu.ifpb.alumigest.catalog.domain.CalculationType;
 import br.edu.ifpb.alumigest.catalog.domain.Material;
@@ -522,5 +524,91 @@ class StockServiceTest {
         assertThat(result.get(0).unitMeasure()).isNull();
         assertThat(result.get(0).type()).isEqualTo(StockMovementType.PRODUCTION_OUTFLOW);
         verify(stockMovementRepository).findAllWithMaterialOrderByCreatedAtDesc();
+    }
+    @Test
+    @DisplayName("RN-06: Deve lançar BusinessException ao registrar PURCHASE_ENTRY sem unitCost")
+    void shouldRejectPurchaseEntryWithoutUnitCost() {
+        StockMovementRequestDTO request = new StockMovementRequestDTO(
+            UUID.randomUUID(),
+            StockMovementType.PURCHASE_ENTRY,
+            new BigDecimal("10"),
+            null,
+            "Compra sem custo",
+            "Pedido 1088",
+            "almoxarifado",
+            "Distribuidora Asa"
+        );
+
+        assertThatThrownBy(() -> stockService.registerMovement(request))
+            .isInstanceOf(BusinessException.class)
+            .hasMessageContaining("RN-06");
+    }
+
+    @Test
+    @DisplayName("RN-05 e supplier: Deve normalizar documento livre e persistir fornecedor no Kardex")
+    void shouldPersistFreeDocumentAndSupplierOnPurchaseEntry() {
+        UUID materialId = UUID.randomUUID();
+        Material material = mock(Material.class);
+        when(material.getId()).thenReturn(materialId);
+        StockItem stockItem = new StockItem(material);
+
+        when(stockItemRepository.findByMaterialIdForUpdate(materialId)).thenReturn(Optional.of(stockItem));
+        when(stockItemRepository.saveAndFlush(any(StockItem.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(stockMovementRepository.saveAndFlush(any(StockMovement.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        StockMovementRequestDTO request = new StockMovementRequestDTO(
+            materialId,
+            StockMovementType.PURCHASE_ENTRY,
+            new BigDecimal("10"),
+            new BigDecimal("145.00"),
+            "  Chegada de loja  ",
+            "  Pedido 1088  ",
+            "  almoxarifado  ",
+            "  Distribuidora Asa  "
+        );
+
+        StockMovementResponseDTO response = stockService.registerMovement(request);
+
+        ArgumentCaptor<StockMovement> captor = ArgumentCaptor.forClass(StockMovement.class);
+        verify(stockMovementRepository).saveAndFlush(captor.capture());
+        StockMovement saved = captor.getValue();
+
+        assertThat(saved.getReferenceDocument()).isEqualTo("Pedido 1088");
+        assertThat(saved.getSupplier()).isEqualTo("Distribuidora Asa");
+        assertThat(saved.getReason()).isEqualTo("Chegada de loja");
+        assertThat(saved.getRegisteredBy()).isEqualTo("almoxarifado");
+        assertThat(saved.getUnitCost()).isEqualByComparingTo("145.00");
+        assertThat(response.supplier()).isEqualTo("Distribuidora Asa");
+        assertThat(response.referenceDocument()).isEqualTo("Pedido 1088");
+    }
+
+    @Test
+    @DisplayName("Auto-provisionamento: Deve criar tb_stock_items ausente e aplicar ponto de pedido (minimumStock)")
+    void shouldProvisionMissingStockItemWithMinimumStock() {
+        UUID materialId = UUID.randomUUID();
+        Material material = mock(Material.class);
+        when(material.getId()).thenReturn(materialId);
+
+        when(stockItemRepository.findByMaterialIdForUpdate(materialId)).thenReturn(Optional.empty());
+        when(materialRepository.findById(materialId)).thenReturn(Optional.of(material));
+        when(stockItemRepository.saveAndFlush(any(StockItem.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        StockItemResponseDTO response = stockService.provisionStockItem(materialId, new BigDecimal("4"));
+
+        ArgumentCaptor<StockItem> captor = ArgumentCaptor.forClass(StockItem.class);
+        verify(stockItemRepository, times(2)).saveAndFlush(captor.capture());
+        assertThat(captor.getValue().getMinimumStock()).isEqualByComparingTo("4.0000");
+        assertThat(response.minimumStock()).isEqualByComparingTo("4.0000");
+    }
+
+    @Test
+    @DisplayName("Auto-provisionamento: Deve rejeitar ponto de pedido negativo")
+    void shouldRejectNegativeMinimumStockOnProvision() {
+        UUID materialId = UUID.randomUUID();
+        BigDecimal negativeMinimumStock = new BigDecimal("-1");
+
+        assertThatThrownBy(() -> stockService.provisionStockItem(materialId, negativeMinimumStock))
+            .isInstanceOf(BusinessException.class)
+            .hasMessageContaining("não pode ser negativo");
     }
 }

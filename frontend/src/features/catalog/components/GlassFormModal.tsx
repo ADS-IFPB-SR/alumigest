@@ -1,35 +1,33 @@
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-
-function getModalSaveLabel(isPending: boolean, isEditing: boolean): string {
-  if (isPending) return 'Salvando...';
-  return isEditing ? 'Atualizar' : 'Salvar';
-}
-
+import toast from 'react-hot-toast';
+import {
+  InitialStockSection,
+  useCreateMaterialWithStock,
+  useInitialStockSection,
+} from '@/features/stock';
 import { Modal } from '../../../components/ui/Modal';
 import { Input } from '../../../components/ui/Input';
 import { Button } from '../../../components/ui/Button';
-
-import { useCreateGlass, useUpdateGlass } from '../hooks/useCatalog';
-
+import { useUpdateGlass } from '../hooks/useCatalog';
 import {
   formatCurrencyInput,
   parseCurrencyString,
   formatUppercase,
   formatInteger,
 } from '../../../utils/formatters';
-
 import { StatusToggle } from './StatusToggle';
-
-import toast from 'react-hot-toast';
-
 import {
   glassSchema,
   type GlassFormValues,
 } from '../schemas/catalogSchemas';
-
 import { FamilyAutocompleteInput } from './FamilyAutocompleteInput';
+
+function getModalSaveLabel(isPending: boolean, isEditing: boolean): string {
+  if (isPending) return 'Salvando...';
+  return isEditing ? 'Atualizar' : 'Salvar';
+}
 
 interface Props {
   readonly isOpen: boolean;
@@ -45,9 +43,9 @@ export function GlassFormModal({
   const isEditing = Boolean(initialData);
 
   const {
-    mutate: createGlass,
+    mutate: createMaterialWithStock,
     isPending: isCreatePending,
-  } = useCreateGlass();
+  } = useCreateMaterialWithStock();
 
   const {
     mutate: updateGlass,
@@ -65,7 +63,6 @@ export function GlassFormModal({
     formState: { errors },
   } = useForm<GlassFormValues>({
     resolver: zodResolver(glassSchema),
-
     defaultValues: {
       name: '',
       ncmCode: '',
@@ -82,6 +79,12 @@ export function GlassFormModal({
 
   const activeValue = watch('active');
   const familyCodeValue = watch('familyCode');
+  const costPriceValue = watch('costPrice');
+
+  const initialStock = useInitialStockSection(
+    isOpen && !isEditing,
+    costPriceValue ? parseCurrencyString(costPriceValue) : undefined
+  );
 
   useEffect(() => {
     if (!isOpen) {
@@ -137,9 +140,7 @@ export function GlassFormModal({
       maxHeightMm: Number(data.maxHeightMm),
       costPrice: parseCurrencyString(data.costPrice),
       salePrice: parseCurrencyString(data.salePrice),
-      ncmCode: data.ncmCode?.trim()
-        ? data.ncmCode.trim()
-        : undefined,
+      ncmCode: data.ncmCode?.trim() ? data.ncmCode.trim() : undefined,
       active: data.active,
     };
 
@@ -151,11 +152,9 @@ export function GlassFormModal({
         },
         {
           onSuccess: onClose,
-          onError: (err: any) => {
-            toast.error(
-              err?.response?.data?.message ||
-                'Erro de servidor.'
-            );
+          onError: (err: unknown) => {
+            const apiError = err as { response?: { data?: { message?: string } } };
+            toast.error(apiError?.response?.data?.message || 'Erro de servidor.');
           },
         }
       );
@@ -163,15 +162,22 @@ export function GlassFormModal({
       return;
     }
 
-    createGlass(payload as any, {
-      onSuccess: onClose,
-      onError: (err: any) => {
-        toast.error(
-          err?.response?.data?.message ||
-            'Erro de servidor.'
-        );
+    const { valid, payload: initialStockPayload } =
+      initialStock.validateAndBuildPayload();
+    if (!valid) {
+      return;
+    }
+
+    createMaterialWithStock(
+      {
+        categoryType: 'GLASS',
+        glass: payload,
+        initialStock: initialStockPayload,
       },
-    });
+      {
+        onSuccess: onClose,
+      }
+    );
   };
 
   return (
@@ -202,7 +208,6 @@ export function GlassFormModal({
       }
     >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-md">
-
         {/* Nome */}
         <div
           data-cy="glass-form-name-field"
@@ -215,10 +220,7 @@ export function GlassFormModal({
             aria-invalid={Boolean(errors.name)}
             {...register('name', {
               onChange: (e) => {
-                setValue(
-                  'name',
-                  formatUppercase(e.target.value)
-                );
+                setValue('name', formatUppercase(e.target.value));
               },
             })}
             error={errors.name?.message}
@@ -237,10 +239,7 @@ export function GlassFormModal({
             aria-invalid={Boolean(errors.ncmCode)}
             {...register('ncmCode', {
               onChange: (e) => {
-                setValue(
-                  'ncmCode',
-                  formatInteger(e.target.value).slice(0, 8)
-                );
+                setValue('ncmCode', formatInteger(e.target.value).slice(0, 8));
               },
             })}
             error={errors.ncmCode?.message}
@@ -292,10 +291,7 @@ export function GlassFormModal({
             aria-invalid={Boolean(errors.colorFinish)}
             {...register('colorFinish', {
               onChange: (e) => {
-                setValue(
-                  'colorFinish',
-                  formatUppercase(e.target.value)
-                );
+                setValue('colorFinish', formatUppercase(e.target.value));
               },
             })}
             error={errors.colorFinish?.message}
@@ -327,10 +323,7 @@ export function GlassFormModal({
             aria-invalid={Boolean(errors.maxWidthMm)}
             {...register('maxWidthMm', {
               onChange: (e) => {
-                setValue(
-                  'maxWidthMm',
-                  formatInteger(e.target.value).slice(0, 5)
-                );
+                setValue('maxWidthMm', formatInteger(e.target.value).slice(0, 5));
               },
             })}
             error={errors.maxWidthMm?.message}
@@ -346,10 +339,7 @@ export function GlassFormModal({
             aria-invalid={Boolean(errors.maxHeightMm)}
             {...register('maxHeightMm', {
               onChange: (e) => {
-                setValue(
-                  'maxHeightMm',
-                  formatInteger(e.target.value).slice(0, 5)
-                );
+                setValue('maxHeightMm', formatInteger(e.target.value).slice(0, 5));
               },
             })}
             error={errors.maxHeightMm?.message}
@@ -358,7 +348,6 @@ export function GlassFormModal({
 
         {/* Preços */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-md col-span-1 md:col-span-2 mt-xs">
-
           {/* Preço de Custo */}
           <div data-cy="glass-form-cost-price-field">
             <Input
@@ -369,10 +358,7 @@ export function GlassFormModal({
               aria-invalid={Boolean(errors.costPrice)}
               {...register('costPrice', {
                 onChange: (e) => {
-                  setValue(
-                    'costPrice',
-                    formatCurrencyInput(e.target.value)
-                  );
+                  setValue('costPrice', formatCurrencyInput(e.target.value));
                 },
               })}
               error={errors.costPrice?.message}
@@ -389,26 +375,32 @@ export function GlassFormModal({
               aria-invalid={Boolean(errors.salePrice)}
               {...register('salePrice', {
                 onChange: (e) => {
-                  setValue(
-                    'salePrice',
-                    formatCurrencyInput(e.target.value)
-                  );
+                  setValue('salePrice', formatCurrencyInput(e.target.value));
                 },
               })}
               error={errors.salePrice?.message}
             />
           </div>
-
         </div>
+
+        {/* Fluxo 2 em 1: Entrada Inicial no Estoque (US-22.3) */}
+        {!isEditing && (
+          <InitialStockSection
+            enabled={initialStock.enabled}
+            draft={initialStock.draft}
+            errors={initialStock.errors}
+            unitLabel="m²"
+            onToggle={initialStock.toggleEnabled}
+            onChangeField={initialStock.updateField}
+          />
+        )}
 
         {/* Status - somente edição */}
         {isEditing && (
           <div className="col-span-1 md:col-span-2 mt-xs">
             <StatusToggle
               active={activeValue}
-              onChange={(value) =>
-                setValue('active', value)
-              }
+              onChange={(value) => setValue('active', value)}
             />
           </div>
         )}

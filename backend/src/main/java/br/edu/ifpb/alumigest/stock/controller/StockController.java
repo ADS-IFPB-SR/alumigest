@@ -7,6 +7,9 @@ import br.edu.ifpb.alumigest.stock.dto.StockItemResponseDTO;
 import br.edu.ifpb.alumigest.stock.dto.StockMovementRequestDTO;
 import br.edu.ifpb.alumigest.stock.dto.StockMovementResponseDTO;
 import br.edu.ifpb.alumigest.stock.service.StockService;
+import br.edu.ifpb.alumigest.stock.service.MaterialOnboardingService;
+import br.edu.ifpb.alumigest.stock.dto.MaterialWithStockCreateRequestDTO;
+import br.edu.ifpb.alumigest.stock.dto.MaterialWithStockResponseDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -33,9 +36,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class StockController {
 
     private final StockService stockService;
+    private final MaterialOnboardingService materialOnboardingService;
 
-    public StockController(StockService stockService) {
+    public StockController(StockService stockService, MaterialOnboardingService materialOnboardingService) {
         this.stockService = stockService;
+        this.materialOnboardingService = materialOnboardingService;
     }
 
     @GetMapping
@@ -104,6 +109,18 @@ public class StockController {
     public ResponseEntity<Void> cancelReservationsForOrder(@PathVariable UUID orderId) {
         stockService.cancelReservationsForOrder(orderId);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/materials")
+    @Operation(
+        summary = "Cadastrar material com entrada inicial opcional de estoque (2 em 1)",
+        description = "Cria o material na categoria informada, provisiona tb_stock_items e, "
+            + "quando initialStock é enviado, registra PURCHASE_ENTRY na mesma transação."
+    )
+    public ResponseEntity<MaterialWithStockResponseDTO> createMaterialWithStock(
+            @RequestBody @Valid MaterialWithStockCreateRequestDTO request) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+            .body(materialOnboardingService.createMaterialWithStock(request));
     }
 }
 
