@@ -605,8 +605,9 @@ class StockServiceTest {
     @DisplayName("Auto-provisionamento: Deve rejeitar ponto de pedido negativo")
     void shouldRejectNegativeMinimumStockOnProvision() {
         UUID materialId = UUID.randomUUID();
+        BigDecimal negativeMinimumStock = new BigDecimal("-1");
 
-        assertThatThrownBy(() -> stockService.provisionStockItem(materialId, new BigDecimal("-1")))
+        assertThatThrownBy(() -> stockService.provisionStockItem(materialId, negativeMinimumStock))
             .isInstanceOf(BusinessException.class)
             .hasMessageContaining("não pode ser negativo");
     }

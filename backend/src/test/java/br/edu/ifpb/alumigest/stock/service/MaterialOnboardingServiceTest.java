@@ -3,7 +3,6 @@ package br.edu.ifpb.alumigest.stock.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -306,8 +305,7 @@ class MaterialOnboardingServiceTest {
         when(filmService.createFilm(any())).thenReturn(filmResponse);
 
         StockItemResponseDTO provisioned = buildStockItem(materialId, BigDecimal.ZERO, BigDecimal.ZERO);
-        when(stockService.provisionStockItem(eq(materialId), eq(BigDecimal.ZERO))).thenReturn(provisioned);
-
+        when(stockService.provisionStockItem(materialId, BigDecimal.ZERO)).thenReturn(provisioned);
         FilmRequestDTO filmDto = new FilmRequestDTO(
             "PELÍCULA JATEADA",
             "JATEADA",
