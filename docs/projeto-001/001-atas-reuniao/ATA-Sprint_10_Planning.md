@@ -21,15 +21,21 @@
 
 ---
 
-## 2. 🎯 Pauta da Reunião
+## 2. 🎯 Pauta da Reunião & Diretrizes Estratégicas do PO
 
 1. Abertura da **Sprint 10** (Período Oficial: **24/11/2026 a 07/12/2026**), com foco estratégico em **Preparação, Segurança e Calibração para a Primeira Entrega Oficial (Release 2)** do AlumiGest.
-2. Definição do escopo da Sprint 10 baseado nos **4 Pilares Estratégicos**:
-   - **Pilar 1: Autenticação, Usuários e RBAC**: Implementação do Spring Security 6 stateless com JWT e controle de acesso por perfil (`ADMIN`, `VENDEDOR`, `OPERADOR`), além da tela de Login oficial (`/login`).
-   - **Pilar 2: Configurações da Empresa & Cabeçalhos Dinâmicos**: Substituição do placeholder da tela `/configuracoes` por formulário institucional completo e preview interativo ao vivo do cabeçalho oficial que estampará todos os PDFs.
-   - **Pilar 3: Matriz de Calibração com Orçamentos Reais**: Confronto e calibração fina de 5 modelos de esquadrias reais produzidos pela Alumiportas (Janelas 2F/4F Suprema, Portas Suprema e Gold, Maxim-ar) para garantir paridade centavo a centavo (divergência R$ 0,00).
-   - **Pilar 4: Saneamento Geral de Bugs & Homologação**: Integração e validação do fix de impressão de etiquetas térmicas na Venda Avulsa (Issue [#598](https://github.com/ADS-IFPB-SR/alumigest/issues/598) / PR [#600](https://github.com/ADS-IFPB-SR/alumigest/pull/600)), execução da suíte Cypress E2E e geração do dossiê de aceitação da Release 2.
-3. Descarte formal de novas implementações de pagamento/financeiro nesta iteração, priorizando a robustez do core operacional comercial e fabril para a banca.
+2. Diretrizes e alinhamentos cruciais estabelecidos pelo Product Owner (Alumiportas):
+   - **Autenticação de Usuário Único**: O sistema atende à oficina com **usuário único (administrador da oficina)**, sem necessidade de complexidade arquitetural com segregação em 3 categorias (`ADMIN`, `VENDEDOR`, `OPERADOR`). Todas as rotas privadas são protegidas via JWT.
+   - **Logotipo Oficial Alumiportas**: O sistema já possui logomarca oficial consolidada (`/static/logo-alumiportas.png`). O módulo de configurações dinâmicas gerencia Razão Social, CNPJ, Telefone/WhatsApp, Endereço e Cidade, estampando a logo oficial em todos os cabeçalhos A4.
+   - **Calibração do Ramo Moveleiro (Linha 45 mm Rometal)**: A Alumiportas atua prioritariamente na fabricação de portas de alumínio para marcenaria e móveis sob medida, utilizando a **Linha 45 mm Rometal**:
+     - Perfis Estruturais: **RM-060** (Aba Baixa) e **RM-059** (Aba Alta).
+     - Acabamentos homologados: **Bronze**, **Fosco** e **Preto**.
+     - Vidros padronizados: Estritamente **Vidros de 4 mm** (Reflecta Bronze, Espelho, Incolor, Fumê).
+     - Componentes: Esquadretas **ESQ-041** / **ESQ-055** (corte a 45°), parafusos M4×8 e baguete **BG-216**.
+     - 4 Tipologias centrais: **Porta de Giro Moveleira**, **Porta de Correr Moveleira**, **Porta Basculante Aérea** e **Frente de Gaveta Moveleira**.
+     - Meta: Paridade exata ($\Delta = \text{R\$} 0{,}00$) com as planilhas da oficina.
+   - **Saneamento de Bugs & Qualidade**: Validação e merge do PR #600 (correção de etiquetas térmicas 100×60mm na Venda Avulsa), 100% dos testes verdes e SonarQube com 0 code smells.
+3. Descarte formal de fluxos de pagamento/financeiro nesta iteração.
 4. Homologação do protótipo interativo `docs/planejamento/prototipos/autenticacao-configuracoes-homologacao.html` demonstrando a navegação nos 4 pilares em conformidade com o Design System oficial.
 
 ---
@@ -40,32 +46,31 @@
 
 | Pilar | Escopo / Módulo | Story Points | Horas Estimadas | Tarefas |
 |---|---|:---:|:---:|:---:|
-| **Pilar 1** | Autenticação, Usuários e Controle de Acesso (RBAC) | 6 pts | 12.0h | `US-10.1` a `US-10.4` (4 tarefas atômicas) |
-| **Pilar 2** | Configurações da Empresa e Cabeçalhos Dinâmicos | 4 pts | 9.0h | `US-10.5` a `US-10.7` (3 tarefas atômicas) |
-| **Pilar 3** | Calibração de Orçamentos Reais da Alumiportas | 2 pts | 6.0h | `US-10.8` e `US-10.9` (2 tarefas atômicas) |
-| **Pilar 4** | Saneamento de Bugs & Dossiê de Homologação | 2 pts | 6.0h | `US-10.10` e `US-10.11` (2 tarefas atômicas) |
-| **Total** | **Sprint Backlog Oficial da Sprint 10** | **14 pts** | **33.0h** | **11 Tarefas Atômicas** |
+| **Pilar 1** | Segurança & Autenticação de Usuário Único | 5 pts | 8.0h | `US-10.1` a `US-10.3` (3 tarefas atômicas) |
+| **Pilar 2** | Configurações da Empresa e Logo Oficial | 4 pts | 7.5h | `US-10.4` a `US-10.6` (3 tarefas atômicas) |
+| **Pilar 3** | Calibração Moveleira Linha 45 mm Rometal | 2 pts | 5.5h | `US-10.7` e `US-10.8` (2 tarefas atômicas) |
+| **Pilar 4** | Saneamento de Bugs & Dossiê de Homologação | 2 pts | 5.5h | `US-10.9` e `US-10.10` (2 tarefas atômicas) |
+| **Total** | **Sprint Backlog Oficial da Sprint 10** | **13 pts** | **26.5h** | **10 Tarefas Atômicas** |
 
 ### 3.2 Tarefas Decompostas (`docs/planejamento/sprint-10/README.md`)
 
 | Subtarefa | Título da Tarefa Atômica | Pontos | Horas |
 |:---:|---|:---:|:---:|
-| `US-10.1` | Setup de Autenticação, Entidade `User` e Migração Flyway `V27` | 1 pt | 2.5h |
-| `US-10.2` | Motor de Autenticação JWT, Spring Security 6 e Endpoints `/api/v1/auth` | 2 pts | 3.5h |
-| `US-10.3` | Tela de Login (`/login`) Responsiva e Interceptor no Frontend | 2 pts | 3.5h |
-| `US-10.4` | Controle de Acesso RBAC, `ProtectedRoute` e Logout no Frontend | 1 pt | 2.5h |
-| `US-10.5` | Entidade `CompanySettings`, Migração `V28` e Endpoints de Configurações | 1 pt | 2.5h |
-| `US-10.6` | Tela de Configurações (`/configuracoes`) com Preview de Cabeçalho | 2 pts | 3.5h |
-| `US-10.7` | Consumo Dinâmico dos Dados da Empresa em todos os PDFs e Etiquetas | 1 pt | 3.0h |
-| `US-10.8` | Matriz de Calibração com 5 Casos Reais de Esquadrias da Alumiportas | 1 pt | 2.5h |
-| `US-10.9` | Ajuste Fino dos Motores de Cálculo para Paridade Centavo a Centavo | 1 pt | 3.5h |
-| `US-10.10` | Saneamento do Bug de Etiquetas Térmicas na Venda Avulsa (PR #600) | 1 pt | 2.5h |
-| `US-10.11` | Bateria E2E Cypress, Quality Gate SonarQube e Dossiê de Homologação | 1 pt | 3.5h |
+| `US-10.1` | Setup de Autenticação, Entidade `User` e Migração Flyway `V27` | 1 pt | 2.0h |
+| `US-10.2` | Motor de Autenticação JWT, Spring Security 6 e Endpoints `/api/v1/auth` | 2 pts | 3.0h |
+| `US-10.3` | Tela de Login (`/login`) e Proteção de Rotas (`ProtectedRoute`) no Frontend | 2 pts | 3.0h |
+| `US-10.4` | Entidade `CompanySettings`, Migração `V28` e Endpoints de Configurações | 1 pt | 2.0h |
+| `US-10.5` | Tela de Configurações (`/configuracoes`) com Preview de Cabeçalho A4 | 2 pts | 3.0h |
+| `US-10.6` | Consumo Dinâmico dos Dados da Empresa em todos os PDFs e Etiquetas | 1 pt | 2.5h |
+| `US-10.7` | Matriz de Calibração das 4 Tipologias Moveleiras Rometal 45 mm | 1 pt | 2.5h |
+| `US-10.8` | Ajuste Fino dos Motores de Cálculo para Paridade Centavo a Centavo | 1 pt | 3.0h |
+| `US-10.9` | Saneamento do Bug de Etiquetas Térmicas na Venda Avulsa (PR #600) | 1 pt | 2.5h |
+| `US-10.10` | Bateria E2E Cypress, Quality Gate SonarQube e Dossiê de Homologação | 1 pt | 3.0h |
 
 ---
 
 ## 4. 📢 Encaminhamentos e Próximos Passos
 
 1. Iniciar o desenvolvimento das fatias atômicas a partir de branches padronizadas baseadas em `develop`.
-2. O Tech Lead coordenará o setup do Spring Security 6 (`US-10.1` e `US-10.2`) para desbloquear as telas do frontend (`US-10.3` e `US-10.4`).
-3. O Product Owner fornecerá as fichas de medidas reais dos 5 modelos de esquadrias para a calibração da `US-10.8`.
+2. O Tech Lead coordenará o setup do Spring Security 6 (`US-10.1` e `US-10.2`) para desbloquear as telas do frontend (`US-10.3`).
+3. O Product Owner validará a matriz de calibração moveleira da `US-10.7` com as ordens de serviço reais da oficina.

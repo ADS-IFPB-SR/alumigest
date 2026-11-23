@@ -1,168 +1,191 @@
 # 📑 Especificação Funcional Integrada — Sprint 10: Preparação, Segurança e Calibração para a 1ª Entrega
 
 **Período Oficial da Sprint 10**: 24/11/2026 a 07/12/2026  
-**Status**: 🟢 Planejada  
-**Objetivo Geral**: Consolidar a segurança, a parametrização institucional da empresa e a calibração com orçamentos reais para selar com excelência a **Primeira Entrega Oficial (Release 2)** do AlumiGest.
+**Status**: 🟢 Planejada e Calibrada com o Parceiro Social (Alumiportas)  
+**Objetivo Geral**: Consolidar a segurança com autenticação de usuário único, a parametrização dos cabeçalhos institucionais com a logomarca oficial da empresa e a **calibração estrita do motor de cálculo com a Linha 45 mm Rometal do ramo moveleiro** (Portas de Giro, Correr, Basculante e Frente de Gaveta com vidros de 4mm e perfis 059/060 Bronze, Fosco e Preto), selando a **Primeira Entrega Oficial (Release 2)** do AlumiGest.
 
 ---
 
-## 1. 🎯 Objetivos de Negócio por Pilar
+## 1. 🎯 Diretrizes do Parceiro Social & Pilares Estratégicos
 
-### 1.1 Pilar 1: Autenticação, Usuários e Controle de Acesso (RBAC)
-Como proprietário ou encarregado da vidraçaria Alumiportas, desejo que a aplicação exija autenticação segura e controle os acessos de acordo com o perfil de cada colaborador (`ADMIN`, `VENDEDOR`, `OPERADOR`), para garantir que operadores de fábrica vejam apenas as ordens de serviço no chão de fábrica, vendedores operem o balcão comercial e administradores gerenciem parâmetros críticos do sistema.
+### 1.1 Pilar 1: Autenticação Segura com Usuário Único (Sem Divisão em 3 Categorias)
+* **Definição de Escopo**: O sistema AlumiGest opera no modelo de **Usuário Único / Administrador da Oficina**. Não há necessidade de segregação em 3 categorias de perfis (`ADMIN`, `VENDEDOR`, `OPERADOR`).
+* **Comportamento**: Tela de login limpa, geração e validação de tokens JWT (Spring Security 6), interceptor no frontend e proteção de rotas privadas (`ProtectedRoute`). Qualquer tentativa de acesso sem autenticação válida é redirecionada para `/login`.
 
-### 1.2 Pilar 2: Painel de Configurações da Empresa & Cabeçalhos Dinâmicos
-Como gestor da empresa, desejo cadastrar os dados cadastrais e a identidade visual da Alumiportas (Razão Social, Nome Fantasia, CNPJ, Inscrição Estadual, Telefone/WhatsApp, Endereço, Cidade-UF e Logotipo) através de uma tela de configurações, para que esses dados sejam automaticamente estampados em todos os documentos gerados pelo sistema (orçamentos em PDF, fichas técnicas de montagem, comprovantes de O.S. e etiquetas térmicas), eliminando dados estáticos (*hardcoded*).
+### 1.2 Pilar 2: Cabeçalho Dinâmico da Empresa & Logotipo Oficial Alumiportas
+* **Definição de Escopo**: A empresa já possui um logotipo oficial (`/static/logo-alumiportas.png`). O objetivo é parametrizar dinamicamente as informações cadastrais (Razão Social, Nome Fantasia, CNPJ, Telefone/WhatsApp, Endereço e Cidade-UF) em `tb_company_settings`, eliminando valores fixos (*hardcoded*).
+* **Comportamento**: Todos os documentos (Orçamento PDF, Ficha Técnica de Montagem/Corte, Comprovante de O.S., Venda Avulsa e Etiquetas Térmicas) consomem dinamicamente essas informações e estampam a logomarca oficial.
 
-### 1.3 Pilar 3: Calibração e Validação com Orçamentos Reais
-Como orçamentista e responsável técnico de serralheria, desejo comparar as propostas geradas pelo AlumiGest com orçamentos reais já faturados no sistema/planilhas atuais da empresa, confrontando as fórmulas de corte de perfis, consumo de vidro em $m^2$, custos de insumos e preço final, para certificar que o motor de cálculo possui precisão de 100% (divergência R$ 0,00) antes da entrada em produção.
+### 1.3 Pilar 3: Calibração com a Linha 45 mm Rometal Moveleira (Perfis 059/060, Vidros 4mm)
+* **Definição de Escopo**: A Alumiportas atua fortemente no **ramo moveleiro** (marcenaria fina, móveis sob medida, armários, closets e cozinhas planejadas) utilizando a **Linha 45 mm Rometal**:
+  * **Perfis Estruturais de 45 mm**:
+    * **RM-060**: Perfil estrutural com **aba frontal baixa**, estética minimalista e clean.
+    * **RM-059**: Perfil estrutural com **aba frontal alta**, visual imponente e maior sobreposição.
+  * **Acabamentos Homologados**:
+    * **Bronze** (Anodizado Bronze 1002/1003)
+    * **Fosco** (Anodizado Jateado Fosco / Natural Fosco)
+    * **Preto** (Preto Fosco / Pintura Eletrostática a Pó)
+  * **Vidros Padronizados**: Estritamente **Vidro 4 mm** (Incolor, Reflecta Bronze, Reflecta Fumê, Espelho Prata, Vidro Acidato).
+  * **Acessórios de Montagem Rometal**:
+    * Esquadretas de Canto a 45°: **ESQ-041** ou **ESQ-055**.
+    * Parafusos de fixação: **M4×8 CC**.
+    * Baguete / Borracha de Encaixe para Vidro 4mm: **BG-216**.
+  * **Tipologias Moveleiras do Benchmark de Paridade**:
+    1. **Porta de Giro Moveleira 45mm** (com dobradiças de caneco para perfil de alumínio).
+    2. **Porta de Correr Moveleira 45mm** (com sistema deslizante Rometal sobreposto/embutido).
+    3. **Porta Basculante Moveleira 45mm** (com pistão a gás ou articulador para armário superior).
+    4. **Frente de Gaveta Moveleira 45mm** (moldura de gaveta com cantoneiras para corrediça).
+* **Meta de Paridade**: Divergência $\Delta = \text{R\$} 0{,}00$ entre o cálculo do AlumiGest e as planilhas de corte/orçamento da oficina.
 
 ### 1.4 Pilar 4: Saneamento Completo de Bugs & Quality Gate
-Como equipe de desenvolvimento e QA, desejamos sanear integralmente todos os bugs apontados (incluindo o reparo da impressão de etiquetas térmicas na Venda Avulsa), manter 100% dos testes unitários, de integração e E2E verdes e aprovar o Quality Gate do SonarQube com zero débitos técnicos.
+* Correção definitiva da impressão de etiquetas térmicas na Venda Avulsa ([PR #600](https://github.com/ADS-IFPB-SR/alumigest/pull/600), resolvendo a Issue [#598](https://github.com/ADS-IFPB-SR/alumigest/issues/598)).
+* Garantia de 0 bugs, 0 vulnerabilidades e 0 code smells no SonarQube com suíte E2E Cypress aprovada.
 
 ---
 
-## 2. 🧪 Fatiamento Atômico & Critérios de Aceitação (Dado / Quando / Então)
+## 2. 🧪 Fatiamento Atômico & Critérios de Aceitação
 
 ---
 
-### 📦 PILAR 1: Segurança, Autenticação e RBAC (US-10.1 a US-10.4)
+### 📦 PILAR 1: Segurança & Autenticação de Usuário Único (US-10.1 a US-10.3)
 
-#### US-10.1: Setup de Autenticação, Entidade `User` e Migração Flyway `V27` [1 pt / 2.5h]
+#### US-10.1: Setup de Autenticação, Entidade `User` e Migração Flyway `V27` [1 pt / 2.0h]
 - **Escopo**:
-  - Script Flyway `V27__create_users_schema.sql` criando a tabela `tb_users` (`id`, `name`, `email`, `password_hash`, `role`, `is_active`, `created_at`, `updated_at`).
-  - Criação do usuário padrão inicial via seed (`admin@alumiportas.com.br` / senha padrão com hash BCrypt).
-  - Entidade JPA `User`, enum `UserRole` (`ADMIN`, `VENDEDOR`, `OPERADOR`) e `UserRepository` com busca por e-mail (`findByEmailIgnoreCaseAndIsActiveTrue`).
+  - Script Flyway `V27__create_users_schema.sql` criando a tabela `tb_users` (`id`, `name`, `email`, `password_hash`, `is_active`, `created_at`, `updated_at`). Sem tabela de roles ou enums complexos.
+  - Carga do usuário padrão inicial via seed (`admin@alumiportas.com.br` com senha criptografada em BCrypt).
+  - Entidade JPA `User` e repositório `UserRepository` com busca por e-mail (`findByEmailIgnoreCaseAndIsActiveTrue`).
 - **Critérios de Aceitação**:
-  - [ ] A migration executa no PostgreSQL sem erros, criando constraints de e-mail único e índices adequados.
-  - [ ] Tentativas de cadastrar e-mails duplicados são rejeitadas pelo banco.
-  - [ ] Senhas nunca são persistidas em texto puro, exigindo hash BCrypt com salt de pelo menos 10 rounds.
+  - [ ] Migration executa com sucesso no PostgreSQL e H2.
+  - [ ] E-mail possui constraint `UNIQUE`.
+  - [ ] Senhas salvas com hash BCrypt (custo 10+).
 
-#### US-10.2: Motor de Autenticação JWT, Spring Security 6 e Endpoints `/api/v1/auth` [2 pts / 3.5h]
+#### US-10.2: Motor de Autenticação JWT, Spring Security 6 e Endpoints `/api/v1/auth` [2 pts / 3.0h]
 - **Escopo**:
-  - Configuração do Spring Security 6 (`SecurityFilterChain`) em modo stateless (`SessionCreationPolicy.STATELESS`).
-  - Serviço `JwtService` para geração e validação de tokens JWT (HS256) com tempo de expiração configurável (padrão 8 horas).
-  - Filtro `JwtAuthenticationFilter` interceptando o header `Authorization: Bearer <token>`.
-  - Endpoint `POST /api/v1/auth/login` recebendo `LoginRequestDTO` (email e senha) e devolvendo `LoginResponseDTO` (token, nome, email e role).
-  - Endpoint `GET /api/v1/auth/me` para validação de token ativo e recuperação do perfil do usuário logado.
+  - Configuração do Spring Security 6 stateless (`SessionCreationPolicy.STATELESS`).
+  - `JwtService` com token HMAC-SHA256 e expiração configurável (8 horas).
+  - Filtro `JwtAuthenticationFilter` interceptando header `Authorization: Bearer <token>`.
+  - Endpoints `POST /api/v1/auth/login` e `GET /api/v1/auth/me`.
 - **Critérios de Aceitação**:
-  - [ ] Credenciais válidas retornam HTTP 200 com token JWT assinado e dados do perfil.
-  - [ ] Credenciais inválidas retornam HTTP 401 Unauthorized com mensagem padronizada em pt-BR ("E-mail ou senha incorretos").
-  - [ ] Endpoints protegidos rejeitam requisições sem token ou com token expirado/adulterado com HTTP 401.
+  - [ ] Login com credenciais válidas retorna HTTP 200 com token JWT e dados do usuário.
+  - [ ] Credenciais inválidas retornam HTTP 401 Unauthorized com mensagem em pt-BR.
+  - [ ] Endpoints protegidos rejeitam requisições sem token válido com HTTP 401.
 
-#### US-10.3: Tela de Login (`/login`) Responsiva e Interceptor no Frontend [2 pts / 3.5h]
+#### US-10.3: Tela de Login (`/login`) e Proteção de Rotas (`ProtectedRoute`) no Frontend [2 pts / 3.0h]
 - **Escopo**:
-  - Criação da página `LoginPage.tsx` utilizando Tailwind CSS e o Design System AlumiGest (cores institucionais navy `#041632`, logo da empresa e tipografia oficial).
-  - Validação de formulário via Zod e React Hook Form com exibição de erros de campo em tempo real.
-  - Cliente `authApi.ts` e hook/contexto `useAuth` para gerenciar estado de login, persistência segura no `localStorage` e logout.
-  - Interceptor Axios injetando o token `Bearer` em todas as requisições e capturando status 401 para redirecionar automaticamente ao login.
+  - Página `LoginPage.tsx` utilizando o Design System AlumiGest, cores navy `#041632` e o logotipo oficial Alumiportas.
+  - Validação via Zod e React Hook Form.
+  - Contexto `useAuth` persistindo o token no `localStorage`.
+  - Interceptor Axios injetando o cabeçalho `Bearer` e capturando HTTP 401 para redirecionamento automático ao login.
+  - Componente `ProtectedRoute.tsx` bloqueando acessos não autenticados e botão de Logout no `Sidebar.tsx`.
 - **Critérios de Aceitação**:
-  - [ ] Layout perfeitamente responsivo (desktop, tablet e mobile).
-  - [ ] Exibe feedback sonoro/visual via toast em caso de erro de conexão ou credenciais inválidas.
-  - [ ] Ao autenticar com sucesso, armazena a sessão e redireciona o usuário para o painel principal (`/`).
-
-#### US-10.4: Controle de Acesso RBAC, `ProtectedRoute` e Logout no Frontend [1 pt / 2.5h]
-- **Escopo**:
-  - Componente de alta ordem `ProtectedRoute.tsx` avaliando se o usuário está autenticado e se sua role possui permissão para acessar a rota pretendida.
-  - Exibição das informações do usuário autenticado no topo da barra lateral (`Sidebar.tsx`) e cabeçalho, com botão visível de Logout.
-  - Restrição de rotas: Operadores de fábrica acessam somente `/producao`, `/ordens-servico` e etiquetas; rotas de catálogo de preços e configurações exigem `ADMIN`.
-- **Critérios de Aceitação**:
-  - [ ] Usuário não autenticado tentando acessar qualquer rota privada é redirecionado para `/login`.
-  - [ ] Usuário logado sem permissão para uma rota recebe aviso de acesso negado sem quebrar a aplicação.
-  - [ ] Ação de Logout limpa o token de sessão e redireciona com segurança para `/login`.
+  - [ ] Usuário não logado é redirecionado imediatamente para `/login`.
+  - [ ] Logout limpa o token e redireciona para `/login`.
+  - [ ] Feedback visual via toast em caso de erro de credenciais.
 
 ---
 
-### 📦 PILAR 2: Painel de Configurações da Empresa & Cabeçalhos Dinâmicos (US-10.5 a US-10.7)
+### 📦 PILAR 2: Cabeçalho Dinâmico & Logotipo Oficial Alumiportas (US-10.4 a US-10.6)
 
-#### US-10.5: Entidade `CompanySettings`, Migração `V28` e Endpoints de Configurações [1 pt / 2.5h]
+#### US-10.4: Entidade `CompanySettings`, Migração `V28` e Endpoints Institucionais [1 pt / 2.0h]
 - **Escopo**:
-  - Script Flyway `V28__create_company_settings_schema.sql` criando a tabela singleton `tb_company_settings` (`id`, `company_name`, `trade_name`, `cnpj`, `state_registration`, `phone`, `email`, `address`, `city_state`, `logo_base64_or_url`, `updated_at`).
-  - Seed inicial populando os dados oficiais da Alumiportas LTDA.
-  - Entidade `CompanySettings`, DTOs `CompanySettingsRequestDTO` / `CompanySettingsResponseDTO` e serviço `CompanySettingsService`.
-  - Endpoints `GET /api/v1/settings/company` e `PUT /api/v1/settings/company` (restrito a `ADMIN`).
+  - Migration `V28__create_company_settings_schema.sql` criando a tabela singleton `tb_company_settings` (`id`, `company_name`, `trade_name`, `cnpj`, `state_registration`, `phone`, `email`, `address`, `city_state`, `updated_at`).
+  - Seed com os dados oficiais da Alumiportas LTDA.
+  - Endpoints `GET /api/v1/settings/company` e `PUT /api/v1/settings/company`.
 - **Critérios de Aceitação**:
-  - [ ] Validações de CNPJ válido, formato de telefone e campos obrigatórios no DTO.
-  - [ ] Atualização segura retornando o registro consolidado com código HTTP 200.
+  - [ ] DTO valida CNPJ e campos obrigatórios.
+  - [ ] Atualização segura retornando código HTTP 200.
 
-#### US-10.6: Tela de Configurações (`/configuracoes`) com Preview de Cabeçalho [2 pts / 3.5h]
+#### US-10.5: Tela de Configurações (`/configuracoes`) com Preview do Cabeçalho A4 [2 pts / 3.0h]
 - **Escopo**:
-  - Substituição da página estática de Placeholder pela tela oficial `CompanySettingsPage.tsx`.
-  - Formulário com campos estruturados: Dados Cadastrais (Razão Social, Nome Fantasia, CNPJ, IE), Contato (Telefone/WhatsApp, E-mail), Endereço Completo e Campo para upload de Logotipo.
-  - **Componente de Preview Interativo**: Exibição em tempo real de uma miniatura do cabeçalho institucional exatamente como ele será renderizado nos PDFs.
+  - Criação da página `CompanySettingsPage.tsx` com formulário dos dados da empresa.
+  - Exibição da logomarca oficial da Alumiportas no topo do painel.
+  - **Preview em tempo real do cabeçalho da folha A4**: reflete instantaneamente qualquer digitação nos campos de Razão Social, CNPJ, Telefone e Endereço.
 - **Critérios de Aceitação**:
-  - [ ] As alterações digitadas no formulário atualizam instantaneamente o preview do cabeçalho.
-  - [ ] Ao salvar, exibe toast de sucesso e invalida o cache do TanStack Query (`['company-settings']`).
+  - [ ] O preview responde em tempo real à digitação no formulário.
+  - [ ] Feedback via toast ao salvar e invalidação de cache via TanStack Query.
 
-#### US-10.7: Consumo Dinâmico dos Dados da Empresa em todos os PDFs e Etiquetas [1 pt / 3.0h]
+#### US-10.6: Injeção dos Dados Dinâmicos da Empresa em Todos os PDFs e Etiquetas [1 pt / 2.5h]
 - **Escopo**:
-  - Refatoração dos serviços de geração de documentos para consultar dinamicamente `CompanySettingsService`:
-    1. `BudgetPdfService.java` (Orçamento Comercial A4 e Resumo WhatsApp);
-    2. `OrderReceiptPdfService.java` (Comprovante da O.S.);
-    3. `ProductionSheetService.java` (Ficha Técnica A4 de Produção/Montagem);
+  - Refatoração de todos os 5 serviços de emissão para consumir dinamicamente `CompanySettingsService`:
+    1. `BudgetPdfService.java` (Orçamento Proposta A4 com logo oficial);
+    2. `OrderReceiptPdfService.java` (Comprovante de O.S.);
+    3. `ProductionSheetPdfService.java` (Ficha Técnica A4 de Corte e Montagem Moveleira);
     4. `PartSalePdfService.java` (Venda Avulsa A4);
     5. `ThermalLabelPdfRenderer.java` (Etiquetas Térmicas 100×60mm).
 - **Critérios de Aceitação**:
-  - [ ] Qualquer alteração realizada na tela de configurações é refletida no próximo PDF gerado sem necessidade de reiniciar o backend.
-  - [ ] Fallback seguro para os valores padrão caso o banco ainda não possua registro customizado.
+  - [ ] Atualizações nos dados da empresa são refletidas imediatamente nos novos PDFs gerados.
+  - [ ] Logotipo oficial carregado via `/static/logo-alumiportas.png` de forma robusta e com escala adequada.
 
 ---
 
-### 📦 PILAR 3: Calibração e Paridade de Orçamentos Reais (US-10.8 e US-10.9)
+### 📦 PILAR 3: Calibração com a Linha 45 mm Rometal Moveleira (US-10.7 e US-10.8)
 
-#### US-10.8: Matriz de Calibração com 5 Casos Reais de Esquadrias da Alumiportas [1 pt / 2.5h]
+#### US-10.7: Matriz de Calibração das 4 Tipologias Moveleiras Rometal 45 mm [2 pts / 3.5h]
 - **Escopo**:
-  - Documentação da planilha de calibração confrontando 5 modelos oficiais da fábrica:
-    1. **Janela de Correr 2 Folhas (Linha Suprema)**: $1200 \times 1000\text{ mm}$, Vidro Incolor 6mm;
-    2. **Porta de Correr 2 Folhas (Linha Suprema)**: $2100 \times 1600\text{ mm}$, Vidro Verde 8mm;
-    3. **Porta Pivotante (Linha Gold)**: $2200 \times 1000\text{ mm}$, Puxador Tubo Inox 60cm;
-    4. **Janela de Correr 4 Folhas (2 Fixas e 2 Móveis)**: $1500 \times 2000\text{ mm}$;
-    5. **Janela Maxim-ar com Pingadeira**: $600 \times 600\text{ mm}$, Vidro Mini-boreal 4mm.
-  - Registro dos valores de corte (alturas e larguras de perfis), consumo de vidro ($m^2$), acessórios e valor final do sistema legado.
+  - Levantamento e documentação da matriz de calibração para as 4 tipologias do ramo moveleiro:
+    1. **Porta de Giro Moveleira 45mm**:
+       - Medidas nominais: $2100 \times 450\text{ mm}$.
+       - Perfil: **RM-060** (Aba Baixa) ou **RM-059** (Aba Alta) na cor **Preto Fosco**.
+       - Vidro: **Vidro Reflecta Bronze 4 mm**.
+       - Acessórios: 4 Esquadretas **ESQ-041**, Parafusos M4×8, Baguete **BG-216**, 3 Dobradiças para perfil 45mm.
+       - Corte de alumínio: 2 peças de $2100\text{ mm}$ + 2 peças de $450\text{ mm}$ a $45^\circ$. Consumo total $= 5{,}10\text{ m}$.
+    2. **Porta de Correr Moveleira 45mm**:
+       - Medidas nominais: $2200 \times 800\text{ mm}$.
+       - Perfil: **RM-059** (Aba Alta) na cor **Fosco (Natural Jateado)**.
+       - Vidro: **Espelho Prata 4 mm** com película protetora.
+       - Acessórios: 4 Esquadretas **ESQ-041**, Parafusos M4×8, Baguete **BG-216**, Kit Deslizante Rometal (2 roldanas rolamentadas + guias superiores).
+       - Corte de alumínio: 2 peças de $2200\text{ mm}$ + 2 peças de $800\text{ mm}$ a $45^\circ$. Consumo total $= 6{,}00\text{ m}$.
+    3. **Porta Basculante Moveleira 45mm**:
+       - Medidas nominais: $400 \times 900\text{ mm}$.
+       - Perfil: **RM-060** (Aba Baixa) na cor **Bronze**.
+       - Vidro: **Vidro Incolor 4 mm** (ou Reflecta Fumê 4mm).
+       - Acessórios: 4 Esquadretas **ESQ-041**, Baguete **BG-216**, 2 Dobradiças de topo, 2 Pistões a Gás 80N.
+       - Corte de alumínio: 2 peças de $400\text{ mm}$ + 2 peças de $900\text{ mm}$ a $45^\circ$. Consumo total $= 2{,}60\text{ m}$.
+    4. **Frente de Gaveta Moveleira 45mm**:
+       - Medidas nominais: $180 \times 600\text{ mm}$.
+       - Perfil: **RM-060** (Aba Baixa) na cor **Preto Fosco**.
+       - Vidro: **Vidro Reflecta Bronze 4 mm**.
+       - Acessórios: 4 Esquadretas **ESQ-041**, Baguete **BG-216**, Suportes/cantoneiras de fixação interna para corrediça telescópica.
+       - Corte de alumínio: 2 peças de $180\text{ mm}$ + 2 peças de $600\text{ mm}$ a $45^\circ$. Consumo total $= 1{,}56\text{ m}$.
+  - Fórmulas de cálculo de desconto do vidro de 4 mm:
+    $$\text{Largura Vidro} = W_{\text{porta}} - \Delta_{\text{encaixe}}, \quad \text{Altura Vidro} = H_{\text{porta}} - \Delta_{\text{encaixe}}$$
 - **Critérios de Aceitação**:
-  - [ ] Documento de calibração registrado com as fórmulas oficiais aplicadas pelos serralheiros da Alumiportas.
+  - [ ] Planilha de calibração documentada com fórmulas de corte, área faturada de vidro ($m^2 \ge 0{,}25$), esquadretas e parafusos.
 
-#### US-10.9: Ajuste Fino dos Motores de Cálculo para Paridade Centavo a Centavo [1 pt / 3.5h]
+#### US-10.8: Ajuste Fino dos Motores de Cálculo para Paridade Centavo a Centavo [1 pt / 3.0h]
 - **Escopo**:
-  - Verificação e ajuste das constantes de folgas construtivas em `SupremaSlidingWindowCalculator.java` e `DefaultFrameCalculator.java`.
-  - Ajuste de rateio de barras lineares (perda técnica) e arredondamento padrão bancário (`RoundingMode.HALF_UP` e duas casas decimais).
-  - Execução de testes automatizados comparando os resultados calculados com a matriz de calibração da US-10.8.
+  - Ajuste e validação das regras de consumo no `ProfileQuantityCalculator`, `GlassQuantityCalculator` e `HardwareQuantityCalculator`.
+  - Suporte específico no catálogo para as referências comerciais **RM-060** e **RM-059** nas cores **Bronze**, **Fosco** e **Preto**.
+  - Criação da suíte de testes automatizados `Rometal45FurnitureCalibrationTest.java` comparando os resultados do sistema com as planilhas da Alumiportas.
 - **Critérios de Aceitação**:
-  - [ ] Divergência entre o cálculo do AlumiGest e a planilha da oficina igual a **R$ 0,00** nos 5 modelos calibrados.
-  - [ ] Suíte de testes unitários `BudgetEngineCalibrationTest` validando a precisão matemática sem falhas.
+  - [ ] Divergência entre o cálculo do AlumiGest e as planilhas da oficina igual a **R$ 0,00** nos 4 casos calibrados.
+  - [ ] Testes automatizados executando em menos de 1 segundo sem regressões.
 
 ---
 
-### 📦 PILAR 4: Saneamento Geral de Bugs & Homologação da 1ª Entrega (US-10.10 e US-10.11)
+### 📦 PILAR 4: Saneamento Geral de Bugs & Homologação da 1ª Entrega (US-10.9 e US-10.10)
 
-#### US-10.10: Saneamento do Bug de Etiquetas Térmicas na Venda Avulsa (PR #600) [1 pt / 2.5h]
+#### US-10.9: Saneamento do Bug de Etiquetas Térmicas na Venda Avulsa (PR #600) [1 pt / 2.5h]
 - **Escopo**:
-  - Mesclagem e homologação final do [PR #600](https://github.com/ADS-IFPB-SR/alumigest/pull/600), resolvendo a Issue [#598](https://github.com/ADS-IFPB-SR/alumigest/issues/598).
-  - Eliminação da chamada incorreta `window.print()` e disponibilização do endpoint oficial `GET /api/v1/part-sales/{id}/labels-pdf` em proporção exata $100 \times 60\text{ mm}$.
-  - Teste de impressão e download da bobina térmica tanto em desktop quanto na impressora física Elgin L42Pro.
+  - Validação e merge do [PR #600](https://github.com/ADS-IFPB-SR/alumigest/pull/600), resolvendo a Issue [#598](https://github.com/ADS-IFPB-SR/alumigest/issues/598).
+  - Emissão limpa da bobina térmica $100 \times 60\text{ mm}$ via endpoint `GET /api/v1/part-sales/{id}/labels-pdf`.
 - **Critérios de Aceitação**:
-  - [ ] O clique em "Imprimir Etiquetas" na Venda Avulsa baixa ou abre o PDF térmico formatado em 100×60mm, sem capturar a tela do navegador.
-  - [ ] Testes automatizados do `PartSaleControllerTest` e `ThermalLabelModal.test.tsx` 100% aprovados.
+  - [ ] Clique em "Imprimir Etiquetas" na Venda Avulsa faz download/abertura direta do PDF térmico sem acionar `window.print()`.
 
-#### US-10.11: Bateria E2E Cypress, Quality Gate SonarQube e Dossiê de Homologação [1 pt / 3.5h]
+#### US-10.10: Bateria E2E Cypress, Quality Gate SonarQube e Dossiê de Homologação [1 pt / 3.0h]
 - **Escopo**:
-  - Execução de ponta a ponta dos testes Cypress (`npm run test:e2e`).
-  - Varredura estática de código com SonarQube e Checkstyle garantindo 0 bugs, 0 vulnerabilidades e 0 code smells.
-  - Geração dos relatórios formais de governança da disciplina:
-    - **RTM** (Roteiro de Testes Manuais da Release 2);
-    - **RET** (Relatório de Execução de Testes);
-    - **TEA** (Termo de Homologação e Aceitação da Release 2).
+  - Execução completa dos testes E2E Cypress.
+  - Quality Gate com 0 code smells e 0 débitos técnicos.
+  - Geração dos relatórios de governança da disciplina (RTM, RET e TEA da Release 2).
 - **Critérios de Aceitação**:
-  - [ ] Todos os testes Cypress executam com sucesso em ambiente local ou CI.
-  - [ ] Dossiê de entrega aprovado e documentado em `docs/projeto-001/003-teste/`.
+  - [ ] Todos os testes Cypress aprovados.
+  - [ ] Documentação de homologação entregue e versionada.
 
 ---
 
 ## 3. 🛡️ Definition of Done (DoD) da Sprint 10
 
-Para que a Sprint 10 seja considerada 100% concluída e a **Primeira Entrega** liberada para a banca:
-1. **Segurança**: Nenhuma rota privada pode ser acessada sem token JWT válido.
-2. **Configuração**: Alterar os dados da empresa reflete imediatamente no cabeçalho dos PDFs gerados.
-3. **Precisão Matemática**: Orçamentos calculados conferem centavo por centavo com a realidade da oficina.
-4. **Qualidade de Código**: 100% dos testes unitários e de integração passando, com SonarQube verde.
-5. **Estabilidade**: Zero bugs impeditivos ou de layout abertos.
+1. **Segurança**: Rotas privadas protegidas com token JWT e login de usuário único.
+2. **Configuração**: Alterar dados institucionais reflete instantaneamente nos PDFs, mantendo o logotipo oficial Alumiportas.
+3. **Paridade Moveleira**: Os cálculos da Linha 45 mm Rometal (RM-059 e RM-060, Bronze, Fosco, Preto, com vidros 4mm) batem centavo a centavo ($\Delta = \text{R\$} 0{,}00$) com a prática da Alumiportas.
+4. **Qualidade & Estabilidade**: SonarQube verde, 100% dos testes unitários e de integração verdes e bug de etiquetas saneado.

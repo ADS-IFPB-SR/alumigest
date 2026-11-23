@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AlumiGest — Protótipo Sprint 10: Autenticação, Configurações & Calibração</title>
+  <title>AlumiGest — Protótipo Sprint 10: Autenticação, Configurações & Calibração Moveleira Rometal 45mm</title>
   
   <!-- Tipografia Oficial do AlumiGest -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -85,8 +85,8 @@
     }
 
     .nav-logo-badge {
-      width: 36px;
-      height: 36px;
+      width: 38px;
+      height: 38px;
       background: var(--primary);
       color: #ffffff;
       border-radius: 8px;
@@ -95,8 +95,9 @@
       justify-content: center;
       font-family: 'Hanken Grotesk', sans-serif;
       font-weight: 800;
-      font-size: 1.1rem;
+      font-size: 1.15rem;
       letter-spacing: -0.5px;
+      box-shadow: var(--shadow-sm);
     }
 
     .nav-titles h1 {
@@ -386,22 +387,23 @@
       gap: 1rem;
     }
 
-    .header-logo-placeholder {
-      width: 54px;
-      height: 54px;
-      background: #041632;
-      color: #ffffff;
-      border-radius: 6px;
+    .header-official-logo {
       display: flex;
       align-items: center;
       justify-content: center;
+      background: #041632;
+      color: #ffffff;
+      padding: 0.5rem 0.85rem;
+      border-radius: 6px;
       font-weight: 800;
-      font-size: 1.3rem;
+      font-size: 0.95rem;
+      letter-spacing: 0.5px;
+      border: 1px solid #1e293b;
     }
 
     .header-company-info h3 {
       font-family: 'Hanken Grotesk', sans-serif;
-      font-size: 1.15rem;
+      font-size: 1.1rem;
       font-weight: 800;
       color: #0f172a;
       line-height: 1.2;
@@ -419,7 +421,7 @@
 
     .doc-type {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 1rem;
+      font-size: 0.95rem;
       font-weight: 800;
       color: #2563eb;
     }
@@ -471,55 +473,79 @@
       color: var(--status-success);
     }
 
+    /* Cards de Linhas e Materiais Moveleiros */
+    .tech-card-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .tech-card {
+      background: var(--bg-surface-subtle);
+      border: 1px solid var(--border-light);
+      border-radius: 8px;
+      padding: 1rem;
+      border-left: 4px solid var(--primary-accent);
+    }
+
+    .tech-card h4 {
+      font-family: 'Hanken Grotesk', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-title);
+      margin-bottom: 0.25rem;
+    }
+
+    .tech-card p {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    .color-swatch-group {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+
+    .color-swatch {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: #ffffff;
+      border: 1px solid var(--border-medium);
+    }
+
+    .dot-bronze { width: 8px; height: 8px; border-radius: 50%; background: #78350f; }
+    .dot-fosco { width: 8px; height: 8px; border-radius: 50%; background: #94a3b8; }
+    .dot-preto { width: 8px; height: 8px; border-radius: 50%; background: #0f172a; }
+
     /* Tela de Login Demo */
     .login-container {
-      max-width: 420px;
-      margin: 2rem auto;
+      max-width: 400px;
+      margin: 1.5rem auto;
       background: #ffffff;
       border: 1px solid var(--border-light);
       border-radius: 12px;
-      padding: 2.25rem;
-      box-shadow: var(--shadow-lg);
+      padding: 2rem;
+      box-shadow: var(--shadow-sm);
     }
 
     .login-header {
       text-align: center;
-      margin-bottom: 1.75rem;
+      margin-bottom: 1.5rem;
     }
 
     .login-header .nav-logo-badge {
       width: 48px;
       height: 48px;
       margin: 0 auto 0.75rem;
-      font-size: 1.4rem;
-    }
-
-    .role-switcher {
-      display: flex;
-      gap: 0.5rem;
-      margin-bottom: 1.5rem;
-      background: var(--bg-surface-subtle);
-      padding: 4px;
-      border-radius: 8px;
-    }
-
-    .role-btn {
-      flex: 1;
-      padding: 0.4rem;
-      border: none;
-      background: transparent;
-      border-radius: 6px;
-      font-size: 0.75rem;
-      font-weight: 600;
-      color: var(--text-muted);
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .role-btn.active {
-      background: #ffffff;
-      color: var(--primary-accent);
-      box-shadow: var(--shadow-xs);
+      font-size: 1.3rem;
     }
   </style>
 </head>
@@ -531,22 +557,22 @@
       <div class="nav-logo-badge">AG</div>
       <div class="nav-titles">
         <h1>AlumiGest <span style="display:inline; font-weight:400; color:var(--text-muted)">— Sprint 10</span></h1>
-        <span>Preparação, Segurança & Calibração da 1ª Entrega</span>
+        <span>Preparação para 1ª Entrega &bull; Linha 45 mm Rometal Moveleira</span>
       </div>
     </div>
 
     <!-- Navegação entre os 4 Pilares -->
     <div class="pillar-nav">
       <button class="pillar-btn active" onclick="switchTab('auth')">
-        <i class="fa-solid fa-shield-halved"></i> 1. Autenticação (RBAC)
-        <span class="badge-pill badge-primary">6 pts</span>
+        <i class="fa-solid fa-shield-halved"></i> 1. Autenticação (Usuário Único)
+        <span class="badge-pill badge-primary">5 pts</span>
       </button>
       <button class="pillar-btn" onclick="switchTab('settings')">
-        <i class="fa-solid fa-sliders"></i> 2. Configurações da Empresa
+        <i class="fa-solid fa-sliders"></i> 2. Configurações & Logo Oficial
         <span class="badge-pill badge-warning">4 pts</span>
       </button>
       <button class="pillar-btn" onclick="switchTab('calibration')">
-        <i class="fa-solid fa-calculator"></i> 3. Calibração Real
+        <i class="fa-solid fa-calculator"></i> 3. Calibração Rometal 45 mm
         <span class="badge-pill badge-success">2 pts</span>
       </button>
       <button class="pillar-btn" onclick="switchTab('qa')">
@@ -560,7 +586,7 @@
         <div class="user-avatar" id="avatarRole">AD</div>
         <div>
           <strong id="userName">José Guylherme</strong>
-          <span style="display:block; font-size:0.7rem; color:var(--text-muted)" id="userRole">Administrador</span>
+          <span style="display:block; font-size:0.7rem; color:var(--text-muted)" id="userRole">Administrador da Oficina</span>
         </div>
       </div>
     </div>
@@ -569,19 +595,19 @@
   <!-- Área Principal de Conteúdo -->
   <main class="main-viewport">
 
-    <!-- ========================================== -->
-    <!-- ABA 1: AUTENTICAÇÃO E CONTROLE DE ACESSO   -->
-    <!-- ========================================== -->
+    <!-- ======================================================== -->
+    <!-- ABA 1: AUTENTICAÇÃO E CONTROLE DE ACESSO (USUÁRIO ÚNICO) -->
+    <!-- ======================================================== -->
     <section class="tab-content active" id="tab-auth">
       <div class="banner-sprint">
         <div>
-          <h2>🔐 Pilar 1: Sistema de Autenticação, Usuários e RBAC</h2>
-          <p>Spring Security 6 stateless + Tokens JWT assinados com controle de permissão por perfil de colaborador.</p>
+          <h2>🔐 Pilar 1: Autenticação Segura com Usuário Único</h2>
+          <p>Spring Security 6 stateless com tokens JWT. Sistema voltado para a operação da oficina com usuário único (sem segregação desnecessária de 3 perfis).</p>
         </div>
         <div class="sprint-stats">
           <div class="stat-item">
-            <div class="stat-value">3</div>
-            <div class="stat-label">Perfis RBAC</div>
+            <div class="stat-value">1</div>
+            <div class="stat-label">Usuário Único</div>
           </div>
           <div class="stat-item">
             <div class="stat-value">100%</div>
@@ -600,22 +626,16 @@
           <div class="card-header">
             <div class="card-title">
               <i class="fa-solid fa-arrow-right-to-bracket text-primary"></i>
-              Simulador da Tela de Login (`/login`)
+              Simulador da Tela de Login Oficial (`/login`)
             </div>
             <span class="parity-badge"><i class="fa-solid fa-lock"></i> JWT Stateless</span>
           </div>
 
-          <div class="role-switcher">
-            <button class="role-btn active" onclick="setRole('ADMIN')">Admin (Dono)</button>
-            <button class="role-btn" onclick="setRole('VENDEDOR')">Vendedor (Balcão)</button>
-            <button class="role-btn" onclick="setRole('OPERADOR')">Operador (Oficina)</button>
-          </div>
-
-          <div class="login-container" style="margin: 0 auto; box-shadow:none; border:1px solid var(--border-light);">
+          <div class="login-container">
             <div class="login-header">
               <div class="nav-logo-badge">AG</div>
-              <h2 style="font-family:'Hanken Grotesk'; font-size:1.2rem; font-weight:800;">Acesso ao AlumiGest</h2>
-              <p style="font-size:0.8rem; color:var(--text-muted)">Sistema de Gestão de Esquadrias e Vidros</p>
+              <h2 style="font-family:'Hanken Grotesk'; font-size:1.2rem; font-weight:800; color:var(--text-title);">AlumiGest</h2>
+              <p style="font-size:0.8rem; color:var(--text-muted)">Acesso Administrativo à Oficina Alumiportas</p>
             </div>
 
             <div class="form-group">
@@ -628,80 +648,73 @@
               <input type="password" class="form-control" value="••••••••••••" readonly>
             </div>
 
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem; font-size:0.78rem;">
+              <label style="display:flex; align-items:center; gap:0.4rem; color:var(--text-body); cursor:pointer;">
+                <input type="checkbox" checked disabled> Lembrar acesso
+              </label>
+              <span style="color:var(--text-muted);">Ambiente Seguro</span>
+            </div>
+
             <button class="btn-action" style="width:100%; justify-content:center; padding:0.75rem;" onclick="simulateLogin()">
               <i class="fa-solid fa-key"></i> Entrar no Sistema
             </button>
           </div>
         </div>
 
-        <!-- Matriz de Permissões RBAC -->
+        <!-- Arquitetura e Proteção de Rotas -->
         <div class="card-panel">
           <div class="card-header">
             <div class="card-title">
-              <i class="fa-solid fa-users-gear text-primary"></i>
-              Matriz de Acessos por Perfil de Colaborador
+              <i class="fa-solid fa-shield-check text-primary"></i>
+              Arquitetura de Segurança & Proteção de Rotas
             </div>
             <span class="badge-pill badge-primary">Spring Security 6</span>
           </div>
 
-          <p style="font-size:0.82rem; color:var(--text-muted); margin-bottom:1rem;">
-            O AlumiGest restringe as rotas para garantir que cada colaborador veja apenas o que compete à sua função:
+          <p style="font-size:0.82rem; color:var(--text-muted); margin-bottom:1rem; line-height:1.5;">
+            O modelo de usuário único simplifica a arquitetura sem abrir mão da segurança em produção:
           </p>
 
-          <table class="calibration-table">
-            <thead>
-              <tr>
-                <th>Módulo da Aplicação</th>
-                <th>ADMIN</th>
-                <th>VENDEDOR</th>
-                <th>OPERADOR</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td><strong>Orçamentos & Clientes</strong></td>
-                <td><i class="fa-solid fa-circle-check text-success"></i> Completo</td>
-                <td><i class="fa-solid fa-circle-check text-success"></i> Completo</td>
-                <td><i class="fa-solid fa-ban text-muted"></i> Bloqueado</td>
-              </tr>
-              <tr>
-                <td><strong>Venda Avulsa de Partes</strong></td>
-                <td><i class="fa-solid fa-circle-check text-success"></i> Completo</td>
-                <td><i class="fa-solid fa-circle-check text-success"></i> Completo</td>
-                <td><i class="fa-solid fa-ban text-muted"></i> Bloqueado</td>
-              </tr>
-              <tr>
-                <td><strong>Kanban Fabril & Produção</strong></td>
-                <td><i class="fa-solid fa-circle-check text-success"></i> Visualiza/Edita</td>
-                <td><i class="fa-solid fa-eye text-info"></i> Apenas Consulta</td>
-                <td><i class="fa-solid fa-circle-check text-success"></i> Movimenta Cards</td>
-              </tr>
-              <tr>
-                <td><strong>Etiquetas & Ficha Técnica</strong></td>
-                <td><i class="fa-solid fa-circle-check text-success"></i> Emite</td>
-                <td><i class="fa-solid fa-circle-check text-success"></i> Emite</td>
-                <td><i class="fa-solid fa-circle-check text-success"></i> Emite na bancada</td>
-              </tr>
-              <tr>
-                <td><strong>Configurações & Catálogo</strong></td>
-                <td><i class="fa-solid fa-circle-check text-success"></i> Exclusivo</td>
-                <td><i class="fa-solid fa-ban text-muted"></i> Bloqueado</td>
-                <td><i class="fa-solid fa-ban text-muted"></i> Bloqueado</td>
-              </tr>
-            </tbody>
-          </table>
+          <div style="display:flex; flex-direction:column; gap:0.75rem;">
+            <div style="padding:0.85rem; border:1px solid var(--border-light); border-radius:8px; background:var(--bg-surface-subtle);">
+              <h4 style="font-size:0.85rem; font-weight:700; color:var(--text-title); margin-bottom:0.25rem;">
+                <i class="fa-solid fa-fingerprint text-info"></i> Filtro de Autenticação JWT (`JwtAuthenticationFilter`)
+              </h4>
+              <p style="font-size:0.78rem; color:var(--text-body); line-height:1.4;">
+                Intercepta requisições nos endpoints da API, validando assinatura HMAC-SHA256 e expiração. Retorna HTTP 401 caso ausente ou inválido.
+              </p>
+            </div>
+
+            <div style="padding:0.85rem; border:1px solid var(--border-light); border-radius:8px; background:var(--bg-surface-subtle);">
+              <h4 style="font-size:0.85rem; font-weight:700; color:var(--text-title); margin-bottom:0.25rem;">
+                <i class="fa-solid fa-shield-halved text-success"></i> Guarda de Rotas no Frontend (`ProtectedRoute.tsx`)
+              </h4>
+              <p style="font-size:0.78rem; color:var(--text-body); line-height:1.4;">
+                Todas as páginas do sistema (`/orcamentos`, `/estoque`, `/produtos`, `/configuracoes`) exigem token válido. O acesso anônimo é imediatamente redirecionado para `/login`.
+              </p>
+            </div>
+
+            <div style="padding:0.85rem; border:1px solid var(--border-light); border-radius:8px; background:var(--bg-surface-subtle);">
+              <h4 style="font-size:0.85rem; font-weight:700; color:var(--text-title); margin-bottom:0.25rem;">
+                <i class="fa-solid fa-lock text-warning"></i> Criptografia BCrypt com Salt
+              </h4>
+              <p style="font-size:0.78rem; color:var(--text-body); line-height:1.4;">
+                A senha do administrador é protegida com hash irreversível e salt de 10 rounds, garantindo integridade contra vazamentos.
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </section>
 
-    <!-- ========================================== -->
-    <!-- ABA 2: CONFIGURAÇÕES DA EMPRESA & CABEÇALHO-->
-    <!-- ========================================== -->
+    <!-- ======================================================== -->
+    <!-- ABA 2: CONFIGURAÇÕES DA EMPRESA & LOGO OFICIAL           -->
+    <!-- ======================================================== -->
     <section class="tab-content" id="tab-settings">
       <div class="banner-sprint">
         <div>
-          <h2>⚙️ Pilar 2: Configurações da Empresa & Cabeçalho Dinâmico</h2>
-          <p>Personalize os dados cadastrais e a identidade visual da empresa refletidos em todos os relatórios e PDFs.</p>
+          <h2>⚙️ Pilar 2: Configurações da Empresa & Logotipo Oficial</h2>
+          <p>Personalize os dados cadastrais da empresa refletidos em tempo real em todos os relatórios, propostas em PDF e etiquetas.</p>
         </div>
         <div class="sprint-stats">
           <div class="stat-item">
@@ -709,8 +722,8 @@
             <div class="stat-label">Integrados</div>
           </div>
           <div class="stat-item">
-            <div class="stat-value">Ao Vivo</div>
-            <div class="stat-label">Preview Dinâmico</div>
+            <div class="stat-value">Oficial</div>
+            <div class="stat-label">Logo Alumiportas</div>
           </div>
         </div>
       </div>
@@ -772,8 +785,10 @@
               <input type="text" class="form-control" id="cfgCidadeUf" value="Sousa - PB" oninput="updateHeaderPreview()">
             </div>
             <div class="form-group">
-              <label class="form-label">Logo Institucional (Sigla ou Imagem)</label>
-              <input type="text" class="form-control" id="cfgLogoSigla" value="AL" oninput="updateHeaderPreview()">
+              <label class="form-label">Logomarca do Sistema</label>
+              <div style="display:flex; align-items:center; gap:0.5rem; padding:0.45rem 0.75rem; background:var(--bg-surface-subtle); border:1px solid var(--border-medium); border-radius:6px; font-size:0.8rem; font-weight:600; color:var(--text-body);">
+                <i class="fa-solid fa-circle-check text-success"></i> Logotipo Oficial Ativo (`logo-alumiportas.png`)
+              </div>
             </div>
           </div>
         </div>
@@ -797,7 +812,9 @@
             
             <div class="header-render">
               <div class="header-logo-area">
-                <div class="header-logo-placeholder" id="previewLogo">AL</div>
+                <div class="header-official-logo">
+                  <span style="font-weight:900; color:#38bdf8;">ALUMI</span><span style="font-weight:400; color:#ffffff;">PORTAS</span>
+                </div>
                 <div class="header-company-info">
                   <h3 id="previewNomeFantasia">Alumiportas Vidraçaria & Esquadrias</h3>
                   <p id="previewRazaoSocial">Alumiportas Indústria e Comércio LTDA</p>
@@ -808,122 +825,179 @@
               </div>
 
               <div class="header-doc-tag">
-                <div class="doc-type">ORÇAMENTO</div>
+                <div class="doc-type">PROPOSTA COMERCIAL</div>
                 <div class="doc-date">N° ORC-2026-0042</div>
                 <div class="doc-date" style="font-size:0.68rem; margin-top:2px;">Emissão: 24/11/2026</div>
               </div>
             </div>
 
             <div style="margin-top:1.5rem; padding:1rem; background:var(--bg-app); border-radius:6px; font-size:0.75rem; color:var(--text-muted); text-align:center;">
-              <i class="fa-solid fa-file-lines"></i> Corpo do documento compilado via OpenPDF com itens, esquadrias e valores...
+              <i class="fa-solid fa-file-lines"></i> Corpo da proposta comercial compilada via OpenPDF com itens moveleiros, vidros e esquadrias...
             </div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- ========================================== -->
-    <!-- ABA 3: CALIBRAÇÃO DE ORÇAMENTOS REAIS     -->
-    <!-- ========================================== -->
+    <!-- ======================================================== -->
+    <!-- ABA 3: CALIBRAÇÃO REAL MOVELEIRA — LINHA 45 MM ROMETAL   -->
+    <!-- ======================================================== -->
     <section class="tab-content" id="tab-calibration">
       <div class="banner-sprint">
         <div>
-          <h2>📐 Pilar 3: Matriz de Calibração com Orçamentos Reais da Fábrica</h2>
-          <p>Confronto centavo a centavo entre o motor de cálculo AlumiGest e o sistema/planilhas em uso na Alumiportas.</p>
+          <h2>🪚 Pilar 3: Calibração Moveleira — Linha 45 mm Rometal</h2>
+          <p>Foco estrito no ramo moveleiro: Portas de Giro, Correr, Basculante e Frente de Gaveta com perfis RM-059/060, acabamentos Bronze, Fosco e Preto, e vidros de 4mm.</p>
         </div>
         <div class="sprint-stats">
           <div class="stat-item">
-            <div class="stat-value">5 Casos</div>
-            <div class="stat-label">Modelos Reais</div>
+            <div class="stat-value">4 Tipologias</div>
+            <div class="stat-label">Ramo Moveleiro</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">4 mm</div>
+            <div class="stat-label">Vidro Padrão</div>
           </div>
           <div class="stat-item">
             <div class="stat-value" style="color:#4ade80">R$ 0,00</div>
-            <div class="stat-label">Delta de Paridade</div>
+            <div class="stat-label">Delta Paridade</div>
           </div>
         </div>
       </div>
 
+      <!-- Cards Técnicos da Linha 45 mm Rometal -->
+      <div class="tech-card-grid">
+        <div class="tech-card">
+          <h4>Perfil RM-060</h4>
+          <p><strong>Aba Frontal Baixa (45mm):</strong> Estética minimalista e clean. Ideal para portas de giro, basculantes e frentes de gaveta com vidro de 4mm.</p>
+          <div class="color-swatch-group">
+            <span class="color-swatch"><span class="dot-bronze"></span> Bronze</span>
+            <span class="color-swatch"><span class="dot-fosco"></span> Fosco</span>
+            <span class="color-swatch"><span class="dot-preto"></span> Preto</span>
+          </div>
+        </div>
+
+        <div class="tech-card">
+          <h4>Perfil RM-059</h4>
+          <p><strong>Aba Frontal Alta (45mm):</strong> Maior sobreposição frontal e rigidez estrutural. Preferido em portas de correr e armários de grande vão.</p>
+          <div class="color-swatch-group">
+            <span class="color-swatch"><span class="dot-bronze"></span> Bronze</span>
+            <span class="color-swatch"><span class="dot-fosco"></span> Fosco</span>
+            <span class="color-swatch"><span class="dot-preto"></span> Preto</span>
+          </div>
+        </div>
+
+        <div class="tech-card">
+          <h4>Vidros Homologados</h4>
+          <p><strong>Espessura Fixa 4.00 mm:</strong> Encaixe no perfil com baguete BG-216 ou borracha de vedação:</p>
+          <div style="font-size:0.72rem; color:var(--text-body); margin-top:0.4rem; font-weight:600;">
+            &bull; Reflecta Bronze 4mm<br>
+            &bull; Espelho Prata 4mm<br>
+            &bull; Incolor / Reflecta Fumê 4mm
+          </div>
+        </div>
+
+        <div class="tech-card">
+          <h4>Acessórios de Montagem</h4>
+          <p><strong>Padrão Técnico Rometal:</strong></p>
+          <div style="font-size:0.72rem; color:var(--text-body); margin-top:0.4rem; font-weight:600;">
+            &bull; Esquadretas 45°: ESQ-041 / ESQ-055<br>
+            &bull; Parafusos: M4×8 CC<br>
+            &bull; Baguete de Encaixe: BG-216
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabela Comparativa de Paridade Moveleira -->
       <div class="card-panel">
         <div class="card-header">
           <div class="card-title">
             <i class="fa-solid fa-scale-balanced text-primary"></i>
-            Matriz Comparativa de Paridade Matemática (Oficina vs AlumiGest)
+            Matriz de Paridade Moveleira: Planilhas Alumiportas vs Motor AlumiGest
           </div>
-          <span class="parity-badge"><i class="fa-solid fa-check-double"></i> 100% Calibrado</span>
+          <span class="parity-badge"><i class="fa-solid fa-check-double"></i> 100% Calibrado (&Delta; R$ 0,00)</span>
         </div>
 
         <table class="calibration-table">
           <thead>
             <tr>
-              <th>Tipologia / Esquadria Real</th>
-              <th>Linha & Vidro</th>
-              <th>Medidas ($L \times A$)</th>
-              <th>Fórmulas de Corte (Perfis)</th>
-              <th>Preço Atual Oficina</th>
-              <th>Preço AlumiGest</th>
+              <th>Tipologia Moveleira</th>
+              <th>Perfil Rometal 45mm & Cor</th>
+              <th>Vidro (4mm)</th>
+              <th>Dimensões ($L \times A$)</th>
+              <th>Consumo Alumínio (45°)</th>
+              <th>Acessórios / Ferragens</th>
+              <th>Planilha Atual</th>
+              <th>AlumiGest</th>
               <th>Delta</th>
               <th>Status</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td><strong>Janela 2 Folhas (1 Fixa, 1 Móvel)</strong></td>
-              <td>Suprema | Incolor 6mm</td>
-              <td><span style="font-family:'JetBrains Mono'">1200 × 1000 mm</span></td>
-              <td>Montante: 1000mm / Travessa: 1200mm</td>
-              <td>R$ 485,00</td>
-              <td>R$ 485,00</td>
+              <td><strong>1. Porta de Giro Moveleira</strong></td>
+              <td>RM-060 | Preto Fosco</td>
+              <td>Reflecta Bronze 4mm</td>
+              <td><span style="font-family:'JetBrains Mono'">450 × 2100 mm</span></td>
+              <td>$2 \times 450 + 2 \times 2100 = 5{,}10\text{ m}$</td>
+              <td>4 ESQ-041 + Baguete BG-216 + 3 Dobradiças 45mm</td>
+              <td>R$ 395,00</td>
+              <td>R$ 395,00</td>
               <td><span style="color:var(--status-success); font-weight:700;">R$ 0,00</span></td>
               <td><span class="parity-badge"><i class="fa-solid fa-circle-check"></i> Paridade OK</span></td>
             </tr>
             <tr>
-              <td><strong>Porta de Correr 2 Folhas</strong></td>
-              <td>Suprema | Verde 8mm</td>
-              <td><span style="font-family:'JetBrains Mono'">2100 × 1600 mm</span></td>
-              <td>Montante: 2100mm / Trilho: 1600mm</td>
-              <td>R$ 1.240,00</td>
-              <td>R$ 1.240,00</td>
+              <td><strong>2. Porta de Correr Moveleira</strong></td>
+              <td>RM-059 | Fosco (Jateado)</td>
+              <td>Espelho Prata 4mm</td>
+              <td><span style="font-family:'JetBrains Mono'">800 × 2200 mm</span></td>
+              <td>$2 \times 800 + 2 \times 2200 = 6{,}00\text{ m}$</td>
+              <td>4 ESQ-041 + Baguete BG-216 + Kit Deslizante Rometal</td>
+              <td>R$ 560,00</td>
+              <td>R$ 560,00</td>
               <td><span style="color:var(--status-success); font-weight:700;">R$ 0,00</span></td>
               <td><span class="parity-badge"><i class="fa-solid fa-circle-check"></i> Paridade OK</span></td>
             </tr>
             <tr>
-              <td><strong>Porta Pivotante Social</strong></td>
-              <td>Gold | Alumínio Lambril</td>
-              <td><span style="font-family:'JetBrains Mono'">2200 × 1000 mm</span></td>
-              <td>Montante Gold: 2200mm / Puxador 60cm</td>
-              <td>R$ 1.850,00</td>
-              <td>R$ 1.850,00</td>
+              <td><strong>3. Porta Basculante Aérea</strong></td>
+              <td>RM-060 | Bronze</td>
+              <td>Reflecta Bronze 4mm</td>
+              <td><span style="font-family:'JetBrains Mono'">900 × 400 mm</span></td>
+              <td>$2 \times 900 + 2 \times 400 = 2{,}60\text{ m}$</td>
+              <td>4 ESQ-041 + Baguete BG-216 + 2 Pistões 80N + 2 Dobradiças</td>
+              <td>R$ 280,00</td>
+              <td>R$ 280,00</td>
               <td><span style="color:var(--status-success); font-weight:700;">R$ 0,00</span></td>
               <td><span class="parity-badge"><i class="fa-solid fa-circle-check"></i> Paridade OK</span></td>
             </tr>
             <tr>
-              <td><strong>Janela 4 Folhas (2 Fixas, 2 Móveis)</strong></td>
-              <td>Suprema | Fumê 6mm</td>
-              <td><span style="font-family:'JetBrains Mono'">1500 × 2000 mm</span></td>
-              <td>Montantes: 1500mm / Trilhos 4 vias: 2000mm</td>
-              <td>R$ 960,00</td>
-              <td>R$ 960,00</td>
-              <td><span style="color:var(--status-success); font-weight:700;">R$ 0,00</span></td>
-              <td><span class="parity-badge"><i class="fa-solid fa-circle-check"></i> Paridade OK</span></td>
-            </tr>
-            <tr>
-              <td><strong>Maxim-ar com Pingadeira</strong></td>
-              <td>Suprema | Mini-Boreal 4mm</td>
-              <td><span style="font-family:'JetBrains Mono'">600 × 600 mm</span></td>
-              <td>Braço 30cm / Corte 45°: 600mm</td>
-              <td>R$ 215,00</td>
-              <td>R$ 215,00</td>
+              <td><strong>4. Frente de Gaveta Moveleira</strong></td>
+              <td>RM-060 | Preto Fosco</td>
+              <td>Vidro Incolor 4mm</td>
+              <td><span style="font-family:'JetBrains Mono'">600 × 180 mm</span></td>
+              <td>$2 \times 600 + 2 \times 180 = 1{,}56\text{ m}$</td>
+              <td>4 ESQ-041 + Baguete BG-216 + Suportes internos para corrediça</td>
+              <td>R$ 175,00</td>
+              <td>R$ 175,00</td>
               <td><span style="color:var(--status-success); font-weight:700;">R$ 0,00</span></td>
               <td><span class="parity-badge"><i class="fa-solid fa-circle-check"></i> Paridade OK</span></td>
             </tr>
           </tbody>
         </table>
+
+        <div style="margin-top:1.25rem; padding:0.85rem 1rem; background:var(--bg-surface-subtle); border-radius:6px; font-size:0.8rem; color:var(--text-body); display:flex; align-items:center; justify-content:space-between;">
+          <span>
+            <i class="fa-solid fa-calculator text-primary"></i> <strong>Fórmula Universal de Montagem:</strong> 4 peças cortadas em meia-esquadria a 45°, travadas com 4 esquadretas ESQ-041 e 8 parafusos M4×8.
+          </span>
+          <span style="font-family:'JetBrains Mono'; font-weight:700; color:var(--status-success);">
+            Conformidade Rometal: 100%
+          </span>
+        </div>
       </div>
     </section>
 
-    <!-- ========================================== -->
-    <!-- ABA 4: QUALIDADE, BUGS & HOMOLOGAÇÃO       -->
-    <!-- ========================================== -->
+    <!-- ======================================================== -->
+    <!-- ABA 4: QUALIDADE, BUGS & HOMOLOGAÇÃO                     -->
+    <!-- ======================================================== -->
     <section class="tab-content" id="tab-qa">
       <div class="banner-sprint">
         <div>
@@ -998,53 +1072,20 @@
       const email = document.getElementById('cfgEmail').value || 'contato@empresa.com';
       const endereco = document.getElementById('cfgEndereco').value || 'Endereço';
       const cidadeUf = document.getElementById('cfgCidadeUf').value || 'Cidade - UF';
-      const logoSigla = document.getElementById('cfgLogoSigla').value || 'AG';
 
       document.getElementById('previewNomeFantasia').innerText = fantasia;
       document.getElementById('previewRazaoSocial').innerText = razao;
       document.getElementById('previewCnpjIe').innerText = `CNPJ: ${cnpj} | IE: ${ie}`;
       document.getElementById('previewContato').innerText = `Tel/WhatsApp: ${tel} | E-mail: ${email}`;
       document.getElementById('previewEndereco').innerText = `${endereco}, ${cidadeUf}`;
-      document.getElementById('previewLogo').innerText = logoSigla.toUpperCase().substring(0, 2);
-    }
-
-    // Simulação de Perfis de Login
-    function setRole(role) {
-      document.querySelectorAll('.role-btn').forEach(btn => btn.classList.remove('active'));
-      event.currentTarget.classList.add('active');
-
-      const emailInput = document.getElementById('loginEmail');
-      const avatar = document.getElementById('avatarRole');
-      const name = document.getElementById('userName');
-      const roleText = document.getElementById('userRole');
-
-      if (role === 'ADMIN') {
-        emailInput.value = 'admin@alumiportas.com.br';
-        avatar.innerText = 'AD';
-        avatar.style.background = '#2563eb';
-        name.innerText = 'José Guylherme';
-        roleText.innerText = 'Administrador (Dono)';
-      } else if (role === 'VENDEDOR') {
-        emailInput.value = 'vendas@alumiportas.com.br';
-        avatar.innerText = 'VD';
-        avatar.style.background = '#059669';
-        name.innerText = 'Italo Jefferson';
-        roleText.innerText = 'Vendedor Comercial';
-      } else if (role === 'OPERADOR') {
-        emailInput.value = 'oficina@alumiportas.com.br';
-        avatar.innerText = 'OP';
-        avatar.style.background = '#d97706';
-        name.innerText = 'Serralheiro de Bancada';
-        roleText.innerText = 'Operador Fabril';
-      }
     }
 
     function simulateLogin() {
-      alert('Sessão autenticada com sucesso! Token JWT emitido e persistido no localStorage.');
+      alert('Sessão autenticada com sucesso! Token JWT emitido para o usuário único (Administrador da Oficina) e persistido com segurança no localStorage.');
     }
 
     function saveSettings() {
-      alert('Configurações salvas no banco de dados! Todos os PDFs e etiquetas passarão a utilizar este cabeçalho dinâmico.');
+      alert('Configurações salvas no banco de dados! Todos os PDFs e etiquetas passarão a utilizar este cabeçalho dinâmico com a logo oficial da Alumiportas.');
     }
   </script>
 </body>

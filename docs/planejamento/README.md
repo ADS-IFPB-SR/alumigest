@@ -38,7 +38,7 @@ Este diretório centraliza a documentação de planejamento, especificações fu
 | Sprint | Período Oficial | Módulo / Escopo Principal | User Stories | Total Tarefas | Status |
 | :--- | :---: | :--- | :--- | :---: | :---: |
 | [Sprint 09](sprint-09/README.md) | **10/11/2026 a 23/11/2026** | **Reserva/Baixa Automática Make-to-Order & Kardex** | **`US-21`, `US-22`** | **12 (13 pts)** | 🟢 **Concluída / Em Homologação** |
-| [Sprint 10](sprint-10/README.md) | **24/11/2026 a 07/12/2026** | **Autenticação RBAC, Configurações Institucionais & Calibração Real (1ª Entrega)** | **4 Pilares Estratégicos** | **11 (14 pts)** | 🟢 **Planejada** |
+| [Sprint 10](sprint-10/README.md) | **24/11/2026 a 07/12/2026** | **Autenticação de Usuário Único, Configurações com Logo Oficial & Calibração Moveleira Rometal 45mm** | **4 Pilares Estratégicos** | **10 (13 pts)** | 🟢 **Planejada** |
 
 ---
 
