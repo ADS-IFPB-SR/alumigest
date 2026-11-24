@@ -223,12 +223,16 @@ public class PartSaleServiceImpl implements PartSaleService {
   @Override
   @Transactional(readOnly = true)
   public PartSalePdfDTO generateLabelsPdf(UUID id) {
-    return generateLabelsPdf(id, null);
+    return doGenerateLabelsPdf(id, null);
   }
 
   @Override
   @Transactional(readOnly = true)
   public PartSalePdfDTO generateLabelsPdf(UUID id, UUID itemId) {
+    return doGenerateLabelsPdf(id, itemId);
+  }
+
+  private PartSalePdfDTO doGenerateLabelsPdf(UUID id, UUID itemId) {
     PartSale partSale = partSaleRepository.findWithDetailsById(id)
         .orElseThrow(() -> new ResourceNotFoundException(MSG_SALE_NOT_FOUND + id));
 

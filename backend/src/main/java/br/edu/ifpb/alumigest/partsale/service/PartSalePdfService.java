@@ -103,6 +103,9 @@ public class PartSalePdfService {
   private static final String SECAO_FERRAGENS = "FERRAGENS E ACESSÓRIOS (POR UNIDADE)";
   private static final String SECAO_PELICULAS = "PELÍCULAS (COBRANÇA EM M²)";
 
+  private static final String ROTULO_ESPECIFICACAO = "ESPECIFICAÇÃO:";
+  private static final String ROTULO_VIDRO_ESPECIFICADO = "VIDRO ESPECIFICADO:";
+
   private final CompanyProperties companyProps;
   private final LabelPdfService labelPdfService;
 
@@ -218,6 +221,84 @@ public class PartSalePdfService {
     return trimmed.substring(0, maxLen - 3) + "...";
   }
 
+  private record ContextualLabelSpecs(
+      String measurementTitle,
+      String measurementValue,
+      String specLabel,
+      String specValue
+  ) {}
+
+  private ContextualLabelSpecs resolverEspecificacoesContextuais(PartSaleItem item) {
+    MaterialCategoryType category = item.getMaterialType();
+    if (category == null) {
+      return resolverEspecificacoesPadraoOuVidro(item);
+    }
+    return switch (category) {
+      case PROFILE -> resolverEspecificacoesPerfil(item);
+      case HARDWARE, ROLLERS -> new ContextualLabelSpecs(
+          "QUANTIDADE INDIVIDUAL",
+          "1 UNIDADE",
+          ROTULO_ESPECIFICACAO,
+          truncarTexto("Ferragem / Acessório", 28));
+      case FILM -> new ContextualLabelSpecs(
+          "MEDIDAS NOMINAIS (L x A)",
+          formatarDimensoes(item.getWidthMm(), item.getHeightMm()),
+          ROTULO_ESPECIFICACAO,
+          truncarTexto("Película", 28));
+      default -> resolverEspecificacoesPadraoOuVidro(item);
+    };
+  }
+
+  private ContextualLabelSpecs resolverEspecificacoesPerfil(PartSaleItem item) {
+    int length = calcularComprimentoPerfil(item);
+    return new ContextualLabelSpecs(
+        "CORTE / COMPRIMENTO",
+        String.format(Locale.ROOT, "CORTE: %d mm", length),
+        ROTULO_ESPECIFICACAO,
+        truncarTexto("Perfil de Alumínio", 28));
+  }
+
+  private int calcularComprimentoPerfil(PartSaleItem item) {
+    int heightMm = item.getHeightMm() != null ? item.getHeightMm() : 0;
+    int widthMm = item.getWidthMm() != null ? item.getWidthMm() : 0;
+    if (heightMm > 0) {
+      return heightMm;
+    }
+    if (widthMm > 0) {
+      return widthMm;
+    }
+    if (item.getCalculatedUnitMeasure() != null) {
+      return item.getCalculatedUnitMeasure().multiply(BigDecimal.valueOf(1000)).intValue();
+    }
+    return 0;
+  }
+
+  private ContextualLabelSpecs resolverEspecificacoesPadraoOuVidro(PartSaleItem item) {
+    String nomeVidro = resolverNomeVidro(item);
+    return new ContextualLabelSpecs(
+        "MEDIDAS NOMINAIS (L x A)",
+        formatarDimensoes(item.getWidthMm(), item.getHeightMm()),
+        ROTULO_VIDRO_ESPECIFICADO,
+        truncarTexto(nomeVidro, 28));
+  }
+
+  private String resolverNomeVidro(PartSaleItem item) {
+    if (item.getDescription() != null && !item.getDescription().isBlank()) {
+      return item.getDescription();
+    }
+    if (item.getMaterial() != null && item.getMaterial().getName() != null
+        && !item.getMaterial().getName().isBlank()) {
+      return item.getMaterial().getName();
+    }
+    return "Vidro Temperado";
+  }
+
+  private String formatarDimensoes(Integer widthMm, Integer heightMm) {
+    int w = widthMm != null ? widthMm : 0;
+    int h = heightMm != null ? heightMm : 0;
+    return String.format(Locale.ROOT, "%d x %d mm", w, h);
+  }
+
   private void adicionarEtiquetasDoItem(
       List<ThermalLabelData> etiquetas,
       PartSaleItem item,
@@ -235,45 +316,7 @@ public class PartSalePdfService {
     String location = truncarTexto("Venda Avulsa de Balcão", 52);
     String skuCode = item.getMaterial() != null ? item.getMaterial().getSkuCode() : null;
 
-    String measurementTitle;
-    String measurementValue;
-    String specLabel;
-    String specValue;
-
-    MaterialCategoryType category = item.getMaterialType();
-    if (category == MaterialCategoryType.PROFILE) {
-      measurementTitle = "CORTE / COMPRIMENTO";
-      int length = heightMm;
-      if (length <= 0 && widthMm > 0) {
-        length = widthMm;
-      }
-      if (length <= 0 && item.getCalculatedUnitMeasure() != null) {
-        length = item.getCalculatedUnitMeasure().multiply(BigDecimal.valueOf(1000)).intValue();
-      }
-      measurementValue = String.format(Locale.ROOT, "CORTE: %d mm", length);
-      specLabel = "ESPECIFICAÇÃO:";
-      specValue = truncarTexto("Perfil de Alumínio", 28);
-    } else if (category == MaterialCategoryType.HARDWARE
-        || category == MaterialCategoryType.ROLLERS) {
-      measurementTitle = "QUANTIDADE INDIVIDUAL";
-      measurementValue = "1 UNIDADE";
-      specLabel = "ESPECIFICAÇÃO:";
-      specValue = truncarTexto("Ferragem / Acessório", 28);
-    } else if (category == MaterialCategoryType.FILM) {
-      measurementTitle = "MEDIDAS NOMINAIS (L x A)";
-      measurementValue = String.format(Locale.ROOT, "%d x %d mm", widthMm, heightMm);
-      specLabel = "ESPECIFICAÇÃO:";
-      specValue = truncarTexto("Película", 28);
-    } else {
-      measurementTitle = "MEDIDAS NOMINAIS (L x A)";
-      measurementValue = String.format(Locale.ROOT, "%d x %d mm", widthMm, heightMm);
-      specLabel = "VIDRO ESPECIFICADO:";
-      specValue = truncarTexto(
-          item.getDescription() != null && !item.getDescription().isBlank()
-              ? item.getDescription()
-              : (item.getMaterial() != null && item.getMaterial().getName() != null
-                  ? item.getMaterial().getName() : "Vidro Temperado"), 28);
-    }
+    ContextualLabelSpecs specs = resolverEspecificacoesContextuais(item);
 
     for (int pieceNumber = 1; pieceNumber <= quantity; pieceNumber++) {
       String badge = String.format(
@@ -291,15 +334,15 @@ public class PartSalePdfService {
           widthMm,
           heightMm,
           color,
-          specValue,
+          specs.specValue(),
           location,
           skuCode,
           issueDate,
           badge,
-          measurementTitle,
-          measurementValue,
-          specLabel,
-          specValue
+          specs.measurementTitle(),
+          specs.measurementValue(),
+          specs.specLabel(),
+          specs.specValue()
       );
       etiquetas.add(data);
     }

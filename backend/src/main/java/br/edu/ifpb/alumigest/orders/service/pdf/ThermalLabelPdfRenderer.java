@@ -296,12 +296,8 @@ public class ThermalLabelPdfRenderer {
         cellVidro.setPaddingLeft(0);
         cellVidro.setPaddingRight(0);
 
-        String rotuloSpec = data.specLabel() != null && !data.specLabel().isBlank()
-                ? formatarRotulo(data.specLabel())
-                : "VIDRO ESPECIFICADO: ";
-        String valorSpec = data.specValue() != null && !data.specValue().isBlank()
-                ? data.specValue()
-                : (data.glassType() != null ? data.glassType() : NAO_INFORMADO);
+        String rotuloSpec = resolverRotuloEspecificacao(data);
+        String valorSpec = resolverValorEspecificacao(data);
 
         Phrase phraseVidro = new Phrase();
         phraseVidro.add(new Phrase(rotuloSpec, FONTE_SPEC_ROTULO));
@@ -310,6 +306,23 @@ public class ThermalLabelPdfRenderer {
         table.addCell(cellVidro);
 
         return table;
+    }
+
+    private String resolverRotuloEspecificacao(ThermalLabelData data) {
+        if (data.specLabel() != null && !data.specLabel().isBlank()) {
+            return formatarRotulo(data.specLabel());
+        }
+        return "VIDRO ESPECIFICADO: ";
+    }
+
+    private String resolverValorEspecificacao(ThermalLabelData data) {
+        if (data.specValue() != null && !data.specValue().isBlank()) {
+            return data.specValue();
+        }
+        if (data.glassType() != null && !data.glassType().isBlank()) {
+            return data.glassType();
+        }
+        return NAO_INFORMADO;
     }
 
     private String formatarRotulo(String rotulo) {
