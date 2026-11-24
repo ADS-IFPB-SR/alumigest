@@ -362,3 +362,130 @@ describe('ThermalLabelModal — [BUG #510] Numeração única de itens com ordem
     expect(fractions.slice(3).every((f) => f?.startsWith('Item 03'))).toBe(true);
   });
 });
+
+describe('ThermalLabelModal — Modo Venda Avulsa (PartSale) [US-46]', () => {
+  const mockPartSaleData = {
+    id: 'sale-vp-100',
+    code: 'VP-2026-0100',
+    clientName: 'Serralheria Modelo',
+    createdAt: '2026-10-20T10:00:00Z',
+    items: [
+      {
+        id: 'ps-item-1',
+        description: 'Perfil Barra U 50x25',
+        category: 'PROFILE',
+        quantity: 2,
+        lengthMm: 3000,
+        color: 'Branco',
+      },
+      {
+        id: 'ps-item-2',
+        description: 'Fechadura Bico de Papagaio',
+        category: 'HARDWARE',
+        quantity: 1,
+      },
+      {
+        id: 'ps-item-3',
+        description: 'Vidro Laminado 4+4',
+        category: 'GLASS',
+        quantity: 1,
+        widthMm: 1000,
+        heightMm: 2000,
+        color: 'Incolor',
+      },
+    ],
+  };
+
+  it('deve renderizar modal de etiquetas de venda avulsa com dimensões e especificações contextuais', () => {
+    render(
+      <ThermalLabelModal
+        isOpen={true}
+        onClose={vi.fn()}
+        partSale={mockPartSaleData}
+      />
+    );
+
+    expect(screen.getByTestId('modal-thermal-labels')).toBeInTheDocument();
+    expect(screen.getByText('Etiquetas Térmicas Elgin L42 (100×60mm)')).toBeInTheDocument();
+    expect(screen.getByText(/Venda #VP-2026-0100/)).toBeInTheDocument();
+    expect(screen.getAllByText('Serralheria Modelo').length).toBeGreaterThan(0);
+
+    // Total de 4 etiquetas (2 perfis + 1 ferragem + 1 vidro)
+    const cards = screen.getAllByTestId('thermal-label-card');
+    expect(cards).toHaveLength(4);
+
+    // Item 1 (Perfil): dimensões CORTE / COMPRIMENTO
+    expect(cards[0]).toHaveTextContent('CORTE / COMPRIMENTO');
+    expect(cards[0]).toHaveTextContent('CORTE: 3000 mm');
+    expect(cards[0]).toHaveTextContent('LIGA / ACABAMENTO:');
+    expect(cards[0]).toHaveTextContent('COMPRIMENTO:');
+
+    // Item 2 (Ferragem): dimensões QUANTIDADE INDIVIDUAL
+    expect(cards[2]).toHaveTextContent('QUANTIDADE INDIVIDUAL');
+    expect(cards[2]).toHaveTextContent('1 UNIDADE');
+    expect(cards[2]).toHaveTextContent('TIPO / CATEGORIA:');
+
+    // Item 3 (Vidro): dimensões MEDIDAS NOMINAIS (L X A)
+    expect(cards[3]).toHaveTextContent('MEDIDAS NOMINAIS (L X A)');
+    expect(cards[3]).toHaveTextContent('1000 x 2000 mm');
+  });
+
+  it('deve exibir botão de impressão com rótulo dinâmico "Imprimir (N)" e "Imprimir Filtradas (N)" no modo partSale', () => {
+    render(
+      <ThermalLabelModal
+        isOpen={true}
+        onClose={vi.fn()}
+        partSale={mockPartSaleData}
+      />
+    );
+
+    const printBtn = screen.getByTestId('btn-modal-download-pdf');
+
+    // Inicialmente com todas as 4 peças
+    expect(printBtn).toHaveTextContent('Imprimir (4)');
+
+    // Filtra pelo Item 1 (2 peças)
+    fireEvent.click(screen.getByTestId('filter-piece-item-1'));
+    expect(printBtn).toHaveTextContent('Imprimir Filtradas (2)');
+
+    // Filtra pelo Item 2 (1 peça)
+    fireEvent.click(screen.getByTestId('filter-piece-item-2'));
+    expect(printBtn).toHaveTextContent('Imprimir Filtradas (1)');
+
+    // Retorna a todas as peças
+    fireEvent.click(screen.getByTestId('filter-piece-all'));
+    expect(printBtn).toHaveTextContent('Imprimir (4)');
+  });
+
+  it('deve repassar o activeItemId correspondente em onDownloadPdf ao imprimir com filtro ativo', () => {
+    const handleDownload = vi.fn();
+
+    render(
+      <ThermalLabelModal
+        isOpen={true}
+        onClose={vi.fn()}
+        partSale={mockPartSaleData}
+        onDownloadPdf={handleDownload}
+      />
+    );
+
+    const printBtn = screen.getByTestId('btn-modal-download-pdf');
+
+    // Clica em imprimir todas as peças (activeItemId undefined)
+    fireEvent.click(printBtn);
+    expect(handleDownload).toHaveBeenCalledTimes(1);
+    expect(handleDownload).toHaveBeenLastCalledWith(undefined, expect.any(Object));
+
+    // Filtra pelo item 1 e imprime (activeItemId 'ps-item-1')
+    fireEvent.click(screen.getByTestId('filter-piece-item-1'));
+    fireEvent.click(printBtn);
+    expect(handleDownload).toHaveBeenCalledTimes(2);
+    expect(handleDownload).toHaveBeenLastCalledWith('ps-item-1', expect.any(Object));
+
+    // Filtra pelo item 3 e imprime (activeItemId 'ps-item-3')
+    fireEvent.click(screen.getByTestId('filter-piece-item-3'));
+    fireEvent.click(printBtn);
+    expect(handleDownload).toHaveBeenCalledTimes(3);
+    expect(handleDownload).toHaveBeenLastCalledWith('ps-item-3', expect.any(Object));
+  });
+});

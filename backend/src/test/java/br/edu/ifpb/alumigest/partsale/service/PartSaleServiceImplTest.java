@@ -554,4 +554,87 @@ class PartSaleServiceImplTest {
         .isInstanceOf(BusinessException.class)
         .hasMessageContaining("Largura excede o limite");
   }
+
+  @Test
+  @DisplayName("Deve gerar etiquetas térmicas sem itemId para cliente cadastrado com sucesso")
+  void shouldGenerateLabelsPdfWithoutItemIdForRegisteredClient() {
+    UUID saleId = UUID.randomUUID();
+    PartSale partSale = new PartSale("VP-2026-0010", clientId, PartSaleStatus.APPROVED, BigDecimal.ZERO);
+    byte[] pdfBytes = new byte[]{1, 2, 3};
+
+    when(partSaleRepository.findWithDetailsById(saleId)).thenReturn(Optional.of(partSale));
+    when(clientRepository.findById(clientId)).thenReturn(Optional.of(client));
+    when(partSalePdfService.generateLabelsPdf(partSale, client, null)).thenReturn(pdfBytes);
+
+    PartSalePdfDTO dto = partSaleService.generateLabelsPdf(saleId);
+
+    assertThat(dto).isNotNull();
+    assertThat(dto.bytes()).isEqualTo(pdfBytes);
+    assertThat(dto.filename()).isEqualTo("etiquetas-VP-2026-0010.pdf");
+    verify(partSalePdfService).generateLabelsPdf(partSale, client, null);
+  }
+
+  @Test
+  @DisplayName("Deve gerar etiquetas térmicas com itemId filtrado para cliente cadastrado")
+  void shouldGenerateLabelsPdfWithItemId() {
+    UUID saleId = UUID.randomUUID();
+    UUID itemId = UUID.randomUUID();
+    PartSale partSale = new PartSale("VP-2026-0011", clientId, PartSaleStatus.APPROVED, BigDecimal.ZERO);
+    byte[] pdfBytes = new byte[]{4, 5, 6};
+
+    when(partSaleRepository.findWithDetailsById(saleId)).thenReturn(Optional.of(partSale));
+    when(clientRepository.findById(clientId)).thenReturn(Optional.of(client));
+    when(partSalePdfService.generateLabelsPdf(partSale, client, itemId)).thenReturn(pdfBytes);
+
+    PartSalePdfDTO dto = partSaleService.generateLabelsPdf(saleId, itemId);
+
+    assertThat(dto).isNotNull();
+    assertThat(dto.bytes()).isEqualTo(pdfBytes);
+    assertThat(dto.filename()).isEqualTo("etiquetas-VP-2026-0011.pdf");
+    verify(partSalePdfService).generateLabelsPdf(partSale, client, itemId);
+  }
+
+  @Test
+  @DisplayName("Deve gerar etiquetas térmicas para cliente balcão sem cadastro prévio")
+  void shouldGenerateLabelsPdfForWalkInClientWhenClientIdIsNull() {
+    UUID saleId = UUID.randomUUID();
+    PartSale partSale = new PartSale(
+        "VP-2026-0012", PartSaleServiceImpl.DEFAULT_WALK_IN_CLIENT_ID, PartSaleStatus.APPROVED, BigDecimal.ZERO);
+    byte[] pdfBytes = new byte[]{7, 8, 9};
+
+    when(partSaleRepository.findWithDetailsById(saleId)).thenReturn(Optional.of(partSale));
+    when(clientRepository.findById(PartSaleServiceImpl.DEFAULT_WALK_IN_CLIENT_ID)).thenReturn(Optional.empty());
+    when(partSalePdfService.generateLabelsPdf(partSale, null, null)).thenReturn(pdfBytes);
+
+    PartSalePdfDTO dto = partSaleService.generateLabelsPdf(saleId);
+
+    assertThat(dto).isNotNull();
+    assertThat(dto.bytes()).isEqualTo(pdfBytes);
+    assertThat(dto.filename()).isEqualTo("etiquetas-VP-2026-0012.pdf");
+    verify(clientRepository).findById(PartSaleServiceImpl.DEFAULT_WALK_IN_CLIENT_ID);
+    verify(partSalePdfService).generateLabelsPdf(partSale, null, null);
+  }
+
+  @Test
+  @DisplayName("Deve lançar ResourceNotFoundException quando venda não for encontrada para etiquetas")
+  void shouldThrowResourceNotFoundExceptionWhenSaleNotFoundForLabelsPdf() {
+    UUID saleId = UUID.randomUUID();
+    when(partSaleRepository.findWithDetailsById(saleId)).thenReturn(Optional.empty());
+
+    assertThatThrownBy(() -> partSaleService.generateLabelsPdf(saleId))
+        .isInstanceOf(ResourceNotFoundException.class)
+        .hasMessageContaining("Venda de partes não encontrada com ID: " + saleId);
+  }
+
+  @Test
+  @DisplayName("Deve lançar BusinessException (422) ao tentar gerar etiquetas para venda cancelada")
+  void shouldThrowBusinessExceptionWhenSaleIsCancelledForLabelsPdf() {
+    UUID saleId = UUID.randomUUID();
+    PartSale partSale = new PartSale("VP-2026-0013", clientId, PartSaleStatus.CANCELLED, BigDecimal.ZERO);
+    when(partSaleRepository.findWithDetailsById(saleId)).thenReturn(Optional.of(partSale));
+
+    assertThatThrownBy(() -> partSaleService.generateLabelsPdf(saleId))
+        .isInstanceOf(BusinessException.class)
+        .hasMessageContaining("Não é permitido emitir etiquetas de identificação para uma venda cancelada.");
+  }
 }

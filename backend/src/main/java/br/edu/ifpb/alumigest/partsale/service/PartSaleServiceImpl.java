@@ -220,6 +220,40 @@ public class PartSaleServiceImpl implements PartSaleService {
     return partSalePdfService.generatePdf(transientSale, client);
   }
 
+  @Override
+  @Transactional(readOnly = true)
+  public PartSalePdfDTO generateLabelsPdf(UUID id) {
+    return doGenerateLabelsPdf(id, null);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public PartSalePdfDTO generateLabelsPdf(UUID id, UUID itemId) {
+    return doGenerateLabelsPdf(id, itemId);
+  }
+
+  private PartSalePdfDTO doGenerateLabelsPdf(UUID id, UUID itemId) {
+    PartSale partSale = partSaleRepository.findWithDetailsById(id)
+        .orElseThrow(() -> new ResourceNotFoundException(MSG_SALE_NOT_FOUND + id));
+
+    if (partSale.getStatus() == PartSaleStatus.CANCELLED) {
+      throw new BusinessException(
+          "Não é permitido emitir etiquetas de identificação para uma venda cancelada.");
+    }
+
+    Client client = partSale.getClientId() != null
+        ? clientRepository.findById(partSale.getClientId()).orElse(null)
+        : null;
+
+    byte[] pdfBytes = partSalePdfService.generateLabelsPdf(partSale, client, itemId);
+
+    String codigoBase = partSale.getCode() != null && !partSale.getCode().isBlank()
+        ? partSale.getCode().trim()
+        : id.toString();
+    String filename = "etiquetas-" + codigoBase.replace("/", "-") + ".pdf";
+    return new PartSalePdfDTO(pdfBytes, filename);
+  }
+
   private PartSaleItem buildPartSaleItem(CreatePartSaleItemRequest itemReq) {
     Material material = materialRepository.findById(itemReq.referenceId())
         .orElseThrow(() -> new ResourceNotFoundException(

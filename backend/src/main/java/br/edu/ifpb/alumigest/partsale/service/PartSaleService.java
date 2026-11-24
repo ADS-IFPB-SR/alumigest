@@ -55,4 +55,22 @@ public interface PartSaleService {
    * @return array de bytes contendo o documento PDF
    */
   byte[] generatePdfPreview(CreatePartSaleRequest request);
+
+  /**
+   * Gera o arquivo PDF oficial contendo as etiquetas térmicas adesivas (100x60mm) da venda avulsa.
+   *
+   * @param id identificador da venda avulsa persistida
+   * @return DTO com os bytes do documento PDF térmico e o nome sugerido para o arquivo
+   */
+  PartSalePdfDTO generateLabelsPdf(UUID id);
+
+  /**
+   * Gera o arquivo PDF oficial contendo as etiquetas térmicas adesivas (100x60mm) da venda avulsa,
+   * com suporte a filtro opcional por item específico.
+   *
+   * @param id identificador da venda avulsa persistida
+   * @param itemId identificador opcional de um item específico para filtragem individual
+   * @return DTO com os bytes do documento PDF térmico e o nome sugerido para o arquivo
+   */
+  PartSalePdfDTO generateLabelsPdf(UUID id, UUID itemId);
 }
