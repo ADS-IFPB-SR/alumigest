@@ -118,10 +118,6 @@ export const OrderProductionCard: React.FC<OrderProductionCardProps> = ({
             </span>
           )}
         </div>
-              {order.orcamentoCodigo}
-            </span>
-          )}
-        </div>
 
         {alertConfig && (
           <span
