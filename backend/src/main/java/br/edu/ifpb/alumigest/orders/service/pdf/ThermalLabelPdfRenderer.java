@@ -30,6 +30,8 @@ public class ThermalLabelPdfRenderer {
 
     private static final Logger log = LoggerFactory.getLogger(ThermalLabelPdfRenderer.class);
 
+    private static final String NAO_INFORMADO = "Não informado";
+
     private static final DateTimeFormatter FORMATTER_DATA =
             DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
@@ -213,18 +215,25 @@ public class ThermalLabelPdfRenderer {
 
         PdfPCell cell = new PdfPCell();
         cell.setBorder(Rectangle.NO_BORDER);
-        cell.setCellEvent(new BordaArredondadaBoxEvent(3.5f, COR_BORDA_CARD, 0.7f, COR_FUNDO_MEDIDAS));
+        cell.setCellEvent(
+                new BordaArredondadaBoxEvent(3.5f, COR_BORDA_CARD, 0.7f, COR_FUNDO_MEDIDAS));
         cell.setPaddingTop(3.0f);
         cell.setPaddingBottom(3.5f);
         cell.setHorizontalAlignment(Element.ALIGN_CENTER);
 
-        Paragraph titulo = new Paragraph("MEDIDAS NOMINAIS (L x A)", FONTE_MEDIDAS_TITULO);
+        String tituloTexto = data.measurementTitle() != null && !data.measurementTitle().isBlank()
+                ? data.measurementTitle()
+                : resolverTituloMedidasPadrao(data);
+
+        Paragraph titulo = new Paragraph(tituloTexto, FONTE_MEDIDAS_TITULO);
         titulo.setLeading(6.5f);
         titulo.setAlignment(Element.ALIGN_CENTER);
         cell.addElement(titulo);
 
-        String medidasTexto = String.format(Locale.ROOT, "%d x %d mm",
-                data.widthMm(), data.heightMm());
+        String medidasTexto = data.measurementValue() != null && !data.measurementValue().isBlank()
+                ? data.measurementValue()
+                : resolverValorMedidasPadrao(data);
+
         Paragraph valor = new Paragraph(medidasTexto, FONTE_MEDIDAS_VALOR);
         valor.setLeading(14.5f);
         valor.setAlignment(Element.ALIGN_CENTER);
@@ -232,6 +241,28 @@ public class ThermalLabelPdfRenderer {
 
         table.addCell(cell);
         return table;
+    }
+
+    private String resolverTituloMedidasPadrao(ThermalLabelData data) {
+        if (data.widthMm() > 0 && data.heightMm() > 0) {
+            return "MEDIDAS NOMINAIS (L x A)";
+        } else if (data.heightMm() > 0 || data.widthMm() > 0) {
+            return "CORTE / COMPRIMENTO";
+        } else {
+            return "MEDIDAS NOMINAIS (L x A)";
+        }
+    }
+
+    private String resolverValorMedidasPadrao(ThermalLabelData data) {
+        if (data.widthMm() > 0 && data.heightMm() > 0) {
+            return String.format(Locale.ROOT, "%d x %d mm", data.widthMm(), data.heightMm());
+        } else if (data.heightMm() > 0) {
+            return String.format(Locale.ROOT, "CORTE: %d mm", data.heightMm());
+        } else if (data.widthMm() > 0) {
+            return String.format(Locale.ROOT, "CORTE: %d mm", data.widthMm());
+        } else {
+            return String.format(Locale.ROOT, "%d x %d mm", data.widthMm(), data.heightMm());
+        }
     }
 
     private PdfPTable construirBlocoEspecificacoes(ThermalLabelData data) {
@@ -252,7 +283,9 @@ public class ThermalLabelPdfRenderer {
         cellCor.setPaddingRight(0);
         Phrase phraseCor = new Phrase();
         phraseCor.add(new Phrase("COR / ACABAMENTO: ", FONTE_SPEC_ROTULO));
-        phraseCor.add(new Phrase(data.aluminumColor(), FONTE_SPEC_VALOR));
+        phraseCor.add(new Phrase(
+                data.aluminumColor() != null ? data.aluminumColor() : NAO_INFORMADO,
+                FONTE_SPEC_VALOR));
         cellCor.addElement(phraseCor);
         table.addCell(cellCor);
 
@@ -262,13 +295,45 @@ public class ThermalLabelPdfRenderer {
         cellVidro.setPaddingBottom(0.5f);
         cellVidro.setPaddingLeft(0);
         cellVidro.setPaddingRight(0);
+
+        String rotuloSpec = resolverRotuloEspecificacao(data);
+        String valorSpec = resolverValorEspecificacao(data);
+
         Phrase phraseVidro = new Phrase();
-        phraseVidro.add(new Phrase("VIDRO ESPECIFICADO: ", FONTE_SPEC_ROTULO));
-        phraseVidro.add(new Phrase(data.glassType(), FONTE_SPEC_VALOR));
+        phraseVidro.add(new Phrase(rotuloSpec, FONTE_SPEC_ROTULO));
+        phraseVidro.add(new Phrase(valorSpec, FONTE_SPEC_VALOR));
         cellVidro.addElement(phraseVidro);
         table.addCell(cellVidro);
 
         return table;
+    }
+
+    private String resolverRotuloEspecificacao(ThermalLabelData data) {
+        if (data.specLabel() != null && !data.specLabel().isBlank()) {
+            return formatarRotulo(data.specLabel());
+        }
+        return "VIDRO ESPECIFICADO: ";
+    }
+
+    private String resolverValorEspecificacao(ThermalLabelData data) {
+        if (data.specValue() != null && !data.specValue().isBlank()) {
+            return data.specValue();
+        }
+        if (data.glassType() != null && !data.glassType().isBlank()) {
+            return data.glassType();
+        }
+        return NAO_INFORMADO;
+    }
+
+    private String formatarRotulo(String rotulo) {
+        if (rotulo == null || rotulo.isBlank()) {
+            return "";
+        }
+        String trimmed = rotulo.trim();
+        if (trimmed.endsWith(":")) {
+            return trimmed + " ";
+        }
+        return trimmed + ": ";
     }
 
     private PdfPTable construirBlocoLocalAmbiente(ThermalLabelData data) {
@@ -284,7 +349,9 @@ public class ThermalLabelPdfRenderer {
 
         Phrase phrase = new Phrase();
         phrase.add(new Phrase("LOCAL / OBS: ", FONTE_SPEC_ROTULO));
-        phrase.add(new Phrase(data.environmentOrLocation(), FONTE_SPEC_VALOR));
+        phrase.add(new Phrase(
+                data.environmentOrLocation() != null ? data.environmentOrLocation() : NAO_INFORMADO,
+                FONTE_SPEC_VALOR));
         cell.addElement(phrase);
 
         table.addCell(cell);
@@ -312,7 +379,7 @@ public class ThermalLabelPdfRenderer {
     }
 
     /**
-     * Evento de renderização de borda externa arredondada para o card completo da etiqueta térmica.
+     * Evento de renderização de borda externa arredondada para o card da etiqueta térmica.
      */
     private static class BordaArredondadaCardEvent implements PdfPTableEvent {
         private final float radius;

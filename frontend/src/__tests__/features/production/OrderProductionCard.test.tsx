@@ -203,7 +203,7 @@ describe('OrderProductionCard Component', () => {
 
       const badge = screen.getByText('Prazo Crítico');
       expect(badge).toBeInTheDocument();
-      expect(badge.closest('span')).toHaveClass('bg-amber-100');
+      expect(badge.closest('span')).toHaveClass('bg-tertiary-container');
     });
   });
 
@@ -223,10 +223,10 @@ describe('OrderProductionCard Component', () => {
 
       const badge = screen.getByText('Atrasado');
       expect(badge).toBeInTheDocument();
-      expect(badge.closest('span')).toHaveClass('bg-rose-100');
+      expect(badge.closest('span')).toHaveClass('bg-error-container');
     });
 
-      it('não deve exibir badge "Atrasado" para pedidos concluídos (COMPLETED), mesmo com data vencida', () => {
+    it('não deve exibir badge "Atrasado" para pedidos concluídos (COMPLETED), mesmo com data vencida', () => {
       const completedLateOrder: Order = {
         ...baseOrder,
         status: 'COMPLETED',
@@ -458,7 +458,6 @@ describe('OrderProductionCard Component', () => {
       expect(mockOnMoveOrder).toHaveBeenCalledWith('order-uuid-1', 'IN_PRODUCTION');
     });
   });
-
   describe('Indicador Visual Make-to-Order de Estoque (US-21.4)', () => {
     it('deve renderizar a tag 🔴 "Falta Insumo / Comprar" quando a O.S. tiver insumos com saldo negativo (NEED_PURCHASE)', () => {
       render(
