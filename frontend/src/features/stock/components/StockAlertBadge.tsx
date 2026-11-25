@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import type { StockDisplayAlertStatus } from '../types';
 import { formatStockQuantity } from '../utils/stockPresentation';
 
@@ -109,9 +110,83 @@ export const StockAlertBadge: React.FC<StockAlertBadgeProps> = ({
   tooltip,
   title,
 }) => {
-  const [showHoverTooltip, setShowHoverTooltip] = React.useState(false);
+  const [showHoverTooltip, setShowHoverTooltip] = useState(false);
+  const [tooltipCoords, setTooltipCoords] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
+
+  const badgeRef = useRef<HTMLSpanElement>(null);
+  const tooltipRef = useRef<HTMLSpanElement>(null);
   const effectiveTooltip = tooltip || title;
-  const style = BADGE_STYLES[status];
+
+  const updateTooltipPosition = useCallback(() => {
+    if (!badgeRef.current || typeof window === 'undefined') return;
+    const badgeRect = badgeRef.current.getBoundingClientRect();
+
+    const tooltipEl = tooltipRef.current;
+    const tooltipWidth = tooltipEl ? tooltipEl.offsetWidth || 280 : 280;
+    const tooltipHeight = tooltipEl ? tooltipEl.offsetHeight || 60 : 60;
+
+    const viewportWidth = window.innerWidth || 1024;
+    const viewportHeight = window.innerHeight || 768;
+    const PADDING = 8;
+    const GAP = 6;
+
+    const spaceAbove = badgeRect.top;
+    const spaceBelow = viewportHeight - badgeRect.bottom;
+
+    let top: number;
+    if (spaceAbove >= tooltipHeight + GAP + PADDING) {
+      top = badgeRect.top - tooltipHeight - GAP;
+    } else if (spaceBelow >= tooltipHeight + GAP + PADDING) {
+      top = badgeRect.bottom + GAP;
+    } else if (spaceAbove >= spaceBelow) {
+      top = Math.max(PADDING, badgeRect.top - tooltipHeight - GAP);
+    } else {
+      top = Math.min(viewportHeight - tooltipHeight - PADDING, badgeRect.bottom + GAP);
+    }
+
+    let left = badgeRect.left + (badgeRect.width - tooltipWidth) / 2;
+    if (left < PADDING) {
+      left = PADDING;
+    } else if (left + tooltipWidth > viewportWidth - PADDING) {
+      left = Math.max(PADDING, viewportWidth - tooltipWidth - PADDING);
+    }
+
+    setTooltipCoords({ top, left });
+  }, []);
+
+  const handleMouseEnter = () => {
+    updateTooltipPosition();
+    setShowHoverTooltip(true);
+  };
+
+  const handleMouseLeave = () => {
+    setShowHoverTooltip(false);
+    setTooltipCoords(null);
+  };
+
+  useLayoutEffect(() => {
+    if (showHoverTooltip) {
+      updateTooltipPosition();
+    }
+  }, [showHoverTooltip, effectiveTooltip, updateTooltipPosition]);
+
+  useEffect(() => {
+    if (!showHoverTooltip) return;
+    const handleReposition = () => {
+      updateTooltipPosition();
+    };
+    window.addEventListener('scroll', handleReposition, true);
+    window.addEventListener('resize', handleReposition);
+    return () => {
+      window.removeEventListener('scroll', handleReposition, true);
+      window.removeEventListener('resize', handleReposition);
+    };
+  }, [showHoverTooltip, updateTooltipPosition]);
+
+  const style = BADGE_STYLES[status] || BADGE_STYLES.IN_STOCK;
   const resolvedLabel = resolveBadgeLabel(
     status,
     variant,
@@ -121,24 +196,39 @@ export const StockAlertBadge: React.FC<StockAlertBadgeProps> = ({
   );
 
   return (
-    <span
-      data-testid={style.testId}
-      title={effectiveTooltip}
-      onMouseEnter={() => setShowHoverTooltip(true)}
-      onMouseLeave={() => setShowHoverTooltip(false)}
-      className={`relative inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border whitespace-nowrap ${style.containerClass} ${className}`}
-    >
-      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${style.dotClass}`} aria-hidden="true" />
-      <span>{resolvedLabel}</span>
-      {showHoverTooltip && effectiveTooltip && (
-        <span
-          role="tooltip"
-          data-testid="stock-alert-tooltip"
-          className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2.5 py-1.5 text-[11px] font-normal bg-slate-900 text-white rounded-md shadow-lg z-50 whitespace-pre pointer-events-none text-left min-w-max"
-        >
-          {effectiveTooltip}
-        </span>
-      )}
-    </span>
+    <>
+      <span
+        ref={badgeRef}
+        data-testid={style.testId}
+        title={effectiveTooltip}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        className={`relative inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border cursor-default whitespace-nowrap shrink-0 ${style.containerClass} ${className}`}
+      >
+        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${style.dotClass}`} aria-hidden="true" />
+        <span>{resolvedLabel}</span>
+      </span>
+
+      {showHoverTooltip &&
+        effectiveTooltip &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <span
+            ref={tooltipRef}
+            role="tooltip"
+            data-testid="stock-alert-tooltip"
+            style={{
+              position: 'fixed',
+              top: tooltipCoords ? `${tooltipCoords.top}px` : '-9999px',
+              left: tooltipCoords ? `${tooltipCoords.left}px` : '-9999px',
+              visibility: tooltipCoords ? 'visible' : 'hidden',
+            }}
+            className="px-2.5 py-1.5 text-[11px] font-normal bg-slate-900 text-white rounded-md shadow-xl z-[99999] whitespace-pre-wrap break-words pointer-events-none text-left max-w-xs sm:max-w-sm"
+          >
+            {effectiveTooltip}
+          </span>,
+          document.body
+        )}
+    </>
   );
 };

@@ -185,4 +185,31 @@ public class PartSaleController {
         .contentLength(pdfBytes.length)
         .body(pdfBytes);
   }
+
+  /**
+   * Exporta as etiquetas térmicas adesivas (100x60mm) da venda avulsa em PDF.
+   */
+  @GetMapping("/{id}/labels-pdf")
+  @Operation(
+      summary = "Exporta etiquetas térmicas da venda avulsa em PDF (100x60mm)",
+      description = "Gera o arquivo PDF formatado para impressora térmica adesiva (100x60mm).")
+  @ApiResponse(responseCode = "200", description = "PDF de etiquetas gerado com sucesso")
+  @ApiResponse(responseCode = "404", description = "Venda de partes não encontrada")
+  @ApiResponse(responseCode = "422", description = "Venda cancelada ou sem itens para emissão")
+  public ResponseEntity<byte[]> downloadLabelsPdf(
+      @PathVariable UUID id,
+      @Parameter(
+          description = "Identificador opcional de um item específico para filtragem individual")
+      @RequestParam(required = false) UUID itemId) {
+    PartSalePdfDTO pdfDto = partSaleService.generateLabelsPdf(id, itemId);
+    ContentDisposition contentDisposition = ContentDisposition.attachment()
+        .filename(pdfDto.filename())
+        .build();
+
+    return ResponseEntity.ok()
+        .contentType(MediaType.APPLICATION_PDF)
+        .headers(headers -> headers.setContentDisposition(contentDisposition))
+        .contentLength(pdfDto.bytes().length)
+        .body(pdfDto.bytes());
+  }
 }

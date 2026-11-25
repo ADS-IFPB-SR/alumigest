@@ -8,9 +8,12 @@ import br.edu.ifpb.alumigest.orders.domain.Order;
 import br.edu.ifpb.alumigest.orders.domain.OrderItem;
 import br.edu.ifpb.alumigest.orders.domain.OrderItemOption;
 import br.edu.ifpb.alumigest.orders.repository.OrderRepository;
+import br.edu.ifpb.alumigest.stock.domain.StockAlertStatus;
 import br.edu.ifpb.alumigest.stock.domain.StockItem;
 import br.edu.ifpb.alumigest.stock.domain.StockMovement;
 import br.edu.ifpb.alumigest.stock.domain.StockMovementType;
+import br.edu.ifpb.alumigest.stock.dto.OrderStockAlertResponseDTO;
+import br.edu.ifpb.alumigest.stock.dto.OrderStockAlertResponseDTO.MissingMaterialDTO;
 import br.edu.ifpb.alumigest.stock.dto.StockBalanceFilter;
 import br.edu.ifpb.alumigest.stock.dto.StockItemResponseDTO;
 import br.edu.ifpb.alumigest.stock.dto.StockMovementRequestDTO;
@@ -19,11 +22,13 @@ import br.edu.ifpb.alumigest.stock.mapper.StockMapper;
 import br.edu.ifpb.alumigest.stock.repository.StockItemRepository;
 import br.edu.ifpb.alumigest.stock.repository.StockMovementRepository;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -68,7 +73,20 @@ public class StockService implements StockPort {
      */
     @Override
     @Transactional
+    public void reserveMaterials(UUID orderId) {
+        executeMaterialReservation(orderId);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @Transactional
     public void reserveMaterialsForOrder(UUID orderId) {
+        executeMaterialReservation(orderId);
+    }
+
+    private void executeMaterialReservation(UUID orderId) {
         Order order = findOrderOrThrow(orderId);
         Map<UUID, BigDecimal> pendingReservations = computeNetPendingReservations(orderId);
         if (!pendingReservations.isEmpty()) {
@@ -84,6 +102,16 @@ public class StockService implements StockPort {
 
             stockItem.reserve(entry.getValue());
             stockItem = stockItemRepository.saveAndFlush(stockItem);
+
+            if (stockItem.getAvailableQuantity().compareTo(BigDecimal.ZERO) < 0) {
+                log.info(
+                    "Reserva Make-to-Order (RN-05) para O.S. {} gerou necessidade líquida de compra "
+                        + "(NEED_PURCHASE) para material {}: saldo disponível = {}.",
+                    order.getCodigo(),
+                    entry.getKey(),
+                    stockItem.getAvailableQuantity()
+                );
+            }
 
             recordMovement(
                 stockItem,
@@ -169,6 +197,13 @@ public class StockService implements StockPort {
     public StockMovementResponseDTO registerMovement(StockMovementRequestDTO request) {
         validateManualMovementRequest(request);
 
+        if ((request.type() == StockMovementType.SCRAP_LOSS || request.type() == StockMovementType.MANUAL_ADJUSTMENT)
+                && (request.reason() == null || request.reason().trim().isEmpty())) {
+            throw new BusinessException(
+                "A justificativa é obrigatória para movimentações extraordinárias de perda ou ajuste manual."
+            );
+        }
+
         StockItem stockItem = getOrCreateStockItemForUpdate(request.materialId());
         BigDecimal prevPhysical = stockItem.getPhysicalQuantity();
         BigDecimal prevReserved = stockItem.getReservedQuantity();
@@ -203,6 +238,54 @@ public class StockService implements StockPort {
     @Override
     public List<StockItemResponseDTO> listStockBalances() {
         return listStockBalances(StockBalanceFilter.empty());
+    }
+
+    /**
+     * {@inheritDoc}
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public OrderStockAlertResponseDTO getOrderStockAlert(UUID orderId) {
+        findOrderOrThrow(orderId);
+        Map<UUID, BigDecimal> pendingReservations = computeNetPendingReservations(orderId);
+
+        if (pendingReservations.isEmpty()) {
+            return new OrderStockAlertResponseDTO(StockAlertStatus.IN_STOCK, List.of());
+        }
+
+        return buildOrderStockAlert(pendingReservations);
+    }
+
+    private OrderStockAlertResponseDTO buildOrderStockAlert(Map<UUID, BigDecimal> pendingReservations) {
+        List<StockItem> stockItems = stockItemRepository.findAllByMaterialIdIn(pendingReservations.keySet());
+        Map<UUID, StockItem> itemsByMaterialId = stockItems.stream()
+            .collect(Collectors.toMap(item -> item.getMaterial().getId(), item -> item));
+
+        List<MissingMaterialDTO> missingMaterials = new ArrayList<>();
+        StockAlertStatus worstStatus = StockAlertStatus.IN_STOCK;
+
+        for (Map.Entry<UUID, BigDecimal> entry : pendingReservations.entrySet()) {
+            UUID materialId = entry.getKey();
+            BigDecimal reserved = entry.getValue();
+
+            StockItem item = itemsByMaterialId.get(materialId);
+            if (item == null) {
+                worstStatus = StockAlertStatus.NEED_PURCHASE;
+                continue;
+            }
+
+            StockAlertStatus itemStatus = item.resolveAlertStatus();
+            if (itemStatus.isMoreCriticalThan(worstStatus)) {
+                worstStatus = itemStatus;
+            }
+
+            if (itemStatus == StockAlertStatus.NEED_PURCHASE) {
+                missingMaterials.add(stockMapper.toMissingMaterialDTO(item, reserved));
+            }
+        }
+
+        return new OrderStockAlertResponseDTO(worstStatus, List.copyOf(missingMaterials));
     }
 
     /**

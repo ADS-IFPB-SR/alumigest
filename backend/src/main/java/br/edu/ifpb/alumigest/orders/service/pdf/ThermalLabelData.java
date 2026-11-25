@@ -8,6 +8,7 @@ import java.util.Locale;
  * a impressão de uma etiqueta adesiva térmica individual (100mm x 60mm).
  * US-17.1 — Modelagem orientada a domínio e separação de dados da renderização (#448).
  * Correção #492 / #493 — Suporte à identificação fracionada por folha e esquadria.
+ * Suporte a itens contextuais e rótulos flexíveis (US-46 / PR #600).
  *
  * @param companyName           Razão social da empresa emissora
  * @param customerName          Nome do cliente titular da ordem de serviço
@@ -25,6 +26,10 @@ import java.util.Locale;
  * @param itemCode              Código identificador do produto ou do item
  * @param issueDate             Data de emissão ou aprovação da ordem de serviço
  * @param labelBadge            Texto formatado do badge de rastreabilidade física
+ * @param measurementTitle      Título contextual do bloco de medidas (ex: CORTE / COMPRIMENTO)
+ * @param measurementValue      Valor contextual formatado das medidas (ex: CORTE: 3000 mm)
+ * @param specLabel             Rótulo da especificação secundária (ex: ESPECIFICAÇÃO:)
+ * @param specValue             Valor da especificação secundária (ex: Perfil de Alumínio)
  */
 public record ThermalLabelData(
         String companyName,
@@ -42,8 +47,36 @@ public record ThermalLabelData(
         String environmentOrLocation,
         String itemCode,
         LocalDate issueDate,
-        String labelBadge
+        String labelBadge,
+        String measurementTitle,
+        String measurementValue,
+        String specLabel,
+        String specValue
 ) {
+    public ThermalLabelData(
+            String companyName,
+            String customerName,
+            String orderCode,
+            int itemIndex,
+            int pieceNumber,
+            int totalPieces,
+            String description,
+            String lineOrGroup,
+            int widthMm,
+            int heightMm,
+            String aluminumColor,
+            String glassType,
+            String environmentOrLocation,
+            String itemCode,
+            LocalDate issueDate,
+            String labelBadge
+    ) {
+        this(companyName, customerName, orderCode, itemIndex, pieceNumber, totalPieces,
+                description, lineOrGroup, widthMm, heightMm, aluminumColor, glassType,
+                environmentOrLocation, itemCode, issueDate, labelBadge,
+                null, null, null, null);
+    }
+
     public ThermalLabelData(
             String companyName,
             String customerName,
@@ -64,6 +97,17 @@ public record ThermalLabelData(
         this(companyName, customerName, orderCode, itemIndex, pieceNumber, totalPieces,
                 description, lineOrGroup, widthMm, heightMm, aluminumColor, glassType,
                 environmentOrLocation, itemCode, issueDate,
-                String.format(Locale.ROOT, "Item %02d | Peça %02d/%02d", itemIndex, pieceNumber, totalPieces));
+                String.format(
+                        Locale.ROOT, "Item %02d | Peça %02d/%02d",
+                        itemIndex, pieceNumber, totalPieces),
+                null, null, null, null);
+    }
+
+    public String secondarySpecLabel() {
+        return specLabel;
+    }
+
+    public String secondarySpecValue() {
+        return specValue;
     }
 }

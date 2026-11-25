@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { api } from '../../../lib/api';
 import {
@@ -18,7 +18,7 @@ import { CustomerHeroCard } from './CustomerHeroCard';
 import { CustomerKpiGrid } from './CustomerKpiGrid';
 import { CustomerBudgetsTab } from './CustomerBudgetsTab';
 import { CustomerOrdersTab } from './CustomerOrdersTab';
-import { Users, FileText, ClipboardList } from 'lucide-react';
+import { Users, FileText, ClipboardList, ChevronRight } from 'lucide-react';
 
 function triggerPdfBlobDownload(data: BlobPart, filename: string): void {
   const url = window.URL.createObjectURL(new Blob([data], { type: 'application/pdf' }));
@@ -155,7 +155,7 @@ export const CustomerHubPage: React.FC = () => {
   const renderDetailContent = () => {
     if (isLoadingDashboard) {
       return (
-        <div className="flex items-center justify-center p-16 text-slate-500 text-sm">
+        <div className="flex items-center justify-center p-16 text-on-surface-variant text-sm">
           Carregando dados do cliente...
         </div>
       );
@@ -163,10 +163,10 @@ export const CustomerHubPage: React.FC = () => {
 
     if (isDashboardError || !dashboardData) {
       return (
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-12 text-center text-slate-500">
-          <Users className="w-12 h-12 mx-auto text-slate-300 dark:text-slate-700 mb-3" />
-          <p className="text-sm font-semibold">Nenhum cliente selecionado</p>
-          <p className="text-xs text-slate-400 mt-1">
+        <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-12 text-center shadow-xs">
+          <Users className="w-12 h-12 mx-auto text-outline opacity-50 mb-3" />
+          <p className="text-sm font-semibold text-on-surface">Nenhum cliente selecionado</p>
+          <p className="text-xs text-on-surface-variant mt-1">
             Selecione um cliente na barra lateral para visualizar seu Hub 360°.
           </p>
         </div>
@@ -189,19 +189,25 @@ export const CustomerHubPage: React.FC = () => {
         />
 
         {/* 3. Navigation Tabs */}
-        <div className="border-b border-slate-200 dark:border-slate-800 flex items-center gap-6">
+        <div className="border-b border-outline-variant flex items-center gap-6">
           <button
             type="button"
             onClick={() => setActiveTab('budgets')}
             className={`pb-3 text-sm font-semibold flex items-center gap-2 border-b-2 transition ${
               activeTab === 'budgets'
-                ? 'border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400'
-                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-on-surface-variant hover:text-on-surface'
             }`}
           >
             <FileText className="w-4 h-4" />
             <span>Orçamentos</span>
-            <span className="px-1.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300">
+            <span
+              className={`px-1.5 py-0.5 rounded-full text-xs font-semibold ${
+                activeTab === 'budgets'
+                  ? 'bg-primary-container text-on-primary-container'
+                  : 'bg-surface-container-high text-on-surface-variant'
+              }`}
+            >
               {dashboardData.quantidadeOrcamentos}
             </span>
           </button>
@@ -211,13 +217,19 @@ export const CustomerHubPage: React.FC = () => {
             onClick={() => setActiveTab('orders')}
             className={`pb-3 text-sm font-semibold flex items-center gap-2 border-b-2 transition ${
               activeTab === 'orders'
-                ? 'border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400'
-                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-on-surface-variant hover:text-on-surface'
             }`}
           >
             <ClipboardList className="w-4 h-4" />
             <span>Ordens de Serviço (O.S.)</span>
-            <span className="px-1.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+            <span
+              className={`px-1.5 py-0.5 rounded-full text-xs font-semibold ${
+                activeTab === 'orders'
+                  ? 'bg-primary-container text-on-primary-container'
+                  : 'bg-surface-container-high text-on-surface-variant'
+              }`}
+            >
               {dashboardData.quantidadeOrdensServico}
             </span>
           </button>
@@ -248,26 +260,37 @@ export const CustomerHubPage: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-full w-full bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 min-h-0 overflow-hidden rounded-xl">
-      {/* Top Bar / Breadcrumb */}
-      <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-blue-600/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold">
-            <Users className="w-4 h-4" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-base font-bold text-slate-900 dark:text-slate-100">
-                Central 360° do Cliente
-              </h1>
-              <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300">
-                Hub 360°
-              </span>
-            </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Gestão unificada de histórico, orçamentos e Ordens de Serviço
-            </p>
-          </div>
+    <div className="flex flex-col h-full w-full bg-surface text-on-surface min-h-0 overflow-hidden rounded-xl">
+      {/* Top Bar / Breadcrumb / Header */}
+      <div className="px-6 py-4 border-b border-outline-variant bg-surface-container-lowest flex items-center justify-between">
+        <div>
+          {/* Breadcrumbs */}
+          <nav
+            aria-label="Breadcrumb"
+            className="flex items-center gap-1.5 text-xs sm:text-sm text-on-surface-variant mb-1"
+          >
+            <Link to="/" className="hover:text-primary transition">
+              Início
+            </Link>
+            <ChevronRight className="w-3.5 h-3.5 text-on-surface-variant opacity-70" />
+            <span className="font-semibold text-primary">
+              Clientes
+            </span>
+          </nav>
+          
+          <h1 className="text-xl sm:text-2xl font-headline font-bold text-primary tracking-tight">
+            Central 360° do Cliente
+          </h1>
+          <p className="text-sm font-body text-secondary mt-0.5">
+            Gestão unificada de histórico, orçamentos e Ordens de Serviço
+          </p>
+        </div>
+
+        {/* Logotipo textual / Branding Desktop */}
+        <div className="hidden sm:block text-right">
+          <h2 className="font-headline text-title-sm font-bold text-primary">
+            AlumiGest <span className="font-normal text-xs text-secondary font-body">ERP</span>
+          </h2>
         </div>
       </div>
 

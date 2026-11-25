@@ -26,6 +26,7 @@ import {
 } from '@/features/part-sales';
 import { formatBRL } from '@/features/budgets/utils/calculations';
 import { formatDate } from '@/features/orders/utils/formatDate';
+import { ThermalLabelModal } from '@/features/orders/components/ThermalLabelModal';
 import { getVisiblePages } from './OrderListPage';
 
 const STATUS_LABELS: Record<PartSaleStatus, string> = {
@@ -81,7 +82,21 @@ export function PartSaleListPage() {
   const [selectedSaleForLabels, setSelectedSaleForLabels] = useState<PartSaleResponse | null>(null);
   const [saleToCancel, setSaleToCancel] = useState<PartSaleResponse | null>(null);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+  const [isDownloadingLabels, setIsDownloadingLabels] = useState(false);
   const downloadingPdfRef = useRef(false);
+
+  const handleDownloadLabels = async (itemId?: string) => {
+    if (!selectedSaleForLabels) return;
+    try {
+      setIsDownloadingLabels(true);
+      await partSaleApi.downloadLabelsPdf(selectedSaleForLabels.id, selectedSaleForLabels.code, itemId);
+      toast.success('Etiquetas térmicas geradas com sucesso!');
+    } catch {
+      toast.error('Erro ao gerar etiquetas térmicas. Tente novamente.');
+    } finally {
+      setIsDownloadingLabels(false);
+    }
+  };
 
   const handleDownloadPdf = async (sale: PartSaleResponse) => {
     if (downloadingPdfRef.current || isDownloadingPdf) {
@@ -325,8 +340,17 @@ export function PartSaleListPage() {
               <button
                 type="button"
                 onClick={() => setSelectedSaleForLabels(sale)}
-                className="flex items-center justify-center p-1 border border-outline-variant rounded text-amber-600 dark:text-amber-400 bg-surface hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-colors cursor-pointer"
-                title="Emitir etiquetas térmicas Elgin (100x60mm)"
+                disabled={sale.status === 'CANCELLED'}
+                className={`flex items-center justify-center p-1 border border-outline-variant rounded transition-colors ${
+                  sale.status === 'CANCELLED'
+                    ? 'text-slate-300 dark:text-slate-600 bg-slate-100 dark:bg-slate-800 cursor-not-allowed opacity-50'
+                    : 'text-amber-600 dark:text-amber-400 bg-surface hover:bg-amber-50 dark:hover:bg-amber-950/30 cursor-pointer'
+                }`}
+                title={
+                  sale.status === 'CANCELLED'
+                    ? 'Não é permitido emitir etiquetas de uma venda cancelada'
+                    : 'Emitir etiquetas térmicas Elgin (100x60mm)'
+                }
                 aria-label={`Emitir etiquetas Elgin da venda ${sale.code}`}
               >
                 <Printer className="w-3.5 h-3.5" />
@@ -689,11 +713,21 @@ export function PartSaleListPage() {
               </button>
               <button
                 type="button"
+                disabled={selectedSaleForDetails.status === 'CANCELLED'}
                 onClick={() => {
                   setSelectedSaleForLabels(selectedSaleForDetails);
                   setSelectedSaleForDetails(null);
                 }}
-                className="px-3 py-1.5 text-xs font-semibold border border-outline-variant bg-surface rounded-md hover:bg-surface-container text-on-surface flex items-center gap-1.5 cursor-pointer"
+                className={`px-3 py-1.5 text-xs font-semibold border border-outline-variant rounded-md flex items-center gap-1.5 ${
+                  selectedSaleForDetails.status === 'CANCELLED'
+                    ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed opacity-50'
+                    : 'bg-surface hover:bg-surface-container text-on-surface cursor-pointer'
+                }`}
+                title={
+                  selectedSaleForDetails.status === 'CANCELLED'
+                    ? 'Não é permitido emitir etiquetas de uma venda cancelada'
+                    : 'Emitir etiquetas térmicas Elgin (100x60mm)'
+                }
               >
                 <Printer className="w-3.5 h-3.5 text-amber-500" />
                 <span>Etiquetas Elgin</span>
@@ -841,74 +875,27 @@ export function PartSaleListPage() {
 
       {/* MODAL 3: ETIQUETAS TÉRMICAS ELGIN L42 (100x60mm) */}
       {selectedSaleForLabels && (
-        <div data-testid="modal-thermal-labels" className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-xl shadow-2xl max-w-lg w-full p-6 space-y-5 animate-in fade-in zoom-in-95 border border-slate-200 dark:border-slate-800">
-            <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-3">
-              <h3 className="font-bold text-slate-900 dark:text-slate-100 text-sm flex items-center gap-2">
-                <Printer className="w-4 h-4 text-amber-500" />
-                <span>Etiquetas Térmicas Elgin L42 (100×60mm)</span>
-              </h3>
-              <button
-                type="button"
-                data-testid="btn-close-labels-modal"
-                onClick={() => setSelectedSaleForLabels(null)}
-                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <p className="text-xs text-slate-600 dark:text-slate-300">
-              Venda {selectedSaleForLabels.code} | {selectedSaleForLabels.items?.length ?? 0} item(ns) formatados para corte e expedição rápida.
-            </p>
-
-            <div className="max-h-60 overflow-y-auto space-y-2 border border-slate-200 dark:border-slate-800 rounded-lg p-3 bg-slate-50 dark:bg-slate-950 text-xs">
-              {(selectedSaleForLabels.items || []).map((it) => (
-                <div
-                  key={it.id}
-                  className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 rounded shadow-xs flex justify-between items-center"
-                >
-                  <div className="space-y-0.5">
-                    <strong className="text-slate-800 dark:text-slate-100 font-bold block">{it.description}</strong>
-                    <span className="text-[11px] text-slate-500 dark:text-slate-400 block">
-                      Cliente: {selectedSaleForLabels.clientName || 'Cliente Balcão'}
-                    </span>
-                    <span className="text-[11px] text-slate-600 dark:text-slate-300 font-mono font-medium block">
-                      Dimensões: {formatItemDimensions(it)} | Qtd: {it.quantity} un
-                    </span>
-                  </div>
-                  <div className="text-right flex flex-col items-end gap-1">
-                    <span className="font-mono text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded border border-slate-300 dark:border-slate-700">
-                      100×60mm
-                    </span>
-                    <span className="font-mono text-[9px] text-slate-400">{selectedSaleForLabels.code}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-              <button
-                type="button"
-                onClick={() => setSelectedSaleForLabels(null)}
-                className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg cursor-pointer"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  window.print();
-                  setSelectedSaleForLabels(null);
-                }}
-                className="px-4 py-2 text-xs font-bold text-white bg-slate-900 dark:bg-slate-100 dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-200 rounded-lg flex items-center gap-1.5 shadow-sm cursor-pointer"
-              >
-                <Printer className="w-3.5 h-3.5 text-amber-400" />
-                <span>Imprimir Etiquetas</span>
-              </button>
-            </div>
-          </div>
-        </div>
+        <ThermalLabelModal
+          isOpen={Boolean(selectedSaleForLabels)}
+          onClose={() => setSelectedSaleForLabels(null)}
+          isDownloadingPdf={isDownloadingLabels}
+          partSale={{
+            id: selectedSaleForLabels.id,
+            code: selectedSaleForLabels.code,
+            clientName: selectedSaleForLabels.clientName || undefined,
+            createdAt: selectedSaleForLabels.createdAt,
+            items: selectedSaleForLabels.items?.map((it) => ({
+              id: it.id,
+              description: it.description,
+              category: it.materialType,
+              quantity: it.quantity,
+              widthMm: it.widthMm,
+              heightMm: it.heightMm,
+              lengthMm: it.materialType === 'PROFILE' ? (it.heightMm ?? Math.round(it.calculatedUnitMeasure * 1000)) : null,
+            })),
+          }}
+          onDownloadPdf={handleDownloadLabels}
+        />
       )}
 
       {/* MODAL 4: CONFIRMAÇÃO DE CANCELAMENTO */}

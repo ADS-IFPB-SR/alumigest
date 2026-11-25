@@ -655,6 +655,8 @@ export function useWindowBuilderState({
   useEffect(() => {
     if (!isOpen) {
       hasInitializedRef.current = false;
+      setCurrentStep(1);
+      setIsMobileCadExpanded(false);
       return;
     }
 

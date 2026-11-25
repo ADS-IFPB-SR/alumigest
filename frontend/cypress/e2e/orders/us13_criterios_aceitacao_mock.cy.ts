@@ -2,11 +2,16 @@ import type { BudgetDetail } from '../../../src/features/budgets/types';
 import type { Order } from '../../../src/features/orders/types';
 
 describe('US-13: Aprovar Orçamento e Converter em Ordem de Serviço (Suíte de Critérios de Aceitação)', () => {
-  const mockBudgetDraft: BudgetDetail = {
+  const mockBudgetDraft = {
     id: 'orc-1301',
     code: 'ORC-2026-0042',
     customerId: 'cli-001',
     customerName: 'Vidraçaria Alvorada',
+    clientId: 'cli-001',
+    clientName: 'Vidraçaria Alvorada',
+    clientPhone: '(83) 98877-6655',
+    clientEmail: 'contato@vidracariaalvorada.com.br',
+    clientAddress: 'Rua das Esquadrias, 150 - Centro, Sousa - PB',
     customerPhone: '(83) 98877-6655',
     customerEmail: 'contato@vidracariaalvorada.com.br',
     customerAddress: 'Rua das Esquadrias, 150 - Centro, Sousa - PB',
@@ -33,6 +38,8 @@ describe('US-13: Aprovar Orçamento e Converter em Ordem de Serviço (Suíte de 
         templateType: 'SLIDING_WINDOW_2F',
         width: 1500,
         height: 1200,
+        widthMm: 1500,
+        heightMm: 1200,
         quantity: 1,
         laborCost: 250,
         subtotal: 1850.0,
@@ -45,13 +52,15 @@ describe('US-13: Aprovar Orçamento e Converter em Ordem de Serviço (Suíte de 
         templateType: 'SLIDING_DOOR_4F',
         width: 2400,
         height: 2100,
+        widthMm: 2400,
+        heightMm: 2100,
         quantity: 1,
         laborCost: 400,
         subtotal: 2000.0,
         options: [],
       },
     ],
-  };
+  } as unknown as BudgetDetail;
 
   const mockCreatedOrder: Order = {
     id: 'ord-1301',

@@ -117,4 +117,77 @@ class StockMovementRequestDTOTest {
             .isNotEmpty()
             .anyMatch(v -> v.getPropertyPath().toString().equals("quantity"));
     }
+
+    @Test
+    @DisplayName("Deve falhar na validação quando SCRAP_LOSS tiver justificativa nula ou em branco")
+    void shouldFailWhenScrapLossHasBlankReason() {
+        StockMovementRequestDTO dtoNullReason = new StockMovementRequestDTO(
+            UUID.randomUUID(),
+            StockMovementType.SCRAP_LOSS,
+            new BigDecimal("2.5"),
+            null,
+            null,
+            null,
+            null
+        );
+
+        StockMovementRequestDTO dtoBlankReason = new StockMovementRequestDTO(
+            UUID.randomUUID(),
+            StockMovementType.SCRAP_LOSS,
+            new BigDecimal("2.5"),
+            null,
+            "   ",
+            null,
+            null
+        );
+
+        Set<ConstraintViolation<StockMovementRequestDTO>> violationsNull = validator.validate(dtoNullReason);
+        Set<ConstraintViolation<StockMovementRequestDTO>> violationsBlank = validator.validate(dtoBlankReason);
+
+        assertThat(violationsNull)
+            .isNotEmpty()
+            .anyMatch(v -> v.getPropertyPath().toString().equals("reasonValid"));
+
+        assertThat(violationsBlank)
+            .isNotEmpty()
+            .anyMatch(v -> v.getPropertyPath().toString().equals("reasonValid"));
+    }
+
+    @Test
+    @DisplayName("Deve falhar na validação quando MANUAL_ADJUSTMENT tiver justificativa em branco")
+    void shouldFailWhenManualAdjustmentHasBlankReason() {
+        StockMovementRequestDTO dto = new StockMovementRequestDTO(
+            UUID.randomUUID(),
+            StockMovementType.MANUAL_ADJUSTMENT,
+            new BigDecimal("1.0"),
+            null,
+            "",
+            null,
+            null
+        );
+
+        Set<ConstraintViolation<StockMovementRequestDTO>> violations = validator.validate(dto);
+
+        assertThat(violations)
+            .isNotEmpty()
+            .anyMatch(v -> v.getPropertyPath().toString().equals("reasonValid"));
+    }
+
+    @Test
+    @DisplayName("Deve passar na validação quando SCRAP_LOSS possuir justificativa válida")
+    void shouldPassWhenScrapLossHasValidReason() {
+        StockMovementRequestDTO dto = new StockMovementRequestDTO(
+            UUID.randomUUID(),
+            StockMovementType.SCRAP_LOSS,
+            new BigDecimal("3.0"),
+            null,
+            "Vidro quebrado durante transporte interno",
+            "OS-2026-0045",
+            "operador-1"
+        );
+
+        Set<ConstraintViolation<StockMovementRequestDTO>> violations = validator.validate(dto);
+
+        assertThat(violations).isEmpty();
+    }
 }

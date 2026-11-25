@@ -1,12 +1,13 @@
 package br.edu.ifpb.alumigest.stock.service;
 
+import br.edu.ifpb.alumigest.stock.dto.OrderStockAlertResponseDTO;
 import br.edu.ifpb.alumigest.stock.dto.StockBalanceFilter;
 import br.edu.ifpb.alumigest.stock.dto.StockItemResponseDTO;
 import br.edu.ifpb.alumigest.stock.dto.StockMovementRequestDTO;
 import br.edu.ifpb.alumigest.stock.dto.StockMovementResponseDTO;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
-import java.math.BigDecimal;
 
 /**
  * Porta de entrada e contrato de serviços do módulo de estoque.
@@ -15,6 +16,14 @@ import java.math.BigDecimal;
  * cancelamentos e auditoria Kardex, assegurando conformidade com o modelo Make-to-Order.
  */
 public interface StockPort {
+
+    /**
+     * Reserva matérias-primas automaticamente no modelo Make-to-Order (RN-05)
+     * ao aprovar/converter uma O.S. (US-13) ou transicionar para {@code WAITING_PRODUCTION}.
+     *
+     * @param orderId Identificador da Ordem de Serviço
+     */
+    void reserveMaterials(UUID orderId);
 
     /**
      * Reserva matérias-primas automaticamente ao aprovar uma Ordem de Serviço (US-13)
@@ -79,8 +88,22 @@ public interface StockPort {
      * @return Lista ordenada cronologicamente do registro mais recente ao mais antigo
      */
     List<StockMovementResponseDTO> listMovements(UUID materialId);
+
     /**
      * Garante a existência do registro em tb_stock_items para o material e aplica o ponto de pedido, se informado.
      */
     StockItemResponseDTO provisionStockItem(UUID materialId, BigDecimal minimumStock);
+
+    /**
+     * Retorna o status Make-to-Order agregado dos materiais com reserva pendente
+     * para a Ordem de Serviço informada.
+     *
+     * <p>Calcula o pior {@code StockAlertStatus} entre todos os insumos reservados
+     * para a O.S., além de listar os materiais com déficit de saldo disponível
+     * para exibição no tooltip do card Kanban (US-21.4).
+     *
+     * @param orderId Identificador da Ordem de Serviço
+     * @return DTO com o status agregado e lista de insumos em falta
+     */
+    OrderStockAlertResponseDTO getOrderStockAlert(UUID orderId);
 }

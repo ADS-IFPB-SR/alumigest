@@ -29,6 +29,7 @@ import { formatMaterialLabel } from '../utils/materialFormatters';
 import { usePartCalculation } from '../hooks/usePartCalculation';
 import { customersApi } from '@/features/customers/services/customersApi';
 import { partSaleApi } from '../services/partSaleApi';
+import { ThermalLabelModal } from '@/features/orders/components/ThermalLabelModal';
 
 const CATEGORY_DISPLAY_LABELS: Record<MaterialCategoryType, string> = {
   PROFILE: 'Alumínio',
@@ -192,6 +193,7 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const downloadingPdfRef = useRef(false);
   const [isLabelModalOpen, setIsLabelModalOpen] = useState(false);
+  const [isDownloadingLabels, setIsDownloadingLabels] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const savingRef = useRef(false);
   const [savedSale, setSavedSale] = useState<PartSaleResponse | null>(null);
@@ -507,6 +509,22 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
     } finally {
       downloadingPdfRef.current = false;
       setIsDownloadingPdf(false);
+    }
+  };
+
+  const handleDownloadLabels = async (itemId?: string) => {
+    if (savedSale?.id) {
+      try {
+        setIsDownloadingLabels(true);
+        await partSaleApi.downloadLabelsPdf(savedSale.id, savedSale.code, itemId);
+        toast.success('Etiquetas térmicas geradas com sucesso!');
+      } catch {
+        toast.error('Erro ao gerar etiquetas térmicas. Tente novamente.');
+      } finally {
+        setIsDownloadingLabels(false);
+      }
+    } else {
+      toast('Salve a venda para gerar e imprimir as etiquetas térmicas oficiais.', { icon: 'ℹ️' });
     }
   };
 
@@ -1151,7 +1169,7 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
               </button>
               <button
                 type="button"
-                onClick={() => window.print()}
+                onClick={handleDownloadPdf}
                 className="px-4 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 rounded-lg flex items-center gap-1.5 shadow-sm cursor-pointer"
               >
                 <Printer className="w-3.5 h-3.5" />
@@ -1164,68 +1182,28 @@ export function PartSaleForm({ initialCustomers }: PartSaleFormProps = {}) {
 
       {/* MODAL DE ETIQUETAS TÉRMICAS */}
       {isLabelModalOpen && (
-        <div data-testid="modal-thermal-labels" className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-xl shadow-2xl max-w-lg w-full p-6 space-y-5 animate-in fade-in zoom-in-95 border border-slate-200 dark:border-slate-800">
-            <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-3">
-              <h3 className="font-bold text-slate-900 dark:text-slate-100 text-sm flex items-center gap-2">
-                <Printer className="w-4 h-4 text-amber-500" />
-                <span>Etiquetas Térmicas de Expedição</span>
-              </h3>
-              <button
-                type="button"
-                data-testid="btn-close-labels-modal"
-                onClick={() => setIsLabelModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <p className="text-xs text-slate-600 dark:text-slate-300">
-              {items.length} tipo(s) de material(is) pronto(s) para emissão em impressora térmica (formato padrão 100x52mm).
-            </p>
-
-            <div className="max-h-60 overflow-y-auto space-y-2 border border-slate-200 dark:border-slate-800 rounded-lg p-3 bg-slate-50 dark:bg-slate-950 text-xs">
-              {items.map((it) => (
-                <div
-                  key={it.id}
-                  className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2.5 rounded shadow-xs flex justify-between items-center"
-                >
-                  <div>
-                    <strong className="text-slate-800 dark:text-slate-100 font-bold block">{it.description}</strong>
-                    <span className="text-[11px] text-slate-500 dark:text-slate-400">
-                      Qtd: {it.quantity} un | Tipo: {it.categoryLabel} | Medida: {formatItemDimensions(it)}
-                    </span>
-                  </div>
-                  <span className="font-mono text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded border border-slate-300 dark:border-slate-700">
-                    100×52mm
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-              <button
-                type="button"
-                onClick={() => setIsLabelModalOpen(false)}
-                className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg cursor-pointer"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  window.print();
-                  setIsLabelModalOpen(false);
-                }}
-                className="px-4 py-2 text-xs font-bold text-white bg-slate-900 dark:bg-slate-100 dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-200 rounded-lg flex items-center gap-1.5 shadow-sm cursor-pointer"
-              >
-                <Printer className="w-3.5 h-3.5 text-amber-400" />
-                <span>Imprimir Etiquetas</span>
-              </button>
-            </div>
-          </div>
-        </div>
+        <ThermalLabelModal
+          isOpen={isLabelModalOpen}
+          onClose={() => setIsLabelModalOpen(false)}
+          isDownloadingPdf={isDownloadingLabels}
+          partSale={{
+            id: savedSale?.id,
+            code: savedSale?.code || 'VP-RASCUNHO',
+            clientName: selectedCustomer?.nomeCompleto || DEFAULT_WALK_IN_CLIENT_NAME,
+            createdAt: savedSale?.createdAt || new Date().toISOString(),
+            items: items.map((it) => ({
+              id: it.id,
+              description: it.description,
+              category: it.category,
+              categoryLabel: it.categoryLabel,
+              quantity: it.quantity,
+              widthMm: it.widthMm,
+              heightMm: it.heightMm,
+              lengthMm: it.category === 'PROFILE' ? (it.heightMm ?? Math.round(it.calculatedUnitMeasure * 1000)) : null,
+            })),
+          }}
+          onDownloadPdf={handleDownloadLabels}
+        />
       )}
     </div>
   );

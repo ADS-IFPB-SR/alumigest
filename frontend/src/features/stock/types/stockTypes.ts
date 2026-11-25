@@ -108,3 +108,16 @@ export interface StockFilterParams {
   belowMinStock?: boolean;
   sort?: StockSortField;
 }
+
+export interface MissingMaterial {
+  materialName: string;
+  materialSku: string;
+  availableQuantity: number;
+  reservedQuantity: number;
+  unitMeasure: string;
+}
+
+export interface OrderStockAlert {
+  alertStatus: StockAlertStatus;
+  missingMaterials: MissingMaterial[];
+}

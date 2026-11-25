@@ -144,4 +144,26 @@ describe('stockApi — Client HTTP de Estoque & Almoxarifado (US-21)', () => {
 
     expect(api.post).toHaveBeenCalledWith('/stock/cancel-reservations/order-123');
   });
+
+  it('getOrderStockAlert deve chamar GET /stock/orders/:orderId/alert e retornar o status Make-to-Order (US-21.4)', async () => {
+    const mockAlert = {
+      alertStatus: 'NEED_PURCHASE' as const,
+      missingMaterials: [
+        {
+          materialName: 'Perfil U 50x50',
+          materialSku: 'ALU-001',
+          availableQuantity: -3,
+          reservedQuantity: 8,
+          unitMeasure: 'barras',
+        },
+      ],
+    };
+
+    vi.mocked(api.get).mockResolvedValueOnce({ data: mockAlert });
+
+    const result = await stockApi.getOrderStockAlert('order-123');
+
+    expect(api.get).toHaveBeenCalledWith('/stock/orders/order-123/alert');
+    expect(result).toEqual(mockAlert);
+  });
 });
