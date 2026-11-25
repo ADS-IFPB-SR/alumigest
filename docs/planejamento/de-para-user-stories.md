@@ -62,6 +62,11 @@ Este documento é a **referência oficial de sincronização** entre a numeraç�
 | **US-50** | **US-43** | Sprint 16 | Executar Rotinas de Backup Automático e Disaster Recovery | [#168](https://github.com/ADS-IFPB-SR/alumigest/issues/168) | 🔄 Renumerada (-7) |
 | **US-51** | **US-44** | Sprint 16 | Registrar Trilha de Auditoria Imutável para Ações Críticas | [#169](https://github.com/ADS-IFPB-SR/alumigest/issues/169) | 🔄 Renumerada (-7) |
 | **US-52** | **US-45** | Sprint 16 | Monitorar Saúde do Sistema com Actuator e Publicar Documentação | [#170](https://github.com/ADS-IFPB-SR/alumigest/issues/170) | 🔄 Renumerada (-7) |
+| **Nova (S08)** | **US-46** | Sprint 08 | Venda Avulsa de Partes e Insumos | [#171](https://github.com/ADS-IFPB-SR/alumigest/issues/171) | 🟢 Concluída |
+| **Nova (S08)** | **US-47** | Sprint 08 | Central 360° do Cliente e Ficha Técnica A4 | [#496](https://github.com/ADS-IFPB-SR/alumigest/issues/496) | 🟢 Concluída |
+| **Nova (S10)** | **US-48** | Sprint 10 | Autenticar Operador Único com JWT, Proteger Rotas Privadas e Encerrar Sessão | [#610](https://github.com/ADS-IFPB-SR/alumigest/issues/610) | 🟢 Planejada (5 pts) |
+| **Nova (S10)** | **US-49** | Sprint 10 | Alterar Senha de Acesso da Conta Autenticada | [#611](https://github.com/ADS-IFPB-SR/alumigest/issues/611) | 🟢 Planejada (3 pts) |
+| **Nova (S10)** | **US-50** | Sprint 10 | Configurar Dados Institucionais da Empresa, Atualizar Cabeçalhos PDF e Higienizar UI R1.0 | [#612](https://github.com/ADS-IFPB-SR/alumigest/issues/612) | 🟢 Planejada (5 pts + DoD R1.0) |
 
 ---
 

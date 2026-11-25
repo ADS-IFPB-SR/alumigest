@@ -2,7 +2,7 @@
 
 Este diretório centraliza a documentação de planejamento, especificações funcionais, decisões arquiteturais, modelos de dados e contratos de API organizados por sprint e no [Backlog Centralizado](backlog/README.md) do projeto **AlumiGest**.
 
-> **Padrão de Governança**: User Stories sequenciais no projeto inteiro (`US-01` a `US-47`) com Sub-tarefas decimais (`US-XX.Y`), integrando Backend, Frontend e QA sob cada história funcional.
+> **Padrão de Governança**: User Stories sequenciais no projeto inteiro (`US-01` a `US-50`) com Sub-tarefas decimais (`US-XX.Y`), integrando Backend, Frontend e QA sob cada história funcional.
 > **Modelo Ágil de Sprints**: As sprints são estruturadas sob demanda. Conforme as histórias são alinhadas na Sprint Planning, as pastas das sprints são criadas contendo os artefatos de execução das histórias selecionadas a partir do [Backlog](backlog/).
 
 ---
@@ -38,7 +38,7 @@ Este diretório centraliza a documentação de planejamento, especificações fu
 | Sprint | Período Oficial | Módulo / Escopo Principal | User Stories | Total Tarefas | Status |
 | :--- | :---: | :--- | :--- | :---: | :---: |
 | [Sprint 09](sprint-09/README.md) | **10/11/2026 a 23/11/2026** | **Reserva/Baixa Automática Make-to-Order & Kardex** | **`US-21`, `US-22`** | **12 (13 pts)** | 🟢 **Concluída / Em Homologação** |
-| [Sprint 10](sprint-10/README.md) | **24/11/2026 a 07/12/2026** | **Autenticação de Usuário Único, Configurações com Logo Oficial & Calibração Moveleira Rometal 45mm** | **4 Pilares Estratégicos** | **10 (13 pts)** | 🟢 **Planejada** |
+| [Sprint 10](sprint-10/README.md) | **24/11/2026 a 07/12/2026** | **Autenticação JWT (Operador Único), Troca de Senha, Configurações da Empresa & DoD Release 1.0** | **`US-48`, `US-49`, `US-50`** | **9 (13 pts)** | 🟢 **Planejada** |
 
 ---
 

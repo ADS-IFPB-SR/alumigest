@@ -1,191 +1,164 @@
-# 📑 Especificação Funcional Integrada — Sprint 10: Preparação, Segurança e Calibração para a 1ª Entrega
+# 📑 Especificação Funcional Integrada — Sprint 10: Autenticação JWT, Segurança da Conta, Configurações da Empresa & DoD da Release 1.0
 
 **Período Oficial da Sprint 10**: 24/11/2026 a 07/12/2026  
-**Status**: 🟢 Planejada e Calibrada com o Parceiro Social (Alumiportas)  
-**Objetivo Geral**: Consolidar a segurança com autenticação de usuário único, a parametrização dos cabeçalhos institucionais com a logomarca oficial da empresa e a **calibração estrita do motor de cálculo com a Linha 45 mm Rometal do ramo moveleiro** (Portas de Giro, Correr, Basculante e Frente de Gaveta com vidros de 4mm e perfis 059/060 Bronze, Fosco e Preto), selando a **Primeira Entrega Oficial (Release 2)** do AlumiGest.
+**Marco de Entrega**: 🏆 **Release 1.0.0 (MVP Protegido, Parametrizado e Homologado)**  
+**Product Owner (PO)**: José Guylherme dos Santos Melo  
+**Scrum Master**: Joseph Nichollas Abreu Cavalcante  
+**Histórias Selecionadas**: **`US-48`** (5 pts), **`US-49`** (3 pts) e **`US-50`** (5 pts) — **Total: 13 Story Points**  
 
 ---
 
-## 1. 🎯 Diretrizes do Parceiro Social & Pilares Estratégicos
+## 1. 🤝 Diretrizes de Escopo Homologadas com o Product Owner
 
-### 1.1 Pilar 1: Autenticação Segura com Usuário Único (Sem Divisão em 3 Categorias)
-* **Definição de Escopo**: O sistema AlumiGest opera no modelo de **Usuário Único / Administrador da Oficina**. Não há necessidade de segregação em 3 categorias de perfis (`ADMIN`, `VENDEDOR`, `OPERADOR`).
-* **Comportamento**: Tela de login limpa, geração e validação de tokens JWT (Spring Security 6), interceptor no frontend e proteção de rotas privadas (`ProtectedRoute`). Qualquer tentativa de acesso sem autenticação válida é redirecionada para `/login`.
-
-### 1.2 Pilar 2: Cabeçalho Dinâmico da Empresa & Logotipo Oficial Alumiportas
-* **Definição de Escopo**: A empresa já possui um logotipo oficial (`/static/logo-alumiportas.png`). O objetivo é parametrizar dinamicamente as informações cadastrais (Razão Social, Nome Fantasia, CNPJ, Telefone/WhatsApp, Endereço e Cidade-UF) em `tb_company_settings`, eliminando valores fixos (*hardcoded*).
-* **Comportamento**: Todos os documentos (Orçamento PDF, Ficha Técnica de Montagem/Corte, Comprovante de O.S., Venda Avulsa e Etiquetas Térmicas) consomem dinamicamente essas informações e estampam a logomarca oficial.
-
-### 1.3 Pilar 3: Calibração com a Linha 45 mm Rometal Moveleira (Perfis 059/060, Vidros 4mm)
-* **Definição de Escopo**: A Alumiportas atua fortemente no **ramo moveleiro** (marcenaria fina, móveis sob medida, armários, closets e cozinhas planejadas) utilizando a **Linha 45 mm Rometal**:
-  * **Perfis Estruturais de 45 mm**:
-    * **RM-060**: Perfil estrutural com **aba frontal baixa**, estética minimalista e clean.
-    * **RM-059**: Perfil estrutural com **aba frontal alta**, visual imponente e maior sobreposição.
-  * **Acabamentos Homologados**:
-    * **Bronze** (Anodizado Bronze 1002/1003)
-    * **Fosco** (Anodizado Jateado Fosco / Natural Fosco)
-    * **Preto** (Preto Fosco / Pintura Eletrostática a Pó)
-  * **Vidros Padronizados**: Estritamente **Vidro 4 mm** (Incolor, Reflecta Bronze, Reflecta Fumê, Espelho Prata, Vidro Acidato).
-  * **Acessórios de Montagem Rometal**:
-    * Esquadretas de Canto a 45°: **ESQ-041** ou **ESQ-055**.
-    * Parafusos de fixação: **M4×8 CC**.
-    * Baguete / Borracha de Encaixe para Vidro 4mm: **BG-216**.
-  * **Tipologias Moveleiras do Benchmark de Paridade**:
-    1. **Porta de Giro Moveleira 45mm** (com dobradiças de caneco para perfil de alumínio).
-    2. **Porta de Correr Moveleira 45mm** (com sistema deslizante Rometal sobreposto/embutido).
-    3. **Porta Basculante Moveleira 45mm** (com pistão a gás ou articulador para armário superior).
-    4. **Frente de Gaveta Moveleira 45mm** (moldura de gaveta com cantoneiras para corrediça).
-* **Meta de Paridade**: Divergência $\Delta = \text{R\$} 0{,}00$ entre o cálculo do AlumiGest e as planilhas de corte/orçamento da oficina.
-
-### 1.4 Pilar 4: Saneamento Completo de Bugs & Quality Gate
-* Correção definitiva da impressão de etiquetas térmicas na Venda Avulsa ([PR #600](https://github.com/ADS-IFPB-SR/alumigest/pull/600), resolvendo a Issue [#598](https://github.com/ADS-IFPB-SR/alumigest/issues/598)).
-* Garantia de 0 bugs, 0 vulnerabilidades e 0 code smells no SonarQube com suíte E2E Cypress aprovada.
+| # | Tema | Decisão Oficial para a Sprint 10 / Release 1.0 |
+|:---:|---|---|
+| **1** | **Modelo de Perfis** | **1 único perfil autenticado** (Operador Único / Administrador da Oficina). Sem segregação em 3 perfis (`ADMIN`, `SELLER`, `PRODUCTION`) e sem matriz RBAC. |
+| **2** | **Criação de Contas** | **Sem sistema de registro na interface** (sem auto-cadastro público e sem CRUD de usuários). Conta inicial provisionada via *seed* Flyway (`V27`) / variáveis de ambiente. |
+| **3** | **Troca de Senha** | **Habilitada na interface** (`US-49`): operador logado pode alterar sua senha informando a senha atual e definindo uma nova senha forte. |
+| **4** | **Lockout (15 min / 5 erros) e Auditoria** | **Fora de escopo nesta sprint** (`RF-005` e `RF-006` postergados para evoluções futuras). |
+| **5** | **Logomarca nos Documentos** | **Sem upload dinâmico de logo da empresa ou de clientes.** Mantém-se a logomarca oficial fixa em `backend/src/main/resources/static/logo-alumiportas.png`. |
+| **6** | **PDFs Emitidos Anteriormente** | **Sem reprocessamento ou reimpressão retroativa.** A atualização cadastral aplica-se às emissões geradas sob demanda após o salvamento. |
+| **7** | **Menus Não Concluídos** | **Ocultar funcionalidades não prontas** (`Dashboard` e `Financeiro` na `Sidebar.tsx`, além de ícones mortos na `Topbar.tsx`). |
+| **8** | **Homologação da Release 1.0** | **Incorporada como Definition of Done (DoD)** contínuo da Sprint 10 (mesma governança aplicada às antigas `US-12`, `US-23` e `US-41`). |
 
 ---
 
-## 2. 🧪 Fatiamento Atômico & Critérios de Aceitação
+## 2. 📦 Especificação das Histórias de Usuário (Padrão BDD)
 
 ---
 
-### 📦 PILAR 1: Segurança & Autenticação de Usuário Único (US-10.1 a US-10.3)
+### 🔐 US-48: Autenticar Operador Único com JWT, Proteger Rotas Privadas e Encerrar Sessão
+**Requisitos Rastreados**: `RF-002`, `RNF-004` (BCrypt), `RNF-006` (JWT 8h)  
+**Prioridade**: P1 | **Estimativa**: **5 Story Points** (~8.5h) | **Branch**: `feat/us-48-autenticacao-jwt`
 
-#### US-10.1: Setup de Autenticação, Entidade `User` e Migração Flyway `V27` [1 pt / 2.0h]
-- **Escopo**:
-  - Script Flyway `V27__create_users_schema.sql` criando a tabela `tb_users` (`id`, `name`, `email`, `password_hash`, `is_active`, `created_at`, `updated_at`). Sem tabela de roles ou enums complexos.
-  - Carga do usuário padrão inicial via seed (`admin@alumiportas.com.br` com senha criptografada em BCrypt).
-  - Entidade JPA `User` e repositório `UserRepository` com busca por e-mail (`findByEmailIgnoreCaseAndIsActiveTrue`).
-- **Critérios de Aceitação**:
-  - [ ] Migration executa com sucesso no PostgreSQL e H2.
-  - [ ] E-mail possui constraint `UNIQUE`.
-  - [ ] Senhas salvas com hash BCrypt (custo 10+).
+#### 🎯 Objetivo de Negócio
+Como **operador responsável pela empresa**, desejo acessar o AlumiGest ERP por meio de uma tela de login protegida por e-mail e senha, mantendo todas as rotas e dados comerciais/fabris inacessíveis a terceiros não autenticados na web e podendo encerrar minha sessão com segurança ao deixar o computador.
 
-#### US-10.2: Motor de Autenticação JWT, Spring Security 6 e Endpoints `/api/v1/auth` [2 pts / 3.0h]
-- **Escopo**:
-  - Configuração do Spring Security 6 stateless (`SessionCreationPolicy.STATELESS`).
-  - `JwtService` com token HMAC-SHA256 e expiração configurável (8 horas).
-  - Filtro `JwtAuthenticationFilter` interceptando header `Authorization: Bearer <token>`.
-  - Endpoints `POST /api/v1/auth/login` e `GET /api/v1/auth/me`.
-- **Critérios de Aceitação**:
-  - [ ] Login com credenciais válidas retorna HTTP 200 com token JWT e dados do usuário.
-  - [ ] Credenciais inválidas retornam HTTP 401 Unauthorized com mensagem em pt-BR.
-  - [ ] Endpoints protegidos rejeitam requisições sem token válido com HTTP 401.
+#### 🧪 Critérios de Aceitação (*Dado que / Quando / Então*)
+- [ ] **Cenário 1: Autenticação com Credenciais Válidas (`POST /api/v1/auth/login`)**
+  - **Dado que** existe a conta oficial ativa provisionada no banco e estou na página pública `/login`,
+  - **Quando** preencho meu e-mail e senha corretos e aciono **"Entrar"**,
+  - **Então** o backend valida o hash `BCrypt`, retorna **HTTP 200 OK** com o token JWT assinado (validade de 8 horas) e os dados da conta (`id`, `name`, `email`),
+  - **E** sou redirecionado para a tela operacional inicial (`/orcamentos` ou rota originalmente tentada), exibindo meu nome real na `Topbar.tsx`.
 
-#### US-10.3: Tela de Login (`/login`) e Proteção de Rotas (`ProtectedRoute`) no Frontend [2 pts / 3.0h]
-- **Escopo**:
-  - Página `LoginPage.tsx` utilizando o Design System AlumiGest, cores navy `#041632` e o logotipo oficial Alumiportas.
-  - Validação via Zod e React Hook Form.
-  - Contexto `useAuth` persistindo o token no `localStorage`.
-  - Interceptor Axios injetando o cabeçalho `Bearer` e capturando HTTP 401 para redirecionamento automático ao login.
-  - Componente `ProtectedRoute.tsx` bloqueando acessos não autenticados e botão de Logout no `Sidebar.tsx`.
-- **Critérios de Aceitação**:
-  - [ ] Usuário não logado é redirecionado imediatamente para `/login`.
-  - [ ] Logout limpa o token e redireciona para `/login`.
-  - [ ] Feedback visual via toast em caso de erro de credenciais.
+- [ ] **Cenário 2: Rejeição Segura de Credenciais Inválidas**
+  - **Dado que** estou na tela `/login`,
+  - **Quando** informo um e-mail não cadastrado ou uma senha incorreta,
+  - **Então** a API responde com **HTTP 401 Unauthorized** e mensagem única em português (*"E-mail ou senha inválidos"*), sem revelar qual dos dois campos falhou, mantendo o usuário na tela `/login` com feedback visual claro.
 
----
+- [ ] **Cenário 3: Bloqueio Universal de Rotas Privadas e Endpoints da API**
+  - **Dado que** não possuo token JWT válido (acesso anônimo ou token expirado/adulterado),
+  - **Quando** tento acessar diretamente qualquer rota interna no navegador (ex.: `/`, `/orcamentos`, `/ordens-servico`, `/producao`, `/configuracoes`) ou consumir qualquer endpoint privado `/api/v1/**`,
+  - **Então** o backend rejeita a chamada com **HTTP 401 Unauthorized** e o componente `ProtectedRoute` / interceptor Axios limpa a sessão local e redireciona imediatamente para `/login`.
 
-### 📦 PILAR 2: Cabeçalho Dinâmico & Logotipo Oficial Alumiportas (US-10.4 a US-10.6)
+- [ ] **Cenário 4: Encerramento Explícito de Sessão (`Logout`)**
+  - **Dado que** estou autenticado no AlumiGest ERP,
+  - **Quando** clico no botão **"Sair"** na `Sidebar.tsx`,
+  - **Então** o token JWT é removido do armazenamento local, o cache de dados em memória (`QueryClient`) é limpo e sou redirecionado para `/login`, impedindo o retorno às telas internas pelo botão "Voltar" do navegador.
 
-#### US-10.4: Entidade `CompanySettings`, Migração `V28` e Endpoints Institucionais [1 pt / 2.0h]
-- **Escopo**:
-  - Migration `V28__create_company_settings_schema.sql` criando a tabela singleton `tb_company_settings` (`id`, `company_name`, `trade_name`, `cnpj`, `state_registration`, `phone`, `email`, `address`, `city_state`, `updated_at`).
-  - Seed com os dados oficiais da Alumiportas LTDA.
-  - Endpoints `GET /api/v1/settings/company` e `PUT /api/v1/settings/company`.
-- **Critérios de Aceitação**:
-  - [ ] DTO valida CNPJ e campos obrigatórios.
-  - [ ] Atualização segura retornando código HTTP 200.
-
-#### US-10.5: Tela de Configurações (`/configuracoes`) com Preview do Cabeçalho A4 [2 pts / 3.0h]
-- **Escopo**:
-  - Criação da página `CompanySettingsPage.tsx` com formulário dos dados da empresa.
-  - Exibição da logomarca oficial da Alumiportas no topo do painel.
-  - **Preview em tempo real do cabeçalho da folha A4**: reflete instantaneamente qualquer digitação nos campos de Razão Social, CNPJ, Telefone e Endereço.
-- **Critérios de Aceitação**:
-  - [ ] O preview responde em tempo real à digitação no formulário.
-  - [ ] Feedback via toast ao salvar e invalidação de cache via TanStack Query.
-
-#### US-10.6: Injeção dos Dados Dinâmicos da Empresa em Todos os PDFs e Etiquetas [1 pt / 2.5h]
-- **Escopo**:
-  - Refatoração de todos os 5 serviços de emissão para consumir dinamicamente `CompanySettingsService`:
-    1. `BudgetPdfService.java` (Orçamento Proposta A4 com logo oficial);
-    2. `OrderReceiptPdfService.java` (Comprovante de O.S.);
-    3. `ProductionSheetPdfService.java` (Ficha Técnica A4 de Corte e Montagem Moveleira);
-    4. `PartSalePdfService.java` (Venda Avulsa A4);
-    5. `ThermalLabelPdfRenderer.java` (Etiquetas Térmicas 100×60mm).
-- **Critérios de Aceitação**:
-  - [ ] Atualizações nos dados da empresa são refletidas imediatamente nos novos PDFs gerados.
-  - [ ] Logotipo oficial carregado via `/static/logo-alumiportas.png` de forma robusta e com escala adequada.
+#### 📋 Regras de Negócio e Contrato Técnico
+- **RN-01 (Sem Auto-Cadastro na Interface):** Não deve existir link de *"Criar conta"* nem recuperação por SMTP na tela `/login`. A conta inicial é provisionada via `V27__create_users_schema.sql`.
+- **RN-02 (Hash Seguro):** Senhas são persistidas exclusivamente com `BCryptPasswordEncoder` (custo 10–12) e jamais expostas em DTOs ou logs.
+- **Tabela `tb_users` (`V27`):** `id (UUID PK)`, `name (VARCHAR 150 NOT NULL)`, `email (VARCHAR 150 UNIQUE NOT NULL)`, `password_hash (VARCHAR 255 NOT NULL)`, `is_active (BOOLEAN NOT NULL DEFAULT TRUE)`, `created_at`, `updated_at`.
+- **Endpoints:** `POST /api/v1/auth/login` (público) e `GET /api/v1/auth/me` (autenticado).
 
 ---
 
-### 📦 PILAR 3: Calibração com a Linha 45 mm Rometal Moveleira (US-10.7 e US-10.8)
+### 🔑 US-49: Alterar Senha de Acesso da Conta Autenticada
+**Requisitos Rastreados**: `RF-001`, `RNF-004`  
+**Prioridade**: P1 | **Estimativa**: **3 Story Points** (~5.5h) | **Branch**: `feat/us-49-alteracao-senha`
 
-#### US-10.7: Matriz de Calibração das 4 Tipologias Moveleiras Rometal 45 mm [2 pts / 3.5h]
-- **Escopo**:
-  - Levantamento e documentação da matriz de calibração para as 4 tipologias do ramo moveleiro:
-    1. **Porta de Giro Moveleira 45mm**:
-       - Medidas nominais: $2100 \times 450\text{ mm}$.
-       - Perfil: **RM-060** (Aba Baixa) ou **RM-059** (Aba Alta) na cor **Preto Fosco**.
-       - Vidro: **Vidro Reflecta Bronze 4 mm**.
-       - Acessórios: 4 Esquadretas **ESQ-041**, Parafusos M4×8, Baguete **BG-216**, 3 Dobradiças para perfil 45mm.
-       - Corte de alumínio: 2 peças de $2100\text{ mm}$ + 2 peças de $450\text{ mm}$ a $45^\circ$. Consumo total $= 5{,}10\text{ m}$.
-    2. **Porta de Correr Moveleira 45mm**:
-       - Medidas nominais: $2200 \times 800\text{ mm}$.
-       - Perfil: **RM-059** (Aba Alta) na cor **Fosco (Natural Jateado)**.
-       - Vidro: **Espelho Prata 4 mm** com película protetora.
-       - Acessórios: 4 Esquadretas **ESQ-041**, Parafusos M4×8, Baguete **BG-216**, Kit Deslizante Rometal (2 roldanas rolamentadas + guias superiores).
-       - Corte de alumínio: 2 peças de $2200\text{ mm}$ + 2 peças de $800\text{ mm}$ a $45^\circ$. Consumo total $= 6{,}00\text{ m}$.
-    3. **Porta Basculante Moveleira 45mm**:
-       - Medidas nominais: $400 \times 900\text{ mm}$.
-       - Perfil: **RM-060** (Aba Baixa) na cor **Bronze**.
-       - Vidro: **Vidro Incolor 4 mm** (ou Reflecta Fumê 4mm).
-       - Acessórios: 4 Esquadretas **ESQ-041**, Baguete **BG-216**, 2 Dobradiças de topo, 2 Pistões a Gás 80N.
-       - Corte de alumínio: 2 peças de $400\text{ mm}$ + 2 peças de $900\text{ mm}$ a $45^\circ$. Consumo total $= 2{,}60\text{ m}$.
-    4. **Frente de Gaveta Moveleira 45mm**:
-       - Medidas nominais: $180 \times 600\text{ mm}$.
-       - Perfil: **RM-060** (Aba Baixa) na cor **Preto Fosco**.
-       - Vidro: **Vidro Reflecta Bronze 4 mm**.
-       - Acessórios: 4 Esquadretas **ESQ-041**, Baguete **BG-216**, Suportes/cantoneiras de fixação interna para corrediça telescópica.
-       - Corte de alumínio: 2 peças de $180\text{ mm}$ + 2 peças de $600\text{ mm}$ a $45^\circ$. Consumo total $= 1{,}56\text{ m}$.
-  - Fórmulas de cálculo de desconto do vidro de 4 mm:
-    $$\text{Largura Vidro} = W_{\text{porta}} - \Delta_{\text{encaixe}}, \quad \text{Altura Vidro} = H_{\text{porta}} - \Delta_{\text{encaixe}}$$
-- **Critérios de Aceitação**:
-  - [ ] Planilha de calibração documentada com fórmulas de corte, área faturada de vidro ($m^2 \ge 0{,}25$), esquadretas e parafusos.
+#### 🎯 Objetivo de Negócio
+Como **operador autenticado no sistema**, desejo alterar minha senha de acesso a qualquer momento informando minha senha atual e definindo uma nova senha segura na área de Configurações, para substituir a senha padrão de implantação e manter sigilo total sobre o acesso ao sistema da empresa.
 
-#### US-10.8: Ajuste Fino dos Motores de Cálculo para Paridade Centavo a Centavo [1 pt / 3.0h]
-- **Escopo**:
-  - Ajuste e validação das regras de consumo no `ProfileQuantityCalculator`, `GlassQuantityCalculator` e `HardwareQuantityCalculator`.
-  - Suporte específico no catálogo para as referências comerciais **RM-060** e **RM-059** nas cores **Bronze**, **Fosco** e **Preto**.
-  - Criação da suíte de testes automatizados `Rometal45FurnitureCalibrationTest.java` comparando os resultados do sistema com as planilhas da Alumiportas.
-- **Critérios de Aceitação**:
-  - [ ] Divergência entre o cálculo do AlumiGest e as planilhas da oficina igual a **R$ 0,00** nos 4 casos calibrados.
-  - [ ] Testes automatizados executando em menos de 1 segundo sem regressões.
+#### 🧪 Critérios de Aceitação (*Dado que / Quando / Então*)
+- [ ] **Cenário 1: Alteração de Senha com Sucesso (`PUT /api/v1/auth/password`)**
+  - **Dado que** estou autenticado e acesso a seção **"Segurança da Conta / Alterar Senha"** em `/configuracoes`,
+  - **Quando** informo minha `Senha Atual` correta, preencho uma `Nova Senha` com no mínimo 8 caracteres e repito o mesmo valor em `Confirmar Nova Senha`, clicando em **"Atualizar Senha"**,
+  - **Então** o backend valida a senha vigente, grava o novo hash `BCrypt` no banco, retorna **HTTP 200 OK**, limpa os campos do formulário e exibe um *toast* de sucesso (*"Senha alterada com sucesso"*).
+
+- [ ] **Cenário 2: Bloqueio por Senha Atual Incorreta**
+  - **Dado que** estou no formulário de alteração de senha,
+  - **Quando** informo uma `Senha Atual` divergente da cadastrada no banco,
+  - **Então** o backend rejeita a operação com **HTTP 400 Bad Request** (ou **HTTP 422**) informando *"A senha atual informada está incorreta"*, sem encerrar minha sessão ativa e sem alterar o hash salvo.
+
+- [ ] **Cenário 3: Validação de Força Mínima, Confirmação e Não-Repetição**
+  - **Dado que** preencho o formulário de troca de senha,
+  - **Quando** digito uma `Nova Senha` com menos de 8 caracteres, diferente do campo `Confirmar Nova Senha`, ou idêntica à `Senha Atual`,
+  - **Então** a validação cliente (Zod) e servidor (Bean Validation / regra de domínio) impedem o salvamento exibindo mensagens claras por campo.
+
+- [ ] **Cenário 4: Validação no Próximo Login**
+  - **Dado que** concluí a troca de senha e encerrei minha sessão (`Logout`),
+  - **Quando** tento entrar novamente com a senha antiga, recebo **HTTP 401 Unauthorized**,
+  - **E quando** entro com a nova senha recém-definida, o login é efetuado normalmente.
+
+#### 📋 Regras de Negócio e Contrato Técnico
+- **RN-01 (Comprovação da Senha Vigente):** A troca de senha exige obrigatoriamente validação de `currentPassword` contra o hash atual no banco.
+- **RN-02 (Acessibilidade):** Os campos `currentPassword`, `newPassword` e `confirmNewPassword` possuem botão de alternância mostrar/ocultar caracteres.
+- **Endpoint:** `PUT /api/v1/auth/password` (autenticado via JWT).
 
 ---
 
-### 📦 PILAR 4: Saneamento Geral de Bugs & Homologação da 1ª Entrega (US-10.9 e US-10.10)
+### 🏢 US-50: Configurar Dados Institucionais da Empresa, Atualizar Cabeçalhos PDF e Higienizar UI da Release 1.0
+**Requisitos Rastreados**: `RF-033` (Dados da empresa em propostas/documentos), Padronização Release 1.0  
+**Prioridade**: P1 | **Estimativa**: **5 Story Points** (~11.0h) | **Branch**: `feat/us-50-configuracoes-empresa`
 
-#### US-10.9: Saneamento do Bug de Etiquetas Térmicas na Venda Avulsa (PR #600) [1 pt / 2.5h]
-- **Escopo**:
-  - Validação e merge do [PR #600](https://github.com/ADS-IFPB-SR/alumigest/pull/600), resolvendo a Issue [#598](https://github.com/ADS-IFPB-SR/alumigest/issues/598).
-  - Emissão limpa da bobina térmica $100 \times 60\text{ mm}$ via endpoint `GET /api/v1/part-sales/{id}/labels-pdf`.
-- **Critérios de Aceitação**:
-  - [ ] Clique em "Imprimir Etiquetas" na Venda Avulsa faz download/abertura direta do PDF térmico sem acionar `window.print()`.
+#### 🎯 Objetivo de Negócio
+Como **operador responsável pela empresa**, desejo editar em `/configuracoes` os dados cadastrais da vidraçaria/serralheria (Razão Social, Nome Fantasia, CNPJ, Telefone/WhatsApp, E-mail e Endereço) para que as próximas propostas, comprovantes, fichas e etiquetas emitidos saiam com as informações oficiais atualizadas, operando em uma interface limpa sem menus *placeholder* inacabados.
 
-#### US-10.10: Bateria E2E Cypress, Quality Gate SonarQube e Dossiê de Homologação [1 pt / 3.0h]
-- **Escopo**:
-  - Execução completa dos testes E2E Cypress.
-  - Quality Gate com 0 code smells e 0 débitos técnicos.
-  - Geração dos relatórios de governança da disciplina (RTM, RET e TEA da Release 2).
-- **Critérios de Aceitação**:
-  - [ ] Todos os testes Cypress aprovados.
-  - [ ] Documentação de homologação entregue e versionada.
+#### 🧪 Critérios de Aceitação (*Dado que / Quando / Então*)
+- [ ] **Cenário 1: Consulta e Atualização dos Dados Cadastrais da Empresa (`/configuracoes`)**
+  - **Dado que** acesso `/configuracoes` na seção **"Dados da Empresa"**,
+  - **Quando** a tela carrega os dados vindos de `GET /api/v1/settings/company`,
+  - **Então** visualizo o formulário preenchido com `Razão Social`, `Nome Fantasia`, `CNPJ` (máscara `00.000.000/0000-00`), `Inscrição Estadual` (opcional), `Telefone / WhatsApp`, `E-mail`, `CEP`, `Endereço (Logradouro, Número, Complemento, Bairro)` e `Cidade / UF`, acompanhado de pré-visualização do cabeçalho institucional com a logo oficial fixa (`logo-alumiportas.png`),
+  - **E quando** altero os dados válidos e clico em **"Salvar Alterações"**, o endpoint `PUT /api/v1/settings/company` persiste o registro singleton e exibe confirmação visual imediata.
+
+- [ ] **Cenário 2: Validação Cadastral de Campos Obrigatórios e Formato**
+  - **Dado que** estou editando os dados da empresa em `/configuracoes`,
+  - **Quando** informo um CNPJ inválido, e-mail malformado ou deixo campos essenciais (`Razão Social`, `Nome Fantasia`, `CNPJ`, `Telefone`, `Endereço`, `Cidade/UF`) vazios,
+  - **Então** o formulário exibe erro inline impedindo o envio e o backend rejeita payloads inválidos com **HTTP 400 Bad Request**.
+
+- [ ] **Cenário 3: Consumo Dinâmico nos Novos Documentos PDF (Sem Reprocessamento Retroativo)**
+  - **Dado que** salvei novos dados cadastrais em `/configuracoes`,
+  - **Quando** solicito a emissão de um documento PDF a partir desse momento — **Proposta Comercial (`BudgetPdfService`)**, **Comprovante de O.S. (`OrderPdfService`)**, **Ficha Técnica (`ProductionSheetPdfService`)**, **Venda Avulsa (`PartSalePdfService`)** ou **Etiqueta Térmica (`ThermalLabelPdfRenderer`)**,
+  - **Então** o cabeçalho do documento gerado passa a exibir os dados atualizados do banco (substituindo a leitura estática de `CompanyProperties` com fallback seguro) combinados à logomarca oficial fixa, sem regerar PDFs passados.
+
+- [ ] **Cenário 4: Higienização de Menus e Placeholders para a Release 1.0**
+  - **Dado que** navego pelo AlumiGest ERP autenticado na versão `v1.0.0`,
+  - **Quando** inspeciono a `Sidebar.tsx`, a `Topbar.tsx` e as rotas em `App.tsx`,
+  - **Então** os itens não concluídos (`Dashboard`, `Financeiro` e botões estáticos sem função como sino de notificações / `"Suporte"` morto) estão ocultos da navegação, a rota `/configuracoes` renderiza a tela real em vez de `PlaceholderPage`, e URLs desconhecidas redirecionam de forma limpa para a página principal.
+
+#### 📋 Regras de Negócio e Contrato Técnico
+- **RN-01 (Sem Upload de Logo):** Mantém-se o arquivo institucional estático `logo-alumiportas.png` sem upload de imagens da empresa ou de clientes.
+- **RN-02 (Fallback Resiliente):** `CompanySettingsService` prioriza `tb_company_settings` e utiliza `CompanyProperties` como fallback caso campos opcionais estejam ausentes, evitando quebra de layout A4/térmico.
+- **RN-03 (Sem Reimpressão Retroativa):** Alterar dados da empresa ou de clientes não dispara reimpressão de documentos emitidos anteriormente; pedidos aprovados preservam seu snapshot imutável (`US-14`).
+- **Tabela `tb_company_settings` (`V28`):** `id (UUID PK)`, `company_name`, `trade_name`, `cnpj`, `state_registration`, `phone`, `email`, `zip_code`, `address`, `city_state`, `updated_at`.
+- **Endpoints:** `GET /api/v1/settings/company` e `PUT /api/v1/settings/company` (autenticados).
 
 ---
 
-## 3. 🛡️ Definition of Done (DoD) da Sprint 10
+## 3. 🔪 Detalhamento das Fatias Verticais Atômicas (`US-48.1` a `US-50.4`)
 
-1. **Segurança**: Rotas privadas protegidas com token JWT e login de usuário único.
-2. **Configuração**: Alterar dados institucionais reflete instantaneamente nos PDFs, mantendo o logotipo oficial Alumiportas.
-3. **Paridade Moveleira**: Os cálculos da Linha 45 mm Rometal (RM-059 e RM-060, Bronze, Fosco, Preto, com vidros 4mm) batem centavo a centavo ($\Delta = \text{R\$} 0{,}00$) com a prática da Alumiportas.
-4. **Qualidade & Estabilidade**: SonarQube verde, 100% dos testes unitários e de integração verdes e bug de etiquetas saneado.
+1. **`US-48.1` [1 pt / 2.5h]** — Migration `V27__create_users_schema.sql` (com *seed* inicial `BCrypt`), entidade `User`, `UserRepository` e `JwtService` (HMAC-SHA256, 8h) + testes unitários.
+2. **`US-48.2` [2 pts / 3.0h]** — `SecurityConfig` stateless (Spring Security 6), `JwtAuthenticationFilter`, endpoints `POST /api/v1/auth/login` e `GET /api/v1/auth/me` + suporte `@WithMockUser` para testes WebMvc legados.
+3. **`US-48.3` [2 pts / 3.0h]** — Página `LoginPage.tsx` (`/login`), `AuthContext`, interceptor Axios `Bearer`/401, `ProtectedRoute`, exibição do usuário real na `Topbar.tsx` e botão `Sair` na `Sidebar.tsx` + testes Vitest.
+4. **`US-49.1` [1 pt / 2.5h]** — Endpoint `PUT /api/v1/auth/password` validando `currentPassword` via `BCrypt`, força mínima (8 caracteres) e não-repetição da senha atual + testes MockMvc.
+5. **`US-49.2` [2 pts / 3.0h]** — Seção **"Segurança da Conta / Alterar Senha"** em `/configuracoes` com React Hook Form + Zod, toggles de visibilidade e feedback via *toast* + testes Vitest.
+6. **`US-50.1` [1 pt / 2.5h]** — Migration `V28__create_company_settings_schema.sql` (singleton com *seed*), entidade `CompanySettings`, validações cadastrais e endpoints `GET` / `PUT /api/v1/settings/company` + testes MockMvc.
+7. **`US-50.2` [2 pts / 3.0h]** — Seção **"Dados da Empresa"** em `/configuracoes` com máscaras (CNPJ, Telefone, CEP) e preview em tempo real do cabeçalho institucional com logo fixa + testes Vitest.
+8. **`US-50.3` [1 pt / 3.0h]** — Injeção dinâmica de `CompanySettingsService` em `BudgetPdfService`, `OrderPdfService`, `ProductionSheetPdfService`, `PartSalePdfService` e `ThermalLabelPdfRenderer` com fallback para `CompanyProperties` + testes PDF.
+9. **`US-50.4` [1 pt / 2.5h]** — Ocultação de `Dashboard`, `Financeiro` e ícones estáticos mortos na `Sidebar.tsx`/`Topbar.tsx`, comando `cy.login()` com `cy.session()` e suíte E2E Cypress autenticada cobrindo Login + Troca de Senha + Configurações + PDF.
+
+---
+
+## 4. 🛡️ Definition of Done (DoD) & Homologação da Release 1.0.0
+
+1. **Proteção Integral**: Todas as rotas privadas do frontend e endpoints `/api/v1/**` (exceto `/api/v1/auth/login` e healthcheck) exigem JWT válido.
+2. **Estabilidade Automatizada**: 100% dos testes Backend (`mvn test`), Frontend (`vitest run`) e E2E (`cypress run` com `cy.login()`) verdes na esteira CI.
+3. **Qualidade Estática**: Checkstyle = 0 violações, Oxlint/TypeScript = 0 erros e SonarQube Quality Gate aprovado ($\ge 80\%$ de cobertura no código novo).
+4. **Navegação Enxuta**: Nenhuma rota *placeholder* (*"Em Desenvolvimento"*) exposta nos menus da versão `v1.0.0`.
+5. **Smoke Test Ponta a Ponta da Release 1.0 (`docker compose`)**:
+   - Subida limpa do ambiente Docker aplicando migrations até `V28`;
+   - Login inicial $\rightarrow$ Alteração de senha em `/configuracoes` $\rightarrow$ Novo login com a nova senha;
+   - Edição dos dados da empresa em `/configuracoes` $\rightarrow$ Emissão de PDFs (Orçamento, O.S., Ficha Técnica, Venda Avulsa e Etiqueta) comprovando o novo cabeçalho dinâmico;
+   - Ciclo operacional completo (Estoque $\rightarrow$ Cliente $\rightarrow$ Orçamento $\rightarrow$ O.S. $\rightarrow$ Kanban `COMPLETED` $\rightarrow$ Baixa Kardex) validado sem erros para emissão da tag `v1.0.0`.

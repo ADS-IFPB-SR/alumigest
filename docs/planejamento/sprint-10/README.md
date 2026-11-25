@@ -1,95 +1,114 @@
-# 📌 Sprint 10 — Autenticação de Usuário Único, Configurações Institucionais e Calibração Moveleira Rometal 45 mm para a 1ª Entrega
+# 📌 Sprint 10 — Autenticação JWT (Operador Único), Segurança da Conta, Configurações Institucionais & Homologação Release 1.0 (DoD)
 
 **Período Oficial da Sprint 10**: 24/11/2026 a 07/12/2026  
-**Status**: 🟢 Planejada e Calibrada com o Parceiro Social (Alumiportas)  
+**Status**: 🟢 Planejada e Alinhada com o Product Owner  
+**Marco de Entrega**: 🏆 **Release 1.0.0 (Sistema Protegido, Parametrizado e Homologado)**  
 **Product Owner (PO)**: José Guylherme dos Santos Melo  
-**Scrum Master**: Júlio Kennedy dos Santos Silva  
-**Equipe de Desenvolvimento**: Guilherme Kauã, Italo Jefferson, Joseph Nichollas, Júlio Kennedy, Herbert Carvalho, Gabriel de Souza (6 desenvolvedores)  
-**Escopo Oficial Aprovado**: Preparação e Blindagem para a **Primeira Entrega Oficial (Release 2)**  
+**Scrum Master**: Joseph Nichollas Abreu Cavalcante  
+**Equipe de Desenvolvimento**: Guilherme Kauã, Herbert Carvalho, Ítalo Jefferson, José Guylherme, Joseph Nichollas, Júlio Kennedy, Maylson Rodrigues  
+**Escopo Oficial Aprovado**: **`US-48`**, **`US-49`** e **`US-50`** *(com Homologação da Release 1.0 incorporada no Definition of Done)*  
 
-Esta pasta contém o pacote de engenharia da **Sprint 10** do projeto **AlumiGest**, estruturado estrategicamente como a **sprint de estabilização, segurança web, parametrização institucional e prova de paridade real moveleira** para a Primeira Grande Entrega do sistema.
-
-Todo o planejamento foi decomposto estritamente em **Fatias Atômicas (*Atomic Slices*) de até 3.5 horas** em conformidade com o [`guia-estimativa-horas.md`](../guia-estimativa-horas.md) e com o dimensionamento de **12 Story Points** (~29.0 horas de engenharia no total, correspondendo a ~5.0h por desenvolvedor).
+Esta pasta contém o pacote oficial de engenharia da **Sprint 10** do projeto **AlumiGest**, decomposto estritamente em **Fatias Verticais Atômicas (*Atomic Slices*) de até 3.0 horas** em conformidade com o [`guia-estimativa-horas.md`](../guia-estimativa-horas.md) e dimensionado em **13 Story Points** (**25.0 horas** totais de engenharia):
+- **US-48**: Autenticar Operador Único com JWT, Proteger Rotas Privadas e Encerrar Sessão (Issue [#610](https://github.com/ADS-IFPB-SR/alumigest/issues/610)) — **5 Story Points** (~8.5h).
+- **US-49**: Alterar Senha de Acesso da Conta Autenticada (Issue [#611](https://github.com/ADS-IFPB-SR/alumigest/issues/611)) — **3 Story Points** (~5.5h).
+- **US-50**: Configurar Dados Institucionais da Empresa, Atualizar Cabeçalhos PDF e Higienizar UI da Release 1.0 (Issue [#612](https://github.com/ADS-IFPB-SR/alumigest/issues/612)) — **5 Story Points** (~11.0h).
 
 ---
 
-## 🎯 Os 4 Pilares Estratégicos da Sprint 10
+## 🎯 Sprint Goal (Meta da Sprint 10)
+
+> *"Proteger o AlumiGest ERP para operação web real com autenticação JWT de operador único e gestão segura da própria senha, parametrizar os dados institucionais da empresa nos documentos gerados sob demanda e higienizar a navegação removendo funcionalidades não concluídas, consolidando a homologação da Release 1.0.0 no Definition of Done."*
+
+---
+
+## 🤝 Diretrizes de Produto & Decisões Arquiteturais (Zero Regressão)
 
 ```mermaid
 flowchart TD
-    A["Sprint 10: Preparação para a 1ª Entrega"] --> B["1. Segurança & Autenticação de Usuário Único\n(JWT, Spring Security 6, Login Direto sem Divisão de Perfis)"]
-    A --> C["2. Configurações da Empresa & Logo Oficial\n(Cabeçalho dinâmico nos PDFs com logo da Alumiportas)"]
-    A --> D["3. Calibração Real Moveleira Rometal 45 mm\n(RM-059/060, Vidros 4mm, Giro/Correr/Basculante/Gaveta)"]
-    A --> E["4. Saneamento de Bugs & Qualidade\n(Fix de etiquetas térmicas, E2E Cypress e SonarQube)"]
+    S10["Sprint 10 — Fechamento Release 1.0.0 (13 pts)"] --> US48["US-48 (5 pts): Login JWT Operador Único\nProteção Universal de Rotas + Logout"]
+    S10 --> US49["US-49 (3 pts): Segurança da Conta\nTroca de Senha com Validação BCrypt"]
+    S10 --> US50["US-50 (5 pts): Configurações da Empresa\nCabeçalhos PDF Dinâmicos + Limpeza da Sidebar"]
+    US48 & US49 & US50 --> DOD["Definition of Done (DoD)\nHomologação Integrada Release 1.0 + Suíte E2E Verde"]
 ```
 
-### 1. Sistema de Login & Autenticação de Usuário Único
-Como a aplicação é web, a proteção contra acessos indevidos é essencial para a entrega comercial:
-- **Usuário Único / Administrador da Oficina**: O sistema atende à oficina Alumiportas com operador único, eliminando a complexidade desnecessária de segregação em 3 categorias de perfil (`ADMIN`, `VENDEDOR`, `OPERADOR`).
-- **Autenticação Segura JWT**: Senhas criptografadas com `BCryptPasswordEncoder`, tokens assinados via HMAC-SHA256 e interceptor de requisições no frontend.
-- **Experiência Visual**: Tela de login limpa, elegante, responsiva e com feedback reativo de erro e proteção universal de rotas privadas (`ProtectedRoute`).
+### 1. Operador Único Autenticado (Sem RBAC em 3 Perfis e Sem Auto-Cadastro)
+Por decisão explícita de negócio junto ao Product Owner para a Release 1.0:
+- **Apenas 1 perfil autenticado** (Operador Único / Administrador da Oficina), sem divisão em 3 categorias (`ADMIN`, `SELLER`, `PRODUCTION`) e sem matriz de permissões por papel nesta entrega.
+- **Sem sistema de registro de contas na interface**: não há tela pública de auto-cadastro nem CRUD de múltiplos usuários; a conta oficial nasce provisionada via *seed* (`V27__create_users_schema.sql` / variáveis de ambiente) com hash `BCrypt`.
+- **Bloqueio de 15 min após 5 falhas (`RF-005`) e Log de Auditoria (`RF-006`)** permanecem postergados para evoluções futuras.
 
-### 2. Painel de Configurações da Empresa & Cabeçalho Dinâmico
-Eliminação de dados estáticos (*hardcoded*), permitindo à oficina personalizar seus dados cadastrais mantendo a identidade visual oficial:
-- **Logotipo Oficial**: O sistema já possui o logotipo oficial da empresa (`logo-alumiportas.png`), utilizado de forma consistente no cabeçalho.
-- **Cadastro e Persistência Dinâmica**: **Razão Social, Nome Fantasia, CNPJ, Inscrição Estadual, Telefone/WhatsApp, Endereço e Cidade-UF**.
-- **Reflexo Dinâmico Imediato**: Todos os documentos gerados pelo sistema (Orçamentos comerciais em PDF, Fichas Técnicas A4 de montagem/corte, Comprovantes de O.S., Vendas Avulsas e Etiquetas Térmicas 100×60mm) passam a renderizar o cabeçalho oficial dinamicamente a partir do banco de dados.
+### 2. Troca Segura da Própria Senha na Interface (`US-49`)
+- O operador autenticado pode substituir a senha inicial diretamente em `/configuracoes`, informando obrigatoriamente a `Senha Atual`, a `Nova Senha` ($\ge 8$ caracteres, distinta da atual) e a confirmação.
 
-### 3. Calibração e Prova de Paridade com a Linha 45 mm Rometal Moveleira
-A prova de fogo da confiabilidade do motor de precificação e engenharia no core business da empresa:
-- **Foco Real: Ramo Moveleiro de Alto Padrão**: Portas e gavetas em alumínio com vidro de 4mm para móveis planejados, armários e closets.
-- **Perfis de Alumínio Moveleiro Rometal 45 mm**:
-  - **RM-060**: Perfil estrutural 45mm com **aba frontal baixa** (estética limpa/minimalista).
-  - **RM-059**: Perfil estrutural 45mm com **aba frontal alta** (visual robusto com sobreposição).
-- **Cores Homologadas**: **Bronze** (Anodizado Bronze), **Fosco** (Anodizado Fosco / Jateado) e **Preto** (Preto Fosco).
-- **Vidros Utilizados**: Estritamente **Vidro 4 mm** (Incolor, Reflecta Bronze, Reflecta Fumê, Espelho Prata 4mm, Acidato).
-- **4 Tipologias Moveleiras do Benchmark de Paridade**:
-  1. **Porta de Giro Moveleira 45mm** ($2100 \times 450\text{ mm}$, RM-060 Preto, Reflecta Bronze 4mm, dobradiças 45mm);
-  2. **Porta de Correr Moveleira 45mm** ($2200 \times 800\text{ mm}$, RM-059 Fosco, Espelho 4mm, roldanas deslizantes Rometal);
-  3. **Porta Basculante Moveleira 45mm** ($400 \times 900\text{ mm}$, RM-060 Bronze, Vidro 4mm, pistões a gás 80N);
-  4. **Frente de Gaveta Moveleira 45mm** ($180 \times 600\text{ mm}$, RM-060 Preto, Vidro 4mm, cantoneiras de corrediça).
-- **Meta Matemática**: Divergência $\Delta = \text{R\$} 0{,}00$ entre o cálculo do AlumiGest e as planilhas da Alumiportas.
+### 3. Parametrização Institucional em Banco Substituindo Dados Estáticos (`US-50`)
+- Substitui os valores estáticos hoje lidos apenas de `CompanyProperties` (`@ConfigurationProperties(prefix = "empresa")`) por persistência dinâmica singleton em `tb_company_settings` (`V28__create_company_settings_schema.sql`), mantendo fallback seguro.
+- **Sem upload de imagem**: preserva a logomarca institucional já embarcada em `backend/src/main/resources/static/logo-alumiportas.png`.
+- **Sem reprocessamento retroativo de PDFs**: alterações cadastrais refletem naturalmente nas emissões sob demanda realizadas a partir do salvamento, preservando o *snapshot* imutável dos pedidos aprovados (`US-14`).
 
-### 4. Saneamento Completo de Bugs & Quality Gate Verde
-Estabilidade absoluta para a banca e para o cliente final:
-- Finalização da correção da impressão de etiquetas térmicas na Venda Avulsa (Issue [#598](https://github.com/ADS-IFPB-SR/alumigest/issues/598) / PR [#600](https://github.com/ADS-IFPB-SR/alumigest/pull/600)).
-- Bateria completa de testes automatizados: MockMvc no backend, Vitest no frontend e suíte Cypress E2E.
-- SonarQube com **Quality Gate 100% aprovado**, 0 bugs, 0 vulnerabilidades e 0 code smells.
+### 4. Higienização de Navegação & Blindagem dos 2.120 Testes Existentes
+- **UI Limpa para a Release 1.0**: ocultação dos menus *placeholder* não concluídos (`Dashboard` e `Financeiro` na `Sidebar.tsx`) e remoção de elementos estáticos mortos na `Topbar.tsx`.
+- **Compatibilidade Automatizada**: suporte `@WithMockUser` para testes legados de fatia WebMvc no backend e comando `cy.login()` com cache `cy.session()` no Cypress.
+- **Homologação como DoD**: em aderência ao histórico do projeto (`de-para-user-stories.md`), a homologação ponta a ponta da Release 1.0 integra o **Definition of Done** da sprint.
 
 ---
 
-## 🗺️ Mapa de Fatiamento Atômico (Sprint Backlog)
+## 🗺️ Mapa de Histórias e Fatiamento Atômico (Sprint Backlog)
 
-| Sub-Task | Título da Tarefa Atômica | Escopo Delimitado & Critérios Técnicos | Story Points | Horas Estimadas |
-|:---:|---|---|:---:|:---:|
-| **US-10.1** | **Setup de Autenticação, Entidade `User` e Migração Flyway `V27`** | Script `V27__create_users_schema.sql`, tabela `tb_users` (usuário único admin), entidade `User`, `UserRepository` e hash BCrypt. | 1 pt | 2.0h |
-| **US-10.2** | **Motor de Autenticação JWT, Spring Security 6 e Endpoints `/api/v1/auth`** | `SecurityConfig` stateless, `JwtService`, filtro `JwtAuthenticationFilter`, DTOs de login e endpoints `/api/v1/auth/login` e `/api/v1/auth/me`. | 2 pts | 3.0h |
-| **US-10.3** | **Tela de Login (`/login`) e Proteção de Rotas (`ProtectedRoute`) no Frontend** | Página de login com Design System oficial e logotipo Alumiportas, validação Zod/React Hook Form, `ProtectedRoute` e botão Logout. | 2 pts | 3.0h |
-| **US-10.4** | **Entidade `CompanySettings`, Migração `V28` e Endpoints de Configurações** | Tabela `tb_company_settings`, entidade singleton, DTOs e endpoints `GET` / `PUT /api/v1/settings/company` com validação de CNPJ/Telefone. | 1 pt | 2.0h |
-| **US-10.5** | **Tela de Configurações (`/configuracoes`) com Preview de Cabeçalho A4** | Substituição do Placeholder por formulário com exibição da logomarca oficial e preview interativo do cabeçalho institucional em tempo real. | 2 pts | 3.0h |
-| **US-10.6** | **Consumo Dinâmico dos Dados da Empresa em todos os PDFs e Etiquetas** | Refatoração de `BudgetPdfService`, `OrderReceiptPdfService`, `ProductionSheetPdfService`, `PartSalePdfService` e `LabelPdfService` para lerem do banco. | 1 pt | 2.5h |
-| **US-10.7** | **Matriz de Calibração das 4 Tipologias Moveleiras Rometal 45 mm** | Levantamento de fórmulas de corte e insumos para Portas de Giro, Correr, Basculante e Frente de Gaveta (RM-059/060 Bronze, Fosco, Preto, Vidro 4mm). | 1 pt | 2.5h |
-| **US-10.8** | **Ajuste Fino dos Motores de Cálculo para Paridade Centavo a Centavo** | Calibração de folgas de esquadria 45°, desconto de vidro 4mm e acessórios (ESQ-041, BG-216), com testes unitários comprovando $\Delta = \text{R\$} 0{,}00$. | 1 pt | 3.0h |
-| **US-10.9** | **Saneamento do Bug de Etiquetas Térmicas na Venda Avulsa (PR #600)** | Integração do endpoint oficial de PDF de etiquetas térmicas 100×60mm na Venda Avulsa e fechamento da Issue #598. | 1 pt | 2.5h |
-| **US-10.10** | **Bateria E2E Cypress, Quality Gate SonarQube e Dossiê de Homologação** | Execução da suíte Cypress de ponta a ponta, validação no Coolify e geração dos documentos de aceitação (`TEA`, `RTM`, `RET`). | 1 pt | 3.0h |
-| **Total** | **10 Tarefas Atômicas ($\le$ 3.5h cada)** | **Cobertura Completa dos 4 Pilares da Sprint 10** | **13 pts** | **26.5h** |
+### 🔐 US-48: Autenticar Operador Único com JWT, Proteger Rotas Privadas e Encerrar Sessão
+**Issue GitHub**: [#610](https://github.com/ADS-IFPB-SR/alumigest/issues/610) | **Prioridade**: P1 (Bloqueante Release 1.0)  
+**Branch Base**: `develop` | **Branch de Feature**: `feat/us-48-autenticacao-jwt`
+
+| Sub-Task | Issue GitHub | Título da Tarefa Atômica | Escopo Técnico Delimitado (BD + Back + Front + QA) | Story Points | Horas Estimadas |
+|:---:|:---:|---|---|:---:|:---:|
+| **US-48.1** | [#613](https://github.com/ADS-IFPB-SR/alumigest/issues/613) | **Migration `V27`, Entidade `User` (Operador Único) e `JwtService`** | Script `V27__create_users_schema.sql` com *seed* inicial `BCrypt`, entidade JPA `User`, `UserRepository` e geração/validação JWT HMAC-SHA256 (8h) + testes unitários. | 1 pt | 2.5h |
+| **US-48.2** | [#614](https://github.com/ADS-IFPB-SR/alumigest/issues/614) | **Spring Security 6 Stateless, Endpoints `/api/v1/auth` e Compatibilidade de Testes** | `SecurityConfig`, `JwtAuthenticationFilter`, `POST /api/v1/auth/login`, `GET /api/v1/auth/me` e suporte `@WithMockUser` para testes MockMvc legados. | 2 pts | 3.0h |
+| **US-48.3** | [#615](https://github.com/ADS-IFPB-SR/alumigest/issues/615) | **Tela `/login`, `ProtectedRoute`, Sessão Axios e Logout Real** | `LoginPage.tsx` (M3 Light/Dark), `AuthContext`, interceptor Axios `Bearer`/401, guarda universal de rotas privadas, nome real na `Topbar` e ação `Sair` + Vitest. | 2 pts | 3.0h |
+| **Subtotal US-48** | — | — | **3 Tarefas Atômicas ($\le$ 3.0h cada)** | **5 pts** | **8.5h** |
 
 ---
 
-## 📊 Resumo Executivo da Sprint 10
+### 🔑 US-49: Alterar Senha de Acesso da Conta Autenticada
+**Issue GitHub**: [#611](https://github.com/ADS-IFPB-SR/alumigest/issues/611) | **Prioridade**: P1 (Segurança Operacional)  
+**Branch Base**: `develop` | **Branch de Feature**: `feat/us-49-alteracao-senha`
+
+| Sub-Task | Issue GitHub | Título da Tarefa Atômica | Escopo Técnico Delimitado (BD + Back + Front + QA) | Story Points | Horas Estimadas |
+|:---:|:---:|---|---|:---:|:---:|
+| **US-49.1** | [#616](https://github.com/ADS-IFPB-SR/alumigest/issues/616) | **Endpoint Autenticado de Troca de Senha (`PUT /api/v1/auth/password`)** | DTO com Bean Validation, verificação obrigatória da `currentPassword` contra o hash `BCrypt`, trava contra repetição da mesma senha, atualização segura e testes MockMvc. | 1 pt | 2.5h |
+| **US-49.2** | [#617](https://github.com/ADS-IFPB-SR/alumigest/issues/617) | **Formulário "Segurança da Conta / Alterar Senha" em `/configuracoes`** | Seção reativa com React Hook Form + Zod, toggles mostrar/ocultar nos 3 campos, tratamento de erro 400/422 e confirmação via *toast* + testes Vitest. | 2 pts | 3.0h |
+| **Subtotal US-49** | — | — | **2 Tarefas Atômicas ($\le$ 3.0h cada)** | **3 pts** | **5.5h** |
+
+---
+
+### 🏢 US-50: Configurar Dados Institucionais da Empresa, Atualizar Cabeçalhos PDF e Higienizar UI da Release 1.0
+**Issue GitHub**: [#612](https://github.com/ADS-IFPB-SR/alumigest/issues/612) | **Prioridade**: P1 (Identidade & Fechamento Release 1.0)  
+**Branch Base**: `develop` | **Branch de Feature**: `feat/us-50-configuracoes-empresa`
+
+| Sub-Task | Issue GitHub | Título da Tarefa Atômica | Escopo Técnico Delimitado (BD + Back + Front + QA) | Story Points | Horas Estimadas |
+|:---:|:---:|---|---|:---:|:---:|
+| **US-50.1** | [#618](https://github.com/ADS-IFPB-SR/alumigest/issues/618) | **Migration `V28`, Entidade `CompanySettings` e API `/api/v1/settings/company`** | Script `V28__create_company_settings_schema.sql` (singleton com *seed* inicial), validação de CNPJ/E-mail/Telefone e endpoints `GET` e `PUT` + testes MockMvc. | 1 pt | 2.5h |
+| **US-50.2** | [#619](https://github.com/ADS-IFPB-SR/alumigest/issues/619) | **Tela `/configuracoes` — Dados da Empresa com Máscaras e Preview de Cabeçalho** | Formulário completo (Razão Social, Nome Fantasia, CNPJ, I.E., Telefone/WhatsApp, E-mail, CEP e Endereço) com preview em tempo real junto à logo fixa + testes Vitest. | 2 pts | 3.0h |
+| **US-50.3** | [#620](https://github.com/ADS-IFPB-SR/alumigest/issues/620) | **Cabeçalho Institucional Dinâmico nos Geradores PDF e Etiquetas** | Injeção de `CompanySettingsService` em `BudgetPdfService`, `OrderPdfService`, `ProductionSheetPdfService`, `PartSalePdfService` e `ThermalLabelPdfRenderer` com fallback seguro + testes PDF. | 1 pt | 3.0h |
+| **US-50.4** | [#621](https://github.com/ADS-IFPB-SR/alumigest/issues/621) | **Higienização da Sidebar/Topbar e Suíte E2E Autenticada (DoD Release 1.0)** | Ocultar `Dashboard`, `Financeiro` e ícones mortos na `Sidebar`/`Topbar`, criar helper `cy.login()` com `cy.session()` e suíte E2E Cypress Login + Senha + Configurações + PDF. | 1 pt | 2.5h |
+| **Subtotal US-50** | — | — | **4 Tarefas Atômicas ($\le$ 3.0h cada)** | **5 pts** | **11.0h** |
+
+---
+
+### 📊 Resumo Executivo da Sprint 10
 
 | Indicador | Total Planejado |
 |---|:---:|
-| **Histórias / Pilares Contemplados** | **4 Pilares Estratégicos** (Segurança, Configurações, Calibração Moveleira, Qualidade) |
-| **Total de Tarefas da Sprint** | **10 Tarefas Atômicas** |
-| **Total de Story Points** | **13 pts** |
-| **Total de Horas de Engenharia** | **26.5 horas** |
-| **Carga Média por Desenvolvedor** | ~4.4 horas (menos de 2 fatias por desenvolvedor) |
+| **Histórias de Usuário Contempladas** | **3 Histórias** (`US-48`, `US-49` e `US-50`) |
+| **Homologação da Release 1.0.0** | **Incorporada no Definition of Done (DoD)** |
+| **Total de Tarefas da Sprint** | **9 Tarefas Atômicas** (3 na `US-48` + 2 na `US-49` + 4 na `US-50`) |
+| **Total de Story Points** | **13 pts** (`5 + 3 + 5`) |
+| **Total de Horas de Engenharia** | **25.0 horas** |
+| **Carga Média por Desenvolvedor** | ~3.6 a 4.2 horas (1 a 2 fatias leves por desenvolvedor) |
 
 ---
 
-## 🔗 Documentos de Apoio e Protótipos
+## 🔗 Documentos de Referência
 
-- 📑 **Especificação Funcional Detalhada da Sprint 10**: [`spec.md`](spec.md)
-- 🖥️ **Protótipo Interativo Homologado da Sprint 10**: [`docs/planejamento/prototipos/autenticacao-configuracoes-homologacao.html`](../prototipos/autenticacao-configuracoes-homologacao.html)
-- 🏛️ **Constituição e Padrões de Projeto**: [`constitution.md`](../constitution.md)
+- 📑 **Especificação Funcional e BDD da Sprint 10**: [`spec.md`](spec.md)
+- 🗂️ **Pacote de Issues Prontas (USs & Fatias Atômicas)**: [`issues/`](issues/)
+- 📝 **Ata Oficial da Sprint 10 Planning**: [`ATA-Sprint_10_Planning.md`](../../projeto-001/001-atas-reuniao/ATA-Sprint_10_Planning.md)
+- 🏛️ **Constituição e Padrões Arquiteturais do Projeto**: [`constitution.md`](../constitution.md)
