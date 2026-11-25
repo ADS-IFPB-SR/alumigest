@@ -116,6 +116,15 @@ A Sprint 09 é estruturada em **Fatias Atômicas (*Atomic Slices*) de até 3.5 h
 - [ ] Faixa superior de avisos fabris no topo do Kanban alertando sobre insumos pendentes de compra.
 - [ ] Testes automatizados de roteamento e renderização com Vitest.
 
+#### US-22.5: Suíte de Testes E2E (Cypress) de Posição de Estoque, Extrato Kardex e Entrada de Compras [1 pt / 3.0h]
+- **Issue**: [#609](https://github.com/ADS-IFPB-SR/alumigest/issues/609)
+- [ ] Suíte Cypress `frontend/cypress/e2e/stock/us22_posicao_estoque_kardex.cy.ts` cobrindo o ciclo ponta a ponta do catálogo e estoque.
+- [ ] Validação E2E da navegação entre as 4 abas e renderização correta de saldos e badges (`🟢 Insumos Disponíveis`, `🟡 Ponto de Pedido`, `🔴 Falta Insumo / Comprar`).
+- [ ] Validação E2E de abertura, inspeção cronológica e fechamento da gaveta lateral Kardex (`KardexDrawer`).
+- [ ] Validação E2E de registro de entrada de compras via `PurchaseEntryModal` com atualização reativa de saldos.
+- [ ] Validação E2E do fluxo 2 em 1 no modal de cadastro com auto-provisionamento e lote inicial.
+- [ ] Adição do script `"test:e2e:us22"` no `package.json` e integração à pipeline CI.
+
 ---
 
 ## 3. 📐 Padrões Arquiteturais e Diretrizes de Qualidade

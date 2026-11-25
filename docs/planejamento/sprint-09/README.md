@@ -69,7 +69,8 @@ Apresentação visual fiel ao protótipo canônico homologado (`catalogo-materia
 | **US-22.2** | [#589](https://github.com/ADS-IFPB-SR/alumigest/issues/589) | **Gaveta Lateral de Extrato Kardex (`KardexDrawer.tsx`) e Linha do Tempo (Fullstack)** | Componente drawer deslizante (Sheet) com timeline interativa, ícones semânticos e conexão ao endpoint de extrato ordenado. *(Unifica antiga #588 e #589)* | 1 pt | 4.5h |
 | **US-22.3** | [#590](https://github.com/ADS-IFPB-SR/alumigest/issues/590) | **Modal de Entrada de Compras com Documento Livre e Auto-Provisionamento (Fullstack)** | `StockMovementModal.tsx` com documento livre, preço de compra, fluxo "2 em 1" no cadastro e carga inicial de insumos. *(Consolida escopo da #590 e fecha duplicata #595)* | 1 pt | 4.5h |
 | **US-22.4** | [#591](https://github.com/ADS-IFPB-SR/alumigest/issues/591) | **Rota `/catalogo`, Menu Lateral e Guia Visual de Avisos no Kanban** | Rota unificada no frontend, atalho na `Sidebar.tsx` e faixa superior de avisos fabris no Kanban de produção. | 1 pt | 3.5h |
-| **Subtotal US-22** | — | — | **4 Tarefas Verticais Fullstack** | **5 pts** | **18.5h** |
+| **US-22.5** | [#609](https://github.com/ADS-IFPB-SR/alumigest/issues/609) | **Suíte de Testes E2E (Cypress) de Posição de Estoque, Extrato Kardex e Entrada de Compras** | Suíte Cypress cobrindo catálogo, abas, badges Make-to-Order, drawer Kardex, entrada de compras e fluxo 2 em 1. | 1 pt | 3.0h |
+| **Subtotal US-22** | — | — | **5 Tarefas Verticais Fullstack e QA** | **6 pts** | **21.5h** |
 
 ---
 
@@ -78,10 +79,10 @@ Apresentação visual fiel ao protótipo canônico homologado (`catalogo-materia
 | Indicador | Total Planejado |
 |---|:---:|
 | **Histórias de Usuário Contempladas** | **2 Histórias** (US-21 e US-22) |
-| **Total de Tarefas da Sprint** | **12 Tarefas** (8 na US-21 + 4 na US-22) |
-| **Total de Story Points** | **13 pts** (8 pts na US-21 + 5 pts na US-22) |
-| **Total de Horas de Engenharia** | **42.5 horas** |
-| **Carga Média por Desenvolvedor** | ~7.0 horas (2 a 3 tarefas leves por desenvolvedor) |
+| **Total de Tarefas da Sprint** | **13 Tarefas** (8 na US-21 + 5 na US-22) |
+| **Total de Story Points** | **14 pts** (8 pts na US-21 + 6 pts na US-22) |
+| **Total de Horas de Engenharia** | **45.5 horas** |
+| **Carga Média por Desenvolvedor** | ~7.5 horas (2 a 3 tarefas leves por desenvolvedor) |
 
 ---
 
