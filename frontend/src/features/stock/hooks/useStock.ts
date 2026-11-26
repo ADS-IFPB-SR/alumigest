@@ -204,10 +204,18 @@ export const useCreateMaterialWithStock = () => {
   return useMutation({
     mutationFn: (payload: MaterialWithStockCreateRequest) =>
       stockApi.createMaterialWithStock(payload),
-    onSuccess: (response) => {
+    onSuccess: (response, variables) => {
+      const categoryLabels: Record<string, string> = {
+        GLASS: 'Vidro cadastrado com sucesso!',
+        ALUMINUM_PROFILE: 'Perfil cadastrado com sucesso!',
+        HARDWARE: 'Ferragem cadastrada com sucesso!',
+        FILM: 'Película cadastrada com sucesso!',
+      };
+      const baseLabel = categoryLabels[variables.categoryType] || 'Material cadastrado com sucesso!';
+
       const msg = response.initialMovement
-        ? 'Material cadastrado e lote inicial registrado no estoque!'
-        : 'Material cadastrado e provisionado no estoque com sucesso!';
+        ? `${baseLabel} (Lote inicial registrado no estoque)`
+        : baseLabel;
       toast.success(msg);
       queryClient.invalidateQueries({ queryKey: ['stock-balances'] });
       queryClient.invalidateQueries({ queryKey: ['stock-movements'] });

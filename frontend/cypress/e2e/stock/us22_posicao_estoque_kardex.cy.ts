@@ -475,7 +475,8 @@ describe('US-22: Suíte de Testes E2E (Cypress) - Posição de Estoque, Extrato 
     cy.get('[data-cy="glass-form-save-button"]').click();
 
     cy.wait('@createMaterialWithStock');
-    cy.contains('Material e saldo inicial de estoque cadastrados com sucesso!').should('be.visible');
+    cy.contains('Vidro cadastrado com sucesso!').should('be.visible');
+    cy.contains('Lote inicial registrado no estoque').should('be.visible');
   });
 
   // =========================================================
