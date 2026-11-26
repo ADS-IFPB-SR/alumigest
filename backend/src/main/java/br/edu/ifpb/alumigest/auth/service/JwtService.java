@@ -12,7 +12,6 @@ import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Date;
 import java.util.Objects;
 import javax.crypto.SecretKey;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +32,7 @@ public class JwtService {
   static final String CLAIM_USER_ID = "uid";
   static final String CLAIM_NAME = "name";
   private static final String ALGORITHM_HS256 = "HS256";
+  private static final long PARSER_CLOCK_SKEW_SECONDS = Long.MAX_VALUE / 2000;
 
   private final SecretKey signingKey;
   private final Duration expiration;
@@ -65,12 +65,13 @@ public class JwtService {
   public String generateToken(User user) {
     Objects.requireNonNull(user, "A conta é obrigatória para emissão do token.");
     Instant now = clock.instant();
+    Instant expiresAt = now.plus(expiration);
     return Jwts.builder()
         .subject(user.getEmail())
         .claim(CLAIM_USER_ID, user.getId() != null ? user.getId().toString() : null)
         .claim(CLAIM_NAME, user.getName())
-        .issuedAt(Date.from(now))
-        .expiration(Date.from(now.plus(expiration)))
+        .claim(Claims.ISSUED_AT, now.getEpochSecond())
+        .claim(Claims.EXPIRATION, expiresAt.getEpochSecond())
         .signWith(signingKey, Jwts.SIG.HS256)
         .compact();
   }
@@ -94,7 +95,7 @@ public class JwtService {
    * @throws InvalidTokenException se o token for inválido, expirado ou adulterado
    */
   public Instant extractExpiration(String token) {
-    return parseClaims(token).getExpiration().toInstant();
+    return extractExpirationInstant(parseClaims(token));
   }
 
   /**
@@ -128,16 +129,28 @@ public class JwtService {
     try {
       Jws<Claims> jws = Jwts.parser()
           .verifyWith(signingKey)
-          .clock(() -> Date.from(clock.instant()))
+          .clockSkewSeconds(PARSER_CLOCK_SKEW_SECONDS)
           .build()
           .parseSignedClaims(token);
       if (!ALGORITHM_HS256.equals(jws.getHeader().getAlgorithm())) {
         throw new InvalidTokenException("Algoritmo de assinatura do token não suportado.");
       }
-      return jws.getPayload();
+      Claims claims = jws.getPayload();
+      Instant expiresAt = extractExpirationInstant(claims);
+      if (!expiresAt.isAfter(clock.instant())) {
+        throw new InvalidTokenException("Token JWT inválido ou expirado.");
+      }
+      return claims;
     } catch (JwtException | IllegalArgumentException e) {
       throw new InvalidTokenException("Token JWT inválido ou expirado.", e);
     }
+  }
+
+  private static Instant extractExpirationInstant(Claims claims) {
+    if (claims.get(Claims.EXPIRATION) instanceof Number expSeconds) {
+      return Instant.ofEpochSecond(expSeconds.longValue());
+    }
+    throw new InvalidTokenException("Token JWT sem data de expiração válida.");
   }
 
   private static SecretKey buildSigningKey(String secret) {

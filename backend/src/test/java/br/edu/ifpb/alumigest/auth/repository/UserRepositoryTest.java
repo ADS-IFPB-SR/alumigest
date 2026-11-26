@@ -68,9 +68,9 @@ class UserRepositoryTest {
   @DisplayName("Deve impedir e-mails duplicados, inclusive com variação de maiúsculas")
   void shouldRejectDuplicateEmail() {
     userRepository.saveAndFlush(new User("Operador", "admin@alumigest.com", HASH));
+    User duplicate = new User("Outro", "ADMIN@alumigest.com", HASH);
 
-    assertThatThrownBy(() ->
-        userRepository.saveAndFlush(new User("Outro", "ADMIN@alumigest.com", HASH)))
+    assertThatThrownBy(() -> userRepository.saveAndFlush(duplicate))
         .isInstanceOf(DataIntegrityViolationException.class);
   }
 }

@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import br.edu.ifpb.alumigest.auth.config.JwtProperties;
 import br.edu.ifpb.alumigest.auth.domain.User;
 import br.edu.ifpb.alumigest.auth.exception.InvalidTokenException;
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import java.nio.charset.StandardCharsets;
@@ -13,7 +14,6 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
-import java.util.Date;
 import java.util.UUID;
 import javax.crypto.SecretKey;
 import org.junit.jupiter.api.BeforeEach;
@@ -169,6 +169,19 @@ class JwtServiceTest {
       assertThatThrownBy(() -> later.extractExpiration(token))
           .isInstanceOf(InvalidTokenException.class);
     }
+
+    @Test
+    @DisplayName("Deve rejeitar token assinado sem claim de expiração")
+    void shouldRejectTokenWithoutExpirationClaim() {
+      SecretKey key = Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
+      String tokenWithoutExp = Jwts.builder()
+          .subject("admin@alumigest.com")
+          .claim(Claims.ISSUED_AT, T0.getEpochSecond())
+          .signWith(key, Jwts.SIG.HS256)
+          .compact();
+
+      assertThat(serviceAt(T0).isTokenValid(tokenWithoutExp)).isFalse();
+    }
   }
 
   @Nested
@@ -207,8 +220,8 @@ class JwtServiceTest {
       SecretKey key = Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
       String hs384Token = Jwts.builder()
           .subject("admin@alumigest.com")
-          .issuedAt(Date.from(T0))
-          .expiration(Date.from(T0.plusSeconds(3600)))
+          .claim(Claims.ISSUED_AT, T0.getEpochSecond())
+          .claim(Claims.EXPIRATION, T0.plusSeconds(3600).getEpochSecond())
           .signWith(key, Jwts.SIG.HS384)
           .compact();
 
@@ -220,7 +233,7 @@ class JwtServiceTest {
     void shouldRejectUnsignedToken() {
       String unsigned = Jwts.builder()
           .subject("admin@alumigest.com")
-          .expiration(Date.from(T0.plusSeconds(3600)))
+          .claim(Claims.EXPIRATION, T0.plusSeconds(3600).getEpochSecond())
           .compact();
 
       assertThat(serviceAt(T0).isTokenValid(unsigned)).isFalse();
@@ -294,7 +307,9 @@ class JwtServiceTest {
     @Test
     @DisplayName("Deve rejeitar propriedades ou relógio nulos")
     void shouldRejectNullDependencies() {
-      assertThatThrownBy(() -> new JwtService(null, Clock.systemUTC()))
+      Clock utcClock = Clock.systemUTC();
+
+      assertThatThrownBy(() -> new JwtService(null, utcClock))
           .isInstanceOf(NullPointerException.class);
       assertThatThrownBy(() -> new JwtService(properties, null))
           .isInstanceOf(NullPointerException.class);

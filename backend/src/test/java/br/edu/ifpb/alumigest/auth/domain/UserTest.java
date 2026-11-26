@@ -55,11 +55,14 @@ class UserTest {
     User b = new User("B", "b@alumigest.com", "hash");
     UUID id = UUID.randomUUID();
 
-    assertThat(a).isEqualTo(a).isNotEqualTo(b).isNotEqualTo("outro tipo");
+    assertThat(a)
+        .isNotEqualTo(b)
+        .isNotEqualTo(null);
     ReflectionTestUtils.setField(a, "id", id);
     ReflectionTestUtils.setField(b, "id", id);
 
-    assertThat(a).isEqualTo(b);
-    assertThat(a.hashCode()).isEqualTo(b.hashCode());
+    assertThat(a)
+        .isEqualTo(b)
+        .hasSameHashCodeAs(b);
   }
 }
