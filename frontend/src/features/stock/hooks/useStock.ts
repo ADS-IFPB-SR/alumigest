@@ -207,7 +207,7 @@ export const useCreateMaterialWithStock = () => {
     onSuccess: (response, variables) => {
       const categoryLabels: Record<string, string> = {
         GLASS: 'Vidro cadastrado com sucesso!',
-        ALUMINUM_PROFILE: 'Perfil cadastrado com sucesso!',
+        PROFILE: 'Perfil cadastrado com sucesso!',
         HARDWARE: 'Ferragem cadastrada com sucesso!',
         FILM: 'Película cadastrada com sucesso!',
       };

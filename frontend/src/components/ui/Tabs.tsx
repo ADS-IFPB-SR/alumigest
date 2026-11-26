@@ -16,7 +16,7 @@ export function Tabs({ children, defaultIndex = 0, rightSlot }: TabsProps) {
   const [activeIndex, setActiveIndex] = useState(defaultIndex);
 
   return (
-    <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
+    <div className="flex flex-col flex-1 min-h-0 overflow-hidden h-full">
 
       {/* Horizontal Tabs + Optional Right Slot */}
       <div className="border-b border-outline-variant mb-sm flex flex-col xl:flex-row xl:items-center xl:justify-between gap-xs flex-none">

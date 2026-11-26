@@ -215,7 +215,7 @@ export function CatalogView({ initialOnlyNeedsPurchase = false }: CatalogViewPro
   );
 
   return (
-    <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+    <>
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-sm gap-sm flex-none">
         <div>
@@ -461,6 +461,6 @@ export function CatalogView({ initialOnlyNeedsPurchase = false }: CatalogViewPro
           onRequestNewMaterial={handleOpenSelectionModal}
         />
       )}
-    </div>
+    </>
   );
 }

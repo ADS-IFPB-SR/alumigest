@@ -203,7 +203,7 @@ describe('US-22: Suíte de Testes E2E (Cypress) - Posição de Estoque, Extrato 
       id: 'mov-002',
       stockItemId: 'stk-001',
       materialId: glass1Id,
-      type: 'RESERVATION',
+      type: 'PRODUCTION_RESERVATION',
       quantity: 5.0,
       unitCost: 120.0,
       previousPhysicalQuantity: 15.0,
@@ -229,9 +229,10 @@ describe('US-22: Suíte de Testes E2E (Cypress) - Posição de Estoque, Extrato 
     cy.intercept('GET', '**/api/v1/catalog/materials*', []).as('getMaterialsSummary');
 
     // Intercepts do módulo de Estoque / Almoxarifado
+    // Nota: Cypress avalia intercepts em ordem reversa (último registrado tem prioridade)
     cy.intercept('GET', '**/api/v1/stock', mockStockBalances).as('getStockBalances');
-    cy.intercept('GET', `**/api/v1/stock/movements?materialId=${glass1Id}`, mockMovementsGlass1).as('getMovementsGlass1');
     cy.intercept('GET', '**/api/v1/stock/movements*', []).as('getGenericMovements');
+    cy.intercept('GET', `**/api/v1/stock/movements?materialId=${glass1Id}`, mockMovementsGlass1).as('getMovementsGlass1');
   });
 
   // =========================================================
@@ -351,9 +352,9 @@ describe('US-22: Suíte de Testes E2E (Cypress) - Posição de Estoque, Extrato 
     // Valida os registros na linha do tempo
     cy.get('[data-testid="kardex-timeline"]').should('be.visible');
     cy.get('[data-testid="kardex-timeline-item"]').should('have.length', 2);
-    cy.contains('Compra / Entrada').should('be.visible');
+    cy.contains('Entrada de Compras').should('be.visible');
     cy.contains('NF-1088').should('be.visible');
-    cy.contains('Reserva O.S.').should('be.visible');
+    cy.contains('Reserva para Produção').should('be.visible');
     cy.contains('OS-2026-0042').should('be.visible');
 
     // Fecha via botão fechar
@@ -450,7 +451,7 @@ describe('US-22: Suíte de Testes E2E (Cypress) - Posição de Estoque, Extrato 
 
     // Intercepta criação com estoque simultâneo (POST /stock/materials)
     cy.intercept('POST', '**/api/v1/stock/materials', (req) => {
-      expect(req.body.materialType).to.eq('GLASS');
+      expect(req.body.categoryType).to.eq('GLASS');
       expect(Boolean(req.body.initialStock)).to.equal(true);
       expect(req.body.initialStock.quantity).to.eq(30);
       expect(req.body.initialStock.unitCost).to.eq(85.0);
@@ -461,12 +462,35 @@ describe('US-22: Suíte de Testes E2E (Cypress) - Posição de Estoque, Extrato 
         statusCode: 201,
         body: {
           materialId: 'vid-new-001',
-          stockItemId: 'stk-new-001',
-          materialName: 'Vidro Fantasia Pontilhado 4mm',
-          materialSku: 'VID-PON-4MM',
-          physicalQuantity: 30.0,
-          availableQuantity: 30.0,
-          movementId: 'mov-new-001',
+          categoryType: 'GLASS',
+          material: { id: 'vid-new-001', name: 'Vidro Fantasia Pontilhado 4mm' },
+          stockItem: {
+            id: 'stk-new-001',
+            materialId: 'vid-new-001',
+            materialSku: 'VID-PON-4MM',
+            materialName: 'Vidro Fantasia Pontilhado 4mm',
+            category: 'GLASS',
+            unitMeasure: 'M2',
+            physicalQuantity: 30.0,
+            reservedQuantity: 0.0,
+            availableQuantity: 30.0,
+            minimumStock: 8.0,
+            alertStatus: 'IN_STOCK',
+          },
+          initialMovement: {
+            id: 'mov-new-001',
+            stockItemId: 'stk-new-001',
+            materialId: 'vid-new-001',
+            materialSku: 'VID-PON-4MM',
+            materialName: 'Vidro Fantasia Pontilhado 4mm',
+            type: 'PURCHASE_ENTRY',
+            quantity: 30.0,
+            unitCost: 85.0,
+            previousPhysicalQuantity: 0.0,
+            newPhysicalQuantity: 30.0,
+            referenceDocument: 'Lote Inicial #501',
+            createdAt: '2026-11-26T12:00:00Z',
+          },
         },
       });
     }).as('createMaterialWithStock');
@@ -496,22 +520,22 @@ describe('US-22: Suíte de Testes E2E (Cypress) - Posição de Estoque, Extrato 
     // Valida mensagens Zod nos campos obrigatórios
     cy.get('[data-cy="purchase-error-material"]')
       .should('be.visible')
-      .and('contain', 'Selecione o insumo');
+      .and('contain', 'Selecione o insumo que chegou');
 
     cy.get('[data-cy="purchase-error-quantity"]')
       .should('be.visible')
-      .and('contain', 'A quantidade deve ser maior que zero');
+      .and('contain', 'A quantidade recebida é obrigatória');
 
     cy.get('[data-cy="purchase-error-cost"]')
       .should('be.visible')
-      .and('contain', 'Preço unitário é obrigatório');
+      .and('contain', 'O preço de compra unitário é obrigatório (RN-06)');
 
     // Testa quantidade negativa / zerada
     cy.get('[data-cy="purchase-quantity-input"]').clear().type('0');
     cy.get('[data-cy="btn-submit-purchase-entry"]').click();
     cy.get('[data-cy="purchase-error-quantity"]')
       .should('be.visible')
-      .and('contain', 'A quantidade deve ser maior que zero');
+      .and('contain', 'A quantidade recebida deve ser maior que zero');
   });
 
   // =========================================================
