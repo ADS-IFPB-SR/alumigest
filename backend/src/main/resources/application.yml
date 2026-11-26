@@ -45,6 +45,12 @@ springdoc:
     operations-sorter: method
     tags-sorter: alpha
 
+security:
+  jwt:
+    # Sem valor padrao: defina JWT_SECRET (min. 32 bytes). O perfil dev possui segredo apenas para uso local.
+    secret: ${JWT_SECRET:}
+    expiration: ${JWT_EXPIRATION:8h}
+
 empresa:
   razao-social: ${EMPRESA_RAZAO_SOCIAL:Alumiportas LTDA}
   cnpj: ${EMPRESA_CNPJ:00.000.000/0000-00}
