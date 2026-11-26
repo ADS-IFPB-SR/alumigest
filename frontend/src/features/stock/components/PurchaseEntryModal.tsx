@@ -90,10 +90,14 @@ export function PurchaseEntryModal({
       open
       aria-modal="true"
       aria-labelledby="purchase-entry-modal-title"
+      data-cy="purchase-entry-modal"
+      data-testid="purchase-entry-modal"
       className="fixed inset-0 z-50 m-0 flex h-full w-full max-h-none max-w-none items-center justify-center border-0 bg-transparent p-4"
     >
       <button
         type="button"
+        data-cy="purchase-backdrop"
+        data-testid="purchase-backdrop"
         className="fixed inset-0 h-full w-full bg-black/50 backdrop-blur-sm border-0 cursor-default"
         onClick={onClose}
         tabIndex={-1}
@@ -118,6 +122,8 @@ export function PurchaseEntryModal({
           <button
             type="button"
             onClick={onClose}
+            data-cy="btn-close-purchase-entry"
+            data-testid="btn-close-purchase-entry"
             aria-label="Fechar modal de entrada de compras"
             className="rounded-lg p-1.5 text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors"
           >
@@ -151,6 +157,8 @@ export function PurchaseEntryModal({
             </div>
             <select
               id="purchase-materialId"
+              data-cy="purchase-material-select"
+              data-testid="purchase-material-select"
               {...register('materialId')}
               className="w-full rounded-xl border border-outline bg-surface px-3 py-2 text-xs font-medium text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/20"
             >
@@ -168,7 +176,7 @@ export function PurchaseEntryModal({
               })}
             </select>
             {errors.materialId && (
-              <p className="text-xs text-rose-500">{errors.materialId.message}</p>
+              <p data-cy="purchase-error-material" className="text-xs text-rose-500">{errors.materialId.message}</p>
             )}
           </div>
 
@@ -183,6 +191,8 @@ export function PurchaseEntryModal({
               </label>
               <input
                 id="purchase-quantity"
+                data-cy="purchase-quantity-input"
+                data-testid="purchase-quantity-input"
                 type="number"
                 step="any"
                 min="0"
@@ -191,7 +201,7 @@ export function PurchaseEntryModal({
                 className="w-full rounded-xl border border-outline bg-surface px-3 py-2 font-mono text-xs font-bold text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
               {errors.quantity && (
-                <p className="text-xs text-rose-500">{errors.quantity.message}</p>
+                <p data-cy="purchase-error-quantity" className="text-xs text-rose-500">{errors.quantity.message}</p>
               )}
             </div>
 
@@ -204,6 +214,8 @@ export function PurchaseEntryModal({
               </label>
               <input
                 id="purchase-unitCost"
+                data-cy="purchase-unit-cost-input"
+                data-testid="purchase-unit-cost-input"
                 type="number"
                 step="0.01"
                 min="0"
@@ -212,7 +224,7 @@ export function PurchaseEntryModal({
                 className="w-full rounded-xl border border-outline bg-surface px-3 py-2 font-mono text-xs font-bold text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
               {errors.unitCost && (
-                <p className="text-xs text-rose-500">{errors.unitCost.message}</p>
+                <p data-cy="purchase-error-cost" className="text-xs text-rose-500">{errors.unitCost.message}</p>
               )}
             </div>
           </div>
@@ -228,6 +240,8 @@ export function PurchaseEntryModal({
               </label>
               <input
                 id="purchase-referenceDocument"
+                data-cy="purchase-document-input"
+                data-testid="purchase-document-input"
                 type="text"
                 placeholder="Ex: Pedido 1088, Recibo 450"
                 {...register('referenceDocument')}
@@ -250,6 +264,8 @@ export function PurchaseEntryModal({
               </label>
               <input
                 id="purchase-supplier"
+                data-cy="purchase-supplier-input"
+                data-testid="purchase-supplier-input"
                 type="text"
                 placeholder="Ex: Distribuidora Asa"
                 {...register('supplier')}
@@ -271,6 +287,8 @@ export function PurchaseEntryModal({
             </label>
             <textarea
               id="purchase-reason"
+              data-cy="purchase-reason-input"
+              data-testid="purchase-reason-input"
               rows={2}
               placeholder="Ex: Reposição de lote para O.S. da semana"
               {...register('reason')}
@@ -284,6 +302,8 @@ export function PurchaseEntryModal({
             <button
               type="button"
               onClick={onClose}
+              data-cy="btn-cancel-purchase-entry"
+              data-testid="btn-cancel-purchase-entry"
               className="rounded-xl px-4 py-2 text-xs font-semibold text-on-surface-variant hover:bg-surface-container transition-colors"
             >
               Cancelar
@@ -291,6 +311,8 @@ export function PurchaseEntryModal({
             <button
               type="submit"
               disabled={isPending}
+              data-cy="btn-submit-purchase-entry"
+              data-testid="btn-submit-purchase-entry"
               className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
             >
               {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
