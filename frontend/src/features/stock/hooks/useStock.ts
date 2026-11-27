@@ -224,8 +224,9 @@ export const useCreateMaterialWithStock = () => {
       queryClient.invalidateQueries({ queryKey: ['catalog'] });
       queryClient.invalidateQueries({ queryKey: ['profiles'] });
       queryClient.invalidateQueries({ queryKey: ['glasses'] });
-      queryClient.invalidateQueries({ queryKey: ['hardware'] });
+      queryClient.invalidateQueries({ queryKey: ['hardwares'] });
       queryClient.invalidateQueries({ queryKey: ['films'] });
+      queryClient.invalidateQueries({ queryKey: ['materialsSummary'] });
     },
     onError: (error: unknown) => {
       console.error('Erro ao cadastrar material com estoque inicial:', error);
