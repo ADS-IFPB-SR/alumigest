@@ -9,6 +9,11 @@ spring:
       hibernate:
         format_sql: true
 
+security:
+  jwt:
+    # Segredo EXCLUSIVO para desenvolvimento local; em producao informe JWT_SECRET.
+    secret: ${JWT_SECRET:alumigest-dev-only-jwt-secret-key-0123456789-change-in-prod}
+
 logging:
   level:
     root: INFO
