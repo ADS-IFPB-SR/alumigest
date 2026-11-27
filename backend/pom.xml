@@ -74,10 +74,10 @@
             <artifactId>spring-boot-starter-aop</artifactId>
         </dependency>
 
-        <!-- Spring Security Crypto (BCryptPasswordEncoder) - sem ativar a auto-configuração de segurança (US-48.1) -->
+        <!-- Spring Security (Stateless JWT + BCryptPasswordEncoder) - US-48.2 -->
         <dependency>
-            <groupId>org.springframework.security</groupId>
-            <artifactId>spring-security-crypto</artifactId>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
 
         <!-- JJWT (JSON Web Token HMAC-SHA256) - US-48.1 -->
@@ -148,6 +148,13 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Spring Security Test (@WithMockUser, SecurityMockMvcRequestPostProcessors) - US-48.2 -->
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-test</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

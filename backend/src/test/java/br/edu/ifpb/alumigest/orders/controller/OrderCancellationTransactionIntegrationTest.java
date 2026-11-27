@@ -5,6 +5,7 @@ import br.edu.ifpb.alumigest.budgets.domain.BudgetStatus;
 import br.edu.ifpb.alumigest.budgets.repository.BudgetRepository;
 import br.edu.ifpb.alumigest.clients.domain.Client;
 import br.edu.ifpb.alumigest.clients.repository.ClientRepository;
+import br.edu.ifpb.alumigest.common.security.WithMockOperator;
 import br.edu.ifpb.alumigest.orders.domain.ApprovalChannel;
 import br.edu.ifpb.alumigest.orders.domain.Order;
 import br.edu.ifpb.alumigest.orders.domain.OrderStatus;
@@ -35,6 +36,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
+@WithMockOperator
 @DisplayName("Testes de Transação Real (Commit H2): Cancelamento de OS e Reabertura de Orçamento [Issue #517]")
 class OrderCancellationTransactionIntegrationTest {
 

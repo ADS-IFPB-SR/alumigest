@@ -16,7 +16,119 @@ declare namespace Cypress {
   }
 }
 
+// ==========================================
+// 0. AUTENTICAÇÃO JWT E2E (SPRING SECURITY 6 STATELESS)
+// ==========================================
+const getApiUrl = () => Cypress.env('apiUrl') || 'http://localhost:8081/api/v1';
+const getE2eEmail = () => Cypress.env('e2eEmail') || 'e2e@alumigest.com';
+const getE2ePassword = () => Cypress.env('e2ePassword') || 'AlumiGestE2E#2026!';
+
+let cachedAuthToken: string | null = null;
+
+function normalizeRequestOptions(args: unknown[]): Partial<Cypress.RequestOptions> {
+  const [first, second, third] = args;
+  if (typeof first === 'object' && first !== null) {
+    return { ...(first as Partial<Cypress.RequestOptions>) };
+  }
+  if (typeof first === 'string' && typeof second === 'string') {
+    return {
+      method: first as Cypress.HttpMethod,
+      url: second,
+      ...(third !== undefined ? { body: third as Cypress.RequestBody } : {}),
+    };
+  }
+  return {
+    url: String(first),
+    ...(second !== undefined ? { body: second as Cypress.RequestBody } : {}),
+  };
+}
+
+function shouldAttachAuthHeader(url?: string, headers?: Record<string, unknown>): boolean {
+  if (!url || !url.includes('/api/') || url.includes('/auth/login')) {
+    return false;
+  }
+  if (!headers) {
+    return true;
+  }
+  return !Object.keys(headers).some((key) => key.toLowerCase() === 'authorization');
+}
+
+function ensureE2eAuthToken(): void {
+  if (cachedAuthToken) {
+    return;
+  }
+  cy.request({
+    method: 'POST',
+    url: `${getApiUrl()}/auth/login`,
+    body: {
+      email: getE2eEmail(),
+      password: getE2ePassword(),
+    },
+    log: false,
+  }).then((response) => {
+    const token = response.body?.token;
+    if (!token || typeof token !== 'string') {
+      throw new Error(`Falha ao autenticar operador E2E. Status: ${response.status}`);
+    }
+    cachedAuthToken = token;
+  });
+}
+
+Cypress.Commands.overwrite('request', (originalFn, ...args: unknown[]) => {
+  const options = normalizeRequestOptions(args);
+
+  if (!shouldAttachAuthHeader(options.url, options.headers as Record<string, unknown> | undefined)) {
+    return originalFn(options as Cypress.RequestOptions);
+  }
+
+  if (cachedAuthToken) {
+    return originalFn({
+      ...options,
+      headers: {
+        ...options.headers,
+        Authorization: `Bearer ${cachedAuthToken}`,
+      },
+    } as Cypress.RequestOptions);
+  }
+
+  return originalFn({
+    method: 'POST',
+    url: `${getApiUrl()}/auth/login`,
+    body: {
+      email: getE2eEmail(),
+      password: getE2ePassword(),
+    },
+    log: false,
+  } as Cypress.RequestOptions).then((loginResponse) => {
+    const token = loginResponse.body?.token;
+    if (!token || typeof token !== 'string') {
+      throw new Error(`Falha ao autenticar operador E2E. Status: ${loginResponse.status}`);
+    }
+    cachedAuthToken = token;
+    return originalFn({
+      ...options,
+      headers: {
+        ...options.headers,
+        Authorization: `Bearer ${token}`,
+      },
+    } as Cypress.RequestOptions);
+  });
+});
+
+before(() => {
+  ensureE2eAuthToken();
+});
+
 beforeEach(() => {
+  ensureE2eAuthToken();
+
+  // Injeta Bearer JWT nas chamadas da aplicação sem interferir em mocks/aliases dos specs
+  cy.intercept({ url: '**/api/**', middleware: true }, (req) => {
+    if (cachedAuthToken && !req.url.includes('/auth/login') && !req.headers.authorization) {
+      req.headers.authorization = `Bearer ${cachedAuthToken}`;
+    }
+  });
+
   // Evita que fontes externas bloqueiem o evento window.load em Electron headless
   cy.intercept('GET', 'https://fonts.googleapis.com/**', {
     statusCode: 200,
@@ -98,14 +210,7 @@ const generateRandomNCM = () => {
 };
 
 // ==========================================
-// 3. CONFIGURAÇÃO DINÂMICA DA URL
-// ==========================================
-// Busca a variável de ambiente 'apiUrl' configurada no cypress.config.ts
-// Se não encontrar, usa o localhost como fallback seguro de desenvolvimento
-const getApiUrl = () => Cypress.env('apiUrl') || 'http://localhost:8081/api/v1';
-
-// ==========================================
-// 4. COMANDOS DE CRIAÇÃO E DELEÇÃO VIA API
+// 3. COMANDOS DE CRIAÇÃO E DELEÇÃO VIA API
 // ==========================================
 
 Cypress.Commands.add('deleteEntityAPI', (endpoint: string, id: string | number) => {

@@ -24,6 +24,7 @@ import br.edu.ifpb.alumigest.catalog.repository.MaterialRepository;
 import br.edu.ifpb.alumigest.catalog.repository.ProductRepository;
 import br.edu.ifpb.alumigest.clients.domain.Client;
 import br.edu.ifpb.alumigest.clients.repository.ClientRepository;
+import br.edu.ifpb.alumigest.common.security.WithMockOperator;
 import br.edu.ifpb.alumigest.orders.domain.ApprovalChannel;
 import br.edu.ifpb.alumigest.orders.domain.Order;
 import br.edu.ifpb.alumigest.orders.domain.OrderItem;
@@ -59,6 +60,7 @@ import org.springframework.test.web.servlet.MvcResult;
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
+@WithMockOperator
 @DisplayName("Integração Ciclo de Vida Estoque x O.S. (US-21.2)")
 class StockLifecycleIntegrationTest {
 

@@ -127,3 +127,19 @@ VALUES
     ('f0000000-0000-0000-0000-000000000025', 'e0000000-0000-0000-0000-000000000025', 'a0000000-0000-0000-0000-000000000101', 'GLASS', 1000, 2000, 1, 15.0, 2.0000, 180.00, 360.00),
     ('f0000000-0000-0000-0000-000000000026', 'e0000000-0000-0000-0000-000000000026', 'a0000000-0000-0000-0000-000000000201', 'PROFILE', NULL, 3000, 1, 0.0, 3.0000, 78.00, 234.00)
 ON CONFLICT (id) DO NOTHING;
+
+-- 6. OPERADOR DEDICADO PARA TESTES E2E (tb_users)
+-- Conta exclusiva para automação Cypress (não reutiliza nem expõe a senha do operador admin@alumigest.com)
+INSERT INTO tb_users (
+    id, name, email, password_hash, is_active, created_at, updated_at
+)
+VALUES (
+    '00000000-0000-0000-0000-000000000099',
+    'Operador E2E Cypress',
+    'e2e@alumigest.com',
+    '$2a$10$2OB/IdhMdIk3W0vE41LF8ummv4LjXhez0ho1Ar9/ZLwWY0KQAgb12',
+    TRUE,
+    NOW(),
+    NOW()
+)
+ON CONFLICT (email) DO NOTHING;

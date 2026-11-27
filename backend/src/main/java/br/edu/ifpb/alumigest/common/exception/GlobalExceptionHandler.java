@@ -1,5 +1,7 @@
 package br.edu.ifpb.alumigest.common.exception;
 
+import br.edu.ifpb.alumigest.auth.exception.InvalidCredentialsException;
+import br.edu.ifpb.alumigest.auth.exception.InvalidTokenException;
 import br.edu.ifpb.alumigest.common.dto.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
@@ -17,6 +19,19 @@ import java.util.List;
 public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    @ExceptionHandler({InvalidCredentialsException.class, InvalidTokenException.class})
+    public ResponseEntity<ErrorResponse> handleUnauthorized(
+            RuntimeException ex, HttpServletRequest request) {
+        HttpStatus status = HttpStatus.UNAUTHORIZED;
+        ErrorResponse error = ErrorResponse.of(
+                status.value(),
+                status.getReasonPhrase(),
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(status).body(error);
+    }
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleResourceNotFound(ResourceNotFoundException ex, HttpServletRequest request) {
