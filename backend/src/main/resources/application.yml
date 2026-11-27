@@ -35,6 +35,7 @@ spring:
     enabled: true
     baseline-on-migrate: true
     validate-on-migrate: false
+    out-of-order: true
     locations: classpath:db/migration
 
 springdoc:
