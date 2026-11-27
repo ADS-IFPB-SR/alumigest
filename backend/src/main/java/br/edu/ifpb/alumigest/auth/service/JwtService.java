@@ -24,6 +24,7 @@ import org.springframework.stereotype.Service;
  * claims auxiliares. Apenas o algoritmo HS256 é aceito na validação.
  */
 @Service
+@SuppressWarnings("java:S2143") // io.jsonwebtoken.Clock#now() exige retorno java.util.Date
 public class JwtService {
 
   /** Tamanho mínimo do segredo em bytes (256 bits) exigido pelo HMAC-SHA256. */
@@ -32,7 +33,6 @@ public class JwtService {
   static final String CLAIM_USER_ID = "uid";
   static final String CLAIM_NAME = "name";
   private static final String ALGORITHM_HS256 = "HS256";
-  private static final long PARSER_CLOCK_SKEW_SECONDS = Long.MAX_VALUE / 2000;
 
   private final SecretKey signingKey;
   private final Duration expiration;
@@ -129,7 +129,7 @@ public class JwtService {
     try {
       Jws<Claims> jws = Jwts.parser()
           .verifyWith(signingKey)
-          .clockSkewSeconds(PARSER_CLOCK_SKEW_SECONDS)
+          .clock(() -> java.util.Date.from(clock.instant())) // NOSONAR
           .build()
           .parseSignedClaims(token);
       if (!ALGORITHM_HS256.equals(jws.getHeader().getAlgorithm())) {

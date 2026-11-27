@@ -14,6 +14,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.Date;
 import java.util.UUID;
 import javax.crypto.SecretKey;
 import org.junit.jupiter.api.BeforeEach;
@@ -158,6 +159,15 @@ class JwtServiceTest {
     }
 
     @Test
+    @DisplayName("Deve rejeitar o token no instante exato de expiração")
+    void shouldRejectTokenAtExactExpirationInstant() {
+      String token = serviceAt(T0).generateToken(user);
+      JwtService atExpiration = serviceAt(T0.plus(Duration.ofHours(8)));
+
+      assertThat(atExpiration.isTokenValid(token)).isFalse();
+    }
+
+    @Test
     @DisplayName("Deve rejeitar o token expirado e lançar InvalidTokenException na extração")
     void shouldRejectExpiredToken() {
       String token = serviceAt(T0).generateToken(user);
@@ -168,6 +178,20 @@ class JwtServiceTest {
           .isInstanceOf(InvalidTokenException.class);
       assertThatThrownBy(() -> later.extractExpiration(token))
           .isInstanceOf(InvalidTokenException.class);
+    }
+
+    @Test
+    @DisplayName("Deve rejeitar token assinado com claim nbf no futuro")
+    void shouldRejectTokenNotYetValid() {
+      SecretKey key = Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
+      String prematureToken = Jwts.builder()
+          .subject("admin@alumigest.com")
+          .notBefore(Date.from(T0.plusSeconds(60)))
+          .expiration(Date.from(T0.plusSeconds(3600)))
+          .signWith(key, Jwts.SIG.HS256)
+          .compact();
+
+      assertThat(serviceAt(T0).isTokenValid(prematureToken)).isFalse();
     }
 
     @Test

@@ -56,8 +56,8 @@ class UserTest {
     UUID id = UUID.randomUUID();
 
     assertThat(a)
-        .isNotEqualTo(b)
-        .isNotEqualTo(null);
+        .isNotNull()
+        .isNotEqualTo(b);
     ReflectionTestUtils.setField(a, "id", id);
     ReflectionTestUtils.setField(b, "id", id);
 

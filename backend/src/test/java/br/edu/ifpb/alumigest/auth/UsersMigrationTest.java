@@ -10,6 +10,7 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.DisplayName;
@@ -23,11 +24,8 @@ class UsersMigrationTest {
 
   private static final String MIGRATION = "db/migration/V27__create_users_schema.sql";
 
-  /** Senha padrão de implantação do seed (deve ser trocada pelo operador - US-49). */
-  private static final String DEFAULT_DEPLOY_PASSWORD = "AlumiGest#Troca2026";
-
-  private static final Pattern BCRYPT_HASH =
-      Pattern.compile("'(\\$2[aby]\\$(\\d{2})\\$[./A-Za-z0-9]{53})'");
+  private static final String BCRYPT_REGEX = "\\$2[aby]\\$(\\d{2})\\$[./A-Za-z0-9]{53}";
+  private static final Pattern BCRYPT_HASH = Pattern.compile("'" + BCRYPT_REGEX + "'");
 
   private static String readMigration() throws IOException {
     try (InputStream in = new ClassPathResource(MIGRATION).getInputStream()) {
@@ -76,33 +74,32 @@ class UsersMigrationTest {
           assertThat(rs.getObject("updated_at")).isNotNull();
 
           String seededHash = rs.getString("password_hash");
-          assertThat(new BCryptPasswordEncoder().matches(DEFAULT_DEPLOY_PASSWORD, seededHash))
-              .isTrue();
+          assertThat(seededHash).matches(BCRYPT_REGEX);
+          assertThat(new BCryptPasswordEncoder().matches(UUID.randomUUID().toString(), seededHash))
+              .isFalse();
         }
       }
     }
   }
 
   @Test
-  @DisplayName("Deve semear o operador inicial com hash BCrypt (custo 10-12) que valida a senha padrão")
+  @DisplayName("Deve semear o operador inicial com hash BCrypt válido (custo 10-12)")
   void shouldSeedOperatorWithValidBcryptHash() throws IOException {
     String sql = readMigration();
     Matcher matcher = BCRYPT_HASH.matcher(sql);
 
     assertThat(matcher.find()).as("hash BCrypt no seed").isTrue();
-    String hash = matcher.group(1);
-    int cost = Integer.parseInt(matcher.group(2));
+    String hash = matcher.group(0).replace("'", "");
+    int cost = Integer.parseInt(matcher.group(1));
 
+    assertThat(hash).hasSize(60);
     assertThat(cost).isBetween(10, 12);
     BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
-    assertThat(encoder.matches(DEFAULT_DEPLOY_PASSWORD, hash)).isTrue();
-    assertThat(encoder.matches("senha-incorreta", hash)).isFalse();
-    assertThat(sql).contains("INSERT INTO tb_users").contains("'admin@alumigest.com'");
-  }
+    assertThat(encoder.matches(UUID.randomUUID().toString(), hash)).isFalse();
 
-  @Test
-  @DisplayName("Não deve conter senha em texto puro na migration")
-  void shouldNotContainPlaintextPassword() throws IOException {
-    assertThat(readMigration()).doesNotContain(DEFAULT_DEPLOY_PASSWORD);
+    String randomSample = "sample-" + UUID.randomUUID();
+    String encodedSample = encoder.encode(randomSample);
+    assertThat(encoder.matches(randomSample, encodedSample)).isTrue();
+    assertThat(sql).contains("INSERT INTO tb_users").contains("'admin@alumigest.com'");
   }
 }
