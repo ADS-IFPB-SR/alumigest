@@ -17,6 +17,10 @@ declare namespace Cypress {
 }
 
 beforeEach(() => {
+  // Viewport ampliado para garantir que botões de ação das tabelas
+  // não sejam cobertos pelo card do DashboardLayout em Electron headless
+  cy.viewport(1600, 900);
+
   // Evita que fontes externas bloqueiem o evento window.load em Electron headless
   cy.intercept('GET', 'https://fonts.googleapis.com/**', {
     statusCode: 200,

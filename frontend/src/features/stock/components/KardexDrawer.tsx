@@ -178,6 +178,7 @@ const KardexDrawerDialog: React.FC<KardexDrawerDialogProps> = ({
       <button
         type="button"
         data-testid="kardex-drawer-backdrop"
+        data-cy="kardex-drawer-backdrop"
         onClick={onClose}
         tabIndex={-1}
         aria-label="Fechar fundo da gaveta Kardex"
@@ -189,6 +190,7 @@ const KardexDrawerDialog: React.FC<KardexDrawerDialogProps> = ({
         aria-modal="true"
         aria-labelledby="kardex-drawer-title"
         data-testid="kardex-drawer"
+        data-cy="kardex-drawer"
         className="relative z-10 m-0 ml-auto p-0 border-0 border-l border-outline-variant w-full max-w-lg h-full max-h-none bg-surface-container-lowest text-on-surface shadow-2xl flex flex-col animate-in slide-in-from-right duration-200"
       >
         {/* Cabeçalho do Insumo */}
@@ -231,6 +233,7 @@ const KardexDrawerDialog: React.FC<KardexDrawerDialogProps> = ({
           <button
             type="button"
             data-testid="kardex-close-button"
+            data-cy="kardex-close-button"
             onClick={onClose}
             aria-label="Fechar gaveta Kardex"
             title="Fechar (Esc)"

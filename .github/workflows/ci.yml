@@ -184,8 +184,8 @@ jobs:
             module_name: Orçamentos
             spec_pattern: "cypress/e2e/budgets/**/*.cy.ts"
           - module: catalog
-            module_name: Catálogo
-            spec_pattern: "cypress/e2e/catalog/**/*.cy.ts"
+            module_name: Catálogo & Estoque
+            spec_pattern: "cypress/e2e/catalog/**/*.cy.ts,cypress/e2e/stock/**/*.cy.ts"
           - module: orders
             module_name: Pedidos & Produção
             spec_pattern: "cypress/e2e/orders/**/*.cy.ts"
