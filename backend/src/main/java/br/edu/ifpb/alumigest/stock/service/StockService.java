@@ -14,6 +14,7 @@ import br.edu.ifpb.alumigest.stock.domain.StockMovement;
 import br.edu.ifpb.alumigest.stock.domain.StockMovementType;
 import br.edu.ifpb.alumigest.stock.dto.OrderStockAlertResponseDTO;
 import br.edu.ifpb.alumigest.stock.dto.OrderStockAlertResponseDTO.MissingMaterialDTO;
+import br.edu.ifpb.alumigest.stock.dto.StockBalanceFilter;
 import br.edu.ifpb.alumigest.stock.dto.StockItemResponseDTO;
 import br.edu.ifpb.alumigest.stock.dto.StockMovementRequestDTO;
 import br.edu.ifpb.alumigest.stock.dto.StockMovementResponseDTO;
@@ -23,6 +24,7 @@ import br.edu.ifpb.alumigest.stock.repository.StockMovementRepository;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
@@ -193,9 +195,7 @@ public class StockService implements StockPort {
     @Override
     @Transactional
     public StockMovementResponseDTO registerMovement(StockMovementRequestDTO request) {
-        if (request == null || request.materialId() == null || request.type() == null) {
-            throw new BusinessException("Material e tipo de movimentação são obrigatórios.");
-        }
+        validateManualMovementRequest(request);
 
         if ((request.type() == StockMovementType.SCRAP_LOSS || request.type() == StockMovementType.MANUAL_ADJUSTMENT)
                 && (request.reason() == null || request.reason().trim().isEmpty())) {
@@ -237,11 +237,11 @@ public class StockService implements StockPort {
      */
     @Override
     public List<StockItemResponseDTO> listStockBalances() {
-        return stockItemRepository.findAllWithMaterial().stream()
-            .map(stockMapper::toItemResponseDTO)
-            .toList();
+        return listStockBalances(StockBalanceFilter.empty());
     }
 
+    /**
+     * {@inheritDoc}
     /**
      * {@inheritDoc}
      */
@@ -289,11 +289,63 @@ public class StockService implements StockPort {
     }
 
     /**
-     * Lista o histórico de movimentações Kardex, opcionalmente filtrado por material.
-     *
-     * @param materialId identificador opcional do material
-     * @return lista ordenada cronologicamente do mais recente ao mais antigo
+     * {@inheritDoc}
      */
+    @Override
+    public List<StockItemResponseDTO> listStockBalances(StockBalanceFilter filter) {
+        StockBalanceFilter effectiveFilter = filter != null ? filter : StockBalanceFilter.empty();
+        return stockItemRepository.findAllWithMaterial().stream()
+            .filter(item -> matchesProcurementFilter(item, effectiveFilter))
+            .map(stockMapper::toItemResponseDTO)
+            .filter(dto -> matchesDtoFilter(dto, effectiveFilter))
+            .sorted(effectiveFilter.effectiveSort().comparator())
+            .toList();
+    }
+
+    private boolean matchesProcurementFilter(StockItem item, StockBalanceFilter filter) {
+        if (!filter.hasProcurementFilter()) {
+            return true;
+        }
+        boolean matchNeedsPurchase = Boolean.TRUE.equals(filter.needsPurchase())
+            && item.needsPurchase();
+        boolean matchBelowMin = Boolean.TRUE.equals(filter.belowMinStock())
+            && item.isBelowMinimumStock();
+        return matchNeedsPurchase || matchBelowMin;
+    }
+
+    private boolean matchesDtoFilter(StockItemResponseDTO dto, StockBalanceFilter filter) {
+        if (!matchesCategory(dto, filter.category())) {
+            return false;
+        }
+        if (filter.alertStatus() != null && dto.alertStatus() != filter.alertStatus()) {
+            return false;
+        }
+        return matchesSearch(dto, filter.search());
+    }
+
+    private boolean matchesCategory(StockItemResponseDTO dto, String category) {
+        if (category == null || category.isBlank()) {
+            return true;
+        }
+        return dto.category() != null && dto.category().equalsIgnoreCase(category.trim());
+    }
+
+    private boolean matchesSearch(StockItemResponseDTO dto, String search) {
+        if (search == null || search.isBlank()) {
+            return true;
+        }
+        String term = search.trim().toLowerCase(Locale.ROOT);
+        boolean inName = dto.materialName() != null
+            && dto.materialName().toLowerCase(Locale.ROOT).contains(term);
+        boolean inSku = dto.materialSku() != null
+            && dto.materialSku().toLowerCase(Locale.ROOT).contains(term);
+        return inName || inSku;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public List<StockMovementResponseDTO> listMovements(UUID materialId) {
         List<StockMovement> movements = materialId != null
             ? stockMovementRepository.findByMaterialIdOrderByCreatedAtDesc(materialId)
@@ -372,6 +424,45 @@ public class StockService implements StockPort {
             });
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @Transactional
+    public StockItemResponseDTO provisionStockItem(UUID materialId, BigDecimal minimumStock) {
+        if (materialId == null) {
+            throw new BusinessException("O identificador do material é obrigatório.");
+        }
+        if (minimumStock != null && minimumStock.compareTo(BigDecimal.ZERO) < 0) {
+            throw new BusinessException("O ponto de pedido (estoque mínimo) não pode ser negativo.");
+        }
+
+        StockItem stockItem = getOrCreateStockItemForUpdate(materialId);
+        if (minimumStock != null) {
+            stockItem.updateMinimumStock(minimumStock);
+            stockItem = stockItemRepository.saveAndFlush(stockItem);
+        }
+        return stockMapper.toItemResponseDTO(stockItem);
+    }
+
+    private void validateManualMovementRequest(StockMovementRequestDTO request) {
+        if (request == null || request.materialId() == null || request.type() == null) {
+            throw new BusinessException("Material e tipo de movimentação são obrigatórios.");
+        }
+        if (request.quantity() == null || request.quantity().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new BusinessException("A quantidade movimentada deve ser maior que zero.");
+        }
+        if (request.unitCost() != null && request.unitCost().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new BusinessException("O preço de compra unitário deve ser maior que zero.");
+        }
+        // RN-06: Preço de compra unitário obrigatório em entradas de compra
+        if (request.type() == StockMovementType.PURCHASE_ENTRY && request.unitCost() == null) {
+            throw new BusinessException(
+                "O preço de compra unitário (unitCost) é obrigatório para entradas de compra (RN-06)."
+            );
+        }
+    }
+
     private StockMovement recordMovement(
             StockItem stockItem,
             StockMovementType type,
@@ -391,6 +482,7 @@ public class StockService implements StockPort {
             .previousReservedQuantity(previousReserved)
             .newReservedQuantity(stockItem.getReservedQuantity())
             .referenceDocument(context.referenceDocument())
+            .supplier(context.supplier())
             .reason(context.reason())
             .registeredBy(context.registeredBy())
             .build();
@@ -403,6 +495,7 @@ public class StockService implements StockPort {
     private record MovementAuditContext(
             UUID orderId,
             String referenceDocument,
+            String supplier,
             String reason,
             String registeredBy,
             BigDecimal unitCost) {
@@ -411,6 +504,7 @@ public class StockService implements StockPort {
             return new MovementAuditContext(
                 order.getId(),
                 order.getCodigo(),
+                null,
                 reason,
                 SYSTEM_USER,
                 null
@@ -420,13 +514,18 @@ public class StockService implements StockPort {
         static MovementAuditContext forManual(StockMovementRequestDTO request) {
             return new MovementAuditContext(
                 null,
-                request.referenceDocument(),
-                request.reason(),
+                normalizeOptionalText(request.referenceDocument()),
+                normalizeOptionalText(request.supplier()),
+                normalizeOptionalText(request.reason()),
                 request.registeredBy() != null && !request.registeredBy().isBlank()
-                    ? request.registeredBy()
+                    ? request.registeredBy().trim()
                     : SYSTEM_USER,
                 request.unitCost()
             );
+        }
+
+        private static String normalizeOptionalText(String value) {
+            return value != null && !value.isBlank() ? value.trim() : null;
         }
     }
 }

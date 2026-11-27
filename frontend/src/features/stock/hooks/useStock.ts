@@ -9,7 +9,12 @@ import {
 import type { AxiosError } from 'axios';
 import toast from 'react-hot-toast';
 import { stockApi } from '../api/stockApi';
-import type { OrderStockAlert, StockFilterParams, StockMovementRequest } from '../types';
+import type {
+  MaterialWithStockCreateRequest,
+  OrderStockAlert,
+  StockFilterParams,
+  StockMovementRequest,
+} from '../types';
 
 interface ApiErrorData {
   message?: string;
@@ -63,6 +68,19 @@ export const useStockMovements = (materialId?: string) => {
   return useQuery({
     queryKey: ['stock-movements', materialId],
     queryFn: () => stockApi.listMovements(materialId),
+  });
+};
+
+/**
+/**
+ * Hook dedicado à Gaveta Lateral Kardex (US-22.2): busca a trilha de movimentações
+ * apenas quando há um material selecionado e a gaveta está aberta.
+ */
+export const useKardex = (materialId: string | undefined, enabled = true) => {
+  return useQuery({
+    queryKey: ['stock-movements', materialId],
+    queryFn: () => stockApi.listMovements(materialId),
+    enabled: Boolean(materialId) && enabled,
   });
 };
 
@@ -173,6 +191,46 @@ export const useCancelStockReservationsForOrder = () => {
     onError: (error: unknown) => {
       console.error('Erro ao estornar reservas de estoque:', error);
       toast.error(extractErrorMessage(error, 'Falha ao estornar reservas de estoque da O.S.'));
+    },
+  });
+};
+
+/**
+ * Hook de mutação para o fluxo 2 em 1 (Cadastro de Material + Auto-Provisionamento + Entrada Inicial).
+ */
+export const useCreateMaterialWithStock = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: MaterialWithStockCreateRequest) =>
+      stockApi.createMaterialWithStock(payload),
+    onSuccess: (response, variables) => {
+      const categoryLabels: Record<string, string> = {
+        GLASS: 'Vidro cadastrado com sucesso!',
+        PROFILE: 'Perfil cadastrado com sucesso!',
+        HARDWARE: 'Ferragem cadastrada com sucesso!',
+        FILM: 'Película cadastrada com sucesso!',
+      };
+      const baseLabel = categoryLabels[variables.categoryType] || 'Material cadastrado com sucesso!';
+
+      const msg = response.initialMovement
+        ? `${baseLabel} (Lote inicial registrado no estoque)`
+        : baseLabel;
+      toast.success(msg);
+      queryClient.invalidateQueries({ queryKey: ['stock-balances'] });
+      queryClient.invalidateQueries({ queryKey: ['stock-movements'] });
+      queryClient.invalidateQueries({ queryKey: ['stock-item'] });
+      queryClient.invalidateQueries({ queryKey: ['stock-order-alert'] });
+      queryClient.invalidateQueries({ queryKey: ['catalog'] });
+      queryClient.invalidateQueries({ queryKey: ['profiles'] });
+      queryClient.invalidateQueries({ queryKey: ['glasses'] });
+      queryClient.invalidateQueries({ queryKey: ['hardwares'] });
+      queryClient.invalidateQueries({ queryKey: ['films'] });
+      queryClient.invalidateQueries({ queryKey: ['materialsSummary'] });
+    },
+    onError: (error: unknown) => {
+      console.error('Erro ao cadastrar material com estoque inicial:', error);
+      toast.error(extractErrorMessage(error, 'Erro ao cadastrar material no catálogo e estoque.'));
     },
   });
 };

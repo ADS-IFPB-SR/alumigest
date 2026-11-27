@@ -1,9 +1,15 @@
 package br.edu.ifpb.alumigest.stock.controller;
 
+import br.edu.ifpb.alumigest.stock.domain.StockAlertStatus;
+import br.edu.ifpb.alumigest.stock.domain.StockSortField;
+import br.edu.ifpb.alumigest.stock.dto.MaterialWithStockCreateRequestDTO;
+import br.edu.ifpb.alumigest.stock.dto.MaterialWithStockResponseDTO;
 import br.edu.ifpb.alumigest.stock.dto.OrderStockAlertResponseDTO;
+import br.edu.ifpb.alumigest.stock.dto.StockBalanceFilter;
 import br.edu.ifpb.alumigest.stock.dto.StockItemResponseDTO;
 import br.edu.ifpb.alumigest.stock.dto.StockMovementRequestDTO;
 import br.edu.ifpb.alumigest.stock.dto.StockMovementResponseDTO;
+import br.edu.ifpb.alumigest.stock.service.MaterialOnboardingService;
 import br.edu.ifpb.alumigest.stock.service.StockService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -35,9 +41,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class StockController {
 
     private final StockService stockService;
+    private final MaterialOnboardingService materialOnboardingService;
 
-    public StockController(StockService stockService) {
+    public StockController(StockService stockService, MaterialOnboardingService materialOnboardingService) {
         this.stockService = stockService;
+        this.materialOnboardingService = materialOnboardingService;
     }
 
     @GetMapping
@@ -50,8 +58,28 @@ public class StockController {
         description = "Lista de saldos recuperada com sucesso",
         content = @Content(array = @ArraySchema(schema = @Schema(implementation = StockItemResponseDTO.class)))
     )
-    public ResponseEntity<List<StockItemResponseDTO>> listBalances() {
-        return ResponseEntity.ok(stockService.listStockBalances());
+    public ResponseEntity<List<StockItemResponseDTO>> listBalances(
+            @Parameter(description = "Categoria do material (GLASS, PROFILE, HARDWARE, FILM)")
+            @RequestParam(required = false) String category,
+            @Parameter(description = "Filtro por status de alerta de suprimento")
+            @RequestParam(required = false) StockAlertStatus alertStatus,
+            @Parameter(description = "Termo de busca por nome ou SKU do material")
+            @RequestParam(required = false) String search,
+            @Parameter(description = "Quando true, inclui itens com saldo disponível negativo")
+            @RequestParam(required = false) Boolean needsPurchase,
+            @Parameter(description = "Quando true, inclui itens no ponto de pedido (<= mínimo)")
+            @RequestParam(required = false) Boolean belowMinStock,
+            @Parameter(description = "Ordenação permitida: NAME, AVAILABLE, CRITICALITY")
+            @RequestParam(required = false) String sort) {
+        StockBalanceFilter filter = new StockBalanceFilter(
+            category,
+            alertStatus,
+            search,
+            needsPurchase,
+            belowMinStock,
+            StockSortField.fromParam(sort)
+        );
+        return ResponseEntity.ok(stockService.listStockBalances(filter));
     }
 
     @GetMapping("/materials/{materialId}")
@@ -152,6 +180,18 @@ public class StockController {
             @PathVariable UUID orderId) {
         stockService.cancelReservationsForOrder(orderId);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/materials")
+    @Operation(
+        summary = "Cadastrar material com entrada inicial opcional de estoque (2 em 1)",
+        description = "Cria o material na categoria informada, provisiona tb_stock_items e, "
+            + "quando initialStock é enviado, registra PURCHASE_ENTRY na mesma transação."
+    )
+    public ResponseEntity<MaterialWithStockResponseDTO> createMaterialWithStock(
+            @RequestBody @Valid MaterialWithStockCreateRequestDTO request) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+            .body(materialOnboardingService.createMaterialWithStock(request));
     }
 
     @GetMapping("/orders/{orderId}/alert")

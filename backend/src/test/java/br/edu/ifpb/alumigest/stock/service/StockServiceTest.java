@@ -9,6 +9,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 
 import br.edu.ifpb.alumigest.catalog.domain.CalculationType;
 import br.edu.ifpb.alumigest.catalog.domain.Material;
@@ -26,9 +28,12 @@ import br.edu.ifpb.alumigest.stock.domain.StockAlertStatus;
 import br.edu.ifpb.alumigest.stock.domain.StockItem;
 import br.edu.ifpb.alumigest.stock.domain.StockMovement;
 import br.edu.ifpb.alumigest.stock.domain.StockMovementType;
+import br.edu.ifpb.alumigest.stock.domain.StockSortField;
 import br.edu.ifpb.alumigest.stock.dto.OrderStockAlertResponseDTO;
+import br.edu.ifpb.alumigest.stock.dto.StockBalanceFilter;
 import br.edu.ifpb.alumigest.stock.dto.StockItemResponseDTO;
 import br.edu.ifpb.alumigest.stock.dto.StockMovementRequestDTO;
+import br.edu.ifpb.alumigest.stock.dto.StockMovementResponseDTO;
 import br.edu.ifpb.alumigest.stock.mapper.StockMapper;
 import br.edu.ifpb.alumigest.stock.repository.StockItemRepository;
 import br.edu.ifpb.alumigest.stock.repository.StockMovementRepository;
@@ -366,6 +371,272 @@ class StockServiceTest {
             .isInstanceOf(ResourceNotFoundException.class);
     }
 
+    private List<StockItem> buildCatalogStockFixtures() {
+        Material glassNegative = buildMaterial(
+            UUID.randomUUID(), "VIDRO", "VID-010", "Vidro Fumê 10mm");
+        StockItem deficitItem = new StockItem(glassNegative);
+        deficitItem.addPhysical(new BigDecimal("4.00"));
+        deficitItem.reserve(new BigDecimal("10.00"));
+        deficitItem.updateMinimumStock(new BigDecimal("5.00"));
+
+        Material profileReorder = buildMaterial(
+            UUID.randomUUID(), "ALUMINIO", "PER-001", "Perfil Suprema");
+        StockItem reorderItem = new StockItem(profileReorder);
+        reorderItem.addPhysical(new BigDecimal("5.00"));
+        reorderItem.updateMinimumStock(new BigDecimal("5.00"));
+
+        Material hardwareHealthy = buildMaterial(
+            UUID.randomUUID(), "FERRAGEM", "FER-001", "Fechadura Concha");
+        StockItem healthyItem = new StockItem(hardwareHealthy);
+        healthyItem.addPhysical(new BigDecimal("12.00"));
+        healthyItem.updateMinimumStock(new BigDecimal("5.00"));
+
+        Material filmZeroMin = buildMaterial(
+            UUID.randomUUID(), "PELICULA", "PEL-001", "Película Jateada");
+        StockItem zeroMinItem = new StockItem(filmZeroMin);
+
+        return List.of(healthyItem, reorderItem, deficitItem, zeroMinItem);
+    }
+
+    @Test
+    @DisplayName("[Tabela de Decisão] listStockBalances: combinação needsPurchase e belowMinStock usa OR")
+    void shouldFilterBalancesWithDecisionTableCombinations() {
+        when(stockItemRepository.findAllWithMaterial()).thenReturn(buildCatalogStockFixtures());
+
+        List<StockItemResponseDTO> onlyDeficit = stockService.listStockBalances(
+            new StockBalanceFilter(null, null, null, true, false, StockSortField.NAME)
+        );
+        assertThat(onlyDeficit).extracting(StockItemResponseDTO::materialSku)
+            .containsExactly("VID-010");
+
+        List<StockItemResponseDTO> onlyBelowMin = stockService.listStockBalances(
+            new StockBalanceFilter(null, null, null, false, true, StockSortField.NAME)
+        );
+        assertThat(onlyBelowMin).extracting(StockItemResponseDTO::materialSku)
+            .containsExactly("PER-001", "VID-010");
+
+        List<StockItemResponseDTO> combinedOr = stockService.listStockBalances(
+            new StockBalanceFilter(null, null, null, true, true, StockSortField.CRITICALITY)
+        );
+        assertThat(combinedOr).extracting(StockItemResponseDTO::materialSku)
+            .containsExactly("VID-010", "PER-001");
+    }
+
+    @Test
+    @DisplayName("[Análise de Valor Limite] listStockBalances: respeita fronteira available <= minimumStock")
+    void shouldEvaluateBoundaryBetweenOrderPointAndInStock() {
+        Material exactLimit = buildMaterial(
+            UUID.randomUUID(), "VIDRO", "VID-LIM", "Vidro Limite");
+        StockItem atBoundary = new StockItem(exactLimit);
+        atBoundary.addPhysical(new BigDecimal("5.0000"));
+        atBoundary.updateMinimumStock(new BigDecimal("5.0000"));
+
+        Material aboveLimit = buildMaterial(
+            UUID.randomUUID(), "VIDRO", "VID-OK", "Vidro Acima");
+        StockItem justAbove = new StockItem(aboveLimit);
+        justAbove.addPhysical(new BigDecimal("5.0100"));
+        justAbove.updateMinimumStock(new BigDecimal("5.0000"));
+
+        when(stockItemRepository.findAllWithMaterial()).thenReturn(List.of(atBoundary, justAbove));
+
+        List<StockItemResponseDTO> belowMin = stockService.listStockBalances(
+            new StockBalanceFilter(null, null, null, null, true, StockSortField.AVAILABLE)
+        );
+
+        assertThat(belowMin).hasSize(1);
+        assertThat(belowMin.get(0).materialSku()).isEqualTo("VID-LIM");
+        assertThat(belowMin.get(0).alertStatus()).isEqualTo(StockAlertStatus.ORDER_POINT);
+    }
+
+    @Test
+    @DisplayName("[Partição de Equivalência] listStockBalances: filtra por categoria, busca e ordenação")
+    void shouldFilterByCategorySearchAndSortCriteria() {
+        when(stockItemRepository.findAllWithMaterial()).thenReturn(buildCatalogStockFixtures());
+
+        List<StockItemResponseDTO> byCategoryAndSearch = stockService.listStockBalances(
+            new StockBalanceFilter("PROFILE", null, "suprema", null, null, StockSortField.NAME)
+        );
+        assertThat(byCategoryAndSearch).extracting(StockItemResponseDTO::materialSku)
+            .containsExactly("PER-001");
+
+        List<StockItemResponseDTO> sortedByAvailable = stockService.listStockBalances(
+            new StockBalanceFilter(null, null, null, null, null, StockSortField.AVAILABLE)
+        );
+        assertThat(sortedByAvailable).extracting(StockItemResponseDTO::materialSku)
+            .containsExactly("VID-010", "PEL-001", "PER-001", "FER-001");
+    }
+
+    @Test
+    @DisplayName("[Partição de Equivalência] listMovements: filtra por material e mapeia auditoria")
+    void shouldListMovementsFilteredByMaterialWithExtendedAuditFields() {
+        UUID materialId = UUID.randomUUID();
+        UUID orderId = UUID.randomUUID();
+        Material material = buildMaterial(materialId, "VIDRO", "VID-008", "Vidro Incolor 8mm");
+        StockItem stockItem = new StockItem(material);
+
+        StockMovement entry = StockMovement.builder()
+            .stockItem(stockItem)
+            .material(material)
+            .type(StockMovementType.PURCHASE_ENTRY)
+            .quantity(new BigDecimal("10.0000"))
+            .unitCost(new BigDecimal("95.00"))
+            .previousPhysicalQuantity(BigDecimal.ZERO)
+            .newPhysicalQuantity(new BigDecimal("10.0000"))
+            .previousReservedQuantity(BigDecimal.ZERO)
+            .newReservedQuantity(BigDecimal.ZERO)
+            .referenceDocument("NF-1024")
+            .reason("Compra inicial")
+            .registeredBy("Almoxarife")
+            .build();
+
+        StockMovement reservation = StockMovement.builder()
+            .stockItem(stockItem)
+            .material(material)
+            .orderId(orderId)
+            .type(StockMovementType.PRODUCTION_RESERVATION)
+            .quantity(new BigDecimal("4.0000"))
+            .previousPhysicalQuantity(new BigDecimal("10.0000"))
+            .newPhysicalQuantity(new BigDecimal("10.0000"))
+            .previousReservedQuantity(BigDecimal.ZERO)
+            .newReservedQuantity(new BigDecimal("4.0000"))
+            .referenceDocument("OS-2026-0001")
+            .reason("Reserva O.S.")
+            .registeredBy("SYSTEM")
+            .build();
+
+        when(stockMovementRepository.findByMaterialIdOrderByCreatedAtDesc(materialId))
+            .thenReturn(List.of(reservation, entry));
+
+        List<StockMovementResponseDTO> result = stockService.listMovements(materialId);
+
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0).type()).isEqualTo(StockMovementType.PRODUCTION_RESERVATION);
+        assertThat(result.get(0).orderId()).isEqualTo(orderId);
+        assertThat(result.get(0).unitMeasure()).isEqualTo("M2");
+        assertThat(result.get(1).type()).isEqualTo(StockMovementType.PURCHASE_ENTRY);
+        assertThat(result.get(1).unitCost()).isEqualByComparingTo("95.00");
+        verify(stockMovementRepository).findByMaterialIdOrderByCreatedAtDesc(materialId);
+    }
+
+    @Test
+    @DisplayName("[Partição de Equivalência] listMovements: sem filtro consulta todas com JOIN FETCH")
+    void shouldListAllMovementsWhenMaterialIdIsNull() {
+        UUID materialId = UUID.randomUUID();
+        Material material = buildMaterial(materialId, "FERRAGEM", "FER-010", "Fecho Concha");
+        material.setUnitMeasure(null);
+        StockItem stockItem = new StockItem(material);
+
+        StockMovement outflow = StockMovement.builder()
+            .stockItem(stockItem)
+            .material(material)
+            .type(StockMovementType.PRODUCTION_OUTFLOW)
+            .quantity(new BigDecimal("2.0000"))
+            .previousPhysicalQuantity(new BigDecimal("5.0000"))
+            .newPhysicalQuantity(new BigDecimal("3.0000"))
+            .previousReservedQuantity(new BigDecimal("2.0000"))
+            .newReservedQuantity(BigDecimal.ZERO)
+            .referenceDocument("OS-2026-0002")
+            .reason("Baixa de conclusão")
+            .registeredBy("SYSTEM")
+            .build();
+
+        when(stockMovementRepository.findAllWithMaterialOrderByCreatedAtDesc())
+            .thenReturn(List.of(outflow));
+
+        List<StockMovementResponseDTO> result = stockService.listMovements(null);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).unitMeasure()).isNull();
+        assertThat(result.get(0).type()).isEqualTo(StockMovementType.PRODUCTION_OUTFLOW);
+        verify(stockMovementRepository).findAllWithMaterialOrderByCreatedAtDesc();
+    }
+    @Test
+    @DisplayName("RN-06: Deve lançar BusinessException ao registrar PURCHASE_ENTRY sem unitCost")
+    void shouldRejectPurchaseEntryWithoutUnitCost() {
+        StockMovementRequestDTO request = new StockMovementRequestDTO(
+            UUID.randomUUID(),
+            StockMovementType.PURCHASE_ENTRY,
+            new BigDecimal("10"),
+            null,
+            "Compra sem custo",
+            "Pedido 1088",
+            "almoxarifado",
+            "Distribuidora Asa"
+        );
+
+        assertThatThrownBy(() -> stockService.registerMovement(request))
+            .isInstanceOf(BusinessException.class)
+            .hasMessageContaining("RN-06");
+    }
+
+    @Test
+    @DisplayName("RN-05 e supplier: Deve normalizar documento livre e persistir fornecedor no Kardex")
+    void shouldPersistFreeDocumentAndSupplierOnPurchaseEntry() {
+        UUID materialId = UUID.randomUUID();
+        Material material = mock(Material.class);
+        when(material.getId()).thenReturn(materialId);
+        StockItem stockItem = new StockItem(material);
+
+        when(stockItemRepository.findByMaterialIdForUpdate(materialId)).thenReturn(Optional.of(stockItem));
+        when(stockItemRepository.saveAndFlush(any(StockItem.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(stockMovementRepository.saveAndFlush(any(StockMovement.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        StockMovementRequestDTO request = new StockMovementRequestDTO(
+            materialId,
+            StockMovementType.PURCHASE_ENTRY,
+            new BigDecimal("10"),
+            new BigDecimal("145.00"),
+            "  Chegada de loja  ",
+            "  Pedido 1088  ",
+            "  almoxarifado  ",
+            "  Distribuidora Asa  "
+        );
+
+        StockMovementResponseDTO response = stockService.registerMovement(request);
+
+        ArgumentCaptor<StockMovement> captor = ArgumentCaptor.forClass(StockMovement.class);
+        verify(stockMovementRepository).saveAndFlush(captor.capture());
+        StockMovement saved = captor.getValue();
+
+        assertThat(saved.getReferenceDocument()).isEqualTo("Pedido 1088");
+        assertThat(saved.getSupplier()).isEqualTo("Distribuidora Asa");
+        assertThat(saved.getReason()).isEqualTo("Chegada de loja");
+        assertThat(saved.getRegisteredBy()).isEqualTo("almoxarifado");
+        assertThat(saved.getUnitCost()).isEqualByComparingTo("145.00");
+        assertThat(response.supplier()).isEqualTo("Distribuidora Asa");
+        assertThat(response.referenceDocument()).isEqualTo("Pedido 1088");
+    }
+
+    @Test
+    @DisplayName("Auto-provisionamento: Deve criar tb_stock_items ausente e aplicar ponto de pedido (minimumStock)")
+    void shouldProvisionMissingStockItemWithMinimumStock() {
+        UUID materialId = UUID.randomUUID();
+        Material material = mock(Material.class);
+        when(material.getId()).thenReturn(materialId);
+
+        when(stockItemRepository.findByMaterialIdForUpdate(materialId)).thenReturn(Optional.empty());
+        when(materialRepository.findById(materialId)).thenReturn(Optional.of(material));
+        when(stockItemRepository.saveAndFlush(any(StockItem.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        StockItemResponseDTO response = stockService.provisionStockItem(materialId, new BigDecimal("4"));
+
+        ArgumentCaptor<StockItem> captor = ArgumentCaptor.forClass(StockItem.class);
+        verify(stockItemRepository, times(2)).saveAndFlush(captor.capture());
+        assertThat(captor.getValue().getMinimumStock()).isEqualByComparingTo("4.0000");
+        assertThat(response.minimumStock()).isEqualByComparingTo("4.0000");
+    }
+
+    @Test
+    @DisplayName("Auto-provisionamento: Deve rejeitar ponto de pedido negativo")
+    void shouldRejectNegativeMinimumStockOnProvision() {
+        UUID materialId = UUID.randomUUID();
+        BigDecimal negativeMinimumStock = new BigDecimal("-1");
+
+        assertThatThrownBy(() -> stockService.provisionStockItem(materialId, negativeMinimumStock))
+            .isInstanceOf(BusinessException.class)
+            .hasMessageContaining("não pode ser negativo");
+    }
+
     @Test
     @DisplayName("reserveMaterials: deve reservar materiais com saldo disponível positivo mantendo invariante e gravando PRODUCTION_RESERVATION")
     void shouldReserveMaterialsWithPositiveAvailableBalance() {
@@ -382,7 +653,6 @@ class StockServiceTest {
         when(stockItemRepository.findByMaterialIdForUpdate(materialId)).thenReturn(Optional.of(stockItem));
         when(stockItemRepository.saveAndFlush(any(StockItem.class))).thenAnswer(inv -> inv.getArgument(0));
         when(stockMovementRepository.saveAndFlush(any(StockMovement.class))).thenAnswer(inv -> inv.getArgument(0));
-
         stockService.reserveMaterials(orderId);
 
         assertThat(stockItem.getPhysicalQuantity()).isEqualByComparingTo("20.00");

@@ -1,9 +1,11 @@
 package br.edu.ifpb.alumigest.stock.service;
 
 import br.edu.ifpb.alumigest.stock.dto.OrderStockAlertResponseDTO;
+import br.edu.ifpb.alumigest.stock.dto.StockBalanceFilter;
 import br.edu.ifpb.alumigest.stock.dto.StockItemResponseDTO;
 import br.edu.ifpb.alumigest.stock.dto.StockMovementRequestDTO;
 import br.edu.ifpb.alumigest.stock.dto.StockMovementResponseDTO;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -68,6 +70,29 @@ public interface StockPort {
      * @return Lista com os saldos consolidados
      */
     List<StockItemResponseDTO> listStockBalances();
+
+    /**
+     * Lista os saldos consolidados aplicando filtros de suprimentos e ordenação segura.
+     *
+     * @param filter critérios opcionais de filtragem e ordenação
+     * @return Lista filtrada e ordenada com os saldos consolidados
+     */
+    default List<StockItemResponseDTO> listStockBalances(StockBalanceFilter filter) {
+        return listStockBalances();
+    }
+
+    /**
+     * Lista o histórico imutável de movimentações Kardex, opcionalmente filtrado por material.
+     *
+     * @param materialId Identificador opcional do material
+     * @return Lista ordenada cronologicamente do registro mais recente ao mais antigo
+     */
+    List<StockMovementResponseDTO> listMovements(UUID materialId);
+
+    /**
+     * Garante a existência do registro em tb_stock_items para o material e aplica o ponto de pedido, se informado.
+     */
+    StockItemResponseDTO provisionStockItem(UUID materialId, BigDecimal minimumStock);
 
     /**
      * Retorna o status Make-to-Order agregado dos materiais com reserva pendente

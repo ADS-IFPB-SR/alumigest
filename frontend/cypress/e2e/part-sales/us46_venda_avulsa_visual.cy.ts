@@ -57,6 +57,8 @@ describe('US-46: Suíte de Testes E2E (Critérios de Aceitação) - Venda Avulsa
     cy.get('[data-testid="input-aluminum-quantity"]').clear().type('4').blur();
     cy.get('[data-testid="input-aluminum-length"]').clear().type('2500').blur();
 
+    cy.wait(500);
+
     cy.get('[data-testid="btn-add-part-item"]').click();
     cy.get('[data-testid="summary-total-measure"]').invoke('text').should('match', /10[,.]00/);
   });

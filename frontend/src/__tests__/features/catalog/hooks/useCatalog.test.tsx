@@ -89,6 +89,29 @@ describe('useCatalog Hooks [Joseph Nichollas]', () => {
       expect(result.current.data).toEqual(mockGlasses);
     });
 
+    it('useGlasses deve agregar todas as páginas quando totalPages > 1 (grande volume de estoque)', async () => {
+      vi.mocked(catalogApi.getGlasses)
+        .mockResolvedValueOnce({
+          content: [{ id: '1', name: 'Vidro Página 1' }],
+          totalPages: 2,
+          totalElements: 2,
+        } as any)
+        .mockResolvedValueOnce({
+          content: [{ id: '2', name: 'Vidro Página 2' }],
+          totalPages: 2,
+          totalElements: 2,
+        } as any);
+
+      const { result } = renderHook(() => useGlasses(), {
+        wrapper: createWrapper(queryClient),
+      });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+      expect(catalogApi.getGlasses).toHaveBeenNthCalledWith(1);
+      expect(catalogApi.getGlasses).toHaveBeenNthCalledWith(2, 1);
+      expect(result.current.data?.content).toHaveLength(2);
+    });
+
     it('useCreateGlass deve cadastrar com sucesso, exibir toast e invalidar cache', async () => {
       const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
       vi.mocked(catalogApi.createGlass).mockResolvedValueOnce({ id: '2' } as any);

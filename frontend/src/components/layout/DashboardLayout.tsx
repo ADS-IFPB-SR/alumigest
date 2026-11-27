@@ -1,27 +1,51 @@
-import { useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Outlet, useLocation } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 
+const SIDEBAR_COLLAPSED_STORAGE_KEY = 'alumigest_sidebar_collapsed';
+
+function readSidebarCollapsed(): boolean {
+  try {
+    return globalThis.localStorage?.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+function persistSidebarCollapsed(value: boolean): void {
+  try {
+    globalThis.localStorage?.setItem(SIDEBAR_COLLAPSED_STORAGE_KEY, String(value));
+  } catch {
+    // Ignora falha de armazenamento em ambientes restritos
+  }
+}
+
 export function DashboardLayout() {
+  const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
-    return localStorage.getItem('alumigest_sidebar_collapsed') === 'true';
-  });
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(readSidebarCollapsed);
+
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [location.pathname]);
 
   const handleToggleCollapse = () => {
     setIsSidebarCollapsed((prev) => {
       const next = !prev;
-      localStorage.setItem('alumigest_sidebar_collapsed', String(next));
+      persistSidebarCollapsed(next);
       return next;
     });
   };
 
   return (
-    <div className="bg-background text-on-background font-body text-body-md antialiased overflow-hidden flex h-screen transition-colors duration-200">
-      <Sidebar 
-        isOpen={isMobileMenuOpen} 
-        onClose={() => setIsMobileMenuOpen(false)} 
+    <div
+      data-testid="dashboard-layout"
+      className="bg-background text-on-background font-body text-body-md antialiased overflow-hidden flex h-screen transition-colors duration-200"
+    >
+      <Sidebar
+        isOpen={isMobileMenuOpen}
+        onClose={() => setIsMobileMenuOpen(false)}
         isCollapsed={isSidebarCollapsed}
         onToggleCollapse={handleToggleCollapse}
       />

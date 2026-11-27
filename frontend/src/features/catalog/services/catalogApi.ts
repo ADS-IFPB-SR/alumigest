@@ -18,8 +18,9 @@ export interface ApiResponse<T> {
 
 export const catalogApi = {
   // ── Glasses ──────────────────────────────────────────────────────────────
-  getGlasses: async (): Promise<PageResponse<GlassDTO>> => {
-    const response = await api.get<PageResponse<GlassDTO>>('/catalog/glasses?size=100');
+  getGlasses: async (page?: number): Promise<PageResponse<GlassDTO>> => {
+    const query = page === undefined ? 'size=100' : `page=${page}&size=100`;
+    const response = await api.get<PageResponse<GlassDTO>>(`/catalog/glasses?${query}`);
     return response.data;
   },
   createGlass: async (data: Omit<GlassDTO, 'id'>) => {
@@ -32,8 +33,9 @@ export const catalogApi = {
   },
 
   // ── Profiles ──────────────────────────────────────────────────────────────
-  getProfiles: async (): Promise<PageResponse<ProfileDTO>> => {
-    const response = await api.get<PageResponse<ProfileDTO>>('/catalog/aluminum-profiles?size=100');
+  getProfiles: async (page?: number): Promise<PageResponse<ProfileDTO>> => {
+    const query = page === undefined ? 'size=100' : `page=${page}&size=100`;
+    const response = await api.get<PageResponse<ProfileDTO>>(`/catalog/aluminum-profiles?${query}`);
     return response.data;
   },
   createProfile: async (data: Omit<ProfileDTO, 'id'>) => {
@@ -46,8 +48,9 @@ export const catalogApi = {
   },
 
   // ── Hardware ──────────────────────────────────────────────────────────────
-  getHardwares: async (): Promise<PageResponse<HardwareDTO>> => {
-    const response = await api.get<PageResponse<HardwareDTO>>('/catalog/hardware?size=100');
+  getHardwares: async (page?: number): Promise<PageResponse<HardwareDTO>> => {
+    const query = page === undefined ? 'size=100' : `page=${page}&size=100`;
+    const response = await api.get<PageResponse<HardwareDTO>>(`/catalog/hardware?${query}`);
     return response.data;
   },
   createHardware: async (data: Omit<HardwareDTO, 'id'>) => {
@@ -60,8 +63,9 @@ export const catalogApi = {
   },
 
   // ── Films ──────────────────────────────────────────────────────────────────
-  getFilms: async (): Promise<PageResponse<FilmDTO>> => {
-    const response = await api.get<PageResponse<FilmDTO>>('/catalog/films?size=100');
+  getFilms: async (page?: number): Promise<PageResponse<FilmDTO>> => {
+    const query = page === undefined ? 'size=100' : `page=${page}&size=100`;
+    const response = await api.get<PageResponse<FilmDTO>>(`/catalog/films?${query}`);
     return response.data;
   },
   createFilm: async (data: Omit<FilmDTO, 'id'>) => {

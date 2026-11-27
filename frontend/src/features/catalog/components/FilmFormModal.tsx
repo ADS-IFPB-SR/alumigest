@@ -1,36 +1,32 @@
 import { useEffect } from 'react';
-
-function getModalSaveLabel(isPending: boolean, isEditing: boolean): string {
-  if (isPending) return 'Salvando...';
-  return isEditing ? 'Atualizar' : 'Salvar';
-}
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-
+import toast from 'react-hot-toast';
+import {
+  InitialStockSection,
+  useCreateMaterialWithStock,
+  useInitialStockSection,
+} from '@/features/stock';
 import { Modal } from '../../../components/ui/Modal';
 import { Input } from '../../../components/ui/Input';
 import { Button } from '../../../components/ui/Button';
-
-import {
-  useCreateFilm,
-  useUpdateFilm,
-} from '../hooks/useCatalog';
-
+import { useUpdateFilm } from '../hooks/useCatalog';
 import {
   formatCurrencyInput,
   parseCurrencyString,
   formatUppercase,
   formatInteger,
 } from '../../../utils/formatters';
-
 import { StatusToggle } from './StatusToggle';
-
-import toast from 'react-hot-toast';
-
 import {
   filmSchema,
   type FilmFormValues,
 } from '../schemas/catalogSchemas';
+
+function getModalSaveLabel(isPending: boolean, isEditing: boolean): string {
+  if (isPending) return 'Salvando...';
+  return isEditing ? 'Atualizar' : 'Salvar';
+}
 
 interface Props {
   readonly isOpen: boolean;
@@ -46,17 +42,16 @@ export function FilmFormModal({
   const isEditing = Boolean(initialData);
 
   const {
-    mutate: createFilm,
+    mutate: createMaterialWithStock,
     isPending: isCreatePending,
-  } = useCreateFilm();
+  } = useCreateMaterialWithStock();
 
   const {
     mutate: updateFilm,
     isPending: isUpdatePending,
   } = useUpdateFilm();
 
-  const isPending =
-    isCreatePending || isUpdatePending;
+  const isPending = isCreatePending || isUpdatePending;
 
   const {
     register,
@@ -67,7 +62,6 @@ export function FilmFormModal({
     formState: { errors },
   } = useForm<FilmFormValues>({
     resolver: zodResolver(filmSchema),
-
     defaultValues: {
       skuCode: '',
       name: '',
@@ -83,6 +77,12 @@ export function FilmFormModal({
   });
 
   const activeValue = watch('active');
+  const costPriceValue = watch('costPrice');
+
+  const initialStock = useInitialStockSection(
+    isOpen && !isEditing,
+    costPriceValue ? parseCurrencyString(costPriceValue) : undefined
+  );
 
   useEffect(() => {
     if (!isOpen) {
@@ -91,42 +91,16 @@ export function FilmFormModal({
 
     if (initialData) {
       reset({
-        skuCode:
-          initialData.commercialReference || '',
-
-        name:
-          initialData.name || '',
-
-        ncmCode:
-          initialData.ncmCode || '',
-
-        filmType:
-          initialData.colorFinish || '',
-
-        thicknessMm:
-          initialData.thicknessMm?.toString() ||
-          '0.08',
-
-        standardLengthM:
-          initialData.standardLengthM?.toString() ||
-          '30',
-
-        maxWidthMm:
-          initialData.maxWidthMm?.toString() ||
-          '1520',
-
-        costPrice:
-          formatCurrencyInput(
-            (initialData.costPrice ?? 0).toFixed(2)
-          ),
-
-        salePrice:
-          formatCurrencyInput(
-            (initialData.salePrice ?? 0).toFixed(2)
-          ),
-
-        active:
-          initialData.active ?? true,
+        skuCode: initialData.commercialReference || '',
+        name: initialData.name || '',
+        ncmCode: initialData.ncmCode || '',
+        filmType: initialData.colorFinish || '',
+        thicknessMm: initialData.thicknessMm?.toString() || '0.08',
+        standardLengthM: initialData.standardLengthM?.toString() || '30',
+        maxWidthMm: initialData.maxWidthMm?.toString() || '1520',
+        costPrice: formatCurrencyInput((initialData.costPrice ?? 0).toFixed(2)),
+        salePrice: formatCurrencyInput((initialData.salePrice ?? 0).toFixed(2)),
+        active: initialData.active ?? true,
       });
 
       return;
@@ -153,17 +127,11 @@ export function FilmFormModal({
       colorFinish: data.filmType,
       salePrice: parseCurrencyString(data.salePrice),
       costPrice: parseCurrencyString(data.costPrice),
-      thicknessMm:
-        Number(data.thicknessMm) || 0.08,
-      standardLengthM:
-        Number(data.standardLengthM) || 30,
-      maxWidthMm:
-        Number(data.maxWidthMm) || 1520,
-      ncmCode: data.ncmCode?.trim()
-        ? data.ncmCode.trim()
-        : undefined,
-      unitMeasure:
-        initialData?.unitMeasure || 'M2',
+      thicknessMm: Number(data.thicknessMm) || 0.08,
+      standardLengthM: Number(data.standardLengthM) || 30,
+      maxWidthMm: Number(data.maxWidthMm) || 1520,
+      ncmCode: data.ncmCode?.trim() ? data.ncmCode.trim() : undefined,
+      unitMeasure: initialData?.unitMeasure || 'M2',
       active: data.active,
     };
 
@@ -175,11 +143,9 @@ export function FilmFormModal({
         },
         {
           onSuccess: onClose,
-          onError: (err: any) => {
-            toast.error(
-              err?.response?.data?.message ||
-                'Erro de servidor.'
-            );
+          onError: (err: unknown) => {
+            const apiError = err as { response?: { data?: { message?: string } } };
+            toast.error(apiError?.response?.data?.message || 'Erro de servidor.');
           },
         }
       );
@@ -187,15 +153,22 @@ export function FilmFormModal({
       return;
     }
 
-    createFilm(payload as any, {
-      onSuccess: onClose,
-      onError: (err: any) => {
-        toast.error(
-          err?.response?.data?.message ||
-            'Erro de servidor.'
-        );
+    const { valid, payload: initialStockPayload } =
+      initialStock.validateAndBuildPayload();
+    if (!valid) {
+      return;
+    }
+
+    createMaterialWithStock(
+      {
+        categoryType: 'FILM',
+        film: payload,
+        initialStock: initialStockPayload,
       },
-    });
+      {
+        onSuccess: onClose,
+      }
+    );
   };
 
   return (
@@ -226,7 +199,6 @@ export function FilmFormModal({
       }
     >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-md">
-
         {/* Referência Comercial */}
         <div
           data-cy="film-form-sku-field"
@@ -238,10 +210,7 @@ export function FilmFormModal({
             placeholder="Ex: G20"
             {...register('skuCode', {
               onChange: (e) => {
-                setValue(
-                  'skuCode',
-                  formatUppercase(e.target.value)
-                );
+                setValue('skuCode', formatUppercase(e.target.value));
               },
             })}
           />
@@ -259,10 +228,7 @@ export function FilmFormModal({
             aria-invalid={Boolean(errors.name)}
             {...register('name', {
               onChange: (e) => {
-                setValue(
-                  'name',
-                  formatUppercase(e.target.value)
-                );
+                setValue('name', formatUppercase(e.target.value));
               },
             })}
             error={errors.name?.message}
@@ -280,10 +246,7 @@ export function FilmFormModal({
             placeholder="Opcional"
             {...register('ncmCode', {
               onChange: (e) => {
-                setValue(
-                  'ncmCode',
-                  formatInteger(e.target.value).slice(0, 8)
-                );
+                setValue('ncmCode', formatInteger(e.target.value).slice(0, 8));
               },
             })}
           />
@@ -301,10 +264,7 @@ export function FilmFormModal({
             aria-invalid={Boolean(errors.filmType)}
             {...register('filmType', {
               onChange: (e) => {
-                setValue(
-                  'filmType',
-                  formatUppercase(e.target.value)
-                );
+                setValue('filmType', formatUppercase(e.target.value));
               },
             })}
             error={errors.filmType?.message}
@@ -329,7 +289,7 @@ export function FilmFormModal({
             label="Comprimento da Bobina (m)"
             placeholder="Ex: 30"
             {...register('standardLengthM')}
-             error={errors.standardLengthM?.message}
+            error={errors.standardLengthM?.message}
           />
         </div>
 
@@ -345,10 +305,7 @@ export function FilmFormModal({
             error={errors.maxWidthMm?.message}
             {...register('maxWidthMm', {
               onChange: (e) => {
-                setValue(
-                  'maxWidthMm',
-                  formatInteger(e.target.value).slice(0, 5)
-                );
+                setValue('maxWidthMm', formatInteger(e.target.value).slice(0, 5));
               },
             })}
           />
@@ -356,7 +313,6 @@ export function FilmFormModal({
 
         {/* Preços */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-md col-span-1 md:col-span-2 mt-xs">
-
           {/* Custo */}
           <div data-cy="film-form-cost-price-field">
             <Input
@@ -367,10 +323,7 @@ export function FilmFormModal({
               aria-invalid={Boolean(errors.costPrice)}
               {...register('costPrice', {
                 onChange: (e) => {
-                  setValue(
-                    'costPrice',
-                    formatCurrencyInput(e.target.value)
-                  );
+                  setValue('costPrice', formatCurrencyInput(e.target.value));
                 },
               })}
               error={errors.costPrice?.message}
@@ -387,10 +340,7 @@ export function FilmFormModal({
               aria-invalid={Boolean(errors.salePrice)}
               {...register('salePrice', {
                 onChange: (e) => {
-                  setValue(
-                    'salePrice',
-                    formatCurrencyInput(e.target.value)
-                  );
+                  setValue('salePrice', formatCurrencyInput(e.target.value));
                 },
               })}
               error={errors.salePrice?.message}
@@ -398,14 +348,24 @@ export function FilmFormModal({
           </div>
         </div>
 
+        {/* Fluxo 2 em 1: Entrada Inicial no Estoque (US-22.3) */}
+        {!isEditing && (
+          <InitialStockSection
+            enabled={initialStock.enabled}
+            draft={initialStock.draft}
+            errors={initialStock.errors}
+            unitLabel="m²"
+            onToggle={initialStock.toggleEnabled}
+            onChangeField={initialStock.updateField}
+          />
+        )}
+
         {/* Status */}
         {isEditing && (
           <div className="col-span-1 md:col-span-2 mt-xs">
             <StatusToggle
               active={activeValue}
-              onChange={(value) =>
-                setValue('active', value)
-              }
+              onChange={(value) => setValue('active', value)}
             />
           </div>
         )}

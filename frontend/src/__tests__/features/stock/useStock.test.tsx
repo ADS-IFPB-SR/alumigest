@@ -6,6 +6,7 @@ import {
   useStockBalances,
   useStockItem,
   useStockMovements,
+  useKardex,
   useRegisterStockMovement,
   useReserveStockForOrder,
   useConsumeStockForOrder,
@@ -238,6 +239,40 @@ describe('useStock Hooks — Testes de Integração com TanStack Query', () => {
 
     expect(stockApi.cancelReservationsForOrder).toHaveBeenCalledWith('order-cancel-1');
     expect(toast.success).toHaveBeenCalledWith('Reservas de estoque estornadas com sucesso!');
+  });
+
+  it('useKardex deve buscar movimentações quando materialId estiver definido e enabled=true', async () => {
+    const mockMovements = [
+      {
+        id: 'mov-k1',
+        stockItemId: 's1',
+        materialId: 'm-kardex',
+        materialSku: 'VID-008',
+        materialName: 'Vidro 8mm',
+        type: 'PURCHASE_ENTRY' as const,
+        quantity: 10,
+        previousPhysicalQuantity: 0,
+        newPhysicalQuantity: 10,
+        createdAt: '2026-11-18T10:00:00Z',
+      },
+    ];
+
+    vi.mocked(stockApi.listMovements).mockResolvedValueOnce(mockMovements);
+
+    const { result } = renderHook(() => useKardex('m-kardex', true), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(stockApi.listMovements).toHaveBeenCalledWith('m-kardex');
+    expect(result.current.data).toEqual(mockMovements);
+  });
+
+  it('useKardex não deve disparar requisição quando gaveta estiver fechada ou sem materialId', () => {
+    renderHook(() => useKardex('m-closed', false), { wrapper: createWrapper() });
+    renderHook(() => useKardex(undefined, true), { wrapper: createWrapper() });
+
+    expect(stockApi.listMovements).not.toHaveBeenCalled();
   });
 
   describe('useStockAlertForOrder (US-21.4)', () => {

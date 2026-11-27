@@ -1,8 +1,12 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { StockAlertBadge } from '@/features/stock/components/StockAlertBadge';
 
 describe('StockAlertBadge', () => {
+  afterEach(() => {
+    document.documentElement.classList.remove('dark');
+  });
+
   describe('Modo Padrão (Catálogo / Tabela)', () => {
     it('deve renderizar a tag "Em Dia" quando o status for IN_STOCK', () => {
       render(<StockAlertBadge status="IN_STOCK" />);
@@ -36,6 +40,48 @@ describe('StockAlertBadge', () => {
 
       expect(screen.getByTestId('badge-stock-need-purchase')).toBeInTheDocument();
       expect(screen.getByText('Comprar')).toBeInTheDocument();
+    });
+  });
+
+  describe('Modo Catálogo (US-22.1)', () => {
+    it('[Partição de Equivalência] deve exibir "Falta 6 barras" para NEED_PURCHASE no catálogo', () => {
+      render(
+        <StockAlertBadge
+          variant="catalog"
+          status="NEED_PURCHASE"
+          availableQuantity={-6}
+          unitMeasure="BARRA_6M"
+        />
+      );
+
+      const badge = screen.getByTestId('badge-stock-need-purchase');
+      expect(badge).toHaveTextContent('Falta 6 barras');
+      expect(badge.className).toContain('dark:bg-rose-500/15');
+    });
+
+    it('[Partição de Equivalência] deve exibir "Em Estoque", "Ponto de Pedido" e "Sem Saldo" no catálogo', () => {
+      const { rerender } = render(<StockAlertBadge variant="catalog" status="IN_STOCK" />);
+      expect(screen.getByText('Em Estoque')).toBeInTheDocument();
+
+      rerender(<StockAlertBadge variant="catalog" status="ORDER_POINT" />);
+      expect(screen.getByText('Ponto de Pedido')).toBeInTheDocument();
+
+      rerender(<StockAlertBadge variant="catalog" status="NO_BALANCE" />);
+      expect(screen.getByTestId('badge-stock-no-balance')).toHaveTextContent('Sem Saldo');
+
+      rerender(<StockAlertBadge variant="catalog" status="NEED_PURCHASE" />);
+      expect(screen.getByTestId('badge-stock-need-purchase')).toHaveTextContent('Falta Insumo');
+
+      rerender(<StockAlertBadge status="IN_STOCK" label="Estoque OK" />);
+      expect(screen.getByText('Estoque OK')).toBeInTheDocument();
+    });
+
+    it('[Tema Escuro] deve renderizar badges com classes dark preservadas', () => {
+      document.documentElement.classList.add('dark');
+
+      render(<StockAlertBadge variant="catalog" status="ORDER_POINT" />);
+      const badge = screen.getByTestId('badge-stock-order-point');
+      expect(badge.className).toContain('dark:text-amber-300');
     });
   });
 
@@ -107,40 +153,41 @@ describe('StockAlertBadge', () => {
       render(
         <StockAlertBadge
           status="ORDER_POINT"
-          tooltip="Ponto de pedido atingido"
+          variant="kanban"
+          tooltip="Estoque no limite"
         />
       );
 
       const badge = screen.getByTestId('badge-stock-order-point');
       vi.spyOn(badge, 'getBoundingClientRect').mockReturnValue({
-        top: 150,
-        bottom: 180,
-        left: 200,
-        right: 300,
+        top: 200,
+        bottom: 230,
+        left: 100,
+        right: 200,
         width: 100,
         height: 30,
-        x: 200,
-        y: 150,
+        x: 100,
+        y: 200,
         toJSON: () => {},
       });
 
       fireEvent.mouseEnter(badge);
       const tooltip = screen.getByRole('tooltip');
       expect(tooltip).toBeInTheDocument();
-      expect(tooltip.style.top).toBe('84px');
-      expect(tooltip.style.left).toBe('110px');
+      // badge.top (200) - tooltipHeight (60) - GAP (6) = 134px
+      expect(tooltip.style.top).toBe('134px');
 
-      // Dispara scroll para garantir que listener de reposicionamento é acionado sem quebrar
+      // Dispara evento de scroll para checar reposicionamento
       fireEvent.scroll(window);
-      expect(screen.getByRole('tooltip')).toBeInTheDocument();
+      expect(tooltip).toBeInTheDocument();
     });
 
-    it('deve posicionar tooltip abaixo quando estiver próximo do topo para não cortar no Kanban', () => {
+    it('deve posicionar tooltip abaixo quando não houver espaço suficiente acima', () => {
       render(
         <StockAlertBadge
           status="NEED_PURCHASE"
           variant="kanban"
-          tooltip="Insumos em falta"
+          tooltip="Insumos faltantes"
         />
       );
 

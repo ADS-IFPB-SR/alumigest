@@ -18,8 +18,8 @@ export function usePartCalculation({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    setResult(null);
     if (!enabled || !payload) {
-      setResult(null);
       setError(null);
       return;
     }

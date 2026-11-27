@@ -1,23 +1,28 @@
-import { Table } from '../../../components/ui/Table';
+import type { StockItem } from '@/features/stock';
 import { useGlasses } from '../hooks/useCatalog';
 import type { GlassDTO } from '../types';
 import { filterByStatus } from '../utils/filters';
+import type { CatalogTableColumn } from '../utils/stockColumns';
+import { CatalogMaterialSection } from './CatalogMaterialSection';
+import type { MobileCardMetadata } from './CatalogMobileMaterialCard';
 
-const columns = [
+const formatGlassPrice = (row: GlassDTO) =>
+  `R$ ${(row.salePrice || 0).toFixed(2).replace('.', ',')}`;
+
+const specColumns: readonly CatalogTableColumn<GlassDTO>[] = [
   {
     header: 'Referência',
+    className: 'whitespace-nowrap',
     accessor: (row: GlassDTO) => (
       <span
         data-cy="glass-reference"
         className="font-data-mono text-data-mono text-on-surface-variant"
       >
-        {row.commercialReference || row.skuCode}
+        {row.commercialReference || row.skuCode || '—'}
       </span>
     ),
-    exportValue: (row: GlassDTO) =>
-      row.commercialReference || row.skuCode,
+    exportValue: (row: GlassDTO) => row.commercialReference || row.skuCode,
   },
-
   {
     header: 'Descrição',
     accessor: (row: GlassDTO) => (
@@ -30,85 +35,71 @@ const columns = [
     ),
     exportValue: (row: GlassDTO) => row.name,
   },
-
   {
     header: 'Cor',
     accessor: (row: GlassDTO) => (
-      <span
-        data-cy="glass-color-finish"
-        className="text-secondary"
-      >
+      <span data-cy="glass-color-finish" className="text-secondary">
         {row.colorFinish}
       </span>
     ),
     exportValue: (row: GlassDTO) => row.colorFinish,
   },
-
   {
     header: 'Espessura',
+    className: 'whitespace-nowrap',
     accessor: (row: GlassDTO) => (
       <span
         data-cy="glass-thickness"
-        className="font-data-mono text-data-mono text-secondary"
+        className="font-data-mono text-data-mono text-secondary whitespace-nowrap"
       >
         {row.thicknessMm} mm
       </span>
     ),
     exportValue: (row: GlassDTO) => `${row.thicknessMm} mm`,
   },
-
   {
     header: 'Preço Venda',
+    className: 'whitespace-nowrap',
     accessor: (row: GlassDTO) => (
       <span
         data-cy="glass-sale-price"
-        className="font-data-mono text-data-mono text-on-surface"
+        className="font-data-mono text-data-mono text-on-surface whitespace-nowrap"
       >
-        R${' '}
-        {(row.salePrice || 0)
-          .toFixed(2)
-          .replace('.', ',')}
+        {formatGlassPrice(row)}
       </span>
     ),
-    exportValue: (row: GlassDTO) =>
-      `R$ ${(row.salePrice || 0)
-        .toFixed(2)
-        .replace('.', ',')}`,
-    align: 'right' as const,
-  },
-
-  {
-    header: 'Status',
-    accessor: (row: GlassDTO) => (
-      <span
-        data-cy="glass-status"
-        className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ${
-          row.active
-            ? 'border border-success/30 bg-success/10 text-success'
-            : 'border border-error/30 bg-error/10 text-error'
-        }`}
-      >
-        {row.active ? 'Ativo' : 'Inativo'}
-      </span>
-    ),
-    exportValue: (row: GlassDTO) =>
-      row.active ? 'Ativo' : 'Inativo',
-    align: 'center' as const,
+    exportValue: formatGlassPrice,
+    align: 'right',
   },
 ];
+
+const mobileMeta: MobileCardMetadata<GlassDTO> = {
+  reference: (row) => row.commercialReference || row.skuCode || '-',
+  name: (row) => row.name,
+  specSummary: (row) => `${row.colorFinish} · ${row.thicknessMm} mm`,
+  priceLabel: formatGlassPrice,
+};
 
 interface Props {
   readonly searchQuery: string;
   readonly filterStatus: 'ALL' | 'ACTIVE' | 'INACTIVE';
+  readonly stockByMaterialId?: ReadonlyMap<string, StockItem>;
+  readonly onlyNeedsPurchase?: boolean;
+  readonly hideStockAlert?: boolean;
   readonly onEdit: (item: GlassDTO) => void;
   readonly onViewDetails: (item: GlassDTO) => void;
+  readonly onOpenKardex?: (item: GlassDTO) => void;
 }
 
 export function GlassTab({
   searchQuery,
   filterStatus,
+  stockByMaterialId,
+  onlyNeedsPurchase,
+  hideStockAlert,
   onEdit,
   onViewDetails,
+  onOpenKardex,
 }: Props) {
   const { data, isLoading } = useGlasses();
 
@@ -119,7 +110,7 @@ export function GlassTab({
       return false;
     }
 
-    const term = searchQuery.toLowerCase();
+    const term = searchQuery.trim().toLowerCase();
 
     return (
       g.name.toLowerCase().includes(term) ||
@@ -128,32 +119,25 @@ export function GlassTab({
     );
   });
 
-  if (isLoading) {
-    return (
-      <div
-        data-cy="glass-loading"
-        className="p-md text-secondary"
-      >
-        Carregando vidros...
-      </div>
-    );
-  }
-
   return (
-    <div
-      data-cy="glass-table"
-      className="flex-1 overflow-hidden flex flex-col p-xs sm:p-md"
-    >
-      <Table
-        columns={columns}
-        data={filteredGlasses}
-        onEdit={(row) => onEdit(row)}
-        onViewDetails={(row) => onViewDetails(row)}
-        rowTestId={() => 'glass-row'}
-        rowTestAttributes={(row) => ({
-          'data-glass-name': row.name,
-        })}
-      />
-    </div>
+    <CatalogMaterialSection
+      dataCyContainer="glass-table"
+      dataCyLoading="glass-loading"
+      loadingMessage="Carregando vidros..."
+      isLoading={isLoading}
+      rows={filteredGlasses}
+      specColumns={specColumns}
+      statusDataCy="glass-status"
+      defaultUnitMeasure="M2"
+      stockByMaterialId={stockByMaterialId}
+      onlyNeedsPurchase={onlyNeedsPurchase}
+      hideStockAlert={hideStockAlert}
+      mobileMeta={mobileMeta}
+      rowTestId="glass-row"
+      rowTestAttributes={(row) => ({ 'data-glass-name': row.name })}
+      onEdit={onEdit}
+      onViewDetails={onViewDetails}
+      onOpenKardex={onOpenKardex}
+    />
   );
 }

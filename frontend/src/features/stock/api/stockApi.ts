@@ -1,5 +1,7 @@
 import { api } from '@/lib/api';
 import type {
+  MaterialWithStockCreateRequest,
+  MaterialWithStockResponse,
   OrderStockAlert,
   StockFilterParams,
   StockItem,
@@ -43,6 +45,17 @@ export const stockApi = {
   },
 
   /**
+   * Fluxo 2 em 1 (US-22.3): cadastra o material, provisiona tb_stock_items
+   * e, quando initialStock é informado, registra PURCHASE_ENTRY na mesma transação.
+   */
+  createMaterialWithStock: async (
+    payload: MaterialWithStockCreateRequest
+  ): Promise<MaterialWithStockResponse> => {
+    const { data } = await api.post<MaterialWithStockResponse>('/stock/materials', payload);
+    return data;
+  },
+
+  /**
    * Dispara a reserva automática de materiais para uma Ordem de Serviço ou Venda Avulsa.
    */
   reserveForOrder: async (orderId: string): Promise<void> => {
@@ -62,7 +75,6 @@ export const stockApi = {
   cancelReservationsForOrder: async (orderId: string): Promise<void> => {
     await api.post(`/stock/cancel-reservations/${orderId}`);
   },
-
   /**
    * Consulta o status Make-to-Order agregado dos materiais reservados de uma O.S.
    * Retorna o pior alertStatus e a lista de insumos com déficit (US-21.4).

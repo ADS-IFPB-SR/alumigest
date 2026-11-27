@@ -17,7 +17,7 @@ describe('catalogApi Service', () => {
   });
 
   describe('Glasses Endpoints', () => {
-    it('getGlasses deve invocar /catalog/glasses?size=100', async () => {
+    it('getGlasses deve invocar /catalog/glasses?size=100 e suportar page opcional', async () => {
       const mockData = { content: [{ id: 'g-1', name: 'Vidro' }] };
       vi.mocked(api.get).mockResolvedValueOnce({ data: mockData });
 
@@ -25,6 +25,10 @@ describe('catalogApi Service', () => {
 
       expect(api.get).toHaveBeenCalledWith('/catalog/glasses?size=100');
       expect(result).toEqual(mockData);
+
+      vi.mocked(api.get).mockResolvedValueOnce({ data: { content: [] } });
+      await catalogApi.getGlasses(2);
+      expect(api.get).toHaveBeenCalledWith('/catalog/glasses?page=2&size=100');
     });
 
     it('createGlass deve postar dados em /catalog/glasses', async () => {

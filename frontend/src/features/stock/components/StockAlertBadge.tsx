@@ -1,59 +1,104 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import type { StockAlertStatus } from '../types';
+import type { StockDisplayAlertStatus } from '../types';
+import { formatStockQuantity } from '../utils/stockPresentation';
+
+export type StockAlertBadgeVariant = 'default' | 'kanban' | 'catalog';
 
 export interface StockAlertBadgeProps {
-  status: StockAlertStatus;
+  status: StockDisplayAlertStatus;
   availableQuantity?: number;
   unitMeasure?: string;
   className?: string;
-  variant?: 'default' | 'kanban';
+  variant?: StockAlertBadgeVariant;
   label?: string;
   tooltip?: string;
   title?: string;
 }
 
-interface StatusConfig {
-  testId: string;
-  badgeClass: string;
-  dotClass: string;
-  getDefaultLabel: (opts: {
-    variant: 'default' | 'kanban';
-    availableQuantity?: number;
-    unitMeasure?: string;
-  }) => string;
+interface BadgeStyleConfig {
+  readonly testId: string;
+  readonly containerClass: string;
+  readonly dotClass: string;
 }
 
-const STATUS_CONFIG: Record<StockAlertStatus, StatusConfig> = {
+const BADGE_STYLES: Readonly<Record<StockDisplayAlertStatus, BadgeStyleConfig>> = {
   NEED_PURCHASE: {
     testId: 'badge-stock-need-purchase',
-    badgeClass: 'bg-rose-50 text-rose-700 border-rose-200',
+    containerClass:
+      'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-500/15 dark:text-rose-300 dark:border-rose-500/30',
     dotClass: 'bg-rose-500 animate-pulse',
-    getDefaultLabel: ({ variant, availableQuantity, unitMeasure }) => {
-      if (variant === 'kanban') {
-        return 'Falta Insumo / Comprar';
-      }
-      if (availableQuantity !== undefined && availableQuantity < 0) {
-        const absQty = Math.abs(availableQuantity);
-        const unit = unitMeasure ? ` ${unitMeasure}` : '';
-        return `Comprar (${absQty}${unit})`;
-      }
-      return 'Comprar';
-    },
   },
   ORDER_POINT: {
     testId: 'badge-stock-order-point',
-    badgeClass: 'bg-amber-50 text-amber-700 border-amber-200',
+    containerClass:
+      'bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/30',
     dotClass: 'bg-amber-500',
-    getDefaultLabel: () => 'Ponto de Pedido',
   },
   IN_STOCK: {
     testId: 'badge-stock-in-stock',
-    badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    containerClass:
+      'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-300 dark:border-emerald-500/30',
     dotClass: 'bg-emerald-500',
-    getDefaultLabel: ({ variant }) => (variant === 'kanban' ? 'Insumos Disponíveis' : 'Em Dia'),
+  },
+  NO_BALANCE: {
+    testId: 'badge-stock-no-balance',
+    containerClass:
+      'bg-surface-container text-on-surface-variant border-outline-variant',
+    dotClass: 'bg-slate-400 dark:bg-slate-500',
   },
 };
+
+const IN_STOCK_LABELS: Readonly<Record<StockAlertBadgeVariant, string>> = {
+  kanban: 'Insumos Disponíveis',
+  catalog: 'Em Estoque',
+  default: 'Em Dia',
+};
+
+function resolveNeedPurchaseLabel(
+  variant: StockAlertBadgeVariant,
+  availableQuantity?: number,
+  unitMeasure = ''
+): string {
+  if (variant === 'kanban') {
+    return 'Falta Insumo / Comprar';
+  }
+
+  const hasDeficit = availableQuantity !== undefined && availableQuantity < 0;
+  if (variant === 'catalog') {
+    return hasDeficit
+      ? `Falta ${formatStockQuantity(Math.abs(availableQuantity), unitMeasure)}`
+      : 'Falta Insumo';
+  }
+
+  if (!hasDeficit) {
+    return 'Comprar';
+  }
+  const unitSuffix = unitMeasure ? ` ${unitMeasure}` : '';
+  return `Comprar (${Math.abs(availableQuantity)}${unitSuffix})`;
+}
+
+function resolveBadgeLabel(
+  status: StockDisplayAlertStatus,
+  variant: StockAlertBadgeVariant,
+  availableQuantity?: number,
+  unitMeasure = '',
+  customLabel?: string
+): string {
+  if (customLabel) {
+    return customLabel;
+  }
+  if (status === 'NO_BALANCE') {
+    return 'Sem Saldo';
+  }
+  if (status === 'ORDER_POINT') {
+    return 'Ponto de Pedido';
+  }
+  if (status === 'IN_STOCK') {
+    return IN_STOCK_LABELS[variant];
+  }
+  return resolveNeedPurchaseLabel(variant, availableQuantity, unitMeasure);
+}
 
 export const StockAlertBadge: React.FC<StockAlertBadgeProps> = ({
   status,
@@ -141,21 +186,27 @@ export const StockAlertBadge: React.FC<StockAlertBadgeProps> = ({
     };
   }, [showHoverTooltip, updateTooltipPosition]);
 
-  const config = STATUS_CONFIG[status] || STATUS_CONFIG.IN_STOCK;
-  const displayLabel = label || config.getDefaultLabel({ variant, availableQuantity, unitMeasure });
+  const style = BADGE_STYLES[status] || BADGE_STYLES.IN_STOCK;
+  const resolvedLabel = resolveBadgeLabel(
+    status,
+    variant,
+    availableQuantity,
+    unitMeasure,
+    label
+  );
 
   return (
     <>
       <span
         ref={badgeRef}
-        data-testid={config.testId}
+        data-testid={style.testId}
         title={effectiveTooltip}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
-        className={`relative inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border cursor-default whitespace-nowrap shrink-0 ${config.badgeClass} ${className}`}
+        className={`relative inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border cursor-default whitespace-nowrap shrink-0 ${style.containerClass} ${className}`}
       >
-        <span className={`w-1.5 h-1.5 rounded-full ${config.dotClass}`} />
-        <span>{displayLabel}</span>
+        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${style.dotClass}`} aria-hidden="true" />
+        <span>{resolvedLabel}</span>
       </span>
 
       {showHoverTooltip &&

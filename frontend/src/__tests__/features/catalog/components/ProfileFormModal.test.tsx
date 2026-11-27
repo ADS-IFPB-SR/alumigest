@@ -1,17 +1,23 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import React from 'react';
 import { ProfileFormModal } from '@/features/catalog/components/ProfileFormModal';
 import { buildMockProfile } from '@/test/fixtures/catalogFixtures';
 
-const mockCreateProfile = vi.fn();
+const mockCreateMaterialWithStock = vi.fn();
 const mockUpdateProfile = vi.fn();
 
+vi.mock('@/features/stock', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/features/stock')>();
+  return {
+    ...actual,
+    useCreateMaterialWithStock: () => ({
+      mutate: mockCreateMaterialWithStock,
+      isPending: false,
+    }),
+  };
+});
+
 vi.mock('@/features/catalog/hooks/useCatalog', () => ({
-  useCreateProfile: () => ({
-    mutate: mockCreateProfile,
-    isPending: false,
-  }),
   useUpdateProfile: () => ({
     mutate: mockUpdateProfile,
     isPending: false,
@@ -61,7 +67,7 @@ describe('ProfileFormModal Component', () => {
     expect(onClose).toHaveBeenCalled();
   });
 
-  it('Técnica: Transição e Submissão - deve validar e disparar createProfile ao salvar novo perfil', async () => {
+  it('Técnica: Transição e Submissão - deve validar e disparar createMaterialWithStock ao salvar novo perfil', async () => {
     render(<ProfileFormModal isOpen={true} onClose={vi.fn()} />);
 
     const skuInput = document.querySelector('[data-cy="profile-form-sku"]') as HTMLInputElement;
@@ -86,15 +92,19 @@ describe('ProfileFormModal Component', () => {
     fireEvent.click(saveBtn);
 
     await waitFor(() => {
-      expect(mockCreateProfile).toHaveBeenCalledTimes(1);
-      expect(mockCreateProfile).toHaveBeenCalledWith(
+      expect(mockCreateMaterialWithStock).toHaveBeenCalledTimes(1);
+      expect(mockCreateMaterialWithStock).toHaveBeenCalledWith(
         expect.objectContaining({
-          commercialReference: 'ALU-25-01',
-          commercialLine: 'LINHA 25',
-          name: 'TRILHO SUPERIOR ALUMÍNIO',
-          colorFinish: 'BRANCO',
-          costPrice: 60.0,
-          salePrice: 120.0,
+          categoryType: 'PROFILE',
+          aluminumProfile: expect.objectContaining({
+            commercialReference: 'ALU-25-01',
+            commercialLine: 'LINHA 25',
+            name: 'TRILHO SUPERIOR ALUMÍNIO',
+            colorFinish: 'BRANCO',
+            costPrice: 60.0,
+            salePrice: 120.0,
+          }),
+          initialStock: null,
         }),
         expect.any(Object)
       );
