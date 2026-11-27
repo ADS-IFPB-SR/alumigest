@@ -228,6 +228,37 @@ class CompanySettingsControllerTest {
     }
 
     @Test
+    @DisplayName(
+        "Deve retornar mensagem específica de formato inválido para telefone malformado")
+    void shouldReturnSpecificPhoneFormatMessageWithoutDuplicates() throws Exception {
+      CompanySettingsRequestDTO invalidPhoneRequest =
+          new CompanySettingsRequestDTO(
+              VALID_COMPANY_NAME,
+              VALID_TRADE_NAME,
+              VALID_CNPJ_MASKED,
+              VALID_IE,
+              "83+99999-9999",
+              VALID_EMAIL,
+              VALID_ZIP_CODE,
+              VALID_ADDRESS,
+              VALID_CITY_STATE);
+
+      mockMvc
+          .perform(
+              put(ENDPOINT)
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(objectMapper.writeValueAsString(invalidPhoneRequest)))
+          .andExpect(status().isBadRequest())
+          .andExpect(jsonPath(JSON_STATUS, is(400)))
+          .andExpect(jsonPath("$.validationErrors.length()", is(1)))
+          .andExpect(jsonPath("$.validationErrors[0].field", is("phone")))
+          .andExpect(
+              jsonPath("$.validationErrors[0].message", is("Telefone com formato inválido")));
+
+      verify(companySettingsService, never()).updateSettings(any());
+    }
+
+    @Test
     @DisplayName("Deve retornar 400 Bad Request quando o corpo JSON estiver malformado")
     void shouldReturn400WhenJsonBodyIsMalformed() throws Exception {
       mockMvc
@@ -283,13 +314,26 @@ class CompanySettingsControllerTest {
                   VALID_CITY_STATE),
               "cnpj"),
           Arguments.of(
+              "Telefone em branco",
+              new CompanySettingsRequestDTO(
+                  VALID_COMPANY_NAME,
+                  VALID_TRADE_NAME,
+                  VALID_CNPJ_MASKED,
+                  VALID_IE,
+                  "        ",
+                  VALID_EMAIL,
+                  VALID_ZIP_CODE,
+                  VALID_ADDRESS,
+                  VALID_CITY_STATE),
+              "phone"),
+          Arguments.of(
               "Telefone inválido",
               new CompanySettingsRequestDTO(
                   VALID_COMPANY_NAME,
                   VALID_TRADE_NAME,
                   VALID_CNPJ_MASKED,
                   VALID_IE,
-                  "tel-abc",
+                  "tel-abc1",
                   VALID_EMAIL,
                   VALID_ZIP_CODE,
                   VALID_ADDRESS,

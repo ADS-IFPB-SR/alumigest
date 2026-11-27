@@ -1,5 +1,6 @@
 package br.edu.ifpb.alumigest.settings.dto;
 
+import br.edu.ifpb.alumigest.settings.validation.ValidPhone;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -26,7 +27,7 @@ public record CompanySettingsRequestDTO(
 
     @NotBlank(message = "O CNPJ é obrigatório")
     @Size(max = 20, message = "O CNPJ deve ter no máximo 20 caracteres")
-    @Pattern(regexp = "^(?!00\\.?000\\.?000/?0000-?00$).*$", message = "CNPJ inválido")
+    @Pattern(regexp = "^(?![0./-]+$).*$", message = "CNPJ inválido")
     @CNPJ(message = "CNPJ inválido")
     @Schema(
         description = "CNPJ da empresa com dígitos verificadores válidos",
@@ -39,9 +40,7 @@ public record CompanySettingsRequestDTO(
 
     @NotBlank(message = "O telefone é obrigatório")
     @Size(min = 8, max = 25, message = "O telefone deve ter entre 8 e 25 caracteres")
-    @Pattern(
-        regexp = "^(\\+?55\\s?)?\\(?\\d{2}\\)?[\\s-]?9?\\s?\\d{4}[\\s-]?\\d{4}$|^\\d{8,13}$",
-        message = "Telefone com formato inválido")
+    @ValidPhone
     @Schema(
         description = "Telefone comercial ou WhatsApp da empresa",
         example = "(83) 99999-9999")
@@ -55,7 +54,7 @@ public record CompanySettingsRequestDTO(
     String email,
 
     @Size(max = 12, message = "O CEP deve ter no máximo 12 caracteres")
-    @Pattern(regexp = "^$|^\\d{5}-?\\d{3}$", message = "CEP com formato inválido")
+    @Pattern(regexp = "^(\\d{5}-?\\d{3})?$", message = "CEP com formato inválido")
     @Schema(description = "CEP do endereço da empresa (opcional)", example = "58800-000")
     String zipCode,
 
