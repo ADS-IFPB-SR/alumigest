@@ -1,6 +1,7 @@
 package br.edu.ifpb.alumigest.auth.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -19,10 +20,14 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -118,27 +123,29 @@ class AuthSecurityIntegrationTest {
       assertThat(result.getRequest().getSession(false)).isNull();
     }
 
-    @Test
+    private static Stream<Arguments> invalidCredentialsPayloads() {
+      return Stream.of(
+          Arguments.of("senha incorreta", new LoginRequest(TEST_EMAIL, "SenhaIncorreta")),
+          Arguments.of("e-mail desconhecido",
+              new LoginRequest("naoexiste@alumigest.com", TEST_PASSWORD)),
+          Arguments.of("conta inativa", new LoginRequest(INACTIVE_EMAIL, TEST_PASSWORD)));
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("invalidCredentialsPayloads")
     @DisplayName(
         "[Tabela de Decisão] Deve retornar 401 uniforme para senha incorreta, e-mail"
             + " desconhecido e conta inativa")
-    void shouldReturnUniform401ForInvalidCredentials() throws Exception {
-      LoginRequest wrongPassword = new LoginRequest(TEST_EMAIL, "SenhaIncorreta");
-      LoginRequest unknownEmail = new LoginRequest("naoexiste@alumigest.com", TEST_PASSWORD);
-      LoginRequest inactiveAccount = new LoginRequest(INACTIVE_EMAIL, TEST_PASSWORD);
-
-      for (LoginRequest payload : new LoginRequest[] {
-          wrongPassword, unknownEmail, inactiveAccount
-      }) {
-        mockMvc.perform(post(LOGIN_URL)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(payload)))
-            .andExpect(status().isUnauthorized())
-            .andExpect(jsonPath("$.status").value(401))
-            .andExpect(jsonPath("$.error").value("Unauthorized"))
-            .andExpect(jsonPath("$.message").value("E-mail ou senha inválidos"))
-            .andExpect(jsonPath("$.path").value(LOGIN_URL));
-      }
+    void shouldReturnUniform401ForInvalidCredentials(String scenario, LoginRequest payload)
+        throws Exception {
+      mockMvc.perform(post(LOGIN_URL)
+              .contentType(MediaType.APPLICATION_JSON)
+              .content(objectMapper.writeValueAsString(payload)))
+          .andExpect(status().isUnauthorized())
+          .andExpect(jsonPath("$.status").value(401))
+          .andExpect(jsonPath("$.error").value("Unauthorized"))
+          .andExpect(jsonPath("$.message").value("E-mail ou senha inválidos"))
+          .andExpect(jsonPath("$.path").value(LOGIN_URL));
     }
 
     @Test
@@ -152,6 +159,39 @@ class AuthSecurityIntegrationTest {
           .andExpect(status().isBadRequest())
           .andExpect(jsonPath("$.status").value(400))
           .andExpect(jsonPath("$.validationErrors").isArray());
+    }
+
+    @Test
+    @DisplayName(
+        "[Análise de Valor Limite] Deve retornar 400 Bad Request para senha com 73 caracteres"
+            + " (limite BCrypt 72 bytes)")
+    void shouldReturn400WhenPasswordExceeds72Characters() throws Exception {
+      String oversizedPassword = "A".repeat(73);
+
+      mockMvc.perform(post(LOGIN_URL)
+              .contentType(MediaType.APPLICATION_JSON)
+              .content(objectMapper.writeValueAsString(
+                  new LoginRequest(TEST_EMAIL, oversizedPassword))))
+          .andExpect(status().isBadRequest())
+          .andExpect(jsonPath("$.status").value(400))
+          .andExpect(jsonPath("$.validationErrors[?(@.field == 'password')]").isNotEmpty());
+    }
+
+    @Test
+    @DisplayName(
+        "[Análise de Valor Limite] Deve retornar 400 Bad Request para e-mail com 151 caracteres")
+    void shouldReturn400WhenEmailExceeds150Characters() throws Exception {
+      String oversizedEmail =
+          "a".repeat(60) + "@" + "b".repeat(60) + "." + "c".repeat(25) + ".com";
+      assertThat(oversizedEmail).hasSize(151);
+
+      mockMvc.perform(post(LOGIN_URL)
+              .contentType(MediaType.APPLICATION_JSON)
+              .content(objectMapper.writeValueAsString(
+                  new LoginRequest(oversizedEmail, TEST_PASSWORD))))
+          .andExpect(status().isBadRequest())
+          .andExpect(jsonPath("$.status").value(400))
+          .andExpect(jsonPath("$.validationErrors[?(@.field == 'email')]").isNotEmpty());
     }
   }
 
@@ -241,7 +281,20 @@ class AuthSecurityIntegrationTest {
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.components.securitySchemes.bearerAuth.type").value("http"))
           .andExpect(jsonPath("$.components.securitySchemes.bearerAuth.scheme").value("bearer"))
-          .andExpect(jsonPath("$.components.securitySchemes.bearerAuth.bearerFormat").value("JWT"));
+          .andExpect(jsonPath("$.components.securitySchemes.bearerAuth.bearerFormat").value("JWT"))
+          .andExpect(jsonPath("$.paths['/api/v1/auth/login'].post.security").isArray())
+          .andExpect(jsonPath("$.paths['/api/v1/auth/login'].post.security").isEmpty())
+          .andExpect(jsonPath("$.paths['/api/v1/health'].get.security").isArray())
+          .andExpect(jsonPath("$.paths['/api/v1/health'].get.security").isEmpty());
+    }
+
+    @Test
+    @DisplayName(
+        "[Partição de Equivalência] Não deve retornar 401 Unauthorized em requisição anônima"
+            + " para /error")
+    void shouldPermitErrorEndpointAnonymously() throws Exception {
+      mockMvc.perform(get("/error"))
+          .andExpect(status().is(not(401)));
     }
   }
 }

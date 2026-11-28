@@ -2,6 +2,7 @@ package br.edu.ifpb.alumigest.common.controller;
 
 import br.edu.ifpb.alumigest.common.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,6 +19,7 @@ import java.util.Map;
 public class HealthController {
 
     @GetMapping
+    @SecurityRequirements
     @Operation(summary = "Verificar integridade da API", description = "Retorna o status atual, versão e horário do servidor.")
     public ResponseEntity<ApiResponse<Map<String, Object>>> checkHealth() {
         Map<String, Object> healthInfo = Map.of(

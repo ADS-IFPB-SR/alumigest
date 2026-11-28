@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.MediaType;
@@ -44,6 +45,7 @@ public class AuthController {
    * @return resposta 200 OK com token e dados básicos do operador
    */
   @PostMapping("/login")
+  @SecurityRequirements
   @Operation(
       summary = "Autenticar operador",
       description = "Valida e-mail e senha do operador e emite um token JWT Bearer.")

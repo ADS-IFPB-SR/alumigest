@@ -22,8 +22,39 @@ declare namespace Cypress {
 const getApiUrl = () => Cypress.env('apiUrl') || 'http://localhost:8081/api/v1';
 const getE2eEmail = () => Cypress.env('e2eEmail') || 'e2e@alumigest.com';
 const getE2ePassword = () => Cypress.env('e2ePassword') || 'AlumiGestE2E#2026!';
+const SKIP_AUTO_AUTH_HEADER = 'x-skip-auto-auth';
 
 let cachedAuthToken: string | null = null;
+
+function isAutoAuthDisabled(): boolean {
+  return Cypress.env('skipAutoAuth') === true;
+}
+
+function hasHeaderCaseInsensitive(headers: Record<string, unknown> | undefined, name: string): boolean {
+  if (!headers) {
+    return false;
+  }
+  const target = name.toLowerCase();
+  return Object.keys(headers).some((key) => key.toLowerCase() === target);
+}
+
+function stripSkipAutoAuthHeader(
+  headers?: Record<string, unknown>
+): { cleanedHeaders?: Record<string, unknown>; skipRequested: boolean } {
+  if (!headers) {
+    return { cleanedHeaders: headers, skipRequested: false };
+  }
+  let skipRequested = false;
+  const cleanedHeaders: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(headers)) {
+    if (key.toLowerCase() === SKIP_AUTO_AUTH_HEADER) {
+      skipRequested = true;
+    } else {
+      cleanedHeaders[key] = value;
+    }
+  }
+  return { cleanedHeaders, skipRequested };
+}
 
 function normalizeRequestOptions(args: unknown[]): Partial<Cypress.RequestOptions> {
   const [first, second, third] = args;
@@ -44,17 +75,14 @@ function normalizeRequestOptions(args: unknown[]): Partial<Cypress.RequestOption
 }
 
 function shouldAttachAuthHeader(url?: string, headers?: Record<string, unknown>): boolean {
-  if (!url || !url.includes('/api/') || url.includes('/auth/login')) {
+  if (isAutoAuthDisabled() || !url || !url.includes('/api/') || url.includes('/auth/login')) {
     return false;
   }
-  if (!headers) {
-    return true;
-  }
-  return !Object.keys(headers).some((key) => key.toLowerCase() === 'authorization');
+  return !hasHeaderCaseInsensitive(headers, 'authorization');
 }
 
 function ensureE2eAuthToken(): void {
-  if (cachedAuthToken) {
+  if (isAutoAuthDisabled() || cachedAuthToken) {
     return;
   }
   cy.request({
@@ -76,16 +104,22 @@ function ensureE2eAuthToken(): void {
 
 Cypress.Commands.overwrite('request', (originalFn, ...args: unknown[]) => {
   const options = normalizeRequestOptions(args);
+  const { cleanedHeaders, skipRequested } = stripSkipAutoAuthHeader(
+    options.headers as Record<string, unknown> | undefined
+  );
+  const sanitizedOptions = skipRequested
+    ? { ...options, headers: cleanedHeaders }
+    : options;
 
-  if (!shouldAttachAuthHeader(options.url, options.headers as Record<string, unknown> | undefined)) {
-    return originalFn(options as Cypress.RequestOptions);
+  if (skipRequested || !shouldAttachAuthHeader(sanitizedOptions.url, cleanedHeaders)) {
+    return originalFn(sanitizedOptions as Cypress.RequestOptions);
   }
 
   if (cachedAuthToken) {
     return originalFn({
-      ...options,
+      ...sanitizedOptions,
       headers: {
-        ...options.headers,
+        ...sanitizedOptions.headers,
         Authorization: `Bearer ${cachedAuthToken}`,
       },
     } as Cypress.RequestOptions);
@@ -106,9 +140,9 @@ Cypress.Commands.overwrite('request', (originalFn, ...args: unknown[]) => {
     }
     cachedAuthToken = token;
     return originalFn({
-      ...options,
+      ...sanitizedOptions,
       headers: {
-        ...options.headers,
+        ...sanitizedOptions.headers,
         Authorization: `Bearer ${token}`,
       },
     } as Cypress.RequestOptions);
@@ -124,7 +158,19 @@ beforeEach(() => {
 
   // Injeta Bearer JWT nas chamadas da aplicação sem interferir em mocks/aliases dos specs
   cy.intercept({ url: '**/api/**', middleware: true }, (req) => {
-    if (cachedAuthToken && !req.url.includes('/auth/login') && !req.headers.authorization) {
+    const skipHeaderKey = Object.keys(req.headers).find(
+      (key) => key.toLowerCase() === SKIP_AUTO_AUTH_HEADER
+    );
+    if (skipHeaderKey) {
+      delete req.headers[skipHeaderKey];
+      return;
+    }
+    if (
+      !isAutoAuthDisabled() &&
+      cachedAuthToken &&
+      !req.url.includes('/auth/login') &&
+      !req.headers.authorization
+    ) {
       req.headers.authorization = `Bearer ${cachedAuthToken}`;
     }
   });
