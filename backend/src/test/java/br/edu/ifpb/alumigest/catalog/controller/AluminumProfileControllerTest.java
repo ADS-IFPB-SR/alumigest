@@ -3,6 +3,7 @@ package br.edu.ifpb.alumigest.catalog.controller;
 import br.edu.ifpb.alumigest.catalog.domain.CalculationType;
 import br.edu.ifpb.alumigest.catalog.domain.MaterialGroup;
 import br.edu.ifpb.alumigest.catalog.repository.MaterialGroupRepository;
+import br.edu.ifpb.alumigest.common.security.WithMockOperator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -25,6 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
+@WithMockOperator
 class AluminumProfileControllerTest {
 
     @Autowired

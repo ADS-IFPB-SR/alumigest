@@ -16,7 +16,165 @@ declare namespace Cypress {
   }
 }
 
+// ==========================================
+// 0. AUTENTICAÇÃO JWT E2E (SPRING SECURITY 6 STATELESS)
+// ==========================================
+const getApiUrl = () => Cypress.env('apiUrl') || 'http://localhost:8081/api/v1';
+const getE2eEmail = () => Cypress.env('e2eEmail') || 'e2e@alumigest.com';
+const getE2ePassword = () => Cypress.env('e2ePassword') || 'AlumiGestE2E#2026!';
+const SKIP_AUTO_AUTH_HEADER = 'x-skip-auto-auth';
+
+let cachedAuthToken: string | null = null;
+
+function isAutoAuthDisabled(): boolean {
+  return Cypress.env('skipAutoAuth') === true;
+}
+
+function hasHeaderCaseInsensitive(headers: Record<string, unknown> | undefined, name: string): boolean {
+  if (!headers) {
+    return false;
+  }
+  const target = name.toLowerCase();
+  return Object.keys(headers).some((key) => key.toLowerCase() === target);
+}
+
+function stripSkipAutoAuthHeader(
+  headers?: Record<string, unknown>
+): { cleanedHeaders?: Record<string, unknown>; skipRequested: boolean } {
+  if (!headers) {
+    return { cleanedHeaders: headers, skipRequested: false };
+  }
+  let skipRequested = false;
+  const cleanedHeaders: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(headers)) {
+    if (key.toLowerCase() === SKIP_AUTO_AUTH_HEADER) {
+      skipRequested = true;
+    } else {
+      cleanedHeaders[key] = value;
+    }
+  }
+  return { cleanedHeaders, skipRequested };
+}
+
+function normalizeRequestOptions(args: unknown[]): Partial<Cypress.RequestOptions> {
+  const [first, second, third] = args;
+  if (typeof first === 'object' && first !== null) {
+    return { ...(first as Partial<Cypress.RequestOptions>) };
+  }
+  if (typeof first === 'string' && typeof second === 'string') {
+    return {
+      method: first as Cypress.HttpMethod,
+      url: second,
+      ...(third !== undefined ? { body: third as Cypress.RequestBody } : {}),
+    };
+  }
+  return {
+    url: String(first),
+    ...(second !== undefined ? { body: second as Cypress.RequestBody } : {}),
+  };
+}
+
+function shouldAttachAuthHeader(url?: string, headers?: Record<string, unknown>): boolean {
+  if (isAutoAuthDisabled() || !url || !url.includes('/api/') || url.includes('/auth/login')) {
+    return false;
+  }
+  return !hasHeaderCaseInsensitive(headers, 'authorization');
+}
+
+function ensureE2eAuthToken(): void {
+  if (isAutoAuthDisabled() || cachedAuthToken) {
+    return;
+  }
+  cy.request({
+    method: 'POST',
+    url: `${getApiUrl()}/auth/login`,
+    body: {
+      email: getE2eEmail(),
+      password: getE2ePassword(),
+    },
+    log: false,
+  }).then((response) => {
+    const token = response.body?.token;
+    if (!token || typeof token !== 'string') {
+      throw new Error(`Falha ao autenticar operador E2E. Status: ${response.status}`);
+    }
+    cachedAuthToken = token;
+  });
+}
+
+Cypress.Commands.overwrite('request', (originalFn, ...args: unknown[]) => {
+  const options = normalizeRequestOptions(args);
+  const { cleanedHeaders, skipRequested } = stripSkipAutoAuthHeader(
+    options.headers as Record<string, unknown> | undefined
+  );
+  const sanitizedOptions = skipRequested
+    ? { ...options, headers: cleanedHeaders }
+    : options;
+
+  if (skipRequested || !shouldAttachAuthHeader(sanitizedOptions.url, cleanedHeaders)) {
+    return originalFn(sanitizedOptions as Cypress.RequestOptions);
+  }
+
+  if (cachedAuthToken) {
+    return originalFn({
+      ...sanitizedOptions,
+      headers: {
+        ...sanitizedOptions.headers,
+        Authorization: `Bearer ${cachedAuthToken}`,
+      },
+    } as Cypress.RequestOptions);
+  }
+
+  return originalFn({
+    method: 'POST',
+    url: `${getApiUrl()}/auth/login`,
+    body: {
+      email: getE2eEmail(),
+      password: getE2ePassword(),
+    },
+    log: false,
+  } as Cypress.RequestOptions).then((loginResponse) => {
+    const token = loginResponse.body?.token;
+    if (!token || typeof token !== 'string') {
+      throw new Error(`Falha ao autenticar operador E2E. Status: ${loginResponse.status}`);
+    }
+    cachedAuthToken = token;
+    return originalFn({
+      ...sanitizedOptions,
+      headers: {
+        ...sanitizedOptions.headers,
+        Authorization: `Bearer ${token}`,
+      },
+    } as Cypress.RequestOptions);
+  });
+});
+
+before(() => {
+  ensureE2eAuthToken();
+});
+
 beforeEach(() => {
+  ensureE2eAuthToken();
+
+  // Injeta Bearer JWT nas chamadas da aplicação sem interferir em mocks/aliases dos specs
+  cy.intercept({ url: '**/api/**', middleware: true }, (req) => {
+    const skipHeaderKey = Object.keys(req.headers).find(
+      (key) => key.toLowerCase() === SKIP_AUTO_AUTH_HEADER
+    );
+    if (skipHeaderKey) {
+      delete req.headers[skipHeaderKey];
+      return;
+    }
+    if (
+      !isAutoAuthDisabled() &&
+      cachedAuthToken &&
+      !req.url.includes('/auth/login') &&
+      !req.headers.authorization
+    ) {
+      req.headers.authorization = `Bearer ${cachedAuthToken}`;
+    }
+  });
+
   // Evita que fontes externas bloqueiem o evento window.load em Electron headless
   cy.intercept('GET', 'https://fonts.googleapis.com/**', {
     statusCode: 200,
@@ -98,14 +256,7 @@ const generateRandomNCM = () => {
 };
 
 // ==========================================
-// 3. CONFIGURAÇÃO DINÂMICA DA URL
-// ==========================================
-// Busca a variável de ambiente 'apiUrl' configurada no cypress.config.ts
-// Se não encontrar, usa o localhost como fallback seguro de desenvolvimento
-const getApiUrl = () => Cypress.env('apiUrl') || 'http://localhost:8081/api/v1';
-
-// ==========================================
-// 4. COMANDOS DE CRIAÇÃO E DELEÇÃO VIA API
+// 3. COMANDOS DE CRIAÇÃO E DELEÇÃO VIA API
 // ==========================================
 
 Cypress.Commands.add('deleteEntityAPI', (endpoint: string, id: string | number) => {
